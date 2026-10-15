@@ -81,7 +81,13 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
                e->button.button==SDL_BUTTON_MIDDLE?4:e->button.button==SDL_BUTTON_X1?5:e->button.button==SDL_BUTTON_X2?6:0;
         if(vk)atomic_store(&keys[vk],e->type==SDL_EVENT_MOUSE_BUTTON_DOWN);
     }
-    if(e->type==SDL_EVENT_MOUSE_MOTION && captured && atomic_load(&focused)) {dx+=e->motion.xrel;dy+=e->motion.yrel;}
+    if(e->type==SDL_EVENT_MOUSE_MOTION && captured && atomic_load(&focused)) {
+        dx+=e->motion.xrel;dy+=e->motion.yrel;
+        static unsigned trace_count;
+        if(trace_count<8 && getenv("TSFP_NATIVE_TRACE_RENDER")) {
+            fprintf(stderr,"[native-input] captured mouse delta %g,%g\n",e->motion.xrel,e->motion.yrel);trace_count++;
+        }
+    }
 }
 static int stick(float delta) {return (int)fmaxf(-32767,fminf(32767,delta*14000*atomic_load(&mouse_sensitivity)));}
 void tsfp_native_mouse_sample(XBOX_GAMEPAD *out) {

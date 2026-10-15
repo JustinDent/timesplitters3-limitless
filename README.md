@@ -79,9 +79,13 @@ from the verified game data and the same pinned runtime and Python dependencies
 used on Windows. It executes the translated Xbox entry point, initializes the
 kernel and graphics device, loads assets, and displays the game's **1–4 player
 selection menu in a native SDL/Cocoa OpenGL window**. This is an experimental
-port: keyboard-driven menus now reach the first story level. Its opening scene
-renders, but the gameplay world later becomes black while the HUD remains.
-Full gameplay and rendering fidelity are not validated.
+port: keyboard-driven menus now reach visible first-level gameplay. Basic
+movement, mouse aiming, firing and pause/resume have been checked. Full-level
+completion and rendering fidelity are not yet validated.
+Double-click **Play-Native-Mac.command** to try the native build without a time
+limit. It uses your normal `private/saves` and preserves existing controls and
+PC display settings. Native runtime settings stay under `private/native-settings`.
+Use `./Play-Native-Mac.command --check` for a read-only prerequisite check.
 `Play-Mac.command` remains the CrossOver launcher.
 
 From the project root, use Python 3.12 or newer, Xcode command-line tools, and
@@ -126,17 +130,21 @@ The native implementation includes a reserved 4 GiB **virtual address range**
 (not a 4 GiB game copy), aliased RAM/device mappings, host timers, an ARM64
 register-access fault handler, sparse Xbox partition devices, and an SDL PCM
 output backend. Unknown faulting instructions stop with diagnostics. SDL audio
-submission has been observed, but output fidelity/latency and physical input
-have not been validated. Audio position uses the existing wall-clock fallback.
+submission has been observed, but output fidelity/latency and human hardware
+playtesting have not been validated. Keyboard and mouse OS-event delivery has
+been checked with automation. Audio position uses the existing wall-clock fallback.
 
 The native renderer uses the shared HLE state/texture/vertex hooks, the portable
 NV2A vertex interpreter, and a GLSL register-combiner path for stage-0 textures.
 `--test` checks actual GPU pixels for quad topology, font alpha, blending,
-NV2A vertex/combiner execution, readback and worker-thread context handoff, in
+NV2A vertex/combiner execution, readback, offscreen clear isolation/orientation,
+failed target-change preservation and worker-thread context handoff, in
 addition to the three platform suites. These tests use no game data or saves.
-General multi-texturing, offscreen targets, screen-copy effects and full 3D
-fidelity remain incomplete. Movies are skipped. PC settings/display/texture features, complete gameplay and save/load still
-need validation.
+2D offscreen targets now use real framebuffers with matching depth attachments,
+viewport/rectangle clears and correctly oriented sampling. General multi-texturing,
+cube/depth targets, screen-copy effects and full 3D fidelity remain incomplete.
+Movies are skipped. PC settings/display/texture features, complete gameplay and
+save/load still need validation.
 
 Native controls use the same JSON bindings as Windows. Focus the game window:
 
@@ -160,11 +168,15 @@ For automated menu checks, add `--test-keys` and append SDL scancode names such 
 `+Return` and `-Return` on separate lines to the isolated `test-keys.txt`, with a
 short hold between writes. This optional path feeds SDL events through the same
 binding reader; it does not establish physical keyboard/controller testing.
+For a single bounded renderer trace, add `--trace-render` and write `1` to the
+isolated `trace-render.txt`. The next frame logs up to 2,000 draw/clear samples;
+normal play has tracing disabled. Interactive launch logs are capped at 4 MiB
+per stream and reused on the next launch.
 
 Portable patch, launcher and test-isolation checks:
 
 ```sh
-.venv/bin/python -m pytest tests/test_patch_updates.py tests/test_mac_launcher.py tests/test_native_mac_tools.py -q
+.venv/bin/python -m pytest tests/test_patch_updates.py tests/test_mac_launcher.py tests/test_native_mac_tools.py tests/test_native_mac_launcher.py -q
 ```
 
 ## Local workflow

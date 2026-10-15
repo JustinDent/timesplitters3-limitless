@@ -43,6 +43,7 @@ def main():
     parser.add_argument('--seconds', type=int, default=15)
     parser.add_argument('--capture', action='store_true', help='Retain two rotating native frame captures')
     parser.add_argument('--test-keys', action='store_true', help='Read SDL key events from isolated test-keys.txt')
+    parser.add_argument('--trace-render', action='store_true', help='Enable bounded frame tracing on request')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
@@ -71,6 +72,11 @@ def main():
         if keys.is_symlink():raise SystemExit('Unexpected test key file')
         keys.write_text('')
         env['TSFP_NATIVE_TEST_KEYS'] = str(keys)
+    if args.trace_render:
+        trace = test / 'trace-render.txt'
+        if trace.is_symlink():raise SystemExit('Unexpected trace file')
+        trace.write_text('')
+        env['TSFP_NATIVE_TRACE_RENDER'] = str(trace)
     if args.capture:
         env.update(capture_environment(ROOT))
     logs = ROOT / 'logs'

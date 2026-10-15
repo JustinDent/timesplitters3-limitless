@@ -85,6 +85,40 @@ int tsfp_native_renderer_test(void) {
     ok &= native_test_pixel(dev,16,16,0,255,0);
     ok &= native_test_pixel(dev,48,48,0,255,0);
     d3d8_vsh_delete_shader(shader);
+    /* A later offscreen clear must never erase the already drawn world.
+     * Sampling the target must preserve its top/bottom D3D orientation. */
+    d3d8_combiners_set_pixel_shader(0);
+    dev->lpVtbl->SetVertexShader(dev,D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1);
+    for(int i=0;i<4;i++)vertices[i].color=0xFFFFFFFF;
+    dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFFFF0000,1,0);
+    IDirect3DTexture8 *target=NULL;IDirect3DSurface8 *surface=NULL,*depth=NULL,*original_depth=NULL;
+    ok &= SUCCEEDED(dev->lpVtbl->GetDepthStencilSurface(dev,&original_depth));
+    ok &= SUCCEEDED(dev->lpVtbl->CreateTexture(dev,16,16,1,D3DUSAGE_RENDERTARGET,D3DFMT_LIN_A8R8G8B8,D3DPOOL_DEFAULT,&target));
+    ok &= target && SUCCEEDED(target->lpVtbl->GetSurfaceLevel(target,0,&surface)) && surface;
+    ok &= SUCCEEDED(dev->lpVtbl->CreateDepthStencilSurface(dev,16,16,D3DFMT_D24S8,0,&depth));
+    if(surface && depth) {
+        ok &= SUCCEEDED(dev->lpVtbl->SetRenderTarget(dev,surface,depth));
+        /* Reject an incomplete target without moving subsequent clears there. */
+        IDirect3DTexture8 *incomplete=NULL;IDirect3DSurface8 *bad_surface=NULL;
+        dev->lpVtbl->CreateTexture(dev,16,16,1,0,D3DFMT_LIN_A8R8G8B8,D3DPOOL_DEFAULT,&incomplete);
+        if(incomplete)incomplete->lpVtbl->GetSurfaceLevel(incomplete,0,&bad_surface);
+        ok &= bad_surface && FAILED(dev->lpVtbl->SetRenderTarget(dev,bad_surface,depth));
+        if(bad_surface)bad_surface->lpVtbl->Release(bad_surface);
+        if(incomplete)incomplete->lpVtbl->Release(incomplete);
+        dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER,0xFF0000FF,1,0);
+        D3DRECT top={0,0,16,8};
+        dev->lpVtbl->Clear(dev,1,&top,D3DCLEAR_TARGET,0xFF00FF00,1,0);
+        ok &= native_test_pixel(dev,32,32,255,0,0); /* Back buffer read while RT bound. */
+        ok &= SUCCEEDED(dev->lpVtbl->SetRenderTarget(dev,NULL,original_depth));
+        dev->lpVtbl->SetTexture(dev,0,(IDirect3DBaseTexture8*)target);
+        dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]);
+        ok &= native_test_pixel(dev,18,18,0,255,0);
+        ok &= native_test_pixel(dev,18,46,0,0,255);
+        ok &= native_test_pixel(dev,4,4,255,0,0);
+        dev->lpVtbl->SetTexture(dev,0,NULL);
+    }
+    if(surface)surface->lpVtbl->Release(surface);if(depth)depth->lpVtbl->Release(depth);
+    if(target)target->lpVtbl->Release(target);if(original_depth)original_depth->lpVtbl->Release(original_depth);
     pthread_t worker;
     if(!pthread_create(&worker,NULL,native_test_worker,dev)) {
         pthread_join(worker,NULL);ok &= native_test_pixel(dev,32,32,0,255,0);
@@ -93,6 +127,6 @@ int tsfp_native_renderer_test(void) {
     SDL_GL_DestroyContext(g.glctx);g.glctx=NULL;
     SDL_DestroyWindow(g.window);g.window=NULL;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
-    fprintf(stderr,"[native-gl-test] quad topology, A8 swizzle, alpha blend, NV2A vertex/combiner programs, readback, worker handoff: %s\n",ok?"PASS":"FAIL");
+    fprintf(stderr,"[native-gl-test] quad topology, A8 swizzle, alpha blend, NV2A vertex/combiner programs, readback, offscreen clear isolation/orientation, worker handoff: %s\n",ok?"PASS":"FAIL");
     return ok?0:1;
 }

@@ -3,6 +3,49 @@
 Tested on Windows on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## Visible native first-level gameplay — October 15
+
+- Fixed the black world on `mac-port`. A per-draw GPU trace showed the world
+  rendered correctly, then a later clear erased it. The game switches to a
+  **160×120 offscreen texture** for that pass; the Mac backend previously returned
+  no surface from `GetSurfaceLevel` and ignored `SetRenderTarget`, so the clear
+  landed on the visible back buffer.
+- Added real texture surfaces, OpenGL framebuffers and depth/stencil attachments,
+  reference-counted target ownership, a persistent device depth surface, target
+  viewport reset, rectangle/viewport clear clipping, back-buffer readback while
+  an offscreen target is bound, and correct texture orientation on sampling.
+  Failed/incomplete target changes preserve the prior target. These changes are
+  confined to the native Mac backend; shared upstream patches and generated
+  game C are unchanged.
+- Reviewed actual first-level captures after the opening animation: canyon,
+  enemies, dual pistols, crosshair and ammunition HUD stay visible. Forward
+  input changed the viewpoint; firing reduced both pistols from **16 to 15**.
+  Captured OS mouse deltas turned the view from the canyon toward a rock wall.
+  Pause/resume returned to the visible world. These are bounded checks using
+  SDL test input and macOS CoreGraphics events, not a human full-level playthrough.
+- Added GPU regressions for offscreen clear isolation, top/bottom sampling,
+  rectangle clears and preserving the old target after an incomplete attachment.
+  All GPU/input checks and three native CTests pass. Portable checks:
+  **16 passed, 2 Windows-only checks skipped, 7 subtests passed**. Windows
+  build/runtime checks remain unrun on this host.
+- Added `Play-Native-Mac.command` for interactive play with the native binary.
+  It verifies ARM64/XBE/build hashes, preserves personal settings, strips stale
+  test overrides and bounds logs to 8 MiB total. Its read-only readiness check
+  passes. The interactive launcher was not used for automated game testing;
+  personal save/settings paths remain untouched.
+- The 120-second exact-binary gameplay probe completed at least **2,700**
+  guest frames and host presents, with no native fault or sampled GL error.
+  Its last render-target summary recorded **16,206 switches, zero failures**.
+  Disposable test images were recycled; selected captures stay under `private/`.
+- Evidence: `logs/mac-world-build-and-tests.log`, `logs/mac-world-portable-tests.log`,
+  `logs/native-world-validation.json`, `logs/native-fixed-world-draw.txt`, and
+  `private/captures/native-mac/world-playtest.png` / `world-resumed.png`.
+- Remaining limits: full-level completion, campaign save/load, audio fidelity,
+  physical controllers and complete renderer fidelity are unverified. The
+  vertex programs still execute on the CPU; general multitexturing, cube/depth
+  textures and screen-copy effects need further work. This is a first-level
+  gameplay milestone, not a finished Mac release.
+
 ## Native Mac controls and first story-level load — October 15
 
 - Added a Mac-only SDL event bridge to the shared JSON binding reader through
