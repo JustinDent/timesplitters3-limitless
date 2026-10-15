@@ -16,6 +16,7 @@ static int native_test_pixel(IDirect3DDevice8 *dev, UINT x, UINT y,
     surface->lpVtbl->Release(surface);
     return ok;
 }
+#include "feature_selftest.inc"
 static void *native_test_worker(void *arg) {
     IDirect3DDevice8 *dev=arg;
     dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF00FF00,1,0);
@@ -38,6 +39,14 @@ int tsfp_native_renderer_test(void) {
     };
     dev->lpVtbl->SetVertexShader(dev,D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1);
     int ok=native_test_vertex_programs();
+    ok &= native_test_pack(dev);
+    /* High-resolution rendering must retain guest readback coordinates and
+       later offscreen/interpolation tests must operate on the new target. */
+    ok &= pc_display_apply((PcDisplayMode){1280,720});
+    ok &= native_scene_w==1280 && native_scene_h==720;
+    ok &= !pc_display_apply((PcDisplayMode){99999,720});
+    ok &= native_scene_w==1280 && native_scene_h==720;
+    dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF0000FF,1,0);
     ok &= SUCCEEDED(dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]));
     ok &= native_test_pixel(dev,16,16,255,0,0);
     ok &= native_test_pixel(dev,48,48,255,0,0);
@@ -162,11 +171,32 @@ int tsfp_native_renderer_test(void) {
     for(int i=0;i<4;i++){vertices[i].z=.6f;vertices[i].color=0xFF00FF00;}
     dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]);
     ok &= native_test_pixel(dev,32,32,0,0,255);
+    /* Screen-space HUD keeps its 4:3 proportions in a 16:9 scene. */
+    pc_display_camera_factor();
+    dev->lpVtbl->SetRenderState(dev,D3DRS_ZENABLE,FALSE);
+    dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF0000FF,1,0);
+    for(int i=0;i<4;i++)vertices[i].color=0xFFFF0000;
+    dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]);
+    ok &= native_test_pixel(dev,10,32,0,0,255);
+    ok &= native_test_pixel(dev,32,32,255,0,0);
+    pc_display_frame_done();
     pthread_t worker;
     if(!pthread_create(&worker,NULL,native_test_worker,dev)) {
         pthread_join(worker,NULL);ok &= native_test_pixel(dev,32,32,0,255,0);
     } else ok=0;
     {NATIVE_GL_SCOPE;GLenum e=glGetError();if(e){fprintf(stderr,"[native-gl-test] GL error 0x%x\n",e);ok=0;}}
+    {NATIVE_GL_SCOPE;
+        native_scene_present();
+        GLint read;glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&read);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER,0);glReadBuffer(GL_BACK);
+        int w,h;SDL_GetWindowSizeInPixels(g.window,&w,&h);unsigned char pixel[4];
+        glReadPixels(w/2,h/2,1,1,GL_RGBA,GL_UNSIGNED_BYTE,pixel);
+        if(pixel[0]>2||pixel[1]<253||pixel[2]>2){fprintf(stderr,"[native-feature-test] drawable pixel %u,%u,%u\n",pixel[0],pixel[1],pixel[2]);ok=0;}
+        glBindFramebuffer(GL_READ_FRAMEBUFFER,read);ok &= native_swap_window();
+    }
+    ok &= pc_display_apply((PcDisplayMode){0,0});
+    ok &= native_scene_w==64 && native_scene_h==64;
+    fprintf(stderr,"[native-feature-test] resolution apply/reject/restore and high-resolution offscreen/interpolation: %s\n",ok?"PASS":"FAIL");
     SDL_GL_DestroyContext(g.glctx);g.glctx=NULL;
     SDL_DestroyWindow(g.window);g.window=NULL;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);

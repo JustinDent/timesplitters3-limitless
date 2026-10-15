@@ -19,6 +19,8 @@
 
 #include <SDL3/SDL.h>
 #include "input_sdl.h"
+#include "settings_macos.h"
+#include "pc_display.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
@@ -106,6 +108,7 @@ static int native_interp_on;
 static int native_depth_enabled=1;
 static UINT native_target_width,native_target_height;
 #include "gl_context.inc"
+#include "gl_display.inc"
 #ifdef __APPLE__
 static float *native_shader_vertices(const void *,UINT,UINT);
 static void native_shader_attribs(void);
@@ -364,6 +367,9 @@ typedef struct {
     UINT offsets[16], palette;
     DWORD usage;
     int flipped; /* GPU-rendered textures have GL bottom-up storage. */
+    GLuint pack_texture;
+    uint64_t pack_key,pack_bytes;
+    int pack_checked;
 } GLTexture;
 
 typedef struct {
@@ -461,6 +467,8 @@ static const IDirect3DIndexBuffer8Vtbl g_ib_vtbl = {
     ib_Lock, ib_Unlock, ib_GetDesc,
 };
 
+#include "gl_texture_pack.inc"
+
 /* ======================================================================== */
 /* IDirect3DTexture8                                                        */
 /* ======================================================================== */
@@ -473,7 +481,7 @@ static ULONG __stdcall tex_Release(IDirect3DTexture8 *s)
 { NATIVE_GL_SCOPE;
     GLTexture *t=(GLTexture*)s;
     LONG r=__atomic_sub_fetch(&t->ref,1,__ATOMIC_SEQ_CST);
-    if (r<=0) { if (t->gl_tex) glDeleteTextures(1,&t->gl_tex); free(t->sys_mem); free(t); }
+    if (r<=0) { native_pack_release(t); if (t->gl_tex) glDeleteTextures(1,&t->gl_tex); free(t->sys_mem); free(t); }
     return (ULONG)r;
 }
 static HRESULT __stdcall tex_GetDevice(IDirect3DTexture8 *s, IDirect3DDevice8 **pp)
@@ -538,7 +546,8 @@ static HRESULT __stdcall tex_UnlockRect(IDirect3DTexture8 *self,UINT lvl) { NATI
         glTexImage2D(GL_TEXTURE_2D,lvl,f==RHI_FORMAT_A8_UNORM?GL_R8:GL_RGBA8,w,h,0,format,type,pixels);
         if(f==RHI_FORMAT_A8_UNORM){GLint swizzle[4]={GL_ONE,GL_ONE,GL_ONE,GL_RED};glTexParameteriv(GL_TEXTURE_2D,GL_TEXTURE_SWIZZLE_RGBA,swizzle);}free(linear);free(tmp);
     }
-    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAX_LEVEL,t->levels-1);t->dirty=FALSE;return S_OK;
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAX_LEVEL,t->levels-1);
+    if(lvl==0)native_pack_upload(t);t->dirty=FALSE;return S_OK;
 }
 
 static const IDirect3DTexture8Vtbl g_tex_vtbl = {
@@ -585,16 +594,17 @@ static HRESULT __stdcall sf_LockRect(IDirect3DSurface8 *s, D3DLOCKED_RECT *pL, c
     size_t row=(size_t)t->width*4, size=row*t->height;
     if(!t->readback)t->readback=malloc(size);
     BYTE *raw=malloc(size);if(!t->readback||!raw){free(raw);return E_FAIL;}
-    GLint previous;glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&previous);
-    GLuint read_fbo=0;
-    if(t->backbuffer){glBindFramebuffer(GL_READ_FRAMEBUFFER,0);glReadBuffer(GL_BACK);}
+    GLint previous,previous_draw;glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&previous);glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&previous_draw);
+    GLuint read_fbo=0,read_color=0;
+    if(t->backbuffer)read_fbo=native_scene_readback(t->width,t->height,&read_color);
     else {
         glGenFramebuffers(1,&read_fbo);glBindFramebuffer(GL_READ_FRAMEBUFFER,read_fbo);
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,surface_color(t),t->level);
         glReadBuffer(GL_COLOR_ATTACHMENT0);
     }
     glReadPixels(0,0,t->width,t->height,GL_RGBA,GL_UNSIGNED_BYTE,raw);
-    glBindFramebuffer(GL_READ_FRAMEBUFFER,previous);if(read_fbo)glDeleteFramebuffers(1,&read_fbo);
+    glBindFramebuffer(GL_READ_FRAMEBUFFER,previous);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,previous_draw);
+    if(read_fbo)glDeleteFramebuffers(1,&read_fbo);if(read_color)glDeleteRenderbuffers(1,&read_color);
     for(UINT y=0;y<t->height;y++)memcpy(t->readback+y*row,raw+(t->height-1-y)*row,row);
     free(raw);pL->pBits=t->readback;pL->Pitch=(INT)row;return S_OK;
 }
@@ -656,14 +666,16 @@ static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const
                                      HWND hwnd, void *dirty)
 { NATIVE_GL_SCOPE;
     (void)s;(void)src;(void)dst;(void)hwnd;(void)dirty;
+    native_scene_present();
     Uint64 swap_start=SDL_GetTicksNS();
-    if(!SDL_GL_SwapWindow(g.window)) {
+    if(!native_swap_window()) {
         fprintf(stderr,"[native-gl] present failed: %s\n",SDL_GetError());return E_FAIL;
     }
     native_present_count++;native_guest_present_count++;
     native_frame_timing(swap_start,SDL_GetTicksNS());
     if(native_guest_present_count==1 || native_guest_present_count%300==0)
         fprintf(stderr,"[native-gl] presented frame %u, GL error=0x%x\n",native_present_count,glGetError());
+    pc_display_frame_done();
     trace_draw=0;
     const char *trace_path=getenv("TSFP_NATIVE_TRACE_RENDER");
     if(trace_path) {
@@ -723,7 +735,9 @@ static HRESULT __stdcall dev_Clear(IDirect3DDevice8 *s, DWORD count, const D3DRE
                 if(rects[i].x2<right)right=rects[i].x2;if(rects[i].y2<bottom)bottom=rects[i].y2;
             }
             if(right>x && bottom>y) {
-                glScissor(x,(int)native_target_height-bottom,right-x,bottom-y);glClear(m);
+                double sx=native_scene_active?(double)native_scene_w/g.backbuf_w:1;
+                double sy=native_scene_active?(double)native_scene_h/g.backbuf_h:1;
+                glScissor(x*sx,(native_target_height-bottom)*sy,(right-x)*sx,(bottom-y)*sy);glClear(m);
             }
         }
         glStencilMask(old_stencil);glScissor(old_box[0],old_box[1],old_box[2],old_box[3]);
@@ -847,8 +861,8 @@ static void bind_texture0(void)
     GLTexture *t = (GLTexture *)g.textures[0];
     if (t && t->gl_tex) {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, t->gl_tex);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, t->pack_texture?t->pack_texture:t->gl_tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, t->pack_texture?GL_LINEAR_MIPMAP_LINEAR:GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_REPEAT);
@@ -880,6 +894,7 @@ static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *s, D3DPRIMITIVETY
     if (!verts || prim_count == 0 || stride == 0) return D3D_OK;
     UINT vcount = 0;
     GLenum mode = gl_prim(pt, prim_count, &vcount);
+    native_place_draw(verts,stride,vcount);
     float *converted=NULL;
     GLuint gpu=native_gpu_prepare(stride);
     if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
@@ -922,6 +937,7 @@ static HRESULT __stdcall dev_DrawIndexedPrimitiveUP(IDirect3DDevice8 *s, D3DPRIM
     GLenum mode = gl_prim(pt, prim_count, &icount);
     GLenum itype = (idx_fmt == D3DFMT_INDEX32) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
     GLsizeiptr ibytes = (GLsizeiptr)icount * ((itype == GL_UNSIGNED_INT) ? 4 : 2);
+    native_place_draw(verts,stride,nv);
     float *converted=NULL;
     GLuint gpu=native_gpu_prepare(stride);
     if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
@@ -1059,7 +1075,7 @@ static HRESULT __stdcall dev_CreateDepthStencilSurface(IDirect3DDevice8 *s, UINT
 
 static int native_bind_target(GLSurface *color,GLSurface *depth)
 {
-    if(!color){glBindFramebuffer(GL_FRAMEBUFFER,0);return 1;}
+    if(!color){glBindFramebuffer(GL_FRAMEBUFFER,native_scene_fbo);return 1;}
     if(!native_framebuffer)glGenFramebuffers(1,&native_framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER,native_framebuffer);
     glFramebufferTexture2D(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,surface_color(color),color->level);
@@ -1081,9 +1097,10 @@ static HRESULT __stdcall dev_SetRenderTarget(IDirect3DDevice8 *s, IDirect3DSurfa
     if(color && color->parent)color->parent->flipped=1;
     if(color)sf_AddRef(&color->iface);if(depth)sf_AddRef(&depth->iface);
     if(native_target)sf_Release(&native_target->iface);if(native_depth)sf_Release(&native_depth->iface);
+    native_scene_active=color==NULL;
     native_target=color;native_depth=depth;native_depth_enabled=depth!=NULL;
     native_target_width=w;native_target_height=h;
-    g.viewport=(D3DVIEWPORT8){0,0,w,h,0,1};glViewport(0,0,w,h);glDepthRange(0,1);
+    g.viewport=(D3DVIEWPORT8){0,0,w,h,0,1};native_viewport();glDepthRange(0,1);
     if(trace_draw && trace_draw<=2000)fprintf(stderr,"[native-draw] target %ux%u texture=%p depth=%p\n",w,h,color?color->parent:NULL,depth);
     return D3D_OK;
 }
@@ -1103,8 +1120,7 @@ static HRESULT __stdcall dev_SetViewport(IDirect3DDevice8 *s, const D3DVIEWPORT8
 { NATIVE_GL_SCOPE;
     (void)s; if (!vp) return D3DERR_INVALIDCALL;
     g.viewport = *vp;
-    glViewport((GLint)vp->X, (GLint)(native_target_height - vp->Y - vp->Height),
-               (GLsizei)vp->Width, (GLsizei)vp->Height);
+    native_viewport();
     glDepthRange(vp->MinZ, vp->MaxZ);
     return D3D_OK;
 }
@@ -1224,7 +1240,7 @@ static HRESULT __stdcall d3d_CreateDevice(IDirect3D8 *s, UINT adapter, DWORD dev
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     g.window = SDL_CreateWindow(g_window_title, g.backbuf_w, g.backbuf_h,
-                                SDL_WINDOW_OPENGL);
+                                SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE|SDL_WINDOW_HIGH_PIXEL_DENSITY);
     if (!g.window) {
         fprintf(stderr, "[d3d8_gl] SDL_CreateWindow failed: %s\n", SDL_GetError());
         return D3DERR_INVALIDCALL;
@@ -1266,7 +1282,10 @@ static HRESULT __stdcall d3d_CreateDevice(IDirect3D8 *s, UINT adapter, DWORD dev
     g.rs[D3DRS_COLORWRITEENABLE]   = 0x0F;
 
     g.viewport=(D3DVIEWPORT8){0,0,g.backbuf_w,g.backbuf_h,0,1};
-    glViewport(0, 0, g.backbuf_w, g.backbuf_h);
+    PcDisplayMode mode=pc_display_current();
+    if(!native_scene_resize(mode.width,mode.height))return E_FAIL;
+    native_viewport();
+    tsfp_native_settings_attach(g.window);
 
     g_device.lpVtbl = &g_device_vtbl;
     *pp = &g_device;
@@ -1342,22 +1361,21 @@ void xbox_D3D8ScreenCopyShutdown(void) {}
 /* No Hor+ on this backend, so nothing for a title to widen. */
 float xbox_D3D8ClaimHorPlus(void) { return 1.0f; }
 /* SDL owns this backend's window and its fullscreen; nothing to follow. */
-void xbox_D3D8SetFullscreen(BOOL on) { (void)on; }
+void xbox_D3D8SetFullscreen(BOOL on) { if(g.window && SDL_IsMainThread())SDL_SetWindowFullscreen(g.window,on); }
 /* Nor widescreen by screen. */
 void xbox_D3D8SetWideFrames(BOOL wide) { (void)wide; }
 #include "gl_interpolation.inc"
 
-/* No widescreen 2D squeeze on this backend, so nothing to place. */
+/* The shared HLE records these tags during interpolation too. */
 void xbox_D3D8SetTwoDPlacement(int placement, uint32_t tag)
 {
-    (void)placement; (void)tag;
+    native_placement=placement;native_placement_tag=tag;
 }
 
 int xbox_D3D8GetTwoDPlacement(uint32_t *tag)
 {
-    if (tag)
-        *tag = 0;
-    return 0;
+    if(tag)*tag=native_placement_tag;
+    return native_placement;
 }
 
 BOOL xbox_D3D8GetScissors(UINT *count, BOOL *exclusive, D3DRECT *rect)

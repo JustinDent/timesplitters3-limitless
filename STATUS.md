@@ -3,6 +3,77 @@
 Tested on Windows and Apple Silicon macOS on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## Shared Windows and Mac feature policy/input model — October 15
+
+- Added tracked shared-development rules to `AGENTS.md`: common behavior has one
+  implementation wired into both builds; native API work stays in adapters, and
+  unimplemented or untested platform support must be recorded explicitly.
+  Git synchronization and rebuilding are still required between devices/branches.
+- Found and corrected a concrete gap: the Windows diagonal-movement speed fix
+  was behind `TSFP_PC_CONTROLS`, so the Mac binding path skipped it. The new
+  `zzzzzzz-shared-input-model.patch` compiles the same `src/pc_input.c` on Mac
+  and invokes its normalization from the shared binding parser. Windows's
+  existing implementation/build path is unchanged. The Mac SDL regression now
+  checks W+D speed normalization and release back to full straight-line speed.
+- Native manifests now include shared source hashes. README documents the shared
+  paths and remaining differences: Windows settings UI, direct-camera mouse path,
+  display/texture-pack hooks and separate graphics APIs do not become portable
+  merely by compiling the input model. No complete feature-parity claim is made.
+- Rebuilt on macOS 27.0.1 ARM64 / Apple M5 Pro, AppleClang 21, pinned SDL 3.4.16
+  and OpenGL 4.1 Metal -91.7. Supported US XBE and upstream `d90c929` verified.
+  Source base `ea1979a` plus the prior interpolation repair and this change.
+  Three native CTests, real-GPU/SDL checks (including diagonal input) and 25
+  tool/patch tests pass; two Windows-only tests skipped. No mission run was
+  required for this shared binding change. Windows execution and the other
+  computer's synchronization remain unverified.
+- Evidence: `logs/shared-pc-mac-build.log`, `logs/shared-pc-mac-tests.log`,
+  `logs/shared-pc-mac-validation.json` and `build/macos/BUILD.json`.
+  Changes remain local and uncommitted on `mac-port`; personal saves/settings
+  were untouched, and disposable native regression disks were recycled.
+
+## Native interpolation mesh-layout repair — October 15
+
+- Investigated the user's missing first-mission terrain/character screenshots.
+  Found a shared replay-state bug: vertex declarations changed during a guest
+  frame, but interpolation retained neither those changes nor the initial
+  declarations. Replaying with the final layout could misread vertices or skip
+  a draw entirely. Immediate-mode effects temporarily use a sixteen-float4
+  layout, then return to their normal stream layout.
+- Added `zzzzzz-interpolation-layouts.patch` after the existing patch stack.
+  It snapshots active declarations at frame start and copies successful layout
+  changes into the replay in order, preserving the final guest state. The native
+  executable was rebuilt; temporary culling/depth/CPU diagnostic edits were
+  removed. No generated game C was edited.
+- Before the fix, a moving first-level guest/midpoint pair showed fire/smoke
+  disappearing in the midpoint; logs also reported a skipped vertex declaration.
+  After the fix, both frames retain those effects, terrain and the nearby soldier.
+  Reviewed further movement/turn captures retain terrain. **The exact complete
+  terrain disappearance in the user's photograph was not reproduced, so its
+  full resolution remains unverified.** No full-level playthrough was attempted.
+- The final 145-second isolated 120-FPS run ended normally at its time limit,
+  with no native fault, sampled GL error or skipped-declaration warning.
+  Movement/turning used synthetic SDL keys. In seconds 115–135 after the first
+  host present, the stationary sample measured **120.00 host FPS**: 1,200 guest
+  plus 1,200 interpolated presents (60.00 FPS each); p95 11.47 ms, worst 13.34 ms.
+  The moving/capture sample at seconds 95–110 measured 116.81 host FPS
+  (59.67 guest + 57.14 interpolated). These are presents, not display scanout.
+- Validation: 25 portable/native-tool tests passed, 2 Windows-only tests skipped;
+  all three native CTests and real-GPU/SDL regressions passed. The new regression
+  compiles the actual shared recorder with a mock renderer and checks layouts at
+  draw boundaries, copied payloads, rejected changes and final restoration. It
+  fails when declaration recording is deliberately removed. Complete patch-stack
+  checks and the read-only native launcher prerequisite check pass. Native Windows
+  execution remains untested for this shared recorder change.
+- Build base `ea1979a` plus the new patch, upstream `d90c929`, supported US XBE
+  verified. Host: macOS 27.0.1 ARM64, Apple M5 Pro, AppleClang 21, SDL 3.4.16,
+  OpenGL 4.1 Metal -91.7. Evidence and full hashes are in
+  `logs/render-layout-validation.json`, `logs/render-layout-fixed.*`,
+  `logs/render-layout-build.log` and `build/macos/BUILD.json`. Selected before/after
+  PNGs are `private/captures/native-mac/render-layout-*.png`; redundant diagnostic
+  PNGs were removed. Isolated controls were restored and disposable test disks
+  recycled. Personal saves/settings were untouched. Changes are local and
+  uncommitted on `mac-port`; the other computer's synchronization is unverified.
+
 ## CrossOver integration removed — October 15
 
 - Removed the compatibility launcher, Python implementation, dedicated tests
@@ -639,3 +710,72 @@ input/camera, and settings suites passed. A real-game UI check verified F2,
 the PC Settings menu, and F2 in fullscreen; closing the editor returned input
 and rendering to the game. The user configuration hash is unchanged. Logs:
 `logs/revert-menu-build.log`, `logs/revert-menu-settings-ui.log`.
+
+## Native Mac settings and graphics adapters (2026-10-15)
+
+Local, uncommitted work on `mac-port` over `ea1979a4b6279045d0dc9c7c19472cb75e8a2216`.
+Main and the other device were not changed; Windows build and cross-device
+synchronization remain unverified. The native executable and every source hash
+match `build/macos/BUILD.json` (executable SHA-256
+`b6344c2b09bd415905d8675c05947a99f2063a069f5a361764d7954dce47b8ac`).
+Host: Apple Silicon macOS 27.0.1, Apple Clang 21.0.0, SDL 3.4.16,
+OpenGL 4.1 Metal 91.7 / GLSL 4.10. Shared upstream and supported XBE pins unchanged.
+
+- F2 and the Mac Game Settings menu open a Cocoa Keyboard & Mouse / Graphics
+  editor. Bindings, validation, defaults, unknown JSON preservation and display
+  state use the PC implementation; POSIX atomic writes retain a controls backup.
+  Sensitivity/inversion and bindings apply live. Conflicting keys are rejected
+  with the two action names; Mac does not yet offer Windows' move-binding dialog.
+  Closing the editor releases its input and raises the SDL game window.
+- Native render targets support the shared resolution list, high-resolution
+  scenes, widened projection/CPU frustum, and screen-position HUD classification.
+  F11 toggles fullscreen; fullscreen is a session preference. The original
+  Settings/Options menu's existing Display Settings integration is compiled on
+  Mac too. Its 15-second preview logic is shared; the page's timeout interaction
+  has not yet been exercised end-to-end on Mac.
+- OpenGL replacements use the same texture keys and DDS loader/acceptance rules
+  as Windows: full mip chains, BC1/2/3, aspect/no-downscale checks, 512 MiB resident
+  replacement budget, and original-texture fallback. Launch with `--texture-pack`.
+  Synthetic replacements were sampled on the real GPU and released correctly;
+  this is not verification of a complete remaster pack.
+- Integration found and fixed nested native settings initialization blocking
+  input startup, and Cocoa presenting black while an offscreen FBO was bound.
+  Both guest and interpolated swaps now bind the window drawable during swap.
+  The GPU regression checks the drawable as well as guest readback.
+
+Validation: complete patch-stack fresh/repeated/historical-upgrade tests;
+28 Python tests passed, 2 Windows-only tests skipped; three native CTests passed;
+real-GPU renderer/vertex/texture/resolution/offscreen/interpolation tests,
+SDL input and shared settings tests passed. Settings checks cover live binding
+sampling, exact backup, unrelated members/other controllers, invalid/reserved
+values, symlink/read-only refusal and preserving active state on failed writes.
+Standalone shared DDS-format tests and the interactive launcher's read-only
+prerequisite check passed. Native MSVC/Direct3D tests cannot run on this host.
+
+A bounded 130.15-second isolated game run at 1920x1080 with the 120-present target
+reached the first mission and performed short movement checks. Reviewed both
+rotating guest captures and an actual macOS window screenshot showing the world,
+weapons, NPC, fire and HUD; full campaign completion was not attempted. At least
+6,900 completed guest frames and 10,011 host presents were logged, with no sampled
+GL errors or native fault. The 90–110-second movement interval measured 86.84
+host presents/s: 56.17 guest + 30.66 interpolated, p95 19.32 ms, p99 31.48 ms.
+Captures were enabled; these are host intervals, not display scanout or a broad
+performance benchmark. The 60 Hz guest clock and personal FPS preferences remain
+unchanged. The earlier pre-fix 1080p run established offscreen rendering only;
+use the final run for on-screen evidence.
+
+Separate bounded UI checks visually verified windowed/fullscreen menus,
+resolution save/reload at 1080p, F2, controls save/reopen, Cancel, and keyboard
+navigation after closing Settings. All tests used isolated saves/settings;
+personal controls retain SHA-256
+`cf44293910a77fb8f397ced933a1cfd5098e1949c93db9cc0571ed438b39f64a` and the absent
+personal display file remains absent. Disposable partition images were recycled.
+Evidence: `logs/mac-features-build.log`, `logs/mac-features-pytest.log`,
+`logs/mac-features-final.json`, `logs/mac-features-ui.json`,
+`logs/mac-features-final-frame-times.csv` and selected captures under
+`private/captures/native-mac/mac-features-*` / `mac-settings-*`.
+
+Remaining: general multi-texturing, movies/screen-copy effects and exhaustive
+HUD placement/rendering fidelity; native direct-camera mouse behavior and PC
+prompt/debug features are not claimed as equivalent. This work does not establish
+that the previously reported world-disappearance case is completely resolved.

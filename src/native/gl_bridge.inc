@@ -130,3 +130,34 @@ static void native_shader_attribs(void) {
 }
 
 #include "gl_vertex.inc"
+
+#include "pc_screen_space.h"
+static void native_place_draw(const void *vertices,UINT stride,UINT count) {
+    int pos=-1;unsigned offset=0;
+    if(d3d8_vsh_is_programmable(g.current_vsh)) {
+        NV2AVshProgram *p=&native_programs[g.current_vsh-0x10000];
+        for(int i=0;i<p->length;i++)pos=pc_screen_position_write(&p->insns[i],pos);
+        NV2AVshSlot *slot=&native_slots[g.current_vsh-0x10000];
+        int found=0;
+        for(int i=0;i<slot->decl_count;i++)if(slot->decl[i].reg==pos &&
+            (slot->decl[i].format==RHI_FORMAT_R32G32B32A32_FLOAT || slot->decl[i].format==RHI_FORMAT_R32G32B32_FLOAT || slot->decl[i].format==RHI_FORMAT_R32G32_FLOAT)){
+            offset=slot->decl[i].offset;found=1;break;
+        }
+        if(!found)pos=-1;
+    } else if(d3d8_fvf_transformed(g.current_fvf))pos=0;
+    float k=1,anchor=.5f;
+    if(native_scene_active && pos>=0 && pc_display_wide_now() && offset+8<=stride && count) {
+        float left=INFINITY,right=-INFINITY;
+        for(UINT i=0;i<count;i++){
+            float x;memcpy(&x,(const BYTE *)vertices+(size_t)i*stride+offset,4);
+            left=fminf(left,x);right=fmaxf(right,x);
+        }
+        k=pc_display_hud_scale();
+        if(native_placement==XBOX_D3D8_2D_STRETCH ||
+           (native_placement==XBOX_D3D8_2D_AUTO && left<=1 && right>=g.backbuf_w-1))k=1;
+        if(native_placement==XBOX_D3D8_2D_LEFT)anchor=0;
+        if(native_placement==XBOX_D3D8_2D_RIGHT)anchor=1;
+        if(native_placement==XBOX_D3D8_2D_SIDE)anchor=(left+right)<g.backbuf_w?0:1;
+    }
+    if(k!=native_hud_k || anchor!=native_hud_anchor){native_hud_k=k;native_hud_anchor=anchor;native_viewport();}
+}

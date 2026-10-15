@@ -85,6 +85,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true', help='Read-only prerequisite check')
     parser.add_argument('--fps', type=int, choices=(60,120), help='Display target for this launch (default: saved preference or 120)')
+    parser.add_argument('--texture-pack', type=Path, help='Use an existing compiled DDS texture pack for this launch')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         raise ValueError('This native build requires an Apple Silicon Mac.')
@@ -99,14 +100,19 @@ def main():
     controls = ROOT / 'config/pc-controls.json'
     read_controls(controls if controls.exists() else ROOT / 'config/pc-controls.default.json')
     print(f'Native ARM64 build ready: {executable}')
+    if args.texture_pack and not args.texture_pack.is_dir():
+        raise ValueError('Texture pack directory does not exist.')
     if args.check:
         return 0
     prepare_settings(ROOT)
     logs = ROOT / 'logs'
     logs.mkdir(exist_ok=True)
-    print('Arrows/Enter navigate. Click inside the game for mouse-look; click again to fire. Escape pauses/releases the pointer. F1 also toggles capture. Close the game window to quit.', flush=True)
+    print('Arrows/Enter navigate. Click inside the game for mouse-look; click again to fire. Escape pauses/releases the pointer. F1 also toggles capture. F2 opens Settings; F11 toggles fullscreen. Close the game window to quit.', flush=True)
     print('Experimental: first-level rendering and basic input tested; campaign completion is unverified.', flush=True)
-    proc = subprocess.Popen([str(executable)], cwd=ROOT, env=game_environment(os.environ, ROOT, args.fps),
+    env = game_environment(os.environ, ROOT, args.fps)
+    if args.texture_pack:
+        env['TSFP_TEXTURE_PACK_DIR'] = str(args.texture_pack.resolve())
+    proc = subprocess.Popen([str(executable)], cwd=ROOT, env=env,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     readers = [threading.Thread(target=drain_log, args=(stream, logs / name))
                for stream, name in ((proc.stdout, 'native-play.out'), (proc.stderr, 'native-play.err'))]

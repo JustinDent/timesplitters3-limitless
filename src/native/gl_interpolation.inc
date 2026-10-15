@@ -2,7 +2,7 @@
  * intermediate frame. The default framebuffer remains the draw destination,
  * so offscreen target changes and readback use the same paths as guest draws. */
 static GLuint native_saved_fbo,native_saved_color,native_saved_depth;
-static int native_saved_w,native_saved_h;
+static unsigned native_saved_w,native_saved_h;
 static int native_capture_pair;
 static GLint native_interp_read,native_interp_draw;
 static unsigned native_interpolated_count;
@@ -21,7 +21,7 @@ static void native_interp_copy(GLuint from,GLuint to) {
     glDisable(GL_SCISSOR_TEST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER,from);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER,to);
-    glBlitFramebuffer(0,0,g.backbuf_w,g.backbuf_h,0,0,g.backbuf_w,g.backbuf_h,
+    glBlitFramebuffer(0,0,native_scene_w,native_scene_h,0,0,native_scene_w,native_scene_h,
                       GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT,GL_NEAREST);
     if(scissor)glEnable(GL_SCISSOR_TEST);
 }
@@ -36,18 +36,18 @@ BOOL xbox_D3D8InterpBegin(void) {
         glGenRenderbuffers(1,&native_saved_depth);
     }
     glBindFramebuffer(GL_FRAMEBUFFER,native_saved_fbo);
-    if(native_saved_w!=g.backbuf_w || native_saved_h!=g.backbuf_h) {
+    if(native_saved_w!=native_scene_w || native_saved_h!=native_scene_h) {
         glBindRenderbuffer(GL_RENDERBUFFER,native_saved_color);
-        glRenderbufferStorage(GL_RENDERBUFFER,GL_RGBA8,g.backbuf_w,g.backbuf_h);
+        glRenderbufferStorage(GL_RENDERBUFFER,GL_RGBA8,native_scene_w,native_scene_h);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_RENDERBUFFER,native_saved_color);
         glBindRenderbuffer(GL_RENDERBUFFER,native_saved_depth);
-        glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH24_STENCIL8,g.backbuf_w,g.backbuf_h);
+        glRenderbufferStorage(GL_RENDERBUFFER,GL_DEPTH24_STENCIL8,native_scene_w,native_scene_h);
         glFramebufferRenderbuffer(GL_FRAMEBUFFER,GL_DEPTH_STENCIL_ATTACHMENT,GL_RENDERBUFFER,native_saved_depth);
-        native_saved_w=g.backbuf_w;native_saved_h=g.backbuf_h;
+        native_saved_w=native_scene_w;native_saved_h=native_scene_h;
     }
     int complete=glCheckFramebufferStatus(GL_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE;
     if(complete) {
-        native_interp_copy(0,native_saved_fbo);
+        native_interp_copy(native_scene_fbo,native_saved_fbo);
         /* A replay starts a new depth history. Retaining N's opaque depth
          * incorrectly rejects translucent draws at the same surface. */
         GLboolean scissor=glIsEnabled(GL_SCISSOR_TEST),depth_write;
@@ -56,7 +56,7 @@ BOOL xbox_D3D8InterpBegin(void) {
         glGetIntegerv(GL_STENCIL_WRITEMASK,&stencil_write);
         glGetDoublev(GL_DEPTH_CLEAR_VALUE,&clear_depth);
         glGetIntegerv(GL_STENCIL_CLEAR_VALUE,&clear_stencil);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER,0);glDisable(GL_SCISSOR_TEST);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER,native_scene_fbo);glDisable(GL_SCISSOR_TEST);
         glDepthMask(GL_TRUE);glStencilMask(~0u);glClearDepth(1);glClearStencil(0);
         glClear(GL_DEPTH_BUFFER_BIT|GL_STENCIL_BUFFER_BIT);
         glDepthMask(depth_write);glStencilMask(stencil_write);
@@ -78,8 +78,9 @@ void xbox_D3D8InterpPresent(void) {
     NATIVE_GL_SCOPE;
     if(!native_interp_on)return;
     if(native_capture_pair)native_interp_capture("midpoint");
+    native_scene_present();
     Uint64 start=SDL_GetTicksNS();
-    if(SDL_GL_SwapWindow(g.window)) {
+    if(native_swap_window()) {
         native_present_count++;native_interpolated_count++;
         native_frame_timing(start,SDL_GetTicksNS());
     } else fprintf(stderr,"[native-gl] interpolated present failed: %s\n",SDL_GetError());
@@ -87,7 +88,7 @@ void xbox_D3D8InterpPresent(void) {
 void xbox_D3D8InterpEnd(void) {
     NATIVE_GL_SCOPE;
     if(!native_interp_on)return;
-    native_interp_copy(native_saved_fbo,0);
+    native_interp_copy(native_saved_fbo,native_scene_fbo);
     glBindFramebuffer(GL_READ_FRAMEBUFFER,native_interp_read);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER,native_interp_draw);
     native_interp_on=0;

@@ -28,6 +28,40 @@ reproducibility, and validation requirements.
   personal settings, and saves remain ignored and local. Transfer those only
   when needed for the task, preserving the authoritative copy and settings.
 
+## PC features and deferred Mac adaptation
+
+- New Windows PC features may be implemented and completed on PC first. Do not
+  automatically implement their Mac adapters in the same task unless requested.
+  Before reporting a new PC feature complete, add or update its entry in
+  `MAC_PORT_BACKLOG.md` so later Mac work has a durable handoff. Also record
+  behavioral fixes that need corresponding Mac work.
+- Each entry must describe the PC behavior, source files and commit/PR when
+  available (otherwise mark uncommitted), Mac support already present, remaining
+  adaptation, and acceptance checks. Use the backlog's statuses; a queued Mac
+  adaptation does not block completion of the PC feature. If no Mac adaptation
+  is needed, record why and distinguish verified support from pending validation.
+- When asked to port features to Mac, consult `MAC_PORT_BACKLOG.md`, implement
+  the requested entries, and update their status and evidence. Do not mark an
+  entry verified from a successful Windows test or shared-source change alone.
+  Keep measured validation in `STATUS.md` and link it from the backlog.
+- Implement platform-independent gameplay, input rules, asset/configuration
+  handling and runtime fixes once in shared source or the shared patch stack.
+  Keep operating-system event handling, native settings windows and graphics
+  API calls in platform adapters. Preserve reusable common logic while allowing
+  new Mac integration to be deferred to the backlog.
+- Changes to code already shared by both builds must preserve existing platform
+  support. Review affected build paths, run relevant shared tests and available
+  host checks, and report unavailable checks. Preserve existing settings and
+  supported defaults. Deferring a new feature does not authorize regressions in
+  existing Mac functionality.
+- Use `.github/pull_request_template.md` to record PC results and link the Mac
+  backlog entries. These instructions and the review checklist require agents
+  to maintain the list; they are not an automated feature detector or CI gate.
+- Git revisions must contain the change and backlog update before another
+  checkout can use them. Keep this chat's work on `mac-port`; transferring changes
+  between branches or devices must preserve their edits and follow the user's
+  branch instructions. Shared-account access does not synchronize local files.
+
 ## Build and launch consistency
 
 - Use the supported US Xbox executable, title ID `45410066`, with SHA-256
@@ -75,6 +109,11 @@ reproducibility, and validation requirements.
   `private/native-settings`. Its `--check` is read-only. Automated tests must
   use the bounded isolated runner, never the interactive launcher. Interactive
   logs reuse `logs/native-play.out` / `.err`, capped at 4 MiB each.
+- Mac F2/Cocoa settings use the shared PC bindings and display models. Keep
+  atomic POSIX file writes and OpenGL resource management in the native adapters;
+  keep binding validation, display/camera rules, texture keys and DDS acceptance
+  shared with Windows. Settings tests must use a disposable controls copy, check
+  backup/preservation/failure behavior, and never edit the fixture or personal file.
 - Native regression tests use `build/macos/path-tests`. Recycle only their
   known `Partition0.img` through `Partition5.img` files after each test pass;
   preserve test metadata and profiles. The shared cleanup helper validates the

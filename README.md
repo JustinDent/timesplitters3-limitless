@@ -29,6 +29,38 @@ To produce the same public package after building:
 This uses an explicit file list and default settings. It excludes all game data,
 personal settings, and saves, and writes the ZIP plus SHA-256 under `build/releases`.
 
+## Sharing fixes between Windows and Mac
+
+Both builds apply the complete `patches/` stack to the same pinned runtime and
+use the same generated game code and binding parser. Put common behavior in
+shared source, with OS-specific event handling and rendering in adapters; the
+tracked `AGENTS.md` makes this the rule for every device.
+
+The portable input model in `src/pc_input.c` is compiled by both builds. Its
+movement normalization now runs on both platforms, so fixes to diagonal speed
+use one implementation. The Mac SDL input regression checks the actual binding
+path, while Windows retains its PC input integration tests. Native build
+manifests include shared source hashes as well as Mac adapter hashes.
+
+This does not make Windows-only features automatically available on Mac:
+Windows settings dialogs, direct-camera mouse input, display hooks and texture
+pack integration still have platform-specific wiring. Mac mouse-look currently
+uses the right stick, and the graphics backends remain separate. Record and test
+adapter work before claiming a feature works on both platforms.
+
+New Windows PC features can be completed on PC first. Before completing a PC
+feature, add or update its entry in [the Mac port backlog](MAC_PORT_BACKLOG.md)
+with its behavior, source references, remaining Mac adaptation and acceptance
+checks. Mac implementation happens in a later requested porting task; queued Mac
+work does not block PC completion. Shared changes must still preserve existing
+Mac functionality. Agents follow `AGENTS.md` and the pull-request checklist to
+maintain this list; there is no automatic feature detector or CI enforcement.
+Record measured validation in `STATUS.md` and link it from the backlog.
+
+A change must reach the other checkout through Git and be rebuilt there. Keep
+this chat's changes on `mac-port`; do not automatically merge it into `main` or
+replace another device's uncommitted work. See `STATUS.md` for measured coverage.
+
 ## Native Apple Silicon setup (experimental)
 
 Native work stays on **mac-port**. The Mac now builds an ARM64 Mach-O executable
@@ -74,7 +106,9 @@ Output stays in `build/macos`. `BUILD.json` records the source and runtime
 revision, source/patch hashes, executable hash, compiler, Python packages and
 linked libraries. Native changes to the upstream runtime are reproduced by
 `patches/zz-mac-native-boot.patch`, `patches/zzz-mac-renderer.patch`,
-`patches/zzzz-mac-input.patch` and `patches/zzzzz-mac-high-refresh.patch`, applied
+`patches/zzzz-mac-input.patch`, `patches/zzzzz-mac-high-refresh.patch`,
+`patches/zzzzzz-interpolation-layouts.patch` and
+`patches/zzzzzzz-shared-input-model.patch`, applied
 after the shared feature patches. Mac renderer source stays in `src/native`;
 Windows and the inherited Linux graphics backends retain their own sources.
 Never edit generated game C. Regenerate when wrapper declarations change.
@@ -159,8 +193,35 @@ Native controls use the same JSON bindings as Windows. Focus the game window:
   assigned to other players are reserved. Physical controller play is unverified;
   SDL virtual-controller mapping/hotplug has regression coverage.
 
+**Mac settings:** press **F2** (Fn+F2 if needed), or choose **Game Settings →
+Keyboard, Mouse & Graphics…** in the Mac menu bar. The Keyboard & Mouse tab edits
+up to four bindings per action, sensitivity and vertical inversion. Save applies
+that tab immediately and backs up the controls file; Cancel discards unsaved edits.
+The Graphics tab selects the render resolution and fullscreen. **F11** toggles
+fullscreen directly. Resolutions persist in `config/pc-display.ini`; fullscreen
+is a session setting. The original in-game Settings/Options menu also includes
+**Display settings**, with a 15-second resolution preview and automatic rollback.
+
+Higher resolutions render the scene at the selected size, preserve the original
+menu proportions and widen the gameplay camera. Screen-space HUD draws retain
+their proportions. Larger targets cost GPU time, so 120 presentations per second
+remains a target, not a guarantee. General multi-texturing, movies and some
+screen-copy effects remain incomplete; this is not complete Windows graphics parity.
+
+To use the same compiled DDS texture pack as Windows for one Mac launch:
+
+```sh
+./Play-Native-Mac.command --texture-pack private/texture-remaster/pack
+```
+
+Both adapters share content keys, full-mip BC1/BC2/BC3 validation, aspect checks
+and a 512 MiB replacement residency limit. Missing, malformed or over-budget
+replacements use original textures. This does not create artwork or increase the
+6 GiB pack budget. Native texture replacement is verified with synthetic GPU
+fixtures; the complete remaster pack has not been visually verified on Mac.
+
 Mouse enabled/sensitivity/invert settings are read from the shared controls file
-at startup. Native mouse-look currently feeds the game's right-stick look path,
+at startup and updated live when saved in Mac Settings. Native mouse-look currently feeds the game's right-stick look path,
 so the in-game profile's look speed/inversion also applies. With the default
 profile and `invert_y: false`, moving the mouse up looks up.
 Losing focus releases keys, buttons and mouse capture and neutralizes

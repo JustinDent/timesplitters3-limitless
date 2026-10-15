@@ -45,6 +45,9 @@ int main(int argc, char **argv)
     if(argc==2 && strcmp(argv[1],"--input-self-test")==0) {
         extern int tsfp_native_input_test(void);return tsfp_native_input_test();
     }
+    if(argc==2 && strcmp(argv[1],"--settings-self-test")==0) {
+        extern int tsfp_native_settings_test(void);return tsfp_native_settings_test();
+    }
     (void)argc; (void)argv;
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);

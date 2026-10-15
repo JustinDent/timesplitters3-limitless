@@ -87,7 +87,8 @@ def main():
     run(*command)
     run(CMAKE, '--build', BUILD, '--target', 'futureperfect_recomp', '--parallel', '4')
     run('file', BUILD / 'futureperfect_recomp')
-    sources = sorted((ROOT / 'patches').glob('*.patch')) + sorted((ROOT / 'src/native').glob('*'))
+    # Include shared PC source hashes as well as the native adapters.
+    sources = sorted((ROOT / 'patches').glob('*.patch')) + sorted((ROOT / 'src').rglob('*'))
     manifest = dict(source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,
                     build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
@@ -109,9 +110,22 @@ def main():
                        RECOMP_DISPLAY_CONFIG=str(test / 'runtime.conf'),
                        TSFP_DISPLAY_CONFIG=str(test / 'pc-display.ini'),
                        XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'))
-            for check in ('--renderer-self-test', '--input-self-test'):
+            for check in ('--renderer-self-test', '--input-self-test', '--settings-self-test'):
+                if check == '--settings-self-test':
+                    settings = json.loads((ROOT / 'tests/fixtures/pc-controls.json').read_text())
+                    settings['keep_test_member'] = {'value': 42}
+                    settings['controllers'][1] = {'port': 2, 'device': 'none', 'keep': 'second-player'}
+                    control_path = test / 'settings-test.json'
+                    control_path.write_text(json.dumps(settings))
+                    before = control_path.read_bytes()
+                    env['RECOMP_INPUT_CONFIG'] = str(control_path)
                 subprocess.run([str(BUILD / 'futureperfect_recomp'), check],
                                cwd=ROOT, env=env, check=True, timeout=20)
+                if check == '--settings-self-test':
+                    saved = json.loads(control_path.read_text())
+                    assert saved['keep_test_member'] == settings['keep_test_member']
+                    assert saved['controllers'][1:] == settings['controllers'][1:]
+                    assert Path(str(control_path) + '.bak').read_bytes() == before
         finally:
             print('Test disk cleanup:', recycle_test_disks(ROOT, BUILD / 'path-tests'))
 

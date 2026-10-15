@@ -1,6 +1,7 @@
 /* SDL events are pumped on Cocoa's main thread. Guest input polls may happen
  * on workers: publish key/button state atomically, never call Cocoa there. */
 #include "input_sdl.h"
+#include "settings_macos.h"
 #include "input_bindings.h"
 #include <stdatomic.h>
 #include <stdio.h>
@@ -45,6 +46,19 @@ static int virtual_key(SDL_Scancode code) {
     default:return 0;
     }
 }
+void pc_controls_get_mouse(double *s,int *enabled,int *invert) {
+    *s=atomic_load(&mouse_sensitivity);*enabled=atomic_load(&mouse_enabled);*invert=atomic_load(&mouse_invert);
+}
+void pc_controls_set_mouse(double s,int enabled,int invert) {tsfp_native_mouse_config(enabled,s,invert);}
+void tsfp_native_key_name(int key,char *out,size_t bytes) {
+    const char *name=NULL;
+    switch(key){case 0:name="Unbound";break;case 1:name="Mouse 1";break;case 2:name="Mouse 2";break;
+    case 4:name="Mouse 3";break;case 5:name="Mouse 4";break;case 6:name="Mouse 5";break;
+    case 0x86:name="Wheel up";break;case 0x87:name="Wheel down";break;
+    case 0x10:name="Shift";break;case 0x11:name="Control";break;case 0x12:name="Option";break;}
+    if(!name)for(int sc=1;sc<SDL_SCANCODE_COUNT;sc++)if(virtual_key(sc)==key){name=SDL_GetScancodeName(sc);break;}
+    if(name&&*name)snprintf(out,bytes,"%s",name);else snprintf(out,bytes,"Key %d",key);
+}
 static void clear_mouse(void) {
     atomic_store(&mouse_x,0);atomic_store(&mouse_y,0);dx=dy=0;
 }
@@ -63,6 +77,7 @@ static void release_all(void) {
     for(int i=0;i<256;i++)atomic_store(&keys[i],0);
     clear_mouse();capture_click=0;
 }
+void tsfp_native_settings_release_input(SDL_Window *window) {release_all();set_capture(window,0);}
 int tsfp_native_input_focused(void) {return atomic_load(&focused);}
 int tsfp_native_key_down(int vk) {
     if(!atomic_load(&focused)||vk<=0||vk>255)return 0;
@@ -80,6 +95,13 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
     if(e->type==SDL_EVENT_KEY_DOWN||e->type==SDL_EVENT_KEY_UP){
         int vk=virtual_key(e->key.scancode),down=e->type==SDL_EVENT_KEY_DOWN;
         if(vk)atomic_store(&keys[vk],down);
+        if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F2 && window){
+            tsfp_native_settings_show(window);return;
+        }
+        if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F11 && window){
+            tsfp_native_settings_release_input(window);
+            SDL_SetWindowFullscreen(window,!(SDL_GetWindowFlags(window)&SDL_WINDOW_FULLSCREEN));return;
+        }
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F1 && window){
             set_capture(window,!captured);
         }
@@ -105,6 +127,10 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
                e->button.button==SDL_BUTTON_MIDDLE?4:e->button.button==SDL_BUTTON_X1?5:e->button.button==SDL_BUTTON_X2?6:0;
         if(vk)atomic_store(&keys[vk],e->type==SDL_EVENT_MOUSE_BUTTON_DOWN);
     }
+    if(e->type==SDL_EVENT_MOUSE_WHEEL && captured && atomic_load(&focused)) {
+        if(e->wheel.y>0)atomic_store(&keys[0x86],1);
+        if(e->wheel.y<0)atomic_store(&keys[0x87],1);
+    }
     if(e->type==SDL_EVENT_MOUSE_MOTION && captured && atomic_load(&focused)) {
         dx+=e->motion.xrel;dy+=e->motion.yrel;
         static unsigned trace_count;
@@ -121,6 +147,7 @@ void tsfp_native_mouse_sample(XBOX_GAMEPAD *out) {
     if(abs(y)>abs(out->sThumbRY))out->sThumbRY=y;
 }
 void tsfp_native_input_frame(SDL_Window *window) {
+    atomic_store(&keys[0x86],0);atomic_store(&keys[0x87],0);
     if(captured && !atomic_load(&mouse_enabled))set_capture(window,0);
     /* Optional bounded test input feeds SDL events, then the exact same binding
      * path as physical keys. This is deliberately distinct from XAPI replay. */
@@ -158,6 +185,13 @@ int tsfp_native_input_test(void) {
     recomp_bindings_sample(0,&pad);ok &= !!(pad.wButtons&XBOX_GAMEPAD_DPAD_DOWN);
     e.key.scancode=SDL_SCANCODE_W;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.sThumbLY>30000;
+    /* Both hosts use pc_input.c: diagonal movement must not run faster. */
+    e.key.scancode=SDL_SCANCODE_D;tsfp_native_input_event(&e,NULL);
+    recomp_bindings_sample(0,&pad);
+    ok &= pad.sThumbLX==pad.sThumbLY && pad.sThumbLX>23000 &&
+          hypot(pad.sThumbLX,pad.sThumbLY)<=32767;
+    e.type=SDL_EVENT_KEY_UP;tsfp_native_input_event(&e,NULL);
+    recomp_bindings_sample(0,&pad);ok &= pad.sThumbLX==0 && pad.sThumbLY>30000;
     e.type=SDL_EVENT_WINDOW_FOCUS_LOST;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.wButtons==0 && pad.sThumbLY==0;
     e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,NULL);
@@ -241,3 +275,5 @@ int tsfp_native_input_test(void) {
     fprintf(stderr,"[native-input-test] bindings, press/release, movement, focus, mouse settings/click capture/release, SDL pad hotplug: %s\n",ok?"PASS":"FAIL");
     return ok?0:1;
 }
+
+#include "settings_selftest.inc"

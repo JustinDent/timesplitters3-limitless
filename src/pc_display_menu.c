@@ -3,6 +3,12 @@
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
 #include "pc_display.h"
+#ifndef _WIN32
+#include "platform/win32_compat.h"
+/* Win32 protection values not produced by the POSIX mapper. */
+#define PAGE_GUARD 0x100
+#define PAGE_EXECUTE_WRITECOPY 0x80
+#endif
 #include <stdarg.h>
 
 #include "recomp_types.h"
