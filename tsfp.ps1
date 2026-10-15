@@ -156,9 +156,15 @@ try {
                         "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/save_paths.c",
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', '--parallel', '4')
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_network_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_format_test.exe") @()
+                    $textureTest = Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_toggle_test.exe"
+                    $textureTestRoot = Join-Path $buildRoot 'texture-toggle-tests'
+                    New-Item -ItemType Directory -Force -Path $textureTestRoot | Out-Null
+                    foreach ($mode in @('classic', '4k', 'missing', 'implicit')) {
+                        Invoke-Checked $textureTest @($textureTestRoot, $mode)
+                    }
                     $testRoot = Join-Path $projectRoot 'build\path-tests'
                     $testConfig = Join-Path $projectRoot 'tests\fixtures\pc-controls.json'
                     New-Item -ItemType Directory -Force -Path $testRoot | Out-Null
@@ -196,7 +202,7 @@ try {
                     $previousSequence = $env:RECOMP_INPUT_SEQ
                     $previousBackground = $env:RECOMP_WINDOW_BACKGROUND
                     $pcEnvironment = @{}
-                    foreach ($name in @('RECOMP_INPUT_CONFIG', 'RECOMP_PC_MOUSE', 'RECOMP_MOUSE_SENSITIVITY', 'RECOMP_MOUSE_INVERT_Y', 'RECOMP_TRACE_BUDGET', 'TSFP_NETWORK', 'TSFP_NET_PEERS')) {
+                    foreach ($name in @('RECOMP_INPUT_CONFIG', 'RECOMP_PC_MOUSE', 'RECOMP_MOUSE_SENSITIVITY', 'RECOMP_MOUSE_INVERT_Y', 'RECOMP_TRACE_BUDGET', 'TSFP_NETWORK', 'TSFP_NET_PEERS', 'TSFP_TEXTURE_PACK_DIR', 'TSFP_TEXTURE_MODE')) {
                         $pcEnvironment[$name] = [Environment]::GetEnvironmentVariable($name)
                     }
                     try {
@@ -214,6 +220,10 @@ try {
                             $env:TSFP_NET_PEERS = $Peers -join ','
                         }
                         $env:RECOMP_GAME_DIR = $gameRoot
+                        if (!$env:TSFP_TEXTURE_PACK_DIR) {
+                            $env:TSFP_TEXTURE_PACK_DIR = Join-Path $privateRoot 'texture-remaster\pack'
+                            if (!$env:TSFP_TEXTURE_MODE) { $env:TSFP_TEXTURE_MODE = 'classic' }
+                        }
                         $controlsPath = Join-Path $projectRoot 'config\pc-controls.json'
                         $controls = Get-Content -LiteralPath $controlsPath -Raw | ConvertFrom-Json
                         $mouseSensitivity = [double]$controls.mouse.sensitivity

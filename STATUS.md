@@ -2590,3 +2590,26 @@ queued under MAC-021; other-device synchronization is unverified.
   The current launcher build passes 71 updater and 21 settings checks
   (`build/pr55-validation/launcher.log`). Objectives notes are appended here so
   new status entries at the top do not repeatedly conflict with this PR.
+
+## Live Classic / 4K texture toggle — October 15
+
+- F10 switches the cached original/replacement texture views without restarting
+  or reloading a level. PC Settings > 4K Textures also switches the mode and
+  shows its checkmark. Keyboard repeats are ignored; fullscreen and hidden-menu
+  shortcuts work. F10 no longer also cycles the runtime's diagnostic frame cap.
+- Play.cmd starts Classic with the installed local pack available; Play-Textures
+  starts 4K. Packaged launchers discover an optional Textures folder beside Play.
+  This session choice is independent of render resolution. Missing, invalid and
+  memory-budget-limited replacements retain Classic; original assets stay intact.
+- Windows Release build and all build-time native checks passed. Counted RHI
+  loader tests cover cached switches, unchanged original data, missing/invalid
+  DDS files, screen copies/render targets, content changes, allocation failures
+  and release. Seven fresh/upgrade/idempotence patch-stack tests passed.
+- One brief actual-runtime startup smoke check passed F10, held repeats, hidden
+  menu, fullscreen, menu selection/checkmarks, one replacement load, clean exit,
+  and personal controls/display settings preservation. Evidence is in
+  logs/texture-toggle-validation.json and logs/texture-toggle-game.err.
+- Full gameplay scene/artwork validation remains pending under the existing
+  overhaul cadence. The current partial pack and 512 MiB resident GPU budget
+  are unchanged. Disposable validation disk images were recycled after the run.
+

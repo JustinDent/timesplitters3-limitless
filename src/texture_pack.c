@@ -1,9 +1,11 @@
 /* Optional host-only replacements. Guest dimensions, texels, and game archives
  * remain unchanged. Only compressed, non-render-target 2D textures participate.
- * Restart the game after changing a pack. No file I/O when both options are off. */
+ * F10 switches cached views live. Restart after changing pack files on disk.
+ * No file I/O when both options are off. */
 #include "d3d8_internal.h"
 #include "texture_pack.h"
 #include "texture_pack_io.h"
+#include "texture_mode.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +15,12 @@ static char pack_root[2048], dump_root[2048];
 static int initialized;
 static uint64_t resident_bytes;
 #define PACK_BUDGET TSFP_PACK_RESIDENT_BUDGET
+
+RhiView *tsfp_texture_view(D3D8Texture *tex) {
+    /* A formerly static texture can become a screen copy. Never override it. */
+    return tsfp_texture_is_4k() && !tex->usage && !tex->screen_copy && tex->pack_srv
+        ? tex->pack_srv : tex->srv;
+}
 
 void tsfp_texture_release(D3D8Texture *tex) {
     if(tex->pack_srv) rhi_view_destroy(tex->pack_srv);
