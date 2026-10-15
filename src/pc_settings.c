@@ -1,0 +1,277 @@
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#define _WIN32_WINNT 0x0601
+#include "pc_settings.h"
+#include <commctrl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+
+enum { ID_ACTIONS=100, ID_SLOT, ID_CHANGE, ID_CLEAR, ID_DEFAULTS, ID_SENSITIVITY,
+       ID_INVERT, ID_ENABLED, ID_STATUS, ID_HELP, ID_SENS_LABEL };
+typedef struct Editor { PcSettings settings; HWND list; int slot; } Editor;
+typedef struct Capture { int key, accepted; } Capture;
+
+/* DialogBox owns the message loop and keyboard navigation. Controls are
+   created in WM_INITDIALOG, so no external resource files are required. */
+static INT_PTR dialog(HWND owner, const WCHAR *title, int width, int height,
+                      DLGPROC procedure, LPARAM data)
+{
+    union { DWORD align; BYTE bytes[256]; } buffer = {0};
+    DLGTEMPLATE *t=(DLGTEMPLATE *)buffer.bytes;
+    WORD *p=(WORD *)(t+1);
+    const WCHAR *c=title;
+    DWORD units=GetDialogBaseUnits();
+    RECT work;
+    SystemParametersInfo(SPI_GETWORKAREA,0,&work,0);
+    if(width>work.right-work.left-40) width=work.right-work.left-40;
+    if(height>work.bottom-work.top-70) height=work.bottom-work.top-70;
+    t->style=WS_POPUP|WS_CAPTION|WS_SYSMENU|DS_MODALFRAME|DS_CENTER;
+    t->cdit=0; t->cx=(short)MulDiv(width,4,LOWORD(units)); t->cy=(short)MulDiv(height,8,HIWORD(units));
+    *p++=0; *p++=0;
+    while (*c) *p++=(WORD)*c++;
+    *p=0;
+    return DialogBoxIndirectParamW(GetModuleHandleW(NULL),t,owner,procedure,data);
+}
+
+static HWND control(HWND parent, const char *kind, const char *text, DWORD style, int id)
+{
+    HWND h=CreateWindowExA(!strcmp(kind,"EDIT")?WS_EX_CLIENTEDGE:0,kind,text,
+        WS_CHILD|WS_VISIBLE|style,0,0,1,1,parent,(HMENU)(INT_PTR)id,GetModuleHandle(NULL),NULL);
+    SendMessage(h,WM_SETFONT,(WPARAM)GetStockObject(DEFAULT_GUI_FONT),TRUE);
+    return h;
+}
+
+static void place(HWND d,int id,int x,int y,int w,int h)
+{ MoveWindow(GetDlgItem(d,id),x,y,w,h,TRUE); }
+
+static int selected(Editor *e)
+{ return ListView_GetNextItem(e->list,-1,LVNI_SELECTED); }
+
+static void fill(HWND d, Editor *e)
+{
+    int i,j;
+    char name[80],number[40];
+    for(i=0;i<PC_ACTION_COUNT;i++) for(j=0;j<PC_BINDING_SLOTS;j++) {
+        pc_settings_key_name(e->settings.keys[i][j],name,sizeof name);
+        ListView_SetItemText(e->list,i,j+1,name);
+    }
+    snprintf(number,sizeof number,"%.4g",e->settings.sensitivity);
+    SetDlgItemTextA(d,ID_SENSITIVITY,number);
+    CheckDlgButton(d,ID_INVERT,e->settings.invert_y?BST_CHECKED:BST_UNCHECKED);
+    CheckDlgButton(d,ID_ENABLED,e->settings.enabled?BST_CHECKED:BST_UNCHECKED);
+}
+
+static int reserved(int key)
+{ return key==VK_F1 || key==VK_F2 || key==VK_F9 || key==VK_F10 || key==VK_F11 || key==VK_LWIN || key==VK_RWIN; }
+
+static void capture_key(HWND d,int key)
+{
+    Capture *c=(Capture *)GetWindowLongPtr(d,DWLP_USER);
+    if(reserved(key)) { SetDlgItemTextA(d,ID_STATUS,"That key is reserved by the game window. Choose another key."); return; }
+    c->key=key; c->accepted=1;
+    EndDialog(d,IDOK);
+}
+
+static LRESULT CALLBACK capture_input(HWND window,UINT message,WPARAM wp,LPARAM lp,
+                                     UINT_PTR id,DWORD_PTR data)
+{
+    HWND d=(HWND)data;
+    (void)id;
+    switch(message) {
+    case WM_GETDLGCODE: return DLGC_WANTALLKEYS|DLGC_WANTCHARS;
+    case WM_KEYDOWN: case WM_SYSKEYDOWN:
+        if(wp==VK_ESCAPE) EndDialog(d,IDCANCEL);
+        else capture_key(d,(int)wp);
+        return 0;
+    case WM_LBUTTONDOWN: capture_key(d,VK_LBUTTON); return 0;
+    case WM_RBUTTONDOWN: capture_key(d,VK_RBUTTON); return 0;
+    case WM_MBUTTONDOWN: capture_key(d,VK_MBUTTON); return 0;
+    case WM_XBUTTONDOWN: capture_key(d,HIWORD(wp)==XBUTTON1?VK_XBUTTON1:VK_XBUTTON2); return TRUE;
+    case WM_MOUSEWHEEL: capture_key(d,(short)HIWORD(wp)>0?VK_F23:VK_F24); return 0;
+    }
+    return DefSubclassProc(window,message,wp,lp);
+}
+
+static INT_PTR CALLBACK capture_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
+{
+    switch(message) {
+    case WM_INITDIALOG: {
+        HWND input;
+        SetWindowLongPtr(d,DWLP_USER,lp);
+        control(d,"STATIC","Press a key, or click a mouse button / scroll inside the box.",0,ID_HELP);
+        place(d,ID_HELP,15,14,430,30);
+        input=control(d,"STATIC","Press your new binding here",WS_TABSTOP|SS_NOTIFY|SS_CENTER|SS_CENTERIMAGE|WS_BORDER,ID_ACTIONS);
+        place(d,ID_ACTIONS,15,48,430,80);
+        SetWindowSubclass(input,capture_input,1,(DWORD_PTR)d);
+        control(d,"STATIC","Escape cancels. Use the button below to bind Escape itself.",0,ID_STATUS);
+        place(d,ID_STATUS,15,140,430,36);
+        control(d,"BUTTON","Use Escape",WS_TABSTOP|BS_PUSHBUTTON,ID_CHANGE); place(d,ID_CHANGE,15,183,105,28);
+        control(d,"BUTTON","Unbind",WS_TABSTOP|BS_PUSHBUTTON,ID_CLEAR); place(d,ID_CLEAR,130,183,100,28);
+        control(d,"BUTTON","Cancel",WS_TABSTOP|BS_PUSHBUTTON,IDCANCEL); place(d,IDCANCEL,345,183,100,28);
+        SetFocus(input);
+        return FALSE;
+    }
+    case WM_COMMAND:
+        if(LOWORD(wp)==IDCANCEL) { EndDialog(d,IDCANCEL); return TRUE; }
+        if(LOWORD(wp)==ID_CHANGE) { capture_key(d,VK_ESCAPE); return TRUE; }
+        if(LOWORD(wp)==ID_CLEAR) { capture_key(d,0); return TRUE; }
+        break;
+    case WM_CLOSE: EndDialog(d,IDCANCEL); return TRUE;
+    }
+    return FALSE;
+}
+
+static void change_binding(HWND d,Editor *e)
+{
+    int row=selected(e), conflict,i,j;
+    Capture capture={0};
+    char title[256];
+    if(row<0) { SetDlgItemTextA(d,ID_STATUS,"Select an action first."); return; }
+    if(dialog(d,L"Choose a keyboard or mouse binding",465,230,capture_dialog,(LPARAM)&capture)!=IDOK || !capture.accepted) return;
+    conflict=pc_settings_conflict(&e->settings,row,capture.key);
+    if(conflict>=0) {
+        char key_name[80];
+        pc_settings_key_name(capture.key,key_name,sizeof key_name);
+        snprintf(title,sizeof title,"%s is already assigned to %s.\n\nMove it to %s?",key_name,pc_action_labels[conflict],pc_action_labels[row]);
+        if(MessageBoxA(d,title,"Binding already in use",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2)!=IDYES) return;
+    }
+    if(capture.key) for(i=0;i<PC_ACTION_COUNT;i++) for(j=0;j<PC_BINDING_SLOTS;j++)
+        if(e->settings.keys[i][j]==capture.key) e->settings.keys[i][j]=0;
+    e->settings.keys[row][e->slot]=capture.key;
+    /* Only redraw bindings: do not overwrite mouse edits still in the form. */
+    for(i=0;i<PC_ACTION_COUNT;i++) for(j=0;j<PC_BINDING_SLOTS;j++) {
+        char name[80]; pc_settings_key_name(e->settings.keys[i][j],name,sizeof name);
+        ListView_SetItemText(e->list,i,j+1,name);
+    }
+    SetDlgItemTextA(d,ID_STATUS,"Binding changed. Save to apply and remember your changes.");
+}
+
+static void layout(HWND d)
+{
+    RECT r;
+    int w,h;
+    GetClientRect(d,&r); w=r.right; h=r.bottom;
+    place(d,ID_HELP,16,12,w-32,34);
+    place(d,ID_ACTIONS,16,49,w-32,h-210);
+    place(d,ID_SLOT,16,h-151,130,150);
+    place(d,ID_CHANGE,158,h-153,135,28);
+    place(d,ID_CLEAR,305,h-153,110,28);
+    place(d,ID_SENS_LABEL,16,h-111,130,22);
+    place(d,ID_SENSITIVITY,150,h-115,85,25);
+    place(d,ID_INVERT,255,h-114,125,25);
+    place(d,ID_ENABLED,397,h-114,180,25);
+    place(d,ID_STATUS,16,h-78,w-32,28);
+    place(d,ID_DEFAULTS,16,h-40,135,28);
+    place(d,IDOK,w-260,h-40,125,28);
+    place(d,IDCANCEL,w-123,h-40,107,28);
+}
+
+static INT_PTR CALLBACK settings_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
+{
+    Editor *e=(Editor *)GetWindowLongPtr(d,DWLP_USER);
+    switch(message) {
+    case WM_INITDIALOG: {
+        int i;
+        LVCOLUMNA column={0};
+        const char *headers[]={"Action","Primary","Alternate","Extra 1","Extra 2"};
+        e=(Editor *)lp; SetWindowLongPtr(d,DWLP_USER,lp);
+        control(d,"STATIC","Double-click a binding to change it. F2 opens this menu; F1 releases the mouse.\nDuring a mission, pause the game before opening PC settings.",0,ID_HELP);
+        e->list=control(d,WC_LISTVIEWA,"",WS_TABSTOP|LVS_REPORT|LVS_SINGLESEL|LVS_SHOWSELALWAYS|WS_BORDER,ID_ACTIONS);
+        ListView_SetExtendedListViewStyle(e->list,LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES|LVS_EX_DOUBLEBUFFER);
+        for(i=0;i<5;i++) { column.mask=LVCF_TEXT|LVCF_WIDTH; column.pszText=(char *)headers[i]; column.cx=i?105:225; ListView_InsertColumn(e->list,i,&column); }
+        for(i=0;i<PC_ACTION_COUNT;i++) {
+            LVITEMA item={0}; item.mask=LVIF_TEXT; item.iItem=i; item.pszText=(char *)pc_action_labels[i]; ListView_InsertItem(e->list,&item);
+        }
+        control(d,"COMBOBOX","",WS_TABSTOP|CBS_DROPDOWNLIST,ID_SLOT);
+        for(i=1;i<5;i++) SendDlgItemMessageA(d,ID_SLOT,CB_ADDSTRING,0,(LPARAM)headers[i]);
+        SendDlgItemMessage(d,ID_SLOT,CB_SETCURSEL,0,0);
+        control(d,"BUTTON","Change binding...",WS_TABSTOP|BS_PUSHBUTTON,ID_CHANGE);
+        control(d,"BUTTON","Clear binding",WS_TABSTOP|BS_PUSHBUTTON,ID_CLEAR);
+        control(d,"STATIC","Mouse sensitivity",0,ID_SENS_LABEL);
+        control(d,"EDIT","",WS_TABSTOP|ES_AUTOHSCROLL,ID_SENSITIVITY);
+        SendDlgItemMessage(d,ID_SENSITIVITY,EM_SETLIMITTEXT,24,0);
+        control(d,"BUTTON","Invert mouse Y",WS_TABSTOP|BS_AUTOCHECKBOX,ID_INVERT);
+        control(d,"BUTTON","Enable mouse controls",WS_TABSTOP|BS_AUTOCHECKBOX,ID_ENABLED);
+        control(d,"STATIC","Changes apply immediately when saved; Cancel keeps your current settings.",0,ID_STATUS);
+        control(d,"BUTTON","Restore defaults",WS_TABSTOP|BS_PUSHBUTTON,ID_DEFAULTS);
+        control(d,"BUTTON","Save && Close",WS_TABSTOP|BS_DEFPUSHBUTTON,IDOK);
+        control(d,"BUTTON","Cancel",WS_TABSTOP|BS_PUSHBUTTON,IDCANCEL);
+        fill(d,e); layout(d);
+        ListView_SetItemState(e->list,0,LVIS_SELECTED|LVIS_FOCUSED,LVIS_SELECTED|LVIS_FOCUSED);
+        return TRUE;
+    }
+    case WM_NOTIFY:
+        if(((NMHDR *)lp)->idFrom==ID_ACTIONS && ((NMHDR *)lp)->code==NM_DBLCLK) {
+            NMITEMACTIVATE *click=(NMITEMACTIVATE *)lp;
+            if(click->iItem>=0) {
+                e->slot=click->iSubItem>0?click->iSubItem-1:0;
+                SendDlgItemMessage(d,ID_SLOT,CB_SETCURSEL,e->slot,0);
+                change_binding(d,e);
+            }
+            return TRUE;
+        }
+        break;
+    case WM_COMMAND:
+        switch(LOWORD(wp)) {
+        case ID_SLOT:
+            if(HIWORD(wp)==CBN_SELCHANGE) e->slot=(int)SendDlgItemMessage(d,ID_SLOT,CB_GETCURSEL,0,0);
+            return TRUE;
+        case ID_CHANGE: change_binding(d,e); return TRUE;
+        case ID_CLEAR: {
+            int row=selected(e); char name[32];
+            if(row>=0) { e->settings.keys[row][e->slot]=0; pc_settings_key_name(0,name,sizeof name); ListView_SetItemText(e->list,row,e->slot+1,name); }
+            return TRUE;
+        }
+        case ID_DEFAULTS:
+            if(MessageBoxA(d,"Restore the default PC bindings and mouse settings?\n\nThey are applied only when you save.","Restore defaults",MB_YESNO|MB_DEFBUTTON2|MB_ICONQUESTION)==IDYES) { pc_settings_defaults(&e->settings); fill(d,e); }
+            return TRUE;
+        case IDOK: {
+            char number[40],error[320],*end;
+            double sensitivity;
+            GetDlgItemTextA(d,ID_SENSITIVITY,number,sizeof number);
+            sensitivity=strtod(number,&end);
+            while(*end==' ') end++;
+            if(end==number || *end || !isfinite(sensitivity) || sensitivity<.001 || sensitivity>10) {
+                MessageBoxA(d,"Enter a mouse sensitivity between 0.001 and 10.","Invalid sensitivity",MB_OK|MB_ICONWARNING);
+                SetFocus(GetDlgItem(d,ID_SENSITIVITY)); return TRUE;
+            }
+            e->settings.sensitivity=sensitivity;
+            e->settings.invert_y=IsDlgButtonChecked(d,ID_INVERT)==BST_CHECKED;
+            e->settings.enabled=IsDlgButtonChecked(d,ID_ENABLED)==BST_CHECKED;
+            if(!pc_settings_save(&e->settings,error,sizeof error)) { MessageBoxA(d,error,"Settings were not saved",MB_OK|MB_ICONERROR); return TRUE; }
+            EndDialog(d,IDOK); return TRUE;
+        }
+        case IDCANCEL: EndDialog(d,IDCANCEL); return TRUE;
+        }
+        break;
+    case WM_CLOSE: EndDialog(d,IDCANCEL); return TRUE;
+    }
+    return FALSE;
+}
+
+void pc_settings_attach(HWND game)
+{
+    HMENU bar=CreateMenu(),settings=CreatePopupMenu();
+    RECT client,rect;
+    INITCOMMONCONTROLSEX controls={sizeof controls,ICC_LISTVIEW_CLASSES};
+    InitCommonControlsEx(&controls);
+    GetClientRect(game,&client);
+    AppendMenuA(settings,MF_STRING,PC_SETTINGS_COMMAND,"&Keyboard && Mouse...\tF2");
+    AppendMenuA(bar,MF_POPUP,(UINT_PTR)settings,"&PC Settings");
+    SetMenu(game,bar);
+    rect=client;
+    AdjustWindowRectEx(&rect,(DWORD)GetWindowLongPtr(game,GWL_STYLE),TRUE,(DWORD)GetWindowLongPtr(game,GWL_EXSTYLE));
+    SetWindowPos(game,NULL,0,0,rect.right-rect.left,rect.bottom-rect.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);
+    DrawMenuBar(game);
+}
+
+void pc_settings_show(HWND game)
+{
+    Editor editor={0};
+    char error[320];
+    if(!pc_settings_read(&editor.settings,error,sizeof error)) { MessageBoxA(game,error,"PC Controls",MB_OK|MB_ICONERROR); return; }
+    dialog(game,L"Keyboard & Mouse - TimeSplitters Future Perfect",780,720,settings_dialog,(LPARAM)&editor);
+}

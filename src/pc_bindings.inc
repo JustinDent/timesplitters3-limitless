@@ -1,0 +1,203 @@
+/* Included by input_bindings.c: use the runtime's control order, parser,
+   and initialization rather than maintaining a second binding vocabulary. */
+#include "pc_settings.h"
+#include <math.h>
+_Static_assert(CONTROL_COUNT == PC_ACTION_COUNT, "PC settings action order must match runtime controls");
+
+const char *const pc_action_labels[PC_ACTION_COUNT] = {
+    "Interact / confirm (A)", "Melee / back (B)", "Reload (X)", "Y action",
+    "Black button action", "White button action", "Pause / Start", "Objectives / Back",
+    "Throw grenade", "Fire", "Weapon mode / zoom in", "Grenade type / zoom out",
+    "Previous weapon", "Next weapon", "Move forward", "Move backward", "Strafe left",
+    "Strafe right", "Crouch", "Look up (optional key)", "Look down (optional key)",
+    "Look left (optional key)", "Look right (optional key)", "Aim"
+};
+
+void pc_settings_defaults(PcSettings *s)
+{
+    static const int keys[PC_ACTION_COUNT][PC_BINDING_SLOTS] = {
+        {'E',VK_SPACE,VK_RETURN}, {'F',VK_MBUTTON,VK_XBUTTON1,VK_BACK}, {'R'}, {'Y'},
+        {'2'}, {'1'}, {VK_ESCAPE}, {VK_TAB}, {'G',VK_XBUTTON2}, {VK_LBUTTON},
+        {VK_UP,VK_PRIOR,'Q'}, {VK_DOWN,VK_NEXT,'V'}, {VK_LEFT,VK_F24}, {VK_RIGHT,VK_F23},
+        {'W'}, {'S'}, {'A'}, {'D'}, {VK_CONTROL,'C'}, {0}, {0}, {0}, {0}, {VK_RBUTTON}
+    };
+    memset(s, 0, sizeof *s);
+    memcpy(s->keys, keys, sizeof keys);
+    s->sensitivity = 0.10; s->enabled = 1;
+}
+
+void pc_settings_key_name(int key, char *out, size_t bytes)
+{
+    const char *name = NULL;
+    switch (key) {
+    case 0: name = "Unbound"; break;
+    case VK_LBUTTON: name = "Mouse 1"; break;
+    case VK_RBUTTON: name = "Mouse 2"; break;
+    case VK_MBUTTON: name = "Mouse 3"; break;
+    case VK_XBUTTON1: name = "Mouse 4"; break;
+    case VK_XBUTTON2: name = "Mouse 5"; break;
+    case VK_F23: name = "Wheel up"; break;
+    case VK_F24: name = "Wheel down"; break;
+    }
+    if (name) { snprintf(out, bytes, "%s", name); return; }
+    if (!GetKeyNameTextA((LONG)(MapVirtualKeyA((UINT)key, MAPVK_VK_TO_VSC) << 16) |
+        ((key >= VK_PRIOR && key <= VK_DELETE) ? (1L << 24) : 0), out, (int)bytes))
+        snprintf(out, bytes, "Key %d", key);
+}
+
+int pc_settings_conflict(const PcSettings *s, int action, int key)
+{
+    int i,j;
+    if (!key) return -1;
+    for (i=0; i<PC_ACTION_COUNT; i++) for (j=0; j<PC_BINDING_SLOTS; j++)
+        if (i != action && s->keys[i][j] == key) return i;
+    return -1;
+}
+
+int pc_settings_read(PcSettings *s, char *error, size_t bytes)
+{
+    int i,j;
+    recomp_bindings_init();
+    memset(s, 0, sizeof *s);
+    if (!g_have_path) { snprintf(error, bytes, "No PC controls configuration was loaded. Start the game with Play.cmd."); return 0; }
+    AcquireSRWLockShared(&g_pc_bindings_lock);
+    if (g_ctl[0].device != DEV_KEYBOARD) {
+        ReleaseSRWLockShared(&g_pc_bindings_lock);
+        snprintf(error, bytes, "Player 1 is using a controller profile. Select the PC keyboard profile before editing keyboard bindings.");
+        return 0;
+    }
+    for (i=0; i<CONTROL_COUNT; i++) for (j=0; j<g_ctl[0].bind[i].count; j++) {
+        if (g_ctl[0].bind[i].src[j].kind == SRC_KEY) s->keys[i][j] = g_ctl[0].bind[i].src[j].arg;
+    }
+    ReleaseSRWLockShared(&g_pc_bindings_lock);
+    pc_controls_get_mouse(&s->sensitivity, &s->enabled, &s->invert_y);
+    return 1;
+}
+
+/* Find a value in a JSON object without touching unrelated members. The
+   runtime JSON walker also handles strings, escapes and nested arrays. */
+static const char *pc_member(const char *object, const char *wanted, const char **end)
+{
+    const char *p = ws(object), *value, *next;
+    char name[64];
+    if (*p++ != '{') return NULL;
+    p = ws(p);
+    while (*p && *p != '}') {
+        p = jstring(p, name, sizeof name);
+        if (!p || *(p = ws(p)) != ':') return NULL;
+        value = ws(p + 1); next = jskip(value);
+        if (!next) return NULL;
+        if (!strcmp(name, wanted)) { if (end) *end = next; return value; }
+        p = ws(next);
+        if (*p == ',') p = ws(p + 1);
+        else if (*p != '}') return NULL;
+    }
+    return NULL;
+}
+
+static const char *pc_controller(const char *text)
+{
+    const char *p = pc_member(text, "controllers", NULL), *port;
+    int index=0;
+    if (!p || *p++ != '[') return NULL;
+    p = ws(p);
+    while (*p && *p != ']') {
+        const char *next = jskip(p);
+        if (!next || *p != '{') return NULL;
+        port = pc_member(p, "port", NULL);
+        if ((port && strtol(port,NULL,10) == 1) || (!port && index == 0)) return p;
+        p = ws(next); if (*p == ',') p = ws(p+1);
+        index++;
+    }
+    return NULL;
+}
+
+static int pc_replace_member(char **text, const char *object, const char *name, const char *value)
+{
+    const char *end, *start = pc_member(object, name, &end);
+    char addition[96], *result;
+    size_t before, after, middle;
+    if (start) addition[0] = 0;
+    else {
+        end = jskip(object);
+        if (!end) return 0;
+        start = --end;
+        snprintf(addition, sizeof addition, "%s\"%s\":", *ws(object+1) == '}' ? "" : ",", name);
+    }
+    before = (size_t)(start-*text); after = strlen(end); middle = strlen(addition)+strlen(value);
+    result = malloc(before+middle+after+1);
+    if (!result) return 0;
+    memcpy(result,*text,before);
+    snprintf(result+before,middle+1,"%s%s",addition,value);
+    memcpy(result+before+middle,end,after+1);
+    free(*text); *text = result;
+    return 1;
+}
+
+int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
+{
+    char bindings[4096]="{", value[128], temp[600], backup[600];
+    char *text = NULL;
+    const char *controller, *mouse;
+    size_t used=1;
+    FILE *f = NULL;
+    int i,j,first, ok=0;
+    PcSettings current;
+    if (!pc_settings_read(&current,error,bytes)) return 0;
+    if (!isfinite(s->sensitivity) || s->sensitivity < .001 || s->sensitivity > 10) {
+        snprintf(error,bytes,"Mouse sensitivity must be between 0.001 and 10."); return 0;
+    }
+    for (i=0;i<PC_ACTION_COUNT;i++) {
+        used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"%s\":[",i?",":"",CONTROLS[i].name);
+        first=1;
+        for (j=0;j<PC_BINDING_SLOTS;j++) {
+            int key=s->keys[i][j];
+            if (key<0 || key>255 || key==VK_F1 || key==VK_F2 || key==VK_F9 || key==VK_F10 || key==VK_F11 || key==VK_LWIN || key==VK_RWIN) {
+                snprintf(error,bytes,"A binding uses an invalid key, a Windows key, or a reserved function key (F1, F2, F9, F10, F11)."); return 0;
+            }
+            if (key) { used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"key:#%d\"",first?"":",",key); first=0; }
+        }
+        used += (size_t)snprintf(bindings+used,sizeof bindings-used,"]");
+    }
+    snprintf(bindings+used,sizeof bindings-used,"}");
+    text=read_file(g_path);
+    if (!text || !(controller=pc_controller(text)) ||
+        !pc_replace_member(&text,controller,"bindings",bindings)) goto failure;
+    mouse=pc_member(text,"mouse",NULL);
+    if (!mouse || *mouse != '{') {
+        if (!pc_replace_member(&text,ws(text),"mouse","{}")) goto failure;
+    }
+    snprintf(value,sizeof value,"%.9g",s->sensitivity);
+    if (!pc_replace_member(&text,pc_member(text,"mouse",NULL),"sensitivity",value) ||
+        !pc_replace_member(&text,pc_member(text,"mouse",NULL),"enabled",s->enabled?"true":"false") ||
+        !pc_replace_member(&text,pc_member(text,"mouse",NULL),"invert_y",s->invert_y?"true":"false")) goto failure;
+    snprintf(temp,sizeof temp,"%s.%lu.tmp",g_path,GetCurrentProcessId());
+    snprintf(backup,sizeof backup,"%s.bak",g_path);
+    if (GetFileAttributesA(g_path) == INVALID_FILE_ATTRIBUTES ||
+        (GetFileAttributesA(g_path) & FILE_ATTRIBUTE_READONLY)) {
+        SetLastError(ERROR_ACCESS_DENIED); goto failure;
+    }
+    f=fopen(temp,"wb");
+    if (!f) goto failure;
+    ok=fwrite(text,1,strlen(text),f)==strlen(text);
+    if (fclose(f)) ok=0;
+    f=NULL;
+    if (!ok || !CopyFileA(g_path,backup,FALSE) ||
+        !MoveFileExA(temp,g_path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)) { DeleteFileA(temp); goto failure; }
+    AcquireSRWLockExclusive(&g_pc_bindings_lock);
+    for (i=0;i<CONTROL_COUNT;i++) {
+        Binding *b=&g_ctl[0].bind[i];
+        memset(b,0,sizeof *b);
+        for (j=0;j<PC_BINDING_SLOTS;j++) if (s->keys[i][j]) {
+            b->src[b->count].kind=SRC_KEY; b->src[b->count++].arg=(short)s->keys[i][j];
+        }
+    }
+    ReleaseSRWLockExclusive(&g_pc_bindings_lock);
+    pc_controls_set_mouse(s->sensitivity,s->enabled,s->invert_y);
+    fprintf(stderr,"[PC-SETTINGS] Saved and applied keyboard/mouse settings to %s\n",g_path);
+    free(text); return 1;
+failure:
+    free(text);
+    snprintf(error,bytes,"Could not safely save the controls file (Windows error %lu). Your active bindings were kept.",GetLastError());
+    return 0;
+}
