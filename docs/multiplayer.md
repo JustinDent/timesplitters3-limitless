@@ -104,6 +104,22 @@ must be implemented and tested before advertising playable internet multiplayer.
 
 ## Validation and storage
 
+Launch both local test instances from the repository folder:
+
+```powershell
+.\Test-SystemLink.ps1
+```
+
+The script verifies the existing build, launches a host and client with separate
+test saves and display settings, and waits until both games close before recycling
+their temporary virtual disks automatically. Leave its PowerShell window open
+until cleanup finishes. Test profiles are retained for the next run; logs are
+overwritten in each role's `interactive.out` and `interactive.err`. The launcher
+restores the calling shell's environment and prevents overlapping test sessions.
+It uses the fixed test controls, so personal bindings and settings are preserved.
+In both windows choose **Xbox Live / System Link > System Link**. Host a new match
+in the first window, join and Ready in the second, then select Go on the host.
+
 Native tests cover UDP round trips, default-protocol sockets used by discovery,
 XNADDR/key mapping, source ports, invalid guest pointers, and incompatible/raw
 packet rejection. Python tests cover deterministic identities, changed game and
