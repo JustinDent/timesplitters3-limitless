@@ -4,6 +4,7 @@
 #include "pc_controls.h"
 #include "pc_input.h"
 #include "pc_settings.h"
+#include "pc_prompts.h"
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -95,9 +96,10 @@ void pc_controls_attach(HWND window)
         pc_input_focus(&input, 1);
         pc_input_capture(&input, 1);
     }
-    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 releases/captures mouse; F2 opens settings; Escape releases mouse.\n",
+    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 shows/hides the menu bar; F2 opens settings; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
             sensitivity, invert_y ? "on" : "off");
     if (window) pc_settings_attach(window);
+    pc_debug_init(window);
 }
 
 void pc_controls_get_mouse(double *value, int *on, int *inverted)
@@ -116,11 +118,11 @@ void pc_controls_set_mouse(double value, int on, int inverted)
     ReleaseSRWLockExclusive(&lock);
 }
 
-static void show_settings(HWND window)
+static void show_settings(HWND window, int debug)
 {
     if (InterlockedCompareExchange(&editing, 1, 0)) return;
     capture(window, 0);
-    pc_settings_show(window);
+    if (debug) pc_debug_show(window); else pc_settings_show(window);
     AcquireSRWLockExclusive(&lock);
     pc_input_focus(&input, replaying || GetForegroundWindow() == window);
     if(replaying) pc_input_capture(&input,1);
@@ -129,15 +131,42 @@ static void show_settings(HWND window)
     if(!replaying) capture(window, want_capture);
 }
 
+static void toggle_fullscreen(HWND window)
+{
+    /* Use the runtime's existing Alt+Enter path on its window thread. */
+    PostMessage(window, WM_SYSKEYDOWN, VK_RETURN, (LPARAM)1 << 29);
+}
+
+static void update_fullscreen_menu(HWND window)
+{
+    HMENU menu = GetSubMenu(GetMenu(window), 0);
+    if (menu) CheckMenuItem(menu, PC_FULLSCREEN_COMMAND, MF_BYCOMMAND |
+        ((GetWindowLongPtr(window, GWL_STYLE) & WS_CAPTION) ? MF_UNCHECKED : MF_CHECKED));
+}
+
 int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT *result)
 {
     int captured;
     *result = 0;
     if (window != window_handle) return 0;
+    if (message == WM_TIMER && wp == PC_DEBUG_TIMER) { pc_debug_poll(); return 1; }
+    if (message == WM_DESTROY) { pc_settings_detach(window); pc_debug_shutdown(); }
     if(replaying) return 0;
     switch (message) {
     case WM_COMMAND:
-        if (LOWORD(wp) == PC_SETTINGS_COMMAND) { show_settings(window); return 1; }
+        if (LOWORD(wp) == PC_MENU_BAR_COMMAND) {
+            pc_settings_toggle_menu(window); update_fullscreen_menu(window); return 1;
+        }
+        if (LOWORD(wp) == PC_FULLSCREEN_COMMAND) { toggle_fullscreen(window); return 1; }
+        if (LOWORD(wp) == PC_SETTINGS_COMMAND || LOWORD(wp) == PC_DEBUG_COMMAND) {
+            show_settings(window, LOWORD(wp) == PC_DEBUG_COMMAND); return 1;
+        }
+        break;
+    case WM_INITMENUPOPUP:
+        update_fullscreen_menu(window);
+        break;
+    case WM_STYLECHANGED:
+        if ((int)wp == GWL_STYLE) update_fullscreen_menu(window);
         break;
     case WM_ENTERMENULOOP:
         capture(window, 0);
@@ -173,12 +202,21 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         if (captured) clip_to_window(window);
         break;
     case WM_KEYDOWN: case WM_SYSKEYDOWN:
-        if (wp == VK_F2 && !(lp & (1LL << 30))) { show_settings(window); return 1; }
+        pc_prompts_keyboard();
+        if (wp == VK_F2 || wp == VK_F12) {
+            if (!(lp & (1LL << 30))) show_settings(window, wp == VK_F12);
+            return 1;
+        }
+        if (wp == VK_F11) {
+            /* Ctrl+F11 belongs to the renderer's diagnostic frame capture. */
+            return 1;
+        }
         if (message == WM_SYSKEYDOWN && wp == VK_RETURN && (lp & (1LL << 29))) break;
-        if (wp == VK_F1 && !(lp & (1LL << 30))) {
-            AcquireSRWLockShared(&lock); captured = input.captured; ReleaseSRWLockShared(&lock);
-            want_capture = !captured;
-            capture(window, want_capture);
+        if (wp == VK_F1) {
+            if (!(lp & (1LL << 30))) {
+                pc_settings_toggle_menu(window);
+                update_fullscreen_menu(window);
+            }
             return 1;
         }
         if (wp == VK_ESCAPE && !(lp & (1LL << 30))) {
@@ -190,6 +228,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         ReleaseSRWLockExclusive(&lock);
         break;
     case WM_KEYUP: case WM_SYSKEYUP:
+        if (wp == VK_F1 || wp == VK_F2 || wp == VK_F12 || wp == VK_F11) return 1;
         AcquireSRWLockExclusive(&lock);
         pc_input_key(&input, (unsigned)wp, 0);
         ReleaseSRWLockExclusive(&lock);
@@ -199,6 +238,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         unsigned key = message == WM_LBUTTONDOWN || message == WM_LBUTTONUP ? VK_LBUTTON :
                        message == WM_RBUTTONDOWN || message == WM_RBUTTONUP ? VK_RBUTTON : VK_MBUTTON;
         int down = message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN;
+        if (down) pc_prompts_keyboard();
         AcquireSRWLockShared(&lock); captured = input.captured; ReleaseSRWLockShared(&lock);
         if (!captured && message == WM_LBUTTONDOWN && enabled) {
             want_capture = 1;
@@ -211,6 +251,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         break;
     }
     case WM_XBUTTONDOWN: case WM_XBUTTONUP:
+        if (message == WM_XBUTTONDOWN) pc_prompts_keyboard();
         AcquireSRWLockExclusive(&lock);
         pc_input_key(&input, HIWORD(wp) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2,
                      message == WM_XBUTTONDOWN && input.captured);
@@ -222,6 +263,11 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         UINT bytes = sizeof raw;
         if (GetRawInputData((HRAWINPUT)lp, RID_INPUT, &raw, &bytes, sizeof raw.header) != (UINT)-1 &&
             raw.header.dwType == RIM_TYPEMOUSE) {
+            if (GetForegroundWindow()==window &&
+                (raw.data.mouse.usButtonFlags ||
+                 (!(raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) &&
+                  (abs(raw.data.mouse.lLastX)+abs(raw.data.mouse.lLastY)>=2))))
+                pc_prompts_keyboard();
             AcquireSRWLockExclusive(&lock);
             if (!(raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE))
                 pc_input_motion(&input, raw.data.mouse.lLastX, raw.data.mouse.lLastY, GetTickCount64());
@@ -240,6 +286,12 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         break;
     }
     return 0;
+}
+
+int pc_controls_accept_pad(void)
+{
+    return !replaying && !InterlockedCompareExchange(&editing,0,0) &&
+           window_handle && GetForegroundWindow()==window_handle;
 }
 
 int pc_controls_key_down(int key)

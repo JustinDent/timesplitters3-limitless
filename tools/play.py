@@ -1,5 +1,6 @@
 """Run the windowed game with diagnostics written directly to local files."""
 
+import os
 import subprocess
 import sys
 from datetime import datetime
@@ -11,6 +12,7 @@ def main():
     log_directory = Path(sys.argv[2]).resolve()
     log_directory.mkdir(parents=True, exist_ok=True)
     tag = datetime.now().strftime("play-%Y%m%d-%H%M%S")
+    environment = dict(os.environ, RECOMP_LOG_FILE=str(log_directory / f"{tag}.err"))
     with (log_directory / f"{tag}.out").open("wb") as output, (
         log_directory / f"{tag}.err"
     ).open("wb") as errors:
@@ -19,6 +21,7 @@ def main():
         result = subprocess.run(
             [str(executable)], cwd=executable.parent, stdout=output, stderr=errors,
             creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0,
+            env=environment,
         )
     return result.returncode
 

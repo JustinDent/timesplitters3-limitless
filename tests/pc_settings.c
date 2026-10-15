@@ -2,6 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include "pc_settings.h"
+#include "pc_prompts.h"
 #include "pc_controls.h"
 #include "input_bindings.h"
 #include <commctrl.h>
@@ -151,6 +152,11 @@ int main(int argc,char **argv)
     CHECK(pc_settings_conflict(&settings,9,VK_XBUTTON2)==8);
     settings.keys[14][0]='I'; settings.keys[2][0]='T'; settings.sensitivity=.25; settings.invert_y=1;
     CHECK(pc_settings_save(&settings,error,sizeof error));
+    {
+        char prompt[128];
+        CHECK(pc_prompts_rewrite("\v4 Reload / \vD Move",prompt,sizeof prompt));
+        CHECK(!strcmp(prompt,"[T] Reload / [I/S/A/D] Move"));
+    }
     Sleep(520);
     CHECK(recomp_bindings_sample(0,&pad) && pad.sThumbLY==32767 && pad.bAnalogButtons[XBOX_BUTTON_X]==255);
     CHECK(pc_settings_read(&current,error,sizeof error) && current.keys[14][0]=='I' && fabs(current.sensitivity-.25)<.0001 && current.invert_y);
@@ -158,6 +164,10 @@ int main(int argc,char **argv)
     saved=load(backup); CHECK(saved && strstr(saved,"key:W")); free(saved);
     current=settings; current.sensitivity=NAN; CHECK(!pc_settings_save(&current,error,sizeof error));
     current=settings; current.keys[0][0]=VK_F2; CHECK(!pc_settings_save(&current,error,sizeof error));
+    current=settings; current.keys[0][0]=VK_F12; CHECK(!pc_settings_save(&current,error,sizeof error));
+    current=settings; current.keys[0][0]=VK_F11; CHECK(!pc_settings_save(&current,error,sizeof error));
+    current=settings; current.keys[0][0]=VK_F3; CHECK(pc_settings_save(&current,error,sizeof error));
+    CHECK(pc_settings_save(&settings,error,sizeof error));
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
     current=settings; current.keys[14][0]='U'; CHECK(!pc_settings_save(&current,error,sizeof error));
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
@@ -190,6 +200,11 @@ int main(int argc,char **argv)
         CloseHandle(child.hProcess); CloseHandle(child.hThread);
     }
     pc_settings_defaults(&current); CHECK(current.keys[14][0]=='W' && fabs(current.sensitivity-.1)<.0001);
+    {
+        HMENU bar=GetMenu(owner);
+        pc_settings_toggle_menu(owner); CHECK(!GetMenu(owner) && IsMenu(bar));
+        pc_settings_detach(owner); CHECK(!IsMenu(bar));
+    }
     DestroyWindow(owner);
     /* Replay mode leaves desktop messages alone. */
     CHECK(pc_controls_message(NULL,WM_MOUSEACTIVATE,0,0,&result)==0); /* replay does not consume native messages */

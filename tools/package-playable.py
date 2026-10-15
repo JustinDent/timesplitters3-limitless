@@ -60,7 +60,10 @@ Your keyboard/mouse settings are in Settings/pc-controls.json.
 Your existing game saves are in Saves. Keep that folder when moving the game.
 Press F2, or PC Settings > Keyboard & Mouse, to change bindings.
 Pause a mission before opening the separate settings window.
-F1 releases/captures the mouse; Alt+Enter switches fullscreen.
+F1 shows/hides the PC Settings menu bar; Alt+Enter switches fullscreen.
+Escape releases the mouse; click the game to recapture it.
+Button prompts show your assigned keys and switch to controller icons when you
+use a controller. The first unassigned controller also controls player 1.
 
 Includes the current experimental PC build with the original game menus.
 Logs are written locally to Logs when the game starts.

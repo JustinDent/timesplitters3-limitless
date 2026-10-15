@@ -125,7 +125,7 @@ you move a binding from another action. **Clear binding** removes one slot;
 **Restore defaults** stages the default PC layout. Mouse sensitivity, inversion,
 and mouse input can also be changed here. **Save & Close** saves and applies the
 settings; **Cancel** discards edits. The previous configuration is backed up to
-`config/pc-controls.json.bak`. F1, F2, F9–F11 and the Windows keys are reserved.
+`config/pc-controls.json.bak`. F1, F2, F9–F12 and the Windows keys are reserved.
 
 Default bindings:
 
@@ -144,9 +144,18 @@ Default bindings:
 | Weapon mode / scope zoom in | Q or Up / Page Up |
 | Change grenade / scope zoom out | V or Down / Page Down |
 | Pause and release cursor | Escape |
-| Capture / release cursor | F1 |
+| Show / hide PC Settings menu bar | F1 |
 | Keyboard & mouse settings | F2 |
+| Debug settings | F12 |
 | Fullscreen | Alt+Enter |
+
+**PC Settings > Fullscreen** also toggles fullscreen; its checkmark reflects the
+current window mode.
+
+Press **F1** to show or hide the menu bar, including in fullscreen. You can also
+choose **PC Settings > Hide Menu Bar** and press F1 to bring it back. The menu bar
+starts visible each launch; F2, F12, and Alt+Enter still work while it is hidden.
+Escape releases the mouse; click the game to recapture it.
 
 Click the game window to recapture the mouse. The recapture click is consumed
 so it does not fire a weapon. Alt-Tab releases the cursor and clears held
@@ -160,8 +169,52 @@ zoomed, and does not pass through the controller's stick deadzone or turn-speed
 curve. WASD diagonals are normalized. The supplied configuration uses keyboard
 input on player 1; it does not require a controller.
 
+In-game button prompts automatically show the **first assigned keyboard or mouse
+binding** for each control, for example **[E] Select** and **[F] Back**. Saving
+bindings in F2 updates the prompts immediately. Unassigned controls show
+**[Unbound]**. Mouse-look prompts show **[Mouse]** while raw mouse look is enabled.
+
+Press a controller button, move a stick past its deadzone, or squeeze a trigger
+to restore the original controller icons. Keyboard presses, mouse clicks, wheel
+input, or mouse movement switch back to keyboard/mouse prompts. An unchanged held
+button, button releases, and stick drift do not switch the prompts back and forth.
+The first connected controller not assigned to another local player can control
+player 1 alongside the keyboard profile; plugging it in does not require a restart.
+This applies to the game's formatted text prompts, including menu and HUD hints;
+controller diagrams and labels baked into images retain their original artwork.
+
 The Xbox action mapping was checked against the publisher's original
 [Xbox manual, Complete Controls](https://www.gamesdatabase.org/Media/SYSTEM/Microsoft_Xbox//Manual/formated/Timesplitters_-_Future_Perfect_-_2005_-_Electronic_Arts.pdf).
+
+### Debug settings
+
+Press **F12** or choose **PC Settings > Debug**.
+The shortcuts also work in fullscreen. Pause a mission first: settings block gameplay input but do not
+pause the simulation. The Debug window offers:
+
+- **Show FPS:** game frame rate; when interpolation adds presentations, the
+  overlay shows game/shown FPS. F9 toggles the FPS display for the current session.
+- **Show average frame time:** the average interval between game frames in
+  milliseconds, measured over roughly half a second; this is not GPU execution time.
+- **Show error / warning counters:** on-screen E/W counts of matching runtime log
+  lines. The window lists the latest 12 matches and counts frames over 50 ms,
+  including loading delays.
+- **Write performance samples to log:** FPS and average frame interval, about
+  twice per second. This is off by default to avoid growing logs unnecessarily.
+- **Open logs folder** and **Clear counters / recent:** inspect the original
+  logs or reset the session counters without deleting log files.
+
+**Save & Close** persists the display/logging options under `debug` in the same
+controls JSON file and applies them immediately. **Cancel** discards checkbox
+edits; clearing counters takes effect immediately. All options default to off.
+Existing controls files without a `debug` section remain supported.
+
+Diagnostics match logged failures, unresolved calls, warnings, and unsupported
+features; they do not detect every gameplay or visual anomaly. Counts cover the
+current launch since startup or the last clear. Use `Play.cmd` or `tsfp.ps1 Run`
+for live log monitoring; direct launches without `RECOMP_LOG_FILE` show
+"Log unavailable". Log reading is bounded and runs outside the render thread.
+The runtime's diagnostic frame capture uses **Ctrl+F11**; plain **F11** does nothing.
 
 For a fresh checkout, install Git, Visual Studio 2022 with its C++ workload and
 Windows SDK, and Python 3.12+, then run:
@@ -235,13 +288,48 @@ data. Failed tests retain that directory for diagnosis; `private/saves` is unaff
 `patches/pc-controls.patch` connects the window/input layer to `src/pc_controls.c`
 and `src/pc_input.c`, and adds a manual wrapper around the US build's
 `sub_000D2B80`. Its generated original body is retained as
-`sub_000D2B80_gen`; the generated C is never hand-edited. Run Generate after
-applying this patch to an older generated tree, then Build. The native
+`sub_000D2B80_gen`; the generated C is never hand-edited. Build refreshes the
+generated code automatically when newly added wrappers are missing. The native
 `tests/pc_controls.c` suite runs during Build.
+
+`patches/pc-display.patch` adds the display menu and camera hooks separately
+from the original controls patch, so existing checkouts can upgrade after a merge.
+Setup, Test, Generate, and Build validate the complete patch stack in a temporary
+source-only directory before changing runtime files. Conflicts name the failing
+patch and leave the runtime checkout untouched. Existing patches should remain
+stable; add subsequent changes as separate patches. Run the upgrade regression
+tests with `.venv\Scripts\python.exe -m pytest tests/test_patch_updates.py -q`.
 
 `patches/pc-input-vocabulary.patch` keeps the Python input UI's key names in sync
 with the mouse-button and F23/F24 names added to the runtime by the PC controls
 patch. Setup, Test, and Build apply local patches idempotently.
+
+`patches/pc-debug.patch` connects the renderer's frame statistics and F9 shortcut
+to `src/pc_debug.c`. Build runs `tests/pc_debug.c` to check persistence, log
+monitoring, live display options, and Debug dialog Save/Cancel behavior.
+`tests/pc_debug_game.py` checks the real game's menu and fullscreen access using
+isolated settings/saves and captures the dialog and overlay for review.
+`patches/pc-window-shortcuts.patch` moves the runtime's frame capture to Ctrl+F11
+so plain F11 does not trigger a capture.
+
+`patches/pc-prompts.patch` connects input-device detection and shared player-1
+controller input to `src/pc_prompts.c`. It wraps the supported US executable's
+text measurement (`0x0003FCF0`) and rendering (`0x00040FA0`) functions using
+`src/pc_prompt_guest.inc`, translating prompt codes before text layout. The
+original strings are preserved for controller input. Build runs
+`tests/pc_prompts.c`, including a virtual SDL controller test and guest-stack
+checks. The virtual-controller check skips when a physical controller is attached.
+Build automatically refreshes an older generated checkout when these wrappers are missing.
+
+`patches/pc-fullscreen.patch` disables DXGI's automatic exclusive fullscreen
+switch so the game's borderless fullscreen handler owns Alt+Enter and the
+menu command. This prevents failed frame presentation and frozen video when
+entering fullscreen. New Direct3D presentation errors are logged once per change.
+`tests/pc_fullscreen_game.py` checks actual screen animation before and after both
+fullscreen controls, using isolated settings and saves. Run it with
+`.venv\Scripts\python.exe tests\pc_fullscreen_game.py` on an unlocked Windows
+desktop, leaving the game in front until it exits. Screen captures and logs are
+saved under `private/captures/fullscreen`; temporary test saves are removed.
 
 The camera-field research also consulted the open-source
 [MouseInjector TS3 driver](https://github.com/regilopes/MouseInjectorDolphinDuck/blob/master/games/ts3.c).

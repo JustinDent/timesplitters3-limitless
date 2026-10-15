@@ -74,6 +74,24 @@ int pc_settings_read(PcSettings *s, char *error, size_t bytes)
     return 1;
 }
 
+/* The first assigned key is the compact in-game prompt; alternatives remain
+   available in Keyboard & Mouse settings. */
+int pc_settings_prompt_keys(int keys[PC_ACTION_COUNT])
+{
+    int i,j,available=0;
+    recomp_bindings_init();
+    memset(keys,0,PC_ACTION_COUNT*sizeof *keys);
+    AcquireSRWLockShared(&g_pc_bindings_lock);
+    for(i=0;i<CONTROL_COUNT;i++) for(j=0;j<g_ctl[0].bind[i].count;j++) {
+        if(g_ctl[0].bind[i].src[j].kind==SRC_KEY) {
+            keys[i]=g_ctl[0].bind[i].src[j].arg;
+            available=1; break;
+        }
+    }
+    ReleaseSRWLockShared(&g_pc_bindings_lock);
+    return available;
+}
+
 /* Find a value in a JSON object without touching unrelated members. The
    runtime JSON walker also handles strings, escapes and nested arrays. */
 static const char *pc_member(const char *object, const char *wanted, const char **end)
@@ -134,14 +152,85 @@ static int pc_replace_member(char **text, const char *object, const char *name, 
     return 1;
 }
 
+static int pc_write_config(const char *text)
+{
+    char temp[600], backup[600];
+    FILE *f;
+    int ok;
+    snprintf(temp,sizeof temp,"%s.%lu.tmp",g_path,GetCurrentProcessId());
+    snprintf(backup,sizeof backup,"%s.bak",g_path);
+    if (GetFileAttributesA(g_path) == INVALID_FILE_ATTRIBUTES ||
+        (GetFileAttributesA(g_path) & FILE_ATTRIBUTE_READONLY)) {
+        SetLastError(ERROR_ACCESS_DENIED); return 0;
+    }
+    f=fopen(temp,"wb");
+    if (!f) return 0;
+    ok=fwrite(text,1,strlen(text),f)==strlen(text);
+    if (fclose(f)) ok=0;
+    if (!ok || !CopyFileA(g_path,backup,FALSE) ||
+        !MoveFileExA(temp,g_path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)) {
+        DWORD error=GetLastError(); DeleteFileA(temp); SetLastError(error); return 0;
+    }
+    return 1;
+}
+
+static int pc_debug_bool(const char *object, const char *name)
+{
+    const char *end, *value = pc_member(object,name,&end);
+    return value && end-value>=4 && !strncmp(value,"true",4) && ws(value+4)==end;
+}
+
+void pc_debug_config_read(PcDebugOptions *s)
+{
+    char *text;
+    const char *debug, *env;
+    memset(s,0,sizeof *s);
+    recomp_bindings_init();
+    text=g_have_path?read_file(g_path):NULL;
+    if (text && (debug=pc_member(text,"debug",NULL)) && *debug=='{') {
+        s->show_fps=pc_debug_bool(debug,"show_fps");
+        s->show_frame_time=pc_debug_bool(debug,"show_frame_time");
+        s->show_issues=pc_debug_bool(debug,"show_issues");
+        s->log_performance=pc_debug_bool(debug,"log_performance");
+    }
+    free(text);
+    env=getenv("RECOMP_FPS_OVERLAY");
+    if (env && *env) s->show_fps=strcmp(env,"0")!=0;
+}
+
+int pc_debug_config_save(const PcDebugOptions *s, char *error, size_t bytes)
+{
+    char *text;
+    const char *debug;
+    int ok=0;
+    recomp_bindings_init();
+    if (!g_have_path) { snprintf(error,bytes,"No settings file is loaded. Start the game with Play.cmd."); return 0; }
+    text=read_file(g_path);
+    if (!text) goto failure;
+    debug=pc_member(text,"debug",NULL);
+    if (!debug || *debug!='{') {
+        if (!pc_replace_member(&text,ws(text),"debug","{}")) goto failure;
+    }
+    if (!pc_replace_member(&text,pc_member(text,"debug",NULL),"show_fps",s->show_fps?"true":"false") ||
+        !pc_replace_member(&text,pc_member(text,"debug",NULL),"show_frame_time",s->show_frame_time?"true":"false") ||
+        !pc_replace_member(&text,pc_member(text,"debug",NULL),"show_issues",s->show_issues?"true":"false") ||
+        !pc_replace_member(&text,pc_member(text,"debug",NULL),"log_performance",s->log_performance?"true":"false") ||
+        !pc_write_config(text)) goto failure;
+    pc_debug_set(s);
+    ok=1;
+failure:
+    free(text);
+    if (!ok) snprintf(error,bytes,"Could not safely save debug settings (Windows error %lu). Active settings were kept.",GetLastError());
+    return ok;
+}
+
 int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
 {
-    char bindings[4096]="{", value[128], temp[600], backup[600];
+    char bindings[4096]="{", value[128];
     char *text = NULL;
     const char *controller, *mouse;
     size_t used=1;
-    FILE *f = NULL;
-    int i,j,first, ok=0;
+    int i,j,first;
     PcSettings current;
     if (!pc_settings_read(&current,error,bytes)) return 0;
     if (!isfinite(s->sensitivity) || s->sensitivity < .001 || s->sensitivity > 10) {
@@ -152,8 +241,8 @@ int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
         first=1;
         for (j=0;j<PC_BINDING_SLOTS;j++) {
             int key=s->keys[i][j];
-            if (key<0 || key>255 || key==VK_F1 || key==VK_F2 || key==VK_F9 || key==VK_F10 || key==VK_F11 || key==VK_LWIN || key==VK_RWIN) {
-                snprintf(error,bytes,"A binding uses an invalid key, a Windows key, or a reserved function key (F1, F2, F9, F10, F11)."); return 0;
+            if (key<0 || key>255 || key==VK_F1 || key==VK_F2 || key==VK_F12 || key==VK_F9 || key==VK_F10 || key==VK_F11 || key==VK_LWIN || key==VK_RWIN) {
+                snprintf(error,bytes,"A binding uses an invalid key, a Windows key, or a reserved function key (F1, F2, F9, F10, F11, F12)."); return 0;
             }
             if (key) { used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"key:#%d\"",first?"":",",key); first=0; }
         }
@@ -171,19 +260,7 @@ int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
     if (!pc_replace_member(&text,pc_member(text,"mouse",NULL),"sensitivity",value) ||
         !pc_replace_member(&text,pc_member(text,"mouse",NULL),"enabled",s->enabled?"true":"false") ||
         !pc_replace_member(&text,pc_member(text,"mouse",NULL),"invert_y",s->invert_y?"true":"false")) goto failure;
-    snprintf(temp,sizeof temp,"%s.%lu.tmp",g_path,GetCurrentProcessId());
-    snprintf(backup,sizeof backup,"%s.bak",g_path);
-    if (GetFileAttributesA(g_path) == INVALID_FILE_ATTRIBUTES ||
-        (GetFileAttributesA(g_path) & FILE_ATTRIBUTE_READONLY)) {
-        SetLastError(ERROR_ACCESS_DENIED); goto failure;
-    }
-    f=fopen(temp,"wb");
-    if (!f) goto failure;
-    ok=fwrite(text,1,strlen(text),f)==strlen(text);
-    if (fclose(f)) ok=0;
-    f=NULL;
-    if (!ok || !CopyFileA(g_path,backup,FALSE) ||
-        !MoveFileExA(temp,g_path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)) { DeleteFileA(temp); goto failure; }
+    if (!pc_write_config(text)) goto failure;
     AcquireSRWLockExclusive(&g_pc_bindings_lock);
     for (i=0;i<CONTROL_COUNT;i++) {
         Binding *b=&g_ctl[0].bind[i];

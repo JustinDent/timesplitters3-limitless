@@ -25,8 +25,17 @@ $expectedHash = '3CFD001A84FC3E08175D6C4B2E42EBF49577A089B5D0BD87AC724F61A41816B
 
 function Invoke-Checked {
     param([string]$Program, [string[]]$Arguments)
-    & $Program @Arguments
-    if ($LASTEXITCODE -ne 0) { throw "$Program failed (exit $LASTEXITCODE)." }
+    $nativeCommand = Get-Command -Name $Program -CommandType Application -ErrorAction Stop
+    $previousErrorPreference = $ErrorActionPreference
+    try {
+        # Windows PowerShell can turn redirected native stderr (including
+        # successful tools' warnings) into terminating errors with Stop.
+        $ErrorActionPreference = 'Continue'
+        & $nativeCommand.Source @Arguments
+        $exitCode = $LASTEXITCODE
+    }
+    finally { $ErrorActionPreference = $previousErrorPreference }
+    if ($exitCode -ne 0) { throw "$Program failed (exit $exitCode)." }
 }
 
 function Assert-Game {
@@ -38,18 +47,8 @@ function Assert-Game {
 }
 
 function Apply-LocalPatches {
-    foreach ($patch in Get-ChildItem -LiteralPath (Join-Path $projectRoot 'patches') -Filter '*.patch') {
-        $previousErrorPreference = $ErrorActionPreference
-        try {
-            $ErrorActionPreference = 'Continue'
-            & git -C $toolRoot apply --reverse --check --quiet $patch.FullName 2>$null
-            $alreadyApplied = $LASTEXITCODE -eq 0
-        }
-        finally { $ErrorActionPreference = $previousErrorPreference }
-        if ($alreadyApplied) { continue }
-        Invoke-Checked 'git' @('-C', $toolRoot, 'apply', '--check', $patch.FullName)
-        Invoke-Checked 'git' @('-C', $toolRoot, 'apply', $patch.FullName)
-    }
+    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\apply-patches.py'),
+        $toolRoot, (Join-Path $projectRoot 'patches'))
 }
 
 New-Item -ItemType Directory -Force -Path $privateRoot, $logRoot | Out-Null
@@ -105,11 +104,14 @@ try {
                 }
                 'Test' {
                     Apply-LocalPatches
+                    Invoke-Checked $envPython @('-m', 'pytest',
+                        (Join-Path $projectRoot 'tests\test_patch_updates.py'), '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'pytest', 'tools', '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'tools.conformance')
                 }
                 'Generate' {
                     Assert-Game
+                    Apply-LocalPatches
                     $xbe = Join-Path $gameRoot 'default.xbe'
                     Invoke-Checked $envPython @('-m', 'tools.xdk_symbols', $xbe)
                     Invoke-Checked $envPython @('scripts/recompile.py', $xbe,
@@ -122,22 +124,38 @@ try {
                     if (!(Test-Path -LiteralPath 'titles/futureperfect/src/recomp/gen/recomp_funcs.h')) {
                         throw 'Run Generate first.'
                     }
+                    # Merged runtime patches may add wrappers around generated
+                    # game functions. Refresh the lift before compiling if the
+                    # existing generated sources predate those wrappers.
+                    $manual = Get-Content -LiteralPath 'titles/futureperfect/src/recomp_manual.c' -Raw
+                    $generated = Get-Content -LiteralPath 'titles/futureperfect/src/recomp/gen/recomp_funcs.h' -Raw
+                    $missingWrappers = @([regex]::Matches($manual, 'extern void (sub_[0-9A-Fa-f]+_gen)\(void\)') |
+                        Where-Object { $generated -notmatch ('\b' + $_.Groups[1].Value + '\b') })
+                    if ($missingWrappers.Count) {
+                        Write-Output 'Runtime hooks changed; refreshing generated game code before building.'
+                        Invoke-Checked $envPython @('scripts/recompile.py', (Join-Path $gameRoot 'default.xbe'),
+                            '--work-dir', (Join-Path $privateRoot 'pipeline'), '--project', 'titles/futureperfect',
+                            '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries', '--only', 'lift')
+                    }
                     Invoke-Checked $cmake @('-S', 'titles/futureperfect', '-B', $buildRoot,
                         '-G', 'Visual Studio 17 2022', '-A', 'x64',
                         "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/save_paths.c",
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', '--parallel', '4')
                     Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_format_test.exe") @()
                     $testRoot = Join-Path $projectRoot 'build\path-tests'
                     $testConfig = Join-Path $projectRoot 'tests\fixtures\pc-controls.json'
                     New-Item -ItemType Directory -Force -Path $testRoot | Out-Null
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_display_test.exe") @(
                         (Join-Path $testRoot 'pc-display-test.ini'))
+                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_prompts_test.exe") @($testConfig)
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_save_paths_test.exe") @($testRoot)
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_controls_test.exe") @(
                         $testConfig, $testRoot)
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_settings_test.exe") @(
+                        $testConfig, $testRoot)
+                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_debug_test.exe") @(
                         $testConfig, $testRoot)
                     # Only successful tests reach cleanup; retain failures for diagnosis.
                     $cleanupPath = (Resolve-Path -LiteralPath $testRoot).ProviderPath
