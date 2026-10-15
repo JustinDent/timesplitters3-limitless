@@ -28,6 +28,91 @@ To produce the same public package after building:
 This uses an explicit file list and default settings. It excludes all game data,
 personal settings, and saves, and writes the ZIP plus SHA-256 under `build/releases`.
 
+## Mac compatibility setup (experimental)
+
+The quickest route to test this Windows build on Apple Silicon is CrossOver.
+This is a compatibility-layer launch, not a native Mac build, and gameplay on
+Mac has not yet been verified. The current host integration uses Win32 input,
+dialogs and synchronization, and the pinned title links Direct3D 11/DXGI; a
+native port needs more than changing the compiler or the launch script.
+
+1. Install [CrossOver](https://www.codeweavers.com/crossover) and create a
+   **Windows 10 64-bit** bottle named **TimeSplitters-Future-Perfect**. Select
+   **D3DMetal** under its Graphics setting. CrossOver supports both D3DMetal and
+   DXMT for Direct3D 11; DXMT is a fallback to test if rendering fails. See the
+   [vendor guide](https://support.codeweavers.com/crossover-mac-user-guide).
+2. Keep the Windows executable and its four runtime DLLs in
+   `build/windows/Release`. Use that directory from the Windows computer, or
+   the `Bin` files from the public release. Retain the release's licenses and
+   `BUILD.json`. The public `v0.1.0-alpha.1` binary records source commit
+   `89b6063`, which differs from this checkout; it may lack newer source changes.
+3. Transfer the other computer's complete `private/game` folder **once**, or
+   extract your verified Xbox ISO once with the pinned upstream `tools.xiso`,
+   into this checkout's `private/game`. It must contain the supported
+   `default.xbe` plus the `pak` and `xmv` directories. Do not overwrite an
+   existing extraction. Git does not transfer these ignored game files.
+4. Double-click **Play-Mac.command**. For a read-only readiness check, run
+   `python3 tools/play-mac.py --check` from this directory.
+
+The launcher requires Python 3, uses CrossOver's `winepath` for Windows paths,
+and launches the `.exe` directly. It preserves `config/pc-controls.json` and
+`config/pc-display.ini`, uses `private/saves` for interactive play, and writes
+diagnostics to `logs/mac-play-*`. It creates default controls only if no personal
+configuration exists. It does not copy game files, enable texture packs, or
+inherit replay/capture variables from earlier tests. The `--check` command
+does not launch the game or create personal settings/saves. A successful check
+confirms prerequisites only; menus, audio, mouse capture, fullscreen, save/load,
+and actual gameplay still require a Mac playtest using isolated test saves.
+
+On October 15, 2026, this Mac had CrossOver 26.3 and working Rosetta. The public
+release was checksum-verified and its runtime installed in the single existing
+build location, without retaining a ZIP or staging tree. The dedicated bottle
+ran a Windows command successfully. The user subsequently supplied the ISO;
+all 412 game files are now extracted in `private/game` and the executable hash
+matches. The original ISO is preserved in `private/discs`. The prerequisite
+check passes; rendered gameplay has not yet been tested on this Mac.
+
+### Native Apple Silicon investigation
+
+Native Mac work belongs on **mac-port** unless the user requests otherwise.
+The pinned runtime includes POSIX primitives and an early SDL3/OpenGL renderer,
+but its Future Perfect entry point, graphics hooks, audio/input bridge and
+several timing functions still depend on Windows. Its Vulkan backend is also
+currently wired to Windows. A native build needs these integrations ported;
+installing the libraries or changing the compiler is not enough.
+
+The first native foundation is validated: `patches/mac-platform.patch` replaces
+the Mac anonymous-memory placeholder with an owned temporary backing file.
+`tests/native_platform.c` compiles to an ARM64 Mach-O executable and checks
+64 MiB shared mappings, alias coherence, occupied-address protection, threads
+and events. It uses ordinary native addresses and no game files or saves.
+It does **not** validate the complete Xbox address-space layout or game execution.
+Run it from the checkout after applying the patch stack:
+
+```sh
+mkdir -p build/path-tests/native
+clang -arch arm64 -std=c11 -O2 -Werror=implicit-function-declaration \
+  -Iexternal/ts3FPrecomp/src tests/native_platform.c \
+  external/ts3FPrecomp/src/platform/win32_compat.c \
+  -o build/path-tests/native/platform-test
+build/path-tests/native/platform-test
+```
+
+The next native milestones are a Mac entry point with working guest memory and
+timers; the game rendering through a native graphics backend; SDL audio/input
+and macOS FFmpeg library loading; then porting the PC settings, display and
+texture features and validating actual play/save/load. Start with original
+assets to keep graphics diagnosis separate from texture-pack coverage.
+OpenGL is an existing, incomplete starting point; Metal or Vulkan/MoltenVK
+would require additional renderer work. Neither is implemented here yet.
+
+Patch installation now explicitly handles whitespace differences in context,
+including upstream CRLF files on macOS, while preserving existing context
+whitespace. Content conflicts still fail without modifying runtime files.
+Run `.venv/bin/python -m pytest tests/test_patch_updates.py tests/test_mac_launcher.py -q`
+for the portable patch and launcher checks. The Mac test environment currently
+contains pinned pytest 9.1.1 on Python 3.12; it is not a complete game-build setup.
+
 ## Local workflow
 
 This repository contains the PC input code, runtime patches, and build scripts.

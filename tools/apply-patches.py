@@ -14,7 +14,10 @@ import tempfile
 
 def git(tree, *args):
     return subprocess.run(
-        ['git', '-C', str(tree), *map(str, args)],
+        # Upstream stores some sources as CRLF. Match context whitespace on
+        # every host while retaining it in the output; non-whitespace edits
+        # still conflict. Do not depend on a developer's global Git settings.
+        ['git', '-C', str(tree), '-c', 'apply.ignoreWhitespace=change', *map(str, args)],
         capture_output=True, encoding='utf-8', errors='replace',
     )
 

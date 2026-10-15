@@ -8,6 +8,9 @@ reproducibility, and validation requirements.
 
 ## Workspace and coordination
 
+- Native Mac development and changes continued from this chat belong on
+  `mac-port`. Do not move or merge them to `main` unless the user explicitly
+  instructs it. Preserve other devices' separate Windows work.
 - Working root: the `timesplitters-future-perfect-pc` folder on that device's
   Desktop, not the old Documents location. Resolve project paths relative to
   the checkout or script; do not bake in a user's home directory, Windows drive
