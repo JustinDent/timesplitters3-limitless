@@ -104,6 +104,7 @@ try {
                         Set-Content -LiteralPath (Join-Path $privateRoot 'disc.json') -Encoding UTF8
                 }
                 'Test' {
+                    Apply-LocalPatches
                     Invoke-Checked $envPython @('-m', 'pytest', 'tools', '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'tools.conformance')
                 }
