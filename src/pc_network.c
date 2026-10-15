@@ -16,7 +16,7 @@
 #define MAX_PEERS 32
 #define HEADER 40
 #define MAX_PACKET 65507
-typedef struct { SOCKET socket; unsigned port; } NetSocket;
+typedef struct { SOCKET socket; unsigned port; ULONGLONG registered; } NetSocket;
 typedef struct { uint32_t ip; unsigned char xnaddr[36], key[8]; } NetPeer;
 static NetSocket sockets[MAX_SOCKETS];
 static NetPeer peers[MAX_PEERS];
@@ -30,9 +30,21 @@ static unsigned char local_address[36];
 static const unsigned char compatibility[32] = TSFP_NETWORK_COMPATIBILITY;
 static unsigned rejected;
 static unsigned sent_logs, received_logs;
+static int online;
+static uint32_t online_ip;
+static unsigned char online_token[16];
+static struct sockaddr_in bridge_address;
+#define BRIDGE_HEADER 68
 
 int pc_network_enabled(void)
-{ const char *v=getenv("TSFP_NETWORK"); return v && !strcmp(v,"1"); }
+{
+    const char *v=getenv("TSFP_NETWORK"), *config=getenv("TSFP_ONLINE_CONFIG");
+    if(!online && config && *config) {
+        char line[128]; FILE *file=fopen(config,"r");
+        if(file) { if(fgets(line,sizeof line,file)) pc_network_set_online(line); fclose(file); }
+    }
+    return online || (v && !strcmp(v,"1"));
+}
 static uint32_t failure(int error) { last_error=error; return UINT32_MAX; }
 static void *pointer(uint32_t a, size_t n, ptrdiff_t offset, int write)
 {
@@ -68,6 +80,7 @@ static int initialize(void)
     }
     if(!local_ip) local_ip=htonl(INADDR_LOOPBACK);
     memset(local_address,0,sizeof local_address);
+    if(online) local_ip=online_ip;
     memcpy(local_address,&local_ip,4);
     if(BCryptGenRandom(NULL,local_address+10,6,BCRYPT_USE_SYSTEM_PREFERRED_RNG)<0) { WSACleanup(); return 0; }
     local_address[10]=(local_address[10]|2)&0xfe;
@@ -85,11 +98,45 @@ static void shutdown_locked(void)
 }
 void pc_network_shutdown(void)
 { AcquireSRWLockExclusive(&network_lock); shutdown_locked(); ReleaseSRWLockExclusive(&network_lock); }
+int pc_network_set_online(const char *configuration)
+{
+    unsigned port,i,value; char token[33],ip[32],extra; uint32_t address;
+    if(!configuration) {
+        AcquireSRWLockExclusive(&network_lock); shutdown_locked(); online=0; ReleaseSRWLockExclusive(&network_lock);
+        return 1;
+    }
+    if(sscanf(configuration,"%u %32s %31s %c",&port,token,ip,&extra)!=3 ||
+       !port || port>65535 || strlen(token)!=32 || InetPtonA(AF_INET,ip,&address)!=1 ||
+       (ntohl(address)&0xffffff00u)!=0x0afe0000u || !(ntohl(address)&255) || (ntohl(address)&255)==255) return 0;
+    for(i=0;i<32;i++) if(!strchr("0123456789abcdef",token[i])) return 0;
+    AcquireSRWLockExclusive(&network_lock);
+    shutdown_locked();
+    for(i=0;i<16;i++) { sscanf(token+i*2,"%2x",&value); online_token[i]=(unsigned char)value; }
+    memset(&bridge_address,0,sizeof bridge_address);
+    bridge_address.sin_family=AF_INET; bridge_address.sin_port=htons((u_short)port);
+    bridge_address.sin_addr.s_addr=htonl(INADDR_LOOPBACK);
+    online_ip=address; online=1;
+    ReleaseSRWLockExclusive(&network_lock);
+    return 1;
+}
 static NetSocket *get_socket(uint32_t handle)
 { return handle && handle<=MAX_SOCKETS && sockets[handle-1].socket!=INVALID_SOCKET ? &sockets[handle-1] : NULL; }
+static int bridge_send(NetSocket *s,const char *payload,int length,int flags,const struct sockaddr_in *to)
+{
+    unsigned char packet[BRIDGE_HEADER+4096]; uint16_t port; int sent;
+    if(length<0 || length>4096 || flags) return (int)failure(WSAEMSGSIZE);
+    memcpy(packet,"TSFB\1\0\0\0",8); memcpy(packet+8,compatibility,32);
+    memcpy(packet+40,online_token,16); memcpy(packet+56,&online_ip,4);
+    memcpy(packet+60,&to->sin_addr.s_addr,4);
+    port=htons((u_short)s->port); memcpy(packet+64,&port,2); memcpy(packet+66,&to->sin_port,2);
+    if(length) memcpy(packet+BRIDGE_HEADER,payload,length);
+    sent=sendto(s->socket,(const char *)packet,length+BRIDGE_HEADER,0,(const struct sockaddr *)&bridge_address,sizeof bridge_address);
+    return sent==SOCKET_ERROR?(int)failure(WSAGetLastError()):length;
+}
 static int send_packet(NetSocket *s,const char *payload,int length,int flags,const struct sockaddr_in *to)
 {
     unsigned char packet[MAX_PACKET]; int sent;
+    if(online) return bridge_send(s,payload,length,flags,to);
     if(length<0 || length>MAX_PACKET-HEADER) return (int)failure(WSAEMSGSIZE);
     memcpy(packet,"TSFP\1\0\0\0",8); memcpy(packet+8,compatibility,32);
     memcpy(packet+HEADER,payload,length);
@@ -103,11 +150,26 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
 {
     unsigned char packet[MAX_PACKET]; struct sockaddr_in address; int n,size,attempt;
     if(capacity<0 || flags) return (int)failure(WSAEINVAL);
+    if(online && GetTickCount64()-s->registered>=1000) {
+        struct sockaddr_in registration={0};
+        bridge_send(s,NULL,0,0,&registration); s->registered=GetTickCount64();
+    }
     /* Bound work per game tick even under incompatible traffic. */
     for(attempt=0;attempt<64;attempt++) {
         size=sizeof address;
         n=recvfrom(s->socket,(char *)packet,sizeof packet,0,(struct sockaddr *)&address,&size);
         if(n==SOCKET_ERROR) return (int)failure(WSAGetLastError());
+        if(online) {
+            uint16_t destination;
+            if(address.sin_addr.s_addr!=bridge_address.sin_addr.s_addr || address.sin_port!=bridge_address.sin_port ||
+               n<BRIDGE_HEADER || memcmp(packet,"TSFB\1\0\0\0",8) || memcmp(packet+8,compatibility,32) ||
+               memcmp(packet+40,online_token,16) || memcmp(packet+60,&online_ip,4)) continue;
+            memcpy(&destination,packet+66,2); if(ntohs(destination)!=s->port) continue;
+            if(n-BRIDGE_HEADER>capacity) return (int)failure(WSAEMSGSIZE);
+            memcpy(&address.sin_addr.s_addr,packet+56,4); memcpy(&address.sin_port,packet+64,2);
+            memcpy(payload,packet+BRIDGE_HEADER,n-BRIDGE_HEADER); if(from) *from=address;
+            return n-BRIDGE_HEADER;
+        }
         if(n<HEADER || memcmp(packet,"TSFP\1\0\0\0",8) || memcmp(packet+8,compatibility,32)) {
             if(!rejected++) fprintf(stderr,"[PC-NET] Dropped incompatible/unframed peer traffic\n");
             continue;
@@ -210,9 +272,15 @@ static uint32_t call_locked(uint32_t va,const uint32_t *a,ptrdiff_t offset)
         if(address.sin_family!=AF_INET) return failure(WSAEAFNOSUPPORT);
         /* Receive LAN broadcasts on all interfaces normally. The explicit
            bind override isolates instances on separate loopback addresses. */
-        address.sin_addr.s_addr=bind_specific?local_ip:INADDR_ANY;
+        address.sin_addr.s_addr=online?htonl(INADDR_LOOPBACK):(bind_specific?local_ip:INADDR_ANY);
+        if(online) address.sin_port=0; /* No physical-port conflicts between game instances. */
         result=bind(s->socket,(struct sockaddr *)&address,sizeof address);
-        s->port=ntohs(address.sin_port);
+        s->port=ntohs(((struct sockaddr_in *)p)->sin_port);
+        s->registered=0;
+        if(online && !result) {
+            struct sockaddr_in registration={0};
+            bridge_send(s,NULL,0,0,&registration); s->registered=GetTickCount64();
+        }
         fprintf(stderr,"[PC-NET] Bind UDP %u: %d\n",s->port,result);
         break;
     }
@@ -221,7 +289,7 @@ static uint32_t call_locked(uint32_t va,const uint32_t *a,ptrdiff_t offset)
         p=pointer(a[1],a[2],offset,0); q=pointer(a[4],sizeof address,offset,0);
         if(!p || !q || a[5]!=sizeof address) return failure(WSAEFAULT);
         memcpy(&address,q,sizeof address);
-        if(address.sin_addr.s_addr==INADDR_BROADCAST) {
+        if(!online && address.sin_addr.s_addr==INADDR_BROADCAST) {
             /* Explicit peers also permit routed LANs and controlled WAN tests.
                Comma-separated numeric IPv4; no DNS or blocking work in a tick. */
             const char *v=getenv("TSFP_NET_PEERS"); char targets[1024],*next,*token;

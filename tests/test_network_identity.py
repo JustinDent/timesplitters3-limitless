@@ -44,6 +44,13 @@ def test_runtime_edits_change_identity(tmp_path):
     before = module.identity(tmp_path, game)[0]
     source.write_text('int value = 2;\n')
     assert module.identity(tmp_path, game)[0] != before
+    companions = tmp_path / 'tools'
+    companions.mkdir()
+    bridge = companions / 'online_transport.py'
+    bridge.write_text('protocol = 1\n')
+    before = module.identity(tmp_path, game)[0]
+    bridge.write_text('protocol = 2\n')
+    assert module.identity(tmp_path, game)[0] != before
 
 
 def test_incomplete_or_replaced_build_is_not_accepted(tmp_path):
