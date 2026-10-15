@@ -50,6 +50,13 @@ full gameplay and campaign completion have not been verified.
 
 ## Completed
 
+- Experimental PC System Link: native framed UDP, strict build/content identity
+  checks, default-protocol discovery sockets, and XNADDR/key mapping. Two isolated
+  game instances discovered a match, joined a 2/16-player lobby, and loaded into
+  the same Thief match. This is a same-PC loopback test, not a cross-network test
+  or a completed-match validation. See [multiplayer status](docs/multiplayer.md)
+  for the player-hosted directory foundation and remaining internet/Online work.
+
 - Read the supplied desktop Xbox ISO without modifying it; extracted 412 files.
 - Confirmed the US executable, title ID `45410066`, entry point `0038024D`,
   XDK 5849 and the expected SHA-256 documented in `README.md`.
