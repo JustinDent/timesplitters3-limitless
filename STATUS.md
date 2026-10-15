@@ -3,6 +3,30 @@
 Tested on Windows on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## Native 120/144 FPS feasibility check — October 15
+
+- Tested `frame_cap = 0` only in the isolated runtime settings, keeping the
+  console vblank clock at 60 Hz. The log confirmed the flip gate was off.
+  In the same stationary canyon window (120–145 seconds), 1,500 host-present
+  intervals still measured **60.00 FPS**, median **16.57 ms**, p95 **18.99 ms**,
+  and worst **31.63 ms**. Removing that gate is not a high-refresh solution for
+  this build. The 150-second run had no native fault or sampled GL error.
+- The current Apple M5 Pro's only reported display is its built-in Color LCD,
+  configured at **120.00 Hz**. Displaying 144 distinct frames per second would
+  need an appropriate higher-refresh display; 120 is the relevant built-in target.
+- Source inspection confirms numeric caps are divisions of the console vblank
+  clock, and the native Mac interpolation entry points are unimplemented.
+  Increasing the console clock may change game speed and was not used as a
+  substitute for rendering support. The follow-up CPU sample placed 1,193 of
+  2,633 main-thread samples in the CPU vertex interpreter. GPU vertex shaders
+  and render-only high-refresh presentation remain development work; **120/144
+  FPS support has not been implemented or validated**.
+- Restored the isolated runtime settings exactly and recycled disposable test
+  images. Personal saves/settings were not used. No runtime source or binary
+  changed; only findings/documentation were updated. Evidence:
+  `logs/native-higher-fps-validation.json`, `logs/mac-perf-uncapped.csv`,
+  `logs/mac-perf-uncapped-boot.json`, and `logs/mac-perf-uncapped-sample.txt`.
+
 ## Native frame-time investigation and upload fix — October 15
 
 - Confirmed the reported slowdown on `mac-port`. Measured host-present intervals

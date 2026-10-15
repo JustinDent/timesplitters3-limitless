@@ -141,6 +141,14 @@ screens and menus must be excluded before describing gameplay FPS. These are
 host-present timings, not measurements of monitor scanout. Compare the same
 scene and build settings, and state whether `--capture` was enabled.
 
+Native Mac high-refresh output is not implemented yet. The current console clock
+is 60 Hz, and numeric `frame_cap` settings release frames on that clock's ticks;
+setting `frame_cap = 144` does not create a 144 FPS mode. The Mac backend also
+does not implement `frame_interp`. Increasing `RECOMP_VBLANK_HZ` changes the
+guest console clock and may change game speed; it is not a render-only FPS
+setting. Higher-refresh support needs faster rendering and presentation that
+preserves the game's timing. Keep the default pacing for normal play.
+
 The native implementation includes a reserved 4 GiB **virtual address range**
 (not a 4 GiB game copy), aliased RAM/device mappings, host timers, an ARM64
 register-access fault handler, sparse Xbox partition devices, and an SDL PCM
