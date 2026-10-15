@@ -3,13 +3,29 @@
 Tested on Windows and Apple Silicon macOS on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## Mac branch update before publishing — October 15
+
+- Incorporated the newer Mac camera/prompt/multistage-renderer commit `6e48241`
+  into the prepared main compatibility merge, preserving both lines of work.
+  Shared prompt wrappers use the new guarded guest-memory helpers while still
+  allowing the Online text rewrite in controller mode. Network backlog moved to
+  `MAC-013` so existing audited `MAC-001` through `MAC-012` keep their identities.
+- Windows/shared validation passed: 47 Python/compiler checks, with five
+  Mac-specific checks skipped. Recompiled the shared controls, prompt model,
+  guest prompt regression and display-menu sources with MSVC x64; linked the
+  prompt regression against the existing input/SDL libraries and passed its
+  controller/keyboard switching, guest ABI and Online-label checks.
+- A full Windows game build and native Apple Silicon execution of this combined
+  revision remain pending; prior evidence is retained below. No game or personal
+  settings/saves were used for this merge.
+
 ## Mac/main merge compatibility — October 15
 
 - Reconciled `mac-port` at `93dc422` with main at `16fcea5` for PR #10.
   The shared display menu retains POSIX memory-query compatibility and the
   Windows Online/System Link entries without linking the Windows host adapter
   into native Mac. Native network wrappers delegate to their original guest
-  functions until a Mac transport is implemented; see backlog `MAC-001`.
+  functions until a Mac transport is implemented; see backlog `MAC-013`.
 - Kept existing runtime patch files intact. The updater applies the existing
   network patches before native boot, retaining its adjacent context around the
   SDK block and reversing the same order. Regression tests cover fresh installs,
@@ -817,3 +833,112 @@ Remaining: general multi-texturing, movies/screen-copy effects and exhaustive
 HUD placement/rendering fidelity; native direct-camera mouse behavior and PC
 prompt/debug features are not claimed as equivalent. This work does not establish
 that the previously reported world-disappearance case is completely resolved.
+
+
+## Mac backlog renderer, camera and prompts (2026-10-15)
+
+Validation performed before commit on `mac-port`, based on
+`93dc422139bae4acb64d1e24c528cf3869a4ce20` plus the changes accompanying this
+record. The other computer was not accessible for verification. Pinned upstream remains `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`.
+Host: macOS 27.0.1 arm64, Apple M5 Pro, Apple Clang 21.0.0, SDL 3.4.16,
+OpenGL 4.1 Metal 91.7 / GLSL 4.10. The supported US XBE hash was checked:
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+The complete patch stack was applied and wrappers regenerated through
+`tools/build-native-mac.py --generate`; no generated C was hand-edited.
+The final build manifest's recorded source hashes match the current sources.
+Executable SHA-256:
+`8f50deaa32247b94266b725fc6a00911b81236858743932be8e14edbfdf918e3`.
+
+Implemented and checked in this batch:
+
+- MAC-001: SDL relative counts now use the shared direct-camera model and verified
+  US guest fields, preserving sensitivity, inversion, zoom scaling and pitch
+  limits without adding mouse input to the controller stick. Native fixtures
+  checked sensitivity/inversion/FOV, no stick injection, capture-click suppression,
+  release and focus behavior. A live first-mission wrapper logged synthetic
+  8/-2 count events producing -1.6/+0.4 degree yaw/pitch changes at sensitivity
+  0.2 and FOV 55. Equal-count/polling-rate checks, complete live transition checks
+  and physical-device testing remain pending on Mac.
+- MAC-002: Mac compiles the shared prompt formatter and guest wrappers, and SDL
+  activity selects the active prompt device. Real Mac VM region/protection checks
+  replace the compatibility VirtualQuery stub for guest text/camera access;
+  Windows retains its VirtualQuery implementation. Native fixtures passed
+  custom/unbound/mouse labels, held/release/drift suppression, virtual-controller
+  switching, live saved binding changes, guarded memory and guest stack/ABI
+  restoration. Reviewed menus show [E] Select and [F] Back. Literal tutorial
+  text still says START; artwork and non-token strings are not rewritten.
+  Representative gameplay hints and physical-device switching remain unverified.
+- MAC-005: all four 2D texture inputs and coordinates now reach fixed vertex,
+  GPU vertex-program and CPU fallback paths. Tests cover distinct stages/UVs,
+  projected coordinates, linear texture scaling and GPU/CPU agreement. FVF
+  coordinate-size flags no longer accidentally select the programmable path.
+  Reviewed first-mission captures show improved terrain, weapons, NPCs and
+  debris. Dependent/dot texture modes, cube/volume resources and complete
+  material fidelity remain unfinished.
+- MAC-007: current-scene full/rectangular copies and image surfaces support
+  32-bit ARGB/XRGB and linear variants. Real-GPU fixtures passed full/partial
+  pixels, clipped offsets, orientation, preserved surrounding pixels/FBO state,
+  and image-surface full/subrect read/write, double-lock and invalid-rect checks.
+  Original and 1920x1080 scene sizes passed. Other formats explicitly return
+  E_NOTIMPL; an actual title effect using the copy path remains to be checked.
+- MAC-008: the first inclusive scissor rectangle now clips draws with target
+  scaling, GL origin conversion and the existing HUD transform. GPU fixtures
+  verified inside/outside pixels, disabling and clear behavior at original/1080p
+  targets. Multiple/exclusive rectangles remain unsupported, matching the
+  audited Windows limitation. This limited contract is marked Verified.
+- MAC-010: the actual paused Options menu previewed 2560x1440, displayed the
+  15-second countdown and automatically restored 1920x1080. The isolated saved
+  mode stayed 1920x1080 and the game returned to visible first-mission gameplay.
+  Keep/save/reopen, explicit Revert and broader aspect/HUD checks remain pending.
+
+Validation commands/results:
+
+- `python3 tools/build-native-mac.py --test`: all three native CTests passed,
+  plus real-GPU renderer/multitexture/scissor/copy/image-surface/vertex/texture-pack/
+  resolution/offscreen/interpolation/drawable tests and SDL input, prompt and
+  settings regressions. Evidence: `logs/mac-backlog-build.log`.
+- `.venv/bin/python -m pytest -q tests/test_patch_updates.py tests/test_native_interp_declarations.py tests/test_native_config_files.py tests/test_native_mac_tools.py tests/test_native_mac_launcher.py`:
+  26 passed, two Windows-only checks skipped. Fresh, repeated and historical
+  patch-upgrade coverage passed. Evidence: `logs/mac-backlog-python.log`.
+- Final isolated runner: `--seconds 270 --capture --test-keys --profile-frames
+  --fps 120`; 270.12 seconds, normal bounded exit, at least 13,800 completed guest
+  frames and 15,530 successful host presents, no sampled GL errors/native fault.
+  Captures were reviewed separately; frame counters alone do not establish
+  gameplay. The final capture shows terrain, weapons, HUD and the opening
+  tutorial. The run included menus, cinematics, resolution preview and brief
+  synthetic input; it was not a full-level playthrough or physical-device test.
+  Evidence: `logs/mac-backlog-final-summary.json`, `.err`, `-frames.csv`.
+
+The final whole-run timing sample includes loading/cinematics and the higher
+resolution preview: 58.33 host presents/s, comprising 51.69 guest and 6.64
+interpolated presents/s, p95 25.56 ms and p99 37.18 ms. These are host CPU
+intervals, not display scanout or a matched performance comparison. The 120
+presentation setting and 60 Hz guest clock remain intact; sustained 120 FPS is
+not established. Future renderer work needs scene-specific profiling as well as
+fidelity checks.
+
+Selected reviewed images in `private/captures/native-mac`:
+`backlog-render-opening.png` (earlier renderer),
+`backlog-multitexture-landing.png`, `backlog-multitexture-gameplay.png`,
+`backlog-keyboard-prompts.png`, `backlog-paused-display.png`,
+`backlog-resolution-countdown.png`, `backlog-final-landing.png`, and
+`backlog-final-gameplay.png`. These are guest readbacks, not new macOS window
+screenshots. Earlier cinematic border/outside-viewport artifacts and the user's
+reported world-disappearance route are not claimed resolved by this batch.
+
+One intermediate probe lost window focus and was stopped; it is not completion
+evidence. The isolated SDL input file now accepts `motion`, `button` and `focus`
+commands as well as key presses/releases. Synthetic focus allowed reliable menu
+checks without changing normal interactive focus handling. This does not test
+physical macOS event delivery. Runtime/input/display/save paths stayed isolated;
+personal controls retain SHA-256
+`cf44293910a77fb8f397ced933a1cfd5098e1949c93db9cc0571ed438b39f64a`, and the personal
+display file remains absent. Known disposable partition images were recycled;
+none remain in either native test directory.
+
+MAC-003/004/006/009/012 remain queued. MAC-011 needs the real texture pack: its
+local directory is absent, and the user confirmed it has not yet been transferred.
+Synthetic pack tests passed again, but they do not verify actual artwork coverage.
+Windows MSVC/Direct3D runtime checks are unavailable on this Mac; changes to the
+shared headers/wrappers must still be checked on Windows. See
+[MAC_PORT_BACKLOG.md](MAC_PORT_BACKLOG.md) for per-entry remaining acceptance work.

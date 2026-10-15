@@ -43,10 +43,10 @@ path, while Windows retains its PC input integration tests. Native build
 manifests include shared source hashes as well as Mac adapter hashes.
 
 This does not make Windows-only features automatically available on Mac:
-Windows settings dialogs, direct-camera mouse input, display hooks and texture
-pack integration still have platform-specific wiring. Mac mouse-look currently
-uses the right stick, and the graphics backends remain separate. Record and test
-adapter work before claiming a feature works on both platforms.
+Debug settings, advanced graphics effects and release packaging still need Mac
+adaptation. Native Mac now shares the camera input model and button-prompt
+formatter, but the graphics backends remain separate. Record and test adapter
+work before claiming a feature works on both platforms.
 
 New Windows PC features can be completed on PC first. Before completing a PC
 feature, add or update its entry in [the Mac port backlog](MAC_PORT_BACKLOG.md)
@@ -167,23 +167,23 @@ submission has been observed, but output fidelity/latency and human hardware
 playtesting have not been validated. Keyboard and mouse OS-event delivery has
 been checked with automation. Audio position uses the existing wall-clock fallback.
 
-The native renderer uses the shared HLE state/texture/vertex hooks, the portable
-NV2A vertex interpreter, and a GLSL register-combiner path for stage-0 textures.
-`--test` checks actual GPU pixels for quad topology, font alpha, blending,
-NV2A vertex/combiner execution, readback, offscreen clear isolation/orientation,
-failed target-change preservation and worker-thread context handoff, in
-addition to the three platform suites. These tests use no game data or saves.
-2D offscreen targets now use real framebuffers with matching depth attachments,
-viewport/rectangle clears and correctly oriented sampling. General multi-texturing,
-cube/depth targets, screen-copy effects and full 3D fidelity remain incomplete.
-Movies are skipped. PC settings/display/texture features, complete gameplay and
-save/load still need validation.
+The native renderer uses shared HLE state/texture/vertex hooks, GPU NV2A vertex
+programs with the portable interpreter as fallback, and register combiners with
+four 2D texture inputs. `--test` checks actual GPU pixels for topology, font
+alpha/blending, distinct texture stages/coordinates, GPU/CPU vertex agreement,
+scissors, screen copies, image surfaces, readback, offscreen state/orientation,
+interpolation and worker-thread context handoff, alongside three platform suites.
+These tests use no game data or saves. Advanced texture modes, cube/volume
+resources, movies and full rendering fidelity remain incomplete. Complete
+gameplay and save/load still need validation.
 
 Native controls use the same JSON bindings as Windows. Focus the game window:
 
 - Arrow keys navigate; **Enter**, **Space** or **E** selects; **Backspace** goes back.
 - **Click inside the game** to capture the pointer, then move the mouse to look
-  around. This first click is consumed; subsequent left clicks fire.
+  around. This first click is consumed; subsequent left clicks fire. Relative
+  mouse counts now update camera angles directly using the shared PC model,
+  including zoom sensitivity and pitch limits; they no longer emulate a stick.
 - **Escape** pauses and releases the mouse. After resuming, click to capture
   again. **F1** also toggles relative mouse capture
   (use Fn+F1 if macOS reserves the function key for brightness).
@@ -192,6 +192,10 @@ Native controls use the same JSON bindings as Windows. Focus the game window:
 - The first unassigned SDL controller also shares player 1. Explicit controllers
   assigned to other players are reserved. Physical controller play is unverified;
   SDL virtual-controller mapping/hotplug has regression coverage.
+
+Formatted menu/HUD hints use the current keyboard/mouse bindings and switch to
+controller icons on deliberate controller activity. Text baked into artwork or
+plain tutorial text is unchanged.
 
 **Mac settings:** press **F2** (Fn+F2 if needed), or choose **Game Settings →
 Keyboard, Mouse & Graphics…** in the Mac menu bar. The Keyboard & Mouse tab edits
@@ -205,8 +209,9 @@ is a session setting. The original in-game Settings/Options menu also includes
 Higher resolutions render the scene at the selected size, preserve the original
 menu proportions and widen the gameplay camera. Screen-space HUD draws retain
 their proportions. Larger targets cost GPU time, so 120 presentations per second
-remains a target, not a guarantee. General multi-texturing, movies and some
-screen-copy effects remain incomplete; this is not complete Windows graphics parity.
+remains a target, not a guarantee. Four 2D texture inputs, projected/linear
+texture coordinates, scissor clipping and 32-bit screen copies are implemented. Advanced texture modes, cube/volume
+textures and movies remain incomplete; this is not complete Windows graphics parity.
 
 To use the same compiled DDS texture pack as Windows for one Mac launch:
 
@@ -221,9 +226,9 @@ replacements use original textures. This does not create artwork or increase the
 fixtures; the complete remaster pack has not been visually verified on Mac.
 
 Mouse enabled/sensitivity/invert settings are read from the shared controls file
-at startup and updated live when saved in Mac Settings. Native mouse-look currently feeds the game's right-stick look path,
-so the in-game profile's look speed/inversion also applies. With the default
-profile and `invert_y: false`, moving the mouse up looks up.
+at startup and updated live when saved in Mac Settings. Mouse look uses direct
+camera angles, independent of the controller turn-speed curve. With
+`invert_y: false`, moving the mouse up looks up.
 Losing focus releases keys, buttons and mouse capture and neutralizes
 controller input. The bounded probe uses its own copy of controls under
 `private/test-saves/native-mac`; edit only that copy for experiments. No personal
@@ -235,6 +240,13 @@ For automated menu checks, add `--test-keys` and append SDL scancode names such 
 `+Return` and `-Return` on separate lines to the isolated `test-keys.txt`, with a
 short hold between writes. This optional path feeds SDL events through the same
 binding reader; it does not establish physical keyboard/controller testing.
+Native test input can append `+Return` / `-Return`, `motion 20 -10`, or
+`button 1 1` / `button 1 0` to the isolated runner's `test-keys.txt` when
+`--test-keys` is enabled. Use F1 or a capture click before motion. These inject
+synthetic SDL events; they do not validate physical mouse or macOS event delivery.
+`focus 1` / `focus 0` simulate focus changes within this test path without
+changing normal interactive focus handling.
+
 For a single bounded renderer trace, add `--trace-render` and write `1` to the
 isolated `trace-render.txt`. The next frame logs up to 2,000 draw/clear samples;
 normal play has tracing disabled. Interactive launch logs are capped at 4 MiB
