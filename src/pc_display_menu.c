@@ -3,6 +3,7 @@
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
 #include "pc_display.h"
+#include "pc_online.h"
 #include <stdarg.h>
 
 #include "recomp_types.h"
@@ -10,6 +11,7 @@
 #include <string.h>
 
 extern uint32_t xbox_HeapAlloc(uint32_t bytes, uint32_t alignment);
+extern void sub_0007D480(void);
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(uint32_t)(a) + g_xbox_mem_offset))
 
 typedef struct GuestRegisters {
@@ -91,10 +93,27 @@ void pc_display_menu_button(void (*original)(void))
     const uint32_t callsite=WORD_AT(g_esp), callback=WORD_AT(g_esp+20);
     const int frontend=callsite==0x002CC116u && callback==0x002CBE50u;
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
+    const int network=callsite==0x001A2788u;
     GuestRegisters r;
     original();
-    if(!frontend && !paused) return;
+    if(!frontend && !paused && !network) return;
     save_registers(&r);
+    if(network) {
+        static uint32_t online_caption;
+        /* The caller styles its most recently built row next. Apply that same
+           style to System Link now, before Online becomes the current row. */
+        push(0); push(0x20000u); push(callsite); sub_0007D480(); g_esp+=8;
+        if(!online_caption) {
+            const char text[]="Online";
+            online_caption=xbox_HeapAlloc(sizeof text,4);
+            if(online_caption) memcpy((void *)((uintptr_t)online_caption+g_xbox_mem_offset),text,sizeof text);
+        }
+        if(online_caption) {
+            push(0); push(0x1200du); push(0); push(0x30000u); push(UINT32_MAX); push(online_caption);
+            push(callsite); original();
+        }
+        restore_registers(&r); return;
+    }
     if(!caption) {
         const char text[]="Display settings";
         caption=xbox_HeapAlloc(sizeof text,4);
@@ -269,6 +288,21 @@ static void activate(void)
     }
     restore_registers(&r); g_esp+=4;
 }
+extern void sub_001A0A60(void);
+static void system_link_activate(void)
+{
+    GuestRegisters r; save_registers(&r);
+    pc_online_disconnect();
+    _putenv_s("TSFP_ONLINE_CONFIG",""); _putenv_s("TSFP_NETWORK","1");
+    guest_call(sub_001A0A60,0);
+    restore_registers(&r); g_esp+=4;
+}
+static void online_activate(void)
+{
+    GuestRegisters r; save_registers(&r);
+    if(pc_online_connect()) guest_call(sub_001A0A60,0);
+    restore_registers(&r); g_esp+=4;
+}
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
     switch(address) {
@@ -277,6 +311,11 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case TICK_CB: return tick_menu;
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
+    case 0x1200du: return online_activate;
+    /* System Link is reached through the title's indirect menu table. Online
+       deliberately calls its generated body directly after configuring the
+       bridge, while ordinary System Link selection resets to LAN transport. */
+    case 0x001A0A60u: return system_link_activate;
     default: return NULL;
     }
 }

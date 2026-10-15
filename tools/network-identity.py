@@ -50,6 +50,10 @@ def identity(root, game):
                 # separate otherwise identical Windows/Linux source checkouts.
                 data = path.read_bytes().replace(b'\r\n', b'\n')
                 entries.append((path.relative_to(root).as_posix(), hashlib.sha256(data).hexdigest()))
+    for name in ('online_transport.py', 'online_client.py', 'online.py', 'online_host.py', 'lobby_server.py'):
+        path = root / 'tools' / name
+        if path.is_file():
+            entries.append(('tools/' + name, hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest()))
     # Include the actual runtime and lifted code, not just patch intentions.
     # Local edits to upstream code must also produce an incompatible build.
     runtime = root / 'external/ts3FPrecomp'
