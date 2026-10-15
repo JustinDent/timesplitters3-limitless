@@ -1,6 +1,6 @@
 # PC multiplayer bring-up
 
-The source build includes **Online** beside Xbox Live and System Link. Every PC
+The source build replaces Xbox Live with **Online** above System Link. Every PC
 runs its own game, using competitive multiplayer with a player-hosted directory
 and UDP bridge. No Steam, paid service, account, or centrally operated server is
 required. Campaign co-op is a separate future effort.
@@ -15,7 +15,7 @@ is experimental and is not in the existing downloadable portable release.
 Build the same source and game content on all PCs with `.\tsfp.ps1 Build`, then
 launch with `.\tsfp.ps1 Run` or `Play.cmd`.
 
-Choose **Xbox Live / System Link > Online > Start New Match**. Automatic hosting
+Choose **Online / System Link > Online > Start New Match**. Automatic hosting
 is enabled by default. It detects your public IPv4, starts an HTTPS directory in
 the background, creates/reuses a certificate under `private/online-directory`,
 and fills in the local directory address and fingerprint. No PowerShell window
@@ -74,7 +74,7 @@ environment. Keep this window open. It makes no certificate store changes.
 - Guests need no forwarding. A host behind carrier-grade NAT needs a reachable
   player to host instead. IPv6-only hosting is not implemented.
 
-Choose **Xbox Live / System Link > Online** in the game and enter the directory
+Choose **Online / System Link > Online** in the game and enter the directory
 address and certificate fingerprint. These non-secret preferences are saved in
 ignored `config/pc-online.json`.
 
@@ -106,7 +106,7 @@ Build the same source and game content on both PCs, then run in PowerShell:
 .\tsfp.ps1 Run -SystemLink
 ```
 
-Select **Xbox Live / System Link > System Link**. One player selects **Start New
+Select **Online / System Link > System Link**. One player selects **Start New
 Match**; the other selects that match, then Ready. The host starts the match.
 The native transport uses UDP 1000 (gameplay), 3000 (session information), and
 9999 (discovery). Allow the game through Windows Firewall on the private LAN.
@@ -191,7 +191,7 @@ until cleanup finishes. Test profiles are retained for the next run; logs are
 overwritten in each role's `interactive.out` and `interactive.err`. The launcher
 restores the calling shell's environment and prevents overlapping test sessions.
 It uses the fixed test controls, so personal bindings and settings are preserved.
-In both windows choose **Xbox Live / System Link > System Link**. Host a new match
+In both windows choose **Online / System Link > System Link**. Host a new match
 in the first window, join and Ready in the second, then select Go on the host.
 
 Native tests cover UDP round trips, default-protocol sockets used by discovery,

@@ -11,7 +11,6 @@
 #include <string.h>
 
 extern uint32_t xbox_HeapAlloc(uint32_t bytes, uint32_t alignment);
-extern void sub_0007D480(void);
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(uint32_t)(a) + g_xbox_mem_offset))
 
 typedef struct GuestRegisters {
@@ -93,28 +92,28 @@ void pc_display_menu_button(void (*original)(void))
     const uint32_t callsite=WORD_AT(g_esp), callback=WORD_AT(g_esp+20);
     const int frontend=callsite==0x002CC116u && callback==0x002CBE50u;
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
-    const int network=callsite==0x001A27D8u;
     GuestRegisters r;
-    original();
-    if(!frontend && !paused && !network) return;
-    save_registers(&r);
-    if(network) {
+    if(callsite==0x001CC0A3u && callback==0x001CC050u) {
         static uint32_t online_caption;
-        /* Append after System Link, below the heading's divider. The caller
-           styles its latest row next, so finish System Link's style first. */
-        push(0); push(0x20000u); push(callsite); sub_0007D480(); g_esp+=8;
+        const uint32_t frame=g_esp, previous_caption=WORD_AT(frame+4);
+        /* Replace the original Xbox Live row in place. Its font, layout and
+           position above System Link remain owned by the original builder. */
         if(!online_caption) {
             const char text[]="ONLINE";
             online_caption=xbox_HeapAlloc(sizeof text,4);
             if(online_caption) memcpy((void *)((uintptr_t)online_caption+g_xbox_mem_offset),text,sizeof text);
         }
         if(online_caption) {
-            /* 0x200 selects the same menu font as the original network options. */
-            push(0); push(0x1200du); push(0); push(0x30200u); push(UINT32_MAX); push(online_caption);
-            push(callsite); original();
+            WORD_AT(frame+4)=online_caption;
+            WORD_AT(frame+20)=0x1200du;
         }
-        restore_registers(&r); return;
+        original();
+        WORD_AT(frame+4)=previous_caption; WORD_AT(frame+20)=callback;
+        return;
     }
+    original();
+    if(!frontend && !paused) return;
+    save_registers(&r);
     if(!caption) {
         const char text[]="Display settings";
         caption=xbox_HeapAlloc(sizeof text,4);
@@ -313,6 +312,8 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
     case 0x1200du: return online_activate;
+    /* Any remaining indirect reference to the retired Live entry uses Online. */
+    case 0x001CC050u: return online_activate;
     /* System Link is reached through the title's indirect menu table. Online
        deliberately calls its generated body directly after configuring the
        bridge, while ordinary System Link selection resets to LAN transport. */

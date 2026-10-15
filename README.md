@@ -30,7 +30,7 @@ personal settings, and saves, and writes the ZIP plus SHA-256 under `build/relea
 
 ## Local workflow
 
-The source build adds **Online** beside Xbox Live and System Link, with a
+The source build replaces Xbox Live with **Online** above System Link, with a
 player-hosted HTTPS directory, compatible-only browser, private join codes and
 a host-routed UDP bridge. **Online > Start New Match** detects your public IPv4,
 starts a background directory and fills in its certificate automatically. Share
