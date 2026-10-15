@@ -288,9 +288,17 @@ data. Failed tests retain that directory for diagnosis; `private/saves` is unaff
 `patches/pc-controls.patch` connects the window/input layer to `src/pc_controls.c`
 and `src/pc_input.c`, and adds a manual wrapper around the US build's
 `sub_000D2B80`. Its generated original body is retained as
-`sub_000D2B80_gen`; the generated C is never hand-edited. Run Generate after
-applying this patch to an older generated tree, then Build. The native
+`sub_000D2B80_gen`; the generated C is never hand-edited. Build refreshes the
+generated code automatically when newly added wrappers are missing. The native
 `tests/pc_controls.c` suite runs during Build.
+
+`patches/pc-display.patch` adds the display menu and camera hooks separately
+from the original controls patch, so existing checkouts can upgrade after a merge.
+Setup, Test, Generate, and Build validate the complete patch stack in a temporary
+source-only directory before changing runtime files. Conflicts name the failing
+patch and leave the runtime checkout untouched. Existing patches should remain
+stable; add subsequent changes as separate patches. Run the upgrade regression
+tests with `.venv\Scripts\python.exe -m pytest tests/test_patch_updates.py -q`.
 
 `patches/pc-input-vocabulary.patch` keeps the Python input UI's key names in sync
 with the mouse-button and F23/F24 names added to the runtime by the PC controls
@@ -311,7 +319,7 @@ text measurement (`0x0003FCF0`) and rendering (`0x00040FA0`) functions using
 original strings are preserved for controller input. Build runs
 `tests/pc_prompts.c`, including a virtual SDL controller test and guest-stack
 checks. The virtual-controller check skips when a physical controller is attached.
-When applying this patch to an older generated checkout, run Generate before Build.
+Build automatically refreshes an older generated checkout when these wrappers are missing.
 
 `patches/pc-fullscreen.patch` disables DXGI's automatic exclusive fullscreen
 switch so the game's borderless fullscreen handler owns Alt+Enter and the
