@@ -152,6 +152,22 @@ or protection against a deliberately modified client.
 
 ## Online transport
 
+### Latency display and build version
+
+Open **PC Settings > Debug** (F12) and enable **Show network latency** to display
+round-trip time in milliseconds. Online guests measure their host; hosts and LAN
+players show the highest fresh peer RTT. The Debug window also shows the number
+of peers measured. Samples refresh about once a second and expire after five
+seconds without a reply. Offline and waiting states are labelled; the lobby
+directory response time is not used as gameplay latency. Online probes are
+authenticated and replay-checked with the normal room credentials. LAN probes
+check build identity and the outstanding reply nonce. Control packets stay out
+of the original game's packet decoder.
+
+A persistent lower-right watermark shows the PC version from `VERSION` and the
+first eight characters of the multiplayer build identity. It remains visible
+when Debug counters are off, including interpolated frames and fullscreen.
+
 Online presents `10.254.0.0/24` addresses to the title, preserving addresses inside
 Xbox session data across different networks. Game sockets talk to their own
 bridge on loopback using a random local token. Physical socket ports are

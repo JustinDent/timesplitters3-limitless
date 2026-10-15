@@ -192,6 +192,7 @@ void pc_debug_config_read(PcDebugOptions *s)
         s->show_frame_time=pc_debug_bool(debug,"show_frame_time");
         s->show_issues=pc_debug_bool(debug,"show_issues");
         s->log_performance=pc_debug_bool(debug,"log_performance");
+        s->show_latency=pc_debug_bool(debug,"show_latency");
     }
     free(text);
     env=getenv("RECOMP_FPS_OVERLAY");
@@ -215,6 +216,7 @@ int pc_debug_config_save(const PcDebugOptions *s, char *error, size_t bytes)
         !pc_replace_member(&text,pc_member(text,"debug",NULL),"show_frame_time",s->show_frame_time?"true":"false") ||
         !pc_replace_member(&text,pc_member(text,"debug",NULL),"show_issues",s->show_issues?"true":"false") ||
         !pc_replace_member(&text,pc_member(text,"debug",NULL),"log_performance",s->log_performance?"true":"false") ||
+        !pc_replace_member(&text,pc_member(text,"debug",NULL),"show_latency",s->show_latency?"true":"false") ||
         !pc_write_config(text)) goto failure;
     pc_debug_set(s);
     ok=1;

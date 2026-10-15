@@ -302,17 +302,22 @@ void pc_settings_show(HWND game)
 }
 
 enum { ID_DEBUG_FPS=200, ID_DEBUG_TIME, ID_DEBUG_ISSUES, ID_DEBUG_LOG,
-       ID_DEBUG_STATS, ID_DEBUG_RECENT, ID_DEBUG_FOLDER, ID_DEBUG_CLEAR, ID_DEBUG_HELP };
+       ID_DEBUG_STATS, ID_DEBUG_RECENT, ID_DEBUG_FOLDER, ID_DEBUG_CLEAR, ID_DEBUG_HELP, ID_DEBUG_LATENCY };
 
 static void debug_refresh(HWND d)
 {
     PcDebugSnapshot stats;
-    char text[512], old[6144];
+    char text[512], old[6144], latency[128];
     pc_debug_poll();
     pc_debug_snapshot(&stats);
+    if(!stats.network_mode) snprintf(latency,sizeof latency,"Network latency: offline");
+    else if(stats.latency_ms<0 || !stats.latency_peers)
+        snprintf(latency,sizeof latency,"%s latency: waiting for a peer / reply",stats.network_mode==2?"Online":"LAN");
+    else snprintf(latency,sizeof latency,"%s RTT: %.1f ms (highest of %u peer%s)",
+        stats.network_mode==2?"Online":"LAN",stats.latency_ms,stats.latency_peers,stats.latency_peers==1?"":"s");
     snprintf(text,sizeof text,"Game: %.1f FPS   Shown: %.1f FPS   Average frame interval: %.2f ms\r\n"
-        "Log matches: %lu errors, %lu warnings   Frames over 50 ms: %lu (includes loading)",
-        stats.fps,stats.shown_fps,stats.frame_ms,stats.errors,stats.warnings,stats.slow_frames);
+        "Log matches: %lu errors, %lu warnings   Frames over 50 ms: %lu (includes loading)\r\n%s",
+        stats.fps,stats.shown_fps,stats.frame_ms,stats.errors,stats.warnings,stats.slow_frames,latency);
     SetDlgItemTextA(d,ID_DEBUG_STATS,text);
     if (!stats.log_available) snprintf(stats.recent,sizeof stats.recent,"Live log unavailable. Launch with Play.cmd to enable log diagnostics.");
     else if (!stats.recent[0]) snprintf(stats.recent,sizeof stats.recent,"No matching errors or warnings since startup / last clear.");
@@ -337,19 +342,22 @@ static INT_PTR CALLBACK debug_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
         control(d,"BUTTON","Show average frame time",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_TIME);
         control(d,"BUTTON","Show error / warning counters (E / W)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_ISSUES);
         control(d,"BUTTON","Write performance samples to log (twice per second)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_LOG);
+        control(d,"BUTTON","Show network latency (round-trip time)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_LATENCY);
         place(d,ID_DEBUG_FPS,16,12,width-32,24);
         place(d,ID_DEBUG_TIME,16,40,width-32,24);
         place(d,ID_DEBUG_ISSUES,16,68,width-32,24);
         place(d,ID_DEBUG_LOG,16,96,width-32,24);
+        place(d,ID_DEBUG_LATENCY,16,124,width-32,24);
         CheckDlgButton(d,ID_DEBUG_FPS,options.show_fps?BST_CHECKED:BST_UNCHECKED);
         CheckDlgButton(d,ID_DEBUG_TIME,options.show_frame_time?BST_CHECKED:BST_UNCHECKED);
         CheckDlgButton(d,ID_DEBUG_ISSUES,options.show_issues?BST_CHECKED:BST_UNCHECKED);
         CheckDlgButton(d,ID_DEBUG_LOG,options.log_performance?BST_CHECKED:BST_UNCHECKED);
-        control(d,"STATIC","",0,ID_DEBUG_STATS); place(d,ID_DEBUG_STATS,16,132,width-32,42);
+        CheckDlgButton(d,ID_DEBUG_LATENCY,options.show_latency?BST_CHECKED:BST_UNCHECKED);
+        control(d,"STATIC","",0,ID_DEBUG_STATS); place(d,ID_DEBUG_STATS,16,164,width-32,62);
         control(d,"STATIC","Recent log diagnostics (up to 12). Matches include failed calls, unsupported features and warnings;\nthis does not detect every gameplay or visual anomaly. Pause the game before opening settings.",0,ID_DEBUG_HELP);
-        place(d,ID_DEBUG_HELP,16,180,width-32,40);
+        place(d,ID_DEBUG_HELP,16,236,width-32,40);
         control(d,"EDIT","",WS_TABSTOP|WS_VSCROLL|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL,ID_DEBUG_RECENT);
-        place(d,ID_DEBUG_RECENT,16,228,width-32,height-326);
+        place(d,ID_DEBUG_RECENT,16,284,width-32,height-382);
         control(d,"BUTTON","Open logs folder",WS_TABSTOP|BS_PUSHBUTTON,ID_DEBUG_FOLDER);
         place(d,ID_DEBUG_FOLDER,16,height-84,145,28);
         control(d,"BUTTON","Clear counters / recent",WS_TABSTOP|BS_PUSHBUTTON,ID_DEBUG_CLEAR);
@@ -372,6 +380,7 @@ static INT_PTR CALLBACK debug_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
             options.show_frame_time=IsDlgButtonChecked(d,ID_DEBUG_TIME)==BST_CHECKED;
             options.show_issues=IsDlgButtonChecked(d,ID_DEBUG_ISSUES)==BST_CHECKED;
             options.log_performance=IsDlgButtonChecked(d,ID_DEBUG_LOG)==BST_CHECKED;
+            options.show_latency=IsDlgButtonChecked(d,ID_DEBUG_LATENCY)==BST_CHECKED;
             if (!pc_debug_config_save(&options,error,sizeof error)) {
                 MessageBoxA(d,error,"Debug settings were not saved",MB_OK|MB_ICONERROR); return TRUE;
             }
@@ -392,5 +401,5 @@ static INT_PTR CALLBACK debug_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
 
 void pc_debug_show(HWND owner)
 {
-    dialog(owner,L"Debug - TimeSplitters Future Perfect",760,570,debug_dialog,0);
+    dialog(owner,L"Debug - TimeSplitters Future Perfect",760,620,debug_dialog,0);
 }

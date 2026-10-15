@@ -218,6 +218,9 @@ pause the simulation. The Debug window offers:
   including loading delays.
 - **Write performance samples to log:** FPS and average frame interval, about
   twice per second. This is off by default to avoid growing logs unnecessarily.
+- **Show network latency:** gameplay RTT in milliseconds, updated about once a
+  second. Online guests measure their host; hosts and LAN players show the highest
+  fresh peer RTT. Offline and waiting states are labelled.
 - **Open logs folder** and **Clear counters / recent:** inspect the original
   logs or reset the session counters without deleting log files.
 
@@ -225,6 +228,10 @@ pause the simulation. The Debug window offers:
 controls JSON file and applies them immediately. **Cancel** discards checkbox
 edits; clearing counters takes effect immediately. All options default to off.
 Existing controls files without a `debug` section remain supported.
+
+A lower-right watermark always shows the PC version and a short multiplayer
+build identifier, including when Debug options are off. `VERSION` is the shared
+version source for builds and the default release package name.
 
 Diagnostics match logged failures, unresolved calls, warnings, and unsupported
 features; they do not detect every gameplay or visual anomaly. Counts cover the

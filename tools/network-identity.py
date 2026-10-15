@@ -67,6 +67,8 @@ def verify_build(executable, manifest, stamp):
 
 def identity(root, game):
     entries = []
+    if (root/'VERSION').is_file():
+        entries.append(('VERSION', hashlib.sha256((root/'VERSION').read_bytes().replace(b'\r\n', b'\n')).hexdigest()))
     for folder in ('src', 'patches'):
         for path in sorted((root / folder).rglob('*')):
             if path.is_file():

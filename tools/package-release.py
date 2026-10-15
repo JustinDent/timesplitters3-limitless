@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version', default='v0.2.0-alpha.2')
+    parser.add_argument('--version', default='v'+(ROOT/'VERSION').read_text().strip())
     parser.add_argument('--output', type=Path, default=ROOT / 'build/releases')
     args = parser.parse_args()
     if not all(c.isalnum() or c in '.-_' for c in args.version):
