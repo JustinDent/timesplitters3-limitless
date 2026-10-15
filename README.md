@@ -30,6 +30,10 @@ personal settings, and saves, and writes the ZIP plus SHA-256 under `build/relea
 
 ## Local workflow
 
+Experimental PC System Link is available with `.\tsfp.ps1 Run -SystemLink`.
+Two local instances have joined and entered a match; internet play and the Online
+menu are still in development. See [multiplayer setup and status](docs/multiplayer.md).
+
 This repository contains the PC input code, runtime patches, and build scripts.
 Game data, translated game code, binaries, personal settings, and saves stay local.
 Keyboard/mouse bindings use a separate F2 settings window. Display settings
