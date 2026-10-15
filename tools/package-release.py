@@ -66,7 +66,8 @@ Button prompts show your first assigned keyboard/mouse binding. Controller input
 restores controller icons; using the keyboard/mouse switches them back.
 The first controller not assigned to another player also controls player 1.
 Pause before opening F2: the editor blocks input but does not pause the game.
-The original in-game Options menus are unchanged.
+Settings and paused Options include Display settings for render resolution.
+Confirmed display choices are saved in Settings/pc-display.ini.
 
 Settings: Settings/pc-controls.json. Saves: Saves. Diagnostics: Logs.
 Keep Data, Settings, and Saves when upgrading. Extract upgrades to a new folder

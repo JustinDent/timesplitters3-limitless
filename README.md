@@ -32,8 +32,9 @@ personal settings, and saves, and writes the ZIP plus SHA-256 under `build/relea
 
 This repository contains the PC input code, runtime patches, and build scripts.
 Game data, translated game code, binaries, personal settings, and saves stay local.
-The current build uses a separate F2 settings window; the original game menus
-are unchanged. See [STATUS.md](STATUS.md) for tested behavior and current limits.
+Keyboard/mouse bindings use a separate F2 settings window. Display settings
+are available inside the game's own Settings and paused Options menus.
+See [STATUS.md](STATUS.md) for tested behavior and current limits.
 
 Run in PowerShell from this directory:
 
@@ -60,6 +61,55 @@ the game's PC settings menu apply immediately.
 continue to be written to `logs`, and launch failures appear in a dialog. The
 portable release uses the same behavior after first-time game import. For terminal
 diagnostics, use `tsfp.ps1 Run` (or `Launch.ps1` in a portable release) directly.
+
+## In-game display settings
+
+Available in the current local/source build.
+
+Open **Settings → Display settings** from the main menu, or **Options → Display
+settings** while paused. Select the resolution row to cycle forward, or use
+**Previous resolution** to cycle backward. Choose **Apply resolution**, then
+**Keep resolution** within 15 seconds. Back, Revert, or letting the countdown
+expire restores the previous mode. Only confirmed settings are saved.
+
+The picker includes 1920×1080, 2560×1440, 3840×2160, and modes reported by the
+monitor nearest the game window, including ultrawide sizes. The first candidate
+is that monitor's current desktop resolution. These settings change the native
+3D rendering resolution; the window still follows its existing size. Use
+**Alt+Enter** for fullscreen. Desktop resolution and refresh rate are unchanged.
+Game menus retain their original proportions with bars; gameplay uses the
+selected aspect ratio and a wider horizontal camera view.
+
+Settings live in `config/pc-display.ini` beside the keyboard/mouse configuration
+(`Settings/pc-display.ini` in packaged builds). `TSFP_DISPLAY_CONFIG` can override
+the path for isolated tests. Delete that small file to restore the original
+rendering resolution. Extremely wide modes are bounded at 7680×2160; modes above
+2160 pixels high are outside this release's resolution range.
+
+## Texture preview
+
+**Play-Textures.cmd** enables the local texture preview. The current pack contains
+11 replacements: selected terrain, masonry, timber, concrete, flooring, metal
+panels and a weapon atlas. Most of the game still uses original art. The pack is
+about 44 MiB; its compiler enforces the requested **6 GiB** cap, including metadata.
+Artwork and original game assets remain local under `private/texture-remaster`.
+
+Two installed DDS files are 4096×4096, eight are 2048×2048 and one is 2048×1024,
+all with complete mip chains. Square generated sources are 1254×1254; the stone
+wall source is 1774×887. Compilation resamples these images; this is not native
+4K generated detail. Character artwork that shifted UV details remains a draft
+outside the active pack. Full level, tiling and material-consistency review remains.
+The loader currently supports DXT1/DXT3/DXT5 replacements and limits resident
+replacement textures to 512 MiB of GPU memory. Missing or invalid replacements
+fall back to original textures. Restart after changing pack files.
+
+Run `.venv/Scripts/python.exe tools/texture-worklist.py` to audit installed DDS
+hashes, dimensions and mip chains and refresh the local coverage/size plan.
+The worklist tracks 5,547 unique supported keys and 753 unsupported payloads;
+installed, unfinished artwork and unapproved drafts are counted separately.
+Its roughly 2.5 GiB projection covers supported DDS payloads only, not source
+art or undecoded formats, and does not mean those replacements have been made.
+Exact new generation prompts are saved beside their artwork under `authored/`.
 
 ## PC controls
 
@@ -232,7 +282,7 @@ any relevant runtime code. No game data is supplied by this repository.
 storage: Partition1's TDATA and UDATA now use the configured save directory.
 Setup and Build apply it idempotently. Build also runs the native
 `tests/save_paths.c` regression test against the actual runtime.
-After all native build tests pass, Build removes their temporary `build/path-tests`
+After all native build tests pass, Build recycles their temporary `build/path-tests`
 data. Failed tests retain that directory for diagnosis; `private/saves` is unaffected.
 
 `patches/pc-controls.patch` connects the window/input layer to `src/pc_controls.c`

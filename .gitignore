@@ -15,6 +15,7 @@ xbox_kernel.log
 /config/pc-controls.json.bak
 /config/*.tmp
 /config/pc-controls.json
+/config/pc-display.ini
 
 # Packaged builds and local credentials are never source uploads.
 *.zip
