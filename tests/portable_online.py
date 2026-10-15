@@ -68,7 +68,11 @@ def probe(stage, game):
             games[1].sendto(LOCAL.pack(LOCAL_MAGIC, bytes.fromhex(version), first.local_token,
                                      virtual_ip(first.peer_id), virtual_ip(second.peer_id), 1000, 1000)
                             + b'portable multiplayer', first.local.getsockname())
-            assert games[2].recv(8192)[LOCAL.size:] == b'portable multiplayer'
+            while True:
+                packet = games[2].recv(8192)
+                if LOCAL.unpack_from(packet)[-1] != 0:  # Native code consumes bridge RTT telemetry.
+                    break
+            assert packet[LOCAL.size:] == b'portable multiplayer'
             cert = root/'Settings/OnlineDirectory/certificate.pem'
             assert cert.is_file() and len(directory.fingerprint) == 64
             assert hashlib.sha256(ssl.PEM_cert_to_DER_cert(cert.read_text())).hexdigest() == directory.fingerprint

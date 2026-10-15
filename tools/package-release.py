@@ -17,8 +17,8 @@ def main():
     parser.add_argument('--version', default='v'+(ROOT/'VERSION').read_text().strip())
     parser.add_argument('--output', type=Path, default=ROOT / 'build/releases')
     args = parser.parse_args()
-    if not all(c.isalnum() or c in '.-_' for c in args.version):
-        parser.error('Version must contain only letters, numbers, dots, dashes, or underscores.')
+    if not all(c.isalnum() or c in '.-+_' for c in args.version):
+        parser.error('Version must contain only letters, numbers, dots, dashes, plus signs, or underscores.')
     name = f'TimeSplitters-Future-Perfect-PC-{args.version}-windows-x64'
     # Only a successfully built executable with matching content can be packaged.
     subprocess.run([os.sys.executable, str(ROOT/'tools/network-identity.py'), '--verify',
