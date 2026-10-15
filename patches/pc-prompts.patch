@@ -1,0 +1,151 @@
+diff --git a/src/input/input_bindings.c b/src/input/input_bindings.c
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -740,6 +740,11 @@
+ #endif
+ }
+ 
++#ifdef TSFP_PC_CONTROLS
++#include "pc_prompts.h"
++static volatile LONG g_pc_auto_pad = -1;
++#endif
++
+ static const unsigned short PAD_BITS[PB_COUNT] = {
+     RECOMP_PAD_A, RECOMP_PAD_B, RECOMP_PAD_X, RECOMP_PAD_Y,
+     RECOMP_PAD_LEFT_SHOULDER, RECOMP_PAD_RIGHT_SHOULDER,
+@@ -881,6 +886,11 @@
+     RecompPadState pad;
+     int have_pad = 0, i;
+     int axis[4] = { 0, 0, 0, 0 };
++#ifdef TSFP_PC_CONTROLS
++    Controller pad_defaults;
++    unsigned reserved_pads = 0;
++    int auto_pad = -1;
++#endif
+ 
+     if (!out)
+         return 0;
+@@ -900,11 +910,47 @@
+     memset(&kc, 0, sizeof kc);
+     key_cache_tick();
+     memset(&pad, 0, sizeof pad);
++#ifdef TSFP_PC_CONTROLS
++    AcquireSRWLockShared(&g_pc_bindings_lock);
++    if (port == 0 && c->device == DEV_KEYBOARD) {
++        for (int other=1;other<PORTS;other++)
++            if (g_ctl[other].device==DEV_PAD && g_ctl[other].pad>=0)
++                reserved_pads |= 1u << g_ctl[other].pad;
++    }
++    ReleaseSRWLockShared(&g_pc_bindings_lock);
++#endif
+     if (c->device == DEV_PAD)
+         have_pad = recomp_pad_read(c->pad, &pad);
+ 
++#ifdef TSFP_PC_CONTROLS
++    if (port == 0 && pc_controls_accept_pad()) {
++        if (c->device == DEV_KEYBOARD) {
++            /* Share player 1 with the first free physical pad. Never steal a
++             * controller explicitly assigned to another local player. */
++            for (int slot=0;slot<RECOMP_PAD_SLOTS;slot++) {
++                if (!(reserved_pads & (1u<<slot)) && recomp_pad_read(slot,&pad)) {
++                    have_pad=1; auto_pad=slot; break;
++                }
++            }
++            if (have_pad) defaults_for(&pad_defaults,1); /* pad-only defaults */
++            InterlockedExchange(&g_pc_auto_pad,auto_pad);
++        }
++        pc_prompts_controller(&pad,have_pad);
++    } else if (!pc_controls_accept_pad()) {
++        have_pad=0; /* Modal PC settings and background windows receive no pad input. */
++    }
++#endif
++
+     for (i = 0; i < CONTROL_COUNT; i++) {
+         int mag = 0, s;
++#ifdef TSFP_PC_CONTROLS
++        if (auto_pad>=0) {
++            for (s=0;s<pad_defaults.bind[i].count;s++) {
++                int m=source_magnitude(&pad_defaults.bind[i].src[s],&kc,&pad,1,c->deadzone);
++                if(m>mag) mag=m;
++            }
++        }
++#endif
+ 
+         for (s = 0; s < c->bind[i].count; s++) {
+             int m = source_magnitude(&c->bind[i].src[s], &kc, &pad, have_pad,
+@@ -976,6 +1022,12 @@
+ void recomp_bindings_rumble(unsigned port, unsigned short low, unsigned short high)
+ {
+     recomp_bindings_init();
++#ifdef TSFP_PC_CONTROLS
++    if (port==0 && g_ctl[0].device==DEV_KEYBOARD) {
++        int slot=(int)InterlockedCompareExchange(&g_pc_auto_pad,-1,-1);
++        if(slot>=0) recomp_pad_rumble(slot,low,high);
++    }
++#endif
+     if (port < PORTS && g_ctl[port].device == DEV_PAD)
+         recomp_pad_rumble(g_ctl[port].pad, low, high);
+ }
+diff --git a/src/input/CMakeLists.txt b/src/input/CMakeLists.txt
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -28,6 +28,10 @@
+     target_link_libraries(xbox_input PUBLIC xinput)
+ endif()
+ 
++if(WIN32 AND TSFP_PC_CONTROLS_DIR)
++    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_prompts.c")
++endif()
++
+ if(MSVC)
+     target_compile_options(xbox_input PRIVATE /W4 $<$<NOT:$<CONFIG:Debug>>:/O2>)
+ else()
+diff --git a/titles/futureperfect/src/recomp_manual.c b/titles/futureperfect/src/recomp_manual.c
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -108,6 +108,30 @@
+ /* Which dispatch form was refused: 0 unknown, 1 call, 2 jump. Unknown
+  * means this title was lifted before the macros published it. */
+ extern RECOMP_MANUAL_TLS uint32_t g_icall_dispatch_form;
++
++/* Shared text sizing and rendering: translate controller prompt tokens
++ * before either pass so alignment, wrapping, and displayed text agree. */
++#ifdef TSFP_PC_CONTROLS
++#include "pc_prompt_guest.inc"
++#endif
++extern void sub_0003FCF0_gen(void);
++void sub_0003FCF0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_prompt_guest(sub_0003FCF0_gen,3,4);
++#else
++    sub_0003FCF0_gen();
++#endif
++}
++extern void sub_00040FA0_gen(void);
++void sub_00040FA0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_prompt_guest(sub_00040FA0_gen,4,6);
++#else
++    sub_00040FA0_gen();
++#endif
++}
+ 
+ /* -- Future Perfect: the MMX memcpy at 0x000245C0 ----------------------- */
+ 
+diff --git a/titles/futureperfect/CMakeLists.txt b/titles/futureperfect/CMakeLists.txt
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -75,6 +75,11 @@
+ # time, so a newly generated file (an extra chunk, recomp_stubs_unresolved.c)
+ # is silently left out of the build and shows up as unresolved externals.
+ file(GLOB RECOMP_GEN_SOURCES CONFIGURE_DEPENDS "src/recomp/gen/*.c")
++
++if(WIN32 AND TSFP_PC_CONTROLS_DIR)
++    add_executable(tsfp_pc_prompts_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_prompts.c")
++    target_link_libraries(tsfp_pc_prompts_test PRIVATE xbox_input)
++endif()
+ 
+ # Core game sources
+ set(GAME_SOURCES

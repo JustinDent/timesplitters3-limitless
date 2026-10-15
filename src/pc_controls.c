@@ -4,6 +4,7 @@
 #include "pc_controls.h"
 #include "pc_input.h"
 #include "pc_settings.h"
+#include "pc_prompts.h"
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -201,6 +202,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         if (captured) clip_to_window(window);
         break;
     case WM_KEYDOWN: case WM_SYSKEYDOWN:
+        pc_prompts_keyboard();
         if (wp == VK_F2 || wp == VK_F12) {
             if (!(lp & (1LL << 30))) show_settings(window, wp == VK_F12);
             return 1;
@@ -236,6 +238,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         unsigned key = message == WM_LBUTTONDOWN || message == WM_LBUTTONUP ? VK_LBUTTON :
                        message == WM_RBUTTONDOWN || message == WM_RBUTTONUP ? VK_RBUTTON : VK_MBUTTON;
         int down = message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN;
+        if (down) pc_prompts_keyboard();
         AcquireSRWLockShared(&lock); captured = input.captured; ReleaseSRWLockShared(&lock);
         if (!captured && message == WM_LBUTTONDOWN && enabled) {
             want_capture = 1;
@@ -248,6 +251,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         break;
     }
     case WM_XBUTTONDOWN: case WM_XBUTTONUP:
+        if (message == WM_XBUTTONDOWN) pc_prompts_keyboard();
         AcquireSRWLockExclusive(&lock);
         pc_input_key(&input, HIWORD(wp) == XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2,
                      message == WM_XBUTTONDOWN && input.captured);
@@ -259,6 +263,11 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         UINT bytes = sizeof raw;
         if (GetRawInputData((HRAWINPUT)lp, RID_INPUT, &raw, &bytes, sizeof raw.header) != (UINT)-1 &&
             raw.header.dwType == RIM_TYPEMOUSE) {
+            if (GetForegroundWindow()==window &&
+                (raw.data.mouse.usButtonFlags ||
+                 (!(raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE) &&
+                  (abs(raw.data.mouse.lLastX)+abs(raw.data.mouse.lLastY)>=2))))
+                pc_prompts_keyboard();
             AcquireSRWLockExclusive(&lock);
             if (!(raw.data.mouse.usFlags & MOUSE_MOVE_ABSOLUTE))
                 pc_input_motion(&input, raw.data.mouse.lLastX, raw.data.mouse.lLastY, GetTickCount64());
@@ -277,6 +286,12 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         break;
     }
     return 0;
+}
+
+int pc_controls_accept_pad(void)
+{
+    return !replaying && !InterlockedCompareExchange(&editing,0,0) &&
+           window_handle && GetForegroundWindow()==window_handle;
 }
 
 int pc_controls_key_down(int key)

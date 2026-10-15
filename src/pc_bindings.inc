@@ -74,6 +74,24 @@ int pc_settings_read(PcSettings *s, char *error, size_t bytes)
     return 1;
 }
 
+/* The first assigned key is the compact in-game prompt; alternatives remain
+   available in Keyboard & Mouse settings. */
+int pc_settings_prompt_keys(int keys[PC_ACTION_COUNT])
+{
+    int i,j,available=0;
+    recomp_bindings_init();
+    memset(keys,0,PC_ACTION_COUNT*sizeof *keys);
+    AcquireSRWLockShared(&g_pc_bindings_lock);
+    for(i=0;i<CONTROL_COUNT;i++) for(j=0;j<g_ctl[0].bind[i].count;j++) {
+        if(g_ctl[0].bind[i].src[j].kind==SRC_KEY) {
+            keys[i]=g_ctl[0].bind[i].src[j].arg;
+            available=1; break;
+        }
+    }
+    ReleaseSRWLockShared(&g_pc_bindings_lock);
+    return available;
+}
+
 /* Find a value in a JSON object without touching unrelated members. The
    runtime JSON walker also handles strings, escapes and nested arrays. */
 static const char *pc_member(const char *object, const char *wanted, const char **end)

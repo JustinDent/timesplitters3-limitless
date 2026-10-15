@@ -127,10 +127,11 @@ try {
                         "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/save_paths.c",
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_pc_debug_test', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', '--parallel', '4')
                     $testRoot = Join-Path $projectRoot 'build\path-tests'
                     $testConfig = Join-Path $projectRoot 'tests\fixtures\pc-controls.json'
                     New-Item -ItemType Directory -Force -Path $testRoot | Out-Null
+                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_prompts_test.exe") @($testConfig)
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_save_paths_test.exe") @($testRoot)
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_controls_test.exe") @(
                         $testConfig, $testRoot)

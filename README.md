@@ -119,6 +119,20 @@ zoomed, and does not pass through the controller's stick deadzone or turn-speed
 curve. WASD diagonals are normalized. The supplied configuration uses keyboard
 input on player 1; it does not require a controller.
 
+In-game button prompts automatically show the **first assigned keyboard or mouse
+binding** for each control, for example **[E] Select** and **[F] Back**. Saving
+bindings in F2 updates the prompts immediately. Unassigned controls show
+**[Unbound]**. Mouse-look prompts show **[Mouse]** while raw mouse look is enabled.
+
+Press a controller button, move a stick past its deadzone, or squeeze a trigger
+to restore the original controller icons. Keyboard presses, mouse clicks, wheel
+input, or mouse movement switch back to keyboard/mouse prompts. An unchanged held
+button, button releases, and stick drift do not switch the prompts back and forth.
+The first connected controller not assigned to another local player can control
+player 1 alongside the keyboard profile; plugging it in does not require a restart.
+This applies to the game's formatted text prompts, including menu and HUD hints;
+controller diagrams and labels baked into images retain their original artwork.
+
 The Xbox action mapping was checked against the publisher's original
 [Xbox manual, Complete Controls](https://www.gamesdatabase.org/Media/SYSTEM/Microsoft_Xbox//Manual/formated/Timesplitters_-_Future_Perfect_-_2005_-_Electronic_Arts.pdf).
 
@@ -239,6 +253,15 @@ monitoring, live display options, and Debug dialog Save/Cancel behavior.
 isolated settings/saves and captures the dialog and overlay for review.
 `patches/pc-window-shortcuts.patch` moves the runtime's frame capture to Ctrl+F11
 so plain F11 does not trigger a capture.
+
+`patches/pc-prompts.patch` connects input-device detection and shared player-1
+controller input to `src/pc_prompts.c`. It wraps the supported US executable's
+text measurement (`0x0003FCF0`) and rendering (`0x00040FA0`) functions using
+`src/pc_prompt_guest.inc`, translating prompt codes before text layout. The
+original strings are preserved for controller input. Build runs
+`tests/pc_prompts.c`, including a virtual SDL controller test and guest-stack
+checks. The virtual-controller check skips when a physical controller is attached.
+When applying this patch to an older generated checkout, run Generate before Build.
 
 `patches/pc-fullscreen.patch` disables DXGI's automatic exclusive fullscreen
 switch so the game's borderless fullscreen handler owns Alt+Enter and the

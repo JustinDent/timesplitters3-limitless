@@ -2,6 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include "pc_settings.h"
+#include "pc_prompts.h"
 #include "pc_controls.h"
 #include "input_bindings.h"
 #include <commctrl.h>
@@ -151,6 +152,11 @@ int main(int argc,char **argv)
     CHECK(pc_settings_conflict(&settings,9,VK_XBUTTON2)==8);
     settings.keys[14][0]='I'; settings.keys[2][0]='T'; settings.sensitivity=.25; settings.invert_y=1;
     CHECK(pc_settings_save(&settings,error,sizeof error));
+    {
+        char prompt[128];
+        CHECK(pc_prompts_rewrite("\v4 Reload / \vD Move",prompt,sizeof prompt));
+        CHECK(!strcmp(prompt,"[T] Reload / [I/S/A/D] Move"));
+    }
     Sleep(520);
     CHECK(recomp_bindings_sample(0,&pad) && pad.sThumbLY==32767 && pad.bAnalogButtons[XBOX_BUTTON_X]==255);
     CHECK(pc_settings_read(&current,error,sizeof error) && current.keys[14][0]=='I' && fabs(current.sensitivity-.25)<.0001 && current.invert_y);
