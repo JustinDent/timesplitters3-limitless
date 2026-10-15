@@ -3,6 +3,73 @@
 Tested on Windows on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## First native Apple Silicon execution — October 15
+
+- Built `build/macos/futureperfect_recomp` as a native ARM64 Mach-O executable
+  on macOS 27.0.1 with Apple Clang 21, Python 3.12 and the shared pinned runtime,
+  Python dependencies and SDL submodule. No Wine, Rosetta or Windows process
+  participates in the native runs. The verified US XBE was regenerated locally.
+- A bounded 30-second run loaded all 23 XBE sections, resolved all 151 kernel
+  imports, initialized the game's graphics device successfully, loaded game
+  assets, ran worker threads and completed at least 1,800 guest frame calls.
+  No native fault was recorded. The runner stopped it at the time limit;
+  SIGTERM did not exit within the three-second grace period, so it used SIGKILL.
+  This is **game-code execution without a connected host renderer**: no menu
+  image, game window, gameplay, physical controls or save/load was verified.
+- The first attempt exposed missing related address mappings. The Mac now
+  reserves one 4 GiB virtual range and maps only its own unused pages; all 28
+  low-RAM aliases, contiguous memory, device apertures and tiled alias mapped.
+  It does not weaken macOS protections or overwrite unrelated host mappings.
+- Implemented native relative/absolute and periodic waitable timers, and an
+  ARM64 signal handler for supported scalar MMIO loads/stores. Protected NV2A
+  interrupt writes and AC97 reset writes have real-signal regression coverage;
+  unsupported instructions stop with diagnostics instead of being skipped.
+  Read/write aliases let handlers update device backing without opening the
+  protected guest page to concurrent writes. APU accesses use the existing
+  device model, whose DSP implementation remains incomplete upstream.
+- Implemented POSIX sparse partition images with the existing retail geometry,
+  partition-device path routing, volume-directory opens and relative file opens.
+  Existing image contents are preserved. These fixed the guest's early request
+  to return to the Xbox dashboard. Isolated title metadata was created under
+  `private/test-saves/native-mac`; personal saves were not used.
+- Added an SDL3 PCM output backend and reused the portable controller-binding
+  path. SDL audio output opened and PCM submissions occurred. Audible quality,
+  latency and physical input remain unverified; audio uses the existing
+  wall-clock fallback rather than claiming a hardware playback cursor. Movies
+  are skipped because the native movie/renderer path is not connected.
+- The initial graphics probe exposed an additional upstream settings fallback
+  at `~/.config/xboxrecomp/titles/45410066.conf`. Its newly created default was
+  moved into the isolated test directory. The probe now explicitly routes
+  `RECOMP_DISPLAY_CONFIG`, `TSFP_DISPLAY_CONFIG`, input, saves and XDG roots;
+  regression tests cover stale override removal and protection of personal paths.
+- Three native CTest suites pass: mapping/threads/events/timers, ARM64 MMIO,
+  and save/partition routing. Portable checks: 12 passed, 2 Windows-only
+  PowerShell tests skipped, 7 subtests passed. Fresh application, upgrades,
+  CRLF inputs, conflicts and repeat application of the complete patch stack
+  pass. The actual Windows executable was not rebuilt or tested on this Mac.
+- The shared rules now distinguish the retained Windows compatibility build
+  from one active native build in `build/macos`. Native build provenance is
+  recorded in its ignored `BUILD.json`; runtime changes are reproducible from
+  `patches/zz-mac-native-boot.patch`, applied after the existing feature stack.
+- Native tests recycled their known disposable partition images. The game
+  probe's six images had 5,243,406,848 logical bytes but only 135,168 allocated
+  bytes; the images are no longer in the project. Metadata/configuration and
+  diagnostic logs remain. Physical project allocation is approximately 8.5 GiB,
+  including the original ISO, the single game extract, dependencies and builds;
+  `build/macos` is approximately 256 MiB.
+- Evidence: `logs/native-boot.out`, `logs/native-boot.err`,
+  `logs/native-boot-summary.json`, `logs/mac-native-build-and-tests.log`,
+  and `logs/mac-native-patch-tests.log`. Earlier feasibility notes below are
+  historical and are superseded by this native execution result.
+
+### Next native milestone
+
+Connect the game's rendering hooks to a native renderer and validate the first
+visible menu. The inherited OpenGL backend compiles but is not connected to the
+Windows-oriented HLE drawing path. Shader/texture translation, movie presentation,
+physical input, PC settings/display/texture features and gameplay validation
+remain. Native guest frames are not evidence of rendered frames.
+
 ## Native Mac feasibility and ISO preparation — October 15
 
 - Work is on `mac-port`; the user requires changes from this chat to stay on

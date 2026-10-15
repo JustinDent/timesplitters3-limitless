@@ -42,6 +42,27 @@ int main(void)
     CHECK(UnmapViewOfFile(low));
     CHECK(CloseHandle(mapping));
 
+#ifdef __APPLE__
+    void *arena = w32_guest_arena_reserve(0x100000000ull);
+    CHECK(arena != NULL);
+    mapping = CreateFileMappingA(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, size, NULL);
+    CHECK(mapping != NULL);
+    low = MapViewOfFileEx(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size, arena);
+    mirror = MapViewOfFileEx(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size, (uint8_t *)arena + 0x80000000ull);
+    CHECK(low == arena && mirror != NULL);
+    low[0] = 0xaabbccdd;
+    CHECK(mirror[0] == 0xaabbccdd);
+    CHECK(MapViewOfFileEx(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size, arena) == NULL);
+    CHECK(VirtualAlloc(arena, size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE) == NULL);
+    CHECK(low[0] == 0xaabbccdd);
+    CHECK(UnmapViewOfFile(low));
+    low = MapViewOfFileEx(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size, arena);
+    CHECK(low == arena && low[0] == 0xaabbccdd);
+    CHECK(UnmapViewOfFile(low) && UnmapViewOfFile(mirror));
+    CHECK(CloseHandle(mapping));
+    CHECK(w32_guest_arena_release());
+#endif
+
     HANDLE event = CreateEventA(NULL, FALSE, FALSE, NULL);
     CHECK(event != NULL);
     CHECK(WaitForSingleObject(event, 0) == WAIT_TIMEOUT);
@@ -51,6 +72,33 @@ int main(void)
     CHECK(WaitForSingleObject(thread, 2000) == WAIT_OBJECT_0);
     CHECK(CloseHandle(thread));
     CHECK(CloseHandle(event));
+    HANDLE timer = CreateWaitableTimerExW(NULL, NULL, CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, TIMER_ALL_ACCESS);
+    CHECK(timer != NULL);
+    CHECK(WaitForSingleObject(timer, 0) == WAIT_TIMEOUT);
+    LARGE_INTEGER due; due.QuadPart = -200000; /* 20 ms */
+    CHECK(SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE));
+    CHECK(WaitForSingleObject(timer, 1) == WAIT_TIMEOUT);
+    CHECK(WaitForSingleObject(timer, 2000) == WAIT_OBJECT_0);
+    CHECK(WaitForSingleObject(timer, 0) == WAIT_TIMEOUT); /* auto reset */
+    CHECK(SetWaitableTimer(timer, &due, 10, NULL, NULL, FALSE));
+    CHECK(WaitForSingleObject(timer, 2000) == WAIT_OBJECT_0);
+    CHECK(WaitForSingleObject(timer, 2000) == WAIT_OBJECT_0); /* periodic */
+    CHECK(CancelWaitableTimer(timer));
+    CHECK(WaitForSingleObject(timer, 30) == WAIT_TIMEOUT);
+    CHECK(CloseHandle(timer));
+    timer = CreateWaitableTimerW(NULL, TRUE, NULL);
+    CHECK(timer != NULL);
+    due.QuadPart = 1; /* absolute time in the past */
+    CHECK(SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE));
+    CHECK(WaitForSingleObject(timer, 100) == WAIT_OBJECT_0);
+    CHECK(CancelWaitableTimer(timer));
+    CHECK(WaitForSingleObject(timer, 0) == WAIT_OBJECT_0); /* cancel preserves signal */
+    due.QuadPart = -1000000;
+    CHECK(SetWaitableTimer(timer, &due, 0, NULL, NULL, FALSE));
+    CHECK(WaitForSingleObject(timer, 0) == WAIT_TIMEOUT); /* rearm clears signal */
+    CHECK(CancelWaitableTimer(timer));
+    CHECK(CloseHandle(timer));
+    puts("PASS: relative/absolute, periodic, auto/manual-reset, cancel/rearm timers");
     puts("PASS: native 64 MiB mapping, alias coherence, collision safety, threads and events");
     return 0;
 }

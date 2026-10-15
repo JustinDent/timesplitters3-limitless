@@ -72,46 +72,64 @@ all 412 game files are now extracted in `private/game` and the executable hash
 matches. The original ISO is preserved in `private/discs`. The prerequisite
 check passes; rendered gameplay has not yet been tested on this Mac.
 
-### Native Apple Silicon investigation
+### Native Apple Silicon bring-up
 
-Native Mac work belongs on **mac-port** unless the user requests otherwise.
-The pinned runtime includes POSIX primitives and an early SDL3/OpenGL renderer,
-but its Future Perfect entry point, graphics hooks, audio/input bridge and
-several timing functions still depend on Windows. Its Vulkan backend is also
-currently wired to Windows. A native build needs these integrations ported;
-installing the libraries or changing the compiler is not enough.
+Native work stays on **mac-port**. The Mac now builds an ARM64 Mach-O executable
+from the verified game data and the same pinned runtime and Python dependencies
+used on Windows. It executes the translated Xbox entry point, initializes the
+kernel and graphics device, loads assets, and runs guest frames. **It does not
+show a game window or render menus yet.** This is a development milestone, not
+an interactive Mac release. `Play-Mac.command` remains the CrossOver launcher.
 
-The first native foundation is validated: `patches/mac-platform.patch` replaces
-the Mac anonymous-memory placeholder with an owned temporary backing file.
-`tests/native_platform.c` compiles to an ARM64 Mach-O executable and checks
-64 MiB shared mappings, alias coherence, occupied-address protection, threads
-and events. It uses ordinary native addresses and no game files or saves.
-It does **not** validate the complete Xbox address-space layout or game execution.
-Run it from the checkout after applying the patch stack:
+From the project root, use Python 3.12 or newer, Xcode command-line tools, and
+an installed OpenSSL development library. The tested Mac has Apple Clang 21,
+OpenSSL 3.6.3, and pinned SDL 3.4.16 built from its upstream submodule. No system
+SDL installation is used. The script does not upgrade system dependencies.
 
 ```sh
-mkdir -p build/path-tests/native
-clang -arch arm64 -std=c11 -O2 -Werror=implicit-function-declaration \
-  -Iexternal/ts3FPrecomp/src tests/native_platform.c \
-  external/ts3FPrecomp/src/platform/win32_compat.c \
-  -o build/path-tests/native/platform-test
-build/path-tests/native/platform-test
+# First native setup and generation; reuses the existing private/game.
+python3 tools/build-native-mac.py --setup --generate --test
+
+# Subsequent source changes.
+.venv/bin/python tools/build-native-mac.py --test
+
+# Bounded native execution, with isolated saves and configuration.
+.venv/bin/python tools/test-native-mac.py --seconds 30
 ```
 
-The next native milestones are a Mac entry point with working guest memory and
-timers; the game rendering through a native graphics backend; SDL audio/input
-and macOS FFmpeg library loading; then porting the PC settings, display and
-texture features and validating actual play/save/load. Start with original
-assets to keep graphics diagnosis separate from texture-pack coverage.
-OpenGL is an existing, incomplete starting point; Metal or Vulkan/MoltenVK
-would require additional renderer work. Neither is implemented here yet.
+Output stays in `build/macos`. `BUILD.json` records the source and runtime
+revision, source/patch hashes, executable hash, compiler, Python packages and
+linked libraries. Native changes to the upstream runtime are reproduced by
+`patches/zz-mac-native-boot.patch`, applied last after the shared feature patches.
+Never edit generated game C. Regenerate when wrapper declarations change.
 
-Patch installation now explicitly handles whitespace differences in context,
-including upstream CRLF files on macOS, while preserving existing context
-whitespace. Content conflicts still fail without modifying runtime files.
-Run `.venv/bin/python -m pytest tests/test_patch_updates.py tests/test_mac_launcher.py -q`
-for the portable patch and launcher checks. The Mac test environment currently
-contains pinned pytest 9.1.1 on Python 3.12; it is not a complete game-build setup.
+The native probe requires an ARM64 binary and the supported XBE hash. It strips
+stale runtime overrides, uses `private/test-saves/native-mac`, isolates both
+upstream and PC settings, bounds duration/log size, and records
+`logs/native-boot-summary.json`. A successful probe means guest frames continued
+until its time limit; it does **not** mean those frames were displayed. Test
+partition images are sparse, then recycled with validated paths; profiles,
+configuration and logs remain. Native CTest uses `build/macos/path-tests` and
+recycles its partition images after the pass as well.
+
+The native implementation includes a reserved 4 GiB **virtual address range**
+(not a 4 GiB game copy), aliased RAM/device mappings, host timers, an ARM64
+register-access fault handler, sparse Xbox partition devices, and an SDL PCM
+output backend. Unknown faulting instructions stop with diagnostics. SDL audio
+submission has been observed, but output fidelity/latency and physical input
+have not been validated. Audio position uses the existing wall-clock fallback.
+
+The next milestone is connecting the game's drawing hooks to a complete native
+renderer. The inherited OpenGL implementation builds, but the game's rich
+rendering path still depends on Windows. Movies are currently skipped; native
+FFmpeg integration, keyboard/mouse capture, PC settings/display/texture
+features, rendered menus, gameplay and save/load validation remain unfinished.
+
+Portable patch, launcher and test-isolation checks:
+
+```sh
+.venv/bin/python -m pytest tests/test_patch_updates.py tests/test_mac_launcher.py tests/test_native_mac_tools.py -q
+```
 
 ## Local workflow
 

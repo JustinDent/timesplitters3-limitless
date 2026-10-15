@@ -42,16 +42,30 @@ reproducibility, and validation requirements.
   generation/build. Preserve existing patches and add subsequent runtime
   changes as separate patches. Never hand-edit generated game C; keep changes
   in source or reproducible patches and regenerate when wrappers change.
-- Windows is the current native build host: use `setup.ps1` / `tsfp.ps1` and
+- For native Windows builds, use `setup.ps1` / `tsfp.ps1` and
   the documented MSVC x64 workflow. Keep its build output in `build/windows`
   and the normal Release executable in `build/windows/Release`.
-- macOS currently runs that Windows executable through CrossOver; this is not
+- The Mac compatibility launcher runs that Windows executable through CrossOver; this is not
   a native Mac build. Use `Play-Mac.command` / `tools/play-mac.py` when present
   in the synced revision. Reuse `build/windows/Release`, `private/game`,
   `private/saves`, and the same configuration paths. Do not create a second
   game-data copy inside a bottle or introduce a separate Mac build tree for
   this compatibility workflow. Keep one dedicated CrossOver bottle outside
   the checkout and include its disk use in storage reports.
+- Native Apple Silicon bring-up is separate: use `tools/build-native-mac.py`
+  with the same upstream/XBE/Python pins and complete patch stack. Keep one
+  native build in `build/macos`; it is needed alongside the retained Windows
+  compatibility build for this request. Use `tools/test-native-mac.py` for
+  bounded tests in `private/test-saves/native-mac`. Both `RECOMP_DISPLAY_CONFIG`
+  (upstream runtime settings) and `TSFP_DISPLAY_CONFIG` (PC display settings)
+  must be isolated, along with the input/save paths. Never let runtime defaults
+  write into the user's home configuration directory during an automated run.
+- Native guest-frame completion currently means game-code execution only;
+  the macOS renderer is not connected. Do not label it rendered or playable.
+- Native regression tests use `build/macos/path-tests`. Recycle only their
+  known `Partition0.img` through `Partition5.img` files after each test pass;
+  preserve test metadata and profiles. The shared cleanup helper validates the
+  resolved test root and refuses symlinks and unknown image names.
 - For a transferred or downloaded build, verify checksums and retain its
   licenses and available build manifest. Record its source revision and any
   known uncommitted source changes. Compare it with the checkout before
@@ -95,7 +109,8 @@ reproducibility, and validation requirements.
 The user explicitly requires a lean project folder on every device. Preserve
 this preference on all further work, including texture remastering and testing.
 
-- Keep one game-data copy (`private/game`) and one working build (`build/windows`) per device,
+- Keep one game-data copy (`private/game`), the Windows build (`build/windows`),
+  and the native build (`build/macos`) only while actively developing this Mac port,
   the user's `private/saves`, `config/pc-controls.json` and `config/pc-display.ini`, source, patches, and
   required build dependencies. Never use personal saves for automated tests.
 - Keep one active texture pack in `private/texture-remaster/pack`. Its compiler
