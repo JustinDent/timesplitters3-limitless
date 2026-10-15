@@ -3,6 +3,32 @@
 Tested on Windows on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## Focused native combat smoke test — October 15
+
+- Continued on `mac-port` with the same native binary and isolated test profile.
+  Traversed the initial canyon beyond the spawn area, reached the first enemy
+  encounter, fired both handguns, observed ammunition consumption and enemies
+  falling, and saw the accompanying marines advance. The world remained visible.
+  This was an automated smoke test, not a human playthrough.
+- Used temporary I/J/K/L aim and O fire bindings in the isolated test configuration
+  for reproducible SDL input. Restored the fixture afterward. Personal saves and
+  settings were not used or created. During inspection, waited for a fresh
+  rotating frame; stale captures had made some turns appear inconsistent.
+- The user narrowed the scope before full-level completion. The test was stopped
+  intentionally with native exit 0; the runner reports an early `process_exit`
+  rather than a passed timed probe. No new gameplay/rendering blocker was confirmed
+  in this coverage. The 477-second session reached at least 8,400 guest frames
+  and host presents, with no native fault or sampled GL error.
+  Full-level completion, checkpoint reload, campaign save/load,
+  audio fidelity and physical-controller play remain unverified.
+- Extended the runner's explicit duration ceiling to 30 minutes, retaining its
+  15-second default, isolated paths, two rotating captures and 8 MiB log limit.
+  Portable regressions: **16 passed, 2 Windows-only checks skipped, 7 subtests**.
+  No renderer/runtime source changed, so the native binary was not rebuilt.
+- Evidence: `logs/native-combat-validation.json` and
+  `private/captures/native-mac/first-combat-smoke.png`. Disposable partition images
+  were recycled after the run.
+
 ## Visible native first-level gameplay — October 15
 
 - Fixed the black world on `mac-port`. A per-draw GPU trace showed the world

@@ -117,7 +117,10 @@ The native probe requires an ARM64 binary and the supported XBE hash. It strips
 stale runtime overrides, uses `private/test-saves/native-mac`, isolates both
 upstream and PC settings, bounds duration/log size, and records
 `logs/native-boot-summary.json`. A successful probe means guest frames continued
-until its time limit. It separately reports sampled host presents/GL errors;
+until its time limit. The default is 15 seconds; an explicit `--seconds` accepts
+up to 1800 seconds for sustained testing, with the same 8 MiB log limit.
+An intentional early stop is recorded as `process_exit`, not a passed timed probe.
+It separately reports sampled host presents/GL errors;
 menu recognition still requires reviewing the captures. `--capture` retains two
 rotating BMPs under `private/captures/native-mac`; it does not capture the desktop.
 Selected visual evidence includes `private/captures/native-mac/first-native-menu.png`

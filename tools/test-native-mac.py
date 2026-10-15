@@ -40,15 +40,16 @@ def capture_environment(root):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--seconds', type=int, default=15)
+    parser.add_argument('--seconds', type=int, default=15,
+                        help='Bounded run duration, 1–1800 seconds (default: 15)')
     parser.add_argument('--capture', action='store_true', help='Retain two rotating native frame captures')
     parser.add_argument('--test-keys', action='store_true', help='Read SDL key events from isolated test-keys.txt')
     parser.add_argument('--trace-render', action='store_true', help='Enable bounded frame tracing on request')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
-    if not 1 <= args.seconds <= 120:
-        parser.error('--seconds must be between 1 and 120')
+    if not 1 <= args.seconds <= 1800:
+        parser.error('--seconds must be between 1 and 1800')
     xbe = ROOT / 'private/game/default.xbe'
     if hashlib.sha256(xbe.read_bytes()).hexdigest() != EXPECTED_XBE:
         raise SystemExit('Unsupported game executable')
