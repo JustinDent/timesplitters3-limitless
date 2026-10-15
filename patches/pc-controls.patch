@@ -1,0 +1,241 @@
+diff --git a/src/hle/CMakeLists.txt b/src/hle/CMakeLists.txt
+index 0f1ed66..4acf5ce 100644
+--- a/src/hle/CMakeLists.txt
++++ b/src/hle/CMakeLists.txt
+@@ -48,6 +48,9 @@ target_link_libraries(xbox_hle PUBLIC xbox_kernel)
+ # Host device choice and per-control bindings (src/input/input_bindings.c),
+ # shared with the USB gamepad so one config file covers both input paths.
+ target_link_libraries(xbox_hle PUBLIC xbox_input)
++if(WIN32 AND TSFP_PC_CONTROLS_DIR)
++    target_compile_definitions(xbox_hle PRIVATE TSFP_PC_CONTROLS)
++endif()
+ if(WIN32)
+     target_link_libraries(xbox_hle PRIVATE xaudio2 ole32 xinput9_1_0)
+     # The D3D8 replacements drive the host renderer in src/d3d, and open a
+diff --git a/src/hle/hle_d3d8.c b/src/hle/hle_d3d8.c
+index 7e6cd97..6980f39 100644
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -67,6 +67,9 @@
+ #include <string.h>
+ #include "hle.h"
+ #include "recomp_config.h"
++#ifdef TSFP_PC_CONTROLS
++#include "pc_controls.h"
++#endif
+ 
+ #ifdef _WIN32
+ #include "d3d8_xbox.h"
+@@ -252,6 +255,10 @@ static int  g_shadow_fullscreen;
+ 
+ static LRESULT CALLBACK shadow_wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
+ {
++#ifdef TSFP_PC_CONTROLS
++    LRESULT pc_result;
++    if (pc_controls_message(hwnd, msg, wp, lp, &pc_result)) return pc_result;
++#endif
+     switch (msg) {
+     case WM_SYSKEYDOWN:
+         /* Alt+Enter, the usual Windows key for it: fullscreen and back. */
+@@ -372,6 +379,9 @@ static DWORD WINAPI shadow_window_thread(LPVOID param)
+                               CW_USEDEFAULT, CW_USEDEFAULT,
+                               r.right - r.left, r.bottom - r.top,
+                               NULL, NULL, wc.hInstance, NULL);
++#ifdef TSFP_PC_CONTROLS
++    if (req->hwnd) pc_controls_attach(req->hwnd);
++#endif
+     /* RECOMP_WINDOW_BACKGROUND=1: open behind the other windows and without
+      * the focus, for a run a script drives while someone works at the same
+      * desk. The game neither needs nor notices the focus: a script is its
+diff --git a/src/input/CMakeLists.txt b/src/input/CMakeLists.txt
+index 250ddbb..347de50 100644
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -14,6 +14,16 @@ add_library(xbox_input STATIC
+ target_include_directories(xbox_input PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+ 
+ target_link_libraries(xbox_input PUBLIC platform SDL3::SDL3)
++if(WIN32 AND TSFP_PC_CONTROLS_DIR)
++    target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_controls.c"
++                                      "${TSFP_PC_CONTROLS_DIR}/pc_input.c"
++                                      "${TSFP_PC_CONTROLS_DIR}/pc_settings.c")
++    target_include_directories(xbox_input PUBLIC "${TSFP_PC_CONTROLS_DIR}")
++    # Keep the define private: adding it to generated game sources would
++    # recompile millions of unchanged lines for a host-input change.
++    target_compile_definitions(xbox_input PRIVATE TSFP_PC_CONTROLS)
++    target_link_libraries(xbox_input PUBLIC comctl32)
++endif()
+ if(WIN32)
+     target_link_libraries(xbox_input PUBLIC xinput)
+ endif()
+diff --git a/src/input/input_bindings.c b/src/input/input_bindings.c
+index a0cea65..4988e82 100644
+--- a/src/input/input_bindings.c
++++ b/src/input/input_bindings.c
+@@ -19,6 +19,9 @@
+  */
+ #include "input_bindings.h"
+ #include "recomp_pad.h"
++#ifdef TSFP_PC_CONTROLS
++#include "pc_controls.h"
++#endif
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -160,6 +163,10 @@ static Controller g_ctl[PORTS];
+ static char g_path[520];
+ static int g_have_path;
+ static int g_ready;
++#ifdef TSFP_PC_CONTROLS
++static SRWLOCK g_pc_bindings_lock = SRWLOCK_INIT;
++static INIT_ONCE g_pc_bindings_once = INIT_ONCE_STATIC_INIT;
++#endif
+ 
+ /* ---- names -> codes ---------------------------------------------------- */
+ 
+@@ -167,6 +174,9 @@ static int g_ready;
+  * their own code on Windows and are handled without a table entry; "key:#13"
+  * passes a raw decimal code through for anything named nowhere. */
+ static const struct { const char *name; int vk; } KEYS[] = {
++    { "LBUTTON", 0x01 }, { "RBUTTON", 0x02 }, { "MBUTTON", 0x04 },
++    { "XBUTTON1", 0x05 }, { "XBUTTON2", 0x06 },
++    { "F23", 0x86 }, { "F24", 0x87 },
+     { "UP", 0x26 }, { "DOWN", 0x28 }, { "LEFT", 0x25 }, { "RIGHT", 0x27 },
+     { "RETURN", 0x0D }, { "ENTER", 0x0D }, { "BACK", 0x08 },
+     { "BACKSPACE", 0x08 }, { "SPACE", 0x20 }, { "TAB", 0x09 },
+@@ -653,7 +663,7 @@ static void describe(Controller *c, char *out, size_t n)
+         snprintf(out, n, "nothing");
+ }
+ 
+-void recomp_bindings_init(void)
++static void bindings_load(void)
+ {
+     char *text;
+     int i;
+@@ -683,6 +693,24 @@ void recomp_bindings_init(void)
+     fflush(stderr);
+ }
+ 
++#ifdef TSFP_PC_CONTROLS
++static BOOL CALLBACK bindings_load_once(PINIT_ONCE once, PVOID parameter, PVOID *context)
++{
++    (void)once; (void)parameter; (void)context;
++    bindings_load();
++    return TRUE;
++}
++#endif
++
++void recomp_bindings_init(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    InitOnceExecuteOnce(&g_pc_bindings_once, bindings_load_once, NULL, NULL);
++#else
++    bindings_load();
++#endif
++}
++
+ const char *recomp_bindings_source_path(void)
+ {
+     recomp_bindings_init();
+@@ -695,6 +723,10 @@ const char *recomp_bindings_device_name(unsigned port)
+     return port < PORTS ? g_ctl[port].label : "nothing";
+ }
+ 
++#ifdef TSFP_PC_CONTROLS
++#include "pc_bindings.inc"
++#endif
++
+ /* ---- reading the host -------------------------------------------------- */
+ 
+ static unsigned long long now_ms(void)
+@@ -747,6 +779,9 @@ static int key_down(KeyCache *kc, int vk)
+     if (vk <= 0 || vk > 255)
+         return 0;
+ #if defined(_WIN32)
++#ifdef TSFP_PC_CONTROLS
++    return pc_controls_key_down(vk);
++#endif
+     if (!g_key_state[vk])
+         g_key_state[vk] = (GetAsyncKeyState(vk) & 0x8000) ? 2 : 1;
+     return g_key_state[vk] == 2;
+@@ -839,6 +874,9 @@ static void say_first_press(unsigned port, const char *control)
+ int recomp_bindings_sample(unsigned port, XBOX_GAMEPAD *out)
+ {
+     Controller *c;
++#ifdef TSFP_PC_CONTROLS
++    Controller snapshot;
++#endif
+     KeyCache kc;
+     RecompPadState pad;
+     int have_pad = 0, i;
+@@ -851,6 +889,12 @@ int recomp_bindings_sample(unsigned port, XBOX_GAMEPAD *out)
+     if (port >= PORTS)
+         return 0;
+     c = &g_ctl[port];
++#ifdef TSFP_PC_CONTROLS
++    AcquireSRWLockShared(&g_pc_bindings_lock);
++    snapshot = *c;
++    ReleaseSRWLockShared(&g_pc_bindings_lock);
++    c = &snapshot;
++#endif
+     if (c->device == DEV_NONE)
+         return 0;
+     memset(&kc, 0, sizeof kc);
+@@ -897,6 +941,9 @@ int recomp_bindings_sample(unsigned port, XBOX_GAMEPAD *out)
+         default:      out->sThumbRY = (SHORT)v; break;
+         }
+     }
++#ifdef TSFP_PC_CONTROLS
++    pc_input_normalize_movement(&out->sThumbLX, &out->sThumbLY);
++#endif
+     return 1;
+ }
+ 
+diff --git a/titles/futureperfect/CMakeLists.txt b/titles/futureperfect/CMakeLists.txt
+index 8bc380b..684e71d 100644
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -155,3 +160,11 @@ endif()
+ #     ENABLE_ICALL_TRACE=1
+ #     VERBOSE_KERNEL_LOG=1
+ # )
++
++if(TSFP_PC_CONTROLS_DIR)
++    set_source_files_properties(src/recomp_manual.c PROPERTIES COMPILE_DEFINITIONS TSFP_PC_CONTROLS)
++    add_executable(tsfp_pc_controls_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_controls.c")
++    target_link_libraries(tsfp_pc_controls_test PRIVATE xbox_input)
++    add_executable(tsfp_pc_settings_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_settings.c")
++    target_link_libraries(tsfp_pc_settings_test PRIVATE xbox_input)
++endif()
+diff --git a/titles/futureperfect/src/recomp_manual.c b/titles/futureperfect/src/recomp_manual.c
+index 720ab00..57564a0 100644
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -22,6 +22,9 @@
+ #include <stdint.h>
+ #include <stdlib.h>   /* getenv, exit: the spin verdict below */
+ #include <string.h>   /* strcmp: RECOMP_ICALL_FATAL */
++#ifdef TSFP_PC_CONTROLS
++#include "pc_controls.h"
++#endif
+ 
+ /* One diagnostic report, one piece.
+  *
+@@ -149,6 +152,17 @@ void sub_000245C0(void)
+ }
+ 
+ /* ── Manual function overrides ─────────────────────────────── */
++/* 0x000D2B80 builds player-relative movement vectors from camera yaw.
++ * Apply raw mouse counts just before those vectors, after the game's own
++ * controller look step. Keep the generated original body and its ABI. */
++extern void sub_000D2B80_gen(void);
++void sub_000D2B80(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_controls_apply_mouse(FP_MEM32(0x007B0C7Cu), FP_MEM32(0x007B0CC0u), g_xbox_mem_offset);
++#endif
++    sub_000D2B80_gen();
++}
+ 
+ /*
+  * Return a function pointer to override the given Xbox VA, or NULL
