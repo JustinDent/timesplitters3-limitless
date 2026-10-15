@@ -3,6 +3,51 @@
 Tested on Windows on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## Display settings and texture preview — October 15
+
+- The working build now adds **Display settings** through the US game's own
+  button builder in main Settings and paused Options. Resolution selection,
+  Apply, Keep and Revert all use guest menu widgets and navigation.
+- 1080p, 1440p, 4K and monitor-reported modes are offered. Rendering targets and
+  depth buffers resize live; a 15-second unconfirmed preview returns to the old
+  resolution. Confirmed settings persist beside the PC input configuration.
+- The US camera wrapper updates the perspective matrix and horizontal CPU
+  frustum together. The HUD retains its proportions in a centered 4:3 region.
+  Front-end menus retain the original layout. Fullscreen remains Alt+Enter.
+- The actual-menu replay verified 1080p apply/save, 1440p preview, timeout
+  rollback, and return to the original menu. Native tests cover resolution
+  bounds, monitor-mode deduplication, failed allocation handling at the API
+  boundary, aspect calculations and persistence. Original game files, saves
+  and keyboard/mouse configuration passed 424 protected-file hash comparisons.
+- First-mission runs rendered 3840×2160 and 3440×1440 scene buffers and reached
+  paused Options without a recorded crash or unresolved indirect call. The
+  resolution checks use GPU render targets on the available display; a physical
+  ultrawide monitor, split screen, and a full campaign are not validated.
+- The expanded texture preview contains 11 replacements, approximately 44 MiB,
+  covering selected terrain, masonry, timber, concrete, floor tiles, metal panels
+  and one weapon atlas. Four replacements loaded in a 174-second opening-mission
+  run at 1920×1080; gameplay and paused Options were reached without a recorded
+  crash or unresolved call. The remaining seven need scene-specific runtime checks.
+- DDS files have complete mip chains: two 4096×4096, eight 2048×2048, and one
+  2048×1024. Square source art is 1254×1254; stone masonry is 1774×887. These are
+  resampled outputs, not native 4K generated art. A character draft shifted facial
+  and ear UV details and was kept out of the active pack.
+- The coverage audit tracks 5,547 supported texture keys: 11 installed, one draft
+  requiring correction/review, and 5,535 awaiting art. Another 753 cataloged
+  payloads use unsupported formats. Embedded textures may remain undiscovered.
+  This is not a completed game remaster. Eight offline tool tests pass; installed
+  DDS hashes, dimensions and mip chains pass the audit. All 427 protected game,
+  save and settings files matched their pre-test hashes; temporary disks and
+  frame captures were recycled. Exact new prompts and real source sizes are saved.
+- Pack compilation enforces the user's 6 GiB cap including metadata. Runtime
+  replacement residency remains capped at 512 MiB. The supported-asset size plan
+  is approximately 2.5 GiB before source art and unsupported-format additions;
+  the plan is not completed artwork or a guarantee of final full-game size.
+- Runtime changes are reproducible from the pinned upstream revision using
+  `pc-controls.patch`, `save-routing.patch`, and `texture-pack.patch`; the last
+  patch includes the renderer wiring shared by display and texture features.
+  Fresh application in setup order and repeat-build checks pass.
+
 ## Completed
 
 - Read the supplied desktop Xbox ISO without modifying it; extracted 412 files.
