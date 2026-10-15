@@ -19,7 +19,7 @@ def summarize(path, start=0, end=math.inf):
         raise ValueError('Frame intervals must be finite and positive')
     def percentile(p):
         return times[max(0, math.ceil(len(times) * p) - 1)]
-    return dict(samples=len(times),
+    result = dict(samples=len(times),
                 first_sample_seconds=float(rows[0]['elapsed_ms']) / 1000,
                 last_sample_seconds=float(rows[-1]['elapsed_ms']) / 1000,
                 fps=1000 / statistics.mean(times),
@@ -29,6 +29,14 @@ def summarize(path, start=0, end=math.inf):
                 frames_over_50_ms=sum(t > 50 for t in times),
                 frames_over_100_ms=sum(t > 100 for t in times),
                 mean_swap_ms=statistics.mean(float(row['swap_ms']) for row in rows))
+    if 'kind' in rows[0]:
+        seconds=sum(times)/1000
+        for kind in ('guest','interpolated'):
+            count=sum(row['kind']==kind for row in rows)
+            result[kind+'_presents']=count
+            result[kind+'_fps']=count/seconds
+    return result
+
 
 
 if __name__ == '__main__':

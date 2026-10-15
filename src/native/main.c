@@ -1,6 +1,7 @@
 /* Native macOS bring-up entry point. No Win32 executable or compatibility layer. */
 #include <xbox/xboxrecomp.h>
 #include "xbox_watchpoint.h"
+#include "recomp_config.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,6 +65,13 @@ int main(int argc, char **argv)
         fprintf(stderr, "Native bring-up requires explicit game, save, input and runtime-display configuration paths.\n");
         return 2;
     }
+    /* Native display frames are capped at 2x; console timing remains 60 Hz.
+     * A saved frame_interp=1 still selects the original 60 FPS path. */
+    int multiple=recomp_config_int("RECOMP_FRAME_INTERP","frame_interp",2)>=2?2:1;
+    setenv("RECOMP_FRAME_INTERP",multiple==2?"2":"1",1);
+    if(multiple==2 && !recomp_config_lookup("RECOMP_FPS_CAP","frame_cap"))
+        setenv("RECOMP_FPS_CAP","60",0);
+    fprintf(stderr,"[native-gl] target %d display FPS; console clock unchanged\n",multiple*60);
     char path[4096];
     if (snprintf(path, sizeof path, "%s/default.xbe", game) >= (int)sizeof path) return 2;
     FILE *f = fopen(path, "rb");

@@ -17,7 +17,7 @@ common = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(common)
 
 
-def game_environment(base, root):
+def game_environment(base, root, fps=None):
     env = {k:v for k,v in base.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
     settings = root / 'private/native-settings'
     env.update(RECOMP_GAME_DIR=str(root / 'private/game'),
@@ -27,6 +27,10 @@ def game_environment(base, root):
                TSFP_DISPLAY_CONFIG=str(root / 'config/pc-display.ini'),
                XDG_CONFIG_HOME=str(settings / 'xdg-config'),
                XDG_DATA_HOME=str(settings / 'xdg-data'), RECOMP_TRACE_BUDGET='0')
+    if fps is not None:
+        if fps not in (60,120):raise ValueError('Native FPS must be 60 or 120')
+        env.update(RECOMP_FRAME_INTERP='2' if fps==120 else '1',
+                   RECOMP_FPS_CAP='60' if fps==120 else 'adaptive')
     return env
 
 
@@ -62,6 +66,7 @@ def drain_log(stream, path, budget=4*1024*1024):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true', help='Read-only prerequisite check')
+    parser.add_argument('--fps', type=int, choices=(60,120), help='Display target for this launch (default: saved preference or 120)')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         raise ValueError('This native build requires an Apple Silicon Mac.')
@@ -83,7 +88,7 @@ def main():
     logs.mkdir(exist_ok=True)
     print('Arrows/Enter navigate. Escape pauses. F1 captures/releases mouse. Close the game window to quit.', flush=True)
     print('Experimental: first-level rendering and basic input tested; campaign completion is unverified.', flush=True)
-    proc = subprocess.Popen([str(executable)], cwd=ROOT, env=game_environment(os.environ, ROOT),
+    proc = subprocess.Popen([str(executable)], cwd=ROOT, env=game_environment(os.environ, ROOT, args.fps),
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     readers = [threading.Thread(target=drain_log, args=(stream, logs / name))
                for stream, name in ((proc.stdout, 'native-play.out'), (proc.stderr, 'native-play.err'))]

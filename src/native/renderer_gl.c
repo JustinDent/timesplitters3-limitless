@@ -2,9 +2,10 @@
  * Shared HLE and format helpers remain in the pinned, patched runtime. */
 /* SDL3/Cocoa + OpenGL 4.1 bring-up renderer. The shared HLE preserves the
  * guest's execution and supplies decoded state, textures and vertex layouts.
- * NV2A vertex programs currently run on the CPU; the fragment shader evaluates
- * register combiners for stage-0 2D textures. General multi-texturing, offscreen
- * render targets, screen-copy effects, movies and full 3D fidelity remain.
+ * NV2A vertex programs compile to GLSL, with a portable CPU fallback. The
+ * fragment shader evaluates stage-0 register combiners. Offscreen targets and
+ * 2x render interpolation are supported; general multi-texturing, screen-copy
+ * effects, movies and full rendering fidelity remain incomplete.
  */
 
 #include "d3d8_xbox.h"
@@ -100,13 +101,19 @@ typedef struct {
 } D3DGL;
 
 static D3DGL g;
-static unsigned native_present_count;
+static unsigned native_present_count,native_guest_present_count;
+static int native_interp_on;
 static int native_depth_enabled=1;
 static UINT native_target_width,native_target_height;
 #include "gl_context.inc"
 #ifdef __APPLE__
 static float *native_shader_vertices(const void *,UINT,UINT);
 static void native_shader_attribs(void);
+static GLuint native_gpu_prepare(UINT);
+static void native_gpu_attribs(UINT);
+static void native_select_program(GLuint);
+static void native_gpu_delete(int);
+static GLuint native_fixed_program;
 static void native_set_palette(DWORD,const void *);
 #endif
 
@@ -630,14 +637,15 @@ static void native_frame_timing(Uint64 swap_start,Uint64 now) {
         checked=1;const char *path=getenv("TSFP_NATIVE_FRAME_PROFILE");
         if(path && *path) {
             output=fopen(path,"w");
-            if(output)fputs("frame,elapsed_ms,frame_ms,swap_ms\n",output);
+            if(output)fputs("frame,elapsed_ms,frame_ms,swap_ms,kind,guest_frame\n",output);
         }
     }
     if(!output)return;
     if(!first)first=now;
     if(last) {
-        fprintf(output,"%u,%.3f,%.3f,%.3f\n",native_present_count,
-                (now-first)/1e6,(now-last)/1e6,(now-swap_start)/1e6);
+        fprintf(output,"%u,%.3f,%.3f,%.3f,%s,%u\n",native_present_count,
+                (now-first)/1e6,(now-last)/1e6,(now-swap_start)/1e6,
+                native_interp_on?"interpolated":"guest",native_guest_present_count);
         if(++rows%60==0)fflush(output);
         if(rows==20000){fclose(output);output=NULL;}
     }
@@ -652,9 +660,9 @@ static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const
     if(!SDL_GL_SwapWindow(g.window)) {
         fprintf(stderr,"[native-gl] present failed: %s\n",SDL_GetError());return E_FAIL;
     }
-    native_present_count++;
+    native_present_count++;native_guest_present_count++;
     native_frame_timing(swap_start,SDL_GetTicksNS());
-    if(native_present_count==1 || native_present_count%300==0)
+    if(native_guest_present_count==1 || native_guest_present_count%300==0)
         fprintf(stderr,"[native-gl] presented frame %u, GL error=0x%x\n",native_present_count,glGetError());
     trace_draw=0;
     const char *trace_path=getenv("TSFP_NATIVE_TRACE_RENDER");
@@ -873,21 +881,23 @@ static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *s, D3DPRIMITIVETY
     UINT vcount = 0;
     GLenum mode = gl_prim(pt, prim_count, &vcount);
     float *converted=NULL;
-    if(d3d8_vsh_is_programmable(g.current_vsh)) {
+    GLuint gpu=native_gpu_prepare(stride);
+    if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
         converted=native_shader_vertices(verts,vcount,stride);if(!converted)return E_FAIL;
         verts=converted;stride=40;
     }
     GLsizeiptr size = (GLsizeiptr)vcount * stride;
-    glUseProgram(g.prog);
+    native_select_program(gpu?gpu:native_fixed_program);
     glBindVertexArray(g.vao);
     glBindBuffer(GL_ARRAY_BUFFER, g.stream_vbo);
     /* Replace the store for each transient draw. Updating offset zero of the
      * previous store made Apple's GL driver wait for earlier GPU draws. */
     glBufferData(GL_ARRAY_BUFFER, size, verts, GL_STREAM_DRAW);
-    if(!converted)setup_fvf_attribs(g.current_fvf, stride);
+    if(!converted && !gpu)setup_fvf_attribs(g.current_fvf, stride);
     bind_texture0();
     update_mvp(g.current_fvf);
     if(converted)native_shader_attribs();
+    if(gpu)native_gpu_attribs(stride);
     apply_render_states();
     if(pt==D3DPT_QUADLIST) {
         GLuint *indices=malloc((size_t)prim_count*6*sizeof *indices);
@@ -913,21 +923,23 @@ static HRESULT __stdcall dev_DrawIndexedPrimitiveUP(IDirect3DDevice8 *s, D3DPRIM
     GLenum itype = (idx_fmt == D3DFMT_INDEX32) ? GL_UNSIGNED_INT : GL_UNSIGNED_SHORT;
     GLsizeiptr ibytes = (GLsizeiptr)icount * ((itype == GL_UNSIGNED_INT) ? 4 : 2);
     float *converted=NULL;
-    if(d3d8_vsh_is_programmable(g.current_vsh)) {
+    GLuint gpu=native_gpu_prepare(stride);
+    if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
         converted=native_shader_vertices(verts,nv,stride);if(!converted)return E_FAIL;
         verts=converted;stride=40;
     }
     GLsizeiptr vbytes = (GLsizeiptr)nv * stride;
-    glUseProgram(g.prog);
+    native_select_program(gpu?gpu:native_fixed_program);
     glBindVertexArray(g.vao);
     glBindBuffer(GL_ARRAY_BUFFER, g.stream_vbo);
     glBufferData(GL_ARRAY_BUFFER, vbytes, verts, GL_STREAM_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.stream_ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, ibytes, idx, GL_STREAM_DRAW);
-    if(!converted)setup_fvf_attribs(g.current_fvf, stride);
+    if(!converted && !gpu)setup_fvf_attribs(g.current_fvf, stride);
     bind_texture0();
     update_mvp(g.current_fvf);
     if(converted)native_shader_attribs();
+    if(gpu)native_gpu_attribs(stride);
     apply_render_states();
     glDrawElements(mode, (GLsizei)icount, itype, 0);
     native_trace("indexed",converted,nv);
@@ -1333,14 +1345,7 @@ float xbox_D3D8ClaimHorPlus(void) { return 1.0f; }
 void xbox_D3D8SetFullscreen(BOOL on) { (void)on; }
 /* Nor widescreen by screen. */
 void xbox_D3D8SetWideFrames(BOOL wide) { (void)wide; }
-/* Nor frame interpolation. */
-BOOL xbox_D3D8InterpBegin(void) { return FALSE; }
-void xbox_D3D8InterpPresent(void) {}
-void xbox_D3D8InterpEnd(void) {}
-void xbox_D3D8SetInterpRegisters(int projection, int affine_first, int affine_count)
-{
-    (void)projection; (void)affine_first; (void)affine_count;
-}
+#include "gl_interpolation.inc"
 
 /* No widescreen 2D squeeze on this backend, so nothing to place. */
 void xbox_D3D8SetTwoDPlacement(int placement, uint32_t tag)

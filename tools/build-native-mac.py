@@ -90,7 +90,7 @@ def main():
     sources = sorted((ROOT / 'patches').glob('*.patch')) + sorted((ROOT / 'src/native').glob('*'))
     manifest = dict(source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,
-                    build_type='Debug', configure_command=[str(arg) for arg in command],
+                    build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
                     compiler=subprocess.check_output(['clang', '--version'], text=True).splitlines()[0],
                     executable_sha256=hashlib.sha256((BUILD / 'futureperfect_recomp').read_bytes()).hexdigest(),
                     source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources if p.is_file()},

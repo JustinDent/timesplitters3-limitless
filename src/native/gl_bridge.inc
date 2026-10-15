@@ -1,6 +1,5 @@
-/* Apple GL host boundary. Included by d3d8_gl.c, whose objects it describes.
- * Vertex programs execute the existing portable NV2A interpreter; this is a
- * correctness-first menu path, not an accelerated general shader translator. */
+/* Apple GL host boundary. Included by renderer_gl.c, whose objects it describes.
+ * Programs compile to GLSL; the portable interpreter is the fallback/reference. */
 static NV2AVshSlot native_slots[NV2A_VS_MAX_SLOTS];
 static NV2AVshProgram native_programs[NV2A_VS_MAX_SLOTS];
 static float native_constants[NV2A_VS_MAX_CONSTANTS][4];
@@ -48,7 +47,7 @@ HRESULT d3d8_vsh_create_shader(const DWORD *code,int n,DWORD *h) {
     return E_FAIL;
 }
 BOOL d3d8_vsh_is_programmable(DWORD h) { return h>=0x10000 && h<0x10000+NV2A_VS_MAX_SLOTS && native_slots[h-0x10000].in_use; }
-HRESULT d3d8_vsh_delete_shader(DWORD h) { if(!d3d8_vsh_is_programmable(h))return E_INVALIDARG;memset(&native_slots[h-0x10000],0,sizeof native_slots[0]);return S_OK; }
+HRESULT d3d8_vsh_delete_shader(DWORD h) { if(!d3d8_vsh_is_programmable(h))return E_INVALIDARG;native_gpu_delete(h-0x10000);memset(&native_slots[h-0x10000],0,sizeof native_slots[0]);return S_OK; }
 HRESULT d3d8_vsh_set_declaration(DWORD h,const D3D8VshInput *d,int n) {
     if(!d3d8_vsh_is_programmable(h)||n<0||n>16||(n&&!d))return E_INVALIDARG;
     NV2AVshSlot *s=&native_slots[h-0x10000];s->decl_count=n;if(n)memcpy(s->decl,d,n*sizeof *d);return S_OK;
@@ -63,10 +62,33 @@ BOOL d3d8_vsh_get_slot(int i,DWORD *h,const DWORD **m,int *n,const D3D8VshInput 
     if(i<0||i>=NV2A_VS_MAX_SLOTS||!native_slots[i].in_use)return FALSE;
     NV2AVshSlot *s=&native_slots[i];if(h)*h=0x10000+i;if(m)*m=s->microcode;if(n)*n=s->length;if(d)*d=s->decl;if(c)*c=s->decl_count;return TRUE;
 }
-/* Interpolation is disabled by xbox_D3D8InterpBegin on this backend. */
-void d3d8_vsh_interp_registers(int *p,int *a,int *n) { *p=-1;*a=-1;*n=0; }
-int d3d8_vsh_bound_uses_projection(void) { return 0; }
-uint32_t d3d8_vsh_bound_reads(int f,int n) { return 0; }
+/* Only constants actually consumed by the bound program identify its matrices. */
+void d3d8_vsh_interp_registers(int *p,int *a,int *n) {
+    *p=native_interp_projection;*a=native_interp_affine;*n=native_interp_count;
+    if(*p<0||*p+4>192)*p=-1;
+    if(*a<0||*n<4||*a+*n>192){*a=-1;*n=0;}
+}
+uint32_t d3d8_vsh_bound_reads(int first,int count) {
+    if(!d3d8_vsh_is_programmable(g.current_vsh))return 0;
+    const NV2AVshProgram *p=&native_programs[g.current_vsh-0x10000];
+    static const unsigned reads[]={0,1,3,5,7,3,3,3,3,3,3,3,3,1};
+    uint32_t mask=0;
+    for(int i=0;i<p->length;i++) {
+        const NV2AVshInstruction *in=&p->insns[i];
+        unsigned used=in->mac_op<14?reads[in->mac_op]:0;
+        for(int j=0;j<4;j++) {
+            const NV2AVshSrcOperand *s=j==3?&in->ilu_src:&in->mac_src[j];
+            if(j==3?in->ilu_op==0:!(used&(1u<<j)))continue;
+            if(s->reg_type!=NV2A_VSH_REG_CONST)continue;
+            for(int group=0;group*4<count&&group<32;group++)
+                if(s->rel_addr||(s->reg_index>=first+group*4&&s->reg_index<first+group*4+4))mask|=1u<<group;
+        }
+    }
+    return mask;
+}
+int d3d8_vsh_bound_uses_projection(void) {
+    return native_interp_projection>=0 && d3d8_vsh_bound_reads(native_interp_projection,4)!=0;
+}
 
 static unsigned native_read_input(const BYTE *p,UINT available,RhiFormat f,float v[4]) {
     unsigned n=f==RHI_FORMAT_R32G32B32A32_FLOAT?4:f==RHI_FORMAT_R32G32B32_FLOAT?3:f==RHI_FORMAT_R32G32_FLOAT?2:f==RHI_FORMAT_R32_FLOAT?1:0;
@@ -106,3 +128,5 @@ static void native_shader_attribs(void) {
     glEnableVertexAttribArray(2);glVertexAttribPointer(2,2,GL_FLOAT,GL_FALSE,40,(void*)32);
     glUniform1i(g.u_use_xform,2);
 }
+
+#include "gl_vertex.inc"

@@ -1,3 +1,4 @@
+#include "vertex_selftest.inc"
 /* Real GPU regressions: topology, A8 swizzle/sampling, compositing, readback,
  * and moving the GL context to a guest-style worker and back. */
 static int native_test_pixel(IDirect3DDevice8 *dev, UINT x, UINT y,
@@ -36,7 +37,8 @@ int tsfp_native_renderer_test(void) {
         {56,56,0,1,0xFFFF0000,1,1}, {8,56,0,1,0xFFFF0000,0,1}
     };
     dev->lpVtbl->SetVertexShader(dev,D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1);
-    int ok=SUCCEEDED(dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]));
+    int ok=native_test_vertex_programs();
+    ok &= SUCCEEDED(dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]));
     ok &= native_test_pixel(dev,16,16,255,0,0);
     ok &= native_test_pixel(dev,48,48,255,0,0);
     ok &= native_test_pixel(dev,4,4,0,0,255);
@@ -141,6 +143,25 @@ int tsfp_native_renderer_test(void) {
     }
     if(surface)surface->lpVtbl->Release(surface);if(depth)depth->lpVtbl->Release(depth);
     if(target)target->lpVtbl->Release(target);if(original_depth)original_depth->lpVtbl->Release(original_depth);
+    /* Intermediate draws start with fresh depth, and End restores both the
+     * original colour and depth. A stale depth buffer hides equal-depth
+     * transparent effects; a lost original depth allows farther draws. */
+    dev->lpVtbl->SetVertexShader(dev,D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1);
+    dev->lpVtbl->SetRenderState(dev,D3DRS_ZENABLE,TRUE);
+    dev->lpVtbl->SetRenderState(dev,D3DRS_ZWRITEENABLE,TRUE);
+    dev->lpVtbl->SetRenderState(dev,D3DRS_ZFUNC,D3DCMP_LESS);
+    dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER,0xFF000000,1,0);
+    for(int i=0;i<4;i++){vertices[i].z=.4f;vertices[i].color=0xFF0000FF;}
+    dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]);
+    ok &= xbox_D3D8InterpBegin();
+    for(int i=0;i<4;i++)vertices[i].color=0xFFFF0000;
+    dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]);
+    ok &= native_test_pixel(dev,32,32,255,0,0);
+    xbox_D3D8InterpPresent();xbox_D3D8InterpEnd();
+    ok &= native_test_pixel(dev,32,32,0,0,255);
+    for(int i=0;i<4;i++){vertices[i].z=.6f;vertices[i].color=0xFF00FF00;}
+    dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]);
+    ok &= native_test_pixel(dev,32,32,0,0,255);
     pthread_t worker;
     if(!pthread_create(&worker,NULL,native_test_worker,dev)) {
         pthread_join(worker,NULL);ok &= native_test_pixel(dev,32,32,0,255,0);
@@ -149,6 +170,6 @@ int tsfp_native_renderer_test(void) {
     SDL_GL_DestroyContext(g.glctx);g.glctx=NULL;
     SDL_DestroyWindow(g.window);g.window=NULL;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
-    fprintf(stderr,"[native-gl-test] quad topology, queued stream uploads, A8 swizzle, alpha blend, NV2A vertex/combiner programs, readback, offscreen clear isolation/orientation, worker handoff: %s\n",ok?"PASS":"FAIL");
+    fprintf(stderr,"[native-gl-test] quad topology, queued stream uploads, A8 swizzle, alpha blend, NV2A vertex/combiner programs, readback, offscreen isolation/orientation, interpolation depth isolation/restore, worker handoff: %s\n",ok?"PASS":"FAIL");
     return ok?0:1;
 }

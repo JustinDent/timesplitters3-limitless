@@ -70,6 +70,13 @@ reproducibility, and validation requirements.
   captures. Native `--test` also runs bounded real-GPU and SDL input regression
   checks. `--test-keys` is explicitly synthetic SDL event input, not a physical
   device test; distinguish it from macOS event delivery and human playtesting.
+- Native Mac defaults to up to 120 host presents per second through 2x render
+  interpolation while retaining the 60 Hz guest clock. Preserve saved
+  `frame_interp = 1` preferences; use `--fps 60` / `--fps 120` on the launcher
+  or isolated runner for a temporary override. Report guest and interpolated
+  presents separately. Never raise the console clock as an FPS shortcut.
+  The shared patch stack enables optimized scalar native game code with debug
+  symbols; GPU vertex programs retain the CPU interpreter as fallback/reference.
 - `Play-Native-Mac.command` is the interactive ARM64 launcher, separate from
   `Play-Mac.command` (CrossOver). It preserves personal controls/display settings
   and uses `private/saves`; native runtime settings stay in ignored

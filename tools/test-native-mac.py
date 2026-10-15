@@ -47,6 +47,8 @@ def main():
     parser.add_argument('--trace-render', action='store_true', help='Enable bounded frame tracing on request')
     parser.add_argument('--profile-frames', action='store_true',
                         help='Record up to 20,000 host present intervals, without GPU readback')
+    parser.add_argument('--fps', type=int, choices=(60,120), help='Override the native display target for this test only')
+    parser.add_argument('--capture-interpolation', action='store_true', help='Capture one guest/midpoint pair when capture-interpolation.txt requests it')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
@@ -70,6 +72,18 @@ def main():
     if not runtime_config.exists():
         runtime_config.write_text('# Isolated native boot defaults\n')
     env = isolated_environment(ROOT, test)
+    if args.fps:
+        env.update(RECOMP_FRAME_INTERP='2' if args.fps==120 else '1',
+                   RECOMP_FPS_CAP='60' if args.fps==120 else 'adaptive')
+    if args.capture_interpolation:
+        capture_environment(ROOT) # Same path and symlink checks as normal captures.
+        captures=ROOT / 'private/captures/native-mac'
+        request=test / 'capture-interpolation.txt'
+        for path in (request,captures/'interpolation-guest.bmp',captures/'interpolation-midpoint.bmp'):
+            if path.is_symlink():raise SystemExit('Unexpected interpolation capture path')
+        request.write_text('')
+        env.update(TSFP_NATIVE_INTERP_CAPTURE_REQUEST=str(request),
+                   TSFP_NATIVE_INTERP_CAPTURE_PREFIX=str(captures/'interpolation'))
     if args.test_keys:
         keys = test / 'test-keys.txt'
         if keys.is_symlink():raise SystemExit('Unexpected test key file')

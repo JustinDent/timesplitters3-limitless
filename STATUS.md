@@ -1,9 +1,59 @@
 # Measured progress
 
-Tested on Windows on October 14-15, 2026. This is an experimental port bring-up;
+Tested on Windows and Apple Silicon macOS on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
-## Native 120/144 FPS feasibility check — October 15
+## Native Mac up-to-120 FPS mode — October 15
+
+- Native launches now default to **2x render interpolation**, retaining the
+  60 Hz console clock. `--fps 60` / `--fps 120` override only that launch;
+  existing `frame_interp = 1` preferences remain respected. Windows behavior
+  and personal saves/settings are unchanged.
+- Compiled the decoded NV2A vertex programs into cached OpenGL vertex shaders,
+  retaining the portable CPU interpreter as fallback/reference. Native game
+  C now uses `-O2` with debug symbols and vectorization disabled for the scalar
+  MMIO fault handler. Changes to pinned upstream sources are reproduced by
+  `zzzzz-mac-high-refresh.patch`; generated game C was not edited.
+- Connected the shared draw replay/matrix interpolation with preservation of
+  the completed guest image/depth. Cleared intermediate depth separately after
+  visual comparison exposed missing fire/smoke, and added a real-GPU regression
+  for depth isolation and restoration. Late cinematic frames consume an already
+  delivered vblank rather than waiting an extra tick for interpolation.
+- The final **165-second** isolated run's stationary first-level canyon window
+  (120–145 seconds after the first present) measured **120.00 host FPS**:
+  **1,500 guest + 1,500 interpolated presents**, each **60.00 FPS**. Median host
+  interval **10.02 ms**, p95 **13.47 ms**, p99 **15.61 ms**, worst **16.82 ms**;
+  none exceeded 33.33 ms. Captures were enabled, with explicit paired readback
+  outside the measurement window. These are completed host-present intervals,
+  not monitor scanout measurements; spacing remains uneven rather than locked
+  to 8.33 ms. Background focus during this window is recorded in the evidence;
+  a separate foreground input check is also retained.
+- A separate 110-second foreground run measured **119.90 host FPS** (60.00
+  guest + 59.90 interpolated) in seconds 80–90: median 9.81 ms, p95 11.76 ms,
+  worst 16.00 ms. Reviewed fresh captures of movement, the pause menu, resumed
+  gameplay and ammunition decreasing after firing. Keyboard events were synthetic
+  SDL input; firing used macOS mouse-event delivery, not a human playtest. The
+  paired moving frames retain fire/smoke and show different geometry pixels.
+- Host: Apple M5 Pro (16 GPU cores), macOS 27.0.1/26A434 ARM64, built-in display
+  reporting 120 Hz; scene 640x480, AppleClang 21, pinned SDL 3.4.16,
+  OpenGL 4.1 Metal -91.7 / GLSL 4.10. Build base `83491ef` plus this change,
+  pinned runtime `d90c929`, and the supported US XBE; full hashes/tool versions
+  are in `build/macos/BUILD.json` and `logs/native-120-fps-validation.json`.
+- GPU/CPU transform-feedback comparisons cover MAC/ILU operations, paired
+  reads, output/temporary aliasing and relative constants. All GPU/input tests
+  and three native CTests pass. Portable checks: **19 passed, 2 Windows-only
+  checks skipped, 7 subtests**; read-only native launcher check passes. No native
+  fault or sampled GL error in the final timed benchmark.
+- This is an up-to-120 target, not a campaign-wide guarantee. Cinematics,
+  transitions, unmatched draws and insufficient rendering time can hold frames;
+  some particles remain at the guest rate. Full-level completion, save/load,
+  physical-controller play and complete rendering fidelity remain unverified.
+  Changes are local on `mac-port`; the other computer has not been verified.
+  Evidence: `logs/mac-120-verified.*`, `logs/mac-120-input-*`,
+  `logs/mac-120-build.log`, `logs/mac-120-portable-tests.log`, and selected
+  `private/captures/native-mac/native-120-*.png` / `interpolation-*.png`.
+
+## Earlier 120/144 FPS feasibility check (before implementation) — October 15
 
 - Tested `frame_cap = 0` only in the isolated runtime settings, keeping the
   console vblank clock at 60 Hz. The log confirmed the flip gate was off.
@@ -15,12 +65,12 @@ full gameplay and campaign completion have not been verified.
   configured at **120.00 Hz**. Displaying 144 distinct frames per second would
   need an appropriate higher-refresh display; 120 is the relevant built-in target.
 - Source inspection confirms numeric caps are divisions of the console vblank
-  clock, and the native Mac interpolation entry points are unimplemented.
+  clock, and at that revision the native Mac interpolation entry points were unimplemented.
   Increasing the console clock may change game speed and was not used as a
   substitute for rendering support. The follow-up CPU sample placed 1,193 of
   2,633 main-thread samples in the CPU vertex interpreter. GPU vertex shaders
-  and render-only high-refresh presentation remain development work; **120/144
-  FPS support has not been implemented or validated**.
+  and render-only high-refresh presentation were still development work at that
+  point. The later 120 FPS implementation is recorded above; 144 is not a target.
 - Restored the isolated runtime settings exactly and recycled disposable test
   images. Personal saves/settings were not used. No runtime source or binary
   changed; only findings/documentation were updated. Evidence:

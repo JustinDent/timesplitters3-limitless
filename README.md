@@ -112,8 +112,8 @@ python3 tools/build-native-mac.py --setup --generate --test
 Output stays in `build/macos`. `BUILD.json` records the source and runtime
 revision, source/patch hashes, executable hash, compiler, Python packages and
 linked libraries. Native changes to the upstream runtime are reproduced by
-`patches/zz-mac-native-boot.patch`, `patches/zzz-mac-renderer.patch` and
-`patches/zzzz-mac-input.patch`, applied
+`patches/zz-mac-native-boot.patch`, `patches/zzz-mac-renderer.patch`,
+`patches/zzzz-mac-input.patch` and `patches/zzzzz-mac-high-refresh.patch`, applied
 after the shared feature patches. Mac renderer source stays in `src/native`;
 Windows and the inherited Linux graphics backends retain their own sources.
 Never edit generated game C. Regenerate when wrapper declarations change.
@@ -141,13 +141,28 @@ screens and menus must be excluded before describing gameplay FPS. These are
 host-present timings, not measurements of monitor scanout. Compare the same
 scene and build settings, and state whether `--capture` was enabled.
 
-Native Mac high-refresh output is not implemented yet. The current console clock
-is 60 Hz, and numeric `frame_cap` settings release frames on that clock's ticks;
-setting `frame_cap = 144` does not create a 144 FPS mode. The Mac backend also
-does not implement `frame_interp`. Increasing `RECOMP_VBLANK_HZ` changes the
-guest console clock and may change game speed; it is not a render-only FPS
-setting. Higher-refresh support needs faster rendering and presentation that
-preserves the game's timing. Keep the default pacing for normal play.
+Native Mac defaults to an **up-to-120 FPS** display target: the game still
+simulates at 60 Hz, while the renderer draws intermediate frames using blended
+camera/object transforms. GPU vertex shaders and optimized native game code
+provide the extra rendering time. Menus, cinematics, scene cuts and expensive
+frames can fall back to fewer display frames. This is experimental interpolation,
+not 120 simulation updates, and is not a guarantee for every level or Mac.
+
+Use `./Play-Native-Mac.command --fps 60` for the original presentation rate, or
+`--fps 120` to explicitly select the new target for that launch. These options
+do not rewrite saved settings. To retain 60 as a preference, put `frame_interp = 1`
+in `private/native-settings/runtime.conf`; `frame_interp = 2` selects 120.
+The Mac path clamps interpolation to 2x. A custom `frame_cap` is preserved;
+use `frame_cap = 60` with interpolation, or the `--fps 120` override. Do not raise
+`RECOMP_VBLANK_HZ`: that changes the console clock and can change game speed.
+
+The isolated test runner also accepts `--fps 60` / `--fps 120`. Profile rows label
+each present as `guest` or `interpolated`, and the statistics report both rates.
+For motion evidence, `--capture-interpolation` enables a request file at
+`private/test-saves/native-mac/capture-interpolation.txt`; write `1` while moving
+to replace exactly two BMPs (`interpolation-guest.bmp` and
+`interpolation-midpoint.bmp`) in the normal native capture directory. This GPU
+readback is for visual validation; keep it outside measured performance windows.
 
 The native implementation includes a reserved 4 GiB **virtual address range**
 (not a 4 GiB game copy), aliased RAM/device mappings, host timers, an ARM64

@@ -45,3 +45,12 @@ def test_log_cap_still_drains_pipe(tmp_path):
     launcher.drain_log(stream, path, budget=100)
     assert path.read_bytes() == b'x'*100
     assert stream.closed
+
+
+def test_fps_override_does_not_change_console_clock(tmp_path):
+    for fps,multiple in ((60,'1'),(120,'2')):
+        env=launcher.game_environment({'RECOMP_VBLANK_HZ':'144'},tmp_path,fps)
+        assert env['RECOMP_FRAME_INTERP']==multiple
+        assert env['RECOMP_FPS_CAP']==('60' if fps==120 else 'adaptive')
+        assert 'RECOMP_VBLANK_HZ' not in env
+    assert 'RECOMP_FRAME_INTERP' not in launcher.game_environment({},tmp_path)

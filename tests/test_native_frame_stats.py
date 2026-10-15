@@ -22,3 +22,14 @@ def test_frame_window_and_stalls(tmp_path):
     assert result['mean_swap_ms'] == 4
     with pytest.raises(ValueError, match='No frame samples'):
         stats.summarize(path, 2)
+
+
+def test_guest_frames_are_separate_from_extra_presents(tmp_path):
+    path=tmp_path/'frames.csv'
+    path.write_text('frame,elapsed_ms,frame_ms,swap_ms,kind,guest_frame\n'
+                    '1,8,8,1,guest,1\n2,18,10,1,interpolated,1\n'
+                    '3,26,8,1,guest,2\n4,40,14,1,interpolated,2\n')
+    result=stats.summarize(path)
+    assert result['fps']==100
+    assert result['guest_presents']==result['interpolated_presents']==2
+    assert result['guest_fps']==result['interpolated_fps']==50
