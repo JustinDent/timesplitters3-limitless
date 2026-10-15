@@ -1,5 +1,6 @@
 {
   "mouse": { "enabled": true, "sensitivity": 0.10, "invert_y": false },
+  "debug": { "show_fps": false, "show_frame_time": false, "show_issues": false, "log_performance": false },
   "controllers": [
     {
       "port": 1,

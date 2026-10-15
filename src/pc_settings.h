@@ -5,6 +5,7 @@
 #define PC_ACTION_COUNT 24
 #define PC_BINDING_SLOTS 4
 #define PC_SETTINGS_COMMAND 0x7e20
+#define PC_FULLSCREEN_COMMAND 0x7e22
 typedef struct PcSettings {
     int keys[PC_ACTION_COUNT][PC_BINDING_SLOTS];
     double sensitivity;

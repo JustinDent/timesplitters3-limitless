@@ -75,7 +75,7 @@ you move a binding from another action. **Clear binding** removes one slot;
 **Restore defaults** stages the default PC layout. Mouse sensitivity, inversion,
 and mouse input can also be changed here. **Save & Close** saves and applies the
 settings; **Cancel** discards edits. The previous configuration is backed up to
-`config/pc-controls.json.bak`. F1, F2, F9–F11 and the Windows keys are reserved.
+`config/pc-controls.json.bak`. F1, F2, F9–F12 and the Windows keys are reserved.
 
 Default bindings:
 
@@ -96,7 +96,11 @@ Default bindings:
 | Pause and release cursor | Escape |
 | Capture / release cursor | F1 |
 | Keyboard & mouse settings | F2 |
-| Fullscreen | Alt+Enter |
+| Debug settings | F12 |
+| Fullscreen | F11 or Alt+Enter |
+
+**PC Settings > Fullscreen** also toggles fullscreen; its checkmark reflects the
+current window mode. Holding F11 does not repeatedly toggle it.
 
 Click the game window to recapture the mouse. The recapture click is consumed
 so it does not fire a weapon. Alt-Tab releases the cursor and clears held
@@ -112,6 +116,37 @@ input on player 1; it does not require a controller.
 
 The Xbox action mapping was checked against the publisher's original
 [Xbox manual, Complete Controls](https://www.gamesdatabase.org/Media/SYSTEM/Microsoft_Xbox//Manual/formated/Timesplitters_-_Future_Perfect_-_2005_-_Electronic_Arts.pdf).
+
+### Debug settings
+
+Press **F12** or choose **PC Settings > Debug**.
+The shortcuts also work in fullscreen. Pause a mission first: settings block gameplay input but do not
+pause the simulation. The Debug window offers:
+
+- **Show FPS:** game frame rate; when interpolation adds presentations, the
+  overlay shows game/shown FPS. F9 toggles the FPS display for the current session.
+- **Show average frame time:** the average interval between game frames in
+  milliseconds, measured over roughly half a second; this is not GPU execution time.
+- **Show error / warning counters:** on-screen E/W counts of matching runtime log
+  lines. The window lists the latest 12 matches and counts frames over 50 ms,
+  including loading delays.
+- **Write performance samples to log:** FPS and average frame interval, about
+  twice per second. This is off by default to avoid growing logs unnecessarily.
+- **Open logs folder** and **Clear counters / recent:** inspect the original
+  logs or reset the session counters without deleting log files.
+
+**Save & Close** persists the display/logging options under `debug` in the same
+controls JSON file and applies them immediately. **Cancel** discards checkbox
+edits; clearing counters takes effect immediately. All options default to off.
+Existing controls files without a `debug` section remain supported.
+
+Diagnostics match logged failures, unresolved calls, warnings, and unsupported
+features; they do not detect every gameplay or visual anomaly. Counts cover the
+current launch since startup or the last clear. Use `Play.cmd` or `tsfp.ps1 Run`
+for live log monitoring; direct launches without `RECOMP_LOG_FILE` show
+"Log unavailable". Log reading is bounded and runs outside the render thread.
+The runtime's diagnostic frame capture uses **Ctrl+F11**; plain **F11** toggles
+fullscreen.
 
 For a fresh checkout, install Git, Visual Studio 2022 with its C++ workload and
 Windows SDK, and Python 3.12+, then run:
@@ -192,6 +227,14 @@ applying this patch to an older generated tree, then Build. The native
 `patches/pc-input-vocabulary.patch` keeps the Python input UI's key names in sync
 with the mouse-button and F23/F24 names added to the runtime by the PC controls
 patch. Setup, Test, and Build apply local patches idempotently.
+
+`patches/pc-debug.patch` connects the renderer's frame statistics and F9 shortcut
+to `src/pc_debug.c`. Build runs `tests/pc_debug.c` to check persistence, log
+monitoring, live display options, and Debug dialog Save/Cancel behavior.
+`tests/pc_debug_game.py` checks the real game's menu and fullscreen access using
+isolated settings/saves and captures the dialog and overlay for review.
+`patches/pc-window-shortcuts.patch` moves the runtime's frame capture to Ctrl+F11
+so it does not conflict with the fullscreen shortcut.
 
 The camera-field research also consulted the open-source
 [MouseInjector TS3 driver](https://github.com/regilopes/MouseInjectorDolphinDuck/blob/master/games/ts3.c).

@@ -3,6 +3,7 @@
 #endif
 #define _WIN32_WINNT 0x0601
 #include "pc_settings.h"
+#include "pc_debug.h"
 #include <commctrl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -65,7 +66,7 @@ static void fill(HWND d, Editor *e)
 }
 
 static int reserved(int key)
-{ return key==VK_F1 || key==VK_F2 || key==VK_F9 || key==VK_F10 || key==VK_F11 || key==VK_LWIN || key==VK_RWIN; }
+{ return key==VK_F1 || key==VK_F2 || key==VK_F12 || key==VK_F9 || key==VK_F10 || key==VK_F11 || key==VK_LWIN || key==VK_RWIN; }
 
 static void capture_key(HWND d,int key)
 {
@@ -260,6 +261,9 @@ void pc_settings_attach(HWND game)
     InitCommonControlsEx(&controls);
     GetClientRect(game,&client);
     AppendMenuA(settings,MF_STRING,PC_SETTINGS_COMMAND,"&Keyboard && Mouse...\tF2");
+    AppendMenuA(settings,MF_STRING,PC_DEBUG_COMMAND,"&Debug...\tF12");
+    AppendMenuA(settings,MF_SEPARATOR,0,NULL);
+    AppendMenuA(settings,MF_STRING,PC_FULLSCREEN_COMMAND,"&Fullscreen\tF11");
     AppendMenuA(bar,MF_POPUP,(UINT_PTR)settings,"&PC Settings");
     SetMenu(game,bar);
     rect=client;
@@ -274,4 +278,98 @@ void pc_settings_show(HWND game)
     char error[320];
     if(!pc_settings_read(&editor.settings,error,sizeof error)) { MessageBoxA(game,error,"PC Controls",MB_OK|MB_ICONERROR); return; }
     dialog(game,L"Keyboard & Mouse - TimeSplitters Future Perfect",780,720,settings_dialog,(LPARAM)&editor);
+}
+
+enum { ID_DEBUG_FPS=200, ID_DEBUG_TIME, ID_DEBUG_ISSUES, ID_DEBUG_LOG,
+       ID_DEBUG_STATS, ID_DEBUG_RECENT, ID_DEBUG_FOLDER, ID_DEBUG_CLEAR, ID_DEBUG_HELP };
+
+static void debug_refresh(HWND d)
+{
+    PcDebugSnapshot stats;
+    char text[512], old[6144];
+    pc_debug_poll();
+    pc_debug_snapshot(&stats);
+    snprintf(text,sizeof text,"Game: %.1f FPS   Shown: %.1f FPS   Average frame interval: %.2f ms\r\n"
+        "Log matches: %lu errors, %lu warnings   Frames over 50 ms: %lu (includes loading)",
+        stats.fps,stats.shown_fps,stats.frame_ms,stats.errors,stats.warnings,stats.slow_frames);
+    SetDlgItemTextA(d,ID_DEBUG_STATS,text);
+    if (!stats.log_available) snprintf(stats.recent,sizeof stats.recent,"Live log unavailable. Launch with Play.cmd to enable log diagnostics.");
+    else if (!stats.recent[0]) snprintf(stats.recent,sizeof stats.recent,"No matching errors or warnings since startup / last clear.");
+    GetDlgItemTextA(d,ID_DEBUG_RECENT,old,sizeof old);
+    if (strcmp(old,stats.recent)) {
+        SetDlgItemTextA(d,ID_DEBUG_RECENT,stats.recent);
+        SendDlgItemMessage(d,ID_DEBUG_RECENT,EM_SETSEL,(WPARAM)-1,(LPARAM)-1);
+        SendDlgItemMessage(d,ID_DEBUG_RECENT,EM_SCROLLCARET,0,0);
+    }
+}
+
+static INT_PTR CALLBACK debug_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
+{
+    (void)lp;
+    switch(message) {
+    case WM_INITDIALOG: {
+        PcDebugOptions options;
+        RECT r; int width,height;
+        GetClientRect(d,&r); width=r.right; height=r.bottom;
+        pc_debug_get(&options);
+        control(d,"BUTTON","Show FPS (F9 toggles during play)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_FPS);
+        control(d,"BUTTON","Show average frame time",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_TIME);
+        control(d,"BUTTON","Show error / warning counters (E / W)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_ISSUES);
+        control(d,"BUTTON","Write performance samples to log (twice per second)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_LOG);
+        place(d,ID_DEBUG_FPS,16,12,width-32,24);
+        place(d,ID_DEBUG_TIME,16,40,width-32,24);
+        place(d,ID_DEBUG_ISSUES,16,68,width-32,24);
+        place(d,ID_DEBUG_LOG,16,96,width-32,24);
+        CheckDlgButton(d,ID_DEBUG_FPS,options.show_fps?BST_CHECKED:BST_UNCHECKED);
+        CheckDlgButton(d,ID_DEBUG_TIME,options.show_frame_time?BST_CHECKED:BST_UNCHECKED);
+        CheckDlgButton(d,ID_DEBUG_ISSUES,options.show_issues?BST_CHECKED:BST_UNCHECKED);
+        CheckDlgButton(d,ID_DEBUG_LOG,options.log_performance?BST_CHECKED:BST_UNCHECKED);
+        control(d,"STATIC","",0,ID_DEBUG_STATS); place(d,ID_DEBUG_STATS,16,132,width-32,42);
+        control(d,"STATIC","Recent log diagnostics (up to 12). Matches include failed calls, unsupported features and warnings;\nthis does not detect every gameplay or visual anomaly. Pause the game before opening settings.",0,ID_DEBUG_HELP);
+        place(d,ID_DEBUG_HELP,16,180,width-32,40);
+        control(d,"EDIT","",WS_TABSTOP|WS_VSCROLL|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL,ID_DEBUG_RECENT);
+        place(d,ID_DEBUG_RECENT,16,228,width-32,height-326);
+        control(d,"BUTTON","Open logs folder",WS_TABSTOP|BS_PUSHBUTTON,ID_DEBUG_FOLDER);
+        place(d,ID_DEBUG_FOLDER,16,height-84,145,28);
+        control(d,"BUTTON","Clear counters / recent",WS_TABSTOP|BS_PUSHBUTTON,ID_DEBUG_CLEAR);
+        place(d,ID_DEBUG_CLEAR,173,height-84,180,28);
+        control(d,"BUTTON","Save && Close",WS_TABSTOP|BS_DEFPUSHBUTTON,IDOK);
+        control(d,"BUTTON","Cancel",WS_TABSTOP|BS_PUSHBUTTON,IDCANCEL);
+        place(d,IDOK,width-260,height-40,125,28);
+        place(d,IDCANCEL,width-123,height-40,107,28);
+        debug_refresh(d);
+        SetTimer(d,1,500,NULL);
+        return TRUE;
+    }
+    case WM_TIMER: debug_refresh(d); return TRUE;
+    case WM_COMMAND:
+        switch(LOWORD(wp)) {
+        case IDOK: {
+            PcDebugOptions options;
+            char error[320];
+            options.show_fps=IsDlgButtonChecked(d,ID_DEBUG_FPS)==BST_CHECKED;
+            options.show_frame_time=IsDlgButtonChecked(d,ID_DEBUG_TIME)==BST_CHECKED;
+            options.show_issues=IsDlgButtonChecked(d,ID_DEBUG_ISSUES)==BST_CHECKED;
+            options.log_performance=IsDlgButtonChecked(d,ID_DEBUG_LOG)==BST_CHECKED;
+            if (!pc_debug_config_save(&options,error,sizeof error)) {
+                MessageBoxA(d,error,"Debug settings were not saved",MB_OK|MB_ICONERROR); return TRUE;
+            }
+            EndDialog(d,IDOK); return TRUE;
+        }
+        case IDCANCEL: EndDialog(d,IDCANCEL); return TRUE;
+        case ID_DEBUG_CLEAR: pc_debug_clear(); debug_refresh(d); return TRUE;
+        case ID_DEBUG_FOLDER:
+            if (!pc_debug_open_logs(d)) MessageBoxA(d,"The log folder is unavailable. Start the game with Play.cmd.","Debug logs",MB_OK|MB_ICONINFORMATION);
+            return TRUE;
+        }
+        break;
+    case WM_CLOSE: EndDialog(d,IDCANCEL); return TRUE;
+    case WM_DESTROY: KillTimer(d,1); return TRUE;
+    }
+    return FALSE;
+}
+
+void pc_debug_show(HWND owner)
+{
+    dialog(owner,L"Debug - TimeSplitters Future Perfect",760,570,debug_dialog,0);
 }

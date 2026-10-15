@@ -158,6 +158,10 @@ int main(int argc,char **argv)
     saved=load(backup); CHECK(saved && strstr(saved,"key:W")); free(saved);
     current=settings; current.sensitivity=NAN; CHECK(!pc_settings_save(&current,error,sizeof error));
     current=settings; current.keys[0][0]=VK_F2; CHECK(!pc_settings_save(&current,error,sizeof error));
+    current=settings; current.keys[0][0]=VK_F12; CHECK(!pc_settings_save(&current,error,sizeof error));
+    current=settings; current.keys[0][0]=VK_F11; CHECK(!pc_settings_save(&current,error,sizeof error));
+    current=settings; current.keys[0][0]=VK_F3; CHECK(pc_settings_save(&current,error,sizeof error));
+    CHECK(pc_settings_save(&settings,error,sizeof error));
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
     current=settings; current.keys[14][0]='U'; CHECK(!pc_settings_save(&current,error,sizeof error));
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));

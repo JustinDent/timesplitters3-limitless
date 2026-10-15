@@ -27,8 +27,11 @@ $info.EnvironmentVariables['RECOMP_PC_MOUSE'] = if ($controls.mouse.enabled) { '
 $info.EnvironmentVariables['RECOMP_MOUSE_INVERT_Y'] = if ($controls.mouse.invert_y) { '1' } else { '0' }
 $info.EnvironmentVariables['RECOMP_MOUSE_SENSITIVITY'] = $sensitivity.ToString('R', [Globalization.CultureInfo]::InvariantCulture)
 $tag = Get-Date -Format 'yyyyMMdd-HHmmss'
+$info.EnvironmentVariables['RECOMP_LOG_FILE'] = Join-Path $logRoot "$tag.err"
 $outFile = [IO.File]::Create((Join-Path $logRoot "$tag.out"))
-$errFile = [IO.File]::Create((Join-Path $logRoot "$tag.err"))
+# Let the in-game Debug panel tail diagnostics while the launcher writes them.
+$errFile = [IO.FileStream]::new((Join-Path $logRoot "$tag.err"),
+    [IO.FileMode]::Create, [IO.FileAccess]::Write, [IO.FileShare]::ReadWrite, 1, $true)
 $game = New-Object System.Diagnostics.Process
 $game.StartInfo = $info
 try {

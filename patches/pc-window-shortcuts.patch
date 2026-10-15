@@ -1,0 +1,14 @@
+diff --git a/src/hle/hle_d3d8.c b/src/hle/hle_d3d8.c
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -2011,6 +2011,10 @@
+     f9  = front && (GetAsyncKeyState(VK_F9)  & 0x8000) != 0;
+     f10 = front && (GetAsyncKeyState(VK_F10) & 0x8000) != 0;
+     f11 = front && (GetAsyncKeyState(VK_F11) & 0x8000) != 0;
++#ifdef TSFP_PC_CONTROLS
++    /* Plain F11 is fullscreen; Ctrl+F11 retains diagnostic frame capture. */
++    f11 = f11 && (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
++#endif
+     if (f11 && !f11_was_down) {
+         /* Both, because they answer different questions: the picture shows
+          * what is wrong, the capture lets it be replayed draw by draw with
