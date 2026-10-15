@@ -14,7 +14,7 @@ reproducibility, and validation requirements.
 - Working root: the `timesplitters-future-perfect-pc` folder on that device's
   Desktop, not the old Documents location. Resolve project paths relative to
   the checkout or script; do not bake in a user's home directory, Windows drive
-  letter, or CrossOver drive mapping.
+  letter, or platform-specific drive mapping.
 - At the start of work, inspect the branch, commit, and working-tree changes.
   Preserve concurrent work and user edits. Before a cross-device handoff,
   compare the shared repository revision and this file on both devices where
@@ -45,18 +45,11 @@ reproducibility, and validation requirements.
 - For native Windows builds, use `setup.ps1` / `tsfp.ps1` and
   the documented MSVC x64 workflow. Keep its build output in `build/windows`
   and the normal Release executable in `build/windows/Release`.
-- The Mac compatibility launcher runs that Windows executable through CrossOver; this is not
-  a native Mac build. Use `Play-Mac.command` / `tools/play-mac.py` when present
-  in the synced revision. Reuse `build/windows/Release`, `private/game`,
-  `private/saves`, and the same configuration paths. Do not create a second
-  game-data copy inside a bottle or introduce a separate Mac build tree for
-  this compatibility workflow. Keep one dedicated CrossOver bottle outside
-  the checkout and include its disk use in storage reports.
-- Native Apple Silicon bring-up is separate: use `tools/build-native-mac.py`
+- For native Apple Silicon builds, use `tools/build-native-mac.py`
   with the same upstream/XBE/Python pins and complete patch stack. Keep one
-  native build in `build/macos`; it is needed alongside the retained Windows
-  compatibility build for this request. Use `tools/test-native-mac.py` for
-  bounded tests in `private/test-saves/native-mac`. Both `RECOMP_DISPLAY_CONFIG`
+  native build in `build/macos`; retain `build/windows` for Windows development.
+  Use `tools/test-native-mac.py` for bounded tests in `private/test-saves/native-mac`.
+  Both `RECOMP_DISPLAY_CONFIG`
   (upstream runtime settings) and `TSFP_DISPLAY_CONFIG` (PC display settings)
   must be isolated, along with the input/save paths. Never let runtime defaults
   write into the user's home configuration directory during an automated run.
@@ -77,9 +70,8 @@ reproducibility, and validation requirements.
   presents separately. Never raise the console clock as an FPS shortcut.
   The shared patch stack enables optimized scalar native game code with debug
   symbols; GPU vertex programs retain the CPU interpreter as fallback/reference.
-- `Play-Native-Mac.command` is the interactive ARM64 launcher, separate from
-  `Play-Mac.command` (CrossOver). It preserves personal controls/display settings
-  and uses `private/saves`; native runtime settings stay in ignored
+- `Play-Native-Mac.command` is the interactive ARM64 launcher. It preserves
+  personal controls/display settings and uses `private/saves`; native runtime settings stay in ignored
   `private/native-settings`. Its `--check` is read-only. Automated tests must
   use the bounded isolated runner, never the interactive launcher. Interactive
   logs reuse `logs/native-play.out` / `.err`, capped at 4 MiB each.

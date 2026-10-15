@@ -3,6 +3,27 @@
 Tested on Windows and Apple Silicon macOS on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## CrossOver integration removed — October 15
+
+- Removed the compatibility launcher, Python implementation, dedicated tests
+  and setup instructions. The native launcher owns its game-data/settings
+  validation directly; it has no dependency on the removed launcher. Shared
+  `AGENTS.md` now documents native Mac and Windows workflows.
+- Moved the dedicated TimeSplitters compatibility-test bottle and obsolete
+  Python caches to Trash. The bottle contained 309.5 MiB of physical allocation
+  (305.2 MiB logical); recycling preserves recovery and does not free that space
+  until Trash is emptied. The shared application, Windows build, native binary,
+  original game data, personal settings and saves were preserved.
+- On macOS 27.0.1 ARM64 with Python 3.12, 24 portable tests pass and 2
+  Windows-only checks are skipped. Native launcher `--check`, shell syntax and
+  diff whitespace checks pass. No game rebuild or gameplay run was needed:
+  runtime source/patches are unchanged from native build `024d9be` (AppleClang
+  21, SDL 3.4.16, OpenGL 4.1 Metal -91.7). Source base is `024d9be` plus this
+  launcher/documentation removal. Evidence: `logs/remove-crossover-tests.log`,
+  `logs/remove-crossover-cleanup.json` and `logs/remove-crossover-validation.json`.
+- Changes remain local on `mac-port`; synchronization on the other computer
+  is unverified. Historical validation logs remain as recovery records.
+
 ## Native Mac mouse-look — October 15
 
 - Clicking inside the focused native game window now enables relative
@@ -381,8 +402,8 @@ in this section describe the state before the renderer connection.
   and extracted one copy: 412 files, 4,046,110,016 bytes, in `private/game`.
   Extraction paths/sizes were checked and the extracted executable rehashed.
   `private/disc.json` and `logs/iso-verification.json` record the checks.
-- This supersedes the missing-data blocker below. The CrossOver prerequisite
-  check now passes; no Mac game-play validation was performed in this pass.
+- Game data is now available locally; no Mac gameplay validation was performed
+  in this ISO preparation pass.
 - Checked out the exact pinned runtime revision under `external/ts3FPrecomp`.
   Found a reproducible patch-installation failure on its CRLF CMake source.
   Made patch context whitespace handling explicit, avoiding reliance on the
@@ -395,7 +416,7 @@ in this section describe the state before the renderer connection.
 - Compiled and ran an actual ARM64 Mach-O test with Apple Clang 21 on macOS
   27.0.1. It verifies 64 MiB aliased mappings, bidirectional data coherence,
   non-destructive collision rejection, a worker thread and event signaling.
-  This runs without Wine/CrossOver/Rosetta. The initial low-address-linker
+  This runs natively. The initial low-address-linker
   experiment was terminated before useful output; the passing test uses the
   normal executable layout and OS-selected addresses. It does not establish
   that the full Xbox address-space mapping is ready.
@@ -411,36 +432,6 @@ in this section describe the state before the renderer connection.
   `logs/native-platform-before.*`, `logs/native-platform-after.*`, and
   `logs/native-kernel-compile-summary.json`. Personal saves and settings were
   not used. No disposable virtual disk images were created.
-
-## Mac compatibility preparation — October 15
-
-- On an Apple Silicon Mac running macOS 27.0.1, the installed CrossOver 26.3
-  successfully ran a Windows command. Rosetta execution and CrossOver's
-  conversion of this checkout's path were checked.
-- Created one Windows 10 64-bit bottle, `TimeSplitters-Future-Perfect`, and
-  selected D3DMetal. The bottle uses approximately 309 MiB of physical space
-  outside the project. No Windows VM was created.
-- Verified public release `v0.1.0-alpha.1` against archive SHA-256
-  `01cb329cdda18064f7c23b1afe8c8dfa0ac0d64b31eff7fcd93901caa5259de5`, then
-  verified individual runtime hashes. Installed only runtime files, licenses,
-  and the build manifest under `build/windows/Release` (approximately 128 MiB).
-  No ZIP, duplicate game extraction, or release staging directory was retained.
-  This release records source commit `89b6063`, not the reviewed `dc0a606` tree.
-- The actual executable loaded, printed its startup banner, and reached its
-  missing-game-data error with no missing-library error in the captured log.
-  The diagnostic run was stopped after 15 seconds using a targeted task kill
-  in this dedicated bottle. It used `private/test-saves/mac-compatibility`;
-  no personal saves/settings were created or used and no virtual disks appeared.
-  Evidence: `logs/mac-compatibility-probe.out` and `.err`.
-- Added `Play-Mac.command` and `tools/play-mac.py` with game-version validation,
-  Windows-path conversion, preserved interactive save/config locations, and a
-  read-only `--check`. Three focused launcher tests pass, including path names
-  containing spaces, removal of stale replay/capture overrides, and rejection
-  of invalid mouse settings. Shell syntax and diff whitespace checks pass.
-- **Blocked on game-data transfer:** this checkout has no `private/game`, and
-  the user confirmed it is only on the other computer. Mac graphics, movies,
-  audio, mouse capture, menus, gameplay, fullscreen and save/load remain
-  unverified. The missing-data startup probe does not establish playability.
 
 ## Display settings and texture preview — October 15
 

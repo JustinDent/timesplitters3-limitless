@@ -2,8 +2,8 @@
 """Launch the experimental native Mac build for interactive play."""
 import argparse
 import hashlib
-import importlib.util
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -12,9 +12,27 @@ import sys
 import threading
 
 ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location('mac_common_launch', ROOT / 'tools/play-mac.py')
-common = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(common)
+EXPECTED_XBE = '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+
+
+def check_game(root):
+    game = root / 'private/game'
+    if not (game / 'default.xbe').is_file():
+        raise ValueError(f'Missing game data. Copy the other computer\'s private/game folder to {game}.')
+    if hashlib.sha256((game / 'default.xbe').read_bytes()).hexdigest() != EXPECTED_XBE:
+        raise ValueError('default.xbe does not match the supported US Xbox release.')
+    for name in ('pak', 'xmv'):
+        if not (game / name).is_dir() or not any((game / name).iterdir()):
+            raise ValueError(f'Missing or empty game asset directory: {game / name}')
+
+
+def read_controls(path):
+    controls = json.loads(path.read_text(encoding='utf-8-sig'))
+    mouse = controls.get('mouse', {})
+    sensitivity = mouse.get('sensitivity', 0.10)
+    if isinstance(sensitivity, bool) or not isinstance(sensitivity, (int, float)) or not math.isfinite(sensitivity) or not 0.001 <= sensitivity <= 10:
+        raise ValueError('Mouse sensitivity must be a finite number from 0.001 to 10.')
+    return sensitivity, bool(mouse.get('enabled', True)), bool(mouse.get('invert_y', False))
 
 
 def game_environment(base, root, fps=None):
@@ -70,7 +88,7 @@ def main():
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         raise ValueError('This native build requires an Apple Silicon Mac.')
-    common.check_game(ROOT)
+    check_game(ROOT)
     executable = ROOT / 'build/macos/futureperfect_recomp'
     kind = subprocess.check_output(['file', str(executable)], text=True)
     if 'Mach-O 64-bit executable arm64' not in kind:
@@ -79,7 +97,7 @@ def main():
     if hashlib.sha256(executable.read_bytes()).hexdigest() != manifest.get('executable_sha256'):
         raise ValueError('Native executable differs from BUILD.json; rebuild before launching.')
     controls = ROOT / 'config/pc-controls.json'
-    common.read_controls(controls if controls.exists() else ROOT / 'config/pc-controls.default.json')
+    read_controls(controls if controls.exists() else ROOT / 'config/pc-controls.default.json')
     print(f'Native ARM64 build ready: {executable}')
     if args.check:
         return 0

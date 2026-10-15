@@ -2,8 +2,9 @@
 
 Target: the original Xbox US release, title ID `45410066`, XDK 5849.
 This workspace uses static recompilation: translate the original x86 executable
-into C and link it to a native Windows runtime. This does not recover the original
-C/C++ source. A build is an experimental port until gameplay has been verified.
+into C and link it to a native Windows or Apple Silicon Mac runtime. This does
+not recover the original C/C++ source. A build is an experimental port until
+gameplay has been verified.
 
 ## Download and play
 
@@ -28,51 +29,7 @@ To produce the same public package after building:
 This uses an explicit file list and default settings. It excludes all game data,
 personal settings, and saves, and writes the ZIP plus SHA-256 under `build/releases`.
 
-## Mac compatibility setup (experimental)
-
-The quickest route to test this Windows build on Apple Silicon is CrossOver.
-This is a compatibility-layer launch, not a native Mac build, and gameplay on
-Mac has not yet been verified. The current host integration uses Win32 input,
-dialogs and synchronization, and the pinned title links Direct3D 11/DXGI; a
-native port needs more than changing the compiler or the launch script.
-
-1. Install [CrossOver](https://www.codeweavers.com/crossover) and create a
-   **Windows 10 64-bit** bottle named **TimeSplitters-Future-Perfect**. Select
-   **D3DMetal** under its Graphics setting. CrossOver supports both D3DMetal and
-   DXMT for Direct3D 11; DXMT is a fallback to test if rendering fails. See the
-   [vendor guide](https://support.codeweavers.com/crossover-mac-user-guide).
-2. Keep the Windows executable and its four runtime DLLs in
-   `build/windows/Release`. Use that directory from the Windows computer, or
-   the `Bin` files from the public release. Retain the release's licenses and
-   `BUILD.json`. The public `v0.1.0-alpha.1` binary records source commit
-   `89b6063`, which differs from this checkout; it may lack newer source changes.
-3. Transfer the other computer's complete `private/game` folder **once**, or
-   extract your verified Xbox ISO once with the pinned upstream `tools.xiso`,
-   into this checkout's `private/game`. It must contain the supported
-   `default.xbe` plus the `pak` and `xmv` directories. Do not overwrite an
-   existing extraction. Git does not transfer these ignored game files.
-4. Double-click **Play-Mac.command**. For a read-only readiness check, run
-   `python3 tools/play-mac.py --check` from this directory.
-
-The launcher requires Python 3, uses CrossOver's `winepath` for Windows paths,
-and launches the `.exe` directly. It preserves `config/pc-controls.json` and
-`config/pc-display.ini`, uses `private/saves` for interactive play, and writes
-diagnostics to `logs/mac-play-*`. It creates default controls only if no personal
-configuration exists. It does not copy game files, enable texture packs, or
-inherit replay/capture variables from earlier tests. The `--check` command
-does not launch the game or create personal settings/saves. A successful check
-confirms prerequisites only; menus, audio, mouse capture, fullscreen, save/load,
-and actual gameplay still require a Mac playtest using isolated test saves.
-
-On October 15, 2026, this Mac had CrossOver 26.3 and working Rosetta. The public
-release was checksum-verified and its runtime installed in the single existing
-build location, without retaining a ZIP or staging tree. The dedicated bottle
-ran a Windows command successfully. The user subsequently supplied the ISO;
-all 412 game files are now extracted in `private/game` and the executable hash
-matches. The original ISO is preserved in `private/discs`. The prerequisite
-check passes; rendered gameplay has not yet been tested on this Mac.
-
-### Native Apple Silicon bring-up
+## Native Apple Silicon setup (experimental)
 
 Native work stays on **mac-port**. The Mac now builds an ARM64 Mach-O executable
 from the verified game data and the same pinned runtime and Python dependencies
@@ -86,7 +43,11 @@ Double-click **Play-Native-Mac.command** to try the native build without a time
 limit. It uses your normal `private/saves` and preserves existing controls and
 PC display settings. Native runtime settings stay under `private/native-settings`.
 Use `./Play-Native-Mac.command --check` for a read-only prerequisite check.
-`Play-Mac.command` remains the CrossOver launcher.
+
+Keep one verified extraction in `private/game`, containing `default.xbe`, `pak`
+and `xmv`. Transfer it once from the Windows checkout or extract your supported
+US Xbox ISO with the pinned upstream `tools.xiso`; preserve any existing copy.
+Git does not transfer these ignored game files.
 
 From the project root, use Python 3.12 or newer, Xcode command-line tools, and
 an installed OpenSSL development library. The tested Mac has Apple Clang 21,
@@ -221,7 +182,7 @@ per stream and reused on the next launch.
 Portable patch, launcher and test-isolation checks:
 
 ```sh
-.venv/bin/python -m pytest tests/test_patch_updates.py tests/test_mac_launcher.py tests/test_native_mac_tools.py tests/test_native_mac_launcher.py -q
+.venv/bin/python -m pytest tests/test_patch_updates.py tests/test_native_mac_tools.py tests/test_native_mac_launcher.py -q
 ```
 
 ## Local workflow

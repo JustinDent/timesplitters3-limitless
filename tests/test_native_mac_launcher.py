@@ -2,11 +2,24 @@
 import importlib.util
 import io
 from pathlib import Path
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('play_native', ROOT / 'tools/play-native-mac.py')
 launcher = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(launcher)
+
+
+@pytest.mark.parametrize('value', ['NaN', 'Infinity', '-1', '0', '10.1', 'true', '"0.1"'])
+def test_invalid_mouse_settings_stop_before_launch(tmp_path, value):
+    path = tmp_path / 'controls.json'
+    path.write_text('{"mouse":{"sensitivity":' + value + '}}')
+    with pytest.raises(ValueError, match='Mouse sensitivity'):
+        launcher.read_controls(path)
+
+
+def test_existing_fixture_is_supported():
+    assert launcher.read_controls(ROOT / 'tests/fixtures/pc-controls.json') == (0.1, True, False)
 
 
 def test_native_routes_and_stale_automation(tmp_path):
