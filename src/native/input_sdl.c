@@ -3,6 +3,10 @@
 #include "input_sdl.h"
 #include "settings_macos.h"
 #include "input_bindings.h"
+#include "pc_prompts.h"
+#include "pc_camera.h"
+#include "pc_input.h"
+#include <pthread.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,10 +14,10 @@
 #include <math.h>
 static atomic_uchar keys[256];
 static atomic_int focused;
-static atomic_int mouse_x, mouse_y;
+static PcInput camera_input;
+static pthread_mutex_t camera_lock=PTHREAD_MUTEX_INITIALIZER;
 static atomic_int mouse_enabled=1, mouse_invert;
 static _Atomic float mouse_sensitivity=0.10f;
-static float dx,dy;
 static int captured;
 static int capture_click;
 
@@ -60,7 +64,7 @@ void tsfp_native_key_name(int key,char *out,size_t bytes) {
     if(name&&*name)snprintf(out,bytes,"%s",name);else snprintf(out,bytes,"Key %d",key);
 }
 static void clear_mouse(void) {
-    atomic_store(&mouse_x,0);atomic_store(&mouse_y,0);dx=dy=0;
+    pthread_mutex_lock(&camera_lock);camera_input.dx=camera_input.dy=0;pthread_mutex_unlock(&camera_lock);
 }
 /* Main-thread only: worker polls see only the cleared/published atomics. */
 static void set_capture(SDL_Window *window,int wanted) {
@@ -95,6 +99,7 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
     if(e->type==SDL_EVENT_KEY_DOWN||e->type==SDL_EVENT_KEY_UP){
         int vk=virtual_key(e->key.scancode),down=e->type==SDL_EVENT_KEY_DOWN;
         if(vk)atomic_store(&keys[vk],down);
+        if(down && !e->key.repeat)pc_prompts_keyboard();
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F2 && window){
             tsfp_native_settings_show(window);return;
         }
@@ -111,6 +116,7 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
     }
     if(e->type==SDL_EVENT_MOUSE_BUTTON_DOWN||e->type==SDL_EVENT_MOUSE_BUTTON_UP){
         int down=e->type==SDL_EVENT_MOUSE_BUTTON_DOWN;
+        if(down && atomic_load(&focused))pc_prompts_keyboard();
         if(down && !atomic_load(&focused))return;
         if(e->button.button==SDL_BUTTON_LEFT) {
             if(down && window && !captured && atomic_load(&mouse_enabled)) {
@@ -128,23 +134,35 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
         if(vk)atomic_store(&keys[vk],e->type==SDL_EVENT_MOUSE_BUTTON_DOWN);
     }
     if(e->type==SDL_EVENT_MOUSE_WHEEL && captured && atomic_load(&focused)) {
+        if(e->wheel.y)pc_prompts_keyboard();
         if(e->wheel.y>0)atomic_store(&keys[0x86],1);
         if(e->wheel.y<0)atomic_store(&keys[0x87],1);
     }
     if(e->type==SDL_EVENT_MOUSE_MOTION && captured && atomic_load(&focused)) {
-        dx+=e->motion.xrel;dy+=e->motion.yrel;
+        if(e->motion.xrel || e->motion.yrel)pc_prompts_keyboard();
+        pthread_mutex_lock(&camera_lock);
+        camera_input.focused=atomic_load(&focused);camera_input.captured=captured;
+        pc_input_motion(&camera_input,e->motion.xrel,e->motion.yrel,SDL_GetTicks());
+        pthread_mutex_unlock(&camera_lock);
         static unsigned trace_count;
         if(trace_count<8 && getenv("TSFP_NATIVE_TRACE_RENDER")) {
             fprintf(stderr,"[native-input] captured mouse delta %g,%g\n",e->motion.xrel,e->motion.yrel);trace_count++;
         }
     }
 }
-static int stick(float delta) {return (int)fmaxf(-32767,fminf(32767,delta*14000*atomic_load(&mouse_sensitivity)));}
-void tsfp_native_mouse_sample(XBOX_GAMEPAD *out) {
-    if(!atomic_load(&focused)||!atomic_load(&mouse_enabled))return;
-    int x=atomic_load(&mouse_x),y=atomic_load(&mouse_y);
-    if(abs(x)>abs(out->sThumbRX))out->sThumbRX=x;
-    if(abs(y)>abs(out->sThumbRY))out->sThumbRY=y;
+/* Mouse deltas reach the camera wrapper; controller stick input stays intact. */
+void tsfp_native_mouse_sample(XBOX_GAMEPAD *out) {(void)out;}
+void pc_controls_apply_mouse(uint32_t player,uint32_t fov_object,ptrdiff_t offset) {
+    float *yaw,*pitch,fov;
+    if(!pc_camera_fields(player,fov_object,offset,&yaw,&pitch,&fov))return;
+    pthread_mutex_lock(&camera_lock);
+    camera_input.focused=atomic_load(&focused)&&atomic_load(&mouse_enabled);
+    float old_yaw=*yaw,old_pitch=*pitch;
+    int changed=pc_input_look(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),
+                             atomic_load(&mouse_invert),fov<55?fov/55:1,yaw,pitch);
+    pthread_mutex_unlock(&camera_lock);
+    static unsigned samples;
+    if(changed && samples++<12)fprintf(stderr,"[native-mouse] yaw %.3f -> %.3f pitch %.3f -> %.3f fov %.3f\n",old_yaw,*yaw,old_pitch,*pitch,fov);
 }
 void tsfp_native_input_frame(SDL_Window *window) {
     atomic_store(&keys[0x86],0);atomic_store(&keys[0x87],0);
@@ -161,6 +179,23 @@ void tsfp_native_input_frame(SDL_Window *window) {
         char line[80];clearerr(test_file);
         for(int n=0;n<32 && fgets(line,sizeof line,test_file);n++){
             line[strcspn(line,"\r\n")]=0;
+            if(!line[0])continue;
+            float mx,my;int button,down;
+            if(sscanf(line,"focus %d",&down)==1 && (down==0 || down==1)) {
+                SDL_Event e={0};e.type=down?SDL_EVENT_WINDOW_FOCUS_GAINED:SDL_EVENT_WINDOW_FOCUS_LOST;
+                e.window.windowID=SDL_GetWindowID(window);SDL_PushEvent(&e);
+                fprintf(stderr,"[native-input] test SDL focus %d\n",down);continue;
+            }
+            if(sscanf(line,"motion %f %f",&mx,&my)==2 && isfinite(mx) && isfinite(my) && fabsf(mx)<=4096 && fabsf(my)<=4096) {
+                SDL_Event e={0};e.type=SDL_EVENT_MOUSE_MOTION;e.motion.windowID=SDL_GetWindowID(window);
+                e.motion.xrel=mx;e.motion.yrel=my;SDL_PushEvent(&e);
+                fprintf(stderr,"[native-input] test SDL motion %g,%g\n",mx,my);continue;
+            }
+            if(sscanf(line,"button %d %d",&button,&down)==2 && button>=1 && button<=5 && (down==0 || down==1)) {
+                SDL_Event e={0};e.type=down?SDL_EVENT_MOUSE_BUTTON_DOWN:SDL_EVENT_MOUSE_BUTTON_UP;
+                e.button.windowID=SDL_GetWindowID(window);e.button.button=button;e.button.down=down;
+                SDL_PushEvent(&e);fprintf(stderr,"[native-input] test SDL button %d %d\n",button,down);continue;
+            }
             SDL_Scancode code=SDL_GetScancodeFromName(line+1);
             if((line[0]=='+'||line[0]=='-')&&code!=SDL_SCANCODE_UNKNOWN){
                 SDL_Event e={0};e.type=line[0]=='+'?SDL_EVENT_KEY_DOWN:SDL_EVENT_KEY_UP;
@@ -169,16 +204,15 @@ void tsfp_native_input_frame(SDL_Window *window) {
             }
         }
     }
-    atomic_store(&mouse_x,captured?stick(dx):0);
-    /* The supported game's default look profile turns downward for positive
-     * right-stick Y. SDL motion is also positive downward; do not negate it. */
-    atomic_store(&mouse_y,captured?stick(atomic_load(&mouse_invert)?-dy:dy):0);dx=dy=0;
+
 }
+#include "prompt_selftest.inc"
 int tsfp_native_input_test(void) {
+    int prompt_ok=native_test_prompts();
     SDL_Event e={0};XBOX_GAMEPAD pad;
     e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,NULL);
     e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_RETURN;tsfp_native_input_event(&e,NULL);
-    recomp_bindings_sample(0,&pad);int ok=pad.bAnalogButtons[XBOX_BUTTON_A]==255;
+    recomp_bindings_sample(0,&pad);int ok=prompt_ok && pad.bAnalogButtons[XBOX_BUTTON_A]==255;
     e.type=SDL_EVENT_KEY_UP;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;
     e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_DOWN;tsfp_native_input_event(&e,NULL);
@@ -200,13 +234,19 @@ int tsfp_native_input_test(void) {
     e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==255;
     e.type=SDL_EVENT_MOUSE_BUTTON_UP;tsfp_native_input_event(&e,NULL);
+    BYTE guest[2048]={0};ptrdiff_t offset=(ptrdiff_t)guest;
+    float *yaw=(float*)(guest+0x100+16),*pitch=yaw+1,*fov=(float*)(guest+0x384+512);*fov=55;
     captured=1;tsfp_native_mouse_config(1,0.1,0);
     e.type=SDL_EVENT_MOUSE_MOTION;e.motion.xrel=2;e.motion.yrel=3;tsfp_native_input_event(&e,NULL);
     tsfp_native_input_frame(NULL);recomp_bindings_sample(0,&pad);
-    ok &= pad.sThumbRX==2800 && pad.sThumbRY==4200;
+    pc_controls_apply_mouse(16,512,offset);
+    ok &= !pad.sThumbRX && !pad.sThumbRY && fabsf(*yaw+.2f)<.001f && fabsf(*pitch+.3f)<.001f;
     tsfp_native_mouse_config(1,0.2,1);tsfp_native_input_event(&e,NULL);
     tsfp_native_input_frame(NULL);recomp_bindings_sample(0,&pad);
-    ok &= pad.sThumbRX==5600 && pad.sThumbRY==-8400;
+    pc_controls_apply_mouse(16,512,offset);
+    ok &= fabsf(*yaw+.6f)<.001f && fabsf(*pitch-.3f)<.001f;
+    *yaw=*pitch=0;*fov=27.5f;tsfp_native_input_event(&e,NULL);
+    pc_controls_apply_mouse(16,512,offset);ok &= fabsf(*yaw+.2f)<.001f && fabsf(*pitch-.3f)<.001f;
     tsfp_native_mouse_config(0,0.1,0);recomp_bindings_sample(0,&pad);
     ok &= pad.sThumbRX==0 && pad.sThumbRY==0;
     captured=0;tsfp_native_mouse_config(1,0.1,0);release_all();
@@ -226,10 +266,12 @@ int tsfp_native_input_test(void) {
         recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==255;
         e.type=SDL_EVENT_MOUSE_MOTION;e.motion.xrel=10;e.motion.yrel=-10;
         tsfp_native_input_event(&e,window);tsfp_native_input_frame(window);
-        recomp_bindings_sample(0,&pad);ok &= pad.sThumbRX>0 && pad.sThumbRY<0;
+        recomp_bindings_sample(0,&pad);*yaw=*pitch=0;*fov=55;
+        pc_controls_apply_mouse(16,512,offset);ok &= *yaw<0 && *pitch>0 && !pad.sThumbRX && !pad.sThumbRY;
         e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_ESCAPE;
         tsfp_native_input_event(&e,window);recomp_bindings_sample(0,&pad);
         ok &= !captured && !SDL_GetWindowRelativeMouseMode(window) && !pad.sThumbRX && !pad.sThumbRY && !pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER];
+        *yaw=*pitch=0;pc_controls_apply_mouse(16,512,offset);ok &= *yaw==0 && *pitch==0;
         e.type=SDL_EVENT_MOUSE_MOTION;e.motion.xrel=50;e.motion.yrel=50;
         tsfp_native_input_event(&e,window);tsfp_native_input_frame(window);
         recomp_bindings_sample(0,&pad);ok &= !pad.sThumbRX && !pad.sThumbRY;
@@ -264,7 +306,7 @@ int tsfp_native_input_test(void) {
     if(joy) {
         SDL_SetJoystickVirtualButton(joy,SDL_GAMEPAD_BUTTON_SOUTH,true);
         SDL_Delay(300);recomp_bindings_sample(0,&pad);
-        ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==255;
+        ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==255 && !pc_prompts_keyboard_active();
         SDL_SetJoystickVirtualButton(joy,SDL_GAMEPAD_BUTTON_SOUTH,false);
         SDL_Delay(3);recomp_bindings_sample(0,&pad);
         ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;

@@ -3,9 +3,9 @@
 /* SDL3/Cocoa + OpenGL 4.1 bring-up renderer. The shared HLE preserves the
  * guest's execution and supplies decoded state, textures and vertex layouts.
  * NV2A vertex programs compile to GLSL, with a portable CPU fallback. The
- * fragment shader evaluates stage-0 register combiners. Offscreen targets and
- * 2x render interpolation are supported; general multi-texturing, screen-copy
- * effects, movies and full rendering fidelity remain incomplete.
+ * fragment shader evaluates four 2D texture inputs and register combiners.
+ * Offscreen targets, screen copies, scissors and 2x interpolation are supported;
+ * advanced texture modes, cube/volume resources and movies remain incomplete.
  */
 
 #include "d3d8_xbox.h"
@@ -106,6 +106,7 @@ static D3DGL g;
 static unsigned native_present_count,native_guest_present_count;
 static int native_interp_on;
 static int native_depth_enabled=1;
+static void native_apply_scissor(void);
 static UINT native_target_width,native_target_height;
 #include "gl_context.inc"
 #include "gl_display.inc"
@@ -207,12 +208,15 @@ static const char *VS_SRC =
     "#version 330 core\n"
     "layout(location=0) in vec4 a_pos;\n"
     "layout(location=1) in vec4 a_color;\n"
-    "layout(location=2) in vec2 a_uv;\n"
+    "layout(location=2) in vec4 a_uv0;\n"
+    "layout(location=3) in vec4 a_uv1;\n"
+    "layout(location=4) in vec4 a_uv2;\n"
+    "layout(location=5) in vec4 a_uv3;\n"
     "uniform mat4 u_mvp;\n"
     "uniform int  u_use_xform;\n"
     "uniform vec2 u_size;\n"
     "out vec4 v_color;\n"
-    "out vec2 v_uv;\n"
+    "out vec4 v_uv[4];\n"
     "void main() {\n"
     "  if (u_use_xform == 1) {\n"
     "    gl_Position = u_mvp * vec4(a_pos.xyz, 1.0);\n"
@@ -223,7 +227,7 @@ static const char *VS_SRC =
     "    if (u_use_xform == 0) { float w = a_pos.w != 0.0 ? 1.0/a_pos.w : 1.0; gl_Position = vec4((a_pos.x+0.5)*2.0/u_size.x-1.0, 1.0-(a_pos.y+0.5)*2.0/u_size.y, a_pos.z*2.0-1.0, 1.0)*w; }\n"
     "  }\n"
     "  v_color = a_color;\n"
-    "  v_uv    = a_uv;\n"
+    "  v_uv[0]=a_uv0;v_uv[1]=a_uv1;v_uv[2]=a_uv2;v_uv[3]=a_uv3;\n"
     "}\n";
 
 static const char *FS_SRC =
@@ -303,6 +307,7 @@ static int init_gl_pipeline(void)
 
 static void apply_render_states(void)
 {
+    native_apply_scissor();
     /* Depth */
     if (g.rs[D3DRS_ZENABLE] && native_depth_enabled)       glEnable(GL_DEPTH_TEST);
     else                            glDisable(GL_DEPTH_TEST);
@@ -367,6 +372,7 @@ typedef struct {
     UINT offsets[16], palette;
     DWORD usage;
     int flipped; /* GPU-rendered textures have GL bottom-up storage. */
+    int screen_copy;
     GLuint pack_texture;
     uint64_t pack_key,pack_bytes;
     int pack_checked;
@@ -379,6 +385,7 @@ typedef struct {
     D3DFORMAT format;
     BYTE *readback;
     int backbuffer;
+    int image_surface, locked, lock_readonly;
     GLTexture *parent;
     UINT level;
     GLuint color,depth;
@@ -522,7 +529,7 @@ static HRESULT __stdcall tex_LockRect(IDirect3DTexture8 *self, UINT lvl, D3DLOCK
 }
 static HRESULT __stdcall tex_UnlockRect(IDirect3DTexture8 *self,UINT lvl) { NATIVE_GL_SCOPE;
     GLTexture *t=(GLTexture*)self;if(lvl>=t->levels)return D3DERR_INVALIDCALL;
-    t->flipped=0;
+    t->flipped=0;t->screen_copy=0;
     UINT w=t->width>>lvl,h=t->height>>lvl;if(!w)w=1;if(!h)h=1;
     const BYTE *src=t->sys_mem+t->offsets[lvl];
     glBindTexture(GL_TEXTURE_2D,t->gl_tex);glPixelStorei(GL_UNPACK_ALIGNMENT,1);
@@ -590,7 +597,9 @@ static HRESULT __stdcall sf_GetDesc(IDirect3DSurface8 *s, D3DSURFACE_DESC *pD)
 static HRESULT __stdcall sf_LockRect(IDirect3DSurface8 *s, D3DLOCKED_RECT *pL, const RECT *r, DWORD f)
 { NATIVE_GL_SCOPE;
     GLSurface *t=(GLSurface*)s;
-    if(!pL || r || (!t->backbuffer && !surface_color(t)))return D3DERR_INVALIDCALL;
+    if(!pL || t->locked || (r && !t->image_surface) || (!t->backbuffer && !surface_color(t)))return D3DERR_INVALIDCALL;
+    if(r && (r->left<0 || r->top<0 || r->right<=r->left || r->bottom<=r->top ||
+             r->right>(int)t->width || r->bottom>(int)t->height))return D3DERR_INVALIDCALL;
     size_t row=(size_t)t->width*4, size=row*t->height;
     if(!t->readback)t->readback=malloc(size);
     BYTE *raw=malloc(size);if(!t->readback||!raw){free(raw);return E_FAIL;}
@@ -602,13 +611,27 @@ static HRESULT __stdcall sf_LockRect(IDirect3DSurface8 *s, D3DLOCKED_RECT *pL, c
         glFramebufferTexture2D(GL_READ_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,surface_color(t),t->level);
         glReadBuffer(GL_COLOR_ATTACHMENT0);
     }
-    glReadPixels(0,0,t->width,t->height,GL_RGBA,GL_UNSIGNED_BYTE,raw);
+    glReadPixels(0,0,t->width,t->height,t->image_surface?GL_BGRA:GL_RGBA,GL_UNSIGNED_BYTE,raw);
     glBindFramebuffer(GL_READ_FRAMEBUFFER,previous);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,previous_draw);
     if(read_fbo)glDeleteFramebuffers(1,&read_fbo);if(read_color)glDeleteRenderbuffers(1,&read_color);
     for(UINT y=0;y<t->height;y++)memcpy(t->readback+y*row,raw+(t->height-1-y)*row,row);
-    free(raw);pL->pBits=t->readback;pL->Pitch=(INT)row;return S_OK;
+    free(raw);pL->pBits=t->readback+(r?(size_t)r->top*row+r->left*4:0);pL->Pitch=(INT)row;
+    t->locked=1;t->lock_readonly=!!(f&D3DLOCK_READONLY);return S_OK;
 }
-static HRESULT __stdcall sf_UnlockRect(IDirect3DSurface8 *s) { NATIVE_GL_SCOPE; (void)s; return D3D_OK; }
+static HRESULT __stdcall sf_UnlockRect(IDirect3DSurface8 *s) {
+    NATIVE_GL_SCOPE;GLSurface *t=(GLSurface*)s;
+    if(!t->locked)return D3DERR_INVALIDCALL;
+    t->locked=0;
+    if(t->image_surface && !t->lock_readonly) {
+        size_t row=(size_t)t->width*4;BYTE *raw=malloc(row*t->height);if(!raw)return E_FAIL;
+        for(UINT y=0;y<t->height;y++)memcpy(raw+y*row,t->readback+(t->height-1-y)*row,row);
+        GLint binding;glGetIntegerv(GL_TEXTURE_BINDING_2D,&binding);
+        glBindTexture(GL_TEXTURE_2D,t->color);
+        glTexSubImage2D(GL_TEXTURE_2D,0,0,0,t->width,t->height,GL_BGRA,GL_UNSIGNED_BYTE,raw);
+        glBindTexture(GL_TEXTURE_2D,binding);free(raw);
+    }
+    return S_OK;
+}
 
 static const IDirect3DSurface8Vtbl g_sf_vtbl = {
     sf_QueryInterface, sf_AddRef, sf_Release,
@@ -824,7 +847,6 @@ static void setup_fvf_attribs(DWORD fvf, UINT stride)
 {
     GLboolean xyzrhw = d3d8_fvf_transformed(fvf) ? GL_TRUE : GL_FALSE;
     GLboolean has_diff = (fvf & D3DFVF_DIFFUSE) ? GL_TRUE : GL_FALSE;
-    GLboolean has_tex  = ((fvf & D3DFVF_TEXCOUNT_MASK) >> D3DFVF_TEXCOUNT_SHIFT) > 0;
     UINT off = 0;
     /* Position: 3 floats (XYZ) or 4 floats (XYZRHW) */
     glEnableVertexAttribArray(0);
@@ -844,35 +866,62 @@ static void setup_fvf_attribs(DWORD fvf, UINT stride)
     }
     /* Specular */
     if (fvf & D3DFVF_SPECULAR) off += 4;
-    /* Texcoord 0 */
-    if (has_tex) {
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride,
-                              (const void *)(uintptr_t)off);
-    } else {
-        glDisableVertexAttribArray(2);
-        glVertexAttrib2f(2, 0.f, 0.f);
+    unsigned count=(fvf&D3DFVF_TEXCOUNT_MASK)>>D3DFVF_TEXCOUNT_SHIFT;
+    for(unsigned stage=0;stage<4;stage++) {
+        unsigned encoded=(fvf>>(16+stage*2))&3;
+        unsigned components=encoded==0?2:encoded==1?3:encoded==2?4:1;
+        if(stage<count && off+components*4<=stride) {
+            glEnableVertexAttribArray(2+stage);
+            glVertexAttribPointer(2+stage,components,GL_FLOAT,GL_FALSE,stride,(void*)(uintptr_t)off);
+            off+=components*4;
+        } else {glDisableVertexAttribArray(2+stage);glVertexAttrib4f(2+stage,0,0,0,1);}
     }
 }
 
+static GLenum native_wrap(DWORD mode) {
+    return mode==D3DTADDRESS_CLAMP?GL_CLAMP_TO_EDGE:mode==D3DTADDRESS_MIRROR?GL_MIRRORED_REPEAT:
+           mode==D3DTADDRESS_BORDER?GL_CLAMP_TO_BORDER:GL_REPEAT;
+}
+static GLuint native_samplers[4];
 static void bind_texture0(void)
 {
-    int use_tex = 0;
-    GLTexture *t = (GLTexture *)g.textures[0];
-    if (t && t->gl_tex) {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, t->pack_texture?t->pack_texture:t->gl_tex);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, t->pack_texture?GL_LINEAR_MIPMAP_LINEAR:GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,     GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,     GL_REPEAT);
-        use_tex = 1;
+    if(!native_samplers[0])glGenSamplers(4,native_samplers);
+    GLint used[4],flipped[4],modes[4];GLfloat scale[8];
+    DWORD token=d3d8_combiners_get_pixel_shader(),tm=g.rs[D3DRS_PSTEXTUREMODES];
+    static unsigned warned;
+    for(int stage=0;stage<4;stage++) {
+        GLTexture *t=(GLTexture*)g.textures[stage];
+        glActiveTexture(GL_TEXTURE0+stage);glBindSampler(stage,native_samplers[stage]);used[stage]=t && t->gl_tex;
+        glBindTexture(GL_TEXTURE_2D,used[stage]?(t->pack_texture?t->pack_texture:t->gl_tex):g.fallback_texture);
+        glSamplerParameteri(native_samplers[stage],GL_TEXTURE_MIN_FILTER,g.tss[stage][D3DTSS_MINFILTER]==D3DTEXF_POINT?GL_NEAREST:(t&&t->pack_texture?GL_LINEAR_MIPMAP_LINEAR:GL_LINEAR));
+        glSamplerParameteri(native_samplers[stage],GL_TEXTURE_MAG_FILTER,g.tss[stage][D3DTSS_MAGFILTER]==D3DTEXF_POINT?GL_NEAREST:GL_LINEAR);
+        glSamplerParameteri(native_samplers[stage],GL_TEXTURE_WRAP_S,native_wrap(g.tss[stage][D3DTSS_ADDRESSU]));
+        glSamplerParameteri(native_samplers[stage],GL_TEXTURE_WRAP_T,native_wrap(g.tss[stage][D3DTSS_ADDRESSV]));
+        flipped[stage]=t && t->flipped;
+        scale[stage*2]=scale[stage*2+1]=1;
+        if(token && t && d3d8_format_is_linear(t->format)) {
+            scale[stage*2]=1.0f/t->width;scale[stage*2+1]=1.0f/t->height;
+        }
+        /* Internal modes: 0 absent, 1 projected 2D, 4 passthrough,
+           32 ordinary 2D. Other Xbox modes remain explicit. */
+        if(!token)modes[stage]=32;
+        else if((token>>8)&0xffff) {
+            unsigned m=(token>>(8+stage*4))&15;modes[stage]=m==0?32:m==3?0:31;
+        } else if(tm&D3D8_PSTEXTUREMODES_XBOX)modes[stage]=(tm>>(5*stage))&31;
+        else {unsigned m=(tm>>(4*stage))&15;modes[stage]=m==0?32:m==3?0:31;}
+        unsigned mode=modes[stage];
+        if(mode!=0 && mode!=1 && mode!=4 && mode!=32 && !(warned&(1u<<mode))) {
+            warned|=1u<<mode;fprintf(stderr,"[native-gl] texture shader mode %u remains unsupported\n",mode);
+        }
+        char name[24];snprintf(name,sizeof name,"u_tex%d",stage);
+        glUniform1i(glGetUniformLocation(g.prog,name),stage);
     }
-    if(!use_tex){glActiveTexture(GL_TEXTURE0);glBindTexture(GL_TEXTURE_2D,g.fallback_texture);}
-    glUniform1i(g.u_tex0, 0);
-    glUniform1i(g.u_use_tex, use_tex);
-    glUniform1i(glGetUniformLocation(g.prog,"u_flip0"),t && t->flipped);
-    glUniform1i(glGetUniformLocation(g.prog,"u_combiner"),d3d8_combiners_get_pixel_shader()!=0);
+    glActiveTexture(GL_TEXTURE0);
+    glUniform1iv(glGetUniformLocation(g.prog,"u_used"),4,used);
+    glUniform1iv(glGetUniformLocation(g.prog,"u_flip"),4,flipped);
+    glUniform1iv(glGetUniformLocation(g.prog,"u_mode"),4,modes);
+    glUniform2fv(glGetUniformLocation(g.prog,"u_scale"),4,scale);
+    glUniform1i(glGetUniformLocation(g.prog,"u_combiner"),token!=0);
     glUniform1uiv(glGetUniformLocation(g.prog,"u_rs"),256,g.rs);
 }
 
@@ -899,7 +948,7 @@ static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *s, D3DPRIMITIVETY
     GLuint gpu=native_gpu_prepare(stride);
     if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
         converted=native_shader_vertices(verts,vcount,stride);if(!converted)return E_FAIL;
-        verts=converted;stride=40;
+        verts=converted;stride=96;
     }
     GLsizeiptr size = (GLsizeiptr)vcount * stride;
     native_select_program(gpu?gpu:native_fixed_program);
@@ -942,7 +991,7 @@ static HRESULT __stdcall dev_DrawIndexedPrimitiveUP(IDirect3DDevice8 *s, D3DPRIM
     GLuint gpu=native_gpu_prepare(stride);
     if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
         converted=native_shader_vertices(verts,nv,stride);if(!converted)return E_FAIL;
-        verts=converted;stride=40;
+        verts=converted;stride=96;
     }
     GLsizeiptr vbytes = (GLsizeiptr)nv * stride;
     native_select_program(gpu?gpu:native_fixed_program);
@@ -1142,7 +1191,7 @@ static HRESULT __stdcall dev_SetVertexShader(IDirect3DDevice8 *s, DWORD h)
 { NATIVE_GL_SCOPE;
     (void)s; g.current_vsh = h;
     /* Handle is either a real shader ID (high bit set) or an FVF code. */
-    if (h < 0x10000u) g.current_fvf = h;
+    if (!d3d8_vsh_is_programmable(h)) g.current_fvf = h;
     return D3D_OK;
 }
 static HRESULT __stdcall dev_GetVertexShader(IDirect3DDevice8 *s, DWORD *p)
@@ -1174,7 +1223,13 @@ static HRESULT __stdcall dev_EndPush(IDirect3DDevice8 *s, DWORD *p)
 static HRESULT __stdcall dev_Swap(IDirect3DDevice8 *s, DWORD flags)
 { NATIVE_GL_SCOPE; return dev_Present(s, NULL, NULL, NULL, NULL); (void)flags; }
 
-static HRESULT __stdcall dev_CreateImageSurface(IDirect3DDevice8 *s,UINT w,UINT h,D3DFORMAT f,IDirect3DSurface8 **p) { NATIVE_GL_SCOPE;if(p)*p=NULL;return E_NOTIMPL;}
+static HRESULT __stdcall dev_CreateImageSurface(IDirect3DDevice8 *s,UINT w,UINT h,D3DFORMAT f,IDirect3DSurface8 **p) {
+    NATIVE_GL_SCOPE;if(!p)return D3DERR_INVALIDCALL;*p=NULL;
+    if(f!=D3DFMT_A8R8G8B8 && f!=D3DFMT_X8R8G8B8 && f!=D3DFMT_LIN_A8R8G8B8 && f!=D3DFMT_LIN_X8R8G8B8)return E_NOTIMPL;
+    HRESULT result=dev_CreateRenderTarget(s,w,h,f,0,TRUE,p);
+    if(SUCCEEDED(result))((GLSurface*)*p)->image_surface=1;
+    return result;
+}
 static HRESULT __stdcall dev_CreateCubeTexture(IDirect3DDevice8 *s,UINT e,UINT l,DWORD u,D3DFORMAT f,D3DPOOL pool,IDirect3DCubeTexture8 **p) { NATIVE_GL_SCOPE;if(p)*p=NULL;return E_NOTIMPL;}
 static HRESULT __stdcall dev_CreateVolumeTexture(IDirect3DDevice8 *s,UINT w,UINT h,UINT d,UINT l,DWORD u,D3DFORMAT f,D3DPOOL pool,IDirect3DVolumeTexture8 **p) { NATIVE_GL_SCOPE;if(p)*p=NULL;return E_NOTIMPL;}
 
@@ -1327,36 +1382,30 @@ UINT d3d8_GetBackBufferHeight(void) { return g_guest_height; }
 UINT d3d8_GetGuestWidth(void)  { return g_guest_width; }
 UINT d3d8_GetGuestHeight(void) { return g_guest_height; }
 
-/* Scissors are not applied by this backend; the state is kept so a
- * capture snapshot can still read it. */
-static UINT    g_scissor_count;
-static BOOL    g_scissor_exclusive;
+/* Match the Windows path: the first inclusive rectangle is supported. */
+static UINT g_scissor_count;
+static BOOL g_scissor_exclusive;
 static D3DRECT g_scissor_rect;
-
-void xbox_D3D8SetScissors(UINT count, BOOL exclusive, const D3DRECT *rects)
-{
-    g_scissor_count = rects ? count : 0;
-    g_scissor_exclusive = exclusive;
-    memset(&g_scissor_rect, 0, sizeof g_scissor_rect);
-    if (g_scissor_count)
-        g_scissor_rect = rects[0];
+static void native_apply_scissor(void) {
+    if(!g_scissor_count || g_scissor_exclusive){glDisable(GL_SCISSOR_TEST);return;}
+    double sx=native_scene_active?(double)native_scene_w/g.backbuf_w:1;
+    double sy=native_scene_active?(double)native_scene_h/g.backbuf_h:1;
+    double left=g_scissor_rect.x1*sx,right=g_scissor_rect.x2*sx;
+    if(native_scene_active){double anchor=native_scene_w*native_hud_anchor;
+        left=anchor+(left-anchor)*native_hud_k;right=anchor+(right-anchor)*native_hud_k;}
+    int top=(int)(g_scissor_rect.y1*sy),bottom=(int)(g_scissor_rect.y2*sy);
+    int x=(int)left,r=(int)right,height=(int)(native_target_height*sy);
+    glEnable(GL_SCISSOR_TEST);glScissor(x,height-bottom,r>x?r-x:0,bottom>top?bottom-top:0);
 }
-
-HRESULT xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst)
-{
-    (void)dst;
-    return E_NOTIMPL;
+void xbox_D3D8SetScissors(UINT count,BOOL exclusive,const D3DRECT *rects) {
+    NATIVE_GL_SCOPE;
+    g_scissor_count=rects?count:0;g_scissor_exclusive=exclusive;
+    memset(&g_scissor_rect,0,sizeof g_scissor_rect);if(g_scissor_count)g_scissor_rect=rects[0];
+    static int said;
+    if((count>1 || (count&&exclusive)) && !said++)
+        fprintf(stderr,"[native-gl] scissor supports the first inclusive rectangle only\n");
 }
-
-HRESULT xbox_D3D8CopyBackBufferRectToTexture(IDirect3DTexture8 *dst, const RECT *src,
-                                             const POINT *at)
-{
-    (void)dst; (void)src; (void)at;
-    return E_NOTIMPL;
-}
-
-unsigned long xbox_D3D8ScreenCopyCount(void) { return 0; }
-void xbox_D3D8ScreenCopyShutdown(void) {}
+#include "gl_screen_copy.inc"
 
 /* No Hor+ on this backend, so nothing for a title to widen. */
 float xbox_D3D8ClaimHorPlus(void) { return 1.0f; }

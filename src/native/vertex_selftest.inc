@@ -9,8 +9,8 @@ static int native_test_vertex_programs(void) {
     int ok=1;GLuint buffer;glGenBuffers(1,&buffer);
     glBindVertexArray(g.vao);
     for(int op=1;op<=21;op++) {
-        NV2AVshProgram p={0};p.length=3;
-        for(int i=0;i<3;i++) {
+        NV2AVshProgram p={0};p.length=6;
+        for(int i=0;i<6;i++) {
             p.insns[i].mac_dst.temp_reg=p.insns[i].ilu_dst.temp_reg=-1;
             p.insns[i].mac_dst.output_reg=p.insns[i].ilu_dst.output_reg=NV2A_VSH_OUT_NONE;
         }
@@ -33,7 +33,11 @@ static int native_test_vertex_programs(void) {
         p.insns[2].mac_src[0].negate=1;
         p.insns[2].mac_src[0].swizzle=(NV2AVshSwizzle){3,2,1,0};
         p.insns[2].mac_dst=(NV2AVshDstOperand){-1,NV2A_VSH_OUT_T0,0,12};
-        p.insns[2].is_final=1;
+        for(int i=3;i<6;i++) {
+            p.insns[i]=p.insns[2];p.insns[i].mac_src[0].reg_index=8+i;
+            p.insns[i].mac_dst.output_reg=NV2A_VSH_OUT_T0+i-2;p.insns[i].mac_dst.output_mask=15;
+        }
+        p.insns[5].is_final=1;
         char *src=native_gpu_text(&p);GLuint vs=src?compile_shader(GL_VERTEX_SHADER,src):0;free(src);
         if(!vs){ok=0;break;}
         GLuint program=glCreateProgram();glAttachShader(program,vs);
@@ -51,7 +55,7 @@ static int native_test_vertex_programs(void) {
         glUniform1i(glGetUniformLocation(program,"screen_enabled"),0);
         for(int i=0;i<16;i++)glDisableVertexAttribArray(i);
         for(int sample=0;sample<12;sample++) {
-            float input[16][4]={{0}},actual[10],expected[10];
+            float input[16][4]={{0}},actual[24],expected[24];
             float x[]={0.0f,-0.0f,.25f,-.25f,1,2,-2,3.5f,-3.5f,20,-20,.001f};
             input[0][0]=x[sample];input[0][1]=.3f;input[0][2]=-.7f;input[0][3]=1.25f;
             input[1][0]=.6f;input[1][1]=.8f;input[1][2]=.1f;input[1][3]=.2f;
@@ -64,8 +68,8 @@ static int native_test_vertex_programs(void) {
             glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER,0,sizeof actual,actual);
             NV2AVshState result;nv2a_vsh_execute(&p,input,constants,192,&result);
             memcpy(expected,result.out[0],16);expected[2]=2*expected[2]-expected[3];
-            memcpy(expected+4,result.out[3],16);memcpy(expected+8,result.out[9],8);
-            for(int j=0;j<10;j++) {
+            memcpy(expected+4,result.out[3],16);memcpy(expected+8,result.out[9],64);
+            for(int j=0;j<24;j++) {
                 float error=fabsf(actual[j]-expected[j]);
                 if(!(error<=1e-4f*fmaxf(1,fabsf(expected[j]))) && !(isinf(actual[j])&&actual[j]==expected[j])) {
                     fprintf(stderr,"[native-gl-test] vertex op %d sample %d component %d: GPU %g CPU %g\n",op,sample,j,actual[j],expected[j]);ok=0;

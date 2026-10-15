@@ -34,7 +34,7 @@ static void native_gpu_dest(FILE *f,const NV2AVshDstOperand *d,const char *value
 static char *native_gpu_text(const NV2AVshProgram *p) {
     char *text=NULL;size_t length=0;FILE *f=open_memstream(&text,&length);
     if(!f)return NULL;
-    fputs("#version 410 core\nuniform vec4 vc[192];\nuniform vec4 screen_scale,screen_offset;\nuniform int screen_enabled;\nout vec4 v_color;out vec2 v_uv;\n",f);
+    fputs("#version 410 core\nuniform vec4 vc[192];\nuniform vec4 screen_scale,screen_offset;\nuniform int screen_enabled;\nout vec4 v_color;out vec4 v_uv[4];\n",f);
     for(int i=0;i<16;i++)fprintf(f,"layout(location=%d) in vec4 attr%d;\n",i,i);
     fputs("uniform vec4 input_defaults[16];uniform int input_counts[16];\nvec4 constant_at(int i,float a){if(!(a>-1024.0 && a<1024.0))return vec4(0);i+=int(a);return i>=0 && i<192?vc[i]:vec4(0);}\n"
           "float rcp(float x){return x==0.0?((floatBitsToUint(x)&0x80000000u)!=0u?-3.402823466e38:3.402823466e38):1.0/x;}\n"
@@ -57,7 +57,7 @@ static char *native_gpu_text(const NV2AVshProgram *p) {
         if(in->ilu_op>0 && in->ilu_op<8)native_gpu_dest(f,&in->ilu_dst,"I");
         fputs("}\n",f);if(in->is_final)break;
     }
-    fputs("vec4 pos=r[12];if(screen_enabled!=0){pos=(pos-screen_offset)/screen_scale;if(pos.w==0.0)pos.w=1.0;pos.xyz*=pos.w;}pos.z=2.0*pos.z-pos.w;gl_Position=pos;v_color=o[3];v_uv=o[9].xy;}\n",f);
+    fputs("vec4 pos=r[12];if(screen_enabled!=0){pos=(pos-screen_offset)/screen_scale;if(pos.w==0.0)pos.w=1.0;pos.xyz*=pos.w;}pos.z=2.0*pos.z-pos.w;gl_Position=pos;v_color=o[3];v_uv[0]=o[9];v_uv[1]=o[10];v_uv[2]=o[11];v_uv[3]=o[12];}\n",f);
     if(fclose(f)){free(text);return NULL;}return text;
 }
 static GLuint native_gpu_compile(const NV2AVshProgram *p) {

@@ -102,7 +102,7 @@ static unsigned native_read_input(const BYTE *p,UINT available,RhiFormat f,float
 static float *native_shader_vertices(const void *data,UINT count,UINT stride) {
     if(!d3d8_vsh_is_programmable(g.current_vsh)||!count||count>1000000)return NULL;
     NV2AVshSlot *s=&native_slots[g.current_vsh-0x10000];
-    float *out=malloc((size_t)count*10*sizeof(float));if(!out)return NULL;
+    float *out=malloc((size_t)count*24*sizeof(float));if(!out)return NULL;
     for(UINT i=0;i<count;i++) {
         float inputs[16][4];memcpy(inputs,native_inputs,sizeof inputs);
         for(int j=0;j<s->decl_count;j++) {
@@ -112,20 +112,20 @@ static float *native_shader_vertices(const void *data,UINT count,UINT stride) {
             }
         }
         NV2AVshState st;nv2a_vsh_execute(&native_programs[g.current_vsh-0x10000],inputs,native_constants,NV2A_VS_MAX_CONSTANTS,&st);
-        float *v=out+i*10;memcpy(v,st.out[NV2A_VSH_OUT_POS],16);
+        float *v=out+i*24;memcpy(v,st.out[NV2A_VSH_OUT_POS],16);
         if(native_screen) {
             for(int k=0;k<4;k++)v[k]=(v[k]-native_offset[k])/native_scale[k];
             if(v[3]==0)v[3]=1;for(int k=0;k<3;k++)v[k]*=v[3];
         }
         v[2]=2*v[2]-v[3];
-        memcpy(v+4,st.out[NV2A_VSH_OUT_D0],16);memcpy(v+8,st.out[NV2A_VSH_OUT_T0],8);
+        memcpy(v+4,st.out[NV2A_VSH_OUT_D0],16);memcpy(v+8,st.out[NV2A_VSH_OUT_T0],64);
     }
     return out;
 }
 static void native_shader_attribs(void) {
-    glEnableVertexAttribArray(0);glVertexAttribPointer(0,4,GL_FLOAT,GL_FALSE,40,0);
-    glEnableVertexAttribArray(1);glVertexAttribPointer(1,4,GL_FLOAT,GL_FALSE,40,(void*)16);
-    glEnableVertexAttribArray(2);glVertexAttribPointer(2,2,GL_FLOAT,GL_FALSE,40,(void*)32);
+    glEnableVertexAttribArray(0);glVertexAttribPointer(0,4,GL_FLOAT,GL_FALSE,96,0);
+    glEnableVertexAttribArray(1);glVertexAttribPointer(1,4,GL_FLOAT,GL_FALSE,96,(void*)16);
+    for(int i=0;i<4;i++){glEnableVertexAttribArray(2+i);glVertexAttribPointer(2+i,4,GL_FLOAT,GL_FALSE,96,(void*)(uintptr_t)(32+i*16));}
     glUniform1i(g.u_use_xform,2);
 }
 
@@ -153,7 +153,9 @@ static void native_place_draw(const void *vertices,UINT stride,UINT count) {
             left=fminf(left,x);right=fmaxf(right,x);
         }
         k=pc_display_hud_scale();
-        if(native_placement==XBOX_D3D8_2D_STRETCH ||
+        int copied=0;for(int stage=0;stage<4;stage++)if(g.textures[stage] &&
+            ((GLTexture*)g.textures[stage])->screen_copy)copied=1;
+        if(copied || native_placement==XBOX_D3D8_2D_STRETCH ||
            (native_placement==XBOX_D3D8_2D_AUTO && left<=1 && right>=g.backbuf_w-1))k=1;
         if(native_placement==XBOX_D3D8_2D_LEFT)anchor=0;
         if(native_placement==XBOX_D3D8_2D_RIGHT)anchor=1;

@@ -43,7 +43,7 @@ def main():
     parser.add_argument('--seconds', type=int, default=15,
                         help='Bounded run duration, 1–1800 seconds (default: 15)')
     parser.add_argument('--capture', action='store_true', help='Retain two rotating native frame captures')
-    parser.add_argument('--test-keys', action='store_true', help='Read SDL key events from isolated test-keys.txt')
+    parser.add_argument('--test-keys', action='store_true', help='Read synthetic SDL key/mouse events from isolated test-keys.txt')
     parser.add_argument('--trace-render', action='store_true', help='Enable bounded frame tracing on request')
     parser.add_argument('--profile-frames', action='store_true',
                         help='Record up to 20,000 host present intervals, without GPU readback')
