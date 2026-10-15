@@ -95,7 +95,7 @@ void pc_controls_attach(HWND window)
         pc_input_focus(&input, 1);
         pc_input_capture(&input, 1);
     }
-    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 releases/captures mouse; F2 opens settings; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
+    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 shows/hides the menu bar; F2 opens settings; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
             sensitivity, invert_y ? "on" : "off");
     if (window) pc_settings_attach(window);
     pc_debug_init(window);
@@ -149,10 +149,13 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     *result = 0;
     if (window != window_handle) return 0;
     if (message == WM_TIMER && wp == PC_DEBUG_TIMER) { pc_debug_poll(); return 1; }
-    if (message == WM_DESTROY) pc_debug_shutdown();
+    if (message == WM_DESTROY) { pc_settings_detach(window); pc_debug_shutdown(); }
     if(replaying) return 0;
     switch (message) {
     case WM_COMMAND:
+        if (LOWORD(wp) == PC_MENU_BAR_COMMAND) {
+            pc_settings_toggle_menu(window); update_fullscreen_menu(window); return 1;
+        }
         if (LOWORD(wp) == PC_FULLSCREEN_COMMAND) { toggle_fullscreen(window); return 1; }
         if (LOWORD(wp) == PC_SETTINGS_COMMAND || LOWORD(wp) == PC_DEBUG_COMMAND) {
             show_settings(window, LOWORD(wp) == PC_DEBUG_COMMAND); return 1;
@@ -207,10 +210,11 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
             return 1;
         }
         if (message == WM_SYSKEYDOWN && wp == VK_RETURN && (lp & (1LL << 29))) break;
-        if (wp == VK_F1 && !(lp & (1LL << 30))) {
-            AcquireSRWLockShared(&lock); captured = input.captured; ReleaseSRWLockShared(&lock);
-            want_capture = !captured;
-            capture(window, want_capture);
+        if (wp == VK_F1) {
+            if (!(lp & (1LL << 30))) {
+                pc_settings_toggle_menu(window);
+                update_fullscreen_menu(window);
+            }
             return 1;
         }
         if (wp == VK_ESCAPE && !(lp & (1LL << 30))) {
@@ -222,7 +226,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         ReleaseSRWLockExclusive(&lock);
         break;
     case WM_KEYUP: case WM_SYSKEYUP:
-        if (wp == VK_F2 || wp == VK_F12 || wp == VK_F11) return 1;
+        if (wp == VK_F1 || wp == VK_F2 || wp == VK_F12 || wp == VK_F11) return 1;
         AcquireSRWLockExclusive(&lock);
         pc_input_key(&input, (unsigned)wp, 0);
         ReleaseSRWLockExclusive(&lock);

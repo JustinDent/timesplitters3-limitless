@@ -108,6 +108,10 @@ def main():
                 ('menu', 0x111, 0x7e22, 0),
                 ('alt-enter', 0x104, 0x0D, 1 << 29),
             ):
+                if name == 'alt-enter':
+                    user.SendMessageW(window, 0x100, 0x70, 0)  # F1 hides menu bar
+                    user.SendMessageW(window, 0x101, 0x70, 0)
+                    assert not user.GetMenu(window)
                 for fullscreen in (True, False):
                     user.PostMessageW(window, message, key, flags)
                     until = time.monotonic() + 5
@@ -116,6 +120,8 @@ def main():
                             break
                         time.sleep(.1)
                     assert (not (user.GetWindowLongW(window, -16) & 0x00C00000)) == fullscreen, f"{name}: window style did not change"
+                    if name == 'alt-enter':
+                        assert not user.GetMenu(window), 'Fullscreen transition restored hidden menu'
                     check_motion(window, work, f'{name}-{"fullscreen" if fullscreen else "windowed"}')
             user.PostMessageW(window, 0x10, 0, 0)
             assert process.wait(timeout=10) == 0

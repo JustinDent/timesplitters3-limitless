@@ -14,10 +14,30 @@ import pc_settings_game as ui
 
 ROOT = Path(__file__).resolve().parents[1]
 user = ui.user
+user.SetProcessDPIAware()
 user.SetForegroundWindow.argtypes = [w.HWND]
 user.GetSubMenu.argtypes = [w.HMENU, c.c_int]
 user.GetSubMenu.restype = w.HMENU
 user.GetMenuState.argtypes = [w.HMENU, w.UINT, w.UINT]
+user.GetWindowRect.argtypes = [w.HWND, c.POINTER(w.RECT)]
+user.GetClientRect.argtypes = [w.HWND, c.POINTER(w.RECT)]
+user.ClientToScreen.argtypes = [w.HWND, c.POINTER(w.POINT)]
+user.GetClipCursor.argtypes = [c.POINTER(w.RECT)]
+
+
+def window_rect(window):
+    rect = w.RECT()
+    assert user.GetWindowRect(window, c.byref(rect))
+    return rect.left, rect.top, rect.right, rect.bottom
+
+
+def mouse_confined(window):
+    clip, client, origin = w.RECT(), w.RECT(), w.POINT()
+    assert user.GetClipCursor(c.byref(clip))
+    assert user.GetClientRect(window, c.byref(client))
+    assert user.ClientToScreen(window, c.byref(origin))
+    return (clip.left, clip.top, clip.right, clip.bottom) == (
+        origin.x, origin.y, origin.x + client.right, origin.y + client.bottom)
 
 
 def text(window):
@@ -129,11 +149,42 @@ def main():
                 user.PostMessageW(game, 0x101, 0x72, 0)
                 time.sleep(.2)
                 assert not any(title.startswith('Debug -') for _, title in ui.windows(process.pid))
+                # F1 changes the menu without moving the window or recapturing
+                # a mouse released with Escape. A held key must not flicker it.
+                user.PostMessageW(game, 0x100, 0x1B, 0)
+                user.PostMessageW(game, 0x101, 0x1B, 0)
+                wait_for(lambda: not mouse_confined(game), 'Escape did not release mouse')
+                bounds = window_rect(game)
+                user.PostMessageW(game, 0x100, 0x70, 0)
+                wait_for(lambda: not user.GetMenu(game), 'F1 did not hide menu bar')
+                user.SendMessageW(game, 0x100, 0x70, 1 << 30)
+                user.SendMessageW(game, 0x101, 0x70, 0)
+                assert not user.GetMenu(game), 'Held F1 restored menu bar'
+                assert window_rect(game) == bounds, 'Menu toggle changed window bounds'
+                assert not mouse_confined(game), 'F1 recaptured the released mouse'
+                user.PostMessageW(game, 0x100, 0x71, 0)  # F2 works without menu bar
+                keyboard = ui.wait_window(process.pid, 'Keyboard & Mouse -')
+                user.PostMessageW(keyboard, 0x111, 2, 0)
+                wait_for(lambda: user.IsWindowEnabled(game), 'Hidden-menu F2 did not close')
                 user.PostMessageW(game, 0x100, 0x7B, 0)  # F12
                 debug = ui.wait_window(process.pid, 'Debug -')
                 assert not user.IsWindowEnabled(game)
                 user.PostMessageW(debug, 0x111, 2, 0)
                 wait_for(lambda: user.IsWindowEnabled(game), 'F12 Debug did not release game input')
+                user.PostMessageW(game, 0x100, 0x70, 0)
+                user.PostMessageW(game, 0x101, 0x70, 0)
+                wait_for(lambda: bool(user.GetMenu(game)), 'F1 did not restore menu bar')
+                check_mode(full)
+                assert window_rect(game) == bounds
+                user.PostMessageW(game, 0x111, 0x7e23, 0)  # Hide Menu Bar command
+                wait_for(lambda: not user.GetMenu(game), 'Menu command did not hide bar')
+                user.PostMessageW(game, 0x201, 1, (100 << 16) | 100)  # recapture click
+                user.PostMessageW(game, 0x202, 0, (100 << 16) | 100)
+                wait_for(lambda: mouse_confined(game), 'Click did not recapture mouse')
+                user.PostMessageW(game, 0x100, 0x70, 0)
+                user.PostMessageW(game, 0x101, 0x70, 0)
+                wait_for(lambda: bool(user.GetMenu(game)), 'F1 did not restore hidden menu')
+                wait_for(lambda: mouse_confined(game), 'Menu resize did not update mouse clipping')
 
             # Keyboard & Mouse no longer contains a Debug button.
             user.PostMessageW(game, 0x100, 0x71, 0)
@@ -169,7 +220,7 @@ def main():
         allowed = (ROOT / 'private/test-saves/debug-settings').resolve()
         assert resolved != allowed and resolved.is_relative_to(allowed)
         shutil.rmtree(resolved)
-    print('PASS: Debug menu/F12, released F3, removed F2 Debug button, live diagnostics, Save/Cancel, fullscreen shortcuts/checkmarks, and clean exit')
+    print('PASS: F1/menu bar toggle, Escape/click mouse capture, hidden-menu F2/F12, Debug settings, fullscreen controls/checkmarks, and clean exit')
     print(f'Screenshots and isolated test artifacts: {work}')
 
 

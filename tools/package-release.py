@@ -58,7 +58,8 @@ After setup, click Play.cmd to play. The original ISO is no longer needed.
 No Python, Visual Studio, or emulator installation is required.
 
 WASD: move. Mouse: look. Left/right mouse: fire/aim. R: reload.
-E/Space/Enter: use/confirm. Escape: pause/release mouse. F1: capture/release.
+E/Space/Enter: use/confirm. Escape: pause/release mouse. Click: recapture mouse.
+F1: show/hide the PC Settings menu bar (also PC Settings > Hide Menu Bar).
 F2: keyboard/mouse bindings and sensitivity. F12: Debug settings.
 Alt+Enter: fullscreen (also available under PC Settings).
 Pause before opening F2: the editor blocks input but does not pause the game.

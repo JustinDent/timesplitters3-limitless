@@ -179,7 +179,7 @@ static INT_PTR CALLBACK settings_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
         LVCOLUMNA column={0};
         const char *headers[]={"Action","Primary","Alternate","Extra 1","Extra 2"};
         e=(Editor *)lp; SetWindowLongPtr(d,DWLP_USER,lp);
-        control(d,"STATIC","Double-click a binding to change it. F2 opens this menu; F1 releases the mouse.\nDuring a mission, pause the game before opening PC settings.",0,ID_HELP);
+        control(d,"STATIC","Double-click a binding to change it. F2 opens settings; F1 shows/hides the menu bar.\nEscape releases the mouse. Pause a mission before opening PC settings.",0,ID_HELP);
         e->list=control(d,WC_LISTVIEWA,"",WS_TABSTOP|LVS_REPORT|LVS_SINGLESEL|LVS_SHOWSELALWAYS|WS_BORDER,ID_ACTIONS);
         ListView_SetExtendedListViewStyle(e->list,LVS_EX_FULLROWSELECT|LVS_EX_GRIDLINES|LVS_EX_DOUBLEBUFFER);
         for(i=0;i<5;i++) { column.mask=LVCF_TEXT|LVCF_WIDTH; column.pszText=(char *)headers[i]; column.cx=i?105:225; ListView_InsertColumn(e->list,i,&column); }
@@ -253,6 +253,25 @@ static INT_PTR CALLBACK settings_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
     return FALSE;
 }
 
+static const char menu_property[]="TSFP.PcSettingsMenu";
+
+void pc_settings_toggle_menu(HWND game)
+{
+    HMENU bar=(HMENU)GetPropA(game,menu_property);
+    if(!bar || !SetMenu(game,GetMenu(game) ? NULL : bar)) return;
+    /* Keep the outer window bounds, including borderless fullscreen. The
+       renderer follows the new client size and WM_SIZE updates mouse clipping. */
+    SetWindowPos(game,NULL,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_FRAMECHANGED);
+    DrawMenuBar(game);
+}
+
+void pc_settings_detach(HWND game)
+{
+    HMENU bar=(HMENU)RemovePropA(game,menu_property);
+    /* Windows destroys an attached menu with its window; hidden menus are ours. */
+    if(bar && GetMenu(game)!=bar) DestroyMenu(bar);
+}
+
 void pc_settings_attach(HWND game)
 {
     HMENU bar=CreateMenu(),settings=CreatePopupMenu();
@@ -264,7 +283,9 @@ void pc_settings_attach(HWND game)
     AppendMenuA(settings,MF_STRING,PC_DEBUG_COMMAND,"&Debug...\tF12");
     AppendMenuA(settings,MF_SEPARATOR,0,NULL);
     AppendMenuA(settings,MF_STRING,PC_FULLSCREEN_COMMAND,"&Fullscreen\tAlt+Enter");
+    AppendMenuA(settings,MF_STRING,PC_MENU_BAR_COMMAND,"&Hide Menu Bar\tF1");
     AppendMenuA(bar,MF_POPUP,(UINT_PTR)settings,"&PC Settings");
+    if(!SetPropA(game,menu_property,(HANDLE)bar)) { DestroyMenu(bar); return; }
     SetMenu(game,bar);
     rect=client;
     AdjustWindowRectEx(&rect,(DWORD)GetWindowLongPtr(game,GWL_STYLE),TRUE,(DWORD)GetWindowLongPtr(game,GWL_EXSTYLE));

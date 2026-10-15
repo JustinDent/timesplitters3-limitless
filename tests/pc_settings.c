@@ -194,6 +194,11 @@ int main(int argc,char **argv)
         CloseHandle(child.hProcess); CloseHandle(child.hThread);
     }
     pc_settings_defaults(&current); CHECK(current.keys[14][0]=='W' && fabs(current.sensitivity-.1)<.0001);
+    {
+        HMENU bar=GetMenu(owner);
+        pc_settings_toggle_menu(owner); CHECK(!GetMenu(owner) && IsMenu(bar));
+        pc_settings_detach(owner); CHECK(!IsMenu(bar));
+    }
     DestroyWindow(owner);
     /* Replay mode leaves desktop messages alone. */
     CHECK(pc_controls_message(NULL,WM_MOUSEACTIVATE,0,0,&result)==0); /* replay does not consume native messages */

@@ -94,13 +94,18 @@ Default bindings:
 | Weapon mode / scope zoom in | Q or Up / Page Up |
 | Change grenade / scope zoom out | V or Down / Page Down |
 | Pause and release cursor | Escape |
-| Capture / release cursor | F1 |
+| Show / hide PC Settings menu bar | F1 |
 | Keyboard & mouse settings | F2 |
 | Debug settings | F12 |
 | Fullscreen | Alt+Enter |
 
 **PC Settings > Fullscreen** also toggles fullscreen; its checkmark reflects the
 current window mode.
+
+Press **F1** to show or hide the menu bar, including in fullscreen. You can also
+choose **PC Settings > Hide Menu Bar** and press F1 to bring it back. The menu bar
+starts visible each launch; F2, F12, and Alt+Enter still work while it is hidden.
+Escape releases the mouse; click the game to recapture it.
 
 Click the game window to recapture the mouse. The recapture click is consumed
 so it does not fire a weapon. Alt-Tab releases the cursor and clears held
