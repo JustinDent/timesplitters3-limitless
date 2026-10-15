@@ -8,28 +8,41 @@ import os
 import subprocess
 import time
 import zipfile
+import argparse
 import pc_settings_game as ui
 
 ROOT = Path(__file__).resolve().parents[1]
-STAGE = ROOT / 'private/playable-package/TimeSplitters Future Perfect'
-ARCHIVE = ROOT.parent / 'TimeSplitters Future Perfect - Playable.zip'
-manifest = json.loads((STAGE.parent / 'source-manifest.json').read_text())
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--stage', type=Path, default=ROOT / 'private/playable-package/TimeSplitters Future Perfect')
+parser.add_argument('--archive', type=Path, default=ROOT.parent / 'TimeSplitters Future Perfect - Playable.zip')
+parser.add_argument('--release', action='store_true')
+args = parser.parse_args()
+STAGE, ARCHIVE = args.stage.resolve(), args.archive.resolve()
+if args.release:
+    build = json.loads((STAGE / 'BUILD.json').read_text())
+    manifest = {p: {'size': (STAGE / p).stat().st_size, 'sha256': digest} for p, digest in build['files'].items()}
+else:
+    manifest = json.loads((STAGE.parent / 'source-manifest.json').read_text())
 with zipfile.ZipFile(ARCHIVE) as archive:
     names = set(archive.namelist())
     for relative, entry in manifest.items():
-        name = 'TimeSplitters Future Perfect/' + relative
+        name = STAGE.name + '/' + relative
         assert archive.getinfo(name).file_size == entry['size'], name
         if 'sha256' in entry:
             assert hashlib.sha256(archive.read(name)).hexdigest() == entry['sha256'], name
     assert not any(n.lower().endswith(('.iso', '.pdb', '.obj')) for n in names)
     assert not any('/.venv/' in n or '/external/' in n or '/tests/' in n for n in names)
+    if args.release:
+        assert not any('/Data/' in n or '/Saves/' in n or n.lower().endswith(('.xbe', '.pak', '.img')) for n in names)
 print('PASS: ZIP manifest, settings/save data hashes, and development-file exclusions', flush=True)
 
 ps = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 env = dict(os.environ)
 env['PSModulePath'] = (r'C:\Windows\System32\WindowsPowerShell\v1.0\Modules;'
                        r'C:\Program Files\WindowsPowerShell\Modules')
-launcher = subprocess.Popen([ps, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(STAGE / 'Launch.ps1')],
+launch_command = ([os.environ['COMSPEC'], '/d', '/c', str(STAGE / 'Play.cmd')] if args.release else
+                  [ps, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(STAGE / 'Launch.ps1')])
+launcher = subprocess.Popen(launch_command,
                             cwd=STAGE, env=env, creationflags=0x08000000,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 pid = None
@@ -85,7 +98,8 @@ try:
     assert '[CRASH]' not in log and '[ICALL] unresolved' not in log
     assert '[XMV] FFmpeg avcodec-62.dll loaded' in log
     assert str(STAGE / 'Saves') in log
-    assert (STAGE / 'Settings/pc-controls.json').read_bytes() == (ROOT / 'config/pc-controls.json').read_bytes()
+    expected_config = ROOT / ('config/pc-controls.default.json' if args.release else 'config/pc-controls.json')
+    assert (STAGE / 'Settings/pc-controls.json').read_bytes() == expected_config.read_bytes()
     print('PASS: standalone launcher, packaged movie DLLs, F2 settings, local saves, and clean shutdown', flush=True)
 finally:
     if launcher.poll() is None:
