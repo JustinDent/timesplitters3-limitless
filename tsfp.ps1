@@ -136,6 +136,15 @@ try {
                         $testConfig, $testRoot)
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_settings_test.exe") @(
                         $testConfig, $testRoot)
+                    # Only successful tests reach cleanup; retain failures for diagnosis.
+                    $cleanupPath = (Resolve-Path -LiteralPath $testRoot).ProviderPath
+                    $expectedTestRoot = Join-Path ([IO.Path]::GetFullPath($projectRoot)) 'build\path-tests'
+                    if ($cleanupPath -ne $expectedTestRoot -or
+                        ((Get-Item -LiteralPath $cleanupPath).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+                        throw "Refusing to clean an unexpected test directory: $cleanupPath"
+                    }
+                    Remove-Item -LiteralPath $cleanupPath -Recurse -Force
+                    Write-Output 'Build tests passed; temporary build/path-tests data removed.'
                 }
                 { $_ -in 'Run', 'SmokeTest' } {
                     Assert-Game

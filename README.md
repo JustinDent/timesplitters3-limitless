@@ -175,6 +175,8 @@ any relevant runtime code. No game data is supplied by this repository.
 storage: Partition1's TDATA and UDATA now use the configured save directory.
 Setup and Build apply it idempotently. Build also runs the native
 `tests/save_paths.c` regression test against the actual runtime.
+After all native build tests pass, Build removes their temporary `build/path-tests`
+data. Failed tests retain that directory for diagnosis; `private/saves` is unaffected.
 
 `patches/pc-controls.patch` connects the window/input layer to `src/pc_controls.c`
 and `src/pc_input.c`, and adds a manual wrapper around the US build's
