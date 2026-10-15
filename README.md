@@ -176,5 +176,3 @@ supports the same executable hash, but its documented tested host is Linux.
 Its status claims do not establish the behavior of our Windows build.
 
 See `STATUS.md` for results measured in this workspace.
-
-Sorbet test
