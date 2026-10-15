@@ -14,8 +14,8 @@ from tkinter import ttk, messagebox
 
 from online_client import Client, Session
 from online_host import fetch_public_ipv4, invitation, parse_invitation, start_match
+from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS
 
-ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
@@ -25,13 +25,13 @@ def main():
     parser.add_argument('--compatibility', required=True)
     args = parser.parse_args()
     result = args.result.resolve()
-    private = (ROOT / 'private/online').resolve()
+    private = HANDSHAKES.resolve()
     if result.parent != private or result.name != f'{args.pid}.ready':
         raise ValueError('Unexpected Online handshake path')
-    spec = importlib.util.spec_from_file_location('network_identity', ROOT/'tools/network-identity.py')
+    spec = importlib.util.spec_from_file_location('network_identity', TOOLS/'network-identity.py')
     identity = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(identity)
-    manifest = json.loads((ROOT/'build/windows/generated/network-identity.json').read_text())
+    manifest = json.loads(MANIFEST.read_text())
     identity.verify_content(Path(os.environ['RECOMP_GAME_DIR']), manifest)
     if manifest['compatibility'] != args.compatibility:
         raise ValueError('Online tools and executable have different build identities; rebuild first')
@@ -43,7 +43,7 @@ def main():
     parent = kernel.OpenProcess(0x00100000, False, args.pid)
     if not parent:
         raise ValueError('Game process is no longer running')
-    state = Path(os.environ.get('TSFP_ONLINE_SETTINGS', ROOT/'config/pc-online.json'))
+    state = Path(os.environ.get('TSFP_ONLINE_SETTINGS', SETTINGS))
     try:
         saved = json.loads(state.read_text())
     except (OSError, ValueError):
@@ -311,5 +311,9 @@ if __name__ == '__main__':
     try:
         main()
     except Exception as error:
+        import traceback
+        logs = ROOT / 'Logs'
+        logs.mkdir(parents=True, exist_ok=True)
+        (logs/'online-error.log').write_text(traceback.format_exc(), encoding='utf-8')
         ctypes.windll.user32.MessageBoxW(None, str(error), 'Online connection failed', 0x10)
         raise

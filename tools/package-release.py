@@ -7,18 +7,22 @@ from pathlib import Path
 import shutil
 import subprocess
 import zipfile
+from bundle_online import bundle
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--version', default='v0.1.0-alpha.1')
+    parser.add_argument('--version', default='v0.2.0-alpha.2')
     parser.add_argument('--output', type=Path, default=ROOT / 'build/releases')
     args = parser.parse_args()
     if not all(c.isalnum() or c in '.-_' for c in args.version):
         parser.error('Version must contain only letters, numbers, dots, dashes, or underscores.')
     name = f'TimeSplitters-Future-Perfect-PC-{args.version}-windows-x64'
+    # Only a successfully built executable with matching content can be packaged.
+    subprocess.run([os.sys.executable, str(ROOT/'tools/network-identity.py'), '--verify',
+                    '--executable', str(ROOT/'build/windows/Release/futureperfect_recomp.exe')], check=True)
     stage = args.output.resolve() / name
     stage.mkdir(parents=True, exist_ok=False)
     upstream = ROOT / 'external/ts3FPrecomp'
@@ -31,11 +35,15 @@ def main():
     copy(ROOT / 'build/windows/Release/futureperfect_recomp.exe', 'Bin/futureperfect_recomp.exe')
     for dll in ['avcodec-62.dll', 'avutil-60.dll', 'swresample-6.dll']:
         copy(upstream / 'third_party/ffmpeg/bin' / dll, 'Bin/' + dll)
-    vs = Path(os.environ.get('ProgramFiles', r'C:\Program Files')) / 'Microsoft Visual Studio'
-    candidates = sorted(vs.glob('*/*/VC/Redist/MSVC/*/x64/Microsoft.VC143.CRT/vcruntime140.dll'))
+    installations = [Path(os.environ.get(variable, default))/'Microsoft Visual Studio'
+                     for variable, default in [('ProgramFiles', r'C:\Program Files'),
+                                               ('ProgramFiles(x86)', r'C:\Program Files (x86)')]]
+    candidates = sorted(path for vs in installations for path in
+                        vs.glob('*/*/VC/Redist/MSVC/*/x64/Microsoft.VC143.CRT/vcruntime140.dll'))
     if not candidates:
         raise RuntimeError('The x64 MSVC runtime redistributable was not found.')
-    copy(candidates[-1], 'Bin/vcruntime140.dll')
+    for path in candidates[-1].parent.glob('*.dll'):
+        copy(path, 'Bin/'+path.name)
     copy(ROOT / 'config/pc-controls.default.json', 'Settings/pc-controls.json')
     copy(ROOT / 'tools/playable-launch.ps1', 'Launch.ps1')
     copy(ROOT / 'tools/start-game.ps1', 'Start-game.ps1')
@@ -47,6 +55,26 @@ def main():
         ('third_party/SDL/LICENSE.txt', 'SDL.txt'), ('third_party/ffmpeg/LICENSE.txt', 'FFmpeg-LGPL-3.0.txt'),
     ]:
         copy(upstream / source, 'Licenses/' + dest)
+    online = bundle(ROOT, stage, copy)
+    # Include the exact local source edits used for this test package, since
+    # those may not yet exist at the source_commit recorded below.
+    source_dir = stage/'Source'
+    source_dir.mkdir()
+    source_files = subprocess.check_output(
+        ['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], cwd=ROOT).decode().split('\0')
+    with zipfile.ZipFile(source_dir/'pc-port-source.zip', 'w', zipfile.ZIP_DEFLATED) as source:
+        for relative in sorted(set(source_files)):
+            path = ROOT/relative
+            if relative and path.is_file():
+                source.write(path, relative)
+        local_patch = subprocess.check_output(['git', '-C', str(upstream), 'diff', '--binary'])
+        source.writestr('runtime-local.patch', local_patch)
+    (source_dir/'README.txt').write_text(
+        'pc-port-source.zip contains the project source and local runtime patch for this build.\n'
+        f'Base runtime: https://github.com/nemonicicon/ts3FPrecomp/tree/'
+        f'{subprocess.check_output(["git", "-C", str(upstream), "rev-parse", "HEAD"], text=True).strip()}\n'
+        'See the project README and requirements-release.txt for build and packaging instructions.\n',
+        encoding='utf-8')
     (stage / 'README.txt').write_text(f'''TimeSplitters: Future Perfect PC {args.version} - experimental prerelease
 
 Requires 64-bit Windows 10/11 and your own US Xbox game files.
@@ -55,7 +83,8 @@ On first launch choose your Xbox ISO or an extracted folder containing
 default.xbe, pak, and xmv. Setup validates the supported executable and copies
 the game files to Data. Allow at least 5 GB of free space for setup.
 After setup, click Play.cmd to play. The original ISO is no longer needed.
-No Python, Visual Studio, or emulator installation is required.
+Python/Tk and Online certificate support are bundled under Support.
+No Python, Git, Visual Studio, or emulator installation is required.
 
 WASD: move. Mouse: look. Left/right mouse: fire/aim. R: reload.
 E/Space/Enter: use/confirm. Escape: pause/release mouse. Click: recapture mouse.
@@ -68,6 +97,17 @@ The first controller not assigned to another player also controls player 1.
 Pause before opening F2: the editor blocks input but does not pause the game.
 Settings and paused Options include Display settings for render resolution.
 Confirmed display choices are saved in Settings/pc-display.ini.
+
+Online multiplayer: choose Online / System Link > Online in the game.
+Host: Start New Match detects your public IPv4 and starts the HTTPS directory.
+Forward TCP 30820 and UDP 30821 to the host PC and allow both through Windows
+Firewall. Copy the invitation from the Online window and send it to friends.
+Guests paste it into Invitation / lobby code and click Join by code.
+Return to the game: host creates a match, guests select it and Ready, host Go.
+Guests do not need port forwarding. Hosting behind carrier-grade NAT requires
+a reachable player to host instead. The game does not configure your router.
+Real internet connections and full-match stability remain experimental.
+Online preferences and hosting certificates are stored under Settings.
 
 Settings: Settings/pc-controls.json. Saves: Saves. Diagnostics: Logs.
 Keep Data, Settings, and Saves when upgrading. Extract upgrades to a new folder
@@ -93,6 +133,8 @@ Third-party notices are in Licenses. Microsoft Visual C++ runtime is bundled.
     info = {
         'version': args.version,
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+        'source_changes': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).splitlines(),
+        'online': online,
         'upstream_commit': subprocess.check_output(['git', '-C', str(upstream), 'rev-parse', 'HEAD'], text=True).strip(),
         'ffmpeg_archive_sha256': '1689da96399f372cfee985b3f2b9d74685892078059bc37764388f49e3118bdb',
         'files': {p.relative_to(stage).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()

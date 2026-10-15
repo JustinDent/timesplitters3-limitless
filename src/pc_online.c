@@ -30,19 +30,29 @@ int pc_online_connect(void)
     DWORD pid=GetCurrentProcessId(); unsigned i; FILE *file; HWND owner=xbox_D3D8Window();
     pc_online_disconnect();
     if(!GetModuleFileNameA(NULL,root,sizeof root)) return 0;
-    /* Source build: project/build/windows/Configuration/game.exe. */
-    for(i=0;i<4;i++) { char *slash=strrchr(root,'\\'); if(!slash) return 0; *slash=0; }
-    snprintf(python,sizeof python,"%s\\.venv\\Scripts\\pythonw.exe",root);
-    snprintf(script,sizeof script,"%s\\tools\\online.py",root);
+    /* Portable build: package/Bin/game.exe, with its own isolated runtime. */
+    for(i=0;i<2;i++) { char *slash=strrchr(root,'\\'); if(!slash) return 0; *slash=0; }
+    snprintf(python,sizeof python,"%s\\Support\\Python\\pythonw.exe",root);
+    snprintf(script,sizeof script,"%s\\Support\\Online\\online.py",root);
+    if(GetFileAttributesA(python)!=INVALID_FILE_ATTRIBUTES && GetFileAttributesA(script)!=INVALID_FILE_ATTRIBUTES) {
+        snprintf(folder,sizeof folder,"%s\\Logs",root); CreateDirectoryA(folder,NULL);
+        snprintf(folder,sizeof folder,"%s\\Logs\\Online",root);
+    } else {
+        /* Source build: project/build/windows/Configuration/game.exe. */
+        for(i=0;i<2;i++) { char *slash=strrchr(root,'\\'); if(!slash) return 0; *slash=0; }
+        snprintf(python,sizeof python,"%s\\.venv\\Scripts\\pythonw.exe",root);
+        snprintf(script,sizeof script,"%s\\tools\\online.py",root);
+        snprintf(folder,sizeof folder,"%s\\private\\online",root);
+    }
     if(GetFileAttributesA(python)==INVALID_FILE_ATTRIBUTES || GetFileAttributesA(script)==INVALID_FILE_ATTRIBUTES) {
-        MessageBoxA(NULL,"Online requires the source workspace and its Python environment. Launch the current source build.","Online",MB_OK|MB_ICONINFORMATION);
+        MessageBoxA(NULL,"Online support files are missing. Extract the complete game package, or run Setup in the source workspace.","Online",MB_OK|MB_ICONINFORMATION);
         return 0;
     }
-    snprintf(folder,sizeof folder,"%s\\private\\online",root); CreateDirectoryA(folder,NULL);
+    CreateDirectoryA(folder,NULL);
     snprintf(ready_path,sizeof ready_path,"%s\\%lu.ready",folder,pid);
     snprintf(stop_path,sizeof stop_path,"%s\\%lu.stop",folder,pid);
     DeleteFileA(ready_path); DeleteFileA(stop_path);
-    snprintf(command,sizeof command,"\"%s\" \"%s\" --pid %lu --result \"%s\" --compatibility %s",
+    snprintf(command,sizeof command,"\"%s\" -B \"%s\" --pid %lu --result \"%s\" --compatibility %s",
         python,script,pid,ready_path,TSFP_NETWORK_COMPATIBILITY_HEX);
     if(!CreateProcessA(python,command,NULL,NULL,FALSE,CREATE_NO_WINDOW,NULL,root,&startup,&process)) {
         MessageBoxA(NULL,"Could not start the Online browser.","Online",MB_OK|MB_ICONERROR); return 0;

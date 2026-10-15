@@ -22,11 +22,20 @@ Keep the release's `Data`, `Settings`, and `Saves` folders when upgrading.
 To produce the same public package after building:
 
 ```powershell
-.\.venv\Scripts\python.exe tools/package-release.py --version v0.1.0-alpha.1
+.\.venv\Scripts\python.exe tools/package-release.py --version v0.2.0-alpha.2
 ```
 
 This uses an explicit file list and default settings. It excludes all game data,
 personal settings, and saves, and writes the ZIP plus SHA-256 under `build/releases`.
+The package includes an isolated Windows Python/Tk runtime and the Online
+companion, including automatic hosting certificate support; players do not need
+Python or Git installed. Packaging downloads the pinned Windows wheels in
+`requirements-release.txt` and includes their licenses. A matching successful
+Release build is required. `Source/pc-port-source.zip` records the local project
+source and runtime patch, including changes not yet committed.
+Use `.venv\Scripts\python.exe tests/portable_online.py --stage <extracted-package>`
+to test the bundled runtime, HTTPS hosting, invitations, and three-peer UDP relay
+without system Python/Git on PATH. Real router forwarding still needs validation.
 
 ## Local workflow
 
