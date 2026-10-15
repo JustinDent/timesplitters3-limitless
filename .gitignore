@@ -1,0 +1,28 @@
+# Local tool checkouts and environments
+/external/
+/.venv/
+/build/
+/logs/
+
+# Original game data and all generated derivatives stay local.
+/private/
+*.iso
+*.xbe
+*.pak
+*.c2n
+__pycache__/
+xbox_kernel.log
+/config/pc-controls.json.bak
+/config/*.tmp
+/config/pc-controls.json
+
+# Packaged builds and local credentials are never source uploads.
+*.zip
+*.7z
+*.img
+*.dll
+*.exe
+*.pdb
+*.obj
+.env
+.env.*

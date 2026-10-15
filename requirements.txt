@@ -1,0 +1,6 @@
+capstone==5.0.9
+cmake==4.4.4
+ninja==1.13.2
+numpy==2.5.4
+pefile==2024.8.26
+pytest==9.1.1
