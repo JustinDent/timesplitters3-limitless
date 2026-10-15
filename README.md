@@ -56,6 +56,10 @@ in `private/captures`. Interactive runs store saves in `private/saves`.
 Double-click `Play.cmd` for the keyboard-and-mouse setup. Restart the game after
 updating a build or editing the configuration file by hand. Changes saved from
 the game's PC settings menu apply immediately.
+`Play.cmd` closes its command window after starting a hidden launcher; game logs
+continue to be written to `logs`, and launch failures appear in a dialog. The
+portable release uses the same behavior after first-time game import. For terminal
+diagnostics, use `tsfp.ps1 Run` (or `Launch.ps1` in a portable release) directly.
 
 ## PC controls
 

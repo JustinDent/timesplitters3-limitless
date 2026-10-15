@@ -17,7 +17,8 @@ def main():
         # Native file handles avoid console buffering and PowerShell's text
         # redirection. This is also how the bounded gameplay runner launches.
         result = subprocess.run(
-            [str(executable)], cwd=executable.parent, stdout=output, stderr=errors
+            [str(executable)], cwd=executable.parent, stdout=output, stderr=errors,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0,
         )
     return result.returncode
 

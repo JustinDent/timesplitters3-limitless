@@ -12,6 +12,7 @@ $info = New-Object System.Diagnostics.ProcessStartInfo
 $info.FileName = Join-Path $gameRoot 'Bin\futureperfect_recomp.exe'
 $info.WorkingDirectory = Join-Path $gameRoot 'Bin'
 $info.UseShellExecute = $false
+$info.CreateNoWindow = $true
 $info.RedirectStandardOutput = $true
 $info.RedirectStandardError = $true
 foreach ($name in @($info.EnvironmentVariables.Keys)) {

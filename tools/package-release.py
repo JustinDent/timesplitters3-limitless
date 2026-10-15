@@ -38,6 +38,7 @@ def main():
     copy(candidates[-1], 'Bin/vcruntime140.dll')
     copy(ROOT / 'config/pc-controls.default.json', 'Settings/pc-controls.json')
     copy(ROOT / 'tools/playable-launch.ps1', 'Launch.ps1')
+    copy(ROOT / 'tools/start-game.ps1', 'Start-game.ps1')
     for file in ['ImportGame.cs', 'Import-game.ps1', 'Play.cmd']:
         copy(ROOT / 'tools/release' / file, file)
     for source, dest in [
