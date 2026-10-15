@@ -102,6 +102,11 @@ python3 tools/build-native-mac.py --setup --generate --test
 
 # Bounded native execution, with isolated saves and configuration.
 .venv/bin/python tools/test-native-mac.py --seconds 120 --capture
+
+# Frame timing without screenshot readback (navigate using isolated test input).
+.venv/bin/python tools/test-native-mac.py --seconds 150 --test-keys --profile-frames
+# Select a known gameplay window, excluding menus/loading and the opening animation.
+.venv/bin/python tools/native_frame_stats.py logs/native-frame-times.csv --start 120 --end 145
 ```
 
 Output stays in `build/macos`. `BUILD.json` records the source and runtime
@@ -128,6 +133,13 @@ and `private/captures/native-mac/menu-navigation.png`. Test
 partition images are sparse, then recycled with validated paths; profiles,
 configuration and logs remain. Native CTest uses `build/macos/path-tests` and
 recycles its partition images after the pass as well.
+
+`--profile-frames` records CPU wall-clock intervals between completed host
+presents and time spent in swap, capped at 20,000 rows (under 2 MiB). It adds
+no GPU readback. The CSV and whole-run statistics are diagnostic data; loading
+screens and menus must be excluded before describing gameplay FPS. These are
+host-present timings, not measurements of monitor scanout. Compare the same
+scene and build settings, and state whether `--capture` was enabled.
 
 The native implementation includes a reserved 4 GiB **virtual address range**
 (not a 4 GiB game copy), aliased RAM/device mappings, host timers, an ARM64

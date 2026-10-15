@@ -40,6 +40,28 @@ int tsfp_native_renderer_test(void) {
     ok &= native_test_pixel(dev,16,16,255,0,0);
     ok &= native_test_pixel(dev,48,48,255,0,0);
     ok &= native_test_pixel(dev,4,4,0,0,255);
+    /* Queue many different uploads before any readback synchronizes the GPU.
+     * Earlier draws must retain their geometry/color as the stream is reused,
+     * including changing sizes and both 16/32-bit index uploads. */
+    dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF000000,1,0);
+    for(int pass=0;pass<16;pass++)for(int tile=0;tile<8;tile++) {
+        DWORD color=tile&1?0xFF00FF00:0xFFFF0000;
+        struct TestVertex quad[4]={
+            {tile*8,8,0,1,color,0,0},{tile*8+8,8,0,1,color,1,0},
+            {tile*8+8,56,0,1,color,1,1},{tile*8,56,0,1,color,0,1}
+        };
+        if(tile%3==0) {
+            struct TestVertex triangles[6]={quad[0],quad[1],quad[2],quad[0],quad[2],quad[3]};
+            ok &= SUCCEEDED(dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_TRIANGLELIST,2,triangles,sizeof quad[0]));
+        } else {
+            const uint16_t short_indices[6]={0,1,2,0,2,3};
+            const uint32_t long_indices[6]={0,2,3,0,1,2};
+            ok &= SUCCEEDED(dev->lpVtbl->DrawIndexedPrimitiveUP(dev,D3DPT_TRIANGLELIST,0,4,2,
+                tile%3==1?(const void*)short_indices:(const void*)long_indices,
+                tile%3==1?D3DFMT_INDEX16:D3DFMT_INDEX32,quad,sizeof quad[0]));
+        }
+    }
+    for(int tile=0;tile<8;tile++)ok &= native_test_pixel(dev,tile*8+4,32,tile&1?0:255,tile&1?255:0,0);
     IDirect3DTexture8 *texture=NULL;
     ok &= SUCCEEDED(dev->lpVtbl->CreateTexture(dev,8,8,1,0,D3DFMT_A8,D3DPOOL_MANAGED,&texture));
     if(texture) {
@@ -127,6 +149,6 @@ int tsfp_native_renderer_test(void) {
     SDL_GL_DestroyContext(g.glctx);g.glctx=NULL;
     SDL_DestroyWindow(g.window);g.window=NULL;
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
-    fprintf(stderr,"[native-gl-test] quad topology, A8 swizzle, alpha blend, NV2A vertex/combiner programs, readback, offscreen clear isolation/orientation, worker handoff: %s\n",ok?"PASS":"FAIL");
+    fprintf(stderr,"[native-gl-test] quad topology, queued stream uploads, A8 swizzle, alpha blend, NV2A vertex/combiner programs, readback, offscreen clear isolation/orientation, worker handoff: %s\n",ok?"PASS":"FAIL");
     return ok?0:1;
 }

@@ -45,6 +45,8 @@ def main():
     parser.add_argument('--capture', action='store_true', help='Retain two rotating native frame captures')
     parser.add_argument('--test-keys', action='store_true', help='Read SDL key events from isolated test-keys.txt')
     parser.add_argument('--trace-render', action='store_true', help='Enable bounded frame tracing on request')
+    parser.add_argument('--profile-frames', action='store_true',
+                        help='Record up to 20,000 host present intervals, without GPU readback')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
@@ -82,6 +84,11 @@ def main():
         env.update(capture_environment(ROOT))
     logs = ROOT / 'logs'
     logs.mkdir(exist_ok=True)
+    if args.profile_frames:
+        profile = logs / 'native-frame-times.csv'
+        if profile.is_symlink():raise SystemExit('Unexpected frame profile file')
+        profile.write_text('')
+        env['TSFP_NATIVE_FRAME_PROFILE'] = str(profile)
     out_path, err_path = logs / 'native-boot.out', logs / 'native-boot.err'
     print(f'Native probe: {exe}\nIsolated saves: {test}\nLimit: {args.seconds}s, 8 MiB logs', flush=True)
     started = time.monotonic()
@@ -131,6 +138,17 @@ def main():
                   overrides={k:v for k,v in env.items() if k.startswith(('RECOMP_', 'TSFP_'))},
                   frame_captures=captures,
                   rendered_game_verified=False) # Visual recognition is a separate reviewed result.
+    if args.profile_frames:
+        from native_frame_stats import summarize
+        try:
+            timing = summarize(profile)
+        except ValueError:
+            timing = None
+        result['frame_profile'] = dict(path=str(profile.relative_to(ROOT)),
+                                       sha256=hashlib.sha256(profile.read_bytes()).hexdigest(),
+                                       whole_run_including_loading=timing,
+                                       row_limit=20000,
+                                       metric='CPU wall-clock intervals between host presents, not display scanout')
     (logs / 'native-boot-summary.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({k:result[k] for k in ('seconds', 'reason', 'exit_code')}, indent=2))
     # A process exit of zero can be the guest rebooting after a startup error.

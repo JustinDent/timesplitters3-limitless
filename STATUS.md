@@ -3,6 +3,44 @@
 Tested on Windows on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## Native frame-time investigation and upload fix — October 15
+
+- Confirmed the reported slowdown on `mac-port`. Measured host-present intervals
+  in the stationary first-level canyon, 120–145 seconds after the first present,
+  excluding menus, loading, the opening animation and CPU sampling. Three bounded
+  150-second runs used the same isolated profile and menu input sequence.
+
+  | Run | Average FPS | Median frame | 95th percentile | Worst frame |
+  | --- | ---: | ---: | ---: | ---: |
+  | Before, rotating captures enabled | 14.63 | 68.34 ms | 71.61 ms | 80.61 ms |
+  | Before, captures disabled | 14.85 | 67.28 ms | 70.48 ms | 74.60 ms |
+  | After, rotating captures enabled | 60.00 | 16.44 ms | 19.09 ms | 33.80 ms |
+
+- Captures were not the main cause. CPU sampling placed 1,442 of 1,942 main-thread
+  samples in `glBufferSubData`, including driver waits for earlier GPU work.
+  The renderer reused offset zero in one transient vertex/index buffer on every
+  draw. Replacing each buffer's storage with `glBufferData` lets the driver retain
+  earlier uploads while the GPU finishes them. The follow-up sample has no
+  `glBufferSubData` calls. CPU vertex interpretation remains a performance limit.
+- Compiler settings stayed unchanged to isolate this fix: Debug game code and
+  the runtime libraries' existing `-O2`. `BUILD.json` now records the build type
+  and complete configure command. The result is specific to this scene and Mac;
+  it does not establish 60 FPS throughout the campaign or monitor scanout pacing.
+- Added opt-in `--profile-frames` (20,000 CSV rows maximum, no GPU readback) and
+  a frame-statistics tool that selects a known gameplay interval. The corrected
+  1,500-frame measurement had one interval over 33.33 ms and none over 50 ms.
+- Added real-GPU coverage for 128 queued, changing vertex/index uploads before
+  readback, including nonindexed draws and both 16/32-bit indices. All graphics,
+  input and three native CTests pass; portable tests: **17 passed, 2 Windows-only
+  checks skipped, 7 subtests**. The read-only native launcher check passes.
+  The final timed run reached at least 7,800 guest frames and host presents,
+  with no native fault or sampled GL error. Reviewed the world/weapons/HUD capture.
+- Test partition images were recycled; personal saves/settings were not used.
+  Evidence: `logs/native-frame-performance-validation.json`,
+  `logs/mac-perf-*.csv`, `logs/mac-perf-*-sample.txt`,
+  `logs/mac-frame-fixed-build.log`, `logs/mac-frame-portable-tests.log`, and
+  `private/captures/native-mac/native-frame-performance.png`.
+
 ## Focused native combat smoke test — October 15
 
 - Continued on `mac-port` with the same native binary and isolated test profile.

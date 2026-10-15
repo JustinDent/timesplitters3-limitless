@@ -89,8 +89,6 @@ typedef struct {
     GLuint           vao;
     GLuint           stream_vbo;
     GLuint           stream_ibo;
-    GLsizeiptr       stream_vbo_size;
-    GLsizeiptr       stream_ibo_size;
 
     /* GL fixed shader program */
     GLuint           fallback_texture;
@@ -270,13 +268,9 @@ static int init_gl_pipeline(void)
 
     glGenBuffers(1, &g.stream_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, g.stream_vbo);
-    g.stream_vbo_size = 1 << 20;
-    glBufferData(GL_ARRAY_BUFFER, g.stream_vbo_size, NULL, GL_STREAM_DRAW);
 
     glGenBuffers(1, &g.stream_ibo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.stream_ibo);
-    g.stream_ibo_size = 1 << 18;
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, g.stream_ibo_size, NULL, GL_STREAM_DRAW);
 
     GLuint vs = compile_shader(GL_VERTEX_SHADER,   VS_SRC);
     GLuint fs = compile_shader(GL_FRAGMENT_SHADER, FS_SRC);
@@ -624,14 +618,42 @@ static HRESULT __stdcall dev_GetCreationParameters(IDirect3DDevice8 *s, void *pP
 static HRESULT __stdcall dev_Reset(IDirect3DDevice8 *s, D3DPRESENT_PARAMETERS *pPP)
 { NATIVE_GL_SCOPE; (void)s;(void)pPP; return D3D_OK; }
 
+/* Opt-in CPU wall-clock intervals between completed host presents. This does
+ * not wait for the GPU or claim display scanout timing. At most 20,000 rows
+ * (under 2 MiB), with no per-frame flush or readback. */
+static void native_frame_timing(Uint64 swap_start,Uint64 now) {
+    static int checked;
+    static FILE *output;
+    static Uint64 first,last;
+    static unsigned rows;
+    if(!checked) {
+        checked=1;const char *path=getenv("TSFP_NATIVE_FRAME_PROFILE");
+        if(path && *path) {
+            output=fopen(path,"w");
+            if(output)fputs("frame,elapsed_ms,frame_ms,swap_ms\n",output);
+        }
+    }
+    if(!output)return;
+    if(!first)first=now;
+    if(last) {
+        fprintf(output,"%u,%.3f,%.3f,%.3f\n",native_present_count,
+                (now-first)/1e6,(now-last)/1e6,(now-swap_start)/1e6);
+        if(++rows%60==0)fflush(output);
+        if(rows==20000){fclose(output);output=NULL;}
+    }
+    last=now;
+}
+
 static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const RECT *dst,
                                      HWND hwnd, void *dirty)
 { NATIVE_GL_SCOPE;
     (void)s;(void)src;(void)dst;(void)hwnd;(void)dirty;
+    Uint64 swap_start=SDL_GetTicksNS();
     if(!SDL_GL_SwapWindow(g.window)) {
         fprintf(stderr,"[native-gl] present failed: %s\n",SDL_GetError());return E_FAIL;
     }
     native_present_count++;
+    native_frame_timing(swap_start,SDL_GetTicksNS());
     if(native_present_count==1 || native_present_count%300==0)
         fprintf(stderr,"[native-gl] presented frame %u, GL error=0x%x\n",native_present_count,glGetError());
     trace_draw=0;
@@ -859,12 +881,9 @@ static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *s, D3DPRIMITIVETY
     glUseProgram(g.prog);
     glBindVertexArray(g.vao);
     glBindBuffer(GL_ARRAY_BUFFER, g.stream_vbo);
-    if (size > g.stream_vbo_size) {
-        glBufferData(GL_ARRAY_BUFFER, size, verts, GL_STREAM_DRAW);
-        g.stream_vbo_size = size;
-    } else {
-        glBufferSubData(GL_ARRAY_BUFFER, 0, size, verts);
-    }
+    /* Replace the store for each transient draw. Updating offset zero of the
+     * previous store made Apple's GL driver wait for earlier GPU draws. */
+    glBufferData(GL_ARRAY_BUFFER, size, verts, GL_STREAM_DRAW);
     if(!converted)setup_fvf_attribs(g.current_fvf, stride);
     bind_texture0();
     update_mvp(g.current_fvf);
@@ -876,7 +895,6 @@ static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *s, D3DPRIMITIVETY
         for(UINT q=0;q<prim_count;q++){GLuint v=q*4;GLuint quad[6]={v,v+1,v+2,v,v+2,v+3};memcpy(indices+q*6,quad,sizeof quad);}
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,g.stream_ibo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER,(size_t)prim_count*6*sizeof *indices,indices,GL_STREAM_DRAW);
-        g.stream_ibo_size=(size_t)prim_count*6*sizeof *indices;
         glDrawElements(GL_TRIANGLES,prim_count*6,GL_UNSIGNED_INT,0);free(indices);
     } else glDrawArrays(mode, 0, (GLsizei)vcount);
     native_trace("draw",converted,vcount);
@@ -903,11 +921,9 @@ static HRESULT __stdcall dev_DrawIndexedPrimitiveUP(IDirect3DDevice8 *s, D3DPRIM
     glUseProgram(g.prog);
     glBindVertexArray(g.vao);
     glBindBuffer(GL_ARRAY_BUFFER, g.stream_vbo);
-    if (vbytes > g.stream_vbo_size) { glBufferData(GL_ARRAY_BUFFER, vbytes, verts, GL_STREAM_DRAW); g.stream_vbo_size = vbytes; }
-    else glBufferSubData(GL_ARRAY_BUFFER, 0, vbytes, verts);
+    glBufferData(GL_ARRAY_BUFFER, vbytes, verts, GL_STREAM_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g.stream_ibo);
-    if (ibytes > g.stream_ibo_size) { glBufferData(GL_ELEMENT_ARRAY_BUFFER, ibytes, idx, GL_STREAM_DRAW); g.stream_ibo_size = ibytes; }
-    else glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ibytes, idx);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, ibytes, idx, GL_STREAM_DRAW);
     if(!converted)setup_fvf_attribs(g.current_fvf, stride);
     bind_texture0();
     update_mvp(g.current_fvf);
