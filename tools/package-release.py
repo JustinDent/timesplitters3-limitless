@@ -60,7 +60,7 @@ No Python, Visual Studio, or emulator installation is required.
 WASD: move. Mouse: look. Left/right mouse: fire/aim. R: reload.
 E/Space/Enter: use/confirm. Escape: pause/release mouse. F1: capture/release.
 F2: keyboard/mouse bindings and sensitivity. F12: Debug settings.
-F11 or Alt+Enter: fullscreen (also available under PC Settings).
+Alt+Enter: fullscreen (also available under PC Settings).
 Pause before opening F2: the editor blocks input but does not pause the game.
 The original in-game Options menus are unchanged.
 

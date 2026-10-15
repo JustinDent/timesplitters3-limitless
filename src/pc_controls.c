@@ -95,7 +95,7 @@ void pc_controls_attach(HWND window)
         pc_input_focus(&input, 1);
         pc_input_capture(&input, 1);
     }
-    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 releases/captures mouse; F2 opens settings; F12 opens Debug; F11 toggles fullscreen; Escape releases mouse.\n",
+    fprintf(stderr, "[PC-INPUT] WASD/mouse controls ready; %.3f degrees/count, invert Y %s. F1 releases/captures mouse; F2 opens settings; F12 opens Debug; Alt+Enter toggles fullscreen; Escape releases mouse.\n",
             sensitivity, invert_y ? "on" : "off");
     if (window) pc_settings_attach(window);
     pc_debug_init(window);
@@ -204,7 +204,6 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         }
         if (wp == VK_F11) {
             /* Ctrl+F11 belongs to the renderer's diagnostic frame capture. */
-            if (!(lp & (1LL << 30)) && !(GetKeyState(VK_CONTROL) & 0x8000)) toggle_fullscreen(window);
             return 1;
         }
         if (message == WM_SYSKEYDOWN && wp == VK_RETURN && (lp & (1LL << 29))) break;

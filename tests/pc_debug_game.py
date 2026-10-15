@@ -119,13 +119,12 @@ def main():
                 if full:
                     user.PostMessageW(game, 0x111, 0x7e22, 0)
                     check_mode(True)
-                    user.SendMessageW(game, 0x100, 0x7A, 1 << 30)  # held F11
+                for repeat in (0, 1 << 30):
+                    user.PostMessageW(game, 0x100, 0x7A, repeat)  # F11 must not toggle
+                    user.PostMessageW(game, 0x101, 0x7A, 0)
                     time.sleep(.2)
-                    assert fullscreen(), 'Held F11 toggled fullscreen again'
-                    user.PostMessageW(game, 0x100, 0x7A, 0)  # F11 exits fullscreen
-                    check_mode(False)
-                    user.PostMessageW(game, 0x100, 0x7A, 0)  # F11 enters fullscreen
-                    check_mode(True)
+                    assert fullscreen() == full, 'F11 changed fullscreen mode'
+                    check_mode(full)
                 user.PostMessageW(game, 0x100, 0x72, 0)  # F3 is no longer a shortcut
                 user.PostMessageW(game, 0x101, 0x72, 0)
                 time.sleep(.2)

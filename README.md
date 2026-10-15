@@ -97,10 +97,10 @@ Default bindings:
 | Capture / release cursor | F1 |
 | Keyboard & mouse settings | F2 |
 | Debug settings | F12 |
-| Fullscreen | F11 or Alt+Enter |
+| Fullscreen | Alt+Enter |
 
 **PC Settings > Fullscreen** also toggles fullscreen; its checkmark reflects the
-current window mode. Holding F11 does not repeatedly toggle it.
+current window mode.
 
 Click the game window to recapture the mouse. The recapture click is consumed
 so it does not fire a weapon. Alt-Tab releases the cursor and clears held
@@ -145,8 +145,7 @@ features; they do not detect every gameplay or visual anomaly. Counts cover the
 current launch since startup or the last clear. Use `Play.cmd` or `tsfp.ps1 Run`
 for live log monitoring; direct launches without `RECOMP_LOG_FILE` show
 "Log unavailable". Log reading is bounded and runs outside the render thread.
-The runtime's diagnostic frame capture uses **Ctrl+F11**; plain **F11** toggles
-fullscreen.
+The runtime's diagnostic frame capture uses **Ctrl+F11**; plain **F11** does nothing.
 
 For a fresh checkout, install Git, Visual Studio 2022 with its C++ workload and
 Windows SDK, and Python 3.12+, then run:
@@ -234,7 +233,17 @@ monitoring, live display options, and Debug dialog Save/Cancel behavior.
 `tests/pc_debug_game.py` checks the real game's menu and fullscreen access using
 isolated settings/saves and captures the dialog and overlay for review.
 `patches/pc-window-shortcuts.patch` moves the runtime's frame capture to Ctrl+F11
-so it does not conflict with the fullscreen shortcut.
+so plain F11 does not trigger a capture.
+
+`patches/pc-fullscreen.patch` disables DXGI's automatic exclusive fullscreen
+switch so the game's borderless fullscreen handler owns Alt+Enter and the
+menu command. This prevents failed frame presentation and frozen video when
+entering fullscreen. New Direct3D presentation errors are logged once per change.
+`tests/pc_fullscreen_game.py` checks actual screen animation before and after both
+fullscreen controls, using isolated settings and saves. Run it with
+`.venv\Scripts\python.exe tests\pc_fullscreen_game.py` on an unlocked Windows
+desktop, leaving the game in front until it exits. Screen captures and logs are
+saved under `private/captures/fullscreen`; temporary test saves are removed.
 
 The camera-field research also consulted the open-source
 [MouseInjector TS3 driver](https://github.com/regilopes/MouseInjectorDolphinDuck/blob/master/games/ts3.c).

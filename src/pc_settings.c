@@ -263,7 +263,7 @@ void pc_settings_attach(HWND game)
     AppendMenuA(settings,MF_STRING,PC_SETTINGS_COMMAND,"&Keyboard && Mouse...\tF2");
     AppendMenuA(settings,MF_STRING,PC_DEBUG_COMMAND,"&Debug...\tF12");
     AppendMenuA(settings,MF_SEPARATOR,0,NULL);
-    AppendMenuA(settings,MF_STRING,PC_FULLSCREEN_COMMAND,"&Fullscreen\tF11");
+    AppendMenuA(settings,MF_STRING,PC_FULLSCREEN_COMMAND,"&Fullscreen\tAlt+Enter");
     AppendMenuA(bar,MF_POPUP,(UINT_PTR)settings,"&PC Settings");
     SetMenu(game,bar);
     rect=client;
