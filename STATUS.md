@@ -3,6 +3,40 @@
 Tested on Windows and Apple Silicon macOS on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## Native Mac mouse-look — October 15
+
+- Clicking inside the focused native game window now enables relative
+  mouse-look. The capture click is consumed; subsequent clicks use the shared
+  fire binding. F1 remains an alternative toggle. Escape and focus loss release
+  capture, clear pending look samples and release held mouse buttons. Disabling
+  mouse-look also releases capture on the main thread.
+- Corrected the vertical sign after a first-level check showed upward mouse
+  movement looking down with the default profile. Native input still feeds the
+  original right-stick look path, so profile look speed/inversion also applies;
+  it does not yet use the Windows direct-camera mouse path.
+- The first 150-second isolated run reviewed horizontal/vertical turning,
+  capture without an ammunition decrease, and pause/resume/recapture, and exposed
+  that vertical-direction bug. The final 135-second run reviewed horizontal
+  turning and upward motion looking up after the correction. Additional live
+  input and focus changes interrupted its later scripted sequence: the final
+  down/pause/resume/fire sequence is **not** counted as a controlled pass.
+  Both runs reached their time limit without a native fault or sampled GL error.
+  Mouse actions used macOS event delivery; navigation used synthetic SDL keys.
+  This does not establish a completed human hardware playtest.
+- Real SDL-window regression checks pass for click capture, swallowed capture
+  click, subsequent fire, immediate neutralization on release, F1, focus loss,
+  disabled mouse-look, sensitivity and inversion. Three native CTests and GPU
+  regressions pass; portable checks report 19 passed, 2 Windows-only skipped,
+  and 7 subtests. The read-only native launcher check passes. Windows was not run.
+- Build base `9b00846` plus these native source changes; pinned runtime
+  `d90c929` and supported US XBE verified. Apple M5 Pro, macOS 27.0.1 ARM64,
+  AppleClang 21, SDL 3.4.16, OpenGL 4.1 Metal -91.7. Full source/binary hashes,
+  test routing and limitations are in `logs/native-mouse-validation.json` and
+  `build/macos/BUILD.json`; evidence includes `logs/mac-mouse-*` and selected
+  `private/captures/native-mac/mouse-*.png`. Personal saves/configuration were
+  absent and remain absent; disposable test disks were recycled. Changes are
+  local on `mac-port`; the other computer's synchronization is unverified.
+
 ## Native Mac up-to-120 FPS mode — October 15
 
 - Native launches now default to **2x render interpolation**, retaining the

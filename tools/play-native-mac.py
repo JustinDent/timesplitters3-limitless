@@ -86,7 +86,7 @@ def main():
     prepare_settings(ROOT)
     logs = ROOT / 'logs'
     logs.mkdir(exist_ok=True)
-    print('Arrows/Enter navigate. Escape pauses. F1 captures/releases mouse. Close the game window to quit.', flush=True)
+    print('Arrows/Enter navigate. Click inside the game for mouse-look; click again to fire. Escape pauses/releases the pointer. F1 also toggles capture. Close the game window to quit.', flush=True)
     print('Experimental: first-level rendering and basic input tested; campaign completion is unverified.', flush=True)
     proc = subprocess.Popen([str(executable)], cwd=ROOT, env=game_environment(os.environ, ROOT, args.fps),
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)

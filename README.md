@@ -187,7 +187,10 @@ save/load still need validation.
 Native controls use the same JSON bindings as Windows. Focus the game window:
 
 - Arrow keys navigate; **Enter**, **Space** or **E** selects; **Backspace** goes back.
-- **Escape** pauses and releases the mouse. **F1** toggles relative mouse capture
+- **Click inside the game** to capture the pointer, then move the mouse to look
+  around. This first click is consumed; subsequent left clicks fire.
+- **Escape** pauses and releases the mouse. After resuming, click to capture
+  again. **F1** also toggles relative mouse capture
   (use Fn+F1 if macOS reserves the function key for brightness).
 - **WASD** moves; left mouse fires; right mouse activates the right-stick action;
   **R** reloads, **G** uses the left trigger, **Tab** maps to Xbox Back.
@@ -196,11 +199,15 @@ Native controls use the same JSON bindings as Windows. Focus the game window:
   SDL virtual-controller mapping/hotplug has regression coverage.
 
 Mouse enabled/sensitivity/invert settings are read from the shared controls file
-at startup. Losing focus releases keys, buttons and mouse capture and neutralizes
+at startup. Native mouse-look currently feeds the game's right-stick look path,
+so the in-game profile's look speed/inversion also applies. With the default
+profile and `invert_y: false`, moving the mouse up looks up.
+Losing focus releases keys, buttons and mouse capture and neutralizes
 controller input. The bounded probe uses its own copy of controls under
 `private/test-saves/native-mac`; edit only that copy for experiments. No personal
 configuration is used by this test command. `--test` additionally checks native
-key press/release, focus loss, mouse settings and SDL controller sharing.
+key press/release, focus loss, mouse settings, click-to-capture without firing,
+pointer release and SDL controller sharing.
 
 For automated menu checks, add `--test-keys` and append SDL scancode names such as
 `+Return` and `-Return` on separate lines to the isolated `test-keys.txt`, with a

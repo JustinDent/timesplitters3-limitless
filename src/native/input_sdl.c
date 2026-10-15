@@ -14,6 +14,7 @@ static atomic_int mouse_enabled=1, mouse_invert;
 static _Atomic float mouse_sensitivity=0.10f;
 static float dx,dy;
 static int captured;
+static int capture_click;
 
 void tsfp_native_mouse_config(int enabled,double sensitivity,int invert_y) {
     atomic_store(&mouse_enabled,!!enabled);
@@ -44,9 +45,23 @@ static int virtual_key(SDL_Scancode code) {
     default:return 0;
     }
 }
+static void clear_mouse(void) {
+    atomic_store(&mouse_x,0);atomic_store(&mouse_y,0);dx=dy=0;
+}
+/* Main-thread only: worker polls see only the cleared/published atomics. */
+static void set_capture(SDL_Window *window,int wanted) {
+    wanted=!!wanted && atomic_load(&focused) && atomic_load(&mouse_enabled);
+    if(window && !SDL_SetWindowRelativeMouseMode(window,wanted)) {
+        fprintf(stderr,"[native-input] cannot %s mouse capture: %s\n",wanted?"enable":"release",SDL_GetError());
+        return;
+    }
+    captured=wanted;clear_mouse();
+    for(int vk=1;vk<=6;vk++)if(vk!=3)atomic_store(&keys[vk],0);
+    fprintf(stderr,"[native-input] mouse capture %s\n",captured?"on":"off");
+}
 static void release_all(void) {
     for(int i=0;i<256;i++)atomic_store(&keys[i],0);
-    atomic_store(&mouse_x,0);atomic_store(&mouse_y,0);dx=dy=0;
+    clear_mouse();capture_click=0;
 }
 int tsfp_native_input_focused(void) {return atomic_load(&focused);}
 int tsfp_native_key_down(int vk) {
@@ -59,24 +74,33 @@ int tsfp_native_key_down(int vk) {
 void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
     if(e->type==SDL_EVENT_WINDOW_FOCUS_GAINED){release_all();atomic_store(&focused,1);fprintf(stderr,"[native-input] window focused\n");}
     if(e->type==SDL_EVENT_WINDOW_FOCUS_LOST){
-        atomic_store(&focused,0);release_all();captured=0;
+        atomic_store(&focused,0);release_all();set_capture(window,0);
         fprintf(stderr,"[native-input] focus lost; controls released\n");
-        if(window)SDL_SetWindowRelativeMouseMode(window,false);
     }
     if(e->type==SDL_EVENT_KEY_DOWN||e->type==SDL_EVENT_KEY_UP){
         int vk=virtual_key(e->key.scancode),down=e->type==SDL_EVENT_KEY_DOWN;
         if(vk)atomic_store(&keys[vk],down);
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F1 && window){
-            int wanted=!captured && atomic_load(&mouse_enabled);
-            if(SDL_SetWindowRelativeMouseMode(window,wanted))captured=wanted;
-            dx=dy=0;
-            fprintf(stderr,"[native-input] mouse capture %s\n",captured?"on":"off");
+            set_capture(window,!captured);
         }
-        if(down && e->key.scancode==SDL_SCANCODE_ESCAPE && window){
-            captured=0;SDL_SetWindowRelativeMouseMode(window,false);dx=dy=0;
+        if(down && e->key.scancode==SDL_SCANCODE_ESCAPE){
+            set_capture(window,0);
         }
     }
     if(e->type==SDL_EVENT_MOUSE_BUTTON_DOWN||e->type==SDL_EVENT_MOUSE_BUTTON_UP){
+        int down=e->type==SDL_EVENT_MOUSE_BUTTON_DOWN;
+        if(down && !atomic_load(&focused))return;
+        if(e->button.button==SDL_BUTTON_LEFT) {
+            if(down && window && !captured && atomic_load(&mouse_enabled)) {
+                set_capture(window,1);
+                capture_click=1; /* A click to enter mouse-look must not fire. */
+                return;
+            }
+            if(capture_click) {
+                if(!down)capture_click=0;
+                return;
+            }
+        }
         int vk=e->button.button==SDL_BUTTON_LEFT?1:e->button.button==SDL_BUTTON_RIGHT?2:
                e->button.button==SDL_BUTTON_MIDDLE?4:e->button.button==SDL_BUTTON_X1?5:e->button.button==SDL_BUTTON_X2?6:0;
         if(vk)atomic_store(&keys[vk],e->type==SDL_EVENT_MOUSE_BUTTON_DOWN);
@@ -97,6 +121,7 @@ void tsfp_native_mouse_sample(XBOX_GAMEPAD *out) {
     if(abs(y)>abs(out->sThumbRY))out->sThumbRY=y;
 }
 void tsfp_native_input_frame(SDL_Window *window) {
+    if(captured && !atomic_load(&mouse_enabled))set_capture(window,0);
     /* Optional bounded test input feeds SDL events, then the exact same binding
      * path as physical keys. This is deliberately distinct from XAPI replay. */
     static FILE *test_file;
@@ -118,7 +143,9 @@ void tsfp_native_input_frame(SDL_Window *window) {
         }
     }
     atomic_store(&mouse_x,captured?stick(dx):0);
-    atomic_store(&mouse_y,captured?stick(atomic_load(&mouse_invert)?dy:-dy):0);dx=dy=0;
+    /* The supported game's default look profile turns downward for positive
+     * right-stick Y. SDL motion is also positive downward; do not negate it. */
+    atomic_store(&mouse_y,captured?stick(atomic_load(&mouse_invert)?-dy:dy):0);dx=dy=0;
 }
 int tsfp_native_input_test(void) {
     SDL_Event e={0};XBOX_GAMEPAD pad;
@@ -142,13 +169,55 @@ int tsfp_native_input_test(void) {
     captured=1;tsfp_native_mouse_config(1,0.1,0);
     e.type=SDL_EVENT_MOUSE_MOTION;e.motion.xrel=2;e.motion.yrel=3;tsfp_native_input_event(&e,NULL);
     tsfp_native_input_frame(NULL);recomp_bindings_sample(0,&pad);
-    ok &= pad.sThumbRX==2800 && pad.sThumbRY==-4200;
+    ok &= pad.sThumbRX==2800 && pad.sThumbRY==4200;
     tsfp_native_mouse_config(1,0.2,1);tsfp_native_input_event(&e,NULL);
     tsfp_native_input_frame(NULL);recomp_bindings_sample(0,&pad);
-    ok &= pad.sThumbRX==5600 && pad.sThumbRY==8400;
+    ok &= pad.sThumbRX==5600 && pad.sThumbRY==-8400;
     tsfp_native_mouse_config(0,0.1,0);recomp_bindings_sample(0,&pad);
     ok &= pad.sThumbRX==0 && pad.sThumbRY==0;
     captured=0;tsfp_native_mouse_config(1,0.1,0);release_all();
+    /* Exercise capture activation through a real SDL window, including the
+     * swallowed first click and immediate release of a published look sample. */
+    SDL_Window *window=NULL;
+    if(SDL_InitSubSystem(SDL_INIT_VIDEO))
+        window=SDL_CreateWindow("Native mouse capture regression",320,240,0);
+    ok &= window!=NULL;
+    if(window) {
+        e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);
+        e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
+        tsfp_native_input_event(&e,window);recomp_bindings_sample(0,&pad);
+        ok &= captured && SDL_GetWindowRelativeMouseMode(window) && pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==0;
+        e.type=SDL_EVENT_MOUSE_BUTTON_UP;tsfp_native_input_event(&e,window);
+        e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;tsfp_native_input_event(&e,window);
+        recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==255;
+        e.type=SDL_EVENT_MOUSE_MOTION;e.motion.xrel=10;e.motion.yrel=-10;
+        tsfp_native_input_event(&e,window);tsfp_native_input_frame(window);
+        recomp_bindings_sample(0,&pad);ok &= pad.sThumbRX>0 && pad.sThumbRY<0;
+        e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_ESCAPE;
+        tsfp_native_input_event(&e,window);recomp_bindings_sample(0,&pad);
+        ok &= !captured && !SDL_GetWindowRelativeMouseMode(window) && !pad.sThumbRX && !pad.sThumbRY && !pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER];
+        e.type=SDL_EVENT_MOUSE_MOTION;e.motion.xrel=50;e.motion.yrel=50;
+        tsfp_native_input_event(&e,window);tsfp_native_input_frame(window);
+        recomp_bindings_sample(0,&pad);ok &= !pad.sThumbRX && !pad.sThumbRY;
+        e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_F1;e.key.repeat=false;
+        tsfp_native_input_event(&e,window);ok &= captured;
+        tsfp_native_input_event(&e,window);ok &= !captured;
+        e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
+        tsfp_native_input_event(&e,window);ok &= captured;
+        e.type=SDL_EVENT_WINDOW_FOCUS_LOST;tsfp_native_input_event(&e,window);
+        recomp_bindings_sample(0,&pad);ok &= !captured && !pad.sThumbRX && !pad.sThumbRY && !pad.wButtons;
+        e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
+        tsfp_native_input_event(&e,window);ok &= !captured;
+        e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);
+        tsfp_native_mouse_config(0,0.1,0);
+        e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
+        tsfp_native_input_event(&e,window);ok &= !captured;
+        tsfp_native_mouse_config(1,0.1,0);tsfp_native_input_event(&e,window);ok &= captured;
+        tsfp_native_mouse_config(0,0.1,0);tsfp_native_input_frame(window);
+        ok &= !captured && !SDL_GetWindowRelativeMouseMode(window);
+        tsfp_native_mouse_config(1,0.1,0);release_all();
+        SDL_DestroyWindow(window);
+    }
     /* Exercise real SDL mapping/hotplug plus keyboard-player controller sharing. */
     SDL_VirtualJoystickDesc desc;SDL_INIT_INTERFACE(&desc);
     desc.type=SDL_JOYSTICK_TYPE_GAMEPAD;desc.name="Native input regression pad";
@@ -169,6 +238,6 @@ int tsfp_native_input_test(void) {
         SDL_Delay(300);recomp_bindings_sample(0,&pad);
         ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;
     }
-    fprintf(stderr,"[native-input-test] bindings, press/release, movement, focus, mouse, SDL pad hotplug: %s\n",ok?"PASS":"FAIL");
+    fprintf(stderr,"[native-input-test] bindings, press/release, movement, focus, mouse settings/click capture/release, SDL pad hotplug: %s\n",ok?"PASS":"FAIL");
     return ok?0:1;
 }
