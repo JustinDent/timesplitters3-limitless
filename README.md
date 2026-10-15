@@ -5,6 +5,29 @@ This workspace uses static recompilation: translate the original x86 executable
 into C and link it to a native Windows runtime. This does not recover the original
 C/C++ source. A build is an experimental port until gameplay has been verified.
 
+## Download and play
+
+Download the Windows x64 ZIP from [Releases](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases).
+Extract the entire ZIP to a writable folder, then double-click **Play.cmd**.
+On first launch, select your US Xbox ISO or an extracted game folder containing
+`default.xbe`, `pak`, and `xmv`. Setup verifies the game version and copies the
+files once. Afterward, **Play.cmd** launches directly; the ISO is no longer needed.
+
+The release includes the PC executable, movie libraries, and default controls.
+It requires Windows 10/11 x64 and about 5 GB free for setup. Python, Visual Studio,
+and an emulator are not required to play. Original game data is not bundled.
+This is an experimental prerelease; a complete campaign playthrough is unverified.
+Keep the release's `Data`, `Settings`, and `Saves` folders when upgrading.
+
+To produce the same public package after building:
+
+```powershell
+.\.venv\Scripts\python.exe tools/package-release.py --version v0.1.0-alpha.1
+```
+
+This uses an explicit file list and default settings. It excludes all game data,
+personal settings, and saves, and writes the ZIP plus SHA-256 under `build/releases`.
+
 ## Local workflow
 
 This repository contains the PC input code, runtime patches, and build scripts.
