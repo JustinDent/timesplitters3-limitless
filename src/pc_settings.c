@@ -10,10 +10,33 @@
 #include <math.h>
 #include <string.h>
 
+#ifdef _MSC_VER
+/* Opt every executable using these dialogs into Windows visual styles. */
+#pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+
 enum { ID_ACTIONS=100, ID_SLOT, ID_CHANGE, ID_CLEAR, ID_DEFAULTS, ID_SENSITIVITY,
        ID_INVERT, ID_ENABLED, ID_STATUS, ID_HELP, ID_SENS_LABEL };
 typedef struct Editor { PcSettings settings; HWND list; int slot; } Editor;
 typedef struct Capture { int key, accepted; } Capture;
+typedef struct DialogContext { DLGPROC procedure; LPARAM data; HFONT font; } DialogContext;
+static const WCHAR dialog_context_property[]=L"TSFP.Settings.DialogContext";
+
+static INT_PTR CALLBACK themed_dialog(HWND window,UINT message,WPARAM wp,LPARAM lp)
+{
+    DialogContext *context=(DialogContext *)GetPropW(window,dialog_context_property);
+    INT_PTR result;
+    if(message==WM_INITDIALOG) {
+        context=(DialogContext *)lp;
+        if(!SetPropW(window,dialog_context_property,(HANDLE)context)) { EndDialog(window,-1); return TRUE; }
+        SendMessage(window,WM_SETFONT,(WPARAM)(context->font?context->font:GetStockObject(DEFAULT_GUI_FONT)),FALSE);
+        lp=context->data;
+    }
+    if(!context) return FALSE;
+    result=context->procedure(window,message,wp,lp);
+    if(message==WM_NCDESTROY) RemovePropW(window,dialog_context_property);
+    return result;
+}
 
 /* DialogBox owns the message loop and keyboard navigation. Controls are
    created in WM_INITDIALOG, so no external resource files are required. */
@@ -25,6 +48,9 @@ static INT_PTR dialog(HWND owner, const WCHAR *title, int width, int height,
     WORD *p=(WORD *)(t+1);
     const WCHAR *c=title;
     DWORD units=GetDialogBaseUnits();
+    NONCLIENTMETRICSW metrics={sizeof metrics};
+    DialogContext context={procedure,data,NULL};
+    INT_PTR result;
     RECT work;
     SystemParametersInfo(SPI_GETWORKAREA,0,&work,0);
     if(width>work.right-work.left-40) width=work.right-work.left-40;
@@ -34,14 +60,20 @@ static INT_PTR dialog(HWND owner, const WCHAR *title, int width, int height,
     *p++=0; *p++=0;
     while (*c) *p++=(WORD)*c++;
     *p=0;
-    return DialogBoxIndirectParamW(GetModuleHandleW(NULL),t,owner,procedure,data);
+    if(SystemParametersInfoW(SPI_GETNONCLIENTMETRICS,sizeof metrics,&metrics,0))
+        context.font=CreateFontIndirectW(&metrics.lfMessageFont);
+    result=DialogBoxIndirectParamW(GetModuleHandleW(NULL),t,owner,themed_dialog,(LPARAM)&context);
+    /* Each modal dialog owns its font, including nested binding dialogs. */
+    if(context.font) DeleteObject(context.font);
+    return result;
 }
 
 static HWND control(HWND parent, const char *kind, const char *text, DWORD style, int id)
 {
     HWND h=CreateWindowExA(!strcmp(kind,"EDIT")?WS_EX_CLIENTEDGE:0,kind,text,
         WS_CHILD|WS_VISIBLE|style,0,0,1,1,parent,(HMENU)(INT_PTR)id,GetModuleHandle(NULL),NULL);
-    SendMessage(h,WM_SETFONT,(WPARAM)GetStockObject(DEFAULT_GUI_FONT),TRUE);
+    HFONT font=(HFONT)SendMessage(parent,WM_GETFONT,0,0);
+    SendMessage(h,WM_SETFONT,(WPARAM)(font?font:GetStockObject(DEFAULT_GUI_FONT)),TRUE);
     return h;
 }
 
