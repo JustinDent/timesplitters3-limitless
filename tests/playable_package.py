@@ -46,6 +46,13 @@ launcher = subprocess.Popen(launch_command,
                             cwd=STAGE, env=env, creationflags=0x08000000,
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 pid = None
+game_handle = None
+kernel = c.WinDLL('kernel32', use_last_error=True)
+kernel.OpenProcess.argtypes = [w.DWORD, w.BOOL, w.DWORD]
+kernel.OpenProcess.restype = w.HANDLE
+kernel.CloseHandle.argtypes = [w.HANDLE]
+kernel.WaitForSingleObject.argtypes = [w.HANDLE, w.DWORD]
+kernel.GetExitCodeProcess.argtypes = [w.HANDLE, c.POINTER(w.DWORD)]
 try:
     wanted = str(STAGE / 'Bin/futureperfect_recomp.exe').replace("'", "''")
     for attempt in range(20):
@@ -55,14 +62,19 @@ try:
         if result:
             pid = int(result)
             break
-        if launcher.poll() is not None:
+        if launcher.poll() is not None and (not args.release or launcher.returncode != 0):
             raise AssertionError(launcher.communicate())
         time.sleep(.25)
     assert pid, 'Portable game did not launch'
+    game_handle = kernel.OpenProcess(0x100000 | 0x1000, False, pid)
+    assert game_handle
+    if args.release:
+        launcher.wait(timeout=5)
+        assert launcher.returncode == 0, 'Play.cmd did not exit after launching'
     game = ui.wait_window(pid, 'TimeSplitters FP')
     ui.user.ShowWindow(game, 0)
     time.sleep(15)
-    assert launcher.poll() is None, 'Portable game exited early'
+    assert kernel.WaitForSingleObject(game_handle, 0) == 258, 'Portable game exited early'
     ui.user.PostMessageW(game, 0x100, 0x71, 0)
     editor = ui.wait_window(pid, 'Keyboard & Mouse -')
     assert not ui.user.IsWindowEnabled(game)
@@ -70,12 +82,8 @@ try:
     time.sleep(.3)
     assert ui.user.IsWindowEnabled(game)
     # Verify video libraries came from this package rather than the development checkout.
-    kernel = c.WinDLL('kernel32', use_last_error=True)
-    kernel.OpenProcess.argtypes = [w.DWORD, w.BOOL, w.DWORD]
-    kernel.OpenProcess.restype = w.HANDLE
     kernel.K32EnumProcessModulesEx.argtypes = [w.HANDLE, c.POINTER(w.HMODULE), w.DWORD, c.POINTER(w.DWORD), w.DWORD]
     kernel.K32GetModuleFileNameExW.argtypes = [w.HANDLE, w.HMODULE, w.LPWSTR, w.DWORD]
-    kernel.CloseHandle.argtypes = [w.HANDLE]
     handle = kernel.OpenProcess(0x410, False, pid)
     assert handle
     try:
@@ -92,6 +100,10 @@ try:
     finally:
         kernel.CloseHandle(handle)
     ui.user.PostMessageW(game, 0x10, 0, 0)
+    assert kernel.WaitForSingleObject(game_handle, 10000) == 0, 'Game did not shut down'
+    game_exit = w.DWORD()
+    assert kernel.GetExitCodeProcess(game_handle, c.byref(game_exit))
+    assert game_exit.value == 0, game_exit.value
     output, errors = launcher.communicate(timeout=10)
     assert launcher.returncode == 0, (launcher.returncode, output, errors)
     log = max((STAGE / 'Logs').glob('*.err'), key=lambda p: p.stat().st_mtime).read_text(errors='replace')
@@ -102,8 +114,10 @@ try:
     assert (STAGE / 'Settings/pc-controls.json').read_bytes() == expected_config.read_bytes()
     print('PASS: standalone launcher, packaged movie DLLs, F2 settings, local saves, and clean shutdown', flush=True)
 finally:
-    if launcher.poll() is None:
-        if pid:
+    if game_handle:
+        if kernel.WaitForSingleObject(game_handle, 0) == 258:
             subprocess.run(['taskkill', '/PID', str(pid), '/F'], creationflags=0x08000000, capture_output=True)
+        kernel.CloseHandle(game_handle)
+    if launcher.poll() is None:
         launcher.terminate()
         launcher.wait(timeout=5)

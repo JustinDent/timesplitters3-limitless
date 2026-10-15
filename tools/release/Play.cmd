@@ -5,7 +5,7 @@ if exist "%~dp0Data\default.xbe" goto play
 if errorlevel 2 exit /b 2
 if errorlevel 1 goto failed
 :play
-"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File "%~dp0Launch.ps1"
+start "" "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -STA -WindowStyle Hidden -ExecutionPolicy Bypass -File "%~dp0Start-game.ps1" -Script "%~dp0Launch.ps1"
 if errorlevel 1 goto failed
 exit /b 0
 :failed

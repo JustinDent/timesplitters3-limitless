@@ -56,6 +56,10 @@ in `private/captures`. Interactive runs store saves in `private/saves`.
 Double-click `Play.cmd` for the keyboard-and-mouse setup. Restart the game after
 updating a build or editing the configuration file by hand. Changes saved from
 the game's PC settings menu apply immediately.
+`Play.cmd` closes its command window after starting a hidden launcher; game logs
+continue to be written to `logs`, and launch failures appear in a dialog. The
+portable release uses the same behavior after first-time game import. For terminal
+diagnostics, use `tsfp.ps1 Run` (or `Launch.ps1` in a portable release) directly.
 
 ## PC controls
 
@@ -109,12 +113,28 @@ input on player 1; it does not require a controller.
 The Xbox action mapping was checked against the publisher's original
 [Xbox manual, Complete Controls](https://www.gamesdatabase.org/Media/SYSTEM/Microsoft_Xbox//Manual/formated/Timesplitters_-_Future_Perfect_-_2005_-_Electronic_Arts.pdf).
 
-For a fresh checkout, install Visual Studio 2022 with its C++ workload and Windows
-SDK, supply a Python 3.12+ executable, and run:
+For a fresh checkout, install Git, Visual Studio 2022 with its C++ workload and
+Windows SDK, and Python 3.12+, then run:
 
 ```powershell
 git clone https://github.com/TheDoffman/timesplitters-future-perfect-pc.git
 cd timesplitters-future-perfect-pc
+.\setup.ps1 -Python 'C:\path\to\python.exe' -Iso 'C:\path\to\TimeSplitters - Future Perfect (USA).xiso.iso'
+```
+
+If you already have this checkout, run only the `setup.ps1` command. The script
+validates the input paths and Python version, then runs Setup, Extract, Test,
+Generate, and Build in order, stopping at the first failure. It requires internet
+access for dependency downloads; it does not install Git, Python, or Visual Studio.
+The default output is `build/windows/Release/futureperfect_recomp.exe`.
+After setup succeeds, double-click `Play.cmd` to play from the repository.
+The extracted files in `private/game` must remain; the ISO is no longer needed.
+Use `-Configuration Debug` or `-Configuration RelWithDebInfo` for another build
+configuration, and pass the same configuration to `tsfp.ps1 Run` to launch it.
+
+The equivalent individual steps are still available for troubleshooting:
+
+```powershell
 .\tsfp.ps1 Setup -Python 'C:\path\to\python.exe'
 .\tsfp.ps1 Extract -Iso 'C:\path\to\TimeSplitters - Future Perfect (USA).xiso.iso'
 .\tsfp.ps1 Test
@@ -159,6 +179,8 @@ any relevant runtime code. No game data is supplied by this repository.
 storage: Partition1's TDATA and UDATA now use the configured save directory.
 Setup and Build apply it idempotently. Build also runs the native
 `tests/save_paths.c` regression test against the actual runtime.
+After all native build tests pass, Build removes their temporary `build/path-tests`
+data. Failed tests retain that directory for diagnosis; `private/saves` is unaffected.
 
 `patches/pc-controls.patch` connects the window/input layer to `src/pc_controls.c`
 and `src/pc_input.c`, and adds a manual wrapper around the US build's
@@ -166,6 +188,10 @@ and `src/pc_input.c`, and adds a manual wrapper around the US build's
 `sub_000D2B80_gen`; the generated C is never hand-edited. Run Generate after
 applying this patch to an older generated tree, then Build. The native
 `tests/pc_controls.c` suite runs during Build.
+
+`patches/pc-input-vocabulary.patch` keeps the Python input UI's key names in sync
+with the mouse-button and F23/F24 names added to the runtime by the PC controls
+patch. Setup, Test, and Build apply local patches idempotently.
 
 The camera-field research also consulted the open-source
 [MouseInjector TS3 driver](https://github.com/regilopes/MouseInjectorDolphinDuck/blob/master/games/ts3.c).
