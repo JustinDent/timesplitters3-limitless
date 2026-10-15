@@ -9,6 +9,9 @@
 #define PAGE_GUARD 0x100
 #define PAGE_EXECUTE_WRITECOPY 0x80
 #endif
+#ifdef _WIN32
+#include "pc_online.h"
+#endif
 #include <stdarg.h>
 
 #include "recomp_types.h"
@@ -98,6 +101,26 @@ void pc_display_menu_button(void (*original)(void))
     const int frontend=callsite==0x002CC116u && callback==0x002CBE50u;
     const int paused=callsite==0x002F561Cu && callback==0x002EC1A0u;
     GuestRegisters r;
+#ifdef _WIN32
+    if(callsite==0x001CC0A3u && callback==0x001CC050u) {
+        static uint32_t online_caption;
+        const uint32_t frame=g_esp, previous_caption=WORD_AT(frame+4);
+        /* Replace the original Xbox Live row in place. Its font, layout and
+           position above System Link remain owned by the original builder. */
+        if(!online_caption) {
+            const char text[]="ONLINE";
+            online_caption=xbox_HeapAlloc(sizeof text,4);
+            if(online_caption) memcpy((void *)((uintptr_t)online_caption+g_xbox_mem_offset),text,sizeof text);
+        }
+        if(online_caption) {
+            WORD_AT(frame+4)=online_caption;
+            WORD_AT(frame+20)=0x1200du;
+        }
+        original();
+        WORD_AT(frame+4)=previous_caption; WORD_AT(frame+20)=callback;
+        return;
+    }
+#endif
     original();
     if(!frontend && !paused) return;
     save_registers(&r);
@@ -275,6 +298,23 @@ static void activate(void)
     }
     restore_registers(&r); g_esp+=4;
 }
+#ifdef _WIN32
+extern void sub_001A0A60(void);
+static void system_link_activate(void)
+{
+    GuestRegisters r; save_registers(&r);
+    pc_online_disconnect();
+    _putenv_s("TSFP_ONLINE_CONFIG",""); _putenv_s("TSFP_NETWORK","1");
+    guest_call(sub_001A0A60,0);
+    restore_registers(&r); g_esp+=4;
+}
+static void online_activate(void)
+{
+    GuestRegisters r; save_registers(&r);
+    if(pc_online_connect()) guest_call(sub_001A0A60,0);
+    restore_registers(&r); g_esp+=4;
+}
+#endif
 void (*pc_display_menu_lookup(uint32_t address))(void)
 {
     switch(address) {
@@ -283,6 +323,15 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case TICK_CB: return tick_menu;
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
+#ifdef _WIN32
+    case 0x1200du: return online_activate;
+    /* Any remaining indirect reference to the retired Live entry uses Online. */
+    case 0x001CC050u: return online_activate;
+    /* System Link is reached through the title's indirect menu table. Online
+       deliberately calls its generated body directly after configuring the
+       bridge, while ordinary System Link selection resets to LAN transport. */
+    case 0x001A0A60u: return system_link_activate;
+#endif
     default: return NULL;
     }
 }

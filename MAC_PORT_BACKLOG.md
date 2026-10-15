@@ -12,9 +12,31 @@ until those references exist. Keep paths relative to the repository.
 
 ## Queue
 
-No new PC features have been registered yet. This list starts with the new
-workflow; it is not an audit of existing platform differences. See `STATUS.md`
-for previously recorded Mac limitations and validation coverage.
+### MAC-001 — System Link and Online multiplayer
+
+- **Status:** Queued
+- **PC behavior:** System Link uses the native UDP/XNet bridge; Online offers
+  host/join discovery and routes compatible peers through the directory bridge.
+- **PC source:** Main through `16fcea5` (PRs #4 and #5);
+  `src/pc_network.c`, `src/pc_network_guest.inc`, `src/pc_online.c`,
+  `src/pc_display_menu.c`, `patches/zz-pc-network.patch`,
+  `patches/zzz-pc-online.patch`, and `tools/online*.py`.
+- **PC validation:** Main records local two-instance lobby/match loading in
+  `docs/multiplayer.md`; cross-internet routing/full-match validation is pending.
+- **Existing Mac support:** The shared menu/display and original guest XNet
+  paths are retained. Windows host UI/transport calls are guarded during the
+  main/mac-port conflict resolution; no native Mac multiplayer adapter is linked.
+- **Mac adaptation needed:** Native socket/identity transport, directory host/join
+  UI, launch/cleanup integration, and platform-appropriate dependencies.
+- **Mac acceptance checks:** Build and launch on Apple Silicon; verify existing
+  display/settings menus, then test isolated two-instance discovery, joining,
+  gameplay, shutdown and user-setting preservation before cross-network tests.
+- **Mac implementation and evidence:** Deferred. Conflict resolution preserves
+  the Mac build boundary; host-independent dispatch and Windows checks are
+  recorded in `STATUS.md`. Native Mac execution remains unverified for this merge.
+
+This is a handoff for the incoming network feature, not a complete audit of all
+platform differences. See `STATUS.md` for prior native validation and limitations.
 
 ## Status meanings
 

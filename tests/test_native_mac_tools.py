@@ -1,5 +1,6 @@
 """Regressions for isolation and bounded cleanup, without launching the game."""
 import importlib.util
+import os
 from pathlib import Path
 import sys
 import pytest
@@ -46,6 +47,7 @@ def test_cleanup_refuses_symlink(tmp_path):
     assert personal.read_bytes() == b'keep'
 
 
+@pytest.mark.skipif(os.name == 'nt', reason='macOS Trash allocation requires stat.st_blocks')
 def test_cleanup_preserves_metadata_and_recycles_images(tmp_path, monkeypatch):
     test = tmp_path / 'private/test-saves/native-mac'
     test.mkdir(parents=True)

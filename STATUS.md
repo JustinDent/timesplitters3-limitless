@@ -3,6 +3,25 @@
 Tested on Windows and Apple Silicon macOS on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## Mac/main merge compatibility — October 15
+
+- Reconciled `mac-port` at `93dc422` with main at `16fcea5` for PR #10.
+  The shared display menu retains POSIX memory-query compatibility and the
+  Windows Online/System Link entries without linking the Windows host adapter
+  into native Mac. Native network wrappers delegate to their original guest
+  functions until a Mac transport is implemented; see backlog `MAC-001`.
+- Kept existing runtime patch files intact. The updater applies the existing
+  network patches before native boot, retaining its adjacent context around the
+  SDK block and reversing the same order. Regression tests cover fresh installs,
+  repeated builds, older Windows/Mac stacks, CRLF context and local-edit refusal.
+- On Windows, 47 selected shared/native-tool/network tests passed; five Mac
+  compiler/configuration/Trash checks were skipped. Compiled the affected shared
+  display-menu source with MSVC x64, and compiled/executed guest-ABI tests for
+  both the host-network route and native fallback without host-network symbols.
+- Native Apple Silicon build, GPU/menu and multiplayer execution are not verified
+  by this merge check. No game launches or personal settings/save changes were
+  required; the existing Windows texture branch and overhaul files were preserved.
+
 ## Shared Windows and Mac feature policy/input model — October 15
 
 - Added tracked shared-development rules to `AGENTS.md`: common behavior has one
@@ -550,6 +569,25 @@ in this section describe the state before the renderer connection.
   Fresh application in setup order and repeat-build checks pass.
 
 ## Completed
+
+- Online source-build integration: a new network-menu entry, HTTPS browser with
+  certificate fingerprint checking, public/private rooms, compatible-only
+  listing/joining, peer credentials and leases, and a virtual-address bridge
+  using the game host's forwarded UDP port. Guests establish outbound paths;
+  the host relays guest-to-guest traffic. Two local instances used Online and
+  an HTTPS directory to join a 2/16-player lobby and enter the same Shrink match.
+  Cross-internet routing and full-match stability remain unverified. Campaign
+  co-op remains a separate future effort.
+  Automatic hosting now detects public IPv4 over HTTPS, starts/stops a local
+  directory with the bridge, reuses its certificate and offers a copyable
+  invitation containing the directory address, fingerprint and join code.
+
+- Experimental PC System Link: native framed UDP, strict build/content identity
+  checks, default-protocol discovery sockets, and XNADDR/key mapping. Two isolated
+  game instances discovered a match, joined a 2/16-player lobby, and loaded into
+  the same Thief match. This is a same-PC loopback test, not a cross-network test
+  or a completed-match validation. See [multiplayer status](docs/multiplayer.md)
+  for the later Online integration and remaining cross-network validation.
 
 - Read the supplied desktop Xbox ISO without modifying it; extracted 412 files.
 - Confirmed the US executable, title ID `45410066`, entry point `0038024D`,
