@@ -100,6 +100,8 @@ def main():
             'tsfp_native_paths_test', '--parallel', '4')
         try:
             run(CMAKE.parent / 'ctest', '--test-dir', BUILD, '--output-on-failure')
+            subprocess.run([str(BUILD / 'futureperfect_recomp'), '--renderer-self-test'],
+                           cwd=ROOT, check=True, timeout=20)
         finally:
             print('Test disk cleanup:', recycle_test_disks(ROOT, BUILD / 'path-tests'))
 

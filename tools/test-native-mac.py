@@ -26,9 +26,22 @@ def isolated_environment(root, test):
                RECOMP_TRACE_BUDGET='500')
     return env
 
+def capture_environment(root):
+    captures = root / 'private/captures/native-mac'
+    if captures.is_symlink() or not captures.resolve().is_relative_to(root.resolve() / 'private'):
+        raise RuntimeError('Unexpected native capture directory')
+    captures.mkdir(parents=True, exist_ok=True)
+    for name in ('frame000.bmp', 'frame001.bmp'):
+        if (captures / name).is_symlink():
+            raise RuntimeError('Unexpected native capture file')
+    return dict(RECOMP_HLE_D3D8_DUMP=str(captures / 'frame'),
+                RECOMP_HLE_D3D8_DUMP_EVERY='60', RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--seconds', type=int, default=15)
+    parser.add_argument('--capture', action='store_true', help='Retain two rotating native frame captures')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
@@ -52,6 +65,8 @@ def main():
     if not runtime_config.exists():
         runtime_config.write_text('# Isolated native boot defaults\n')
     env = isolated_environment(ROOT, test)
+    if args.capture:
+        env.update(capture_environment(ROOT))
     logs = ROOT / 'logs'
     logs.mkdir(exist_ok=True)
     out_path, err_path = logs / 'native-boot.out', logs / 'native-boot.err'
@@ -77,11 +92,21 @@ def main():
     output = out_path.read_text(errors='replace')
     errors = err_path.read_text(errors='replace')
     frames = [int(n) for n in re.findall(r'\[NATIVE-GUEST\] completed frame (\d+)', errors)]
+    presented = re.findall(r'\[native-gl\] presented frame (\d+), GL error=0x([0-9a-fA-F]+)', errors)
+    captures = []
+    if args.capture:
+        for name in ('frame000.bmp', 'frame001.bmp'):
+            path = ROOT / 'private/captures/native-mac' / name
+            if path.exists() and path.stat().st_mtime >= time.time() - (time.monotonic() - started):
+                captures.append(dict(path=str(path.relative_to(ROOT)), bytes=path.stat().st_size,
+                                     sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
     boot = dict(guest_entry_reached='Entering translated Xbox entry' in output,
                 graphics_initialized='graphics initialization returned 0x00000000' in errors,
                 completed_guest_frames_at_least=max(frames, default=0),
+                presented_frames_at_least=max((int(n) for n, _ in presented), default=0),
+                sampled_gl_errors=[int(code, 16) for _, code in presented if int(code, 16)],
                 native_fault='[NATIVE-FAULT]' in errors,
-                rendering_connected=False)
+                rendering_connected='[d3d8_gl] GL ' in errors and 'host rendering connected' in errors)
     cleanup = recycle_test_disks(ROOT, test)
     result = dict(boot=boot, disposable_test_disks=cleanup, branch=subprocess.check_output(['git', 'branch', '--show-current'], cwd=ROOT, text=True).strip(),
                   source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
@@ -91,7 +116,8 @@ def main():
                   seconds=round(time.monotonic()-started, 2), reason=reason, exit_code=proc.returncode,
                   test_directory=str(test.relative_to(ROOT)),
                   overrides={k:v for k,v in env.items() if k.startswith(('RECOMP_', 'TSFP_'))},
-                  rendered_game_verified=False)
+                  frame_captures=captures,
+                  rendered_game_verified=False) # Visual recognition is a separate reviewed result.
     (logs / 'native-boot-summary.json').write_text(json.dumps(result, indent=2) + '\n')
     print(json.dumps({k:result[k] for k in ('seconds', 'reason', 'exit_code')}, indent=2))
     # A process exit of zero can be the guest rebooting after a startup error.

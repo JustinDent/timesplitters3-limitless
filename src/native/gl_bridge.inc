@@ -1,0 +1,108 @@
+/* Apple GL host boundary. Included by d3d8_gl.c, whose objects it describes.
+ * Vertex programs execute the existing portable NV2A interpreter; this is a
+ * correctness-first menu path, not an accelerated general shader translator. */
+static NV2AVshSlot native_slots[NV2A_VS_MAX_SLOTS];
+static NV2AVshProgram native_programs[NV2A_VS_MAX_SLOTS];
+static float native_constants[NV2A_VS_MAX_CONSTANTS][4];
+static float native_inputs[16][4];
+static float native_scale[4], native_offset[4];
+static int native_screen;
+static DWORD native_palettes[4][256], native_pixel_shader;
+const DWORD *d3d8_GetRenderStates(void) { return g.rs; }
+const DWORD *d3d8_GetTSS(DWORD s) { return g.tss[s < MAX_TSU ? s : 0]; }
+IDirect3DBaseTexture8 *d3d8_GetStageTexture(DWORD s) { return s < MAX_TSU ? g.textures[s] : NULL; }
+const D3DMATRIX *d3d8_GetTransform(D3DTRANSFORMSTATETYPE t) { return t == D3DTS_WORLD ? &g.m_world : t == D3DTS_VIEW ? &g.m_view : &g.m_proj; }
+const D3DLIGHT8 *d3d8_GetLight(DWORD n) { return n < 8 ? &g.lights[n] : NULL; }
+BOOL d3d8_GetLightEnable(DWORD n) { return n < 8 && g.light_enabled[n]; }
+const D3DMATERIAL8 *d3d8_GetMaterial(void) { return &g.material; }
+UINT d3d8_GetNumLights(void) { return 8; }
+const DWORD *d3d8_GetPalette(DWORD s) { return native_palettes[s & 3]; }
+static void native_set_palette(DWORD s, const void *p) { if (p && s < 4) memcpy(native_palettes[s], p, 1024); }
+void d3d8_base_set_palette(IDirect3DBaseTexture8 *p, UINT s) { if (p) ((GLTexture *)p)->palette = s & 3; }
+UINT d3d8_up_vertices_read(D3DPRIMITIVETYPE t, UINT n) { UINT v=0; gl_prim(t,n,&v); return v; }
+UINT d3d8_up_indices_read(D3DPRIMITIVETYPE t, UINT n) { return d3d8_up_vertices_read(t,n); }
+BOOL d3d8_texture_info(IDirect3DBaseTexture8 *p, D3D8TextureInfo *i) {
+    if (!p || (const void *)p->lpVtbl != &g_tex_vtbl) return FALSE;
+    GLTexture *t=(GLTexture *)p; *i=(D3D8TextureInfo){t->format,t->width,t->height,t->levels,t->usage}; return TRUE;
+}
+BOOL d3d8_texture_level(IDirect3DBaseTexture8 *p, UINT l, const BYTE **b, UINT *pitch, UINT *rows) {
+    D3D8TextureInfo i; if (!d3d8_texture_info(p,&i) || l >= i.levels) return FALSE;
+    GLTexture *t=(GLTexture *)p; UINT w=t->width>>l,h=t->height>>l; if(!w)w=1;if(!h)h=1;
+    *b=t->sys_mem+t->offsets[l]; *pitch=d3d8_row_pitch(t->format,w); *rows=d3d8_format_is_compressed(t->format)?(h+3)/4:h;return TRUE;
+}
+/* Cube/volume resources and movie planes are explicitly unsupported in this
+ * first 2D bridge. Their factory calls fail, so no fake resource is returned. */
+BOOL d3d8_cube_info(IDirect3DBaseTexture8 *p,D3D8CubeInfo *i) { return FALSE; }
+BOOL d3d8_cube_level(IDirect3DBaseTexture8 *p,UINT f,UINT l,const BYTE **b,UINT *pitch,UINT *rows) { return FALSE; }
+void d3d8_movie_clear(void) {}
+void d3d8_movie_draw(void) {}
+void hle_d3d8_overlay_redraw(void) {}
+void d3d8_combiners_set_pixel_shader(DWORD t) { native_pixel_shader=t; }
+DWORD d3d8_combiners_get_pixel_shader(void) { return native_pixel_shader; }
+HRESULT d3d8_vsh_create_shader(const DWORD *code,int n,DWORD *h) {
+    if (!code || !h || n<1 || n>NV2A_VS_MAX_INSTRUCTIONS) return E_INVALIDARG;
+    for(int i=0;i<NV2A_VS_MAX_SLOTS;i++) if(!native_slots[i].in_use) {
+        NV2AVshSlot *s=&native_slots[i];s->in_use=1;s->length=n;memcpy(s->microcode,code,n*16);
+        nv2a_vsh_parse(code,n,&native_programs[i]);*h=0x10000+i;return S_OK;
+    }
+    return E_FAIL;
+}
+BOOL d3d8_vsh_is_programmable(DWORD h) { return h>=0x10000 && h<0x10000+NV2A_VS_MAX_SLOTS && native_slots[h-0x10000].in_use; }
+HRESULT d3d8_vsh_delete_shader(DWORD h) { if(!d3d8_vsh_is_programmable(h))return E_INVALIDARG;memset(&native_slots[h-0x10000],0,sizeof native_slots[0]);return S_OK; }
+HRESULT d3d8_vsh_set_declaration(DWORD h,const D3D8VshInput *d,int n) {
+    if(!d3d8_vsh_is_programmable(h)||n<0||n>16||(n&&!d))return E_INVALIDARG;
+    NV2AVshSlot *s=&native_slots[h-0x10000];s->decl_count=n;if(n)memcpy(s->decl,d,n*sizeof *d);return S_OK;
+}
+void d3d8_vsh_set_constant(int r,const float *p,int n) { if(r>=0 && n>=0 && r+n<=NV2A_VS_MAX_CONSTANTS && p)memcpy(native_constants[r],p,n*16); }
+const float *d3d8_vsh_constants(void) { return &native_constants[0][0]; }
+void d3d8_vsh_set_vertex_data(int r,const float p[4]) { if(r>=0&&r<16&&p)memcpy(native_inputs[r],p,16); }
+void d3d8_vsh_get_vertex_data(int r,float p[4]) { if(r>=0&&r<16&&p)memcpy(p,native_inputs[r],16); }
+void d3d8_vsh_set_screenspace(const float s[4],const float o[4]) { memcpy(native_scale,s,16);memcpy(native_offset,o,16);native_screen=1; }
+void d3d8_vsh_get_screenspace(float s[4],float o[4],int *e) { if(s)memcpy(s,native_scale,16);if(o)memcpy(o,native_offset,16);if(e)*e=native_screen; }
+BOOL d3d8_vsh_get_slot(int i,DWORD *h,const DWORD **m,int *n,const D3D8VshInput **d,int *c) {
+    if(i<0||i>=NV2A_VS_MAX_SLOTS||!native_slots[i].in_use)return FALSE;
+    NV2AVshSlot *s=&native_slots[i];if(h)*h=0x10000+i;if(m)*m=s->microcode;if(n)*n=s->length;if(d)*d=s->decl;if(c)*c=s->decl_count;return TRUE;
+}
+/* Interpolation is disabled by xbox_D3D8InterpBegin on this backend. */
+void d3d8_vsh_interp_registers(int *p,int *a,int *n) { *p=-1;*a=-1;*n=0; }
+int d3d8_vsh_bound_uses_projection(void) { return 0; }
+uint32_t d3d8_vsh_bound_reads(int f,int n) { return 0; }
+
+static unsigned native_read_input(const BYTE *p,UINT available,RhiFormat f,float v[4]) {
+    unsigned n=f==RHI_FORMAT_R32G32B32A32_FLOAT?4:f==RHI_FORMAT_R32G32B32_FLOAT?3:f==RHI_FORMAT_R32G32_FLOAT?2:f==RHI_FORMAT_R32_FLOAT?1:0;
+    if(n) { if(available<n*4)return 0;memcpy(v,p,n*4);return 1; }
+    if(f==RHI_FORMAT_R8G8B8A8_UNORM || f==RHI_FORMAT_B8G8R8A8_UNORM) {
+        if(available<4)return 0;for(int j=0;j<4;j++)v[j]=p[j]/255.f;
+        if(f==RHI_FORMAT_B8G8R8A8_UNORM){float x=v[0];v[0]=v[2];v[2]=x;}return 1;
+    }
+    return 0;
+}
+static float *native_shader_vertices(const void *data,UINT count,UINT stride) {
+    if(!d3d8_vsh_is_programmable(g.current_vsh)||!count||count>1000000)return NULL;
+    NV2AVshSlot *s=&native_slots[g.current_vsh-0x10000];
+    float *out=malloc((size_t)count*10*sizeof(float));if(!out)return NULL;
+    for(UINT i=0;i<count;i++) {
+        float inputs[16][4];memcpy(inputs,native_inputs,sizeof inputs);
+        for(int j=0;j<s->decl_count;j++) {
+            D3D8VshInput *d=&s->decl[j];
+            if(d->reg<0||d->reg>=16||d->offset>=stride||!native_read_input((const BYTE*)data+(size_t)i*stride+d->offset,stride-d->offset,d->format,inputs[d->reg])) {
+                static int said;if(!said++){fprintf(stderr,"[native-gl] unsupported vertex declaration format %u; draw skipped\n",d->format);}free(out);return NULL;
+            }
+        }
+        NV2AVshState st;nv2a_vsh_execute(&native_programs[g.current_vsh-0x10000],inputs,native_constants,NV2A_VS_MAX_CONSTANTS,&st);
+        float *v=out+i*10;memcpy(v,st.out[NV2A_VSH_OUT_POS],16);
+        if(native_screen) {
+            for(int k=0;k<4;k++)v[k]=(v[k]-native_offset[k])/native_scale[k];
+            if(v[3]==0)v[3]=1;for(int k=0;k<3;k++)v[k]*=v[3];
+        }
+        v[2]=2*v[2]-v[3];
+        memcpy(v+4,st.out[NV2A_VSH_OUT_D0],16);memcpy(v+8,st.out[NV2A_VSH_OUT_T0],8);
+    }
+    return out;
+}
+static void native_shader_attribs(void) {
+    glEnableVertexAttribArray(0);glVertexAttribPointer(0,4,GL_FLOAT,GL_FALSE,40,0);
+    glEnableVertexAttribArray(1);glVertexAttribPointer(1,4,GL_FLOAT,GL_FALSE,40,(void*)16);
+    glEnableVertexAttribArray(2);glVertexAttribPointer(2,2,GL_FLOAT,GL_FALSE,40,(void*)32);
+    glUniform1i(g.u_use_xform,2);
+}

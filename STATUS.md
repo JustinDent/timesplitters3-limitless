@@ -3,6 +3,49 @@
 Tested on Windows on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## First visible native Mac menu — October 15
+
+- On `mac-port`, connected the existing shared HLE graphics hooks to an Apple
+  Silicon SDL3/Cocoa OpenGL 4.1 backend. The driver reports **GL 4.1 Metal - 91.7,
+  GLSL 4.10**. The executable is native ARM64 Mach-O, with no Wine/Rosetta process.
+- Visually reviewed actual GPU back-buffer captures: the TimeSplitters logo,
+  animated menu background, **1 PLAYER / 2 PLAYER / 3 PLAYER / 4 PLAYER**, and
+  **A Select** are readable. Repeated bounded runs reached this menu without a
+  native fault. The final 45-second probe logged at least 2,100 guest frames
+  and host presents, with no sampled GL errors; termination at the limit needed
+  SIGKILL after the three-second grace period. This establishes the first visible
+  menu; no input was injected,
+  and menu navigation or gameplay is not claimed.
+- Reused the shared vertex declarations, guest state mapping and texture cache.
+  Added CPU execution of NV2A vertex programs with screen-space conversion,
+  GLSL register-combiner evaluation, quad triangulation, Xbox texture unswizzling,
+  DXT and A8 font texture uploads, and GPU readback. The loading worker exposed
+  a missing current-context fault; a recursive lock now hands the context between
+  guest threads. Cocoa window creation/event pumping remain on the main thread.
+- Added a separate reproducible `zzz-mac-renderer.patch`; prior patches and
+  generated game code remain unchanged. The Mac backend is `src/native/renderer_gl.c`;
+  the existing Windows and Linux backend source selection remains intact.
+  Shared portable format helpers compile from the pinned upstream source.
+- Real GPU regression checks pass for quad coverage, A8 unswizzling and alpha
+  blending, a synthetic NV2A vertex program, per-stage combiner constants,
+  readback, and worker-thread context handoff. The three native CTest suites
+  pass. Portable patch/launcher/isolation checks: 13 passed, 2 Windows-only
+  PowerShell checks skipped, 7 subtests passed. The Windows executable was not rebuilt or tested.
+- The probe supports `--capture`, with two rotating BMPs, isolated save/settings
+  paths, bounded run/log size and validated partition-image recycling. Its JSON
+  separates guest frames, sampled successful host presents, sampled GL errors,
+  and capture hashes; visual menu recognition is recorded separately. Personal
+  saves/settings remain unused. Project physical allocation remains about 8.5 GiB,
+  with a 258 MiB native build and about 2 MiB of selected/rotating captures.
+- Evidence: `private/captures/native-mac/first-native-menu.png`,
+  `logs/native-boot-summary.json`, `logs/native-renderer-validation.json`,
+  `logs/mac-renderer-build-and-tests.log`, and `logs/mac-renderer-patch-tests.log`.
+- Remaining renderer gaps include general multi-texturing, offscreen render
+  targets, screen-copy effects, movie playback and full 3D fidelity. Native
+  controls/navigation, audible quality/latency, PC display/texture features,
+  gameplay, fullscreen and save/load are not verified. Vertex programs currently
+  execute on the CPU; a menu result is not a performance claim for gameplay.
+
 ## First native Apple Silicon execution — October 15
 
 - Built `build/macos/futureperfect_recomp` as a native ARM64 Mach-O executable
@@ -64,11 +107,11 @@ full gameplay and campaign completion have not been verified.
 
 ### Next native milestone
 
-Connect the game's rendering hooks to a native renderer and validate the first
-visible menu. The inherited OpenGL backend compiles but is not connected to the
-Windows-oriented HLE drawing path. Shader/texture translation, movie presentation,
-physical input, PC settings/display/texture features and gameplay validation
-remain. Native guest frames are not evidence of rendered frames.
+The first-menu renderer connection is complete (see the newer result above).
+Validate physical input and menu navigation, then extend rendering support for
+an in-game scene. Movie presentation, PC settings/display/texture features and
+save/load remain separate milestones. The earlier execution-only observations
+in this section describe the state before the renderer connection.
 
 ## Native Mac feasibility and ISO preparation — October 15
 

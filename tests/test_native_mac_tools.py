@@ -57,3 +57,16 @@ def test_cleanup_preserves_metadata_and_recycles_images(tmp_path, monkeypatch):
     assert (test / 'profile.dat').read_bytes() == b'keep'
     assert not (test / 'Partition0.img').exists()
     assert (Path(result['recycled_to']) / 'Partition0.img').read_bytes() == b'disposable'
+
+
+def test_capture_is_bounded_and_refuses_symlinks(tmp_path):
+    env = probe.capture_environment(tmp_path)
+    assert env['RECOMP_HLE_D3D8_DUMP_KEEP_LAST'] == '2'
+    assert Path(env['RECOMP_HLE_D3D8_DUMP']).parent == tmp_path / 'private/captures/native-mac'
+    target = tmp_path / 'keep.bmp'
+    target.write_bytes(b'keep')
+    link = tmp_path / 'private/captures/native-mac/frame000.bmp'
+    link.symlink_to(target)
+    with pytest.raises(RuntimeError, match='Unexpected native capture file'):
+        probe.capture_environment(tmp_path)
+    assert target.read_bytes() == b'keep'

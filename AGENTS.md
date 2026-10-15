@@ -60,8 +60,12 @@ reproducibility, and validation requirements.
   (upstream runtime settings) and `TSFP_DISPLAY_CONFIG` (PC display settings)
   must be isolated, along with the input/save paths. Never let runtime defaults
   write into the user's home configuration directory during an automated run.
-- Native guest-frame completion currently means game-code execution only;
-  the macOS renderer is not connected. Do not label it rendered or playable.
+- The native renderer has reached the visible player-selection menu. Preserve
+  the distinction between guest-frame counts, successful host presents, reviewed
+  frame captures, menu navigation and gameplay. The first menu does not establish
+  playability or complete rendering support. `--capture` keeps two rotating BMPs
+  in `private/captures/native-mac`; retain selected evidence and recycle redundant
+  captures. Native `--test` also runs a bounded real-GPU regression check.
 - Native regression tests use `build/macos/path-tests`. Recycle only their
   known `Partition0.img` through `Partition5.img` files after each test pass;
   preserve test metadata and profiles. The shared cleanup helper validates the

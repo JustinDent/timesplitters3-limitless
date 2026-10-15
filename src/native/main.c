@@ -36,6 +36,11 @@ static void fault(int sig, siginfo_t *info, void *context)
 
 int main(int argc, char **argv)
 {
+    if(argc==2 && strcmp(argv[1],"--renderer-self-test")==0) {
+        extern int tsfp_native_renderer_test(void);
+        return tsfp_native_renderer_test();
+    }
+
     (void)argc; (void)argv;
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);

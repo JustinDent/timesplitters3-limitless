@@ -77,9 +77,10 @@ check passes; rendered gameplay has not yet been tested on this Mac.
 Native work stays on **mac-port**. The Mac now builds an ARM64 Mach-O executable
 from the verified game data and the same pinned runtime and Python dependencies
 used on Windows. It executes the translated Xbox entry point, initializes the
-kernel and graphics device, loads assets, and runs guest frames. **It does not
-show a game window or render menus yet.** This is a development milestone, not
-an interactive Mac release. `Play-Mac.command` remains the CrossOver launcher.
+kernel and graphics device, loads assets, and displays the game's **1–4 player
+selection menu in a native SDL/Cocoa OpenGL window**. This is an experimental
+first-menu milestone; navigation and gameplay are not validated.
+`Play-Mac.command` remains the CrossOver launcher.
 
 From the project root, use Python 3.12 or newer, Xcode command-line tools, and
 an installed OpenSSL development library. The tested Mac has Apple Clang 21,
@@ -94,20 +95,25 @@ python3 tools/build-native-mac.py --setup --generate --test
 .venv/bin/python tools/build-native-mac.py --test
 
 # Bounded native execution, with isolated saves and configuration.
-.venv/bin/python tools/test-native-mac.py --seconds 30
+.venv/bin/python tools/test-native-mac.py --seconds 45 --capture
 ```
 
 Output stays in `build/macos`. `BUILD.json` records the source and runtime
 revision, source/patch hashes, executable hash, compiler, Python packages and
 linked libraries. Native changes to the upstream runtime are reproduced by
-`patches/zz-mac-native-boot.patch`, applied last after the shared feature patches.
+`patches/zz-mac-native-boot.patch` and `patches/zzz-mac-renderer.patch`, applied
+after the shared feature patches. Mac renderer source stays in `src/native`;
+Windows and the inherited Linux graphics backends retain their own sources.
 Never edit generated game C. Regenerate when wrapper declarations change.
 
 The native probe requires an ARM64 binary and the supported XBE hash. It strips
 stale runtime overrides, uses `private/test-saves/native-mac`, isolates both
 upstream and PC settings, bounds duration/log size, and records
 `logs/native-boot-summary.json`. A successful probe means guest frames continued
-until its time limit; it does **not** mean those frames were displayed. Test
+until its time limit. It separately reports sampled host presents/GL errors;
+menu recognition still requires reviewing the captures. `--capture` retains two
+rotating BMPs under `private/captures/native-mac`; it does not capture the desktop.
+Selected visual evidence is `private/captures/native-mac/first-native-menu.png`. Test
 partition images are sparse, then recycled with validated paths; profiles,
 configuration and logs remain. Native CTest uses `build/macos/path-tests` and
 recycles its partition images after the pass as well.
@@ -119,11 +125,15 @@ output backend. Unknown faulting instructions stop with diagnostics. SDL audio
 submission has been observed, but output fidelity/latency and physical input
 have not been validated. Audio position uses the existing wall-clock fallback.
 
-The next milestone is connecting the game's drawing hooks to a complete native
-renderer. The inherited OpenGL implementation builds, but the game's rich
-rendering path still depends on Windows. Movies are currently skipped; native
-FFmpeg integration, keyboard/mouse capture, PC settings/display/texture
-features, rendered menus, gameplay and save/load validation remain unfinished.
+The native renderer uses the shared HLE state/texture/vertex hooks, the portable
+NV2A vertex interpreter, and a GLSL register-combiner path for stage-0 textures.
+`--test` checks actual GPU pixels for quad topology, font alpha, blending,
+NV2A vertex/combiner execution, readback and worker-thread context handoff, in
+addition to the three platform suites. These tests use no game data or saves.
+General multi-texturing, offscreen targets, screen-copy effects and full 3D
+fidelity remain incomplete. Movies are skipped. Physical input/menu navigation,
+keyboard/mouse capture, PC settings/display/texture features, gameplay and
+save/load still need validation.
 
 Portable patch, launcher and test-isolation checks:
 
