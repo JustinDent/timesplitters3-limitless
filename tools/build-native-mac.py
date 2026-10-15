@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 import platform
 from pathlib import Path
 import re
@@ -100,8 +101,16 @@ def main():
             'tsfp_native_paths_test', '--parallel', '4')
         try:
             run(CMAKE.parent / 'ctest', '--test-dir', BUILD, '--output-on-failure')
-            subprocess.run([str(BUILD / 'futureperfect_recomp'), '--renderer-self-test'],
-                           cwd=ROOT, check=True, timeout=20)
+            env = {k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
+            test = BUILD / 'path-tests'
+            env.update(RECOMP_INPUT_CONFIG=str(ROOT / 'tests/fixtures/pc-controls.json'),
+                       RECOMP_SAVE_DIR=str(test), RECOMP_GAME_DIR=str(ROOT / 'private/game'),
+                       RECOMP_DISPLAY_CONFIG=str(test / 'runtime.conf'),
+                       TSFP_DISPLAY_CONFIG=str(test / 'pc-display.ini'),
+                       XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'))
+            for check in ('--renderer-self-test', '--input-self-test'):
+                subprocess.run([str(BUILD / 'futureperfect_recomp'), check],
+                               cwd=ROOT, env=env, check=True, timeout=20)
         finally:
             print('Test disk cleanup:', recycle_test_disks(ROOT, BUILD / 'path-tests'))
 

@@ -60,12 +60,15 @@ reproducibility, and validation requirements.
   (upstream runtime settings) and `TSFP_DISPLAY_CONFIG` (PC display settings)
   must be isolated, along with the input/save paths. Never let runtime defaults
   write into the user's home configuration directory during an automated run.
-- The native renderer has reached the visible player-selection menu. Preserve
+- The native renderer has reached menus and the first story-level opening scene;
+  native input navigates menus, but the gameplay world can render black. Preserve
   the distinction between guest-frame counts, successful host presents, reviewed
   frame captures, menu navigation and gameplay. The first menu does not establish
   playability or complete rendering support. `--capture` keeps two rotating BMPs
   in `private/captures/native-mac`; retain selected evidence and recycle redundant
-  captures. Native `--test` also runs a bounded real-GPU regression check.
+  captures. Native `--test` also runs bounded real-GPU and SDL input regression
+  checks. `--test-keys` is explicitly synthetic SDL event input, not a physical
+  device test; distinguish it from macOS event delivery and human playtesting.
 - Native regression tests use `build/macos/path-tests`. Recycle only their
   known `Partition0.img` through `Partition5.img` files after each test pass;
   preserve test metadata and profiles. The shared cleanup helper validates the

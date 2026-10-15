@@ -17,6 +17,7 @@
 #endif
 
 #include <SDL3/SDL.h>
+#include "input_sdl.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
@@ -587,12 +588,15 @@ static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const
     native_present_count++;
     if(native_present_count==1 || native_present_count%300==0)
         fprintf(stderr,"[native-gl] presented frame %u, GL error=0x%x\n",native_present_count,glGetError());
-    /* Pump events so the window stays responsive. Quit closes the window
-     * but leaves the process running until the game's loop notices. */
+    /* Cocoa event pumping stays on the main thread. The guest has no host
+     * close-window loop, so quit ends the native process directly. */
+    if(SDL_IsMainThread())tsfp_native_input_frame(g.window);
     SDL_Event ev;
     while (SDL_IsMainThread() && SDL_PollEvent(&ev)) {
-        if (ev.type == SDL_EVENT_QUIT) {
-            fprintf(stderr, "[d3d8_gl] window close requested\n");
+        tsfp_native_input_event(&ev,g.window);
+        if (ev.type == SDL_EVENT_QUIT || ev.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
+            fprintf(stderr, "[native-input] window close requested\n");
+            exit(0);
         }
     }
     return D3D_OK;
@@ -1075,6 +1079,7 @@ static HRESULT __stdcall d3d_CreateDevice(IDirect3D8 *s, UINT adapter, DWORD dev
         fprintf(stderr, "[d3d8_gl] SDL_CreateWindow failed: %s\n", SDL_GetError());
         return D3DERR_INVALIDCALL;
     }
+    SDL_RaiseWindow(g.window);
     g.glctx = SDL_GL_CreateContext(g.window);
     if (!g.glctx) {
         fprintf(stderr, "[d3d8_gl] SDL_GL_CreateContext failed: %s\n", SDL_GetError());

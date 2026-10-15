@@ -42,6 +42,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--seconds', type=int, default=15)
     parser.add_argument('--capture', action='store_true', help='Retain two rotating native frame captures')
+    parser.add_argument('--test-keys', action='store_true', help='Read SDL key events from isolated test-keys.txt')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
@@ -65,6 +66,11 @@ def main():
     if not runtime_config.exists():
         runtime_config.write_text('# Isolated native boot defaults\n')
     env = isolated_environment(ROOT, test)
+    if args.test_keys:
+        keys = test / 'test-keys.txt'
+        if keys.is_symlink():raise SystemExit('Unexpected test key file')
+        keys.write_text('')
+        env['TSFP_NATIVE_TEST_KEYS'] = str(keys)
     if args.capture:
         env.update(capture_environment(ROOT))
     logs = ROOT / 'logs'

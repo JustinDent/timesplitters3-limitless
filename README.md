@@ -79,7 +79,9 @@ from the verified game data and the same pinned runtime and Python dependencies
 used on Windows. It executes the translated Xbox entry point, initializes the
 kernel and graphics device, loads assets, and displays the game's **1–4 player
 selection menu in a native SDL/Cocoa OpenGL window**. This is an experimental
-first-menu milestone; navigation and gameplay are not validated.
+port: keyboard-driven menus now reach the first story level. Its opening scene
+renders, but the gameplay world later becomes black while the HUD remains.
+Full gameplay and rendering fidelity are not validated.
 `Play-Mac.command` remains the CrossOver launcher.
 
 From the project root, use Python 3.12 or newer, Xcode command-line tools, and
@@ -95,13 +97,14 @@ python3 tools/build-native-mac.py --setup --generate --test
 .venv/bin/python tools/build-native-mac.py --test
 
 # Bounded native execution, with isolated saves and configuration.
-.venv/bin/python tools/test-native-mac.py --seconds 45 --capture
+.venv/bin/python tools/test-native-mac.py --seconds 120 --capture
 ```
 
 Output stays in `build/macos`. `BUILD.json` records the source and runtime
 revision, source/patch hashes, executable hash, compiler, Python packages and
 linked libraries. Native changes to the upstream runtime are reproduced by
-`patches/zz-mac-native-boot.patch` and `patches/zzz-mac-renderer.patch`, applied
+`patches/zz-mac-native-boot.patch`, `patches/zzz-mac-renderer.patch` and
+`patches/zzzz-mac-input.patch`, applied
 after the shared feature patches. Mac renderer source stays in `src/native`;
 Windows and the inherited Linux graphics backends retain their own sources.
 Never edit generated game C. Regenerate when wrapper declarations change.
@@ -113,7 +116,8 @@ upstream and PC settings, bounds duration/log size, and records
 until its time limit. It separately reports sampled host presents/GL errors;
 menu recognition still requires reviewing the captures. `--capture` retains two
 rotating BMPs under `private/captures/native-mac`; it does not capture the desktop.
-Selected visual evidence is `private/captures/native-mac/first-native-menu.png`. Test
+Selected visual evidence includes `private/captures/native-mac/first-native-menu.png`
+and `private/captures/native-mac/menu-navigation.png`. Test
 partition images are sparse, then recycled with validated paths; profiles,
 configuration and logs remain. Native CTest uses `build/macos/path-tests` and
 recycles its partition images after the pass as well.
@@ -131,9 +135,31 @@ NV2A vertex interpreter, and a GLSL register-combiner path for stage-0 textures.
 NV2A vertex/combiner execution, readback and worker-thread context handoff, in
 addition to the three platform suites. These tests use no game data or saves.
 General multi-texturing, offscreen targets, screen-copy effects and full 3D
-fidelity remain incomplete. Movies are skipped. Physical input/menu navigation,
-keyboard/mouse capture, PC settings/display/texture features, gameplay and
-save/load still need validation.
+fidelity remain incomplete. Movies are skipped. PC settings/display/texture features, complete gameplay and save/load still
+need validation.
+
+Native controls use the same JSON bindings as Windows. Focus the game window:
+
+- Arrow keys navigate; **Enter**, **Space** or **E** selects; **Backspace** goes back.
+- **Escape** pauses and releases the mouse. **F1** toggles relative mouse capture
+  (use Fn+F1 if macOS reserves the function key for brightness).
+- **WASD** moves; left mouse fires; right mouse activates the right-stick action;
+  **R** reloads, **G** uses the left trigger, **Tab** maps to Xbox Back.
+- The first unassigned SDL controller also shares player 1. Explicit controllers
+  assigned to other players are reserved. Physical controller play is unverified;
+  SDL virtual-controller mapping/hotplug has regression coverage.
+
+Mouse enabled/sensitivity/invert settings are read from the shared controls file
+at startup. Losing focus releases keys, buttons and mouse capture and neutralizes
+controller input. The bounded probe uses its own copy of controls under
+`private/test-saves/native-mac`; edit only that copy for experiments. No personal
+configuration is used by this test command. `--test` additionally checks native
+key press/release, focus loss, mouse settings and SDL controller sharing.
+
+For automated menu checks, add `--test-keys` and append SDL scancode names such as
+`+Return` and `-Return` on separate lines to the isolated `test-keys.txt`, with a
+short hold between writes. This optional path feeds SDL events through the same
+binding reader; it does not establish physical keyboard/controller testing.
 
 Portable patch, launcher and test-isolation checks:
 

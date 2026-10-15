@@ -3,6 +3,50 @@
 Tested on Windows on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
+## Native Mac controls and first story-level load — October 15
+
+- Added a Mac-only SDL event bridge to the shared JSON binding reader through
+  `zzzz-mac-input.patch`. Keyboard/mouse state is published atomically for guest
+  worker polls. Main-thread Cocoa events handle focus loss, mouse capture and
+  window close. A new launch raises the game window once; it does not steal
+  focus back during play. Windows control code and generated game C are unchanged.
+- Confirmed the real menu flow: player selection, isolated profile creation,
+  storage selection, main menu, Story, **2401: Time to Split**, difficulty,
+  briefing and loading. Up/down changed selection. The isolated profile survived
+  a new process and was selected again. This is profile persistence only, not
+  campaign save/load validation.
+- SDL event injection exercised the binding-to-XInput path. Separately, macOS
+  CoreGraphics keyboard events delivered through the OS opened the in-level
+  pause menu with Escape, moved its selection with Down and resumed with Escape.
+  This verifies OS event delivery, not a human keyboard/controller playtest.
+- The first level rendered its opening 3D scene and reached an ammunition HUD,
+  but the gameplay world became black. No full playability, movement/collision,
+  combat or rendering-fidelity claim is made. Renderer gaps remain the immediate
+  blocker after menu navigation and level startup.
+- F1 toggles relative mouse capture; Escape/focus loss releases it. The shared
+  mouse enabled/sensitivity/invert settings are read at startup. The first free
+  SDL controller shares keyboard player 1 without taking pads assigned to other
+  players. Physical mouse look and hardware-controller play remain unverified.
+- Native regression checks pass for key press/release, arrow/WASD bindings,
+  focus neutralization, mouse buttons/deltas/settings and SDL virtual-controller
+  hotplug/sharing. All three CTests and the real-GPU regression pass. Portable
+  checks: **13 passed, 2 Windows-only checks skipped, 7 subtests passed**.
+  Windows build/runtime tests were not run on this Mac.
+- Repeated bounded 120-second menu/level probes completed without a native fault
+  or sampled GL error. The final focused 100-second run logged at least 1,800
+  guest frames and host presents and again reached the level. Window-close
+  handling now exits cleanly at the probe's
+  time limit (exit 0), without the former forced kill. Each probe uses
+  `private/test-saves/native-mac`; known disposable partition images are recycled.
+  Personal saves and settings remain unused and unchanged.
+- Evidence: `logs/mac-input-build-and-tests.log`, `logs/mac-input-patch-tests.log`,
+  `logs/native-input-validation.json`, `logs/native-level-summary.json`,
+  `logs/native-boot-summary.json`,
+  `private/captures/native-mac/menu-navigation.png` and
+  `private/captures/native-mac/native-pause-navigation.png`,
+  `private/captures/native-mac/first-native-level.png` and
+  `private/captures/native-mac/native-gameplay-hud.png`.
+
 ## First visible native Mac menu — October 15
 
 - On `mac-port`, connected the existing shared HLE graphics hooks to an Apple
