@@ -61,7 +61,8 @@ WASD: move. Mouse: look. Left/right mouse: fire/aim. R: reload.
 E/Space/Enter: use/confirm. Escape: pause/release mouse. F1: capture/release.
 F2: keyboard/mouse bindings and sensitivity. Alt+Enter: fullscreen.
 Pause before opening F2: the editor blocks input but does not pause the game.
-The original in-game Options menus are unchanged.
+Settings and paused Options include Display settings for render resolution.
+Confirmed display choices are saved in Settings/pc-display.ini.
 
 Settings: Settings/pc-controls.json. Saves: Saves. Diagnostics: Logs.
 Keep Data, Settings, and Saves when upgrading. Extract upgrades to a new folder

@@ -16,9 +16,10 @@ parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--stage', type=Path, default=ROOT / 'private/playable-package/TimeSplitters Future Perfect')
 parser.add_argument('--archive', type=Path, default=ROOT.parent / 'TimeSplitters Future Perfect - Playable.zip')
 parser.add_argument('--release', action='store_true')
+parser.add_argument('--standalone', action='store_true')
 args = parser.parse_args()
 STAGE, ARCHIVE = args.stage.resolve(), args.archive.resolve()
-if args.release:
+if args.release or args.standalone:
     build = json.loads((STAGE / 'BUILD.json').read_text())
     manifest = {p: {'size': (STAGE / p).stat().st_size, 'sha256': digest} for p, digest in build['files'].items()}
 else:
@@ -40,7 +41,7 @@ ps = r'C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe'
 env = dict(os.environ)
 env['PSModulePath'] = (r'C:\Windows\System32\WindowsPowerShell\v1.0\Modules;'
                        r'C:\Program Files\WindowsPowerShell\Modules')
-launch_command = ([os.environ['COMSPEC'], '/d', '/c', str(STAGE / 'Play.cmd')] if args.release else
+launch_command = ([os.environ['COMSPEC'], '/d', '/c', str(STAGE / 'Play.cmd')] if args.release or args.standalone else
                   [ps, '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', str(STAGE / 'Launch.ps1')])
 launcher = subprocess.Popen(launch_command,
                             cwd=STAGE, env=env, creationflags=0x08000000,
@@ -110,7 +111,7 @@ try:
     assert '[CRASH]' not in log and '[ICALL] unresolved' not in log
     assert '[XMV] FFmpeg avcodec-62.dll loaded' in log
     assert str(STAGE / 'Saves') in log
-    expected_config = ROOT / ('config/pc-controls.default.json' if args.release else 'config/pc-controls.json')
+    expected_config = ROOT / ('config/pc-controls.default.json' if args.release or args.standalone else 'config/pc-controls.json')
     assert (STAGE / 'Settings/pc-controls.json').read_bytes() == expected_config.read_bytes()
     print('PASS: standalone launcher, packaged movie DLLs, F2 settings, local saves, and clean shutdown', flush=True)
 finally:

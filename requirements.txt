@@ -4,3 +4,4 @@ ninja==1.13.2
 numpy==2.5.4
 pefile==2024.8.26
 pytest==9.1.1
+Pillow==12.2.0

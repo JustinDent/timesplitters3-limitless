@@ -1,8 +1,7 @@
 diff --git a/src/hle/CMakeLists.txt b/src/hle/CMakeLists.txt
-index 0f1ed66..4acf5ce 100644
 --- a/src/hle/CMakeLists.txt
 +++ b/src/hle/CMakeLists.txt
-@@ -48,6 +48,9 @@ target_link_libraries(xbox_hle PUBLIC xbox_kernel)
+@@ -48,6 +48,9 @@
  # Host device choice and per-control bindings (src/input/input_bindings.c),
  # shared with the USB gamepad so one config file covers both input paths.
  target_link_libraries(xbox_hle PUBLIC xbox_input)
@@ -13,7 +12,6 @@ index 0f1ed66..4acf5ce 100644
      target_link_libraries(xbox_hle PRIVATE xaudio2 ole32 xinput9_1_0)
      # The D3D8 replacements drive the host renderer in src/d3d, and open a
 diff --git a/src/hle/hle_d3d8.c b/src/hle/hle_d3d8.c
-index 7e6cd97..6980f39 100644
 --- a/src/hle/hle_d3d8.c
 +++ b/src/hle/hle_d3d8.c
 @@ -67,6 +67,9 @@
@@ -26,7 +24,7 @@ index 7e6cd97..6980f39 100644
  
  #ifdef _WIN32
  #include "d3d8_xbox.h"
-@@ -252,6 +255,10 @@ static int  g_shadow_fullscreen;
+@@ -252,6 +255,10 @@
  
  static LRESULT CALLBACK shadow_wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp)
  {
@@ -37,7 +35,7 @@ index 7e6cd97..6980f39 100644
      switch (msg) {
      case WM_SYSKEYDOWN:
          /* Alt+Enter, the usual Windows key for it: fullscreen and back. */
-@@ -372,6 +379,9 @@ static DWORD WINAPI shadow_window_thread(LPVOID param)
+@@ -372,6 +379,9 @@
                                CW_USEDEFAULT, CW_USEDEFAULT,
                                r.right - r.left, r.bottom - r.top,
                                NULL, NULL, wc.hInstance, NULL);
@@ -48,10 +46,9 @@ index 7e6cd97..6980f39 100644
       * the focus, for a run a script drives while someone works at the same
       * desk. The game neither needs nor notices the focus: a script is its
 diff --git a/src/input/CMakeLists.txt b/src/input/CMakeLists.txt
-index 250ddbb..347de50 100644
 --- a/src/input/CMakeLists.txt
 +++ b/src/input/CMakeLists.txt
-@@ -14,6 +14,16 @@ add_library(xbox_input STATIC
+@@ -14,6 +14,16 @@
  target_include_directories(xbox_input PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
  
  target_link_libraries(xbox_input PUBLIC platform SDL3::SDL3)
@@ -69,7 +66,6 @@ index 250ddbb..347de50 100644
      target_link_libraries(xbox_input PUBLIC xinput)
  endif()
 diff --git a/src/input/input_bindings.c b/src/input/input_bindings.c
-index a0cea65..4988e82 100644
 --- a/src/input/input_bindings.c
 +++ b/src/input/input_bindings.c
 @@ -19,6 +19,9 @@
@@ -82,7 +78,7 @@ index a0cea65..4988e82 100644
  
  #include <stdio.h>
  #include <stdlib.h>
-@@ -160,6 +163,10 @@ static Controller g_ctl[PORTS];
+@@ -160,6 +163,10 @@
  static char g_path[520];
  static int g_have_path;
  static int g_ready;
@@ -93,7 +89,7 @@ index a0cea65..4988e82 100644
  
  /* ---- names -> codes ---------------------------------------------------- */
  
-@@ -167,6 +174,9 @@ static int g_ready;
+@@ -167,6 +174,9 @@
   * their own code on Windows and are handled without a table entry; "key:#13"
   * passes a raw decimal code through for anything named nowhere. */
  static const struct { const char *name; int vk; } KEYS[] = {
@@ -103,7 +99,7 @@ index a0cea65..4988e82 100644
      { "UP", 0x26 }, { "DOWN", 0x28 }, { "LEFT", 0x25 }, { "RIGHT", 0x27 },
      { "RETURN", 0x0D }, { "ENTER", 0x0D }, { "BACK", 0x08 },
      { "BACKSPACE", 0x08 }, { "SPACE", 0x20 }, { "TAB", 0x09 },
-@@ -653,7 +663,7 @@ static void describe(Controller *c, char *out, size_t n)
+@@ -653,7 +663,7 @@
          snprintf(out, n, "nothing");
  }
  
@@ -112,7 +108,7 @@ index a0cea65..4988e82 100644
  {
      char *text;
      int i;
-@@ -683,6 +693,24 @@ void recomp_bindings_init(void)
+@@ -683,6 +693,24 @@
      fflush(stderr);
  }
  
@@ -137,18 +133,18 @@ index a0cea65..4988e82 100644
  const char *recomp_bindings_source_path(void)
  {
      recomp_bindings_init();
-@@ -695,6 +723,10 @@ const char *recomp_bindings_device_name(unsigned port)
+@@ -694,6 +722,10 @@
+     recomp_bindings_init();
      return port < PORTS ? g_ctl[port].label : "nothing";
  }
- 
++
 +#ifdef TSFP_PC_CONTROLS
 +#include "pc_bindings.inc"
 +#endif
-+
+ 
  /* ---- reading the host -------------------------------------------------- */
  
- static unsigned long long now_ms(void)
-@@ -747,6 +779,9 @@ static int key_down(KeyCache *kc, int vk)
+@@ -747,6 +779,9 @@
      if (vk <= 0 || vk > 255)
          return 0;
  #if defined(_WIN32)
@@ -158,7 +154,7 @@ index a0cea65..4988e82 100644
      if (!g_key_state[vk])
          g_key_state[vk] = (GetAsyncKeyState(vk) & 0x8000) ? 2 : 1;
      return g_key_state[vk] == 2;
-@@ -839,6 +874,9 @@ static void say_first_press(unsigned port, const char *control)
+@@ -839,6 +874,9 @@
  int recomp_bindings_sample(unsigned port, XBOX_GAMEPAD *out)
  {
      Controller *c;
@@ -168,7 +164,7 @@ index a0cea65..4988e82 100644
      KeyCache kc;
      RecompPadState pad;
      int have_pad = 0, i;
-@@ -851,6 +889,12 @@ int recomp_bindings_sample(unsigned port, XBOX_GAMEPAD *out)
+@@ -851,6 +889,12 @@
      if (port >= PORTS)
          return 0;
      c = &g_ctl[port];
@@ -181,7 +177,7 @@ index a0cea65..4988e82 100644
      if (c->device == DEV_NONE)
          return 0;
      memset(&kc, 0, sizeof kc);
-@@ -897,6 +941,9 @@ int recomp_bindings_sample(unsigned port, XBOX_GAMEPAD *out)
+@@ -897,6 +941,9 @@
          default:      out->sThumbRY = (SHORT)v; break;
          }
      }
@@ -192,10 +188,9 @@ index a0cea65..4988e82 100644
  }
  
 diff --git a/titles/futureperfect/CMakeLists.txt b/titles/futureperfect/CMakeLists.txt
-index 8bc380b..684e71d 100644
 --- a/titles/futureperfect/CMakeLists.txt
 +++ b/titles/futureperfect/CMakeLists.txt
-@@ -155,3 +160,11 @@ endif()
+@@ -160,3 +160,23 @@
  #     ENABLE_ICALL_TRACE=1
  #     VERBOSE_KERNEL_LOG=1
  # )
@@ -207,21 +202,33 @@ index 8bc380b..684e71d 100644
 +    add_executable(tsfp_pc_settings_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_settings.c")
 +    target_link_libraries(tsfp_pc_settings_test PRIVATE xbox_input)
 +endif()
++
++if(TSFP_PC_CONTROLS_DIR)
++    target_sources(${PROJECT_NAME} PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_display_menu.c")
++    set_source_files_properties("${TSFP_PC_CONTROLS_DIR}/pc_display_menu.c" PROPERTIES
++        INCLUDE_DIRECTORIES "${CMAKE_CURRENT_SOURCE_DIR}/src/recomp/gen")
++endif()
++
++if(TSFP_PC_CONTROLS_DIR)
++    add_executable(tsfp_pc_display_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_display.c" "${TSFP_PC_CONTROLS_DIR}/pc_display.c")
++    target_include_directories(tsfp_pc_display_test PRIVATE "${TSFP_PC_CONTROLS_DIR}")
++    target_link_libraries(tsfp_pc_display_test PRIVATE user32)
++endif()
 diff --git a/titles/futureperfect/src/recomp_manual.c b/titles/futureperfect/src/recomp_manual.c
-index 720ab00..57564a0 100644
 --- a/titles/futureperfect/src/recomp_manual.c
 +++ b/titles/futureperfect/src/recomp_manual.c
-@@ -22,6 +22,9 @@
+@@ -22,6 +22,10 @@
  #include <stdint.h>
  #include <stdlib.h>   /* getenv, exit: the spin verdict below */
  #include <string.h>   /* strcmp: RECOMP_ICALL_FATAL */
 +#ifdef TSFP_PC_CONTROLS
 +#include "pc_controls.h"
++#include "pc_display_menu.h"
 +#endif
  
  /* One diagnostic report, one piece.
   *
-@@ -149,6 +152,17 @@ void sub_000245C0(void)
+@@ -149,6 +153,17 @@
  }
  
  /* ── Manual function overrides ─────────────────────────────── */
@@ -239,3 +246,36 @@ index 720ab00..57564a0 100644
  
  /*
   * Return a function pointer to override the given Xbox VA, or NULL
+@@ -184,8 +199,32 @@
+  *       g_eax = result;
+  *   }
+  */
++extern void sub_000C77C0_gen(void);
++void sub_000C77C0(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_display_camera(sub_000C77C0_gen);
++#else
++    sub_000C77C0_gen();
++#endif
++}
++
++extern void sub_00079D60_gen(void);
++void sub_00079D60(void)
++{
++#ifdef TSFP_PC_CONTROLS
++    pc_display_menu_button(sub_00079D60_gen);
++#else
++    sub_00079D60_gen();
++#endif
++}
++
+ recomp_func_t recomp_lookup_manual(uint32_t xbox_va)
+ {
++#ifdef TSFP_PC_CONTROLS
++    recomp_func_t display_callback=pc_display_menu_lookup(xbox_va);
++    if(display_callback) return display_callback;
++#endif
+     /*
+      * TODO: Add your overrides here. Examples:
+      *

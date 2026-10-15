@@ -127,10 +127,13 @@ try {
                         "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/save_paths.c",
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', '--parallel', '4')
+                    Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_format_test.exe") @()
                     $testRoot = Join-Path $projectRoot 'build\path-tests'
                     $testConfig = Join-Path $projectRoot 'tests\fixtures\pc-controls.json'
                     New-Item -ItemType Directory -Force -Path $testRoot | Out-Null
+                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_display_test.exe") @(
+                        (Join-Path $testRoot 'pc-display-test.ini'))
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_save_paths_test.exe") @($testRoot)
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_controls_test.exe") @(
                         $testConfig, $testRoot)
@@ -143,8 +146,10 @@ try {
                         ((Get-Item -LiteralPath $cleanupPath).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
                         throw "Refusing to clean an unexpected test directory: $cleanupPath"
                     }
-                    Remove-Item -LiteralPath $cleanupPath -Recurse -Force
-                    Write-Output 'Build tests passed; temporary build/path-tests data removed.'
+                    Add-Type -AssemblyName Microsoft.VisualBasic
+                    [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory(
+                        $cleanupPath, 'OnlyErrorDialogs', 'SendToRecycleBin', 'ThrowException')
+                    Write-Output 'Build tests passed; temporary build/path-tests data recycled.'
                 }
                 { $_ -in 'Run', 'SmokeTest' } {
                     Assert-Game
