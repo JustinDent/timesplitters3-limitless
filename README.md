@@ -199,8 +199,15 @@ plain tutorial text is unchanged.
 
 **Mac settings:** press **F2** (Fn+F2 if needed), or choose **Game Settings →
 Keyboard, Mouse & Graphics…** in the Mac menu bar. The Keyboard & Mouse tab edits
-up to four bindings per action, sensitivity and vertical inversion. Save applies
-that tab immediately and backs up the controls file; Cancel discards unsaved edits.
+up to four bindings per action, sensitivity and vertical inversion. Use **Record**
+next to a binding to press a key or click/scroll inside the capture box. Escape
+cancels capture; **Use Escape** and **Unbind** are explicit alternatives. If another
+action uses the binding, **Move binding** reassigns it in the editor; Cancel keeps
+the old assignment. Punctuation and keypad keys use the same portable codes as PC.
+Unsupported saved keys are preserved and labeled unavailable on Mac.
+
+**Save this tab** applies the edits and backs up the controls file; Cancel discards
+unsaved edits. Capture and conflict changes remain drafts until Save.
 The Graphics tab selects the render resolution and fullscreen. **F11** toggles
 fullscreen directly. Resolutions persist in `config/pc-display.ini`; fullscreen
 is a session setting. The original in-game Settings/Options menu also includes

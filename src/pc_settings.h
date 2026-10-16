@@ -23,6 +23,9 @@ int pc_settings_read(PcSettings *settings, char *error, size_t bytes);
 int pc_settings_save(const PcSettings *settings, char *error, size_t bytes);
 void pc_settings_key_name(int key, char *out, size_t bytes);
 int pc_settings_conflict(const PcSettings *settings, int action, int key);
+int pc_settings_key_allowed(int key);
+/* 1 applied, 0 invalid, -1 conflict requiring explicit confirmation. */
+int pc_settings_assign(PcSettings *settings, int action, int slot, int key, int move);
 void pc_settings_attach(HWND game);
 void pc_settings_toggle_menu(HWND game);
 void pc_settings_detach(HWND game);

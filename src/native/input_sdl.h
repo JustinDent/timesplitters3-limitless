@@ -2,6 +2,7 @@
 #define TSFP_NATIVE_INPUT_H
 #include <SDL3/SDL.h>
 struct XBOX_GAMEPAD;
+int tsfp_native_virtual_key(SDL_Scancode code);
 int tsfp_native_key_down(int vk);
 int tsfp_native_input_focused(void);
 void tsfp_native_input_event(const SDL_Event *event, SDL_Window *window);

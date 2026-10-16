@@ -40,7 +40,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-001 | Direct-camera mouse look | Awaiting validation |
 | MAC-002 | Keyboard/mouse prompts and device switching | Awaiting validation |
 | MAC-003 | Debug settings and on-screen performance information | Queued |
-| MAC-004 | Capture-to-bind and conflict reassignment | Queued |
+| MAC-004 | Capture-to-bind and conflict reassignment | Awaiting validation |
 | MAC-005 | Multiple texture stages and shader fidelity | In progress |
 | MAC-006 | Cube and volume texture resources | Queued |
 | MAC-007 | Screen-copy effects and image surfaces | In progress |
@@ -58,9 +58,9 @@ runtime readiness. No full campaign playthrough is required.
 - **PC source:** Audited revision above; `src/pc_controls.c`, `src/pc_input.c`, `patches/pc-controls.patch`, `tests/pc_controls.c`.
 - **PC validation:** Input regression and deterministic mission replay, including zoom scaling, are recorded in [Windows validation](STATUS.md#validation); physical mouse fidelity remains a separate check.
 - **Existing Mac support:** SDL relative counts now feed the shared `pc_input_look` camera model through the guest wrapper. Controller right-stick input stays independent; configured sensitivity, inversion and FOV scaling are shared with Windows.
-- **Mac adaptation needed:** Implementation is present. Finish live gameplay checks across pause/settings/focus transitions and physical mouse use; retain the equal-count/polling-rate and pitch-limit acceptance checks.
+- **Mac adaptation needed:** Implementation is present. Finish live gameplay checks across pause/settings/focus transitions and physical mouse use. Native adapter tests now cover equal counts batched or applied per event, both pitch limits and stale motion suppression.
 - **Mac acceptance checks:** Equal counts give equal angles across polling rates; zoom scaling, inversion and pitch limits work; pause/settings/focus changes cause no jump or unwanted shot. Use isolated settings and a short mission check.
-- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `src/native/input_sdl.c`, `src/pc_camera.h`, `src/pc_guest_memory.h`, `src/pc_controls.c`, `patches/zzzzzzzzzzzzz-native-camera.patch`. Native fixtures passed sensitivity, inversion, FOV, capture/release, focus and no-stick-injection checks. A bounded first-mission run logged 8/-2 counts changing yaw/pitch by -1.6/+0.4 degrees at sensitivity 0.2 and FOV 55. These are synthetic SDL events, not physical-device validation. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
+- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `src/native/input_sdl.c`, `src/pc_camera.h`, `src/pc_guest_memory.h`, `src/pc_controls.c`, `patches/zzzzzzzzzzzzz-native-camera.patch`. Native fixtures passed sensitivity, inversion, FOV, capture/release, focus and no-stick-injection checks. A bounded first-mission run logged 8/-2 counts changing yaw/pitch by -1.6/+0.4 degrees at sensitivity 0.2 and FOV 55. These are synthetic SDL events, not physical-device validation. Further native adapter checks for batched/per-event counts, pitch limits and stale motion passed; see [capture and camera validation](STATUS.md#mac-binding-capture-and-camera-checks-2026-10-15). [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
@@ -87,15 +87,14 @@ runtime readiness. No full campaign playthrough is required.
 
 ### MAC-004 — Capture-to-bind and conflict reassignment
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** The Windows editor captures a pressed key, mouse button or wheel direction and offers to move a conflicting binding from another action.
 - **PC source:** Audited revision above; `src/pc_settings.c`, `src/pc_bindings.inc`, `tests/pc_settings.c`, `tests/pc_settings_game.py`.
 - **PC validation:** Capture, conflict reassignment, Cancel and live persistence were checked in [PC controls menu](STATUS.md#pc-controls-menu-2026-10-15).
-- **Existing Mac support:** The Cocoa editor already has four dropdown slots, defaults, save/cancel and conflict rejection. It lacks capture-to-bind and move-conflict confirmation; SDL key coverage is a limited mapping.
-- **Mac adaptation needed:** Add native capture interaction and explicit conflict moves. Audit supported key mappings against PC bindings, including punctuation/keypad keys; retain portable stored codes and clear unsupported-key feedback.
+- **Existing Mac support:** Each of the four Cocoa binding slots now has a Record action. Capture accepts keyboard/modifier keys, five mouse buttons and wheel directions; Escape cancels, with separate Use Escape and Unbind buttons. Explicit conflict confirmation moves the binding using the same assignment/reserved-key rules as Windows. Punctuation and keypad keys now work through the SDL mapping; unsupported saved keys remain visible and preserved.
+- **Mac adaptation needed:** Finish visual/editor interaction checks and physical keyboard/mouse capture on Mac, including non-US layouts. Native responder and modal-dialog tests passed; they do not establish physical macOS event delivery.
 - **Mac acceptance checks:** Capture keyboard, five mouse buttons and wheel directions without leaking gameplay input; test conflict move/cancel, reserved keys, save/reopen and controls from another device using isolated files.
-- **Mac implementation and evidence:** Remaining work pending. Existing coverage:
-  [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
+- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`, tested against `30653e3`: `src/native/binding_capture.inc`, `src/native/settings_macos.m`, `src/native/input_sdl.c`, `src/native/settings_selftest.inc`, and shared `src/pc_bindings.inc`, `src/pc_settings.c`, `src/pc_settings.h`. Cocoa responder/modal, shared move/cancel, save/reload, live punctuation/keypad input, backup and failure tests pass. [Validation](STATUS.md#mac-binding-capture-and-camera-checks-2026-10-15).
 
 ### MAC-005 — Multiple texture stages and shader fidelity
 

@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "binding_capture.inc"
 static SDL_Window *game_window;
 static PcDebugOptions debug_options;
 void pc_debug_set(const PcDebugOptions *s) { debug_options=*s; }
@@ -32,21 +33,29 @@ static NSTextField *label(NSView *view,NSString *text,NSRect frame) {
 - (void)save:(id)sender;
 - (void)cancel:(id)sender;
 - (void)defaults:(id)sender;
+- (void)record:(id)sender;
+- (PcSettings)bindingValues;
 @end
 static TSFPSettings *settings;
 @implementation TSFPSettings
 - (NSButton *)button:(NSString *)title action:(SEL)action frame:(NSRect)frame view:(NSView *)view {
     NSButton *b=[NSButton buttonWithTitle:title target:self action:action];b.frame=frame;[view addSubview:b];return b;
 }
-- (void)fill:(const PcSettings *)s {
+- (void)fillBindings:(const PcSettings *)s {
     for(int a=0;a<PC_ACTION_COUNT;a++)for(int slot=0;slot<PC_BINDING_SLOTS;slot++) {
-        int found=-1;for(int k=0;k<key_count;k++)if(keys[k]==s->keys[a][slot])found=k;
-        if(found<0){char text[80];pc_settings_key_name(s->keys[a][slot],text,sizeof text);
-            [bindings[a][slot] addItemWithTitle:[NSString stringWithUTF8String:text]];
-            bindings[a][slot].lastItem.representedObject=@(s->keys[a][slot]);
-            [bindings[a][slot] selectItem:bindings[a][slot].lastItem];
-        } else [bindings[a][slot] selectItemAtIndex:found];
+        NSMenuItem *found=nil;
+        for(NSMenuItem *item in bindings[a][slot].itemArray)
+            if([item.representedObject intValue]==s->keys[a][slot]){found=item;break;}
+        if(!found){char text[80];pc_settings_key_name(s->keys[a][slot],text,sizeof text);
+            NSString *name=[NSString stringWithFormat:@"%s (unavailable on Mac)",text];
+            [bindings[a][slot] addItemWithTitle:name];found=bindings[a][slot].lastItem;
+            found.representedObject=@(s->keys[a][slot]);
+        }
+        [bindings[a][slot] selectItem:found];
     }
+}
+- (void)fill:(const PcSettings *)s {
+    [self fillBindings:s];
     sensitivity.stringValue=[NSString stringWithFormat:@"%.4g",s->sensitivity];enabled.state=s->enabled;invert.state=s->invert_y;
 }
 - (void)show {
@@ -60,22 +69,26 @@ static TSFPSettings *settings;
     tabs=[[NSTabView alloc] initWithFrame:NSMakeRect(15,60,830,575)];[view addSubview:tabs];
     NSTabViewItem *controls=[[NSTabViewItem alloc] initWithIdentifier:@"controls"];controls.label=@"Keyboard & Mouse";
     NSView *cv=[[NSView alloc] initWithFrame:NSMakeRect(0,0,805,535)];controls.view=cv;[tabs addTabViewItem:controls];
-    label(cv,@"Choose up to four bindings per action. Settings apply when saved.",NSMakeRect(10,500,780,22));
+    label(cv,@"Choose a binding or use Record to press a key, mouse button or wheel. Save applies this tab.",NSMakeRect(10,500,780,22));
     NSScrollView *scroll=[[NSScrollView alloc] initWithFrame:NSMakeRect(5,110,800,385)];scroll.hasVerticalScroller=YES;
     NSView *rows=[[NSView alloc] initWithFrame:NSMakeRect(0,0,780,PC_ACTION_COUNT*32)];scroll.documentView=rows;[cv addSubview:scroll];
     key_count=0;keys[key_count++]=0;
     for(int k=1;k<256;k++) {
-        if(k==0x70||k==0x71||(k>=0x78&&k<=0x7b)||k==0x5b||k==0x5c)continue;
+        if(!pc_settings_key_allowed(k))continue;
         char text[80];tsfp_native_key_name(k,text,sizeof text);
         if(strncmp(text,"Key ",4))keys[key_count++]=k;
     }
     for(int a=0;a<PC_ACTION_COUNT;a++) {
         CGFloat y=(PC_ACTION_COUNT-a-1)*32;
-        label(rows,[NSString stringWithUTF8String:pc_action_labels[a]],NSMakeRect(5,y+4,270,24));
+        label(rows,[NSString stringWithUTF8String:pc_action_labels[a]],NSMakeRect(5,y+4,180,24));
         for(int slot=0;slot<PC_BINDING_SLOTS;slot++) {
-            NSPopUpButton *b=[[NSPopUpButton alloc] initWithFrame:NSMakeRect(280+slot*122,y,120,28) pullsDown:NO];bindings[a][slot]=b;
+            NSPopUpButton *b=[[NSPopUpButton alloc] initWithFrame:NSMakeRect(190+slot*146,y,87,28) pullsDown:NO];bindings[a][slot]=b;
             for(int k=0;k<key_count;k++){char text[80];pc_settings_key_name(keys[k],text,sizeof text);[b addItemWithTitle:[NSString stringWithUTF8String:text]];b.lastItem.representedObject=@(keys[k]);}
+            b.toolTip=[NSString stringWithFormat:@"%s — binding %d",pc_action_labels[a],slot+1];
             [rows addSubview:b];
+            NSButton *record=[self button:@"Record" action:@selector(record:) frame:NSMakeRect(278+slot*146,y,57,28) view:rows];
+            record.tag=a*PC_BINDING_SLOTS+slot;
+            [record setAccessibilityLabel:[NSString stringWithFormat:@"Record %s binding %d",pc_action_labels[a],slot+1]];
         }
     }
     [rows scrollPoint:NSMakePoint(0,PC_ACTION_COUNT*32)];
@@ -102,11 +115,31 @@ static TSFPSettings *settings;
     SDL_RaiseWindow(game_window);
     tsfp_native_settings_release_input(game_window);
 }
+- (PcSettings)bindingValues {
+    PcSettings next=original;
+    for(int a=0;a<PC_ACTION_COUNT;a++)for(int slot=0;slot<PC_BINDING_SLOTS;slot++)
+        next.keys[a][slot]=[bindings[a][slot].selectedItem.representedObject intValue];
+    return next;
+}
+- (void)record:(id)sender {
+    int action=(int)[sender tag]/PC_BINDING_SLOTS,slot=(int)[sender tag]%PC_BINDING_SLOTS;
+    if(action<0 || action>=PC_ACTION_COUNT)return;
+    int key=capture_binding([NSString stringWithUTF8String:pc_action_labels[action]],nil);
+    if(key<0)return;
+    PcSettings next=[self bindingValues];int conflict=pc_settings_conflict(&next,action,key);
+    if(conflict>=0) {
+        char name[80];pc_settings_key_name(key,name,sizeof name);
+        NSAlert *confirm=[NSAlert new];confirm.messageText=@"Binding already in use";
+        confirm.informativeText=[NSString stringWithFormat:@"%s is assigned to %s. Move it to %s? The change applies only when you save.",name,pc_action_labels[conflict],pc_action_labels[action]];
+        [confirm addButtonWithTitle:@"Cancel"];[confirm addButtonWithTitle:@"Move binding"];
+        if([confirm runModal]!=NSAlertSecondButtonReturn)return;
+    }
+    if(pc_settings_assign(&next,action,slot,key,1)==1)[self fillBindings:&next];
+}
 - (void)save:(id)sender {
     char error[512];
     if([tabs.selectedTabViewItem.identifier isEqual:@"controls"]) {
-        PcSettings next=original;
-        for(int a=0;a<PC_ACTION_COUNT;a++)for(int s=0;s<PC_BINDING_SLOTS;s++)next.keys[a][s]=[bindings[a][s].selectedItem.representedObject intValue];
+        PcSettings next=[self bindingValues];
         for(int a=0;a<PC_ACTION_COUNT;a++)for(int slot=0;slot<PC_BINDING_SLOTS;slot++) {
             int conflict=pc_settings_conflict(&next,a,next.keys[a][slot]);
             if(conflict>=0){snprintf(error,sizeof error,"%s and %s share a binding. Set one to Unbound before saving.",pc_action_labels[a],pc_action_labels[conflict]);alert_text(error);return;}
