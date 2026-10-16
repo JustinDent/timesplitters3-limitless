@@ -534,7 +534,8 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 - **Status:** Queued
 - **Launcher update cleanup (2026-10-16, commit `dc019bf` on
-  `fix/launcher-update-cleanup`):** `tools/launcher/SelfUpdate.cs` removes the
+  `fix/launcher-update-cleanup`, [PR #68](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/68),
+  prepared for v1.2.4):** `tools/launcher/SelfUpdate.cs` removes the
   prior launcher backup, obsolete/incomplete staging and unused helper EXEs
   after the normal main window loads and the installed file hashes verify.
   `Launcher.cs` invokes cleanup under the installation mutex; render previews

@@ -1,5 +1,13 @@
 # Measured progress
 
+## Launcher v1.2.4 release preparation (2026-10-16)
+
+Version and assembly metadata are bumped to 1.2.4 for stable launcher-only
+publication from main through PR #68. The cleanup implementation is unchanged
+from validated `a7246b5`; publication requires the new revision to pass CI and
+checks of the public assets and previous v1.2.3 update path. The published game
+remains alpha.4.
+
 ## Launcher update cleanup (2026-10-16)
 
 Implementation commit `dc019bf` on `fix/launcher-update-cleanup`, based on
@@ -23,8 +31,10 @@ nine isolated cleanup checks and all 23 settings checks passed. Cleanup checks
 include three consecutive upgrades, protected files, damaged installation,
 unfinished transactions, semantic version comparisons, newer/unknown staging,
 locked files with retry, pending game work, and a real directory junction.
-Five startup/packaging checks also passed; full hosted updater/preparation
-coverage is pending. Full local updater validation is blocked by an existing active game;
+Five startup/packaging checks also passed. Windows CI on `a7246b5` passed all
+86 updater/bootstrap/cleanup checks and 23 settings checks, including checksum,
+invalid-archive and cancellation preparation failures. The Mac CI job also
+passed its shared checks. Full local updater validation was blocked by an active game;
 that session and the installed launcher were preserved. No game build/playtest
 is required for this Windows launcher change. MAC-021 adaptation remains queued;
 native Mac execution and other-device synchronization are unverified.
