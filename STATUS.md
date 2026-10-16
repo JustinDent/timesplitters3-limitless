@@ -1,5 +1,39 @@
 # Measured progress
 
+## Terminal mouse routing (issue #7) — 2026-10-16
+
+Implemented on `7-breaking-and-entering-camera-turret-not-working`, based on
+main `696421f` merged at `093e30f`. On Windows x64, a bounded isolated run
+of the supported US XBE reproduced the Breaking and Entering terminal failure:
+player mode was `0x2000`; physical mouse movement changed hidden player angles
+while the active console pointer stayed fixed. The user confirmed the terminal
+menu pointer, rather than a selected camera view, was blocked. Disassembly of
+US `sub_003700D0` identifies local-index console ownership, pointer coordinates,
+4–251 bounds, inactivity reset, scripted input and pause gates.
+
+The shared `src/pc_terminal.h` now routes counts to that pointer and consumes
+terminal input without changing player angles, including invalid transitions.
+Coordinates stay in the game's logical space, independent of screen resolution,
+FOV or aiming inversion. Windows and SDL adapters use the same helper.
+The guarded-memory regression and full MSVC x64 Release build passed on Windows,
+including patch-stack validation and the real Windows adapter regression in
+`tests/pc_controls.c`. The user confirmed physical pointer movement, but left-click initially still
+sent Fire instead of the terminal's Confirm action. The follow-up shared input
+context and `zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch` now suppress the
+normal left-button binding while selecting and emit A/Confirm. A held button
+must be released across either transition to prevent accidental selection or
+firing. Windows regression covers the native adapter-to-binding path with bounded synthetic input; the shared
+fixture covers click state, and the native SDL fixture has equivalent checks.
+The updated MSVC x64 Release build and native checks passed, including Confirm
+without Fire and release-before-fire on terminal exit. All 27 patch tracking/
+transition cases passed (the historical-upgrade fixture was updated to exclude
+this new dependent overlay, then rerun). The shared terminal regression passed.
+The user confirmed the final physical playtest: pointer movement, left-click
+camera selection, and ordinary aiming/firing after leaving the terminal work.
+The read-only capture also records return to mode `0x2` with no active terminal.
+Native Mac compilation/execution remain
+unverified; see MAC-001.
+
 ## Resolution release preparation — October 16, 2026
 
 Game v0.2.0-alpha.4 and launcher v1.2.0 are prepared together on

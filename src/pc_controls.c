@@ -4,6 +4,7 @@
 #include "pc_controls.h"
 #include "pc_input.h"
 #include "pc_camera.h"
+#include "pc_terminal.h"
 #include "pc_settings.h"
 #include "pc_prompts.h"
 #include <math.h>
@@ -325,6 +326,19 @@ int pc_controls_key_down(int key)
     replay_tick();
     down = (replaying || GetForegroundWindow() == window_handle) &&
            pc_input_down(&input, (unsigned)key, GetTickCount64());
+    if (key == VK_LBUTTON && pc_input_terminal_suppresses_left(&input, input.keys[VK_LBUTTON])) down = 0;
+    ReleaseSRWLockExclusive(&lock);
+    return down;
+}
+
+int pc_controls_terminal_click(void)
+{
+    int down;
+    if (InterlockedCompareExchange(&editing, 0, 0)) return 0;
+    AcquireSRWLockExclusive(&lock);
+    replay_tick();
+    down = (replaying || GetForegroundWindow() == window_handle) &&
+           pc_input_terminal_click(&input, input.keys[VK_LBUTTON]);
     ReleaseSRWLockExclusive(&lock);
     return down;
 }
@@ -332,15 +346,23 @@ int pc_controls_key_down(int key)
 void pc_controls_apply_mouse(uint32_t player, uint32_t fov_object, ptrdiff_t memory_offset)
 {
     float *yaw, *pitch, fov, old_yaw, old_pitch;
-    int changed;
+    int changed, terminal;
     if (InterlockedCompareExchange(&editing, 0, 0)) return;
-    if (!pc_camera_fields(player,fov_object,memory_offset,&yaw,&pitch,&fov)) return;
-    old_yaw = *yaw; old_pitch = *pitch;
     AcquireSRWLockExclusive(&lock);
     replay_tick();
-    changed = (replaying || GetForegroundWindow() == window_handle) &&
-        pc_input_look(&input, GetTickCount64(), sensitivity, invert_y,
-                      fov < 55 ? fov / 55 : 1, yaw, pitch);
+    if (!(replaying || GetForegroundWindow() == window_handle)) {
+        ReleaseSRWLockExclusive(&lock);
+        return;
+    }
+    terminal = pc_terminal_mouse(&input, GetTickCount64(), sensitivity, player, memory_offset);
+    pc_input_terminal_context(&input, terminal >= 0, input.keys[VK_LBUTTON]);
+    if (terminal >= 0 || !pc_camera_fields(player,fov_object,memory_offset,&yaw,&pitch,&fov)) {
+        ReleaseSRWLockExclusive(&lock);
+        return;
+    }
+    old_yaw = *yaw; old_pitch = *pitch;
+    changed = pc_input_look(&input, GetTickCount64(), sensitivity, invert_y,
+                            fov < 55 ? fov / 55 : 1, yaw, pitch);
     ReleaseSRWLockExclusive(&lock);
     if (changed && applied++ < 12)
         fprintf(stderr, "[PC-MOUSE] yaw %.3f -> %.3f, pitch %.3f -> %.3f, fov %.3f\n",
