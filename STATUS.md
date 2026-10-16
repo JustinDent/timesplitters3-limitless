@@ -1232,3 +1232,45 @@ Publication source note: this focused change is based on main `8f5e1bd2b500ad1d8
 earlier local checkout, not from this publication commit. Its source-only
 patch stack and regressions passed 51 checks before the push, including the
 208-case compiled pickup regression; one Windows symlink-privilege check skipped.
+
+
+## Runtime patch branch-switch repair — October 16, 2026
+
+Branch-switch fix on `fix/runtime-patch-branch-switch`, based on main
+`837692d3ffbd81fbb6252ff819ff219f8e3ce097`. The same runtime directory had been
+built on `codex/integrate-display-textures`. Its texture-toggle patch remained
+applied after switching to main, preventing the installer from unwinding the
+controls dependency. A disposable source-only copy reproduced the reported
+`pc-controls.patch conflicts with the runtime checkout` error before the fix.
+
+The loader now recognizes exact patches in `patches/legacy/` only for unwinding,
+then applies the current branch's active stack. An active copy takes precedence
+when the same patch is present in both locations. The archived texture-toggle
+patch matches the texture branch exactly. No upstream reset or manual generated
+C edit was used; unrelated runtime edits remain intact. Conflicting edits still
+fail before runtime writes.
+
+Validation: Windows 11 x64 10.0.26300, Python 3.12.14, MSVC x64 14.44.35207,
+Release / Direct3D 11; pinned upstream `d90c929`. The supported US XBE SHA-256
+was verified as `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+
+- Patch-loader regression suite: 14 passed in 75.84 seconds. New checks cover
+  texture-to-main-to-texture transitions with LF and CRLF, repeated no-op
+  application, preservation of an unrelated edit and rejection of a modified
+  legacy patch without writes.
+- Full `tsfp.ps1 Build` passed after the user closed the running development
+  executable. Seven runtime source files were updated by the validated stack.
+  Native checks passed for UDP/guest network routing and packet compatibility,
+  texture formats, display persistence, virtual-controller prompts, save paths,
+  controls, settings and debug. Disposable build/path-tests data was recycled
+  by the normal build command. Existing compiler warnings remain.
+- Rebuilt executable SHA-256: `625769a2fdfa5497a5bdf735b960f5c3100882d3d3b6b68389f515877e04176a`.
+  Its network-build stamp was sealed by the successful build. Controls/display
+  hashes and the pre-existing package-playable.py edit match the pre-build
+  record. Personal saves were not used by the isolated build checks.
+
+Evidence: `logs/runtime-patch-switch-build.log` and
+`build/patch-switch-validation/VALIDATION.json`; a small runtime recovery patch
+was retained before the transition. No game launch, end-to-end multiplayer
+session, packaging or release publication was performed. MAC-014 tracks pending
+macOS validation; other-device synchronization is unverified.

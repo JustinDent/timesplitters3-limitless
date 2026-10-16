@@ -51,6 +51,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-011 | Real texture-pack gameplay coverage | Awaiting validation |
 | MAC-012 | Standalone Mac runtime distribution | Queued |
 | MAC-013 | System Link and Online multiplayer | Queued |
+| MAC-014 | Patch upgrades and branch-switch transitions | Awaiting validation |
 | MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
 
 ### MAC-001 — Direct-camera mouse look
@@ -266,16 +267,23 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **PC behavior:** Release preparation accepts the complete shared patch stack
   over fresh sources or an existing Windows watermark build, without losing
   unrelated runtime edits. Conflicting code still fails before runtime writes.
-- **PC source:** Uncommitted on `mac-port`: `tools/apply-patches.py` and
-  `tests/test_patch_updates.py`; tested with `main` revision `5cf4866` patches.
+  Branch switches can now unwind the recognized texture-toggle patch when
+  building a branch that does not enable it.
+- **PC source:** Original watermark fix is integrated in `main`. Branch-switch
+  repair is on `fix/runtime-patch-branch-switch` (this commit), based on `837692d`:
+  `tools/apply-patches.py`, `tests/test_patch_updates.py`, and
+  `patches/legacy/texture-toggle.patch` (unwind-only).
 - **PC validation:** Eleven patch-loader tests passed on Windows, plus fresh and
   existing-Windows fixtures using the complete main patch stack; repeated
   application made no changes. See `STATUS.md`, 2026-10-15 patch preparation.
+  Branch-switch repair: 14 patch-loader tests and the complete Windows Release
+  build/native checks passed; see the October 16 runtime branch-switch record.
 - **Existing Mac support:** The same Python patch loader serves both hosts.
 - **Mac adaptation needed:** No native adapter changes; validate the shared
-  loader on macOS. This does not add the Windows watermark patch to this branch.
+  loader on macOS. Legacy patches are never enabled by their archive location.
 - **Mac acceptance checks:** Run patch-loader tests and apply/reapply the
   complete merged stack on disposable sources, preserving actual code conflicts.
+  Include texture-to-main-to-texture transitions and unrelated-edit preservation.
 - **Mac implementation and evidence:** Shared fix present locally; macOS checks
   and other-device synchronization remain unverified.
 

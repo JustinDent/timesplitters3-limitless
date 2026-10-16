@@ -577,6 +577,12 @@ upstream URL changes, setup stops for review. All tool downloads stay local.
 The launcher copies `config/pc-controls.default.json` to the ignored personal
 `config/pc-controls.json` on first use. Existing personal bindings are preserved.
 
+The runtime under `external/ts3FPrecomp` is shared when switching branches.
+Build removes exact recognized patches from `patches/legacy/` before applying
+the current branch's stack. This handles a runtime previously built on the
+texture branch without enabling its Classic/4K switch on `main`. Unrelated
+runtime edits are retained; conflicting edits stop validation before any writes.
+
 ## Inputs and generated files
 
 The supported `default.xbe` is 6,270,976 bytes with SHA-256:

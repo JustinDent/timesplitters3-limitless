@@ -4,6 +4,8 @@ Unwind recognized patches in reverse order in a small temporary tree, then
 reapply the stack in order. Later patches may extend earlier patches' context;
 checking each patch independently incorrectly reports those as conflicts.
 Keep existing patches stable and put new changes in a separate patch.
+Recognized patches in legacy/ are unwind-only: switching branches can remove
+their exact changes without enabling a feature absent from the current branch.
 """
 from pathlib import Path
 import argparse
@@ -25,16 +27,23 @@ def git(tree, *args):
 def apply_patches(runtime, patch_dir):
     runtime, patch_dir = Path(runtime).resolve(), Path(patch_dir).resolve()
     patches = sorted(patch_dir.glob('*.patch'))
+    # A runtime checkout survives branch switches. Keep exact historical patches
+    # available to unwind dependencies that the current branch no longer enables.
+    # Prefer an active copy when the same patch is present in both locations.
+    known = {patch.name: patch for patch in sorted((patch_dir / 'legacy').glob('*.patch'))}
+    known.update({patch.name: patch for patch in patches})
+    unwind_patches = sorted(known.values(), key=lambda patch: patch.name)
     # These existing network patches target the original title CMake context.
     # Apply them before native boot inserts platform guards at that location;
     # retain the established order of all other patches and unwind in reverse.
     native_boot = patch_dir / 'zz-mac-native-boot.patch'
-    if native_boot in patches:
-        for name in ('zz-pc-network.patch', 'zzz-pc-online.patch'):
-            network = patch_dir / name
-            if network in patches:
-                patches.remove(network)
-                patches.insert(patches.index(native_boot), network)
+    for stack in (patches, unwind_patches):
+        if native_boot in stack:
+            for name in ('zz-pc-network.patch', 'zzz-pc-online.patch'):
+                network = patch_dir / name
+                if network in stack:
+                    stack.remove(network)
+                    stack.insert(stack.index(native_boot), network)
     def context_options(patch):
         # Native boot wraps the SDK library block; networking adds a separate
         # guarded block immediately before it. Require its unchanged adjacent
@@ -46,7 +55,7 @@ def apply_patches(runtime, patch_dir):
             return ['-C1']
         return ['-C1'] if patch == native_boot and (patch_dir / 'zz-pc-network.patch') in patches else []
     names = set()
-    for patch in patches:
+    for patch in unwind_patches:
         for line in patch.read_text(encoding='utf-8').splitlines():
             if line.startswith('+++ b/'):
                 name = line[6:]
@@ -64,7 +73,7 @@ def apply_patches(runtime, patch_dir):
             target = stage / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
-        for patch in reversed(patches):
+        for patch in reversed(unwind_patches):
             options = context_options(patch)
             if git(stage, 'apply', *options, '--reverse', '--check', patch).returncode == 0:
                 result = git(stage, 'apply', *options, '--reverse', patch)
