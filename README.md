@@ -6,7 +6,7 @@
 
 Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
 
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.1.2"><img src="docs/assets/download-launcher.svg" alt="Download the Windows launcher" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-launcher.svg" alt="Download the latest Windows launcher" width="280" height="52"></a>
 
 **[Quick start](#start-playing)** · [Launcher guide](docs/launcher.md) · [Multiplayer](docs/multiplayer.md) · [Build from source](docs/building.md)
 
@@ -27,7 +27,7 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
 
 | | Get ready for your next jump |
 | :---: | --- |
-| **01** | **Download the launcher.** Get `TimeSplitters-Launcher-v1.1.2-windows-x64.zip` from the [launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.1.2). |
+| **01** | **Download the launcher.** Open the [latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest) and download its `TimeSplitters-Launcher-…-windows-x64.zip` asset. |
 | **02** | **Extract and open.** Extract the whole ZIP to a writable folder, keeping `Bin` and `Support` together. Open **TimeSplitters Launcher.exe**. |
 | **03** | **Install the game runtime.** Set **Update channel → Preview**, then choose **Install release**. The launcher downloads and verifies the published PC runtime. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |

@@ -49,7 +49,26 @@ It tests the bundled Online runtime with the existing game data, without copying
 the game or using personal saves. It creates a GitHub draft for the exact tested
 commit, uploads the ZIP, checksum and build metadata, checks the uploaded asset
 names/sizes, then publishes it. Versions containing a prerelease suffix (such as
-`0.2.0-alpha.3`) become prereleases and are not marked Latest.
+`0.2.0-alpha.3`) become prereleases. All game-runtime releases, including stable
+versions, use `--latest=false` during draft creation and final publication.
+
+### Keep the launcher download current
+
+The README download button uses GitHub's permanent `/releases/latest` URL.
+Reserve the repository's **Latest** designation for the newest stable Windows
+launcher. When publishing a new stable `launcher-vX.Y.Z` release, attach the
+complete launcher ZIP and its verification assets, then select **Set as the
+latest release** (or use `gh release create/edit --latest`). Do not mark test
+launcher prereleases Latest. This moves the README destination automatically;
+no README version edit is needed.
+
+Game releases published through this script retain the launcher destination.
+If publishing a game release manually, also leave **Set as the latest release**
+off or use `--latest=false`. The launcher discovers game updates from the release
+list, so game releases do not need the Latest badge. See GitHub's
+[permanent release links](https://docs.github.com/en/repositories/releasing-projects-on-github/linking-to-releases).
+
+### Release notes and preparation
 
 The description includes GitHub-generated release notes, source commit descriptions
 since the most recently **published** release (including prereleases), installation
