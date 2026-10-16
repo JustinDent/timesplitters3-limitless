@@ -29,8 +29,9 @@ Next work: finish the remaining camera/prompt and resolution acceptance checks,
 then reproduce the reported world disappearance with a short controlled route.
 Four-stage 2D rendering improved reviewed first-mission captures, but does not
 establish the cause of every missing-world symptom. Prioritize remaining
-MAC-005/006/007 paths from scene evidence, then debug tools, binding capture and
-movies. MAC-011 needs the actual texture pack on this device; packaging follows
+MAC-005/006/007 paths from scene evidence, and movies. Debug tools and binding
+capture are implemented with remaining physical-input and live-window validation
+below. MAC-011 needs the actual texture pack on this device; packaging follows
 runtime readiness. No full campaign playthrough is required.
 
 ## Queue
@@ -39,7 +40,7 @@ runtime readiness. No full campaign playthrough is required.
 | --- | --- | --- |
 | MAC-001 | Direct-camera mouse look | Awaiting validation |
 | MAC-002 | Keyboard/mouse prompts and device switching | Awaiting validation |
-| MAC-003 | Debug settings and on-screen performance information | Queued |
+| MAC-003 | Debug settings and on-screen performance information | Awaiting validation |
 | MAC-004 | Capture-to-bind and conflict reassignment | Awaiting validation |
 | MAC-005 | Multiple texture stages and shader fidelity | In progress |
 | MAC-006 | Cube and volume texture resources | Queued |
@@ -75,15 +76,14 @@ runtime readiness. No full campaign playthrough is required.
 
 ### MAC-003 — Debug settings and on-screen performance information
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** F12 opens debug settings; F9 toggles FPS. Options show guest/shown FPS, frame intervals, issue counters and recent logs, with bounded optional performance logging.
 - **PC source:** Audited revision above; `src/pc_debug.c`, `src/pc_debug.h`, `patches/pc-debug.patch`, `tests/pc_debug.c`, `tests/pc_debug_game.py`.
 - **PC validation:** Windows implementation and test scripts exist; current Windows runtime behavior was not retested during this audit.
-- **Existing Mac support:** Native logs/frame-time reports exist, but `src/native/settings_macos.m` only stores `pc_debug_set` options. No equivalent debug panel or overlay is connected.
-- **Mac adaptation needed:** Share portable statistics/configuration logic and add Cocoa controls, SDL shortcuts, native overlay drawing and bounded log access.
+- **Existing Mac support:** F9 toggles a host-only OpenGL text overlay; F12 and the Game Settings menu open a Cocoa debug panel. Both use the shared statistics, options, configuration and diagnostic classifier. POSIX log reading handles truncation/replacement and runs on the main thread.
+- **Mac adaptation needed:** Implementation is present. Finish visual Cocoa layout, physical F9/F12 and live fullscreen panel/focus checks. A synthetic shortcut smoke run does not establish physical event delivery.
 - **Mac acceptance checks:** Toggle in windowed/fullscreen modes; distinguish guest and interpolated presents; save/cancel and issue-counter reset work; log polling stays off the render thread; preserve unrelated JSON.
-- **Mac implementation and evidence:** Remaining work pending. Existing coverage:
-  [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
+- **Mac implementation and evidence:** Uncommitted on `mac-port` over `e83e074`: shared `src/pc_debug.c`, native `debug_macos.inc`, `gl_debug.inc`, SDL/renderer hooks and `patches/zzzzzzzzzzzzzz-native-debug.patch`. Native GPU text/state/isolation tests, real Cocoa Save/Cancel, configuration preservation/failure, log rotation/reset and synthetic F9 repeat/release checks pass. [Measured validation](STATUS.md#mac-debug-and-performance-tools-2026-10-15).
 
 ### MAC-004 — Capture-to-bind and conflict reassignment
 

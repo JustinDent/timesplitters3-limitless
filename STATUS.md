@@ -1024,6 +1024,76 @@ and 1993 successful host presents, no sampled GL errors or native fault.
 Evidence: `logs/mac-capture-final-summary.json` and `logs/mac-capture-final.err`.
 No gameplay or physical-input claim is made from this short startup check.
 
+
+## Mac debug and performance tools (2026-10-15)
+
+Published the preceding binding/camera work as `e83e074` to `origin/mac-port`.
+The debug adaptation below is local and uncommitted over that revision. No main
+merge was performed; the Windows computer's checkout remains unverified.
+
+MAC-003 now uses shared `pc_debug.c` statistics, options, formatting and log
+classification. Native adapters provide F9, an F12/Cocoa panel, CoreText/OpenGL
+text rendering, POSIX log reading and Finder log-folder access. Save & Close
+uses the existing atomic controls-JSON writer and backup behavior. Cancel
+preserves active values; Clear counters skips old log text. The log reader
+handles incomplete lines, truncation and inode replacement, rejects non-regular
+files and consumes at most 64 KiB per main-thread poll. Performance samples are
+optional and emitted no more than twice per second. Both launch paths override
+inherited log paths to their own bounded stderr files.
+
+The overlay is drawn after the scene blit and stays out of guest captures,
+screen copies and interpolation history. The Game count is guest presentations;
+Shown includes successful interpolated host presents. The panel also displays
+their difference. Average guest interval is derived from these counts; neither
+counter measures monitor scanout or changes the 60 Hz guest clock.
+
+Validation on macOS 27.0.1 arm64 / Apple M5 Pro, AppleClang 21.0.0, SDL 3.4.16,
+OpenGL 4.1 Metal 91.7 / GLSL 4.10, upstream `d90c929` and the complete patch stack:
+
+- Supported US XBE SHA-256 verified before building and the bounded run:
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+- Final `python3 tools/build-native-mac.py --test` passed all three CTests plus
+  real-GPU, input, prompts, binding/settings and debug suites. Debug checks cover
+  log rotation/truncation/partial lines, classifier exclusion of its own samples,
+  counter reset, invalid samples, Cocoa modal Save/Cancel, read-only failure,
+  unrelated JSON/other-controller preservation and exact backups. SDL F9 tests
+  verify key repeat and release do not toggle a second time.
+- Real-GPU overlay checks verify visible text pixels, disabled overlay, restored
+  framebuffer/scissor state and unchanged guest scene. Reviewing the rendered
+  fixture caught upside-down CoreGraphics text; the blit now corrects row
+  orientation. Final fixture `build/macos/path-tests/debug-overlay.png` is upright
+  and readable. Its 60/120 numbers are controlled test values, not measured FPS.
+- Relevant Python checks: 28 passed, two Windows-only tests skipped. Launcher
+  `--check` passed, source hashes match `build/macos/BUILD.json`, and
+  `git diff --check` passed. Final executable SHA-256:
+  `40f27d687a9a8bfe5ea1538c74a64171e5e161c55929aa122b1f39ba3f82e290`.
+- A 45.14-second isolated run completed at its time limit with exit 0, no native
+  fault and no sampled GL errors. It dispatched synthetic F9 and F11 toggles,
+  including F9 between fullscreen requests. Its profiler recorded 2,237 guest
+  and 852 interpolated presents, 68.78 total presents/s over loading/title
+  rendering and transitions (49.81 guest + 18.97 interpolated/s), with p95
+  interval 25.38 ms. The debug logger produced 88 bounded samples and kept guest
+  and shown rates distinct. This is a shortcut/integration smoke test, not a
+  steady gameplay or 120 FPS performance certification.
+- That integration run used executable `c699b3e482218f050a2749511bd4055c860c3b9faceeb232612a44d6d751223d`,
+  before the orientation correction and added F9 regression assertion; final
+  GPU/SDL suites above validate those subsequent changes. No additional
+  full-level or campaign run was performed.
+
+Evidence: `logs/mac-debug-build.log`, `logs/mac-debug-python.log`,
+`logs/mac-debug-native-boot-summary.json`, `logs/mac-debug-native-boot.err`,
+`logs/mac-debug-native-frame-times.csv`, and the small rendered fixture above.
+The test controls were restored; personal controls retained SHA-256
+`cf44293910a77fb8f397ced933a1cfd5098e1949c93db9cc0571ed438b39f64a`;
+personal display settings remained absent, and personal saves were unused.
+Both isolated test roots have no remaining disposable partition images.
+
+MAC-003 remains Awaiting validation: physical F9/F12 input, visual Cocoa layout,
+Finder action and live fullscreen panel/focus behavior need review. Synthetic
+SDL events and application-driven modal tests do not establish physical macOS
+event delivery. Windows MSVC/runtime checks remain unavailable on this host.
+MAC-011 still awaits the user's real texture pack; no artwork was substituted.
+
 ## 2026-10-15 — Windows release patch preparation
 
 Local, uncommitted change on `mac-port` base `e83e074`; release patch inputs

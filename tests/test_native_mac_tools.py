@@ -14,6 +14,7 @@ spec.loader.exec_module(probe)
 
 
 def test_all_runtime_settings_are_isolated(tmp_path, monkeypatch):
+    monkeypatch.setenv('RECOMP_LOG_FILE', '/personal/log')
     monkeypatch.setenv('RECOMP_DISPLAY_CONFIG', '/personal/display.conf')
     monkeypatch.setenv('RECOMP_INPUT_SEQ', 'stale automation')
     monkeypatch.setenv('TSFP_PC_INPUT_REPLAY', '/personal/replay')
@@ -22,6 +23,7 @@ def test_all_runtime_settings_are_isolated(tmp_path, monkeypatch):
     for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
                 'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME'):
         assert Path(env[key]).is_relative_to(test)
+    assert env['RECOMP_LOG_FILE'] == str(tmp_path / 'logs/native-boot.err')
     assert 'RECOMP_INPUT_SEQ' not in env
     assert 'TSFP_PC_INPUT_REPLAY' not in env
 

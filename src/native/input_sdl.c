@@ -5,6 +5,7 @@
 #include "input_bindings.h"
 #include "pc_prompts.h"
 #include "pc_camera.h"
+#include "pc_debug.h"
 #include "pc_input.h"
 #include <pthread.h>
 #include <stdatomic.h>
@@ -114,6 +115,10 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
         int vk=tsfp_native_virtual_key(e->key.scancode),down=e->type==SDL_EVENT_KEY_DOWN;
         if(vk)atomic_store(&keys[vk],down);
         if(down && !e->key.repeat)pc_prompts_keyboard();
+        if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F9){pc_debug_toggle_fps();return;}
+        if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F12 && window){
+            tsfp_native_settings_release_input(window);pc_debug_show(NULL);return;
+        }
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F2 && window){
             tsfp_native_settings_show(window);return;
         }
@@ -229,6 +234,14 @@ int tsfp_native_input_test(void) {
     recomp_bindings_sample(0,&pad);int ok=prompt_ok && pad.bAnalogButtons[XBOX_BUTTON_A]==255;
     e.type=SDL_EVENT_KEY_UP;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;
+    PcDebugOptions debug_before,debug_now;pc_debug_get(&debug_before);
+    e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_F9;tsfp_native_input_event(&e,NULL);
+    pc_debug_get(&debug_now);ok &= debug_now.show_fps==!debug_before.show_fps;
+    e.key.repeat=true;tsfp_native_input_event(&e,NULL);
+    pc_debug_get(&debug_now);ok &= debug_now.show_fps==!debug_before.show_fps;
+    e.type=SDL_EVENT_KEY_UP;e.key.repeat=false;tsfp_native_input_event(&e,NULL);
+    pc_debug_get(&debug_now);ok &= debug_now.show_fps==!debug_before.show_fps;
+    pc_debug_set(&debug_before);
     e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_DOWN;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= !!(pad.wButtons&XBOX_GAMEPAD_DPAD_DOWN);
     e.key.scancode=SDL_SCANCODE_W;tsfp_native_input_event(&e,NULL);

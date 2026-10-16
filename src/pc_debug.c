@@ -2,7 +2,15 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include "pc_debug.h"
+#ifdef __APPLE__
+#include "platform/win32_compat.h"
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
+#else
 #include <shellapi.h>
+#endif
 #include <stdio.h>
 #include <string.h>
 #include <wchar.h>
@@ -16,8 +24,14 @@ static char history[12][384];
 static unsigned history_count, history_next;
 static LARGE_INTEGER frequency, previous_frame;
 static HWND debug_window;
+#ifdef __APPLE__
+static FILE *log_file;
+static char log_path[4096];
+static dev_t log_device;static ino_t log_inode;
+#else
 static HANDLE log_file = INVALID_HANDLE_VALUE;
 static WCHAR log_path[1024];
+#endif
 static char partial[1024];
 static size_t partial_size;
 
@@ -39,25 +53,38 @@ void pc_debug_toggle_fps(void)
 void pc_debug_init(HWND window)
 {
     PcDebugOptions value;
+#ifndef __APPLE__
     DWORD length;
+#endif
     pc_debug_shutdown();
     pc_debug_config_read(&value);
     pc_debug_set(&value);
     QueryPerformanceFrequency(&frequency);
     previous_frame.QuadPart = 0;
+#ifdef __APPLE__
+    const char *path=getenv("RECOMP_LOG_FILE");
+    log_path[0]=0;
+    if(path && strlen(path)<sizeof log_path)snprintf(log_path,sizeof log_path,"%s",path);
+    debug_window=window;
+#else
     length = GetEnvironmentVariableW(L"RECOMP_LOG_FILE", log_path, (DWORD)(sizeof log_path / sizeof *log_path));
     if (!length || length >= sizeof log_path / sizeof *log_path) log_path[0] = 0;
     debug_window = window;
     if (window) SetTimer(window, PC_DEBUG_TIMER, 500, NULL);
+#endif
     pc_debug_poll();
 }
 
 void pc_debug_shutdown(void)
 {
+#ifdef __APPLE__
+    if(log_file)fclose(log_file);log_file=NULL;
+#else
     if (debug_window) KillTimer(debug_window, PC_DEBUG_TIMER);
-    debug_window = NULL;
     if (log_file != INVALID_HANDLE_VALUE) CloseHandle(log_file);
     log_file = INVALID_HANDLE_VALUE;
+#endif
+    debug_window = NULL;
     partial_size = 0;
     AcquireSRWLockExclusive(&debug_lock);
     memset(&stats, 0, sizeof stats);
@@ -99,7 +126,7 @@ int pc_debug_overlay(char *text, size_t bytes, const char *cap)
     AcquireSRWLockShared(&debug_lock);
     shown = options.show_fps || options.show_frame_time || options.show_issues;
     if (options.show_fps) {
-        snprintf(cap_text, sizeof cap_text, " cap %s", cap);
+        if(cap && *cap)snprintf(cap_text, sizeof cap_text, " cap %s", cap);
         if (!stats.fps) snprintf(fps, sizeof fps, "-- fps  ");
         else if (stats.shown_fps > stats.fps + .1)
             snprintf(fps, sizeof fps, "%.1f/%.1f fps  ", stats.fps, stats.shown_fps);
@@ -127,7 +154,7 @@ static void record_line(const char *line)
     lower[i] = 0;
     /* These are log pattern matches, not an assertion that gameplay is broken. */
     if (strstr(lower, "[pc-debug]")) return;
-    if (strstr(lower, "[crash]") || strstr(lower, "[error]") || strstr(lower, "fatal") ||
+    if (strstr(lower, "[native-fault]") || strstr(lower, "[crash]") || strstr(lower, "[error]") || strstr(lower, "fatal") ||
         strstr(lower, " failed") || strstr(lower, "[icall] unresolved") || strstr(lower, "exception")) severity = 2;
     else if (strstr(lower, "warning") || strstr(lower, "[warn") || strstr(lower, "unsupported") ||
              strstr(lower, "unimplemented") || strstr(lower, "anomaly") || strstr(lower, "unavailable")) severity = 1;
@@ -142,6 +169,42 @@ static void record_line(const char *line)
 
 void pc_debug_poll(void)
 {
+#ifdef __APPLE__
+    char buffer[4096];size_t budget=65536;int available=0;
+    struct stat current,opened;
+    if(log_file && (stat(log_path,&current) || current.st_dev!=log_device || current.st_ino!=log_inode)) {
+        fclose(log_file);log_file=NULL;partial_size=0;
+    }
+    if(!log_file && log_path[0]) {
+        int fd=open(log_path,O_RDONLY|O_NONBLOCK|O_CLOEXEC);
+        if(fd>=0 && !fstat(fd,&opened) && S_ISREG(opened.st_mode)) {
+            log_file=fdopen(fd,"rb");if(!log_file)close(fd);
+            else {log_device=opened.st_dev;log_inode=opened.st_ino;}
+        } else if(fd>=0)close(fd);
+    }
+    if(log_file && !fstat(fileno(log_file),&current)) {
+        off_t position=ftello(log_file);available=1;
+        if(position<0)available=0;
+        else if(current.st_size<position){fseeko(log_file,0,SEEK_SET);partial_size=0;}
+        clearerr(log_file);
+        while(available && budget) {
+            size_t count=fread(buffer,1,budget<sizeof buffer?budget:sizeof buffer,log_file),i;
+            if(ferror(log_file))available=0;
+            if(!count)break;
+            budget-=count;
+            for (i = 0; i < count; i++) {
+                if (buffer[i] == '\n') {
+                    partial[partial_size] = 0;
+                    record_line(partial);
+                    partial_size = 0;
+                } else if (buffer[i] != '\r' && partial_size < sizeof partial - 1)
+                    partial[partial_size++] = buffer[i];
+            }
+        }
+    }
+    AcquireSRWLockExclusive(&debug_lock);stats.log_available=available;ReleaseSRWLockExclusive(&debug_lock);
+#else
+
     char buffer[4096];
     DWORD count, budget = 65536, i;
     LARGE_INTEGER size, position, zero = {0};
@@ -173,6 +236,7 @@ void pc_debug_poll(void)
         }
     }
     AcquireSRWLockExclusive(&debug_lock); stats.log_available = available; ReleaseSRWLockExclusive(&debug_lock);
+#endif
 }
 
 void pc_debug_snapshot(PcDebugSnapshot *out)
@@ -191,8 +255,12 @@ void pc_debug_snapshot(PcDebugSnapshot *out)
 
 void pc_debug_clear(void)
 {
+#ifdef __APPLE__
+    if(log_file){clearerr(log_file);fseeko(log_file,0,SEEK_END);}
+#else
     LARGE_INTEGER zero = {0};
     if (log_file != INVALID_HANDLE_VALUE) SetFilePointerEx(log_file, zero, NULL, FILE_END);
+#endif
     partial_size = 0;
     AcquireSRWLockExclusive(&debug_lock);
     stats.errors = stats.warnings = stats.slow_frames = 0;
@@ -200,6 +268,7 @@ void pc_debug_clear(void)
     ReleaseSRWLockExclusive(&debug_lock);
 }
 
+#ifndef __APPLE__
 int pc_debug_open_logs(HWND owner)
 {
     WCHAR folder[1024], *slash;
@@ -211,3 +280,5 @@ int pc_debug_open_logs(HWND owner)
     *slash = 0;
     return (INT_PTR)ShellExecuteW(owner, L"open", folder, NULL, NULL, SW_SHOWNORMAL) > 32;
 }
+
+#endif

@@ -23,7 +23,7 @@ def isolated_environment(root, test):
                RECOMP_INPUT_CONFIG=str(test / 'pc-controls.json'), RECOMP_DISPLAY_CONFIG=str(test / 'runtime.conf'),
                XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'),
                TSFP_DISPLAY_CONFIG=str(test / 'pc-display.ini'),
-               RECOMP_TRACE_BUDGET='500')
+               RECOMP_TRACE_BUDGET='500', RECOMP_LOG_FILE=str(root / 'logs/native-boot.err'))
     return env
 
 def capture_environment(root):

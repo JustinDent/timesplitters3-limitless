@@ -44,7 +44,8 @@ def game_environment(base, root, fps=None):
                RECOMP_DISPLAY_CONFIG=str(settings / 'runtime.conf'),
                TSFP_DISPLAY_CONFIG=str(root / 'config/pc-display.ini'),
                XDG_CONFIG_HOME=str(settings / 'xdg-config'),
-               XDG_DATA_HOME=str(settings / 'xdg-data'), RECOMP_TRACE_BUDGET='0')
+               XDG_DATA_HOME=str(settings / 'xdg-data'), RECOMP_TRACE_BUDGET='0',
+               RECOMP_LOG_FILE=str(root / 'logs/native-play.err'))
     if fps is not None:
         if fps not in (60,120):raise ValueError('Native FPS must be 60 or 120')
         env.update(RECOMP_FRAME_INTERP='2' if fps==120 else '1',
@@ -107,7 +108,7 @@ def main():
     prepare_settings(ROOT)
     logs = ROOT / 'logs'
     logs.mkdir(exist_ok=True)
-    print('Arrows/Enter navigate. Click inside the game for mouse-look; click again to fire. Escape pauses/releases the pointer. F1 also toggles capture. F2 opens Settings; F11 toggles fullscreen. Close the game window to quit.', flush=True)
+    print('Arrows/Enter navigate. Click inside the game for mouse-look; click again to fire. Escape pauses/releases the pointer. F1 also toggles capture. F2 opens Settings; F9 toggles FPS; F12 opens Debug; F11 toggles fullscreen. Close the game window to quit.', flush=True)
     print('Experimental: first-level rendering and basic input tested; campaign completion is unverified.', flush=True)
     env = game_environment(os.environ, ROOT, args.fps)
     if args.texture_pack:

@@ -63,6 +63,7 @@ static void native_scene_present(void) {
     glBindFramebuffer(GL_READ_FRAMEBUFFER,native_scene_fbo);
     glBlitFramebuffer(0,0,native_scene_w,native_scene_h,(w-width)/2,(h-height)/2,
                       (w+width)/2,(h+height)/2,GL_COLOR_BUFFER_BIT,GL_LINEAR);
+    native_debug_draw(0,w,h);
     glColorMask(mask[0],mask[1],mask[2],mask[3]);glClearColor(clear[0],clear[1],clear[2],clear[3]);
     if(scissor)glEnable(GL_SCISSOR_TEST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER,read);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,draw);
