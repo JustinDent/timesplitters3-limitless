@@ -168,6 +168,11 @@ runtime readiness. No full campaign playthrough is required.
 
 - **Status:** Awaiting validation
 - **PC behavior:** Windows loads compiled DDS replacements with matching keys/mips and bounded residency.
+- **Windows build fix (2026-10-15):** Uncommitted on `mac-port`,
+  `src/texture_pack.c` restores the local `FILE *f` declaration used by
+  `dump_original`. MSVC syntax compilation passes; no Mac adapter change is
+  needed because the native renderer uses `src/native/gl_texture_pack.inc`.
+  Existing Mac texture coverage remains awaiting validation as described below.
 - **PC source:** Audited revision above; `src/texture_pack.c`, `src/texture_pack_format.h`, `tools/texture-pack.py`, `tools/play-textures.ps1`; `src/native/gl_texture_pack.inc`.
 - **PC validation:** [Display settings and texture preview](STATUS.md#display-settings-and-texture-preview--october-15) records four of eleven replacements loaded in the first mission; seven still need scene-specific checks even on Windows.
 - **Existing Mac support:** Native replacement loading and synthetic real-GPU sampling already pass; the launcher accepts `--texture-pack`. Actual installed-art coverage has not been established on Mac.

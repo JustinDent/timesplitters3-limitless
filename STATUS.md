@@ -1115,3 +1115,23 @@ this Python loader fix. No game data or personal settings were used.
 
 MAC-014 tracks pending macOS validation. Changes have not been committed,
 pushed, or merged to main; synchronization with the other device is unverified.
+
+## 2026-10-15 — Windows texture-dump compilation fix
+
+Reported during release preparation on main `38f1a2f`. Fix is local and
+uncommitted on `mac-port` base `724b1a1`: restore the missing `FILE *f`
+declaration in `src/texture_pack.c::dump_original`. No runtime patch or generated
+game source changes are required. MAC-011 records the platform impact.
+
+On Windows x64, the installed VS 2022 BuildTools MSVC compiler accepted the
+corrected translation unit with `/Zs /TC` and the Windows renderer include paths
+and feature defines. The existing `tsfp_texture_format_test.exe` passed DDS
+validation checks; that executable was not rebuilt and does not exercise the
+dump function. Texture-tool Python tests could not collect because Pillow is
+not installed in this virtual environment. No dependency pins were changed.
+No full game build, packaging, game launch or macOS validation was performed;
+personal settings and saves were unused. Other-device synchronization remains
+unverified. This fix must reach main before release preparation can use it.
+
+Patch validation: `python -m pytest tests/test_patch_updates.py -q` passed all
+11 tests on Python 3.14.2. `git diff --check` passed.
