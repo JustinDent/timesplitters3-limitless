@@ -9,8 +9,7 @@ import urllib.parse
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
-FORMS = ('.github/ISSUE_TEMPLATE/01-bug-report.yml',
-         '.github/ISSUE_TEMPLATE/02-enhancement.yml')
+FORMS = ('.github/ISSUE_TEMPLATE/01-bug-report.yml',)
 SEMVER = re.compile(
     r'v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'
     r'(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?'
@@ -84,7 +83,7 @@ def release_versions(releases):
         except ValueError:
             continue
         versions[kind].add(version)
-    # Older/custom builds always have their own fallback choice in each form.
+    # Older/custom builds always have their own fallback choice in the bug form.
     return {kind: sorted(values, key=lambda v: (version_key(v), v), reverse=True)[:30]
             for kind, values in versions.items()}
 
@@ -106,7 +105,7 @@ def refresh_versions(root, releases, check=False):
                 raise ValueError(f'Expected one {kind} version block in {relative}.')
         if updated != original:
             updates[path] = updated
-    # Validate every form before writing either one.
+    # Validate every version block before writing.
     if not check:
         for path, text in updates.items():
             path.write_text(text, encoding='utf-8', newline='\n')
@@ -116,15 +115,13 @@ def refresh_versions(root, releases, check=False):
 def report_labels(body):
     fields = {name.strip(): value.strip() for name, value in re.findall(
         r'^### ([^\r\n]+)\r?\n(.*?)(?=^### |\Z)', body or '', re.M | re.S)}
-    if not {'Game version', 'Launcher version', 'Platform'} <= fields.keys():
-        return None
-    if 'What happened?' in fields:
+    if {'Game version', 'Launcher version', 'Platform', 'What happened?'} <= fields.keys():
         desired = {'bug'}
-    elif 'What would you like to add or change?' in fields:
+    elif {'What would you like to add or change?', 'How would this help?'} <= fields.keys():
         desired = {'enhancement'}
     else:
         return None
-    platform = fields['Platform']
+    platform = fields.get('Platform', '')
     if platform in ('Windows 10', 'Windows 11'):
         desired.add('platform: windows')
     elif platform == 'macOS':

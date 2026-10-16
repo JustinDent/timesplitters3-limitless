@@ -70,16 +70,17 @@ list, so game releases do not need the Latest badge. See GitHub's
 
 ### Issue-form versions and labels
 
-The **Issue forms** workflow refreshes both issue forms from published GitHub
+The **Issue forms** workflow refreshes the bug report's version choices from published GitHub
 releases after publication, editing, deletion or unpublishing. Game tags use
 `v...`; launcher tags use `launcher-v...`. Draft releases and unreleased source
 version bumps are not offered as installed versions. Both stable and preview
 releases are included, newest version first, with up to 30 versions of each
 and fallbacks for older/custom, unknown and uninstalled builds. No version is
-preselected.
+preselected. The improvement form has no version or platform questions and is
+excluded from version refreshes.
 
 The workflow also refreshes on relevant pushes to `main` and can be run manually
-from Actions. It commits only the two forms' version choices to the default
+from Actions. It commits only the bug form's version choices to the default
 branch with `contents: write`; it never force-pushes. If branch protection is
 added later, allow these updates or adapt this job to the required review flow.
 The current publisher uses the maintainer's GitHub CLI authentication. A future
@@ -88,7 +89,8 @@ token-created release events do not start another workflow.
 
 Form submissions receive `bug` or `enhancement` immediately. On issue creation,
 editing or reopening, the workflow synchronizes that type plus
-`platform: windows` or `platform: macos` from the selected platform. It creates
+`platform: windows` or `platform: macos` when a platform answer is present. New
+improvement suggestions receive only `enhancement`. It creates
 missing platform labels, removes outdated managed labels after edits, and keeps
 other labels such as priority, accessibility and triage decisions. Unrecognized
 reports and pull requests are left alone. Issue text is read as data, never

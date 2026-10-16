@@ -70,7 +70,7 @@ jobs:
           for attempt in 1 2 3; do
             git pull --rebase origin "$TARGET_BRANCH"
             python tools/issue-forms.py versions
-            git add -- .github/ISSUE_TEMPLATE/01-bug-report.yml .github/ISSUE_TEMPLATE/02-enhancement.yml
+            git add -- .github/ISSUE_TEMPLATE/01-bug-report.yml
             if ! git diff --cached --quiet; then
               git commit -m 'Refresh issue form release versions'
             fi
