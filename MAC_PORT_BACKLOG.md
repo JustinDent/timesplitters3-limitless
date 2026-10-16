@@ -532,6 +532,17 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Startup argument handling (2026-10-16, release preparation on
+  `fix/launcher-bootstrap-arguments`):** A resolution-preview command passed an
+  application-only flag to the startup EXE, producing `Unknown bootstrap
+  arguments`. The Windows v1.2.3 local fix in `tools/launcher/Bootstrap.cs`
+  delegates the three application preview flags, preserves output paths/exit
+  status, and logs bounded escaped startup arguments. Tests are in
+  `tests/launcher_updates.cs`; normal startup and updater command routes remain
+  separate. These WPF commands have no existing native Mac counterpart. When
+  adapting MAC-021, test native argument routing, safe preview isolation and
+  diagnostics independently; Windows results do not verify Mac integration.
+  Evidence: [Bootstrap diagnostics](STATUS.md#bootstrap-argument-diagnostics-2026-10-16).
 - **Embedded settings (2026-10-16, commit `5eea0ca` on `feat/launcher-inline-settings`):**
   Windows launcher v1.2.2 replaces the separate settings window with an
   embedded `SettingsPage` in `Launcher.xaml`/`Launcher.cs`. Both tabs, binding
@@ -603,3 +614,8 @@ Copy this template into the queue for each new entry. Replace all placeholders.
   ultrawide; zoom retains relative magnification; cinematics/terminals unchanged;
   configuration round trips and resolution timeout reverts both choices. See
   [Windows FOV evidence](STATUS.md#configurable-gameplay-fov-issue-29--2026-10-16).
+
+Launcher v1.2.3 release compatibility (MAC-021/MAC-022): `GameSettings.cs` and
+`SettingsPage.cs` disable custom FOV for packaged game versions through alpha.4
+to retain V1 display compatibility. Windows model/UI regression coverage is in
+`tests/launcher_settings.cs`; Mac launcher capability gating remains queued.

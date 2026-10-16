@@ -93,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build. The build produces these assets
-in `build/launcher`; for version 1.2.2, publish all three together:
+in `build/launcher`; for version 1.2.3, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.2-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.2-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.3-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.3-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.2`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.3`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -137,6 +137,27 @@ Data, Settings, Saves and Textures are never launcher-update targets. Game
 updates/rollback preserve a newer independently installed launcher. Keep the
 complete `.launcher` folder for recovery. No launcher-only release is published
 automatically by building these files.
+
+## Startup argument troubleshooting
+
+`Unknown bootstrap arguments` means the startup EXE received unsupported
+command-line arguments before opening the main application. Normal startup uses
+`TimeSplitters Launcher.exe` with no arguments. In launcher v1.2.2, developer
+commands such as `--render-settings-graphics output.png` belong to
+`Bin/TimeSplitters.App.exe`; passing them to the startup EXE causes this error.
+
+The local v1.2.3 fix also accepts `--render-preview`, `--render-settings-preview`
+and `--render-settings-graphics` at the startup EXE and forwards them to the
+application without an update check. Relative output paths resolve against the
+caller's current directory; the child exit code is preserved and preview time is
+bounded to 30 seconds. `--render-splash` remains the startup EXE's own preview.
+Unknown/malformed commands are still rejected. The startup log now records the
+launcher version, argument count and bounded, JSON-escaped arguments, rather
+than losing the arguments that caused a rejection. It remains capped at 1 MiB.
+
+`launcher-tests.exe --bootstrap` runs the isolated preview-routing/diagnostic
+checks without running game-update installation tests. Actual preview commands
+operate on disposable output paths and do not launch the game or save settings.
 
 ## Pre-game settings
 
@@ -245,3 +266,8 @@ its `Logs` folder. Saves and config are not used for automated launcher checks.
 
 Windows-specific source lives in `tools/launcher`; Mac release updating remains
 queued as `MAC-014` in `MAC_PORT_BACKLOG.md`.
+
+Launcher v1.2.3 keeps custom FOV disabled for installed game releases through
+v0.2.0-alpha.4, which only read V1 display settings. Resolution changes continue
+to save in that compatible format. FOV becomes available with a newer game
+release; unpackaged development builds retain access for testing.

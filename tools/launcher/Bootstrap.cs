@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +28,11 @@ namespace TimeSplitters.Launcher
                 }
                 bool afterUpdate = args.Length == 1 && args[0] == "--after-self-update";
                 bool render = args.Length == 2 && args[0] == "--render-splash";
-                if (args.Length != 0 && !afterUpdate && !render) throw new ArgumentException("Unknown bootstrap arguments.");
+                LauncherLog.Write(root, "Bootstrap v" + LauncherVersion.Value + ": " + args.Length + " argument(s) " + DescribeArguments(args));
+                int previewExit;
+                if (TryForwardPreview(root, args, out previewExit)) return previewExit;
+                if (args.Length != 0 && !afterUpdate && !render)
+                    throw new ArgumentException("Unknown bootstrap arguments: " + DescribeArguments(args) + ". Open " + Core.LauncherName + " without extra arguments for normal startup.");
                 using (var mutex = new Mutex(false, Core.MutexName(root)))
                 {
                     bool locked;
@@ -60,6 +65,30 @@ namespace TimeSplitters.Launcher
                 MessageBox.Show(ex.Message + "\n\nDetails: .launcher\\launcher.log", "TimeSplitters — Startup", MessageBoxButton.OK, MessageBoxImage.Error);
                 return 1;
             }
+        }
+        internal static string DescribeArguments(string[] args)
+        {
+            // Bound diagnostics and JSON-escape control characters so a rejected
+            // command remains one log entry, even with malformed shell input.
+            return Json.Encode(args.Take(8).Select(arg => arg.Length > 256 ? arg.Substring(0,256) + "..." : arg).ToArray())
+                + (args.Length > 8 ? " (additional arguments omitted)" : "");
+        }
+        internal static bool TryForwardPreview(string root, string[] args, out int exitCode)
+        {
+            exitCode = 0;
+            if (args.Length != 2 || (args[0] != "--render-preview" && args[0] != "--render-settings-preview" && args[0] != "--render-settings-graphics")) return false;
+            string application = Core.PathIn(root, Core.AppPath);
+            Core.Require(File.Exists(application), "Launcher application files are missing. Extract the complete launcher ZIP into this folder and try again.");
+            var info = new ProcessStartInfo(application, args[0] + " " + SelfUpdate.Quote(Path.GetFullPath(args[1]))) {
+                WorkingDirectory = root, UseShellExecute = false, CreateNoWindow = true };
+            using (var child = Process.Start(info)) {
+                if (!child.WaitForExit(30000)) {
+                    child.Kill(); child.WaitForExit(5000);
+                    throw new TimeoutException("Launcher preview did not finish within 30 seconds. Close the launcher and try again.");
+                }
+                exitCode = child.ExitCode;
+            }
+            return true;
         }
         internal static int RunHelper(string root, int parent, bool relaunch)
         {

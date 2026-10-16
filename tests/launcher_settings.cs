@@ -59,6 +59,26 @@ public static class LauncherSettingsChecks
         Directory.CreateDirectory(temp);
         try
         {
+            Test("published alpha.4 retains V1 resolution settings and rejects custom FOV atomically",()=>{
+                string root=Root("legacy-fov");Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.4\"}");
+                var model=GameSettings.Load(root,null);Require(!model.CanAdjustFov);
+                model.Width=1920;model.Height=1080;model.Save();
+                string original=Read(root,"Settings/pc-display.ini");
+                Require(original=="TSFP_DISPLAY_V1 1920 1080\n");
+                model.VerticalFov=75;Reject(()=>model.Save());Require(Read(root,"Settings/pc-display.ini")==original);
+                Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.5\"}");
+                Require(model.CanAdjustFov);model.Save();Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V2 1920 1080 75\n");
+            });
+            Test("alpha.4 FOV controls explain unavailable capability while resolution saves",()=>STA(()=>{
+                string root=Root("legacy-fov-ui");Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.4\"}");
+                var owner=new System.Windows.Window();var editor=new SettingsPage(owner.Resources,root,true);editor.SelectTab(1);
+                var nodes=Descendants(editor.View).ToList();
+                Require(!nodes.OfType<System.Windows.Controls.Slider>().Single(c=>c.Name=="VerticalFovSlider").IsEnabled);
+                Require(!nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="ResetFovButton").IsEnabled);
+                Require(nodes.OfType<System.Windows.Controls.TextBlock>().Any(c=>c.Text.Contains("newer than v0.2.0-alpha.4")));
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
+                Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V1 0 0\n");owner.Close();
+            }));
             Test("FOV legacy defaults, range checks and shared V2 round trip",()=>{
                 string root=Root("fov-settings");Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V1 1920 1080\n");
                 var model=GameSettings.Load(root,null);Require(model.VerticalFov==55);

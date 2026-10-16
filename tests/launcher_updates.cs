@@ -133,6 +133,8 @@ static class LauncherTests
     { return Json.Encode(new { schema = 1, version = version, size = size, sha256 = hash, asset_name = "TimeSplitters-Launcher-v" + version + "-windows-x64.zip" }); }
     public static int Main(string[] args)
     {
+        if (args.Length == 2 && (args[0] == "--render-preview" || args[0] == "--render-settings-preview" || args[0] == "--render-settings-graphics"))
+        { File.WriteAllText(args[1],args[0]);return 17; } // Synthetic preview child, not a UI/game launch.
         if (args.Length == 1 && args[0] == "--settings-child") return LauncherSettingsChecks.Child();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();
         if (args.Length == 2 && args[0] == "--helper")
@@ -167,6 +169,36 @@ static class LauncherTests
         Directory.CreateDirectory(temp);
         try
         {
+            Test("bootstrap forwards application previews and preserves spaced output paths and child status", () => {
+                string root=Path.Combine(temp,"preview launcher root");Directory.CreateDirectory(Path.Combine(root,"Bin"));
+                File.Copy(typeof(LauncherTests).Assembly.Location,Path.Combine(root,Core.AppPath));
+                foreach(string flag in new[]{"--render-preview","--render-settings-preview","--render-settings-graphics"}) {
+                    string output=Path.Combine(root,flag.Substring(2)+" image.png");int result;
+                    Assert(Bootstrap.TryForwardPreview(root,new[]{flag,output},out result));
+                    Assert(result==17 && File.ReadAllText(output)==flag);
+                }
+                string previous=Environment.CurrentDirectory;
+                try {
+                    Environment.CurrentDirectory=temp;int result;
+                    Assert(Bootstrap.TryForwardPreview(root,new[]{"--render-preview","relative preview.png"},out result));
+                    Assert(result==17 && File.ReadAllText(Path.Combine(temp,"relative preview.png"))=="--render-preview");
+                } finally { Environment.CurrentDirectory=previous; }
+                Assert(!Directory.Exists(Path.Combine(root,"Settings")) && !Directory.Exists(Path.Combine(root,"Data")));
+            });
+            Test("bootstrap preserves normal startup, splash and updater argument routes", () => {
+                foreach(var input in new[]{new string[0],new[]{"--after-self-update"},new[]{"--render-splash","output.png"},new[]{"--apply-launcher","root","123"},new[]{"--from-bootstrap","123"},new[]{"--unknown","value"},new[]{"--render-preview"}}) {
+                    int result;Assert(!Bootstrap.TryForwardPreview(temp,input,out result));
+                }
+            });
+            Test("rejected bootstrap argument diagnostics are escaped and bounded", () => {
+                Assert(Bootstrap.DescribeArguments(new string[0])=="[]");
+                string text=Bootstrap.DescribeArguments(new[]{"--bad\nargument",new string('x',10000)});
+                Assert(!text.Contains("\n") && text.Contains("\\n") && text.Length<400);
+                Assert(Bootstrap.DescribeArguments(Enumerable.Repeat("argument",20).ToArray()).Contains("additional arguments omitted"));
+            });
+            if (args.Length == 1 && args[0] == "--bootstrap") {
+                Console.WriteLine("PASS: " + passed + " isolated bootstrap checks.");return 0;
+            }
             Test("semantic version ordering", () => {
                 var ordered = new[] { "v1.0.0-alpha", "v1.0.0-alpha.2", "v1.0.0-alpha.10", "v1.0.0-beta", "v1.0.0", "v1.0.1", "v1.10.0", "v2.0.0" };
                 for (int i = 1; i < ordered.Length; i++) Assert(GameVersion.Parse(ordered[i]).CompareTo(GameVersion.Parse(ordered[i-1])) > 0);
