@@ -73,30 +73,18 @@ Use the [bug report](https://github.com/TheDoffman/timesplitters-future-perfect-
 or [enhancement request](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)
 form. Search existing issues first and report one problem or suggestion at a time.
 
-Game and launcher versions are separate, and an available update may differ from
-the version you have installed:
+Pick your **game version** from the installed version shown in the launcher,
+then pick your **launcher version** from **LAUNCHER v...** at the top of its
+window. These can be different. If you cannot find either one, choose
+**I don't know**. Choose **Other** for an unlisted version and mention it with
+your report. The version choices refresh automatically as releases are published.
 
-- **Game version:** copy the installed game version from the launcher. Select
-  **Game files** and open `BUILD.json` for its `version` and `source_commit`.
-  Report `NOT INSTALLED` if setup failed before installing the game, or
-  `UNVERSIONED` if that is what the launcher shows.
-- **Launcher version:** copy **LAUNCHER v...** from the header. If it will not
-  open, check `version` in `Support/Launcher/manifest.json` in the installation.
-  The `launcher_version` in a game's `BUILD.json` describes the launcher bundled
-  with that game package; a separately updated launcher can be newer.
-- **Build source:** include Stable/Preview when used, the exact release link or
-  ZIP filename, and whether you installed through the launcher or manually.
-  Source builds should include `VERSION`, `git rev-parse HEAD`, and any local
-  changes shown by `git status --short`. These commands work on Windows and Mac.
-  If you cannot identify a version, say unknown and describe what you checked.
-- **Evidence:** use **View logs** for `.launcher/launcher.log`, and check `Logs`
-  for game output. Source builds, including native Mac builds, write diagnostics
-  under the checkout's `logs` folder. Attach the relevant log and screenshots,
-  with reproduction steps, OS version, hardware and relevant settings.
+Tell us what happened and how to make it happen again, or describe your idea
+and why it would help. Screenshots and logs are optional; **View logs** in the
+launcher opens its log folder. Remove personal information before attaching
+anything, and keep game files and saves private.
 
-Remove personal paths, IP addresses, invitations and secrets before posting.
-Keep original game files, ISOs, BIOS files and personal saves private. You do not
-need to delete settings or saves to complete a report.
+Reports are labeled automatically by type and selected platform.
 
 ## Older portable packages and source builds
 
