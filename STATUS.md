@@ -1939,3 +1939,31 @@ unverified (MAC-021). Release preparation targets stable `launcher-v1.2.1` on
 main, using the documented launcher-only packaging channel. `Publish-Release.ps1`
 publishes the game `VERSION`; no new game version is needed for this option.
 The Windows CI workflow now runs the launcher and portable-script regressions.
+
+## Embedded launcher settings (2026-10-16)
+
+Windows launcher v1.2.2 implementation `5eea0ca` on `feat/launcher-inline-settings`,
+based on main `696421fd080a5bd57cb894b76302080f59f52485`. `SettingsPage.cs`
+replaces the separate settings window: controls, graphics, startup options,
+binding capture and confirmations stay in the main content area with the sidebar
+visible. `Launcher.xaml`/`Launcher.cs` switch between Command center and settings
+with active navigation styling. Home keeps the draft/tab and dismisses capture;
+Cancel discards the draft; Save validates and keeps the page open. Atomic file
+save, backup, stale-edit detection and rollback remain in the existing model.
+The preview commands now render the whole launcher rather than a separate window.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both launcher binaries compiled.
+The full launcher build passed 71 updater checks and 19 isolated settings
+checks, including actual WPF sidebar/page navigation, 1000 × 720 minimum and
+1152 × 772 layout sizes, draft retention/cancel, inline binding-conflict cancellation and
+reassignment, successful/invalid save, and existing settings/environment checks.
+Five portable-script and packaging checks passed. Both full-shell 1152 × 772
+controls/graphics previews were visually reviewed; captures are in ignored
+`build/launcher/inline-controls.png` and `inline-graphics.png`.
+
+Evidence for the complete build/test pass: ignored
+`build/launcher/inline-build-test.log`. No game runtime source changed or game
+playtest was needed. Release preparation targets stable `launcher-v1.2.2` on
+main through the documented launcher-only channel; no game update is required.
+Native Mac settings/navigation adaptation remains
+queued under MAC-021; other-device synchronization is unverified.
