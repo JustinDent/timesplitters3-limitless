@@ -1897,3 +1897,45 @@ Its native checks, path-test cleanup and network-content verification passed.
 Logs: `logs/issue-8-branch-build.log` and `logs/issue-8-branch-build-retry.log`.
 Branch executable SHA-256: `7807b189c890a31fcb265dc4395ec67ad453837ea035efd30f287c9b8cc95710`.
 The audio implementation is unchanged from the clean human playtest above.
+
+## Launcher startup skipping (2026-10-16)
+
+Launcher v1.2.1 implementation `bad108c` on `feat/launcher-skip-startup`, based on published main
+`d83ca5e57d36da163680f7c21e0b5f52dd785faf`. Game settings → Graphics & resolution
+now has a Startup checkbox, **Skip startup splash screens**, default off.
+Saving persists `launcher.skip_startup_splashes` in portable controls JSON with
+the existing backup, external-edit protection and rollback rules. Both the
+direct launcher and newly packaged `Launch.ps1` explicitly set the existing
+`RECOMP_XMV_PLAY` switch after sanitizing inherited overrides. This skips all
+file-based XMV playback (opening EA/Free Radical logos and the idle attract
+movie); story scenes use the game's separate rendered-cutscene system. The UI
+explains the attract-video effect. No runtime patch or game rebuild is needed.
+
+Windows x64, .NET Framework 4.8 C# compiler file version 14.8.10001.0,
+Python 3.12.14: launcher
+build passed 71 updater checks and 16 settings checks, including default-off,
+save/reopen/disable, unknown-field preservation, malformed-value rejection,
+inherited-override sanitization and actual child-process consumption. Five
+pytest checks passed (three real PowerShell/synthetic-child launches covering
+missing/false/true preferences plus two packaging checks). The WPF graphics
+preview was rendered and visually reviewed; the checkbox/help text fit the
+existing blue/silver layout. Evidence: ignored `build/launcher/startup-settings.png`.
+
+`tests/launcher_startup_game.py` ran two bounded 20-second launches against the
+verified published alpha.4 executable, SHA-256
+`bc7cbb26ab90fc0af47eb8f8bff90d91c4074893cf443352d4e0c5bf41076345`, using its
+existing D3D11 backend and pinned FFmpeg libraries. The supported US XBE hash
+was reverified before testing. Normal mode played both opening movies; skip
+mode completed both XMV objects with end-of-file status without decoding movies.
+Both runs remained alive and rendered the player-selection screen, confirmed in
+reviewed captures. No crash or unresolved indirect call appeared in their logs.
+All input, saves and both display-config paths were isolated; this invocation's
+disposable saves/frame dumps were removed. Evidence: ignored
+`private/startup-validation/{normal,skip}/startup.png`, `game.err`, `game.out`
+and `runtime/provenance.json`. This is compatibility validation of the published
+game, not a rebuild of concurrent runtime work. Story gameplay/cutscene playback
+was not retested. Mac UI/playback and other-device synchronization remain
+unverified (MAC-021). Release preparation targets stable `launcher-v1.2.1` on
+main, using the documented launcher-only packaging channel. `Publish-Release.ps1`
+publishes the game `VERSION`; no new game version is needed for this option.
+The Windows CI workflow now runs the launcher and portable-script regressions.

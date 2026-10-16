@@ -93,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build. The build produces these assets
-in `build/launcher`; for version 1.2.0, publish all three together:
+in `build/launcher`; for version 1.2.1, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.0-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.0-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.1-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.1-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.0`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.1`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -138,7 +138,7 @@ updates/rollback preserve a newer independently installed launcher. Keep the
 complete `.launcher` folder for recovery. No launcher-only release is published
 automatically by building these files.
 
-## Pre-game settings (local v1.2.0)
+## Pre-game settings
 
 The sidebar **Game settings** window edits Player 1's keyboard/mouse bindings
 (four alternatives per action), input device, sensitivity, mouse look and invert Y.
@@ -151,6 +151,18 @@ Graphics include output resolution (presets, attached display sizes and custom
 dimensions), borderless fullscreen, supersampling (1–8), anisotropic filtering
 (1–16), frame pacing, interpolation (1–4), VRR and the FPS overlay. Invalid
 resolutions and non-finite sensitivity are refused. Desktop refresh is unchanged.
+
+Launcher v1.2.1 adds
+**Game settings → Graphics & resolution → Startup → Skip startup splash screens**:
+skips the opening EA and Free Radical logo movies on the next launch. It also
+disables the idle attract video; story cutscenes rendered by the game still play.
+The checkbox defaults to off. Save settings to keep the choice, or uncheck and
+save to restore the videos. The choice is stored under
+`launcher.skip_startup_splashes` in `Settings/pc-controls.json`, preserved across
+game and launcher updates. Launching sets the existing runtime's
+`RECOMP_XMV_PLAY` switch explicitly to `0` (skip) or `1` (play), after clearing
+inherited overrides. This works with the published alpha.4 game without a
+runtime rebuild. New packages' `Launch.ps1` also honor this preference.
 
 Controls and resolution use the same `Settings/pc-controls.json` and
 `Settings/pc-display.ini` formats as the in-game settings. Graphics use a portable

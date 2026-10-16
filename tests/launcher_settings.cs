@@ -29,6 +29,7 @@ public static class LauncherSettingsChecks
         Console.WriteLine(Convert.ToString(mouse["sensitivity"],System.Globalization.CultureInfo.InvariantCulture));
         Console.WriteLine(File.ReadAllText(display).Trim());
         Console.WriteLine(GameSettings.ParseRuntime(File.ReadAllText(runtime))["anisotropy"]);
+        Console.WriteLine("XMV_PLAY="+Environment.GetEnvironmentVariable("RECOMP_XMV_PLAY"));
         return 0;
     }
     public static int Run()
@@ -58,6 +59,8 @@ public static class LauncherSettingsChecks
                     var owner=new System.Windows.Window();var editor=new SettingsWindow(owner,root,true);
                     var tabs=Descendants(editor.Window).OfType<System.Windows.Controls.TabControl>().Single();tabs.SelectedIndex=1;
                     var nodes=Descendants(editor.Window).ToList();
+                    var startup=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>Convert.ToString(c.Content)=="Skip startup splash screens");
+                    Require(startup.IsChecked==false);startup.IsChecked=true;
                     var picker=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.SelectedItem is DisplayMode);
                     var buttons=nodes.OfType<System.Windows.Controls.Button>().ToList();
                     var previous=buttons.Single(b=>System.Windows.Automation.AutomationProperties.GetName(b)=="Previous resolution");
@@ -75,8 +78,33 @@ public static class LauncherSettingsChecks
             });
             Test("opening settings does not create files; defaults have PC bindings",()=>{
                 string root=Root("cancel");var model=GameSettings.Load(root,null);
-                Require(model.Sensitivity==.10 && model.Binding(14)[0]=="key:W");
+                Require(model.Sensitivity==.10 && model.Binding(14)[0]=="key:W" && !model.SkipStartupSplashes);
                 Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+            });
+            Test("startup preference round-trips, preserves other launcher keys and can be disabled",()=>{
+                string root=Root("startup");var model=GameSettings.Load(root,null);model.Save();
+                var json=Json.Object(Read(root,"Settings/pc-controls.json"));
+                ((System.Collections.Generic.Dictionary<string,object>)json["launcher"])["future_option"]="keep";
+                Put(root,"Settings/pc-controls.json",Json.Encode(json));
+                model=GameSettings.Load(root,null);model.SkipStartupSplashes=true;model.Save();
+                Require(GameSettings.Load(root,null).SkipStartupSplashes);
+                Require(Read(root,"Settings/pc-controls.json").Contains("future_option"));
+                string inherited=Environment.GetEnvironmentVariable("RECOMP_XMV_PLAY");
+                try {
+                    Environment.SetEnvironmentVariable("RECOMP_XMV_PLAY","1");
+                    Require(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_XMV_PLAY"]=="0");
+                    model=GameSettings.Load(root,null);model.SkipStartupSplashes=false;model.Save();
+                    Environment.SetEnvironmentVariable("RECOMP_XMV_PLAY","0");
+                    Require(!GameSettings.Load(root,null).SkipStartupSplashes);
+                    Require(GameSettings.StartInfo(root).EnvironmentVariables["RECOMP_XMV_PLAY"]=="1");
+                } finally {Environment.SetEnvironmentVariable("RECOMP_XMV_PLAY",inherited);}
+            });
+            Test("invalid startup preference is refused without altering settings",()=>{
+                string root=Root("bad-startup");var model=GameSettings.Load(root,null);model.Save();
+                var json=Json.Object(Read(root,"Settings/pc-controls.json"));
+                ((System.Collections.Generic.Dictionary<string,object>)json["launcher"])["skip_startup_splashes"]="false";
+                Put(root,"Settings/pc-controls.json",Json.Encode(json));string before=Read(root,"Settings/pc-controls.json");
+                Reject(()=>GameSettings.Load(root,null));Require(Read(root,"Settings/pc-controls.json")==before);
             });
             Test("save round-trips controls and graphics; preserves other profiles and unknown fields",()=>{
                 string root=Root("preserve"); var first=GameSettings.Load(root,null);first.Save();
@@ -131,11 +159,11 @@ public static class LauncherSettingsChecks
                 try {var info=GameSettings.StartInfo(root);Require(info.FileName==Path.Combine(root,"Bin","futureperfect_recomp.exe"));Require(info.EnvironmentVariables["RECOMP_DISPLAY_CONFIG"]==Path.Combine(root,"Settings","runtime.conf"));Require(info.EnvironmentVariables["TSFP_DISPLAY_CONFIG"]==Path.Combine(root,"Settings","pc-display.ini"));Require(info.EnvironmentVariables["RECOMP_MOUSE_SENSITIVITY"]=="0.25");Require(info.EnvironmentVariables["RECOMP_SETTINGS_TEST"]==null);}finally{Environment.SetEnvironmentVariable("RECOMP_SETTINGS_TEST",old);}
             });
             Test("child process receives and reads the selected portable settings",()=>{
-                string root=Root("child");var model=GameSettings.Load(root,null);model.Sensitivity=.45;model.Width=2560;model.Height=1440;model.Anisotropy=8;model.Save();
+                string root=Root("child");var model=GameSettings.Load(root,null);model.Sensitivity=.45;model.Width=2560;model.Height=1440;model.Anisotropy=8;model.SkipStartupSplashes=true;model.Save();
                 Directory.CreateDirectory(Path.Combine(root,"Bin"));File.Copy(typeof(LauncherSettingsChecks).Assembly.Location,Path.Combine(root,"Bin/futureperfect_recomp.exe"));
                 var info=GameSettings.StartInfo(root);info.Arguments="--settings-child";
                 using(var child=Process.Start(info)) {
-                    try {var output=child.StandardOutput.ReadToEndAsync();var errors=child.StandardError.ReadToEndAsync();Require(child.WaitForExit(5000));string text=output.GetAwaiter().GetResult();string error=errors.GetAwaiter().GetResult();Require(child.ExitCode==0 && text.Contains("0.45") && text.Contains("TSFP_DISPLAY_V1 2560 1440") && text.Contains("8"));Require(error.Length==0);}
+                    try {var output=child.StandardOutput.ReadToEndAsync();var errors=child.StandardError.ReadToEndAsync();Require(child.WaitForExit(5000));string text=output.GetAwaiter().GetResult();string error=errors.GetAwaiter().GetResult();Require(child.ExitCode==0 && text.Contains("0.45") && text.Contains("TSFP_DISPLAY_V1 2560 1440") && text.Contains("8") && text.Contains("XMV_PLAY=0"));Require(error.Length==0);}
                     finally{if(!child.HasExited)child.Kill();}
                 }
             });
