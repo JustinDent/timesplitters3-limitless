@@ -8,9 +8,24 @@ These instructions describe the current Windows source build. Downloaded release
 
 Open **Settings → Display settings** from the main menu, or **Options → Display
 settings** while paused. Use the resolution row's left/right arrows to choose
-a mode, including **Original** for the game's default. Choose **Apply resolution**, then
+a mode, including **Original** for the game's default. Choose **Apply settings**, then
 **Keep resolution** within 15 seconds. Back, Revert, or letting the countdown
 expire restores the previous mode. Only confirmed settings are saved.
+
+The **Vertical FOV** slider adjusts the gameplay view from **40° to 100°**, with a
+numeric value and **Reset FOV to 55** for the original view. Select the row and
+use left/right on the keyboard or controller, then **Apply settings**. Back
+without applying discards the draft. FOV-only changes save immediately; changing
+resolution too uses the same 15-second confirmation and rolls both settings back
+if rejected. The launcher offers the same slider under **Game settings → Graphics
+& resolution**; **Save settings** applies it on the next launch.
+
+FOV is measured vertically, so the horizontal view also follows the selected
+aspect ratio. Weapon zoom keeps its relative magnification. Cinematic framing,
+terminal views and menu proportions retain their original camera behavior.
+Existing display files keep the original 55° setting. Non-default FOV is stored
+in the version 2 display format; both the runtime and launcher read versions 1
+and 2. Resetting FOV to 55° writes the legacy version 1 format again.
 
 The Windows launcher and in-game picker use the primary display's reported modes,
 including ultrawide sizes within 640×480–7680×2160 and a maximum 4:1 aspect ratio.
@@ -31,7 +46,7 @@ in-engine cutscenes; startup video framing is unchanged.
 Settings live in `config/pc-display.ini` beside the keyboard/mouse configuration
 (`Settings/pc-display.ini` in packaged builds). `TSFP_DISPLAY_CONFIG` can override
 the path for isolated tests. Delete that small file to restore the original
-rendering resolution. Extremely wide modes are bounded at 7680×2160; modes above
+rendering resolution and FOV. Extremely wide modes are bounded at 7680×2160; modes above
 2160 pixels high are outside this release's resolution range.
 
 ## PC controls

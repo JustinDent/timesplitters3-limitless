@@ -82,7 +82,7 @@ the console default, and provide left/right arrows. Saved custom modes are retai
 
 | Controls | Display | Launcher |
 | --- | --- | --- |
-| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects resolution. Confirm within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Saves**, **Game files**, **View logs** and **Support** keep essentials close. |
+| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects resolution and vertical FOV (40–100°, default 55°). Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Saves**, **Game files**, **View logs** and **Support** keep essentials close. |
 
 Click the game to capture the mouse; **Escape** pauses and releases it. Use
 **Alt+Enter** for fullscreen. Settings saved in-game remain in place for your
@@ -153,9 +153,14 @@ account, paid service or centrally operated server is required. Choose
 | [Multiplayer](docs/multiplayer.md) — Online, invitations and LAN | [Measured progress](STATUS.md) — evidence and remaining work |
 | [Native Mac](docs/macos.md) — Apple Silicon setup and controls | [Project rules](AGENTS.md) — reproducibility and data preservation |
 
-**Found a problem? [Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues)**
-with your game version/build ID, OS/GPU, level or mode, and reproduction steps.
-Relevant logs or screenshots help; keep personal saves and game data private.
+**[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
+or **[request an enhancement](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)**.
+For bugs, pick your versions and platform, then describe the problem. For an
+improvement, just share your idea. Screenshots and logs
+are optional. Bug version choices stay up to date automatically; both forms
+receive labels automatically.
+[Find your build version and logs](docs/launcher.md#report-a-problem-or-request-an-improvement);
+keep personal saves and game data private.
 
 ---
 

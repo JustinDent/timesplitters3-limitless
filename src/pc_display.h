@@ -5,6 +5,13 @@
 #else
 typedef void *HWND;
 #endif
+#define PC_FOV_DEFAULT 55
+#define PC_FOV_MIN 40
+#define PC_FOV_MAX 100
+int pc_display_fov(void);
+int pc_display_set_fov(int degrees);
+float pc_display_fov_scale(void);
+
 typedef struct PcDisplayMode { unsigned width, height; } PcDisplayMode;
 /* Called on the guest/render thread. Zero dimensions retain the legacy mode. */
 PcDisplayMode pc_display_current(void);

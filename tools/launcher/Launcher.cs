@@ -47,11 +47,11 @@ namespace TimeSplitters.Launcher
                         var ui = new LauncherWindow(root, preview);
                         if (preview)
                         {
-                            var window = settingsPreview ? new SettingsWindow(ui.Window, root, true).Window : ui.Window;
+                            if (settingsPreview) ui.ShowSettings(graphicsPreview?1:0);
+                            var window = ui.Window;
                             var visual = (Panel)window.Content;
-                            if (graphicsPreview) foreach (var child in visual.Children) if (child is TabControl) ((TabControl)child).SelectedIndex = 1;
                             visual.Background = window.Background;
-                            int width = settingsPreview ? 960 : 1152, height = settingsPreview ? 750 : 772;
+                            int width = 1152, height = 772;
                             visual.Measure(new Size(width, height)); visual.Arrange(new Rect(0, 0, width, height)); visual.UpdateLayout();
                             var bitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
                             bitmap.Render(visual);
@@ -121,6 +121,7 @@ namespace TimeSplitters.Launcher
         readonly ReleaseClient client = new ReleaseClient();
         readonly CancellationTokenSource lifetime = new CancellationTokenSource();
         Release available;
+        SettingsPage settings;
         bool busy, checking, handingOff;
         bool validData, gameInstalled;
         string installed = "";
@@ -169,6 +170,9 @@ namespace TimeSplitters.Launcher
                 }
             }
             Refresh();
+            Button("SettingsNav").Click += (s,e)=>ShowSettings();
+            Button("HomeNav").Click += (s,e)=>ShowHome();
+            Window.Closed += (s,e)=> { lifetime.Cancel(); client.Dispose(); };
             if (previewMode)
             {
                 Text("InstalledLabel", "v0.1.0-alpha.1");
@@ -193,11 +197,6 @@ namespace TimeSplitters.Launcher
                 catch (Exception ex) { Fail(ex); }
             };
             Button("PlayButton").Click += async (s, e) => await Play();
-            Button("SettingsNav").Click += (s,e) => {
-                if (busy || Core.GameRunning()) { SetStatus("Close the game before editing settings."); return; }
-                try { if (new SettingsWindow(Window, root, false).Window.ShowDialog() == true) SetStatus("Settings saved. Ready for your next launch."); }
-                catch (Exception ex) { Fail(ex); }
-            };
             Button("ImportButton").Click += async (s, e) => await Import(false);
             Button("FolderButton").Click += async (s, e) => await Import(true);
             Button("CheckButton").Click += async (s, e) => await Check();
@@ -211,7 +210,6 @@ namespace TimeSplitters.Launcher
             Button("FilesNav").Click += (s, e) => Open(root);
             Button("SavesNav").Click += (s, e) => OpenFolder("Saves");
             Button("SupportNav").Click += (s, e) => Open("https://github.com/" + ReleaseClient.Repository + "/issues");
-            Button("HomeNav").Click += (s, e) => SetStatus("Install a release, import your game once, and jump in.");
             Button("LogsButton").Click += (s, e) => OpenFolder(".launcher");
             Window.Loaded += async (s, e) =>
             {
@@ -225,7 +223,37 @@ namespace TimeSplitters.Launcher
             {
                 if (busy && !handingOff) { e.Cancel = true; SetStatus("Please let the current operation finish before closing the launcher."); }
             };
-            Window.Closed += (s, e) => { lifetime.Cancel(); client.Dispose(); };
+        }
+        public void ShowSettings(int tab=-1)
+        {
+            if(busy || (!previewMode && Core.GameRunning())) { SetStatus("Close the game before editing settings."); return; }
+            try {
+                if(settings==null) {
+                    settings=new SettingsPage(Window.Resources,root,previewMode);
+                    settings.Saved+=()=> { SetStatus("Settings saved. Ready for your next launch."); Refresh(); };
+                    settings.Cancelled+=()=> { ShowHome(); Find<ContentControl>("SettingsHost").Content=null; settings=null; SetStatus("Unsaved settings discarded."); };
+                    Find<ContentControl>("SettingsHost").Content=settings.View;
+                }
+                if(tab>=0)settings.SelectTab(tab);
+                Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
+                Find<ContentControl>("SettingsHost").Visibility=Visibility.Visible;
+                SelectNavigation(true);
+            } catch(Exception ex) { Fail(ex); }
+        }
+        void ShowHome()
+        {
+            if(settings!=null)settings.DismissPrompt();
+            Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
+            Find<Grid>("CommandCenter").Visibility=Visibility.Visible;
+            SelectNavigation(false);
+        }
+        void SelectNavigation(bool editing)
+        {
+            foreach(string name in new[]{"HomeNav","SettingsNav"}) {
+                bool selected=(name=="SettingsNav")==editing;
+                Button(name).Background=selected?new SolidColorBrush(Color.FromRgb(29,58,85)):Brushes.Transparent;
+                Button(name).Foreground=new SolidColorBrush(selected?Color.FromRgb(134,205,255):Color.FromRgb(223,233,242));
+            }
         }
         void Open(string path)
         {
@@ -262,7 +290,7 @@ namespace TimeSplitters.Launcher
             Text("DataLabel", validData ? "●  Verified US Xbox data" : dataExists ? "○  Data needs attention" : "○  ISO required");
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
-            Button("SettingsNav").IsEnabled = !busy && !Core.GameRunning();
+            Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
             Button("CheckButton").IsEnabled = !busy && !checking;
             Channel.IsEnabled = !busy && !checking;
             Button("UpdateButton").IsEnabled = !busy && !checking && CanUpdate();

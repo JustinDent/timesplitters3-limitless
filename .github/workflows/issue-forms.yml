@@ -1,0 +1,103 @@
+name: Issue forms
+
+on:
+  pull_request:
+    paths:
+      - .github/ISSUE_TEMPLATE/**
+      - .github/workflows/issue-forms.yml
+      - tools/issue-forms.py
+      - tests/test_issue_forms.py
+  push:
+    branches: [main]
+    paths:
+      - .github/ISSUE_TEMPLATE/**
+      - .github/workflows/issue-forms.yml
+      - tools/issue-forms.py
+      - tests/test_issue_forms.py
+      - VERSION
+      - tools/launcher/LauncherVersion.cs
+  release:
+    types: [published, edited, deleted, unpublished]
+  issues:
+    types: [opened, edited, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    if: github.event_name != 'issues'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event_name == 'release' && github.event.repository.default_branch || github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests -p test_issue_forms.py -v
+
+  versions:
+    needs: validate
+    if: github.event_name != 'pull_request' && github.event_name != 'issues' && (github.event_name == 'release' || github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    concurrency:
+      group: issue-form-versions
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Update published version choices
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          TARGET_BRANCH: ${{ github.event.repository.default_branch }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          for attempt in 1 2 3; do
+            git pull --rebase origin "$TARGET_BRANCH"
+            python tools/issue-forms.py versions
+            git add -- .github/ISSUE_TEMPLATE/01-bug-report.yml
+            if ! git diff --cached --quiet; then
+              git commit -m 'Refresh issue form release versions'
+            fi
+            if git push origin "HEAD:refs/heads/$TARGET_BRANCH"; then exit 0; fi
+          done
+          echo 'Could not push version choices after three attempts.' >&2
+          exit 1
+
+  labels:
+    if: github.event_name == 'issues'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    concurrency:
+      group: issue-labels-${{ github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Label report type and selected platform
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python tools/issue-forms.py labels

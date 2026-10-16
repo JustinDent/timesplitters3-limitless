@@ -67,6 +67,27 @@ Xbox data are installed and that another game instance is not already running.
 An unsupported or incomplete existing `Data` folder is retained for inspection,
 not overwritten. Check the status message and logs before changing files.
 
+## Report a problem or request an improvement
+
+Use the [bug report](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)
+or [enhancement request](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)
+form. Search existing issues first and report one problem or suggestion at a time.
+
+For a bug report, pick your **game version** from the installed version shown in the launcher,
+then pick your **launcher version** from **LAUNCHER v...** at the top of its
+window. These can be different. If you cannot find either one, choose
+**I don't know**. Choose **Other** for an unlisted version and mention it with
+your report. The version choices refresh automatically as releases are published.
+
+Tell us what happened and how to make it happen again, or describe your idea.
+Screenshots and logs are optional; **View logs** in the
+launcher opens its log folder. Remove personal information before attaching
+anything, and keep game files and saves private.
+
+Improvement suggestions only ask for your idea and optional
+extra details. Versions and platform are not required. Reports are labeled
+automatically by type; bug reports also use the selected platform.
+
 ## Older portable packages and source builds
 
 A standalone game runtime ZIP is an alternative for manual installation. Extract

@@ -9,20 +9,26 @@ using System.Windows.Media;
 
 namespace TimeSplitters.Launcher
 {
-    public sealed class SettingsWindow
+    public sealed class SettingsPage
     {
-        public readonly Window Window;
+        public readonly Grid View;
+        readonly DockPanel layout;
+        readonly Border overlay;
+        readonly TabControl tabs;
+        public event Action Saved, Cancelled;
         readonly GameSettings model;
         readonly TextBlock status;
+        readonly Slider fov;
         readonly TextBox sensitivity, width, height;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes;
         readonly ComboBox device, resolution, scale, filtering, pacing, interpolation;
         readonly Button[,] bindingButtons = new Button[24,4];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
-        static readonly Brush Ink = new SolidColorBrush(Color.FromRgb(228,237,245));
-        static readonly Brush Muted = new SolidColorBrush(Color.FromRgb(158,175,191));
-        static readonly Brush Accent = new SolidColorBrush(Color.FromRgb(134,205,255));
-        static readonly Brush Panel = new SolidColorBrush(Color.FromRgb(21,36,53));
+        static Brush ColorBrush(byte r,byte g,byte b) { var brush=new SolidColorBrush(Color.FromRgb(r,g,b));brush.Freeze();return brush; }
+        static readonly Brush Ink = ColorBrush(228,237,245);
+        static readonly Brush Muted = ColorBrush(158,175,191);
+        static readonly Brush Accent = ColorBrush(134,205,255);
+        static readonly Brush Panel = ColorBrush(21,36,53);
         static TextBlock Text(string text, int size) { return new TextBlock { Text=text, FontSize=size, Foreground=Ink, TextWrapping=TextWrapping.Wrap, Margin=new Thickness(0,4,0,8) }; }
         static Button Button(string text) { return new Button { Content=text, Margin=new Thickness(4), MinHeight=32, Padding=new Thickness(12,6,12,6) }; }
         static CheckBox Check(string text, bool value) { return new CheckBox { Content=text, IsChecked=value, Foreground=Ink, Margin=new Thickness(0,9,20,9) }; }
@@ -112,26 +118,28 @@ namespace TimeSplitters.Launcher
   </Style>
 </ResourceDictionary>");
         }
-        public SettingsWindow(Window owner, string root, bool preview)
+        public SettingsPage(ResourceDictionary resources, string root, bool preview)
         {
             string inherited = preview ? null : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "xboxrecomp", "titles", "45410066.conf");
             model=GameSettings.Load(root, inherited);
-            Window=new Window { Owner=preview?null:owner, Title="TimeSplitters · Game settings", Width=960, Height=750, MinWidth=850, MinHeight=650, Background=new SolidColorBrush(Color.FromRgb(11,20,32)), Foreground=Ink, FontFamily=new FontFamily("Segoe UI"), WindowStartupLocation=WindowStartupLocation.CenterOwner, Icon=owner.Icon };
-            Window.Resources.MergedDictionaries.Add(owner.Resources);
-            Window.Resources.MergedDictionaries.Add(TabsTheme());
-            var layout=new DockPanel { Margin=new Thickness(24) }; Window.Content=layout;
+            View=new Grid { Background=new SolidColorBrush(Color.FromRgb(11,20,32)), Margin=new Thickness(30,24,30,18) };
+            View.Resources.MergedDictionaries.Add(resources);
+            View.Resources.MergedDictionaries.Add(TabsTheme());
+            layout=new DockPanel(); View.Children.Add(layout);
+            overlay=new Border { Visibility=Visibility.Collapsed, Background=new SolidColorBrush(Color.FromArgb(245,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(4), Padding=new Thickness(24) };
+            View.Children.Add(overlay);
             var heading=new StackPanel(); DockPanel.SetDock(heading,Dock.Top); layout.Children.Add(heading);
-            heading.Children.Add(Text("Prepare your next jump",25));
+            heading.Children.Add(Text("Game settings",25));
             var subtitle=Text("Set controls and graphics before starting the game. Changes apply on your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
             var footer=new StackPanel(); DockPanel.SetDock(footer,Dock.Bottom); layout.Children.Add(footer);
-            status=Text("Save changes to keep them, or Cancel to leave your current settings untouched.",12); status.Foreground=Muted; footer.Children.Add(status);
+            status=Text("Save to apply on your next launch. Command center keeps your draft; Cancel discards unsaved edits.",12); status.Foreground=Muted; footer.Children.Add(status);
             var actions=new StackPanel { Orientation=Orientation.Horizontal, HorizontalAlignment=HorizontalAlignment.Right };
-            var cancel=Button("Cancel"); cancel.IsCancel=true; cancel.Click+=(s,e)=>Window.Close(); actions.Children.Add(cancel);
-            var save=Button("Save settings"); save.Background=Accent; save.Foreground=new SolidColorBrush(Color.FromRgb(9,28,44)); save.Click+=(s,e)=>Save(); actions.Children.Add(save); footer.Children.Add(actions);
-            var tabs=new TabControl { Background=Panel, BorderBrush=new SolidColorBrush(Color.FromRgb(48,72,95)), Margin=new Thickness(0,14,0,14) }; layout.Children.Add(tabs);
+            var cancel=Button("Cancel"); cancel.Name="SettingsCancelButton"; cancel.Click+=(s,e)=> { if(Cancelled!=null)Cancelled(); }; actions.Children.Add(cancel);
+            var save=Button("Save settings"); save.Name="SettingsSaveButton"; save.Background=Accent; save.Foreground=new SolidColorBrush(Color.FromRgb(9,28,44)); save.Click+=(s,e)=>Save(); actions.Children.Add(save); footer.Children.Add(actions);
+            tabs=new TabControl { Background=Panel, BorderBrush=new SolidColorBrush(Color.FromRgb(48,72,95)), Margin=new Thickness(0,14,0,14) }; layout.Children.Add(tabs);
             var controls=new StackPanel();
             var mouse=new WrapPanel(); controls.Children.Add(mouse);
-            sensitivity=Entry(model.Sensitivity.ToString("G",CultureInfo.InvariantCulture)); Field(mouse,"Mouse sensitivity (0.001–10)",sensitivity);
+            sensitivity=Entry(model.Sensitivity.ToString("G",CultureInfo.InvariantCulture)); sensitivity.Name="MouseSensitivity"; Field(mouse,"Mouse sensitivity (0.001–10)",sensitivity);
             enabled=Check("Mouse look",model.MouseEnabled); invert=Check("Invert vertical look",model.InvertY); mouse.Children.Add(enabled); mouse.Children.Add(invert);
             var deviceLabels=new[]{"Keyboard & mouse","Controller 1","Controller 2","Controller 3","Controller 4","Disabled"};
             device=Choices(deviceLabels,deviceLabels[Array.IndexOf(Devices,model.Device.Replace("xinput:","gamepad:"))]); Field(controls,"Player 1 input device",device);
@@ -150,9 +158,14 @@ namespace TimeSplitters.Launcher
                 controls.Children.Add(row);
             }
             var reset=Button("Restore default keyboard & mouse controls"); reset.HorizontalAlignment=HorizontalAlignment.Left;
-            reset.Click+=(s,e)=> { if (MessageBox.Show(Window,"Replace Player 1 bindings and mouse settings with the defaults? Changes are applied only when you save.","Restore defaults",MessageBoxButton.YesNo,MessageBoxImage.Question)==MessageBoxResult.Yes) { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); } };
+            reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
             controls.Children.Add(reset); tabs.Items.Add(new TabItem { Header="Keyboard & mouse", Content=Scroll(controls) });
             var graphics=new StackPanel();
+            graphics.Children.Add(Text("Startup",20));
+            skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);
+            graphics.Children.Add(skipSplashes);
+            var startupHint=Text("Skip the opening logo videos on your next launch. Also disables the idle attract video. Story cutscenes still play.",12);
+            startupHint.Foreground=Muted; graphics.Children.Add(startupHint);
             graphics.Children.Add(Text("Display & graphics",20));
             graphics.Children.Add(Text("Higher render scale and resolution increase GPU load. These options use the game runtime’s supported settings.",12));
             var sizes=DisplayModes.Primary(model.Width,model.Height);
@@ -172,6 +185,20 @@ namespace TimeSplitters.Launcher
             graphics.Children.Add(Text("Modes reported by your primary display, plus the console default. A saved custom resolution is retained if it is no longer reported by the display.",12));
             var dimensions=new WrapPanel(); width=Entry(model.Width.ToString()); height=Entry(model.Height.ToString()); Field(dimensions,"Width",width); Field(dimensions,"Height",height); graphics.Children.Add(dimensions);
             resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); } };
+            var fieldOfView=new DockPanel { MaxWidth=460, HorizontalAlignment=HorizontalAlignment.Left };
+            var fovValue=Text(model.VerticalFov.ToString(CultureInfo.InvariantCulture)+"°",14); fovValue.Name="VerticalFovValue";
+            fovValue.MinWidth=48; fovValue.TextAlignment=TextAlignment.Right;
+            DockPanel.SetDock(fovValue,Dock.Right); fieldOfView.Children.Add(fovValue);
+            fov=new Slider { Name="VerticalFovSlider", Minimum=GameSettings.FovMin, Maximum=GameSettings.FovMax,
+                Value=model.VerticalFov, TickFrequency=1, IsSnapToTickEnabled=true, SmallChange=1, LargeChange=5,
+                Width=290, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
+            System.Windows.Automation.AutomationProperties.SetName(fov,"Vertical field of view in degrees");
+            fov.ValueChanged+=(s,e)=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°";
+            fieldOfView.Children.Add(fov); Field(graphics,"Vertical FOV (40–100°)",fieldOfView);
+            var resetFov=Button("Reset FOV to 55°"); resetFov.Name="ResetFovButton";
+            resetFov.HorizontalAlignment=HorizontalAlignment.Left; resetFov.Click+=(s,e)=>fov.Value=GameSettings.FovDefault;
+            graphics.Children.Add(resetFov);
+            graphics.Children.Add(Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative. Cinematic and terminal framing is unchanged.",12));
             fullscreen=Check("Borderless fullscreen",model.Fullscreen); graphics.Children.Add(fullscreen);
             var quality=new WrapPanel(); graphics.Children.Add(quality);
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString()); Field(quality,"Render scale / supersampling",scale);
@@ -191,27 +218,47 @@ namespace TimeSplitters.Launcher
             return key==0?token:((System.Windows.Forms.Keys)key).ToString();
         }
         void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) bindingButtons[i,j].Content=KeyName(keys[j]); } }
+        public void SelectTab(int index) { tabs.SelectedIndex=index; }
+        public void DismissPrompt()
+        {
+            overlay.Visibility=Visibility.Collapsed; overlay.Child=null; layout.IsEnabled=true;
+        }
+        StackPanel Prompt(string title, string description)
+        {
+            var content=new StackPanel { VerticalAlignment=VerticalAlignment.Center, MaxWidth=560 };
+            content.Children.Add(Text(title,22)); content.Children.Add(Text(description,14));
+            layout.IsEnabled=false; overlay.Child=content; overlay.Visibility=Visibility.Visible;
+            return content;
+        }
+        void Confirm(string title,string description,string label,Action accepted)
+        {
+            var content=Prompt(title,description);
+            var buttons=new WrapPanel { Margin=new Thickness(0,14,0,0) }; content.Children.Add(buttons);
+            var confirm=Button(label); confirm.Click+=(s,e)=> { DismissPrompt(); accepted(); }; buttons.Children.Add(confirm);
+            var cancel=Button("Cancel"); cancel.Click+=(s,e)=>DismissPrompt(); buttons.Children.Add(cancel);
+            cancel.Focus();
+        }
         void Capture(int action,int slot)
         {
-            var dialog=new Window { Owner=Window, Title="Bind · "+GameSettings.Labels[action], Width=470, Height=270, ResizeMode=ResizeMode.NoResize, WindowStartupLocation=WindowStartupLocation.CenterOwner, Background=Panel, Foreground=Ink, FontFamily=Window.FontFamily };
-            dialog.Resources.MergedDictionaries.Add(Window.Resources);
-            var content=new StackPanel { Margin=new Thickness(20) }; dialog.Content=content;
+            var content=Prompt("Bind · "+GameSettings.Labels[action],"Choose a key or mouse button for binding "+(slot+1)+".");
             var prompt=Text("Press a key, or click / scroll inside the capture area.",14); content.Children.Add(prompt);
-            var area=new Border { Background=new SolidColorBrush(Color.FromRgb(11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), Height=70, Focusable=true, Child=new TextBlock { Text="Capture keyboard or mouse input", Foreground=Accent, HorizontalAlignment=HorizontalAlignment.Center, VerticalAlignment=VerticalAlignment.Center } }; content.Children.Add(area);
-            int? captured=null;
-            Action<int> accept=key=> { if(!GameSettings.KeyAllowed(key)) { prompt.Text="That key is reserved by the game. Choose another."; return; } captured=key; dialog.DialogResult=true; };
-            dialog.PreviewKeyDown+=(s,e)=> { if(e.Key==Key.Escape) { dialog.DialogResult=false; e.Handled=true; return; } Key key=e.Key==Key.System?e.SystemKey:e.Key; int vk=KeyInterop.VirtualKeyFromKey(key); if(vk==160||vk==161)vk=16; if(vk==162||vk==163)vk=17; if(vk==164||vk==165)vk=18; if(vk>0){e.Handled=true;accept(vk);} };
+            var area=new Border { Name="BindingCaptureArea", Background=new SolidColorBrush(Color.FromRgb(11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), Height=90, Focusable=true, Child=new TextBlock { Text="Capture keyboard or mouse input", Foreground=Accent, HorizontalAlignment=HorizontalAlignment.Center, VerticalAlignment=VerticalAlignment.Center } }; content.Children.Add(area);
+            Action<int> accept=key=> {
+                if(!GameSettings.KeyAllowed(key)) { prompt.Text="That key is reserved by the game. Choose another."; return; }
+                DismissPrompt();
+                Action assign=()=> { model.Assign(action,slot,key,true); RefreshBindings(); bindingButtons[action,slot].Focus(); };
+                int conflict=model.Conflict(action,key);
+                if(conflict>=0) Confirm("Move binding?","This key is assigned to "+GameSettings.Labels[conflict]+". Move it to "+GameSettings.Labels[action]+"?","Move binding",assign);
+                else assign();
+            };
+            area.PreviewKeyDown+=(s,e)=> { if(e.Key==Key.Escape) { DismissPrompt(); bindingButtons[action,slot].Focus(); e.Handled=true; return; } Key key=e.Key==Key.System?e.SystemKey:e.Key; int vk=KeyInterop.VirtualKeyFromKey(key); if(vk==160||vk==161)vk=16; if(vk==162||vk==163)vk=17; if(vk==164||vk==165)vk=18; if(vk>0){e.Handled=true;accept(vk);} };
             area.PreviewMouseDown+=(s,e)=> { e.Handled=true; accept(e.ChangedButton==MouseButton.Left?1:e.ChangedButton==MouseButton.Right?2:e.ChangedButton==MouseButton.Middle?4:e.ChangedButton==MouseButton.XButton1?5:6); };
             area.PreviewMouseWheel+=(s,e)=> {e.Handled=true;accept(e.Delta>0?134:135);};
             var buttons=new WrapPanel { Margin=new Thickness(0,12,0,0) }; content.Children.Add(buttons);
             var escape=Button("Bind Escape"); escape.Click+=(s,e)=>accept(27); buttons.Children.Add(escape);
             var clear=Button("Clear binding"); clear.Click+=(s,e)=>accept(0); buttons.Children.Add(clear);
-            var cancel=Button("Cancel"); cancel.Click+=(s,e)=>dialog.DialogResult=false; buttons.Children.Add(cancel);
-            dialog.Loaded+=(s,e)=>area.Focus();
-            if(dialog.ShowDialog()!=true || !captured.HasValue)return;
-            int conflict=model.Conflict(action,captured.Value);
-            if(conflict>=0 && MessageBox.Show(Window,"This key is assigned to "+GameSettings.Labels[conflict]+". Move it to "+GameSettings.Labels[action]+"?","Move binding",MessageBoxButton.YesNo,MessageBoxImage.Question)!=MessageBoxResult.Yes)return;
-            model.Assign(action,slot,captured.Value,true); RefreshBindings();
+            var cancel=Button("Cancel"); cancel.Click+=(s,e)=> { DismissPrompt(); bindingButtons[action,slot].Focus(); }; buttons.Children.Add(cancel);
+            area.Loaded+=(s,e)=>area.Focus(); area.Focus();
         }
         void Save()
         {
@@ -222,9 +269,12 @@ namespace TimeSplitters.Launcher
                 Core.Require(Int32.TryParse(width.Text,out w) && Int32.TryParse(height.Text,out h),"Enter a whole-number width and height (0 × 0 keeps the console resolution).");
                 model.Sensitivity=number; model.MouseEnabled=enabled.IsChecked==true; model.InvertY=invert.IsChecked==true;
                 string chosenDevice=Devices[device.SelectedIndex]; if(chosenDevice!=model.Device.Replace("xinput:","gamepad:")) model.Device=chosenDevice;
+                model.VerticalFov=(int)Math.Round(fov.Value);
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
+                model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem); model.FrameCap=(string)pacing.SelectedItem; model.Interpolation=Int32.Parse((string)interpolation.SelectedItem);
-                model.Save(); Window.DialogResult=true;
+                model.Save(); status.Foreground=Accent; status.Text="Settings saved. Changes apply on your next launch.";
+                if(Saved!=null)Saved();
             }
             catch(Exception ex) { status.Foreground=Accent; status.Text=ex.Message; }
         }

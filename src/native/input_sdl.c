@@ -5,6 +5,7 @@
 #include "input_bindings.h"
 #include "pc_prompts.h"
 #include "pc_camera.h"
+#include "pc_terminal.h"
 #include "pc_debug.h"
 #include "pc_input.h"
 #include <pthread.h>
@@ -100,6 +101,13 @@ void tsfp_native_settings_release_input(SDL_Window *window) {release_all();set_c
 int tsfp_native_input_focused(void) {return atomic_load(&focused);}
 int tsfp_native_key_down(int vk) {
     if(!atomic_load(&focused)||vk<=0||vk>255)return 0;
+    if(vk==1) {
+        int down=atomic_load(&keys[1]);
+        pthread_mutex_lock(&camera_lock);
+        int suppress=pc_input_terminal_suppresses_left(&camera_input,down);
+        pthread_mutex_unlock(&camera_lock);
+        return suppress?0:down;
+    }
     if(vk==0x10)return atomic_load(&keys[0xa0])||atomic_load(&keys[0xa1]);
     if(vk==0x11)return atomic_load(&keys[0xa2])||atomic_load(&keys[0xa3]);
     if(vk==0x12)return atomic_load(&keys[0xa4])||atomic_load(&keys[0xa5]);
@@ -171,11 +179,23 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
 }
 /* Mouse deltas reach the camera wrapper; controller stick input stays intact. */
 void tsfp_native_mouse_sample(XBOX_GAMEPAD *out) {(void)out;}
+int pc_controls_terminal_click(void) {
+    pthread_mutex_lock(&camera_lock);
+    int down=atomic_load(&focused) && atomic_load(&mouse_enabled) &&
+             pc_input_terminal_click(&camera_input,atomic_load(&keys[1]));
+    pthread_mutex_unlock(&camera_lock);
+    return down;
+}
 void pc_controls_apply_mouse(uint32_t player,uint32_t fov_object,ptrdiff_t offset) {
     float *yaw,*pitch,fov;
-    if(!pc_camera_fields(player,fov_object,offset,&yaw,&pitch,&fov))return;
     pthread_mutex_lock(&camera_lock);
     camera_input.focused=atomic_load(&focused)&&atomic_load(&mouse_enabled);
+    int terminal=pc_terminal_mouse(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),player,offset);
+    pc_input_terminal_context(&camera_input,terminal>=0,atomic_load(&keys[1]));
+    if(terminal>=0 || !pc_camera_fields(player,fov_object,offset,&yaw,&pitch,&fov)) {
+        pthread_mutex_unlock(&camera_lock);
+        return;
+    }
     float old_yaw=*yaw,old_pitch=*pitch;
     int changed=pc_input_look(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),
                              atomic_load(&mouse_invert),fov<55?fov/55:1,yaw,pitch);
@@ -289,6 +309,20 @@ int tsfp_native_input_test(void) {
     *yaw=*pitch=0;pc_controls_apply_mouse(16,512,offset);ok &= *yaw==0 && *pitch==0;
     tsfp_native_mouse_config(0,0.1,0);recomp_bindings_sample(0,&pad);
     ok &= pad.sThumbRX==0 && pad.sThumbRY==0;
+    /* Contextual left click must emit only Confirm while the pointer is
+     * active, and require release before normal Fire resumes. */
+    tsfp_native_mouse_config(1,0.1,0);
+    camera_input.focused=camera_input.captured=1;
+    pc_input_terminal_context(&camera_input,1,0);
+    e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
+    tsfp_native_input_event(&e,NULL);recomp_bindings_sample(0,&pad);
+    ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==255 && pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==0;
+    pc_input_terminal_context(&camera_input,0,1);
+    recomp_bindings_sample(0,&pad);
+    ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0 && pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==0;
+    e.type=SDL_EVENT_MOUSE_BUTTON_UP;tsfp_native_input_event(&e,NULL);recomp_bindings_sample(0,&pad);
+    e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;tsfp_native_input_event(&e,NULL);recomp_bindings_sample(0,&pad);
+    ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0 && pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==255;
     captured=0;tsfp_native_mouse_config(1,0.1,0);release_all();
     /* Exercise capture activation through a real SDL window, including the
      * swallowed first click and immediate release of a published look sample. */

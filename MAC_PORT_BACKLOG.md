@@ -56,9 +56,26 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
 | MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
 | MAC-021 | Published-release launcher and pre-game settings | Queued |
-| MAC-022 | Story Objectives health/shield (issue #11) | Awaiting validation |
+| MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
+| MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
 
 ### MAC-001 — Direct-camera mouse look
+
+- **Issue #7 follow-up (2026-10-16):** `src/pc_terminal.h`
+  on `7-breaking-and-entering-camera-turret-not-working` routes relative mouse
+  counts to the active terminal's logical pointer in
+  mode `0x2000`, preserving its 4–251 bounds and normal aiming on exit.
+  Left-click emits Confirm only in terminal menus; release is required when
+  entering/leaving with a held button. Shared context is in `src/pc_input.c`
+  and the sampling hook in `patches/zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch`.
+  Both `src/pc_controls.c` and `src/native/input_sdl.c` call this shared helper;
+  no additional Mac adapter is required. `tests/test_terminal_mouse.py` is
+  included in Windows/macOS CI. Windows build and physical terminal checks
+  passed, including user-confirmed left-click selection and return to ordinary
+  aiming/firing; results are recorded in [Issue #7 validation](STATUS.md#terminal-mouse-routing-issue-7--2026-10-16).
+  Native Mac compilation and physical-pointer validation remain pending:
+  check terminal selection/clicks, scripted/paused states and ordinary aiming
+  after exit using isolated saves/settings.
 
 - **Status:** Awaiting validation
 - **Issue #18 follow-up (2026-10-16, commit 8dee97f):** `src/pc_camera.h` no longer
@@ -175,7 +192,7 @@ runtime readiness. No full campaign playthrough is required.
   v1.2.0 use primary-display modes, the console default, lower modes down to
   640×480, refresh-rate deduplication and preservation of saved custom modes.
   `src/pc_display_menu.c` uses the game's native arrow choice widget. Sources:
-  `src/pc_display.c`, `tools/launcher/DisplayModes.cs`, `SettingsWindow.cs`;
+  `src/pc_display.c`, `tools/launcher/DisplayModes.cs`, `SettingsPage.cs`;
   implementation `e3e99c1`, integrated on `release/resolution-v0.2.0-alpha.4`.
   SDL discovery otherwise retains its existing behavior. Mac mode discovery,
   native arrow spacing, lower modes and Apply/Keep/Revert/timeout still need
@@ -183,6 +200,15 @@ runtime readiness. No full campaign playthrough is required.
 
 - **Status:** Awaiting validation
 - **PC behavior:** Display settings offers Apply/Keep/Revert with a 15-second automatic rollback, persisted resolution and widescreen camera/HUD handling.
+- **Issue #19 decal projection follow-up (`19-floating-decals`):** `src/pc_display_menu.c`,
+  `src/pc_display_menu.h` and `patches/zzzzzzzzzz-decal-projection.patch` make
+  both depth-biased decal passes use the active camera's horizontal and vertical
+  aperture, preserving their depth bias. This is shared guest code; the existing
+  Mac build includes the same manual wrappers and display source, so no native
+  adapter is required. Mac rendering remains unverified. Acceptance: in Arcade,
+  shoot a wall and strafe/look around at default, 4:3, 16:9 and ultrawide modes;
+  impacts must stay attached and HUD proportions must remain unchanged. Also
+  check cinematic camera zoom and split-screen cameras with isolated settings.
 - **PC source:** Audited revision above; `src/pc_display.c`, `src/pc_display_menu.c`, `src/pc_display_renderer.inc`, `tests/pc_display_game.py`, `tests/pc_display_gameplay.py`.
 - **PC validation:** [Display settings and texture preview](STATUS.md#display-settings-and-texture-preview--october-15) records Windows apply/save, timeout rollback, 4K and ultrawide render-target checks.
 - **Existing Mac support:** Mac shares the menu/model and has working resolution targets, Cocoa save/reload and fullscreen. The in-game timeout interaction was not exercised end-to-end.
@@ -499,6 +525,30 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Embedded settings (2026-10-16, commit `5eea0ca` on `feat/launcher-inline-settings`):**
+  Windows launcher v1.2.2 replaces the separate settings window with an
+  embedded `SettingsPage` in `Launcher.xaml`/`Launcher.cs`. Both tabs, binding
+  capture and confirmations keep the sidebar visible. Home navigation keeps
+  drafts; Cancel discards them; Save keeps the page open. Build references and
+  isolated WPF checks are in `tools/build-launcher.ps1` and
+  `tests/launcher_settings.cs`. Native Mac pre-game UI remains queued; its
+  existing in-game Cocoa settings are unchanged. Reuse shared configuration
+  semantics when adapting navigation, focus, inline capture/confirmation and
+  save/cancel; verify sidebar visibility and resize/keyboard accessibility on
+  Mac. Windows evidence: [Embedded launcher settings](STATUS.md#embedded-launcher-settings-2026-10-16).
+- **Startup skipping (2026-10-16, commit `bad108c` on `feat/launcher-skip-startup`):**
+  Windows launcher v1.2.1 adds an off-by-default Startup checkbox under Graphics
+  & resolution. It preserves `launcher.skip_startup_splashes` in the existing
+  controls JSON and explicitly sets `RECOMP_XMV_PLAY=0/1` for each game launch;
+  opening logos and the idle attract movie are skipped, while rendered story
+  cutscenes use a separate system. Sources: `tools/launcher/GameSettings.cs`,
+  `tools/launcher/SettingsPage.cs` (formerly `SettingsWindow.cs`),
+  `tools/playable-launch.ps1`.
+  Existing Mac HLE has no host XMV player, so this does not establish Mac movie
+  playback or a new native checkbox. When adding Mac movie playback/pre-game UI,
+  honor the same saved boolean and switch, preserve unknown JSON members, and
+  verify enabled/disabled launches with isolated paths. Windows evidence:
+  [Launcher startup skipping](STATUS.md#launcher-startup-skipping-2026-10-16).
 - **PC behavior:** Launcher v1.2.0 retains verified release-only game updates,
   independent self-updates, import, rollback and minimize/restore; it adds
   pre-game bindings, graphics, resolution and fullscreen editing with backups,
@@ -526,7 +576,28 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 - **Mac implementation and evidence:** Commit/files, host checks and a link to
   the relevant `STATUS.md` validation record; pending until performed.
 
-### MAC-022 — Story Objectives health/shield (issue #11)
+### MAC-022 — Configurable gameplay FOV (issue #29)
+
+- **PC behavior:** Vertical FOV slider with numeric value, 40–100°, default/reset
+  55°, in the guest Display settings menu and Windows launcher graphics settings.
+  Camera projection and CPU frustum change together; weapon zoom remains relative.
+  Story/letterboxed cameras, terminals and menu framing retain their authored lens.
+- **Source:** issue #29 implementation on `29-fov-support-in-video-settings`, based on main
+  `ef17e2a`; `src/pc_display.c`, `src/pc_display.h`, `src/pc_display_menu.c`,
+  `tools/launcher/GameSettings.cs`, `tools/launcher/SettingsPage.cs`.
+- **Shared Mac support:** the existing shared camera/menu hooks and config model
+  use the same behavior. Config accepts legacy V1 (55°) and V2 with explicit FOV;
+  existing Cocoa resolution saves retain the loaded FOV through the shared writer.
+  No native Mac execution has been performed for this change.
+- **Remaining:** validate native compilation, menu slider drawing/input, gameplay
+  and zoom on Mac. Adding a slider to the separate Cocoa settings window is
+  deferred; Windows launcher UI does not constitute a Mac launcher implementation.
+- **Acceptance:** default framing unchanged; 40/55/75/100° at 4:3, 16:9 and
+  ultrawide; zoom retains relative magnification; cinematics/terminals unchanged;
+  configuration round trips and resolution timeout reverts both choices. See
+  [Windows FOV evidence](STATUS.md#configurable-gameplay-fov-issue-29--2026-10-16).
+
+### MAC-023 — Story Objectives health/shield (issue #11)
 
 - **Status:** Awaiting validation
 - **PC behavior:** Story quick Objectives (Tab/Back) displays the original
@@ -535,7 +606,8 @@ Copy this template into the queue for each new entry. Replace all placeholders.
   every output resolution, including split-screen. The Objectives panel uses
   the same fit ratio for its width and text measurement to reserve clearance
   from the indicators; original font size and wrapping remain in use.
-- **Source:** Branch `11-objectives-tab-not-showing-health-and-shield` (issue #11);
+- **Source:** [PR #55](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/55),
+  branch `11-objectives-tab-not-showing-health-and-shield` (issue #11);
   `patches/zzzzzzzzzzzzzzzzz-story-objectives-health.patch`,
   `src/pc_objectives.h`, `tests/test_objectives_health.py`,
   `tests/objectives_health.c`, `tests/objectives_layout.c`.

@@ -33,11 +33,11 @@ def main():
     def key(at,vk): events.extend([(at,f'{at} key {vk} 1'),(at+180,f'{at+180} key {vk} 0')])
     for at in [15000,18000,23000,27000]: key(at,13)
     for at,vk in [(33000,38),(34000,38),(35000,13),(43000,40),(44000,40),(45000,13),
-                  (48000,39),(49000,37),(50000,39),(50500,39),(51000,40),(52000,13), # right, left to Original, two right; apply 720x480
+                  (48000,39),(49000,37),(50000,39),(50500,39),(51000,40),(51500,40),(52000,13), # right, left to Original, two right; apply 720x480
                   (55000,38),(56000,13), # keep
-                  (58000,37),(59000,37),(60000,40),(62000,13), # preview Original
+                  (58000,37),(59000,37),(60000,40),(61000,40),(62000,13), # preview Original
                   # let timeout revert
-                  (80000,40),(81000,40),(83000,13)]: key(at,vk)
+                  (80000,40),(80500,40),(81000,40),(81500,40),(83000,13)]: key(at,vk)
     replay=folder/'input.txt'; replay.write_text('\n'.join(t for _,t in sorted(events))+'\n')
     env={k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_','TSFP_'))}
     controls=folder/'pc-controls.json';controls.write_bytes((root/'tests/fixtures/pc-controls.json').read_bytes())

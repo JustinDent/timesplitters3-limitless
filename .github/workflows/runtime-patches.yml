@@ -13,18 +13,35 @@ on:
       - tests/native_compiler.py
       - tests/test_pc_display_modes.py
       - tools/publish-release.py
+      - tools/launcher/**
+      - tools/build-launcher.ps1
+      - tools/playable-launch.ps1
+      - tests/launcher_updates.cs
+      - tests/launcher_settings.cs
+      - tests/test_launcher_startup.py
+      - tests/package_launcher.py
       - tests/test_publish_release.py
       - tests/pc_display_modes.c
+      - tests/test_fov_settings.py
+      - tests/fov_settings.c
+      - src/pc_display.h
       - src/pc_display.c
       - tests/test_native_compiler.py
       - tests/test_framebuffer_sampling.py
       - tests/test_cutscene_letterbox.py
+      - tests/test_decal_projection.py
       - tests/cutscene_letterbox.c
       - tests/test_objectives_health.py
       - tests/objectives_health.c
       - tests/objectives_layout.c
       - src/pc_objectives.h
       - src/pc_cutscene.h
+      - src/pc_terminal.h
+      - src/pc_input.c
+      - src/pc_controls.c
+      - src/native/input_sdl.c
+      - tests/test_terminal_mouse.py
+      - tests/terminal_mouse.c
       - src/pc_display_menu.c
       - tests/framebuffer_sampling.c
       - tests/audio_stream_timing.c
@@ -87,12 +104,21 @@ jobs:
         run: python -m pytest tests/test_native_compiler.py tests/test_audio_timing.py tests/test_recomp_generation.py -q --tb=short
       - name: Test framebuffer sampling across rendering passes
         run: python -m pytest tests/test_framebuffer_sampling.py -q --tb=short
-      - name: Test adaptive cutscene letterboxing
-        run: python -m pytest tests/test_cutscene_letterbox.py -q --tb=short
+      - name: Test cinematic and decal projections
+        run: python -m pytest tests/test_cutscene_letterbox.py tests/test_decal_projection.py -q --tb=short
       - name: Test Story Objectives health and shield visibility
         run: python -m pytest tests/test_objectives_health.py -q --tb=short
+      - name: Test terminal mouse routing
+        run: python -m pytest tests/test_terminal_mouse.py -q --tb=short
       - name: Test primary display resolution discovery
         if: runner.os == 'Windows'
-        run: python -m pytest tests/test_pc_display_modes.py -q --tb=short
+        run: python -m pytest tests/test_pc_display_modes.py tests/test_fov_settings.py -q --tb=short
       - name: Test release validation and disposable fixture cleanup
         run: python -m pytest tests/test_publish_release.py -q --tb=short
+      - name: Build and test Windows release launcher
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./tools/build-launcher.ps1 -Test
+      - name: Test portable startup preference and launcher packaging
+        if: runner.os == 'Windows'
+        run: python -m pytest tests/test_launcher_startup.py tests/package_launcher.py -q --tb=short

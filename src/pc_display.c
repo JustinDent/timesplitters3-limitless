@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #ifndef _WIN32
 #include <SDL3/SDL.h>
 #include "config_files.h"
@@ -14,6 +15,7 @@
 
 static PcDisplayMode current;
 static int initialized;
+static int vertical_fov=PC_FOV_DEFAULT, preview_fov;
 static int camera_frame;
 static PcDisplayMode preview_previous;
 static ULONGLONG preview_deadline;
@@ -29,7 +31,7 @@ int pc_display_valid(PcDisplayMode m)
 
 static void init(void)
 {
-    const char *p; FILE *f; unsigned w,h; char tail;
+    const char *p; FILE *f; unsigned w,h; int fov=PC_FOV_DEFAULT; char version[32], tail;
     if(initialized) return;
     initialized=1;
     p=getenv("TSFP_DISPLAY_CONFIG");
@@ -47,13 +49,37 @@ static void init(void)
     }
     f=fopen(path,"rb");
     if(f) {
-        if(fscanf(f,"TSFP_DISPLAY_V1 %u %u %c",&w,&h,&tail)==2) {
+        if(fscanf(f,"%31s",version)==1 &&
+           ((!strcmp(version,"TSFP_DISPLAY_V1") && fscanf(f," %u %u %c",&w,&h,&tail)==2) ||
+            (!strcmp(version,"TSFP_DISPLAY_V2") && fscanf(f," %u %u %d %c",&w,&h,&fov,&tail)==3)) &&
+           fov>=PC_FOV_MIN && fov<=PC_FOV_MAX) {
             PcDisplayMode m={w,h};
-            if(pc_display_valid(m)) current=m;
+            if(pc_display_valid(m)) { current=m; vertical_fov=fov; }
         }
         fclose(f);
     }
     fprintf(stderr,"[PC-DISPLAY] Settings %s, resolution %ux%u\n",path,current.width,current.height);
+}
+
+int pc_display_fov(void) { init(); return vertical_fov; }
+int pc_display_set_fov(int degrees)
+{
+    init();
+    if(degrees<PC_FOV_MIN || degrees>PC_FOV_MAX) return 0;
+    vertical_fov=degrees; return 1;
+}
+float pc_display_fov_scale(void)
+{
+    init();
+    return vertical_fov==PC_FOV_DEFAULT?1.f:
+        tanf(vertical_fov*.00872664626f)/tanf(PC_FOV_DEFAULT*.00872664626f);
+}
+/* Keep legacy files readable when the new setting is at its default. */
+static void config_text(char *text,size_t size)
+{
+    if(vertical_fov==PC_FOV_DEFAULT)
+        snprintf(text,size,"TSFP_DISPLAY_V1 %u %u\n",current.width,current.height);
+    else snprintf(text,size,"TSFP_DISPLAY_V2 %u %u %d\n",current.width,current.height,vertical_fov);
 }
 
 PcDisplayMode pc_display_current(void) { init(); return current; }
@@ -131,7 +157,7 @@ int pc_display_preview(PcDisplayMode mode)
 {
     PcDisplayMode before=pc_display_current();
     if(!pc_display_apply(mode)) return 0;
-    preview_previous=before; preview_deadline=GetTickCount64()+15000;
+    preview_previous=before; preview_fov=vertical_fov; preview_deadline=GetTickCount64()+15000;
     return 1;
 }
 
@@ -139,16 +165,17 @@ int pc_display_save(void)
 {
 #ifndef _WIN32
     char text[128];init();
-    snprintf(text,sizeof text,"TSFP_DISPLAY_V1 %u %u\n",current.width,current.height);
+    config_text(text,sizeof text);
     int ok=tsfp_config_write(path,text,0);
     if(ok)preview_deadline=0;
     return ok;
 #else
-    char temp[32768]; FILE *f; int ok;
+    char temp[32768],text[128]; FILE *f; int ok;
     init();
     if(snprintf(temp,sizeof temp,"%s.tmp",path)<0 || strlen(path)+5>=sizeof temp) return 0;
     f=fopen(temp,"wb"); if(!f) return 0;
-    ok=fprintf(f,"TSFP_DISPLAY_V1 %u %u\n",current.width,current.height)>0;
+    config_text(text,sizeof text);
+    ok=fputs(text,f)>=0;
     if(fflush(f)) ok=0;
     if(fclose(f)) ok=0;
     if(ok) ok=MoveFileExA(temp,path,MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=0;
@@ -187,6 +214,8 @@ void pc_display_frame_done(void)
     camera_frame=0;
     /* Covers leaving the guest menu through a global pause/Start action too.
        Never persist a preview; a crash or forced exit also reloads the old mode. */
-    if(preview_deadline && GetTickCount64()>=preview_deadline && pc_display_apply(preview_previous))
-        fprintf(stderr,"[PC-DISPLAY] Preview timed out; previous resolution restored\n");
+    if(preview_deadline && GetTickCount64()>=preview_deadline && pc_display_apply(preview_previous)) {
+        vertical_fov=preview_fov;
+        fprintf(stderr,"[PC-DISPLAY] Preview timed out; previous display settings restored\n");
+    }
 }

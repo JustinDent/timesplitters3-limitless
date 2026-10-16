@@ -60,10 +60,177 @@
   was stopped by the user's Escape key. Live coverage of all resolutions,
   split-screen and long/multiple objectives remains unverified; numerical
   layout cases cover the viewport sizes listed above. Mac compilation/gameplay
-  remain unverified; see MAC-022. Local captures and test provenance are under
+  remain unverified; see MAC-023. Local captures and test provenance are under
   `build/issue-11-objectives`; the final full-build log is
   `logs/issue-11-build.log`, and the earlier combined 34-test result is in
   `logs/issue-11-regressions.log`.
+- PR #55 conflict resolution integrates main `4124557` while retaining the
+  Objectives implementation and fixtures byte-for-byte. CI keeps the Objectives,
+  cinematic/decal, terminal, FOV and launcher checks; the historical-upgrade
+  fixture retains all dependent-patch exclusions. Objectives is now MAC-023,
+  preserving main's MAC-022 FOV entry and all existing validation notes.
+  On Windows x64 / Python 3.12.14 / MSVC x64, all 44 merged Objectives, cinematic,
+  decal, terminal, FOV and patch-transition checks passed in 129.91 seconds.
+  The supported US XBE hash was reverified. The complete patch stack was applied
+  to an isolated 3,986,182-byte source fixture from pinned upstream `d90c929`;
+  no game assets were copied, and the other task's runtime/build was untouched.
+  No full game rebuild or new live playtest was performed for this conflict-only
+  update. Evidence: ignored `build/pr55-validation/tests.log` and
+  `fixture-provenance.json`. The PR diff passes `git diff --check origin/main`.
+
+## Configurable gameplay FOV (issue #29) — 2026-10-16
+
+Implemented on `29-fov-support-in-video-settings`, starting from
+main `ef17e2a`. Windows x64, MSVC 14.44.35207, the pinned runtime and
+complete verified patch stack; supported US XBE SHA-256
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+The shared display model now retains a vertical FOV preference (40–100°, default
+55°), reading legacy display files and the explicit V2 format. The guest Display
+settings menu and Windows launcher graphics tab expose sliders with numeric
+values, reset and existing save/cancel behavior. Combined resolution previews
+revert both fields. Gameplay projection and CPU culling use the same tangent
+scale without changing the original weapon zoom state. Scripted cinematic and
+terminal cameras keep their authored lens.
+
+Validation on Windows:
+
+- Six targeted pytest cases passed: shared cinematic/camera production wrapper
+  tests (including mutation checks and the original US cinematic routines),
+  display mode discovery, and production FOV settings/menu callbacks. The latter
+  covers old/new files, range limits, slider drawing/input, unsaved drafts,
+  reset, read-only save failure, keep and resolution timeout rollback.
+- Windows launcher built with Windows PowerShell 5.1/.NET Framework; all 71
+  launcher regressions and 21 settings checks passed. The added checks exercise
+  the WPF slider, numeric label, reset, cancel/save, legacy defaults and V2
+  persistence. Reviewed `build/issue-29-fov/launcher.png` from its preview renderer.
+- MSVC Release game and native test targets compiled and linked successfully.
+  Network, texture format, display, save paths, PC controls, settings and debug
+  checks passed. The build runner stopped at the existing controller prompt
+  fixture's foreground-window assertion (`tests/pc_prompts.c:55`); the same
+  assertion failed when rerun directly. No input/prompt implementation changed.
+  The remaining checks were run individually, and executable identity was sealed.
+- A bounded 65-second isolated game run navigated the actual guest menu with
+  recorded input, moved the slider 55 → 58, and saved
+  `TSFP_DISPLAY_V2 1280 720 58`. Reviewed the menu capture and found both the
+  number and original-style slider inside the panel. Evidence is in
+  `build/issue-29-fov/menu-{47,55,62}.png` and `menu.err`.
+
+- First-mission gameplay with isolated 1280×720 / 75° settings produced a
+  vertical CPU frustum of `0.76732695` (tan(75°/2)) and projection Y coefficient
+  `1.30322552` (its reciprocal), while the original game zoom field stayed 55°.
+  This confirms the requested lens reaches the real projection and culling
+  paths. The diagnostic run collected 117.25 seconds before its screenshot
+  watcher hit a rotating-file race and stopped its owned game in `finally`;
+  the game had not crashed. Retained evidence: `gameplay-camera.json`,
+  `gameplay-result.json`, `gameplay-final.png` under `build/issue-29-fov`.
+
+The user confirmed that the FOV slider works in the rebuilt game during a
+separate isolated playtest (155 seconds, normal exit).
+
+Personal saves and settings were not used. Shared/native Mac integration is
+source-reviewed only; Mac build, physical controller navigation, all weapons
+and split-screen gameplay are unverified. See MAC-022 in `MAC_PORT_BACKLOG.md`.
+
+## Terminal mouse routing (issue #7) — 2026-10-16
+
+Implemented on `7-breaking-and-entering-camera-turret-not-working`, based on
+main `696421f` merged at `093e30f`. On Windows x64, a bounded isolated run
+of the supported US XBE reproduced the Breaking and Entering terminal failure:
+player mode was `0x2000`; physical mouse movement changed hidden player angles
+while the active console pointer stayed fixed. The user confirmed the terminal
+menu pointer, rather than a selected camera view, was blocked. Disassembly of
+US `sub_003700D0` identifies local-index console ownership, pointer coordinates,
+4–251 bounds, inactivity reset, scripted input and pause gates.
+
+The shared `src/pc_terminal.h` now routes counts to that pointer and consumes
+terminal input without changing player angles, including invalid transitions.
+Coordinates stay in the game's logical space, independent of screen resolution,
+FOV or aiming inversion. Windows and SDL adapters use the same helper.
+The guarded-memory regression and full MSVC x64 Release build passed on Windows,
+including patch-stack validation and the real Windows adapter regression in
+`tests/pc_controls.c`. The user confirmed physical pointer movement, but left-click initially still
+sent Fire instead of the terminal's Confirm action. The follow-up shared input
+context and `zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch` now suppress the
+normal left-button binding while selecting and emit A/Confirm. A held button
+must be released across either transition to prevent accidental selection or
+firing. Windows regression covers the native adapter-to-binding path with bounded synthetic input; the shared
+fixture covers click state, and the native SDL fixture has equivalent checks.
+The updated MSVC x64 Release build and native checks passed, including Confirm
+without Fire and release-before-fire on terminal exit. All 27 patch tracking/
+transition cases passed (the historical-upgrade fixture was updated to exclude
+this new dependent overlay, then rerun). The shared terminal regression passed.
+The user confirmed the final physical playtest: pointer movement, left-click
+camera selection, and ordinary aiming/firing after leaving the terminal work.
+The read-only capture also records return to mode `0x2` with no active terminal.
+Native Mac compilation/execution remain
+unverified; see MAC-001.
+
+## Terminal mouse routing (issue #7) — 2026-10-16
+
+Implemented on `7-breaking-and-entering-camera-turret-not-working`, based on
+main `696421f` merged at `093e30f`. On Windows x64, a bounded isolated run
+of the supported US XBE reproduced the Breaking and Entering terminal failure:
+player mode was `0x2000`; physical mouse movement changed hidden player angles
+while the active console pointer stayed fixed. The user confirmed the terminal
+menu pointer, rather than a selected camera view, was blocked. Disassembly of
+US `sub_003700D0` identifies local-index console ownership, pointer coordinates,
+4–251 bounds, inactivity reset, scripted input and pause gates.
+
+The shared `src/pc_terminal.h` now routes counts to that pointer and consumes
+terminal input without changing player angles, including invalid transitions.
+Coordinates stay in the game's logical space, independent of screen resolution,
+FOV or aiming inversion. Windows and SDL adapters use the same helper.
+The guarded-memory regression and full MSVC x64 Release build passed on Windows,
+including patch-stack validation and the real Windows adapter regression in
+`tests/pc_controls.c`. The user confirmed physical pointer movement, but left-click initially still
+sent Fire instead of the terminal's Confirm action. The follow-up shared input
+context and `zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch` now suppress the
+normal left-button binding while selecting and emit A/Confirm. A held button
+must be released across either transition to prevent accidental selection or
+firing. Windows regression covers the native adapter-to-binding path with bounded synthetic input; the shared
+fixture covers click state, and the native SDL fixture has equivalent checks.
+The updated MSVC x64 Release build and native checks passed, including Confirm
+without Fire and release-before-fire on terminal exit. All 27 patch tracking/
+transition cases passed (the historical-upgrade fixture was updated to exclude
+this new dependent overlay, then rerun). The shared terminal regression passed.
+The user confirmed the final physical playtest: pointer movement, left-click
+camera selection, and ordinary aiming/firing after leaving the terminal work.
+The read-only capture also records return to mode `0x2` with no active terminal.
+Native Mac compilation/execution remain
+unverified; see MAC-001.
+
+## Issue 19 decal projection (2026-10-16)
+
+- Source: decal fix on `19-floating-decals` (this revision), based on
+  `696421fd080a5bd57cb894b76302080f59f52485`; pinned runtime `d90c929` and
+  checksum-verified US XBE. Windows x64 build 26300, MSVC 19.42.34435.0,
+  Python 3.14.2, CMake 4.4.4, D3D11.
+  Release executable SHA-256:
+  `ada6ab457f3369c64c89d3a46f4d6ed29a698e5a3861364d876b6076e0e6048d`;
+  multiplayer identity `85180d72`.
+- Cause: the two decal render paths independently reconstruct a depth-biased
+  perspective matrix, bypassing the adjusted camera. A baseline 1920x1080
+  Arcade capture used horizontal scale `1.440737` for biased effects versus
+  `1.080552` for the widened scene. The fixed capture uses `1.080552` for
+  both, retaining the distinct depth terms `-0.10050558` and `-0.10000556`.
+  This corrects the guest projection rather than changing HUD classification.
+- Validation: the complete patch stack applies; supported `tsfp.ps1 -Action
+  Build` regeneration/build and all native build tests passed. Executable seal
+  and game-content verification passed. The decal, cinematic and patch-transition
+  suites passed (35 cases; one historical fixture was updated and its failing
+  case rerun). Wrapper checks cover both decal callers, default/wide/ultrawide
+  and cinematic apertures, unchanged depth and other callers, missing camera,
+  guest return state, and both Windows/native display build flags.
+- Live check: a bounded Hotel Arcade match at 1920x1080 with no bots reached
+  gameplay; fired wall impacts stayed aligned while strafing and rotating the
+  camera. No crash or unresolved-call report occurred. All save, input and both
+  display configuration routes were isolated under `private/decal-validation`.
+  Selected screenshots and captures remain ignored there; disposable partition
+  images were recycled after the runs. Personal settings and saves were preserved.
+- Remaining checks: other Arcade maps, explosion impacts, split screen, and live
+  default/4:3/ultrawide rendering were not exercised. Mac source uses the same
+  wrapper, but native build/rendering and other-device synchronization remain
+  unverified. See [MAC-010](MAC_PORT_BACKLOG.md#mac-010--in-game-resolution-preview-and-rollback).
 
 ## Resolution release preparation — October 16, 2026
 
@@ -1962,3 +2129,73 @@ Its native checks, path-test cleanup and network-content verification passed.
 Logs: `logs/issue-8-branch-build.log` and `logs/issue-8-branch-build-retry.log`.
 Branch executable SHA-256: `7807b189c890a31fcb265dc4395ec67ad453837ea035efd30f287c9b8cc95710`.
 The audio implementation is unchanged from the clean human playtest above.
+
+## Launcher startup skipping (2026-10-16)
+
+Launcher v1.2.1 implementation `bad108c` on `feat/launcher-skip-startup`, based on published main
+`d83ca5e57d36da163680f7c21e0b5f52dd785faf`. Game settings → Graphics & resolution
+now has a Startup checkbox, **Skip startup splash screens**, default off.
+Saving persists `launcher.skip_startup_splashes` in portable controls JSON with
+the existing backup, external-edit protection and rollback rules. Both the
+direct launcher and newly packaged `Launch.ps1` explicitly set the existing
+`RECOMP_XMV_PLAY` switch after sanitizing inherited overrides. This skips all
+file-based XMV playback (opening EA/Free Radical logos and the idle attract
+movie); story scenes use the game's separate rendered-cutscene system. The UI
+explains the attract-video effect. No runtime patch or game rebuild is needed.
+
+Windows x64, .NET Framework 4.8 C# compiler file version 14.8.10001.0,
+Python 3.12.14: launcher
+build passed 71 updater checks and 16 settings checks, including default-off,
+save/reopen/disable, unknown-field preservation, malformed-value rejection,
+inherited-override sanitization and actual child-process consumption. Five
+pytest checks passed (three real PowerShell/synthetic-child launches covering
+missing/false/true preferences plus two packaging checks). The WPF graphics
+preview was rendered and visually reviewed; the checkbox/help text fit the
+existing blue/silver layout. Evidence: ignored `build/launcher/startup-settings.png`.
+
+`tests/launcher_startup_game.py` ran two bounded 20-second launches against the
+verified published alpha.4 executable, SHA-256
+`bc7cbb26ab90fc0af47eb8f8bff90d91c4074893cf443352d4e0c5bf41076345`, using its
+existing D3D11 backend and pinned FFmpeg libraries. The supported US XBE hash
+was reverified before testing. Normal mode played both opening movies; skip
+mode completed both XMV objects with end-of-file status without decoding movies.
+Both runs remained alive and rendered the player-selection screen, confirmed in
+reviewed captures. No crash or unresolved indirect call appeared in their logs.
+All input, saves and both display-config paths were isolated; this invocation's
+disposable saves/frame dumps were removed. Evidence: ignored
+`private/startup-validation/{normal,skip}/startup.png`, `game.err`, `game.out`
+and `runtime/provenance.json`. This is compatibility validation of the published
+game, not a rebuild of concurrent runtime work. Story gameplay/cutscene playback
+was not retested. Mac UI/playback and other-device synchronization remain
+unverified (MAC-021). Release preparation targets stable `launcher-v1.2.1` on
+main, using the documented launcher-only packaging channel. `Publish-Release.ps1`
+publishes the game `VERSION`; no new game version is needed for this option.
+The Windows CI workflow now runs the launcher and portable-script regressions.
+
+## Embedded launcher settings (2026-10-16)
+
+Windows launcher v1.2.2 implementation `5eea0ca` on `feat/launcher-inline-settings`,
+based on main `696421fd080a5bd57cb894b76302080f59f52485`. `SettingsPage.cs`
+replaces the separate settings window: controls, graphics, startup options,
+binding capture and confirmations stay in the main content area with the sidebar
+visible. `Launcher.xaml`/`Launcher.cs` switch between Command center and settings
+with active navigation styling. Home keeps the draft/tab and dismisses capture;
+Cancel discards the draft; Save validates and keeps the page open. Atomic file
+save, backup, stale-edit detection and rollback remain in the existing model.
+The preview commands now render the whole launcher rather than a separate window.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both launcher binaries compiled.
+The full launcher build passed 71 updater checks and 19 isolated settings
+checks, including actual WPF sidebar/page navigation, 1000 × 720 minimum and
+1152 × 772 layout sizes, draft retention/cancel, inline binding-conflict cancellation and
+reassignment, successful/invalid save, and existing settings/environment checks.
+Five portable-script and packaging checks passed. Both full-shell 1152 × 772
+controls/graphics previews were visually reviewed; captures are in ignored
+`build/launcher/inline-controls.png` and `inline-graphics.png`.
+
+Evidence for the complete build/test pass: ignored
+`build/launcher/inline-build-test.log`. No game runtime source changed or game
+playtest was needed. Release preparation targets stable `launcher-v1.2.2` on
+main through the documented launcher-only channel; no game update is required.
+Native Mac settings/navigation adaptation remains
+queued under MAC-021; other-device synchronization is unverified.
