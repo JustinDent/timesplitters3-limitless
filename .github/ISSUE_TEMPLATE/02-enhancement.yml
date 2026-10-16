@@ -1,0 +1,99 @@
+name: Enhancement request
+description: Suggest a feature, usability improvement, or change to existing behavior.
+title: "[Enhancement]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Suggest one improvement per issue and search [existing requests](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues) first. Use **Bug report** for a feature that is broken.
+
+        **Game and launcher versions are separate.** Copy the installed game version from the launcher or `BUILD.json` (`version`), and the launcher version from its **LAUNCHER v...** header or `Support/Launcher/manifest.json` (`version`). Use **Game files** to open the installation folder. Report the installed build, not an available update or just "latest".
+
+        For source builds, include `VERSION`, `git rev-parse HEAD`, and local-change status from `git status --short`. If you have not installed the project, enter "not installed"; if a version is unknown, explain what you checked. You can still suggest an improvement.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area to improve
+      options:
+        - Launcher / installation / updates
+        - Gameplay / game modes
+        - Graphics / textures / display
+        - Audio / movies
+        - Controls / accessibility
+        - Performance
+        - Saves / settings
+        - Online / System Link / multiplayer
+        - Documentation / support
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: game-version
+    attributes:
+      label: Installed game version
+      description: Exact installed game version, or not installed / UNVERSIONED / unknown. Explain unknown or unversioned builds in the build details.
+      placeholder: "Example only: v0.2.0-alpha.4"
+    validations:
+      required: true
+  - type: input
+    id: launcher-version
+    attributes:
+      label: Launcher version
+      description: Exact launcher version, or not used / not installed / unknown.
+      placeholder: "Example only: v1.2.0"
+    validations:
+      required: true
+  - type: textarea
+    id: build-source
+    attributes:
+      label: Build and environment details
+      description: If installed, include launcher/manual ZIP/source, Stable/Preview if applicable, release link or ZIP filename, OS version and architecture, and BUILD.json source_commit if available. Source builds must include commit and local-change status. Include hardware/settings if they affect the request; explain unknown versions.
+      placeholder: |
+        Installation method and channel:
+        Release / ZIP / source commit and local changes:
+        OS and architecture:
+        Relevant hardware / settings:
+  - type: dropdown
+    id: platforms
+    attributes:
+      label: Requested platforms
+      multiple: true
+      options:
+        - Windows
+        - macOS / Apple Silicon
+        - All supported platforms
+        - Other (describe in the request)
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the current limitation, who it affects, and a concrete situation where you encounter it. Mention the level, mode, or workflow when relevant.
+      placeholder: When I try to..., I currently have to..., which causes...
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed improvement
+      description: Describe how you want the feature to work from a player's perspective, including where it would appear or how it would be used.
+    validations:
+      required: true
+  - type: textarea
+    id: success
+    attributes:
+      label: What would a successful result look like?
+      description: Give a specific example or a short checklist of behavior that would meet your need.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or current workaround
+      description: Describe other approaches you considered and any workaround you use today.
+  - type: textarea
+    id: context
+    attributes:
+      label: Mockups, examples, and additional context
+      description: Attach screenshots or mockups, link related issues, or explain multiplayer/accessibility needs. Remove personal information and connection secrets. Do not upload game assets or personal saves.
