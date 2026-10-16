@@ -45,7 +45,10 @@ def test_framebuffer_sampling_passes(tmp_path, break_refresh):
     exe = tmp_path / ('framebuffer.exe' if os.name == 'nt' else 'framebuffer')
     fixture = ROOT / 'tests/framebuffer_sampling.c'
     if os.name == 'nt':
-        command = [compiler, '/nologo', '/std:c11', '/O2', '/Gy', '/Gw']
+        # MSVC otherwise accepts mock/declaration mismatches as warnings,
+        # while Clang rejects them. Enforce the same contract on Windows.
+        command = [compiler, '/nologo', '/std:c11', '/O2', '/Gy', '/Gw',
+                   '/we4028', '/we4029']
         command += ['/I' + str(path) for path in includes]
         command += [str(fixture), '/Fe:' + str(exe), '/Fo:' + str(tmp_path / 'test.obj'),
                     '/link', '/OPT:REF']

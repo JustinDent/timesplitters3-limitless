@@ -31,7 +31,7 @@ HRESULT host_SetPalette(IDirect3DDevice8 *dev, DWORD stage, const DWORD *entries
 HRESULT host_CreateCubeTexture(IDirect3DDevice8 *dev, UINT edge, UINT levels,
     DWORD usage, D3DFORMAT format, D3DPOOL pool, IDirect3DCubeTexture8 **out) { assert(0); return E_FAIL; }
 HRESULT host_CubeLockRect(IDirect3DCubeTexture8 *cube, D3DCUBEMAP_FACES face,
-    UINT level, D3DLOCKED_RECT *locked, const RECT *rect, DWORD flags) { assert(0); return E_FAIL; }
+    UINT level, D3DLOCKED_RECT *locked) { assert(0); return E_FAIL; }
 HRESULT host_CubeUnlockRect(IDirect3DCubeTexture8 *cube, D3DCUBEMAP_FACES face, UINT level) { assert(0); return E_FAIL; }
 HRESULT host_LockRect(IDirect3DTexture8 *texture, UINT level, D3DLOCKED_RECT *locked,
     const RECT *rect, DWORD flags) {

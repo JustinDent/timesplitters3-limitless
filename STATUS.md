@@ -23,6 +23,12 @@
   tracking/upgrade and framebuffer regression checks passed in 93.29 seconds;
   repeated complete-stack application changed zero files. The historical upgrade
   fixture excludes this later patch until the complete-stack upgrade step.
+- macOS CI subsequently found a test-only signature mismatch: the mock
+  `host_CubeLockRect` had six parameters instead of the declared four. Corrected
+  the mock and promoted MSVC parameter-mismatch warnings C4028/C4029 to errors.
+  Both Windows framebuffer checks pass with the stricter compiler flags;
+  restoring the old signature now fails compilation with C4029 on Windows too.
+  This changes the test harness only, not the runtime fix or game binary.
 - The user confirmed **walls now stay solid** during movement/turning in the
   rebuilt game. Reviewed the resulting train-interior screenshot: opaque walls
   and weapon, with the window still visible. The isolated fixed run lasted
