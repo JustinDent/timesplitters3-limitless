@@ -534,7 +534,8 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 - **Status:** Queued
 - **Game version cleanup (2026-10-16, commit `d1f4e42` on
-  `fix/game-update-cleanup`):** `tools/launcher/Core.cs` removes retired game
+  `fix/game-update-cleanup`, [PR #69](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/69),
+  prepared for launcher v1.2.5):** `tools/launcher/Core.cs` removes retired game
   backups and obsolete/incomplete game staging after a window was observed and
   the game exited normally, then all managed runtime hashes verified. Confirmation
   is tied to the BUILD.json hash; later startup retries cannot confirm a new

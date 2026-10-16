@@ -1,5 +1,14 @@
 # Measured progress
 
+## Launcher v1.2.5 release preparation (2026-10-16)
+
+The user requested stable publication of the game-version cleanup in PR #69.
+Version and assembly metadata are bumped to 1.2.5. The cleanup implementation is
+unchanged from validated `6e49e0a`; the release requires CI on the new revision,
+a clean build from its main merge commit, public checksum verification and the
+previous v1.2.4 client compatibility check. This is a launcher-only release; the
+game remains v0.2.0-alpha.4. Native Mac launcher execution is unverified.
+
 ## Game version cleanup (2026-10-16)
 
 Implementation commit `d1f4e42` on `fix/game-update-cleanup`, based on main
@@ -38,7 +47,8 @@ obsolete file removal/rollback, modified/untracked file preservation, and ISO
 protection in the old snapshot. One settings run encountered a transient Windows
 file-replacement IOException; its isolated rerun passed all 23 checks. The final
 build passed all 98 updater and 23 settings checks.
-Hosted CI is pending. Tests use tiny synthetic packages and fake
+Windows CI on `6e49e0a` passed all 98 updater checks and 23 settings checks;
+the Mac shared-check job also passed. Tests use tiny synthetic packages and fake
 ISO markers only; no real game data, personal saves, or installed runtime were
 changed and no actual game session was launched. MAC-021 adaptation is queued;
 native Mac execution and other-device synchronization remain unverified.
