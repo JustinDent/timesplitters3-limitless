@@ -1,5 +1,20 @@
 # Measured progress
 
+## Launcher settings CI startup budget — 2026-10-16
+
+- PR #65's Windows run `38969601167` passed patch transitions and all 71 launcher
+  updater checks, then stopped in the first FOV WPF UI check at the ten-second
+  STA-thread deadline. Local runs passed, including the CI fallback without
+  private banner/logo resources. This is a test-harness change, not game behavior.
+- `tests/launcher_settings.cs` now allows up to 60 seconds for a UI worker,
+  reports a timeout distinctly, preserves the original worker exception stack,
+  and prints each check's name and duration. Cold initialization remains bounded;
+  UI assertions and save/cancel checks are retained.
+- Windows x64 local `tools/build-launcher.ps1 -Test` passed 71 updater and 21
+  settings checks. Hosted Windows validation of the updated commit is pending.
+  The previous PR revision's macOS patch-transition job passed; this WPF-only
+  harness has no Mac adapter impact. No game data or personal settings were used.
+
 ## Configurable gameplay FOV (issue #29) — 2026-10-16
 
 Implemented on `29-fov-support-in-video-settings`, starting from
