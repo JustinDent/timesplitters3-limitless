@@ -8,9 +8,14 @@ reproducibility, and validation requirements.
 
 ## Workspace and coordination
 
-- Native Mac development and changes continued from this chat belong on
-  `mac-port`. Do not move or merge them to `main` unless the user explicitly
-  instructs it. Preserve other devices' separate Windows work.
+- Use a focused branch for each task, such as `release-cleanup` or
+  `mac-debug`. Do not route all work through a permanent platform
+  branch or choose a branch merely because the work continues an earlier chat.
+  Start independent changes from up-to-date `main`; use another base only when
+  the task depends on unmerged work, and state that dependency. Existing
+  `mac-port` work can remain there until integrated, but new Mac tasks should
+  also use focused branches. Preserve other devices' separate work. Do not
+  merge into `main` unless the user explicitly instructs it.
 - Working root: the `timesplitters-future-perfect-pc` folder on that device's
   Desktop, not the old Documents location. Resolve project paths relative to
   the checkout or script; do not bake in a user's home directory, Windows drive
@@ -58,9 +63,10 @@ reproducibility, and validation requirements.
   backlog entries. These instructions and the review checklist require agents
   to maintain the list; they are not an automated feature detector or CI gate.
 - Git revisions must contain the change and backlog update before another
-  checkout can use them. Keep this chat's work on `mac-port`; transferring changes
-  between branches or devices must preserve their edits and follow the user's
-  branch instructions. Shared-account access does not synchronize local files.
+  checkout can use them. Keep each task's changes on its focused branch;
+  transferring changes between branches or devices must preserve their edits
+  and follow the user's branch instructions. Shared-account access does not
+  synchronize local files.
 
 ## Build and launch consistency
 

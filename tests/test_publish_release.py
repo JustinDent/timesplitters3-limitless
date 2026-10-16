@@ -6,6 +6,8 @@ import importlib.util
 import json
 from pathlib import Path
 import shutil
+import subprocess
+import sys
 import zipfile
 
 import pytest
@@ -183,6 +185,49 @@ def test_failed_build_prevents_packaging_and_publication(publisher, monkeypatch)
     with pytest.raises(RuntimeError, match='build failed'):
         module.Publisher.build_package(publisher)
     assert len(commands) == 2 and not publication_calls(publisher)
+
+
+def test_failed_cleanup_preserves_original_test_error(publisher, monkeypatch, capsys):
+    publisher.preflight()
+    def run(arguments, **kwargs):
+        if '-m' in arguments and 'pytest' in arguments:
+            (publisher.root / 'build/release-tests').mkdir(parents=True)
+            raise RuntimeError('tests failed')
+        return ''
+    def fail_cleanup(path):
+        raise RuntimeError('cleanup unavailable')
+    monkeypatch.setattr(publisher, 'run', run)
+    monkeypatch.setattr(publisher, 'recycle', fail_cleanup)
+    with pytest.raises(RuntimeError, match='^tests failed$'):
+        module.Publisher.build_package(publisher)
+    assert 'cleanup unavailable' in capsys.readouterr().err
+
+
+@pytest.mark.skipif(sys.platform != 'win32', reason='Windows cleanup script')
+@pytest.mark.parametrize('relative', [
+    'build/release-tests',
+    'build/releases/TimeSplitters-Future-Perfect-PC-v0.2.0-alpha.2-windows-x64',
+    'private/saves',
+])
+def test_release_cleanup_targets_only_disposable_work(tmp_path, relative):
+    script = tmp_path / 'tools/recycle-release-work.ps1'
+    script.parent.mkdir()
+    shutil.copyfile(module.ROOT / 'tools/recycle-release-work.ps1', script)
+    target = tmp_path / relative
+    target.mkdir(parents=True)
+    (target / 'fixture.txt').write_text('disposable fixture')
+    archive = tmp_path / 'build/releases/keep.zip'
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    archive.write_bytes(b'keep')
+    result = subprocess.run(['powershell.exe', '-NoProfile', '-File', str(script),
+                             '-LiteralPath', str(target)], capture_output=True, text=True)
+    if relative == 'private/saves':
+        assert result.returncode != 0
+        assert (target / 'fixture.txt').exists()
+    else:
+        assert result.returncode == 0, result.stderr
+        assert not target.exists()
+    assert archive.read_bytes() == b'keep'
 
 
 def test_release_lock_prevents_overlapping_builds(tmp_path):

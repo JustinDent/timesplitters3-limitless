@@ -254,6 +254,26 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Mac implementation and evidence:** Shared fix present locally; macOS checks
   and other-device synchronization remain unverified.
 
+### MAC-015 — Release test privileges and disposable cleanup
+
+- **Status:** Awaiting validation
+- **PC behavior:** Native-tool symlink tests skip only Windows privilege error
+  1314; other errors still fail. Release test/staging cleanup removes validated
+  disposable directories without shell Recycle Bin support, preserves archives,
+  and does not mask the original test failure if cleanup also fails.
+- **PC source:** Uncommitted on `fix/release-cleanup` over `2ef7536`:
+  `tests/test_native_mac_tools.py`, `tests/test_publish_release.py`,
+  `tools/recycle-release-work.ps1`, `tools/publish-release.py`.
+- **PC validation:** 22 passed, three skipped; see `STATUS.md` release cleanup.
+- **Existing Mac support:** Shared symlink assertions remain enabled on macOS;
+  native Mac cleanup is unchanged.
+- **Mac adaptation needed:** No PowerShell adapter needed for native Mac.
+  Validate the shared Python test change on macOS before marking verified.
+- **Mac acceptance checks:** Run native-tool Python tests with real symlinks;
+  cleanup and capture must still reject redirects and preserve target files.
+- **Mac implementation and evidence:** macOS checks and other-device
+  synchronization remain unverified.
+
 ## Entry template
 
 Copy this template into the queue for each new entry. Replace all placeholders.

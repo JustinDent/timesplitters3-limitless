@@ -38,12 +38,21 @@ def test_cleanup_refuses_personal_directory(tmp_path):
     assert image.read_bytes() == b'keep'
 
 
+def create_symlink(link, target):
+    try:
+        link.symlink_to(target)
+    except OSError as error:
+        if os.name == 'nt' and error.winerror == 1314:
+            pytest.skip('Windows account lacks symlink creation privileges')
+        raise
+
+
 def test_cleanup_refuses_symlink(tmp_path):
     test = tmp_path / 'private/test-saves/native-mac'
     test.mkdir(parents=True)
     personal = tmp_path / 'important.img'
     personal.write_bytes(b'keep')
-    (test / 'Partition0.img').symlink_to(personal)
+    create_symlink(test / 'Partition0.img', personal)
     with pytest.raises(RuntimeError, match='unexpected partition path'):
         common.recycle_test_disks(tmp_path, test)
     assert personal.read_bytes() == b'keep'
@@ -70,7 +79,7 @@ def test_capture_is_bounded_and_refuses_symlinks(tmp_path):
     target = tmp_path / 'keep.bmp'
     target.write_bytes(b'keep')
     link = tmp_path / 'private/captures/native-mac/frame000.bmp'
-    link.symlink_to(target)
+    create_symlink(link, target)
     with pytest.raises(RuntimeError, match='Unexpected native capture file'):
         probe.capture_environment(tmp_path)
     assert target.read_bytes() == b'keep'

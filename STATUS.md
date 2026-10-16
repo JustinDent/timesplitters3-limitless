@@ -1135,3 +1135,31 @@ unverified. This fix must reach main before release preparation can use it.
 
 Patch validation: `python -m pytest tests/test_patch_updates.py -q` passed all
 11 tests on Python 3.14.2. `git diff --check` passed.
+
+## 2026-10-15 — Release cleanup and Windows test privileges
+
+Uncommitted on `fix/release-cleanup`, based on main `2ef7536`. The existing
+changes were carried intact from `mac-port` onto this focused branch following
+the user's updated branching preference. Host: Windows 11 x64, Python 3.14.2,
+Windows PowerShell 5.1.
+Symlink test fixtures now skip only Windows error 1314; real symlink assertions
+still run on capable hosts and other creation errors propagate. Release work
+cleanup uses direct deletion after the existing exact-path and reparse checks,
+so disposable test/staging files do not require Recycle Bin support. Release
+archives and metadata are retained. A cleanup failure during failed tests is
+reported without replacing the original test failure.
+
+Targeted checks: `pytest tests/test_publish_release.py
+tests/test_native_mac_tools.py -q -p no:cacheprovider --basetemp
+build/cleanup-validation`: 22 passed, three skipped. Two skips are Windows
+symlink privileges and one is the existing macOS allocation check. Actual
+PowerShell cleanup tests passed for disposable test and staging directories,
+rejected a personal-save-shaped path, and preserved an adjacent archive.
+The original-error/cleanup-error regression passed. The first sandbox attempt
+could not execute scripts; validation succeeded outside the sandbox using an
+isolated build directory, without changing execution policy.
+
+No game build, release preparation/upload, game launch, or Mac checks were
+performed. Personal saves/settings and existing release outputs were untouched.
+MAC-015 tracks Mac validation. Changes are local, uncommitted and unpushed;
+other-device synchronization remains unverified.
