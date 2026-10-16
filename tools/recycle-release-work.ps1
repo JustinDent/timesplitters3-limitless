@@ -22,6 +22,8 @@ while ($ancestor -and $ancestor.Length -ge $workspace.Length) {
 if (@(Get-ChildItem -LiteralPath $target -Force -Recurse | Where-Object {
     $_.Attributes -band [IO.FileAttributes]::ReparsePoint
 }).Count) { throw 'Refusing redirected release work files.' }
-Add-Type -AssemblyName Microsoft.VisualBasic
-[Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory($target, 'OnlyErrorDialogs', 'SendToRecycleBin', 'ThrowException')
-Write-Output "Recycled release work directory: $target"
+# Only disposable test/staging files are allowed above. Remove them directly;
+# the shell Recycle Bin is unavailable on some drives and noninteractive hosts.
+# Packaged archives, checksums, notes and manifests remain outside these targets.
+Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction Stop
+Write-Output "Removed disposable release work directory: $target"

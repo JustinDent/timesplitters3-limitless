@@ -241,7 +241,14 @@ Online hosts need TCP 30820 and their game UDP port (default 30821) forwarded to
         self.run(['powershell.exe', '-NoProfile', '-File', self.root/'tsfp.ps1', 'Build'], live=True)
         try:
             self.run([self.python, '-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider', '--basetemp', tests], live=True)
-        finally:
+        except Exception:
+            if tests.exists():
+                try:
+                    self.recycle(tests)
+                except Exception as cleanup_error:
+                    print(f'Release test cleanup also failed: {cleanup_error}', file=sys.stderr)
+            raise
+        else:
             if tests.exists():
                 self.recycle(tests)
         self.run([self.python, self.root/'tools/package-release.py'], live=True)

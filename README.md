@@ -77,7 +77,9 @@ To prepare and inspect the ZIP/notes locally without creating a tag or release:
 Run normally afterward to publish the same validated package. `-Draft` instead
 uploads a draft for review on GitHub. Notes are regenerated on each invocation.
 Artifacts and the preparation record stay under ignored `build/releases`;
-temporary staging and Python test fixtures are recycled after successful checks.
+Disposable staging and Python test fixtures are permanently removed using
+validated paths; packaged archives and release metadata are retained. Test
+fixtures are also cleaned when tests fail. No Recycle Bin support is required.
 No branch switching, version bump, overwrite of existing release files, or tag
 rewriting occurs. Changed prepared assets or a changed main commit stop the run.
 Existing drafts/releases with the version also stop it; inspect a failed upload's
