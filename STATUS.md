@@ -2,7 +2,8 @@
 
 ## Launcher update cleanup (2026-10-16)
 
-Uncommitted work on `fix/launcher-update-cleanup`, based on main `b1860c6`.
+Implementation commit `dc019bf` on `fix/launcher-update-cleanup`, based on
+main `b1860c6`.
 The release launcher previously retained one old launcher snapshot and its helper
 copies; snapshots were replaced at each update, rather than accumulating an
 unlimited history. Successful normal main-window startup now verifies the current

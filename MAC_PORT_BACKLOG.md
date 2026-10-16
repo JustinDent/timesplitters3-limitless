@@ -533,7 +533,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Launcher update cleanup (2026-10-16, uncommitted on
+- **Launcher update cleanup (2026-10-16, commit `dc019bf` on
   `fix/launcher-update-cleanup`):** `tools/launcher/SelfUpdate.cs` removes the
   prior launcher backup, obsolete/incomplete staging and unused helper EXEs
   after the normal main window loads and the installed file hashes verify.
