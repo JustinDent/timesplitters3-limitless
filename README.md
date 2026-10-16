@@ -396,7 +396,12 @@ is that monitor's current desktop resolution. These settings change the native
 3D rendering resolution; the window still follows its existing size. Use
 **Alt+Enter** for fullscreen. Desktop resolution and refresh rate are unchanged.
 Game menus retain their original proportions with bars; gameplay uses the
-selected aspect ratio and a wider horizontal camera view.
+selected aspect ratio and a wider horizontal camera view. Cutscene bars adapt to
+the selected aspect ratio while preserving the original cinematic framing:
+wide screens use thinner bars, and screens wider than the cinematic picture
+use side bars to fit its full height. The cutscene camera and scripted bar
+animations adapt together, preserving the original composition. This affects
+in-engine cutscenes; startup video framing is unchanged.
 
 Settings live in `config/pc-display.ini` beside the keyboard/mouse configuration
 (`Settings/pc-display.ini` in packaged builds). `TSFP_DISPLAY_CONFIG` can override
@@ -658,6 +663,22 @@ generator sources change; native Mac builds request `--generate` when needed.
 `tools/recomp-generation.py` records the source hashes beside the ignored game C.
 The isolated `tests/test_recomp_float_joins.py` regression executes the actual
 pickup routine when the supported XBE and a C compiler are available.
+
+`patches/dsound-audio-timing.patch` fixes stream-clock handling after underruns,
+packet submission, flush and pause; preserves refused buffer audio for retry;
+resumes ADPCM at the exact decoded sample inside a block; and applies the
+Xbox stream headroom setting so stereo audio retains its intended mix volume.
+`patches/dsound-stream-lifecycle.patch` cancels queued host audio on stream
+release and immediate/zero-time asynchronous FlushEx, preventing freed packet
+memory from playing during level transitions. The build tracks HLE declarations
+so adding audio hooks automatically regenerates the game wrappers.
+The device clock
+drives Windows stream completion, with the existing fallback retained for
+backends that cannot report a play position. `tests/test_audio_timing.py` runs
+the actual adapters and ADPCM decoder against a deterministic fake backend,
+without game files or audio hardware. It discovers installed MSVC x64 tools on
+Windows. The user confirmed the first-mission opening sounds clean after the
+stream-lifecycle fix. Other levels and full A/V synchronization need playtesting.
 
 `patches/pc-display.patch` adds the display menu and camera hooks separately
 from the original controls patch, so existing checkouts can upgrade after a merge.

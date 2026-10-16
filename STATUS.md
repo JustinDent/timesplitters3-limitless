@@ -1,5 +1,108 @@
 # Measured progress
 
+## Adaptive cutscene letterboxing (issue #33) — 2026-10-16
+
+- Source base `5c9effd`, branch `33-remove-the-letter-boxes-in-cut-scenes`.
+  The requested behavior is adaptive cinematic bars, rather than removal.
+  Story routine `0x0006F150` draws its top/bottom matte at return PCs
+  `0x0006F322`/`0x0006F34B`; scripted scene routine `0x001396B0` uses
+  `0x0013970E`/`0x0013972E`. All four call solid rectangle routine `0x0001EFB0`.
+- Added a reproducible manual wrapper and shared `src/pc_cutscene.h` geometry.
+  Preserve the aperture of the original 4:3 presentation (approximately 1.88:1,
+  with the game's original integer rounding). Adjust bar height for the selected
+  output aspect and retain the original animation fraction. 4:3/legacy output
+  keeps its original layout; wider-than-cinematic output uses side bars.
+  This changes only identified bar rectangles and restores their guest stack
+  arguments after drawing. Subtitles, full-screen fades, menu rectangles,
+  scopes and prerecorded startup videos retain their existing paths.
+- The first live test exposed orange scenery around the opening space backdrop.
+  Capture frame 9140 reproduces this: draw 37 is the authored 3D starfield plane;
+  the widened camera looks past its edges. Replaying with camera projection
+  constants scaled to fit the cinematic aperture eliminates the exposed scenery.
+  `pc_display_camera` now adjusts both projection axes and CPU frustum extents
+  along with the matte, retaining normal gameplay widening outside cutscenes.
+  Source-only checks cover story, no-matte special mode, animated scenes,
+  4:3 and ultrawide framing, and detect removing the camera correction.
+- The Windows Release build and all build-script native checks passed.
+  All 27 patch tracking/upgrade checks and four adaptive-letterbox checks passed.
+  The focused suite includes mutations that remove either bar adaptation or
+  camera correction, and detects both regressions.
+  The new regression compiles the actual wrapper, checks bar anchoring and
+  unchanged unrelated rectangle arguments/ABI, and detects bypassing the filter.
+  A private-XBE test executes both original routines across legacy, 4:3, 16:9,
+  16:10 and ultrawide modes plus three animation phases, comparing original and
+  adaptive draws, fade rectangles, subtitle invocations and render-state calls.
+  It uses disposable guest RAM and skips in public CI without game data.
+- Host: Windows x64, MSVC 14.44.35207, SDK 10.0.26100.0; pinned runtime
+  `d90c929`, supported US XBE SHA-256 verified. Executable SHA-256:
+  `b42b8511c2abd4df6314fe7059fcb574993ee78e856e659ac8c5a0787b6eaca4`.
+  Evidence: ignored `logs/issue-33-build.log`, `logs/issue-33-tests.log` and
+  `build/issue-33-letterbox`. In an isolated 1280x720 Windows run, the user
+  confirmed the first mission space scene now looks correct. That run lasted
+  48.73 seconds and exited successfully. The original diagnostic capture and
+  corrected replay are retained; no second capture of the corrected live space
+  shot was received. Live ultrawide and other scripted scenes remain unverified.
+  Mac execution remains unverified (MAC-020). Personal settings and saves are
+  preserved. Source changes are on `33-remove-the-letter-boxes-in-cut-scenes`.
+
+- PR #37 CI follow-up: macOS Clang rejected the test fixture's unsigned
+  `g_fp_top`, which conflicts with the runtime header's signed `int` declaration.
+  Corrected the fixture type and made MSVC C4142 fatal in the focused test
+  compiler. The stricter Windows check reproduced the original failure, then
+  all four cutscene tests passed after correction (4.88 s). Production game
+  code and the validated executable are unchanged. Hosted CI is pending rerun.
+
+## Khallos Express see-through scenery (issue #9) — 2026-10-16
+
+- Reproduced the transparent train walls and weapon in an isolated Windows
+  Khallos Express session. Captured frame 3376 samples a framebuffer texture
+  for background blur at draws 142–143, then samples that same texture again
+  for additive glow at draws 462–463, after drawing the train and weapon.
+  The HLE refreshed this texture only once per swap, so the final effect
+  painted the earlier background over otherwise solid geometry.
+- Added `patches/zzzzzzz-framebuffer-sampling-passes.patch`. Switching away
+  from a framebuffer texture invalidates its cached copy. Rebinding it captures
+  the scene including intervening geometry; consecutive taps retain a stable
+  snapshot. Frame-zero initialization, changed texture identity and failed-copy
+  retry are also handled. This is shared HLE logic, with no generated game C edits.
+- `tests/framebuffer_sampling.c` executes the actual texture adapter with a
+  fake copy device, through its texture-binding path. Tests cover the two-pass
+  sequence, stable adjacent taps, a new frame, unbinding on another sampler,
+  changed backing data and copy failure/retry. Deliberately removing the binding
+  invalidation makes the regression fail. Added the test to `tsfp.ps1 Test` and
+  CI on supported renderer hosts; Linux skips this Windows/macOS HLE test.
+- Full Windows `tsfp.ps1 Build` and its native checks passed. All 29 patch
+  tracking/upgrade and framebuffer regression checks passed in 93.29 seconds;
+  repeated complete-stack application changed zero files. The historical upgrade
+  fixture excludes this later patch until the complete-stack upgrade step.
+- macOS CI subsequently found a test-only signature mismatch: the mock
+  `host_CubeLockRect` had six parameters instead of the declared four. Corrected
+  the mock and promoted MSVC parameter-mismatch warnings C4028/C4029 to errors.
+  Both Windows framebuffer checks pass with the stricter compiler flags;
+  restoring the old signature now fails compilation with C4029 on Windows too.
+  The next macOS CI run exposed a missing `GetTickCount` link dependency in the
+  standalone mock; its diagnostic clock now uses a deterministic test function
+  on both hosts, without linking the operating-system compatibility layer.
+  This changes the test harness only, not the runtime fix or game binary.
+- The user confirmed **walls now stay solid** during movement/turning in the
+  rebuilt game. Reviewed the resulting train-interior screenshot: opaque walls
+  and weapon, with the window still visible. The isolated fixed run lasted
+  88.11 seconds and exited with code 0. No full-level completion or other-level
+  visual regression sweep was performed; Mac execution remains unverified.
+- Source base `800687d`; fix delivered on branch
+  `9-khallos-express-level-is-transparent`. Windows x64 build 26300,
+  MSVC 14.44.35207, SDK 10.0.26100.0,
+  SDL 3.4.16, Direct3D 11, NVIDIA RTX 4070 SUPER driver 32.0.16.1742. Upstream
+  `d90c929`; supported US XBE SHA-256 verified. Build executable SHA-256:
+  `ad897ef0e868de013a28eaf5515e86ece7c182470959a9a027babba48ac061df`.
+- Ignored evidence: `build/issue-9-render/{before,after}.bmp`, two adjacent
+  `sequence_0337*.d3dcap` reference frames, build/test logs and `validation.json`.
+  Replay alone did not reproduce the live ghosting because the capture format
+  omits GPU screen-copy contents; live screenshots and playtesting establish the
+  visual result. Test saves/configs were isolated under
+  `private/test-saves/pickup-range`; personal settings and saves were untouched.
+  Redundant captures and disposable test partitions were removed. See MAC-019.
+
 ## Temporary diagnostic-output comparison — 2026-10-16
 
 - User confirms the angle improvement but persistent remote strafe lag, with
@@ -1559,3 +1662,177 @@ logs/patch-tracking-shared-tests.log, logs/automatic-patch-tracking-build.log,
 logs/patch-tracking-prompt-retry.log and build/patch-tracking-validation/VALIDATION.json.
 No gameplay session, binary packaging or release publication was performed.
 MAC-014 retains pending native Mac validation and other-device synchronization.
+
+
+## Issue #8 audio timing and buffering — October 16, 2026
+
+Local, uncommitted work on `fix/issue-8-audio-timing`, based on main
+`4189924038729030d890faa93edacdeccc74a1e1`. The user clarified that delayed
+cutscene audio concerns story cutscenes. The separate XMV video path was not
+changed. `patches/dsound-audio-timing.patch` fixes four reproduced runtime bugs:
+stream completion advancing through unheard audio after queue starvation;
+flush retaining the previous voice's timeline origin; refused buffer submissions
+discarding PCM; and ADPCM resume copying from the wrong offset inside a block.
+Process, pause and format changes now synchronize to the available device clock.
+The existing fallback remains for backends without a playback-position report.
+
+Validation host: Windows 11 x64 10.0.26300, Python 3.12.14, MSVC 14.44.35207
+(compiler 19.44), Release / Direct3D 11. Runtime remains pinned to
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`; supported US XBE SHA-256 verified as
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+
+- Compiled tests execute the actual stream/buffer adapters and Xbox ADPCM
+  decoder with deterministic clocks, guest memory and a fake output device.
+  Original pinned sources fail eight of thirteen cases; patched sources pass
+  all thirteen, including starvation, submission, pause, flush, exact completion,
+  fallback/device loss, diagnostic drift, partial ADPCM blocks and refused
+  looping/nonlooping buffer submissions. Together with patch upgrade/tracking
+  tests, 40 checks passed in 93.17 seconds. The final clean patch's audio suite
+  also passed all thirteen checks. CI hooks were added for Windows/Linux/macOS;
+  those new remote matrix checks have not run.
+- Final Windows compilation and linking succeeded. Network, texture and display
+  checks passed, but the full Build command stopped at the existing
+  `tests/pc_prompts.c:55` foreground-window assertion on two attempts. Save-path,
+  controls, settings and debug checks passed separately. The network executable
+  stamp was sealed separately after these checks and content verification
+  passed. This is not a passing final full Build. Final executable SHA-256:
+  `44f92c618c768b98db0d0600bd2c491ea3f883d5c3fc87b032f0f00d3a18c143`.
+- A bounded 165.12-second run used isolated saves and both isolated display
+  configurations, with the real audio device active and muted output. It rendered
+  profile/menu screens without a crash or unresolved call. Inspection of the
+  final capture confirms profile-name entry; the probe did not reach story or
+  gameplay. It cannot establish audible quality or story A/V synchronization.
+  Probe executable SHA-256 was
+  `da1ed1873074bffaa97b532d96b1015f6433b96b6294e0e156bef93872aa0b7b`, before a
+  comment-encoding cleanup and rebuild, with identical audio implementation.
+- Personal controls/display and the pre-existing unrelated package-playable.py
+  edit retain their baseline hashes. No personal saves were used. Disposable
+  build path-test data and six known isolated test partition images were
+  recycled, preserving profiles and metadata. Those six images represented
+  5,243,406,848 logical bytes but only 133,632 physically allocated bytes.
+
+Evidence: `build/issue-8-audio/VALIDATION.json`, `baseline-full.json`,
+`partition-cleanup.json`, `game.json`, `game-160.png` in the same directory;
+`logs/issue-8-final-regressions.log`, `logs/issue-8-build-verified.log`, and
+`logs/issue-8-game-smoke.log`. Story listening, repeated level starts and A/V
+synchronization remain pending. MAC-018 records SDL device-position adaptation
+and native Mac validation. Other-device synchronization is unverified. No
+commit, push, binary packaging or release publication was performed for #8.
+
+### Follow-up: first-mission distortion and missing stream headroom
+
+The user reports harsh static/distortion at the first mission's start with the
+initial build above. That playtest establishes that the initial timing changes
+did not resolve the reported issue. No audible-fix claim is supported by those
+earlier passing regression tests.
+
+Read-only inspection of the isolated game's stream settings found a further
+volume mismatch: the XDK stereo voice records 600 hundredths of a dB of headroom
+and subtracts it from SetVolume, but the host stream used the raw SetVolume
+argument. Stereo audio was therefore about twice the intended amplitude. The
+shared stream adjustment now includes headroom alongside mix-bin/3D attenuation;
+it still falls back unchanged outside the checked XDK layout. A new regression
+fails before this correction and passes afterward, including a headroom change,
+mix-bin attenuation, and unsupported-layout fallback.
+
+- Audio suite: 14 passed in 2.42 seconds. The full Windows `tsfp.ps1 Build`
+  succeeded, including the formerly blocked controller-prompt check and all
+  remaining native tests. Its normal cleanup and executable stamp completed.
+  Network-content verification and repeated patch application (zero updates)
+  passed. Executable SHA-256:
+  `c645c07abd7076dd78122498990868a09b3adb730d991704d1619f3c0f5cc4f7`.
+- A bounded isolated replay of the preceding executable reached the first
+  mission's opening (a capture was visually reviewed, then overwritten by a
+  later menu probe). Read-only process
+  inspection retained twelve compressed packets. All their ADPCM block headers
+  were valid; none of their independently decoded samples clipped individually.
+  These observations do not rule out mixed-output overload or prove audible
+  correctness. Subsequent profile-navigation attempts remained at name entry,
+  so the headroom build has menu/device-level evidence, not another completed
+  story-cutscene probe. Its menu music diagnostic reflects the extra 6 dB
+  attenuation (`-1737` versus the preceding `-1137`).
+- The probes used the existing isolated pickup-range settings/saves, muted real
+  device output, fixed time/capture/log bounds and read-only PDB/memory access.
+  They did not change personal saves/configuration or the executable in memory.
+  Local diagnostic source/data remain ignored in `build/issue-8-audio`.
+
+Evidence: `logs/issue-8-headroom-baseline.log`,
+`logs/issue-8-audio-headroom-tests.log`, `logs/issue-8-headroom-build.log`, and
+`build/issue-8-audio/HEADROOM-VALIDATION.json`. The headroom mismatch is fixed;
+its effect on the user's reported distortion still needs an audible retest.
+Changes remain local and uncommitted; no release was published. MAC-018 still
+requires native Mac validation.
+
+### Follow-up: stale music packets at level transitions (2026-10-16)
+
+The user's headroom-build retest still had harsh distortion. A bounded,
+read-only capture attached to their human-controlled Windows playtest (PID 7616,
+headroom executable `c645c07a...`) isolated a separate fault. Music stream slot
+266 retained three old 73,728-byte packet addresses across the menu-to-story
+transition. Their memory now contained unrelated game data. Respectively
+1,642, 1,605 and 1,770 of 2,048 stereo ADPCM headers were invalid; independent
+decoding clipped 16.04%, 13.48% and 18.30% of samples. Captured host PCM matched
+that corrupted input. The next five music packets had valid headers and no
+clipped decoded samples. Captured cutscene/dialogue PCM matched its source.
+Earlier probes only saved the 22,042 Hz story streams, missing this 32 kHz
+music stream. Reducing headroom could not repair its corrupted input.
+
+The shared adapter intercepted ordinary Flush but neither FlushEx nor Release.
+The pinned XBE's stream stop routine calls FlushEx with zero timestamp and ASYNC;
+its Release method can destroy the stream while the host still retains packets.
+The new `dsound-stream-lifecycle.patch` retires the host voice and packet model
+only on final Release, preserving non-final references and allowing the allocator
+to reuse the same interface address with fresh format/queue state. It handles
+immediate FlushEx and zero-time ASYNC (packet callbacks completed in DoWork),
+blocking submission/status completion while the asynchronous flush is pending.
+Other scheduled/envelope FlushEx modes retain the existing XDK fallback and
+remain outside this fix's validated scope.
+
+Three lifecycle tests reproduced stale host queues before the hooks; 17 audio
+cases passed after the initial implementation. The async regression also checks
+that intervening GetStatus/Process calls cannot complete cancelled packets from
+the wall clock. Build discovery initially missed the new HLE wrappers, producing
+unresolved original-body symbols. `tools/recomp-generation.py` now fingerprints
+HLE export/original/import declarations, with a regression for addition/removal
+and body-only edits. Wrappers are regenerated from source, never edited by hand.
+
+Read-only inspection did not modify the running process, inputs, personal
+settings or saves; the user navigated and closed the game. Captures are capped
+at 12 MiB and 240 seconds in ignored `build/issue-8-audio/live` with source/PCM
+metadata and analysis. Current local rebuild and post-fix listening results are
+recorded below when available. Changes remain uncommitted on
+`fix/issue-8-audio-timing`; native Mac listening/build and other-device
+synchronization are unverified (MAC-018).
+
+Lifecycle validation: 45 checks passed in 187.94 seconds (17 actual audio-adapter
+cases, one HLE-generation invalidation case, and 27 patch/branch-transition
+checks). Full `tsfp.ps1 Build` passed all native checks and recycled its disposable
+path-test data. Generated wrappers now intercept Release at `0x00407286` and
+FlushEx at `0x004074EC`, with their original bodies retained. Network game-content
+verification passed. Windows Release executable SHA-256:
+`1482f8ca68663f6980474efb801193fa0726424e6b92678f71be0a5919e33852`.
+Evidence: `logs/issue-8-lifecycle-baseline.log`,
+`logs/issue-8-lifecycle-regressions.log`, `logs/issue-8-lifecycle-build.log`,
+`build/issue-8-audio/live/music-corruption.json`.
+
+The user retested the rebuilt first-mission opening and confirmed: "The opening
+sounds clean." Read-only capture of that playtest retained eight 32 kHz music
+packets, all with valid ADPCM headers and zero clipped decoded samples, versus
+three corrupted stale packets before the fix. The new run logged FlushEx calls
+(43 by the sampled mission opening, versus zero previously), confirming the
+previously missed stop path now reaches the host adapter. The user then closed
+the game normally. This verifies the reported first-mission distortion; other
+levels, long sessions and full A/V synchronization remain broader playtest gaps.
+Post-fix evidence is in `build/issue-8-audio/live-fixed/packet-analysis.json` and
+`logs/play-20261016-030301.err`. The audio changes are being committed to the
+user-requested `8-audio-issues` branch; no main merge or release publication is
+part of this update.
+
+Branch integration: the audio commit was applied cleanly to `8-audio-issues`
+on top of `c8f8b31`, preserving the newer mouse-player and controller-sensitivity
+changes. The full branch Build passed on retry after the known foreground-window
+controller assertion failed once; no source changes were needed for that retry.
+Its native checks, path-test cleanup and network-content verification passed.
+Logs: `logs/issue-8-branch-build.log` and `logs/issue-8-branch-build-retry.log`.
+Branch executable SHA-256: `7807b189c890a31fcb265dc4395ec67ad453837ea035efd30f287c9b8cc95710`.
+The audio implementation is unchanged from the clean human playtest above.
