@@ -498,7 +498,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Startup skipping (2026-10-16, uncommitted on `feat/launcher-skip-startup`):**
+- **Startup skipping (2026-10-16, commit `bad108c` on `feat/launcher-skip-startup`):**
   Windows launcher v1.2.1 adds an off-by-default Startup checkbox under Graphics
   & resolution. It preserves `launcher.skip_startup_splashes` in the existing
   controls JSON and explicitly sets `RECOMP_XMV_PLAY=0/1` for each game launch;

@@ -1900,7 +1900,7 @@ The audio implementation is unchanged from the clean human playtest above.
 
 ## Launcher startup skipping (2026-10-16)
 
-Local launcher v1.2.1 on `feat/launcher-skip-startup`, based on published main
+Launcher v1.2.1 implementation `bad108c` on `feat/launcher-skip-startup`, based on published main
 `d83ca5e57d36da163680f7c21e0b5f52dd785faf`. Game settings → Graphics & resolution
 now has a Startup checkbox, **Skip startup splash screens**, default off.
 Saving persists `launcher.skip_startup_splashes` in portable controls JSON with
