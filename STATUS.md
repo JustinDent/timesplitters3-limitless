@@ -2,7 +2,8 @@
 
 ## README and launcher copy cleanup (2026-10-16)
 
-Copy-only work on `cleanup/readme-launcher-copy`, based on main `2608580`.
+Copy-only implementation `b9a05b9` on `cleanup/readme-launcher-copy`, based on
+main `2608580`.
 Removed slogans, game-themed quips and promotional headings from the README,
 launcher home screen, default banner, startup splash and runtime status messages.
 Visible navigation now uses Home, Game and Updates; stable element IDs and event

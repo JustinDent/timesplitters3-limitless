@@ -1,7 +1,7 @@
 # README visuals
 
 - `launcher-preview.png`: UI preview rendered from `cleanup/readme-launcher-copy`
-  using the launcher's `--render-preview` command after removing slogans and
+  (implementation `b9a05b9`) using the launcher's `--render-preview` command after removing slogans and
   themed status quips. This is a source/development preview, not a published
   launcher screenshot. Its installed version/channel values are illustrative;
   the README caption directs players to Preview for published game prereleases.

@@ -534,7 +534,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Neutral interface copy (2026-10-16, uncommitted on
+- **Neutral interface copy (2026-10-16, commit `b9a05b9` on
   `cleanup/readme-launcher-copy`):** README and Windows launcher slogans/quips
   are removed. `Launcher.xaml`, `Launcher.cs`, `Bootstrap.cs` and `SettingsPage.cs`
   use functional labels/status messages, including Home/Game/Updates. The README
