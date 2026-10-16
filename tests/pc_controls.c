@@ -1,4 +1,5 @@
 #include "pc_input.h"
+#include "pc_camera.h"
 #include "pc_controls.h"
 #include "input_bindings.h"
 #include <math.h>
@@ -82,8 +83,28 @@ int main(int argc, char **argv)
     CHECK(recomp_bindings_present_mask() == 1);
     guest = VirtualAlloc(NULL, 0x30000, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE); CHECK(guest);
     *(float *)(guest + 0x20384) = 55;
+    /* A network client's current player can have a nonzero guest player ID,
+       even though its keyboard/controller is on local port 1 (index 0). */
+    *(uint32_t *)(guest + 0x10000) = 1;
     pc_controls_apply_mouse(0x10000, 0x20000, (ptrdiff_t)guest);
     CHECK(fabs(*(float *)(guest + 0x10100) + 10) < .001);
+    /* Player IDs must not act as camera eligibility or host port checks. */
+    for (i = 0; i < 16; ++i) {
+        float *camera_yaw, *camera_pitch, fov;
+        *(uint32_t *)(guest + 0x10000) = (uint32_t)i;
+        CHECK(pc_camera_fields(0x10000, 0x20000, (ptrdiff_t)guest,
+                               &camera_yaw, &camera_pitch, &fov));
+        CHECK(camera_yaw == (float *)(guest + 0x10100));
+        CHECK(camera_pitch == (float *)(guest + 0x10104) && fov == 55);
+        CHECK(!pc_camera_fields(0, 0x20000, (ptrdiff_t)guest,
+                                &camera_yaw, &camera_pitch, &fov));
+        CHECK(!pc_camera_fields(0x10000, 0, (ptrdiff_t)guest,
+                                &camera_yaw, &camera_pitch, &fov));
+        *(float *)(guest + 0x20384) = NAN;
+        CHECK(!pc_camera_fields(0x10000, 0x20000, (ptrdiff_t)guest,
+                                &camera_yaw, &camera_pitch, &fov));
+        *(float *)(guest + 0x20384) = 55;
+    }
     CHECK(fabs(*(float *)(guest + 0x10104) + 2) < .001);
     pc_controls_apply_mouse(0x10000, 0x20000, (ptrdiff_t)guest);
     CHECK(fabs(*(float *)(guest + 0x10100) + 10) < .001);

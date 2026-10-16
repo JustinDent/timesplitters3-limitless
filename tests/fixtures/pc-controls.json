@@ -1,26 +1,10 @@
 {
-  "mouse": { "enabled": true, "sensitivity": 0.10, "invert_y": false },
+  "mouse": { "enabled": true, "sensitivity": 0.02, "invert_y": false},
   "controllers": [
     {
       "port": 1,
       "device": "keyboard",
-      "bindings": {
-        "lstick_up": "key:W", "lstick_down": "key:S",
-        "lstick_left": "key:A", "lstick_right": "key:D",
-        "rstick_up": "none", "rstick_down": "none",
-        "rstick_left": "none", "rstick_right": "none",
-        "rtrigger": "key:LBUTTON", "ltrigger": ["key:G", "key:XBUTTON2"],
-        "a": ["key:E", "key:SPACE", "key:RETURN"],
-        "b": ["key:F", "key:MBUTTON", "key:XBUTTON1", "key:BACK"],
-        "x": "key:R", "y": "key:Y",
-        "white": "key:1", "black": "key:2",
-        "lthumb": ["key:CTRL", "key:C"], "rthumb": "key:RBUTTON",
-        "dpad_up": ["key:UP", "key:PAGEUP", "key:Q"],
-        "dpad_down": ["key:DOWN", "key:PAGEDOWN", "key:V"],
-        "dpad_left": ["key:LEFT", "key:F24"],
-        "dpad_right": ["key:RIGHT", "key:F23"],
-        "start": "key:ESCAPE", "back": "key:TAB"
-      }
+      "bindings": {"a":["key:#69","key:#32","key:#13"],"b":["key:#70","key:#4","key:#5","key:#8"],"x":["key:#82"],"y":["key:#89"],"black":["key:#50"],"white":["key:#49"],"start":["key:#27"],"back":["key:#9"],"ltrigger":["key:#71","key:#6"],"rtrigger":["key:#1"],"dpad_up":["key:#38","key:#33","key:#81"],"dpad_down":["key:#40","key:#34","key:#86"],"dpad_left":["key:#37","key:#135"],"dpad_right":["key:#39","key:#134"],"lstick_up":["key:#87"],"lstick_down":["key:#83"],"lstick_left":["key:#65"],"lstick_right":["key:#68"],"lthumb":["key:#17","key:#67"],"rstick_up":[],"rstick_down":[],"rstick_left":[],"rstick_right":[],"rthumb":["key:#2"]}
     },
     { "port": 2, "device": "none" },
     { "port": 3, "device": "none" },
