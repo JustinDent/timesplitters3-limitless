@@ -1,5 +1,38 @@
 # Measured progress
 
+## Issue 19 decal projection (2026-10-16)
+
+- Source: decal fix on `19-floating-decals` (this revision), based on
+  `696421fd080a5bd57cb894b76302080f59f52485`; pinned runtime `d90c929` and
+  checksum-verified US XBE. Windows x64 build 26300, MSVC 19.42.34435.0,
+  Python 3.14.2, CMake 4.4.4, D3D11.
+  Release executable SHA-256:
+  `ada6ab457f3369c64c89d3a46f4d6ed29a698e5a3861364d876b6076e0e6048d`;
+  multiplayer identity `85180d72`.
+- Cause: the two decal render paths independently reconstruct a depth-biased
+  perspective matrix, bypassing the adjusted camera. A baseline 1920x1080
+  Arcade capture used horizontal scale `1.440737` for biased effects versus
+  `1.080552` for the widened scene. The fixed capture uses `1.080552` for
+  both, retaining the distinct depth terms `-0.10050558` and `-0.10000556`.
+  This corrects the guest projection rather than changing HUD classification.
+- Validation: the complete patch stack applies; supported `tsfp.ps1 -Action
+  Build` regeneration/build and all native build tests passed. Executable seal
+  and game-content verification passed. The decal, cinematic and patch-transition
+  suites passed (35 cases; one historical fixture was updated and its failing
+  case rerun). Wrapper checks cover both decal callers, default/wide/ultrawide
+  and cinematic apertures, unchanged depth and other callers, missing camera,
+  guest return state, and both Windows/native display build flags.
+- Live check: a bounded Hotel Arcade match at 1920x1080 with no bots reached
+  gameplay; fired wall impacts stayed aligned while strafing and rotating the
+  camera. No crash or unresolved-call report occurred. All save, input and both
+  display configuration routes were isolated under `private/decal-validation`.
+  Selected screenshots and captures remain ignored there; disposable partition
+  images were recycled after the runs. Personal settings and saves were preserved.
+- Remaining checks: other Arcade maps, explosion impacts, split screen, and live
+  default/4:3/ultrawide rendering were not exercised. Mac source uses the same
+  wrapper, but native build/rendering and other-device synchronization remain
+  unverified. See [MAC-010](MAC_PORT_BACKLOG.md#mac-010--in-game-resolution-preview-and-rollback).
+
 ## Resolution release preparation — October 16, 2026
 
 Game v0.2.0-alpha.4 and launcher v1.2.0 are prepared together on

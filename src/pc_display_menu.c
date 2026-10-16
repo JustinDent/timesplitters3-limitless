@@ -126,6 +126,25 @@ void pc_display_camera(void (*original)(void))
     }
 }
 
+void pc_display_decal_projection(void (*original)(void))
+{
+    const uint32_t caller=WORD_AT(g_esp), destination=WORD_AT(g_esp+4);
+    uint32_t camera, matrix;
+    original();
+    /* These two US decal passes rebuild a perspective matrix with biased
+       near/far planes instead of using the camera projection. Match the
+       active camera's aperture, including widescreen and cinematic zoom,
+       while retaining the original depth bias. Other perspective builders
+       include menus and offscreen effects and must keep their own aperture. */
+    if(caller!=0x00112F7Fu && caller!=0x00115B0Cu) return;
+    camera=WORD_AT(0x007B0CC0u);
+    if(!guest_writable(camera,0x208) || !guest_writable(destination,64)) return;
+    matrix=WORD_AT(camera+0x204u);
+    if(!guest_writable(matrix,64)) return;
+    WORD_AT(destination)=WORD_AT(matrix);
+    WORD_AT(destination+0x14u)=WORD_AT(matrix+0x14u);
+}
+
 void pc_display_menu_button(void (*original)(void))
 {
     static uint32_t caption;
