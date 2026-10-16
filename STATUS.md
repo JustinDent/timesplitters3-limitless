@@ -2,7 +2,8 @@
 
 ## Game version cleanup (2026-10-16)
 
-Uncommitted launcher work on `fix/game-update-cleanup`, based on main `2b3ada8`.
+Implementation commit `d1f4e42` on `fix/game-update-cleanup`, based on main
+`2b3ada8`.
 The previous game snapshot is kept until a session has shown a game window and
 exited with code zero. Installed runtime files must still match BUILD.json before
 cleanup; personal controls and independently updated launcher files are excluded

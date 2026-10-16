@@ -533,7 +533,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Game version cleanup (2026-10-16, uncommitted on
+- **Game version cleanup (2026-10-16, commit `d1f4e42` on
   `fix/game-update-cleanup`):** `tools/launcher/Core.cs` removes retired game
   backups and obsolete/incomplete game staging after a window was observed and
   the game exited normally, then all managed runtime hashes verified. Confirmation
