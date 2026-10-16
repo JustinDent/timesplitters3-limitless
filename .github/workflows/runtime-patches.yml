@@ -17,22 +17,6 @@ on:
       - patches/**
       - tsfp.ps1
       - requirements.txt
-  pull_request:
-    paths:
-      - .github/workflows/runtime-patches.yml
-      - tools/recomp-generation.py
-      - tests/test_recomp_generation.py
-      - tools/apply-patches.py
-      - tests/test_patch_updates.py
-      - tests/test_patch_tracking.py
-      - tests/test_audio_timing.py
-      - tests/test_framebuffer_sampling.py
-      - tests/framebuffer_sampling.c
-      - tests/audio_stream_timing.c
-      - tests/audio_buffer_timing.c
-      - patches/**
-      - tsfp.ps1
-      - requirements.txt
   workflow_dispatch:
 
 permissions:
