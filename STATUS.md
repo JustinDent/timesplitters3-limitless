@@ -1,5 +1,173 @@
 # Measured progress
 
+## Resolution groups and adaptive UI (issues #27/#31) — 2026-10-16
+
+Implemented on `27-add-aspect-ratio-169-and-more-resolutions`, originally based on main
+`4124557`. Windows x64, MSVC 14.44.35207, D3D11, pinned runtime and complete
+patch stack, supported US XBE SHA-256
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+
+The guest menu and Windows launcher share 41 common render presets and six
+aspect groups, supplemented by reported monitor modes. Bounds are 7680×4320,
+33,177,600 pixels and 4:1; saved custom modes and V1/V2 FOV files remain supported.
+Aspect selection filters/stages a resolution rather than stretching it. The guest
+refresh restores choice indices by row ID, so the new filtered index is reapplied
+after refresh to prevent accidental resets. Desktop display modes are unchanged.
+
+Menu backgrounds use the complete output canvas. Text/buttons fit proportionally
+on both wide and narrow screens. Single-player ammo groups retain their original
+left/right handedness; radar placement starts after world target markers; status
+and scope controls receive scoped placement tags. Guest sprite batches flush at
+placement changes, and viewport/scissor transforms agree. Split-screen retains
+its existing layout. Native Mac shares the catalog and layout rules; its separate
+Cocoa aspect selector is deferred in MAC-024 and native execution is unverified.
+
+Health/armor follow-up: the gauges were still using the centred canvas, and
+opening a larger submenu increased their authored scale beyond its horizontal
+bounds. `sub_0013AB60` now fits the full curve mesh with a four-percent inset.
+The primitive-allocation hook separates the three left/right mesh passes before
+they are batched, retaining the centred directional hit marker and restoring the
+previous placement afterward. Single-player layout is shared with native Mac;
+split-screen keeps its previous behavior. A user screenshot at 3440×1440
+identified the clipped health/armor curves on Audio/Video Options.
+
+Tutorial follow-up: the original card reserved 40 units for controller icons,
+so translated mouse/key labels overlapped the action descriptions. The shared
+title hook now measures the current bindings in each row's actual font, uses
+the widest label plus padding for all normal action rows, and expands the panel
+within the viewport. The original text engine wraps descriptions in the remaining
+space and computes their height. A follow-up reduces single-player tutorial
+text and glyphs to 90% in both axes, before measurement and wrapping. The font
+scale is restored afterward, leaving other HUD/menu text unchanged. Controller
+column placement, composite stick rows and split-screen retain their previous behavior; geometry/font/register state is
+restored after the card. No literal tutorial strings or generated game C changed.
+
+Shading-seam follow-up: the user capture isolated an animated textured overlay
+(draw 327, a 128x128 noise texture over a 640x480 canvas). AUTO placement treated
+it as a proportional picture because it was neither flat color nor a framebuffer
+copy. The `fullscreen-effects` patch recognizes a complete first quad at the
+canvas corners, including inclusive pixel bounds, while retaining proportional
+placement for clipped panels and separate corner HUD widgets. It also measures
+original fan/quad vertex counts rather than the expanded triangle-list count,
+avoiding an out-of-bounds read during placement classification. Explicit placement
+scopes still take precedence. The effect is preserved across the full output.
+
+Edge-caption follow-up: the mission intro's date/title (`sub_0013FC50`) and
+single-player tutorial cards (`sub_001476F0`) now use the same LEFT placement
+as edge HUD widgets on wide displays. Each scope flushes existing sprite batches
+before drawing, keeps the full text/outline or panel/key-label group together,
+and restores previous placement afterward. Authored insets, vertical positions,
+animations, tutorial 90% font sizing and measured columns are retained. Original
+4:3/narrow and split-screen placement remains unchanged. The title hooks are
+shared with native Mac, whose runtime validation remains pending.
+
+Validation so far:
+
+- PR #70 CI follow-up: Windows run `38981957451` passed patch tracking,
+  application and UI checks, then failed compiling the standalone FOV fixture.
+  Its production menu include now also compiles tutorial hooks, requiring the
+  runtime input-header directory and five guest drawing functions plus the prompt
+  device query. The fixture now supplies that include path and fail-fast stubs
+  for the unrelated tutorial paths; production runtime behavior is unchanged.
+  The exact failing display/FOV step and shared UI suite pass locally (7 cases).
+  The original macOS CI job passed its shared tests; this does not establish
+  native game compilation or visual support. The correction only changes the
+  Windows fixture and requires no Mac adapter change.
+
+- Main integration: feature commit `2d69459` was combined with main `9e08fa3`.
+  Both branches wrapped `sub_0013AB60`; a subsequent reproducible patch now
+  routes Objectives fitting and ordinary health draws through the shared
+  placement helper exactly once, preserving the upstream panel and split-view
+  sizing. The combined Windows Release build and all eight build checks pass;
+  twenty-six Objectives/UI/patch-transition cases pass. The launcher rebuild
+  under Windows PowerShell 5.1 passes 98 regressions and 24 settings checks.
+  Logs: `build/issue-27-display/build-main-integration.log`, `merged-tests.log`
+  and `launcher-main-integration.log`. Earlier isolated visual captures below
+  precede this integration; the combined build has automated validation only.
+  Native Mac compilation/playtesting and actual 8K GPU allocation remain unrun.
+
+- Edge captions: the Release rebuild and all eight build checks pass, as do all
+  nineteen UI/patch-transition cases. A bounded isolated 3440x1440 Windows run
+  reached first-mission gameplay. Reviewed `caption-edge-0.png` and
+  `tutorial-edge-2.png` in `build/issue-27-display`: the date/title stays at the
+  lower-left inset, while the complete weapon tutorial panel occupies the upper
+  left with separated key/action columns, wrapped text and a clear central view.
+  Render tags confirm LEFT placement; the mission caption spans x=20..155.6 in
+  the guest canvas. Controller/narrow/split guards and placement restoration are
+  covered by shared tests; native Mac visual validation remains pending.
+
+- Shading seam: the user's frame 1540 (350 draws) replays successfully at
+  3440x1440 with zero malformed/unmapped/failed commands. Stretching only draw
+  327 removes the boundary; the fixed renderer matches that diagnostic image
+  within one color value in 121 channels. Mission text retains its position and
+  proportions. Selected evidence: `build/issue-27-display/seam-before.png` and
+  `seam-fixed.png`; capture/checksums are recorded in `seam-validation.json`.
+  The Release build, all eight build checks, five shared UI cases and fourteen
+  patch-transition cases pass. The historical-controls fixture initially failed
+  because it included this display-dependent patch before display support; its
+  old-state patch selection was corrected and the affected test passed on rerun.
+  The user confirmed the transparent rectangle is gone in the rebuilt isolated
+  game during the first-mission opening at 3440x1440. Native Mac validation remains
+  pending.
+
+- Tutorial follow-up: all eight Release build checks, four shared UI cases
+  (including production tutorial hooks) and fourteen patch-transition cases pass.
+  The isolated first-mission run at 3440×1440 shows distinct key/action columns
+  and a fully contained two-line fire-mode description. Reviewed capture:
+  `build/issue-27-display/tutorial-fixed-3440x1440.png`. Longer rebound labels,
+  bounded panel growth, wrapping space, original controller/split-screen geometry
+  and guest stack/font/argument restoration are covered by the regression fixture.
+  Temporary prompt diagnostics were removed. The subsequent 90% tutorial-size
+  adjustment passes all eight build checks and four UI cases, including scoped
+  scale restoration; its
+  smaller appearance awaits user review. Native Mac remains unverified.
+
+- Health/armor follow-up: Release compilation succeeded. Four UI/FOV cases
+  and fourteen patch upgrade/transition cases passed. Seven of eight build
+  checks passed; the virtual-controller prompt fixture twice failed its
+  `GetForegroundWindow` acceptance assertion (line 55). Input code was unchanged;
+  those intermediate runs were not all-green. The subsequent tutorial rebuild
+  passed all eight checks without changing input code.
+- A bounded isolated 3440×1440 run using the existing input-state test interface
+  reached first-mission gameplay, pause Options and Audio/Video Options. Reviewed
+  complete, separate left/right gauges with clear panel spacing in
+  `health-pause-3440x1440.png` and `health-audio-video-3440x1440.png` under
+  `build/issue-27-display`. Recorded mesh bounds are 25.6–217.0 on the left and
+  423.0–614.4 on the right in the 640-unit guest canvas. Return to gameplay
+  retained the centred crosshair and right-edge ammo. Earlier timed attempts
+  stopped at the briefing/profile editor and are not gameplay evidence.
+  Human confirmation of the revised gauges and native Mac validation remain.
+- Windows game Release build and its eight native/build checks pass after the
+  final picker correction. One intermediate run hit the existing foreground-focus
+  prompt-test assertion; subsequent full runs passed without input-code changes.
+- Windows PowerShell 5.1 launcher build: 71 launcher regressions and 22 settings
+  checks passed. WPF coverage includes aspect filtering, current-ratio reporting,
+  custom modes, selection/save/reload and the existing FOV slider. Reviewed the
+  graphics preview in `build/issue-27-display/launcher.png`.
+- Eight targeted cases passed for display discovery, FOV/menu behavior, cinematic
+  framing and framebuffer sampling. Three UI cases pass: production widget scopes,
+  verified hook sites, and extracted production viewport/scissor code across seven
+  sizes and all anchors. Radar world markers remain outside the corner scope.
+- Fourteen complete patch upgrade/transition cases pass, including historical
+  controls and texture-branch round trips. The historical fixture excludes these
+  later UI patches until their display dependencies are installed.
+- Initial 1280×720 actual menu capture confirms a full-width animated background,
+  proportional text/panel/FOV slider and a functioning aspect selector. An
+  86-second recorded-input guest run then filtered 16:9 modes, confirmed 960×540,
+  previewed 1280×720, timed out back to 960×540 and returned to the original menu.
+- A fresh isolated 135-second first-mission run at 2560×1080 reached gameplay.
+  Reviewed the right-edge ammo counter, centred crosshair and pause Options panel;
+  recorder tags confirm the ammo group uses RIGHT and the next menu returns AUTO.
+  The first attempt used an existing test profile and stopped at its name editor;
+  only the fresh-save run is gameplay evidence. Its tutorial key-label overlap
+  prompted the separate measured-column correction described above.
+  Radar and sniper scope placement still need a representative manual playtest.
+- Reviewed final 1280×1024 (5:4) and 2560×720 (32:9) menu captures: full-width
+  animated backgrounds, proportional text/buttons/FOV slider, and unclipped panels.
+  Executable provenance and selected evidence are recorded in
+  `build/issue-27-display/validation.json`. Actual 8K GPU allocation and native Mac
+  execution were not tested. An isolated 1920×1080 build is prepared for user
+  radar/sniper and resolution-switching playtests; no personal settings were changed.
 ## Launcher v1.2.5 release preparation (2026-10-16)
 
 The user requested stable publication of the game-version cleanup in PR #69.

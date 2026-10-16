@@ -16,6 +16,10 @@ typedef struct PcDisplayMode { unsigned width, height; } PcDisplayMode;
 /* Called on the guest/render thread. Zero dimensions retain the legacy mode. */
 PcDisplayMode pc_display_current(void);
 int pc_display_valid(PcDisplayMode mode);
+#define PC_DISPLAY_MODE_CAPACITY 128
+#define PC_DISPLAY_ASPECT_COUNT 7 /* All, then the six shared catalog groups. */
+const char *pc_display_aspect_name(int aspect);
+int pc_display_aspect(PcDisplayMode mode);
 int pc_display_modes(HWND window, PcDisplayMode *out, int capacity);
 int pc_display_apply(PcDisplayMode mode);
 int pc_display_preview(PcDisplayMode mode);

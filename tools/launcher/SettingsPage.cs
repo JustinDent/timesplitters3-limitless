@@ -21,7 +21,7 @@ namespace TimeSplitters.Launcher
         readonly Slider fov;
         readonly TextBox sensitivity, width, height;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes;
-        readonly ComboBox device, resolution, scale, filtering, pacing, interpolation;
+        readonly ComboBox device, resolution, aspect, scale, filtering, pacing, interpolation;
         readonly Button[,] bindingButtons = new Button[24,4];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
         static Brush ColorBrush(byte r,byte g,byte b) { var brush=new SolidColorBrush(Color.FromRgb(r,g,b));brush.Freeze();return brush; }
@@ -169,6 +169,9 @@ namespace TimeSplitters.Launcher
             graphics.Children.Add(Text("Display & graphics",20));
             graphics.Children.Add(Text("Higher render scale and resolution increase GPU load. These options use the game runtime’s supported settings.",12));
             var sizes=DisplayModes.Primary(model.Width,model.Height);
+            aspect=new ComboBox { Name="AspectRatio", Margin=new Thickness(4,2,4,12), Padding=new Thickness(8), MinWidth=180, Foreground=Brushes.Black };
+            foreach(var ratio in DisplayModes.Aspects)aspect.Items.Add(ratio);
+            aspect.SelectedIndex=0;Field(graphics,"Aspect ratio",aspect);
             resolution=new ComboBox { Margin=new Thickness(4,2,4,12), Padding=new Thickness(8), MinWidth=240, Foreground=Brushes.Black };
             foreach(var mode in sizes) resolution.Items.Add(mode);
             resolution.SelectedItem=sizes.FirstOrDefault(m=>m.Width==model.Width && m.Height==model.Height);
@@ -182,9 +185,22 @@ namespace TimeSplitters.Launcher
             DockPanel.SetDock(previous,Dock.Left); selector.Children.Add(previous);
             DockPanel.SetDock(next,Dock.Right); selector.Children.Add(next); selector.Children.Add(resolution);
             Field(graphics,"Output resolution",selector);
-            graphics.Children.Add(Text("Modes reported by your primary display, plus the console default. A saved custom resolution is retained if it is no longer reported by the display.",12));
+            graphics.Children.Add(Text("Common render resolutions plus modes reported by your display. Aspect ratio narrows the list; custom sizes are preserved. Desktop resolution is unchanged.",12));
             var dimensions=new WrapPanel(); width=Entry(model.Width.ToString()); height=Entry(model.Height.ToString()); Field(dimensions,"Width",width); Field(dimensions,"Height",height); graphics.Children.Add(dimensions);
             resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); } };
+            var ratioValue=Text("Current ratio: "+DisplayModes.RatioLabel(model.Width,model.Height),12);ratioValue.Name="CurrentAspectRatio";graphics.Children.Add(ratioValue);
+            TextChangedEventHandler updateRatio=(s,e)=> {
+                int w,h;ratioValue.Text=Int32.TryParse(width.Text,out w)&&Int32.TryParse(height.Text,out h)?"Current ratio: "+DisplayModes.RatioLabel(w,h):"Enter a valid size";
+            };
+            width.TextChanged+=updateRatio;height.TextChanged+=updateRatio;
+            aspect.SelectionChanged+=(s,e)=> {
+                if(aspect.SelectedIndex<0)return;
+                int w,h;if(!Int32.TryParse(width.Text,out w)||!Int32.TryParse(height.Text,out h)){w=model.Width;h=model.Height;}
+                var available=sizes.Where(m=>aspect.SelectedIndex==0 || DisplayModes.AspectIndex(m.Width,m.Height)==aspect.SelectedIndex).ToList();
+                if(available.Count==0)return;
+                var nearest=available.OrderBy(m=>Math.Abs((long)(m.Height==0?480:m.Height)-(h==0?480:h))*10000+Math.Abs((long)(m.Width==0?640:m.Width)-(w==0?640:w))).First();
+                resolution.Items.Clear();foreach(var mode in available)resolution.Items.Add(mode);resolution.SelectedItem=nearest;
+            };
             var fieldOfView=new DockPanel { MaxWidth=460, HorizontalAlignment=HorizontalAlignment.Left };
             var fovValue=Text(model.VerticalFov.ToString(CultureInfo.InvariantCulture)+"°",14); fovValue.Name="VerticalFovValue";
             fovValue.MinWidth=48; fovValue.TextAlignment=TextAlignment.Right;

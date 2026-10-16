@@ -7,7 +7,8 @@
 These instructions describe the current Windows source build. Downloaded releases may predate individual features.
 
 Open **Settings → Display settings** from the main menu, or **Options → Display
-settings** while paused. Use the resolution row's left/right arrows to choose
+settings** while paused. Choose an **Aspect ratio** group (All, 4:3, 5:4,
+16:9, 16:10, 21:9 or 32:9), then use the resolution row's left/right arrows to choose
 a mode, including **Original** for the game's default. Choose **Apply settings**, then
 **Keep resolution** within 15 seconds. Back, Revert, or letting the countdown
 expire restores the previous mode. Only confirmed settings are saved.
@@ -27,16 +28,27 @@ Existing display files keep the original 55° setting. Non-default FOV is stored
 in the version 2 display format; both the runtime and launcher read versions 1
 and 2. Resetting FOV to 55° writes the legacy version 1 format again.
 
-The Windows launcher and in-game picker use the primary display's reported modes,
-including ultrawide sizes within 640×480–7680×2160 and a maximum 4:1 aspect ratio.
+The Windows launcher and in-game picker share a catalog of common render sizes,
+from 640×480 through 7680×4320, including 16:9, 16:10, 21:9 and 32:9 presets.
+They also include modes reported by the primary display. The aspect group filters
+the list and stages a nearby resolution; it does not stretch one resolution to a
+different ratio. The selected width and height determine the actual picture ratio.
+Custom landscape sizes up to 4:1 remain supported.
 Refresh-rate duplicates are removed, the console default appears first, and saved
 custom modes remain available after a display change. The launcher provides
-previous/next buttons beside its dropdown, plus editable custom dimensions.
+previous/next buttons beside its dropdown, an aspect-group selector, editable
+custom dimensions, and a live current-ratio label. Selecting a group only changes
+the draft; the existing Save/Cancel and in-game confirmation rules still apply.
 These settings change the native
 3D rendering resolution; the window still follows its existing size. Use
 **Alt+Enter** for fullscreen. Desktop resolution and refresh rate are unchanged.
-Game menus retain their original proportions with bars; gameplay uses the
-selected aspect ratio and a wider horizontal camera view. Cutscene bars adapt to
+Menu backgrounds fill the selected canvas, while text, buttons and panels fit
+proportionally. Narrower layouts fit widgets vertically instead of cropping them.
+In single-player widescreen, ammo counters, corner radar, status indicators and
+scope zoom controls move toward their screen edges with consistent proportions.
+World target markers and the central aiming graphics retain their own placement.
+Split-screen retains its existing layout. Gameplay uses the selected aspect ratio
+and an adjusted horizontal camera view. Cutscene bars adapt to
 the selected aspect ratio while preserving the original cinematic framing:
 wide screens use thinner bars, and screens wider than the cinematic picture
 use side bars to fit its full height. The cutscene camera and scripted bar
@@ -46,8 +58,9 @@ in-engine cutscenes; startup video framing is unchanged.
 Settings live in `config/pc-display.ini` beside the keyboard/mouse configuration
 (`Settings/pc-display.ini` in packaged builds). `TSFP_DISPLAY_CONFIG` can override
 the path for isolated tests. Delete that small file to restore the original
-rendering resolution and FOV. Extremely wide modes are bounded at 7680×2160; modes above
-2160 pixels high are outside this release's resolution range.
+rendering resolution and FOV. Render targets are limited to 7680×4320 and
+33,177,600 pixels. Higher choices need sufficient GPU resources; an unsuccessful
+in-game allocation leaves the previous setting active.
 
 ## PC controls
 

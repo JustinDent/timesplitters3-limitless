@@ -12,10 +12,12 @@ static uint32_t g_esp;
 #define FP_MEM32(a) (*(uint32_t *)FP_GUEST(a))
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"FAIL: %s\n",#x); exit(1); } } while(0)
 static float rendered;
-static unsigned draws;
+static unsigned draws, placements;
 void sub_0013AB60_gen(void) {
     memcpy(&rendered,FP_GUEST(g_esp+16),4);++draws;g_esp+=4;
 }
+/* Placement scopes and geometry are exercised by test_ui_layout. */
+static void pc_display_health(void (*original)(void)) { ++placements; original(); }
 /* PRODUCTION_LAYOUT */
 static float panel_width[2];
 void sub_002F5E60_gen(void) {
@@ -36,8 +38,9 @@ static void panel(unsigned mode) {
 }
 static void draw(unsigned caller,float scale,unsigned mode) {
     g_esp=0x10000;FP_MEM32(g_esp)=caller;FP_MEM32(0x7DE454)=mode<<8;
-    memcpy(FP_GUEST(g_esp+16),&scale,4);draws=0;
+    memcpy(FP_GUEST(g_esp+16),&scale,4);draws=0;placements=0;
     sub_0013AB60();
+    CHECK(placements==1); /* Both Objectives and gameplay route through placement. */
     CHECK(draws==1 && g_esp==0x10004);
     CHECK(memcmp(FP_GUEST(0x10010),&scale,4)==0); /* Caller's argument restored. */
 }

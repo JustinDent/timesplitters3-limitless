@@ -58,6 +58,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-021 | Published-release launcher and pre-game settings | Queued |
 | MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
 | MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
+| MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
 
 ### MAC-001 — Direct-camera mouse look
 
@@ -682,3 +683,53 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   panel spacing on 2026-10-16. Live coverage of all display shapes remains
   unverified; shared numerical tests cover those dimensions.
 - **Evidence:** [Windows scope](STATUS.md#story-objectives-health-and-shield-issue-11--2026-10-16).
+
+### MAC-024 — Resolution catalog and proportional UI (issues #27/#31)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Common render presets and six aspect groups, up to 7680×4320,
+  shared by the guest menu and Windows launcher. Full-canvas menu backgrounds,
+  proportional widgets, and single-player edge placement for ammo, radar, status
+  and zoom controls. Health/armor curves fit their full mesh inside the viewport,
+  with separate left/right anchors and a centred damage-direction marker. These
+  title hooks and sizing rules are shared; Mac playtesting remains pending.
+  Tutorial cards measure assigned key labels, reserve a padded shared column,
+  grow within the viewport and wrap descriptions without overlap. Single-player
+  tutorial text/glyphs use 90% size before measurement; other HUD/menu font scales
+  are restored afterward. Controller columns and split-screen layout are preserved. These hooks use shared
+  font/prompt logic; native compile and gameplay validation are pending.
+  Full-canvas textured shading effects now span the Windows output instead of
+  leaving a centred 4:3 tint rectangle. The `fullscreen-effects` runtime patch
+  uses shared `pc_ui_full_canvas_quad` geometry classification, preserves clipped
+  panels, and corrects the original vertex count used for fan/quad placement.
+  Native OpenGL already allows full-width AUTO draws to span the output; no new
+  adapter change is required for this captured pass, but visual validation remains.
+  Mission date/title and tutorial cards also use scoped left-edge placement on
+  wide single-player displays, preserving their original insets, animations and
+  proportions. This uses shared title hooks (`story-caption` patch and
+  `src/pc_tutorial_ui.inc`) and the existing native LEFT adapter; Mac visual
+  checks remain pending.
+  Preview, timeout rollback and saved custom modes remain. The subsequent
+  `objectives-ui-integration` patch combines MAC-023 sizing with side placement
+  in one health renderer wrapper, preserving its split-screen and panel fit.
+- **Source:** Feature commit `2d69459` on
+  `27-add-aspect-ratio-169-and-more-resolutions`, integrated with main `9e08fa3`.
+  `src/pc_display*`, `src/pc_ui_layout.h`, the `ui-layout` and
+  `ui-narrow`/`tutorial-layout` runtime patches, `src/pc_tutorial_ui.inc`, and
+  `tools/launcher/DisplayModes.cs`/`SettingsPage.cs`.
+- **Shared Mac support:** The catalog, config bounds, guest picker and title HUD
+  hooks are shared. Native OpenGL uses the shared side-anchor rule and fits narrow
+  widgets vertically, including their scissor rectangles. Cocoa consumes the same
+  capacity and catalog without duplicating Original. Native execution is unverified.
+- **Remaining:** Build and validate on Apple Silicon; add the new aspect filter
+  to the separate Cocoa settings window when adapting its UI. The Windows launcher
+  is not a Mac launcher implementation. Existing split-screen layout is preserved.
+- **Acceptance:** 4:3, 5:4, 16:9, 16:10, 21:9 and 32:9 menu captures with readable,
+  unclipped, proportional text; full backgrounds; ammo/radar corners; centred
+  crosshairs and scope aim; zoom controls aligned; pause/return; no leaked placement
+  between batches; original/custom settings, save/cancel and timeout rollback.
+  Check the first-mission canyon shading for a rectangular tint boundary at wide
+  ratios, then check the weapon tutorial with default and longer rebound keys,
+  wrapped descriptions, and keyboard/controller switching. Verify supported GPU
+  sizes and allocation failure recovery. See issue #27/#31 in
+  `STATUS.md` for Windows evidence; do not infer Mac runtime verification from it.

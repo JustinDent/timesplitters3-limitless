@@ -14,6 +14,7 @@
 #include "pc_online.h"
 #endif
 #include <stdarg.h>
+#include <stdlib.h>
 
 #include "recomp_types.h"
 #include <stdio.h>
@@ -227,9 +228,10 @@ extern void sub_00078980(void), sub_000770E0(void);
 extern void sub_00079710(void), sub_000814B0(void), sub_00154FE0(void), sub_00074910(void);
 extern void sub_0007D480(void), sub_000717D0(void), sub_00075430(void);
 static uint32_t storage, parent_menu, previous_menu, current_menu;
-static PcDisplayMode modes[64], staged, previous;
+static PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY], all_modes[PC_DISPLAY_MODE_CAPACITY], staged, previous;
+static int all_mode_count, selected_aspect;
 static int mode_count, selected_mode, page, staged_fov, previous_fov;
-static uint32_t resolution_row;
+static uint32_t resolution_row, aspect_row;
 static ULONGLONG deadline;
 static char status[192];
 /* Fixed backing storage survives transitions and renderer references. */
@@ -255,6 +257,9 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     restore_registers(&r);
     return result;
 }
+#include "pc_display_ui.inc"
+#include "pc_tutorial_ui.inc"
+
 static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
 static void row(int id,const char *label)
 {
@@ -278,15 +283,37 @@ static void fov_draw(void)
     }
     restore_registers(&r); g_esp+=4;
 }
+static void refresh(int next,int selected);
+static void filter_modes(void)
+{
+    unsigned long long best=~0ull;
+    mode_count=0;selected_mode=0;
+    for(int i=0;i<all_mode_count;i++) {
+        PcDisplayMode m=all_modes[i];
+        if(selected_aspect && pc_display_aspect(m)!=selected_aspect)continue;
+        unsigned mw=m.width?m.width:640,mh=m.height?m.height:480;
+        unsigned sw=staged.width?staged.width:640,sh=staged.height?staged.height:480;
+        unsigned long long score=(unsigned long long)abs((int)mh-(int)sh)*10000+abs((int)mw-(int)sw);
+        if(m.width==staged.width && m.height==staged.height)score=0;
+        if(score<best){best=score;selected_mode=mode_count;}
+        modes[mode_count++]=m;
+    }
+    if(mode_count)staged=modes[selected_mode];
+}
 static void labels(void)
 {
-    resolution_row=0;
+    resolution_row=aspect_row=0;
     if(page==0) {
         int i;
+        aspect_row=guest_call(sub_00079D60_gen,6,text_at(7,"Aspect ratio"),0u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        for(i=0;i<PC_DISPLAY_ASPECT_COUNT;i++)
+            guest_call(sub_000717D0,1,text_at(12+PC_DISPLAY_MODE_CAPACITY+i,"%s",pc_display_aspect_name(i)));
+        guest_call(sub_00075430,2,aspect_row,(uint32_t)selected_aspect);
         /* The same native choice builder as the original Controls menu
            (US sub_002EA3F0): it owns arrow drawing, input repeat and wrapping.
            +0xC8 is its selected choice, not its +0xC0 text alignment. */
-        resolution_row=guest_call(sub_00079D60_gen,6,text_at(1,"Resolution"),0u,0u,0u,0u,0u);
+        resolution_row=guest_call(sub_00079D60_gen,6,text_at(1,"Resolution"),1u,0u,0u,0u,0u);
         /* 0x8000 selects the native right-aligned value column; the second
            parameter is extra row height, not a horizontal offset. */
         guest_call(sub_0007D480,2,0x8400u,0u);
@@ -297,9 +324,9 @@ static void labels(void)
         }
         guest_call(sub_00075430,2,resolution_row,(uint32_t)(selected_mode<0?0:selected_mode));
         fov_label();
-        guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),1u,0x400u,0u,0u,FOV_DRAW_CB);
+        guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),2u,0x400u,0u,0u,FOV_DRAW_CB);
         guest_call(sub_00079710,1,1u);
-        row(2,"Apply settings"); row(3,"Reset FOV to 55"); row(4,"Back");
+        row(3,"Apply settings"); row(4,"Reset FOV to 55"); row(5,"Back");
     } else if(page==1) { row(0,"Keep resolution"); row(1,"Revert"); }
     else row(0,"Back");
 }
@@ -323,7 +350,15 @@ static void build_menu(void)
 static void refresh(int next,int selected)
 {
     page=next;
+    resolution_row=aspect_row=0; /* Rebuild may finish on a later guest tick. */
     guest_call(sub_00078980,1,current_menu);
+    /* The guest refresh restores choices by row ID after our builder runs.
+       The resolution list has changed: reapply the new list's index after
+       that restoration, otherwise the old index clamps/wraps to its first item. */
+    if(page==0 && resolution_row && aspect_row) {
+        guest_call(sub_00075430,2,aspect_row,(uint32_t)selected_aspect);
+        guest_call(sub_00075430,2,resolution_row,(uint32_t)selected_mode);
+    }
     guest_call(sub_000770E0,2,current_menu,(uint32_t)selected);
 }
 static void leave(void)
@@ -336,7 +371,7 @@ static void revert(void)
     if(pc_display_apply(previous)) {
         int i;
         pc_display_set_fov(previous_fov); staged_fov=previous_fov;
-        staged=previous; deadline=0;
+        staged=previous; deadline=0;selected_aspect=0;filter_modes();
         selected_mode=-1;
         for(i=0;i<mode_count;i++) if(modes[i].width==staged.width && modes[i].height==staged.height) selected_mode=i;
         fprintf(stderr,"[PC-DISPLAY-MENU] Reverted\n"); refresh(0,0);
@@ -359,7 +394,7 @@ static void select_callback(void)
     fprintf(stderr,"[PC-DISPLAY-MENU] Selected page %d row %d\n",page,selected);
     if(page==0) {
         read_resolution();
-        if(selected==2) {
+        if(selected==3) {
             previous=pc_display_current(); previous_fov=pc_display_fov();
             if(staged.width==previous.width && staged.height==previous.height) {
                 pc_display_set_fov(staged_fov);
@@ -374,8 +409,8 @@ static void select_callback(void)
             } else {
                 snprintf(status,sizeof status,"Cannot apply"); refresh(2,0);
             }
-        } else if(selected==3) { staged_fov=PC_FOV_DEFAULT; fov_label(); }
-        else if(selected==4) leave();
+        } else if(selected==4) { staged_fov=PC_FOV_DEFAULT; fov_label(); }
+        else if(selected==5) leave();
     } else if(page==1) {
         if(selected==0) {
             if(pc_display_save()) { deadline=0; refresh(0,0); }
@@ -388,7 +423,13 @@ static void tick_menu(void)
 {
     GuestRegisters r; uint32_t menu=WORD_AT(g_esp+4); save_registers(&r);
     read_resolution();
-    if(page==0 && WORD_AT(menu+0x18c)==1) {
+    if(page==0 && aspect_row) {
+        unsigned aspect=WORD_AT(aspect_row+0xc8);
+        if(aspect<PC_DISPLAY_ASPECT_COUNT && aspect!=(unsigned)selected_aspect) {
+            selected_aspect=(int)aspect;filter_modes();refresh(0,0);
+        }
+    }
+    if(page==0 && WORD_AT(menu+0x18c)==2) {
         uint32_t buttons=WORD_AT(menu+0xc4);
         guest_call(sub_00074910,3,menu,0u,1u);
         if((buttons&0x40000u) && staged_fov>PC_FOV_MIN) --staged_fov;
@@ -404,19 +445,19 @@ static void tick_menu(void)
 }
 static void activate(void)
 {
-    GuestRegisters r; uint32_t source=WORD_AT(g_esp+4); int i;
+    GuestRegisters r; uint32_t source=WORD_AT(g_esp+4);
     save_registers(&r);
     if(!storage) {
-        storage=xbox_HeapAlloc(64+TEXT_BYTES*(12+64),4);
+        storage=xbox_HeapAlloc(64+TEXT_BYTES*(12+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT),4);
         if(storage) {
-            memset((void *)((uintptr_t)storage+g_xbox_mem_offset),0,64+TEXT_BYTES*(12+64));
+            memset((void *)((uintptr_t)storage+g_xbox_mem_offset),0,64+TEXT_BYTES*(12+PC_DISPLAY_MODE_CAPACITY+PC_DISPLAY_ASPECT_COUNT));
             WORD_AT(storage)=BUILD_CB; WORD_AT(storage+4)=TICK_CB;
         }
     }
     if(storage) {
         staged=pc_display_current(); staged_fov=pc_display_fov();
-        mode_count=pc_display_modes(xbox_D3D8Window(),modes,64); selected_mode=-1;
-        for(i=0;i<mode_count;i++) if(modes[i].width==staged.width && modes[i].height==staged.height) selected_mode=i;
+        all_mode_count=pc_display_modes(xbox_D3D8Window(),all_modes,PC_DISPLAY_MODE_CAPACITY);
+        selected_aspect=0;filter_modes();
         parent_menu=WORD_AT(source+0x2c); previous_menu=WORD_AT(source+4);
         page=0; deadline=0;
         fprintf(stderr,"[PC-DISPLAY-MENU] Opened, %d resolutions\n",mode_count);

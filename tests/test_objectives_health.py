@@ -55,6 +55,7 @@ def test_automatic_objectives_layout(tmp_path, broken):
     manual = (RUNTIME / 'titles/futureperfect/src/recomp_manual.c').read_text(encoding='utf-8')
     wrapper = re.search(r'void sub_0013AB60\(void\)\n\{.*?\n\}', manual, re.S)
     assert wrapper
+    assert len(re.findall(r'void sub_0013AB60\(void\)\n\{', manual)) == 1
     source = (ROOT / 'tests/objectives_layout.c').read_text(encoding='utf-8').replace('/* PRODUCTION_LAYOUT */', wrapper.group())
     panel = re.search(r'void sub_002F5E60\(void\)\n\{.*?\n\}', manual, re.S)
     assert panel

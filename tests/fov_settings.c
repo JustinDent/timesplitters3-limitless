@@ -23,17 +23,31 @@ int pc_online_connect(void) { return 0; }
 void pc_online_disconnect(void) {}
 uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) { (void)size;(void)alignment;return 0x100000; }
 #define STUB(name) void name(void) { g_esp+=4; }
+/* The menu translation unit also contains tutorial hooks. Their drawing and
+ * input behavior is covered by tutorial_layout.c; these paths must not run
+ * during the FOV/settings test. */
+int pc_prompts_keyboard_active(void) { CHECK(0); return 0; }
+#define TUTORIAL_STUB(name) void name(void) { CHECK(0); }
+TUTORIAL_STUB(sub_00147080) TUTORIAL_STUB(sub_00042D10)
+TUTORIAL_STUB(sub_0003FA10) TUTORIAL_STUB(sub_0003FCF0) TUTORIAL_STUB(sub_0003F8D0)
+#undef TUTORIAL_STUB
 STUB(sub_00075B70) STUB(sub_00071B10) STUB(sub_00071C50)
 STUB(sub_000771D0) STUB(sub_000770E0)
-void sub_00078980(void) { build_menu(); }
+void sub_00078980(void) {
+    unsigned old=WORD_AT(0x200200+0xc8);build_menu();
+    if(resolution_row)WORD_AT(resolution_row+0xc8)=old; /* Native refresh restores by row ID. */
+}
 STUB(sub_0007D480) STUB(sub_000717D0)
 void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+=4; }
+STUB(sub_00022FF0)
+void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
+void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
 STUB(sub_00079710) STUB(sub_00074910) STUB(sub_001A0A60)
 static float drawn;
 void sub_000814B0(void) { uint32_t b=WORD_AT(g_esp+4);memcpy(&drawn,&b,4);g_esp+=4; }
 void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }
 void sub_00079B70(void) { returned++;g_esp+=4; }
-void sub_00079D60_gen(void) { g_eax=0x200000;g_esp+=4; }
+void sub_00079D60_gen(void) { g_eax=0x200000+WORD_AT(g_esp+8)*0x200;g_esp+=4; }
 static void call(uint32_t address,int selected,unsigned buttons)
 {
     g_esp=0x700000;WORD_AT(g_esp)=0;WORD_AT(g_esp+4)=0x300000;
@@ -70,8 +84,19 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     call(PC_DISPLAY_MENU_CALLBACK,0,0);CHECK(staged_fov==55);
     call(BUILD_CB,0,0);
-    for(int i=0;i<100;i++)call(TICK_CB,1,0x80000);CHECK(staged_fov==100 && pc_display_fov()==55);
-    for(int i=0;i<100;i++)call(TICK_CB,1,0x40000);CHECK(staged_fov==40);
+    for(unsigned a=1;a<PC_DISPLAY_ASPECT_COUNT;a++) {
+        WORD_AT(aspect_row+0xc8)=a;call(TICK_CB,0,0);
+        CHECK(selected_aspect==(int)a && mode_count>0);
+        CHECK(WORD_AT(resolution_row+0xc8)==(unsigned)selected_mode);
+        CHECK(pc_display_aspect(staged)==(int)a);
+        for(int i=0;i<mode_count;i++)CHECK(pc_display_aspect(modes[i])==(int)a);
+    }
+    /* Group selection is a draft, never a desktop mode change or implicit save. */
+    CHECK(current.width==1280 && current.height==720);
+    content("TSFP_DISPLAY_V1 1280 720\n");
+    call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    for(int i=0;i<100;i++)call(TICK_CB,2,0x80000);CHECK(staged_fov==100 && pc_display_fov()==55);
+    for(int i=0;i<100;i++)call(TICK_CB,2,0x40000);CHECK(staged_fov==40);
     WORD_AT(0x70000c)=0x400000;
     { float rectangle[4]={0,0,400,20};memcpy((void *)(g_xbox_mem_offset+0x400000),rectangle,sizeof rectangle); }
     call(FOV_DRAW_CB,1,0);CHECK(drawn==0.f);
@@ -79,22 +104,22 @@ int main(int argc,char **argv)
     /* Leaving discards the draft. No write on slider movement. */
     call(BACK_CB,1,0);content("TSFP_DISPLAY_V1 1280 720\n");
     call(PC_DISPLAY_MENU_CALLBACK,0,0);CHECK(staged_fov==55);
-    for(int i=0;i<20;i++)call(TICK_CB,1,0x80000);
-    call(SELECT_CB,2,0);CHECK(pc_display_fov()==75);content("TSFP_DISPLAY_V2 1280 720 75\n");
-    call(SELECT_CB,3,0);CHECK(staged_fov==55 && pc_display_fov()==75);
+    for(int i=0;i<20;i++)call(TICK_CB,2,0x80000);
+    call(SELECT_CB,3,0);CHECK(pc_display_fov()==75);content("TSFP_DISPLAY_V2 1280 720 75\n");
+    call(SELECT_CB,4,0);CHECK(staged_fov==55 && pc_display_fov()==75);
     /* Combined resolution/FOV preview rolls both back, including global exit. */
     resolution_row=0;staged=(PcDisplayMode){1920,1080};
-    call(SELECT_CB,2,0);CHECK(page==1 && pc_display_fov()==55);
+    call(SELECT_CB,3,0);CHECK(page==1 && pc_display_fov()==55);
     call(BACK_CB,0,0);CHECK(page==0 && current.width==1280 && pc_display_fov()==75);
     resolution_row=0;staged=(PcDisplayMode){1920,1080};staged_fov=80;
-    call(SELECT_CB,2,0);clock_ms=16000;pc_display_frame_done();
+    call(SELECT_CB,3,0);clock_ms=16000;pc_display_frame_done();
     CHECK(current.width==1280 && pc_display_fov()==75);content("TSFP_DISPLAY_V2 1280 720 75\n");
     call(TICK_CB,0,0);CHECK(page==0 && staged_fov==75);
     resolution_row=0;staged=(PcDisplayMode){1920,1080};staged_fov=90;
-    call(SELECT_CB,2,0);call(SELECT_CB,0,0);
+    call(SELECT_CB,3,0);call(SELECT_CB,0,0);
     CHECK(page==0 && current.width==1920 && pc_display_fov()==90);content("TSFP_DISPLAY_V2 1920 1080 90\n");
     resolution_row=0;staged=current;staged_fov=80;CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
-    call(SELECT_CB,2,0);CHECK(pc_display_fov()==90 && page==2);
+    call(SELECT_CB,3,0);CHECK(pc_display_fov()==90 && page==2);
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));content("TSFP_DISPLAY_V2 1920 1080 90\n");
     CHECK(pc_display_set_fov(55) && pc_display_save());content("TSFP_DISPLAY_V1 1920 1080\n");
     VirtualFree(mem,0,MEM_RELEASE);

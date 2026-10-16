@@ -132,6 +132,7 @@ static void native_shader_attribs(void) {
 #include "gl_vertex.inc"
 
 #include "pc_screen_space.h"
+#include "pc_ui_layout.h"
 static void native_place_draw(const void *vertices,UINT stride,UINT count) {
     int pos=-1;unsigned offset=0;
     if(d3d8_vsh_is_programmable(g.current_vsh)) {
@@ -145,21 +146,21 @@ static void native_place_draw(const void *vertices,UINT stride,UINT count) {
         }
         if(!found)pos=-1;
     } else if(d3d8_fvf_transformed(g.current_fvf))pos=0;
-    float k=1,anchor=.5f;
+    float k=1,ky=1,anchor=.5f;
     if(native_scene_active && pos>=0 && pc_display_wide_now() && offset+8<=stride && count) {
         float left=INFINITY,right=-INFINITY;
         for(UINT i=0;i<count;i++){
             float x;memcpy(&x,(const BYTE *)vertices+(size_t)i*stride+offset,4);
             left=fminf(left,x);right=fmaxf(right,x);
         }
-        k=pc_display_hud_scale();
+        k=pc_display_hud_scale();ky=pc_ui_scale_y(k);k=pc_ui_scale_x(k);
         int copied=0;for(int stage=0;stage<4;stage++)if(g.textures[stage] &&
             ((GLTexture*)g.textures[stage])->screen_copy)copied=1;
         if(copied || native_placement==XBOX_D3D8_2D_STRETCH ||
-           (native_placement==XBOX_D3D8_2D_AUTO && left<=1 && right>=g.backbuf_w-1))k=1;
+           (native_placement==XBOX_D3D8_2D_AUTO && left<=1 && right>=g.backbuf_w-1)){k=1;ky=1;}
         if(native_placement==XBOX_D3D8_2D_LEFT)anchor=0;
         if(native_placement==XBOX_D3D8_2D_RIGHT)anchor=1;
-        if(native_placement==XBOX_D3D8_2D_SIDE)anchor=(left+right)<g.backbuf_w?0:1;
+        if(native_placement==XBOX_D3D8_2D_SIDE)anchor=pc_ui_side_anchor(left,right,(float)g.backbuf_w);
     }
-    if(k!=native_hud_k || anchor!=native_hud_anchor){native_hud_k=k;native_hud_anchor=anchor;native_viewport();}
+    if(k!=native_hud_k || ky!=native_hud_ky || anchor!=native_hud_anchor){native_hud_ky=ky;native_hud_k=k;native_hud_anchor=anchor;native_viewport();}
 }
