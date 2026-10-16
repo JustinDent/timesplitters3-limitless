@@ -1,5 +1,66 @@
 # Measured progress
 
+## Resolution release preparation — October 16, 2026
+
+Game v0.2.0-alpha.4 and launcher v1.2.0 are prepared together on
+`release/resolution-v0.2.0-alpha.4`, based on main `92384df`. This integrates
+launcher settings commits `caa6f5e`/`3b93941` and issue #28 fix `e3e99c1`
+without replacing newer main runtime/Online/audio/rendering changes. The release
+package includes both launcher executables and their self-update manifest,
+alongside the current portable Online companion, licenses and source bundle.
+
+Earlier issue-branch validation passed 71 updater and 14 settings checks, native
+display tests and an 86-second real D3D11 guest-menu replay covering left/right
+selection, 720×480 apply/keep/save, Original preview, timed rollback and return.
+Both native value-column and WPF graphics-tab captures were reviewed. The US XBE
+hash was verified; those earlier tests used an isolated relink. The main-based
+full MSVC x64 Release build and native checks subsequently passed, along with
+138 Python tests (5 platform/prerequisite skips), 2 launcher packaging tests,
+71 updater checks, 14 settings checks and 3 launcher lifecycle checks.
+The full executable passed the same isolated 86-second D3D11 resolution replay:
+720×480 apply/keep/save, Original preview, 15-second rollback and menu return.
+Fresh disposable saves and explicit input/display/runtime paths were used.
+Both GitHub patch-transition jobs (Windows and macOS) passed on `647a42a`;
+these source-level Mac checks do not establish native Mac game execution.
+Publication follows `Publish-Release.ps1` on clean main, including a fresh
+package manifest/checksum and portable Online validation. Final artifact/source
+hashes and publication records stay under ignored `build/releases`.
+The first preparation stopped on pytest's retained `*current` aliases.
+Publisher cleanup now validates and unlinks only those direct sibling aliases
+inside its own test tree; targets and arbitrary/external/nested links remain
+protected. Passed per-test fixtures are discarded by pytest so intentional
+hostile-link test cases do not remain in the cleanup tree. Regression fixtures
+cover accepted/rejected aliases and a real nested pytest session with retained
+session-cache targets. The earlier diagnostic fixtures are preserved separately.
+Native Mac execution and paused-Options gameplay traversal remain unverified for
+this change; adaptation is tracked in MAC-010 and MAC-021.
+
+## Release regression compiler discovery — 2026-10-16
+
+- Source base `cc35200`, changes on `fix-release-msvc-tests`.
+  Host: Windows x64, CPython 3.14.2, Visual Studio 2022 Build Tools / MSVC
+  19.42.34435.0. No game or renderer behavior changed.
+- The old `vswhere` queries excluded standalone Build Tools. Audio discovery
+  also preferred a stale mixed-case `Path` entry after reading uppercase `PATH`.
+  `tests/native_compiler.py` now includes all Visual Studio products, loads
+  `vcvars64.bat`, normalizes Windows environment names, and shares the resulting
+  compiler/headers/libraries across audio, cutscene, framebuffer and lifted-float
+  regressions. A ready x64 developer shell is preserved; POSIX retains `CC`/`cc`.
+- The 40 affected native regressions and four discovery checks passed from an
+  ordinary PowerShell environment. Native checks include the original supported
+  US cutscene/pickup/controller routines; the tests verify the executable hash.
+  Complete patch-stack validation passed with zero runtime files changed.
+- The complete release Python suite subsequently passed from ordinary
+  PowerShell: **129 passed, 9 skipped in 116.38 seconds**. Test output is local
+  at `logs/release-msvc-validation.log`; disposable fixtures were isolated under
+  `build/release-validation-tests`. No existing settings or saves were used.
+- Native/full-suite fixture trees were recycled. Recycling the small
+  `build/compiler-discovery-tests` directory was denied/unsupported, so it was
+  retained; no alternative deletion or permission change was attempted.
+- No package, tag, release, main-branch merge, or publication was performed.
+  Mac execution and synchronization with the other device remain unverified;
+  see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-distribution).
+
 ## Adaptive cutscene letterboxing (issue #33) — 2026-10-16
 
 - Source base `5c9effd`, branch `33-remove-the-letter-boxes-in-cut-scenes`.
@@ -1836,3 +1897,45 @@ Its native checks, path-test cleanup and network-content verification passed.
 Logs: `logs/issue-8-branch-build.log` and `logs/issue-8-branch-build-retry.log`.
 Branch executable SHA-256: `7807b189c890a31fcb265dc4395ec67ad453837ea035efd30f287c9b8cc95710`.
 The audio implementation is unchanged from the clean human playtest above.
+
+## Launcher startup skipping (2026-10-16)
+
+Launcher v1.2.1 implementation `bad108c` on `feat/launcher-skip-startup`, based on published main
+`d83ca5e57d36da163680f7c21e0b5f52dd785faf`. Game settings → Graphics & resolution
+now has a Startup checkbox, **Skip startup splash screens**, default off.
+Saving persists `launcher.skip_startup_splashes` in portable controls JSON with
+the existing backup, external-edit protection and rollback rules. Both the
+direct launcher and newly packaged `Launch.ps1` explicitly set the existing
+`RECOMP_XMV_PLAY` switch after sanitizing inherited overrides. This skips all
+file-based XMV playback (opening EA/Free Radical logos and the idle attract
+movie); story scenes use the game's separate rendered-cutscene system. The UI
+explains the attract-video effect. No runtime patch or game rebuild is needed.
+
+Windows x64, .NET Framework 4.8 C# compiler file version 14.8.10001.0,
+Python 3.12.14: launcher
+build passed 71 updater checks and 16 settings checks, including default-off,
+save/reopen/disable, unknown-field preservation, malformed-value rejection,
+inherited-override sanitization and actual child-process consumption. Five
+pytest checks passed (three real PowerShell/synthetic-child launches covering
+missing/false/true preferences plus two packaging checks). The WPF graphics
+preview was rendered and visually reviewed; the checkbox/help text fit the
+existing blue/silver layout. Evidence: ignored `build/launcher/startup-settings.png`.
+
+`tests/launcher_startup_game.py` ran two bounded 20-second launches against the
+verified published alpha.4 executable, SHA-256
+`bc7cbb26ab90fc0af47eb8f8bff90d91c4074893cf443352d4e0c5bf41076345`, using its
+existing D3D11 backend and pinned FFmpeg libraries. The supported US XBE hash
+was reverified before testing. Normal mode played both opening movies; skip
+mode completed both XMV objects with end-of-file status without decoding movies.
+Both runs remained alive and rendered the player-selection screen, confirmed in
+reviewed captures. No crash or unresolved indirect call appeared in their logs.
+All input, saves and both display-config paths were isolated; this invocation's
+disposable saves/frame dumps were removed. Evidence: ignored
+`private/startup-validation/{normal,skip}/startup.png`, `game.err`, `game.out`
+and `runtime/provenance.json`. This is compatibility validation of the published
+game, not a rebuild of concurrent runtime work. Story gameplay/cutscene playback
+was not retested. Mac UI/playback and other-device synchronization remain
+unverified (MAC-021). Release preparation targets stable `launcher-v1.2.1` on
+main, using the documented launcher-only packaging channel. `Publish-Release.ps1`
+publishes the game `VERSION`; no new game version is needed for this option.
+The Windows CI workflow now runs the launcher and portable-script regressions.

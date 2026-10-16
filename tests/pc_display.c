@@ -31,10 +31,14 @@ int main(int argc,char **argv)
     CHECK(pc_display_save());
     { FILE *f=fopen(argv[1],"rb"); char line[100]; CHECK(f); CHECK(fgets(line,sizeof line,f)); fclose(f);
       CHECK(!strcmp(line,"TSFP_DISPLAY_V1 3840 2160\n")); }
-    n=pc_display_modes(NULL,list,64); CHECK(n>=3 && n<=64);
+    bad.width=640; bad.height=480; CHECK(pc_display_valid(bad));
+    bad.width=800; bad.height=600; CHECK(pc_display_valid(bad));
+    n=pc_display_modes(NULL,list,64); CHECK(n>=1 && n<=64);
+    CHECK(list[0].width==0 && list[0].height==0);
     for(i=0;i<n;i++) { CHECK(pc_display_valid(list[i]));
         for(j=0;j<i;j++) CHECK(list[i].width!=list[j].width || list[i].height!=list[j].height); }
-    CHECK(pc_display_modes(NULL,list,1)==1); CHECK(pc_display_modes(NULL,list,0)==0);
+    CHECK(pc_display_modes(NULL,list,1)==1); CHECK(list[0].width==0 && list[0].height==0);
+    CHECK(pc_display_modes(NULL,list,0)==0); CHECK(pc_display_modes(NULL,NULL,64)==0);
     puts("PASS: resolution bounds, mode deduplication, failed apply, scene size and persistence");
     return 0;
 }

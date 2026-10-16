@@ -18,6 +18,63 @@ spec.loader.exec_module(module)
 HEAD, PREVIOUS = 'a'*40, 'b'*40
 
 
+def link_fixture(link, target):
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except OSError as error:
+        pytest.skip(f'Directory symlink prerequisite unavailable: {error}')
+
+
+def test_pytest_alias_cleanup_keeps_target_files(tmp_path):
+    tests=tmp_path/'build/release-tests'; target=tests/'audio-buffer0'
+    target.mkdir(parents=True);(target/'fixture.txt').write_text('keep')
+    link=tests/'audio-buffercurrent'; link_fixture(link,target)
+    module.clean_pytest_current_links(tmp_path,tests)
+    assert not link.is_symlink() and (target/'fixture.txt').read_text()=='keep'
+    module.check_directory(tmp_path,tests)
+
+
+def test_successful_pytest_link_fixtures_are_discarded_before_release_cleanup(tmp_path):
+    tests=tmp_path/'build/release-tests'
+    tests.parent.mkdir()
+    fixture=tmp_path/'fixture_test.py'
+    fixture.write_text('''import pytest
+@pytest.fixture(scope="session")
+def compiled(tmp_path_factory):
+    cache=tmp_path_factory.mktemp("compiler")
+    (cache/"fixture.txt").write_text("keep")
+    return cache
+def test_fixture(tmp_path,compiled):
+    target=tmp_path/"target";target.mkdir()
+    try: (tmp_path/"nested-link").symlink_to(target,target_is_directory=True)
+    except OSError: pytest.skip("symlinks unavailable")
+''')
+    result=subprocess.run([sys.executable,'-m','pytest',str(fixture),'-q',
+                           '-o','tmp_path_retention_policy=failed','--basetemp',str(tests)],
+                          cwd=tmp_path,capture_output=True,text=True,timeout=30)
+    assert result.returncode==0,result.stdout+result.stderr
+    module.clean_pytest_current_links(tmp_path,tests)
+    module.check_directory(tmp_path,tests)
+    assert (tests/'compiler0/fixture.txt').read_text()=='keep'
+
+
+@pytest.mark.parametrize('kind',['external','unexpected','nested'])
+def test_pytest_alias_cleanup_rejects_unrecognized_links_without_mutation(tmp_path,kind):
+    tests=tmp_path/'build/release-tests'; target=tests/'fixture0'
+    target.mkdir(parents=True)
+    good=tests/'fixturecurrent'; link_fixture(good,target)
+    if kind=='external':
+        other=tmp_path/'outside0';other.mkdir();bad=tests/'outsidecurrent'
+    elif kind=='nested':
+        other=target;bad=target/'fixturecurrent'
+    else:
+        other=target;bad=tests/'unexpected'
+    link_fixture(bad,other)
+    with pytest.raises(ValueError,match='Unexpected link'):
+        module.clean_pytest_current_links(tmp_path,tests)
+    assert good.is_symlink() and bad.is_symlink() and target.is_dir()
+
+
 class FakePublisher(module.Publisher):
     def __init__(self, root):
         super().__init__(root)
@@ -149,6 +206,18 @@ def test_upload_failure_leaves_draft_unpublished(publisher):
 def test_draft_option_never_publishes(publisher):
     publisher.preflight(); publisher.prepare(); publisher.publish(draft=True)
     assert len(publication_calls(publisher)) == 1
+
+
+@pytest.mark.parametrize('version', ['0.2.0-alpha.3', '0.2.0'])
+@pytest.mark.parametrize('draft', [False, True])
+def test_game_releases_preserve_latest_launcher(publisher, version, draft):
+    (publisher.root/'VERSION').write_text(version)
+    publisher.preflight(); publisher.prepare(); publisher.publish(draft=draft)
+    calls = publication_calls(publisher)
+    assert len(calls) == (1 if draft else 2)
+    # Both draft creation and final publication must keep the launcher Latest.
+    assert all('--latest=false' in call[1] for call in calls)
+    assert ('--prerelease' in calls[0][1]) == ('-' in version)
 
 
 def test_package_manifest_rejects_changed_stage(publisher):

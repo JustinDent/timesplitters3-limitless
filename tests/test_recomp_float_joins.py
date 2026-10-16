@@ -7,12 +7,12 @@ import hashlib
 import importlib.util
 import os
 from pathlib import Path
-import shutil
 import struct
 import subprocess
 import sys
 
 import pytest
+from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / 'external/ts3FPrecomp'
@@ -81,9 +81,7 @@ def test_generator_change_invalidates_existing_game_c(tmp_path):
 
 
 def compile_and_run(tmp_path, source, expect_success=True):
-    compiler = shutil.which(os.environ.get('CC', 'cl' if os.name == 'nt' else 'cc'))
-    if not compiler:
-        pytest.skip('C compiler required; on Windows run inside the MSVC x64 environment')
+    compiler, environment = native_compiler(tmp_path)
     path = tmp_path / 'float_join.c'
     path.write_text(source, encoding='utf-8')
     executable = tmp_path / ('float_join.exe' if os.name == 'nt' else 'float_join')
@@ -93,7 +91,7 @@ def compile_and_run(tmp_path, source, expect_success=True):
                    '/Fe:' + str(executable), '/Fo:' + str(tmp_path / 'float_join.obj')]
     else:
         command = [compiler, '-std=c11', '-O2', '-I', str(includes), str(path), '-lm', '-o', str(executable)]
-    built = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True)
+    built = subprocess.run(command, cwd=tmp_path, env=environment, capture_output=True, text=True)
     assert built.returncode == 0, built.stdout + built.stderr
     result = subprocess.run([str(executable)], capture_output=True, text=True, timeout=15)
     assert (result.returncode == 0) == expect_success, result.stdout + result.stderr

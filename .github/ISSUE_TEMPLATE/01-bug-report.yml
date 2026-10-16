@@ -1,0 +1,80 @@
+name: Report a problem
+description: Tell us about something that is not working.
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Tell us what went wrong. Check [existing reports](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues) first.
+        Not sure about a version? Choose **I don't know**. If you choose **Other**, add your version in the description below.
+  - type: dropdown
+    id: game-version
+    attributes:
+      label: Game version
+      description: Shown as the installed game version in the launcher. Pick the one you have, not an available update.
+      options:
+        # BEGIN AUTO GAME VERSIONS
+        - "v0.2.0-alpha.4"
+        - "v0.2.0-alpha.3"
+        - "v0.2.0-alpha.2"
+        - "v0.1.0-alpha.1"
+        # END AUTO GAME VERSIONS
+        - "Other / source build"
+        - "I don't know"
+        - "Not installed yet"
+    validations:
+      required: true
+  - type: dropdown
+    id: launcher-version
+    attributes:
+      label: Launcher version
+      description: Look for LAUNCHER v... at the top of the launcher window.
+      options:
+        # BEGIN AUTO LAUNCHER VERSIONS
+        - "v1.2.1"
+        - "v1.2.0"
+        - "v1.1.2"
+        - "v1.1.1"
+        - "v1.1.0"
+        # END AUTO LAUNCHER VERSIONS
+        - "Other / custom build"
+        - "I don't know"
+        - "Not using the launcher"
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS
+        - Other / not sure
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: What went wrong, and what did you expect instead? Include any error message you saw.
+      placeholder: "Example: The game closes when I select Story mode. I expected the level to load."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen?
+      description: List what you clicked or did. Include the level or game mode, if relevant. If you are not sure, tell us what you were doing.
+      placeholder: |
+        1. Open the game.
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else? (optional)
+      description: Attach a screenshot, video, or log if you have one. View logs in the launcher opens its log folder. You can also mention your graphics card, settings, or how often it happens. Remove personal information and do not upload game files or saves.

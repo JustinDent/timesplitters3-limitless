@@ -55,6 +55,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
 | MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
 | MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
+| MAC-021 | Published-release launcher and pre-game settings | Queued |
 
 ### MAC-001 — Direct-camera mouse look
 
@@ -169,6 +170,16 @@ runtime readiness. No full campaign playthrough is required.
 
 ### MAC-010 — In-game resolution preview and rollback
 
+- **Issue #28 release follow-up:** Windows game v0.2.0-alpha.4 and launcher
+  v1.2.0 use primary-display modes, the console default, lower modes down to
+  640×480, refresh-rate deduplication and preservation of saved custom modes.
+  `src/pc_display_menu.c` uses the game's native arrow choice widget. Sources:
+  `src/pc_display.c`, `tools/launcher/DisplayModes.cs`, `SettingsWindow.cs`;
+  implementation `e3e99c1`, integrated on `release/resolution-v0.2.0-alpha.4`.
+  SDL discovery otherwise retains its existing behavior. Mac mode discovery,
+  native arrow spacing, lower modes and Apply/Keep/Revert/timeout still need
+  native verification; Windows results do not verify Mac support.
+
 - **Status:** Awaiting validation
 - **PC behavior:** Display settings offers Apply/Keep/Revert with a 15-second automatic rollback, persisted resolution and widescreen camera/HUD handling.
 - **PC source:** Audited revision above; `src/pc_display.c`, `src/pc_display_menu.c`, `src/pc_display_renderer.inc`, `tests/pc_display_game.py`, `tests/pc_display_gameplay.py`.
@@ -195,6 +206,17 @@ runtime readiness. No full campaign playthrough is required.
 - **Mac implementation and evidence:** Synthetic DDS/GPU replacement and corrupt-fallback regressions passed again in this batch. Actual installed-art coverage remains pending because the real pack is unavailable on this device. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 
 ### MAC-012 — Standalone Mac runtime distribution
+
+- **Release-test compiler discovery follow-up (2026-10-16, branch
+  `fix-release-msvc-tests`):** `tests/native_compiler.py` supplies one compiler
+  environment to audio, framebuffer, cutscene, and lifted-float regressions.
+  Windows discovers standalone Build Tools as well as Visual Studio and loads
+  x64 headers/libraries without a developer shell. The POSIX path still uses
+  `CC` or `cc` and inherits its environment. No Mac adapter is needed for this
+  Windows discovery fix; simulated POSIX checks are separate from pending
+  execution on macOS. Acceptance: run `tests/test_native_compiler.py` and the
+  affected native regressions on Mac. See
+  [compiler validation](STATUS.md#release-regression-compiler-discovery--2026-10-16).
 
 - **Status:** Queued
 - **PC behavior:** Windows has a public runtime package with launcher, dependencies, licenses, checksums/build manifest and game-import workflow.
@@ -351,6 +373,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-015 — Release test privileges and disposable cleanup
 
+- **Release follow-up:** `tools/publish-release.py` recognizes only pytest's
+  `*current` sibling symlinks in `build/release-tests`, validates all targets
+  before unlinking, and retains the normal recursive-cleanup guards. Native
+  fixtures cover containment and target preservation. This affects Windows
+  publication; a Mac publisher still needs its own native adapter/validation.
+
 - **Status:** Awaiting validation
 - **PC behavior:** Native-tool symlink tests skip only Windows privilege error
   1314; other errors still fail. Release test/staging cleanup removes validated
@@ -466,6 +494,35 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ## Entry template
 
 Copy this template into the queue for each new entry. Replace all placeholders.
+
+### MAC-021 — Published-release launcher and pre-game settings
+
+- **Status:** Queued
+- **Startup skipping (2026-10-16, commit `bad108c` on `feat/launcher-skip-startup`):**
+  Windows launcher v1.2.1 adds an off-by-default Startup checkbox under Graphics
+  & resolution. It preserves `launcher.skip_startup_splashes` in the existing
+  controls JSON and explicitly sets `RECOMP_XMV_PLAY=0/1` for each game launch;
+  opening logos and the idle attract movie are skipped, while rendered story
+  cutscenes use a separate system. Sources: `tools/launcher/GameSettings.cs`,
+  `tools/launcher/SettingsWindow.cs`, `tools/playable-launch.ps1`.
+  Existing Mac HLE has no host XMV player, so this does not establish Mac movie
+  playback or a new native checkbox. When adding Mac movie playback/pre-game UI,
+  honor the same saved boolean and switch, preserve unknown JSON members, and
+  verify enabled/disabled launches with isolated paths. Windows evidence:
+  [Launcher startup skipping](STATUS.md#launcher-startup-skipping-2026-10-16).
+- **PC behavior:** Launcher v1.2.0 retains verified release-only game updates,
+  independent self-updates, import, rollback and minimize/restore; it adds
+  pre-game bindings, graphics, resolution and fullscreen editing with backups,
+  external-edit protection and transactional saves. The banner, blue/silver theme
+  and icon remain embedded. Release source: `tools/launcher`, `tools/build-launcher.ps1`,
+  `tools/package-release.py`, branch `release/resolution-v0.2.0-alpha.4`.
+- **Mac support/adaptation:** Existing in-game Cocoa settings remain separate.
+  Add native release discovery, import, update/rollback and pre-game UI adapters;
+  reuse shared binding/display/config rules. Do not ship Windows binaries on Mac.
+- **Acceptance:** Safe archive paths/checksums, stable/preview channels, failed
+  update recovery, isolated settings save/cancel, conflicts, file preservation,
+  primary display modes, and actual runtime consumption of all selected settings.
+  Windows results do not verify Mac adapters or rendering.
 
 ### MAC-NNN — Feature name
 

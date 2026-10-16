@@ -1,0 +1,21 @@
+name: Suggest an improvement
+description: Share an idea that would make the game or launcher better.
+title: "[Enhancement]: "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share one idea at a time. Check [existing suggestions](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues) first.
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to add or change?
+      placeholder: "Example: Let me change the text size in the menus."
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else? (optional)
+      description: You can attach a screenshot or example. Remove personal information and do not upload game files or saves.

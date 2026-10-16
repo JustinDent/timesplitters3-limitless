@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup and troubleshooting guides
+    url: https://github.com/TheDoffman/timesplitters-future-perfect-pc/blob/main/README.md#guides--support
+    about: Check the launcher, controls, multiplayer, Mac, and build guides before reporting a problem.
