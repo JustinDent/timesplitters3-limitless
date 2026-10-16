@@ -20,7 +20,7 @@ def release(tag, **changes):
 def report(platform='Windows 11', enhancement=False, legacy=False):
     heading = 'What would you like to add or change?' if enhancement else 'What happened?'
     if enhancement and not legacy:
-        return f'### {heading}\n\nAn idea\n\n### How would this help?\n\nA reason\n'
+        return f'### {heading}\n\nAn idea\n\n### Anything else? (optional)\n\n_No response_\n'
     return (f'### Game version\n\nv0.2.0-alpha.4\n\n'
             f'### Launcher version\n\nv1.2.1\n\n'
             f'### Platform\n\n{platform}\n\n### {heading}\n\nDescription\n'
@@ -118,9 +118,9 @@ class VersionTests(unittest.TestCase):
             before = path.read_bytes()
             forms.refresh_versions(root, [release('v3.0.0'), release('launcher-v4.0.0')])
             self.assertEqual(path.read_bytes(), before)
-            for removed in ('game-version', 'launcher-version', 'id: platform', 'AUTO GAME', 'AUTO LAUNCHER'):
+            for removed in ('game-version', 'launcher-version', 'id: platform', 'id: reason', 'AUTO GAME', 'AUTO LAUNCHER'):
                 self.assertNotIn(removed, path.read_text())
-            self.assertEqual(path.read_text().count('  - type: textarea'), 3)
+            self.assertEqual(path.read_text().count('  - type: textarea'), 2)
 
 
 class LabelTests(unittest.TestCase):

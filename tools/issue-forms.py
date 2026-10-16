@@ -117,7 +117,7 @@ def report_labels(body):
         r'^### ([^\r\n]+)\r?\n(.*?)(?=^### |\Z)', body or '', re.M | re.S)}
     if {'Game version', 'Launcher version', 'Platform', 'What happened?'} <= fields.keys():
         desired = {'bug'}
-    elif {'What would you like to add or change?', 'How would this help?'} <= fields.keys():
+    elif 'What would you like to add or change?' in fields:
         desired = {'enhancement'}
     else:
         return None

@@ -156,7 +156,7 @@ account, paid service or centrally operated server is required. Choose
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
 or **[request an enhancement](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)**.
 For bugs, pick your versions and platform, then describe the problem. For an
-improvement, just share your idea and how it would help. Screenshots and logs
+improvement, just share your idea. Screenshots and logs
 are optional. Bug version choices stay up to date automatically; both forms
 receive labels automatically.
 [Find your build version and logs](docs/launcher.md#report-a-problem-or-request-an-improvement);
