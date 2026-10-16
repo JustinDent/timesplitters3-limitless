@@ -97,13 +97,10 @@ static void fill(HWND d, Editor *e)
     CheckDlgButton(d,ID_ENABLED,e->settings.enabled?BST_CHECKED:BST_UNCHECKED);
 }
 
-static int reserved(int key)
-{ return key==VK_F1 || key==VK_F2 || key==VK_F12 || key==VK_F9 || key==VK_F10 || key==VK_F11 || key==VK_LWIN || key==VK_RWIN; }
-
 static void capture_key(HWND d,int key)
 {
     Capture *c=(Capture *)GetWindowLongPtr(d,DWLP_USER);
-    if(reserved(key)) { SetDlgItemTextA(d,ID_STATUS,"That key is reserved by the game window. Choose another key."); return; }
+    if(!pc_settings_key_allowed(key)) { SetDlgItemTextA(d,ID_STATUS,"That key is reserved by the game window. Choose another key."); return; }
     c->key=key; c->accepted=1;
     EndDialog(d,IDOK);
 }
@@ -171,9 +168,7 @@ static void change_binding(HWND d,Editor *e)
         snprintf(title,sizeof title,"%s is already assigned to %s.\n\nMove it to %s?",key_name,pc_action_labels[conflict],pc_action_labels[row]);
         if(MessageBoxA(d,title,"Binding already in use",MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2)!=IDYES) return;
     }
-    if(capture.key) for(i=0;i<PC_ACTION_COUNT;i++) for(j=0;j<PC_BINDING_SLOTS;j++)
-        if(e->settings.keys[i][j]==capture.key) e->settings.keys[i][j]=0;
-    e->settings.keys[row][e->slot]=capture.key;
+    if(pc_settings_assign(&e->settings,row,e->slot,capture.key,1)!=1)return;
     /* Only redraw bindings: do not overwrite mouse edits still in the form. */
     for(i=0;i<PC_ACTION_COUNT;i++) for(j=0;j<PC_BINDING_SLOTS;j++) {
         char name[80]; pc_settings_key_name(e->settings.keys[i][j],name,sizeof name);

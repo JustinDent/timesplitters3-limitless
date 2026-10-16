@@ -65,6 +65,24 @@ int pc_settings_conflict(const PcSettings *s, int action, int key)
     return -1;
 }
 
+int pc_settings_key_allowed(int key)
+{
+    return key>=0 && key<=255 && key!=VK_F1 && key!=VK_F2 &&
+        key!=VK_F9 && key!=VK_F10 && key!=VK_F11 && key!=VK_F12 &&
+        key!=VK_LWIN && key!=VK_RWIN;
+}
+int pc_settings_assign(PcSettings *s,int action,int slot,int key,int move)
+{
+    int i,j;
+    if(!s || action<0 || action>=PC_ACTION_COUNT || slot<0 || slot>=PC_BINDING_SLOTS ||
+       !pc_settings_key_allowed(key))return 0;
+    if(!move && pc_settings_conflict(s,action,key)>=0)return -1;
+    if(key)for(i=0;i<PC_ACTION_COUNT;i++)for(j=0;j<PC_BINDING_SLOTS;j++)
+        if(s->keys[i][j]==key)s->keys[i][j]=0;
+    s->keys[action][slot]=key;
+    return 1;
+}
+
 int pc_settings_read(PcSettings *s, char *error, size_t bytes)
 {
     int i,j;
@@ -258,7 +276,7 @@ int pc_settings_save(const PcSettings *s, char *error, size_t bytes)
         first=1;
         for (j=0;j<PC_BINDING_SLOTS;j++) {
             int key=s->keys[i][j];
-            if (key<0 || key>255 || key==VK_F1 || key==VK_F2 || key==VK_F12 || key==VK_F9 || key==VK_F10 || key==VK_F11 || key==VK_LWIN || key==VK_RWIN) {
+            if (!pc_settings_key_allowed(key)) {
                 snprintf(error,bytes,"A binding uses an invalid key, a system key, or a reserved function key (F1, F2, F9, F10, F11, F12)."); return 0;
             }
             if (key) { used += (size_t)snprintf(bindings+used,sizeof bindings-used,"%s\"key:#%d\"",first?"":",",key); first=0; }

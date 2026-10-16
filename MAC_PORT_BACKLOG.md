@@ -29,8 +29,9 @@ Next work: finish the remaining camera/prompt and resolution acceptance checks,
 then reproduce the reported world disappearance with a short controlled route.
 Four-stage 2D rendering improved reviewed first-mission captures, but does not
 establish the cause of every missing-world symptom. Prioritize remaining
-MAC-005/006/007 paths from scene evidence, then debug tools, binding capture and
-movies. MAC-011 needs the actual texture pack on this device; packaging follows
+MAC-005/006/007 paths from scene evidence, and movies. Debug tools and binding
+capture are implemented with remaining physical-input and live-window validation
+below. MAC-011 needs the actual texture pack on this device; packaging follows
 runtime readiness. No full campaign playthrough is required.
 
 ## Queue
@@ -39,8 +40,8 @@ runtime readiness. No full campaign playthrough is required.
 | --- | --- | --- |
 | MAC-001 | Direct-camera mouse look | Awaiting validation |
 | MAC-002 | Keyboard/mouse prompts and device switching | Awaiting validation |
-| MAC-003 | Debug settings and on-screen performance information | Queued |
-| MAC-004 | Capture-to-bind and conflict reassignment | Queued |
+| MAC-003 | Debug settings and on-screen performance information | Awaiting validation |
+| MAC-004 | Capture-to-bind and conflict reassignment | Awaiting validation |
 | MAC-005 | Multiple texture stages and shader fidelity | In progress |
 | MAC-006 | Cube and volume texture resources | Queued |
 | MAC-007 | Screen-copy effects and image surfaces | In progress |
@@ -58,9 +59,9 @@ runtime readiness. No full campaign playthrough is required.
 - **PC source:** Audited revision above; `src/pc_controls.c`, `src/pc_input.c`, `patches/pc-controls.patch`, `tests/pc_controls.c`.
 - **PC validation:** Input regression and deterministic mission replay, including zoom scaling, are recorded in [Windows validation](STATUS.md#validation); physical mouse fidelity remains a separate check.
 - **Existing Mac support:** SDL relative counts now feed the shared `pc_input_look` camera model through the guest wrapper. Controller right-stick input stays independent; configured sensitivity, inversion and FOV scaling are shared with Windows.
-- **Mac adaptation needed:** Implementation is present. Finish live gameplay checks across pause/settings/focus transitions and physical mouse use; retain the equal-count/polling-rate and pitch-limit acceptance checks.
+- **Mac adaptation needed:** Implementation is present. Finish live gameplay checks across pause/settings/focus transitions and physical mouse use. Native adapter tests now cover equal counts batched or applied per event, both pitch limits and stale motion suppression.
 - **Mac acceptance checks:** Equal counts give equal angles across polling rates; zoom scaling, inversion and pitch limits work; pause/settings/focus changes cause no jump or unwanted shot. Use isolated settings and a short mission check.
-- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `src/native/input_sdl.c`, `src/pc_camera.h`, `src/pc_guest_memory.h`, `src/pc_controls.c`, `patches/zzzzzzzzzzzzz-native-camera.patch`. Native fixtures passed sensitivity, inversion, FOV, capture/release, focus and no-stick-injection checks. A bounded first-mission run logged 8/-2 counts changing yaw/pitch by -1.6/+0.4 degrees at sensitivity 0.2 and FOV 55. These are synthetic SDL events, not physical-device validation. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
+- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `src/native/input_sdl.c`, `src/pc_camera.h`, `src/pc_guest_memory.h`, `src/pc_controls.c`, `patches/zzzzzzzzzzzzz-native-camera.patch`. Native fixtures passed sensitivity, inversion, FOV, capture/release, focus and no-stick-injection checks. A bounded first-mission run logged 8/-2 counts changing yaw/pitch by -1.6/+0.4 degrees at sensitivity 0.2 and FOV 55. These are synthetic SDL events, not physical-device validation. Further native adapter checks for batched/per-event counts, pitch limits and stale motion passed; see [capture and camera validation](STATUS.md#mac-binding-capture-and-camera-checks-2026-10-15). [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
@@ -75,27 +76,25 @@ runtime readiness. No full campaign playthrough is required.
 
 ### MAC-003 — Debug settings and on-screen performance information
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** F12 opens debug settings; F9 toggles FPS. Options show guest/shown FPS, frame intervals, issue counters and recent logs, with bounded optional performance logging.
 - **PC source:** Audited revision above; `src/pc_debug.c`, `src/pc_debug.h`, `patches/pc-debug.patch`, `tests/pc_debug.c`, `tests/pc_debug_game.py`.
 - **PC validation:** Windows implementation and test scripts exist; current Windows runtime behavior was not retested during this audit.
-- **Existing Mac support:** Native logs/frame-time reports exist, but `src/native/settings_macos.m` only stores `pc_debug_set` options. No equivalent debug panel or overlay is connected.
-- **Mac adaptation needed:** Share portable statistics/configuration logic and add Cocoa controls, SDL shortcuts, native overlay drawing and bounded log access.
+- **Existing Mac support:** F9 toggles a host-only OpenGL text overlay; F12 and the Game Settings menu open a Cocoa debug panel. Both use the shared statistics, options, configuration and diagnostic classifier. POSIX log reading handles truncation/replacement and runs on the main thread.
+- **Mac adaptation needed:** Implementation is present. Finish visual Cocoa layout, physical F9/F12 and live fullscreen panel/focus checks. A synthetic shortcut smoke run does not establish physical event delivery.
 - **Mac acceptance checks:** Toggle in windowed/fullscreen modes; distinguish guest and interpolated presents; save/cancel and issue-counter reset work; log polling stays off the render thread; preserve unrelated JSON.
-- **Mac implementation and evidence:** Remaining work pending. Existing coverage:
-  [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
+- **Mac implementation and evidence:** Uncommitted on `mac-port` over `e83e074`: shared `src/pc_debug.c`, native `debug_macos.inc`, `gl_debug.inc`, SDL/renderer hooks and `patches/zzzzzzzzzzzzzz-native-debug.patch`. Native GPU text/state/isolation tests, real Cocoa Save/Cancel, configuration preservation/failure, log rotation/reset and synthetic F9 repeat/release checks pass. [Measured validation](STATUS.md#mac-debug-and-performance-tools-2026-10-15).
 
 ### MAC-004 — Capture-to-bind and conflict reassignment
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** The Windows editor captures a pressed key, mouse button or wheel direction and offers to move a conflicting binding from another action.
 - **PC source:** Audited revision above; `src/pc_settings.c`, `src/pc_bindings.inc`, `tests/pc_settings.c`, `tests/pc_settings_game.py`.
 - **PC validation:** Capture, conflict reassignment, Cancel and live persistence were checked in [PC controls menu](STATUS.md#pc-controls-menu-2026-10-15).
-- **Existing Mac support:** The Cocoa editor already has four dropdown slots, defaults, save/cancel and conflict rejection. It lacks capture-to-bind and move-conflict confirmation; SDL key coverage is a limited mapping.
-- **Mac adaptation needed:** Add native capture interaction and explicit conflict moves. Audit supported key mappings against PC bindings, including punctuation/keypad keys; retain portable stored codes and clear unsupported-key feedback.
+- **Existing Mac support:** Each of the four Cocoa binding slots now has a Record action. Capture accepts keyboard/modifier keys, five mouse buttons and wheel directions; Escape cancels, with separate Use Escape and Unbind buttons. Explicit conflict confirmation moves the binding using the same assignment/reserved-key rules as Windows. Punctuation and keypad keys now work through the SDL mapping; unsupported saved keys remain visible and preserved.
+- **Mac adaptation needed:** Finish visual/editor interaction checks and physical keyboard/mouse capture on Mac, including non-US layouts. Native responder and modal-dialog tests passed; they do not establish physical macOS event delivery.
 - **Mac acceptance checks:** Capture keyboard, five mouse buttons and wheel directions without leaking gameplay input; test conflict move/cancel, reserved keys, save/reopen and controls from another device using isolated files.
-- **Mac implementation and evidence:** Remaining work pending. Existing coverage:
-  [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
+- **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`, tested against `30653e3`: `src/native/binding_capture.inc`, `src/native/settings_macos.m`, `src/native/input_sdl.c`, `src/native/settings_selftest.inc`, and shared `src/pc_bindings.inc`, `src/pc_settings.c`, `src/pc_settings.h`. Cocoa responder/modal, shared move/cancel, save/reload, live punctuation/keypad input, backup and failure tests pass. [Validation](STATUS.md#mac-binding-capture-and-camera-checks-2026-10-15).
 
 ### MAC-005 — Multiple texture stages and shader fidelity
 
@@ -230,6 +229,25 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 
 If shared code already supplies the feature, record that fact and use awaiting
 validation until Mac checks pass. Do not infer Mac support from Windows results.
+
+### MAC-014 — Patch upgrades across Windows watermark and native overlay guards
+
+- **Status:** Awaiting validation
+- **PC behavior:** Release preparation accepts the complete shared patch stack
+  over fresh sources or an existing Windows watermark build, without losing
+  unrelated runtime edits. Conflicting code still fails before runtime writes.
+- **PC source:** Uncommitted on `mac-port`: `tools/apply-patches.py` and
+  `tests/test_patch_updates.py`; tested with `main` revision `5cf4866` patches.
+- **PC validation:** Eleven patch-loader tests passed on Windows, plus fresh and
+  existing-Windows fixtures using the complete main patch stack; repeated
+  application made no changes. See `STATUS.md`, 2026-10-15 patch preparation.
+- **Existing Mac support:** The same Python patch loader serves both hosts.
+- **Mac adaptation needed:** No native adapter changes; validate the shared
+  loader on macOS. This does not add the Windows watermark patch to this branch.
+- **Mac acceptance checks:** Run patch-loader tests and apply/reapply the
+  complete merged stack on disposable sources, preserving actual code conflicts.
+- **Mac implementation and evidence:** Shared fix present locally; macOS checks
+  and other-device synchronization remain unverified.
 
 ## Entry template
 

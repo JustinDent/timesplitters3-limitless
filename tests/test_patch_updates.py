@@ -50,7 +50,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
-        if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch'):
+        if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch'):
             apply(checkout, patch.name)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')
@@ -112,6 +112,38 @@ def test_windows_line_endings(checkout):
         (checkout / name).write_bytes(content.replace(b'\r\n', b'\n').replace(b'\n', b'\r\n'))
     assert installer.apply_patches(checkout, PATCHES)
     assert installer.apply_patches(checkout, PATCHES) == []
+
+
+@pytest.mark.parametrize('already_applied', [False, True])
+def test_watermark_beside_native_overlay_guard(tmp_path, already_applied):
+    tree, patches = tmp_path / 'runtime', tmp_path / 'patches'
+    target = tree / 'src/hle/hle_d3d8.c'
+    target.parent.mkdir(parents=True)
+    patches.mkdir()
+    installer.git(tree, 'init', '-q')
+    original = '/* overlay */\nstatic int shown;\nstatic char line[96];\nvoid redraw(void);\n'
+    target.write_text(original, encoding='utf-8')
+    (patches / 'zz-mac-native-boot.patch').write_text(
+        '--- a/src/hle/hle_d3d8.c\n+++ b/src/hle/hle_d3d8.c\n'
+        '@@ -1,4 +1,5 @@\n /* overlay */\n+#ifdef _WIN32\n'
+        ' static int shown;\n static char line[96];\n void redraw(void);\n', encoding='utf-8')
+    watermark = patches / 'zzzz-pc-debug-latency-watermark.patch'
+    watermark.write_text(
+        '--- a/src/hle/hle_d3d8.c\n+++ b/src/hle/hle_d3d8.c\n'
+        '@@ -1,4 +1,4 @@\n /* overlay */\n static int shown;\n'
+        '-static char line[96];\n+static char line[192];\n void redraw(void);\n', encoding='utf-8')
+    if already_applied:
+        assert installer.git(tree, 'apply', watermark).returncode == 0
+    assert installer.apply_patches(tree, patches)
+    complete = target.read_bytes()
+    assert b'#ifdef _WIN32' in complete and b'line[192]' in complete
+    assert installer.apply_patches(tree, patches) == []
+    # Reduced context must still reject changes to the actual patched code.
+    target.write_bytes(complete.replace(b'line[192]', b'line[256]'))
+    before = target.read_bytes()
+    with pytest.raises(RuntimeError, match='conflicts with the runtime checkout'):
+        installer.apply_patches(tree, patches)
+    assert target.read_bytes() == before
 
 
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows PowerShell stderr behavior')

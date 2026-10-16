@@ -255,12 +255,34 @@ plain tutorial text is unchanged.
 
 **Mac settings:** press **F2** (Fn+F2 if needed), or choose **Game Settings →
 Keyboard, Mouse & Graphics…** in the Mac menu bar. The Keyboard & Mouse tab edits
-up to four bindings per action, sensitivity and vertical inversion. Save applies
-that tab immediately and backs up the controls file; Cancel discards unsaved edits.
+up to four bindings per action, sensitivity and vertical inversion. Use **Record**
+next to a binding to press a key or click/scroll inside the capture box. Escape
+cancels capture; **Use Escape** and **Unbind** are explicit alternatives. If another
+action uses the binding, **Move binding** reassigns it in the editor; Cancel keeps
+the old assignment. Punctuation and keypad keys use the same portable codes as PC.
+Unsupported saved keys are preserved and labeled unavailable on Mac.
+
+**Save this tab** applies the edits and backs up the controls file; Cancel discards
+unsaved edits. Capture and conflict changes remain drafts until Save.
 The Graphics tab selects the render resolution and fullscreen. **F11** toggles
 fullscreen directly. Resolutions persist in `config/pc-display.ini`; fullscreen
 is a session setting. The original in-game Settings/Options menu also includes
 **Display settings**, with a 15-second resolution preview and automatic rollback.
+
+**Mac debug tools:** **F9** toggles the FPS overlay for the current session.
+**F12** or **Game Settings → Debug & Performance…** opens options for FPS,
+average guest frame interval, error/warning counters and optional performance
+logging. Use Fn with the function keys if macOS reserves them. **Save & Close**
+persists these options under `debug` in the controls JSON; Cancel discards drafts.
+Clear counters resets the diagnostic history without deleting logs.
+
+Game FPS counts guest presentations; Shown includes successful interpolated host
+presentations. These measure application presents, not monitor scanout or the
+console clock. The overlay stays outside guest screen copies and frame captures.
+Log counters match diagnostic text; they cannot detect every rendering problem.
+Polling runs on the main thread, and optional samples are limited to twice per
+second. **Open logs folder** opens the launcher's bounded `logs/native-play.err`
+location (or `native-boot.err` for isolated tests).
 
 Higher resolutions render the scene at the selected size, preserve the original
 menu proportions and widen the gameplay camera. Screen-space HUD draws retain

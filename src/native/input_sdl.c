@@ -5,6 +5,7 @@
 #include "input_bindings.h"
 #include "pc_prompts.h"
 #include "pc_camera.h"
+#include "pc_debug.h"
 #include "pc_input.h"
 #include <pthread.h>
 #include <stdatomic.h>
@@ -27,13 +28,27 @@ void tsfp_native_mouse_config(int enabled,double sensitivity,int invert_y) {
     atomic_store(&mouse_sensitivity,isfinite(sensitivity)?fmax(0.001,fmin(10,sensitivity)):0.10);
 }
 
-static int virtual_key(SDL_Scancode code) {
+int tsfp_native_virtual_key(SDL_Scancode code) {
     if(code>=SDL_SCANCODE_A && code<=SDL_SCANCODE_Z)return 'A'+code-SDL_SCANCODE_A;
     if(code>=SDL_SCANCODE_1 && code<=SDL_SCANCODE_9)return '1'+code-SDL_SCANCODE_1;
     if(code==SDL_SCANCODE_0)return '0';
     if(code>=SDL_SCANCODE_F1 && code<=SDL_SCANCODE_F12)return 0x70+code-SDL_SCANCODE_F1;
     if(code>=SDL_SCANCODE_F13 && code<=SDL_SCANCODE_F24)return 0x7c+code-SDL_SCANCODE_F13;
+    if(code>=SDL_SCANCODE_KP_1 && code<=SDL_SCANCODE_KP_9)return 0x61+code-SDL_SCANCODE_KP_1;
     switch(code) {
+    case SDL_SCANCODE_KP_0:return 0x60;
+    case SDL_SCANCODE_KP_MULTIPLY:return 0x6a;case SDL_SCANCODE_KP_PLUS:return 0x6b;
+    case SDL_SCANCODE_KP_MINUS:return 0x6d;case SDL_SCANCODE_KP_PERIOD:return 0x6e;
+    case SDL_SCANCODE_KP_DIVIDE:return 0x6f;case SDL_SCANCODE_NUMLOCKCLEAR:return 0x90;
+    case SDL_SCANCODE_CAPSLOCK:return 0x14;case SDL_SCANCODE_PRINTSCREEN:return 0x2c;
+    case SDL_SCANCODE_SCROLLLOCK:return 0x91;case SDL_SCANCODE_PAUSE:return 0x13;
+    case SDL_SCANCODE_SEMICOLON:return 0xba;case SDL_SCANCODE_EQUALS:return 0xbb;
+    case SDL_SCANCODE_COMMA:return 0xbc;case SDL_SCANCODE_MINUS:return 0xbd;
+    case SDL_SCANCODE_PERIOD:return 0xbe;case SDL_SCANCODE_SLASH:return 0xbf;
+    case SDL_SCANCODE_GRAVE:return 0xc0;case SDL_SCANCODE_LEFTBRACKET:return 0xdb;
+    case SDL_SCANCODE_BACKSLASH:return 0xdc;case SDL_SCANCODE_RIGHTBRACKET:return 0xdd;
+    case SDL_SCANCODE_APOSTROPHE:return 0xde;case SDL_SCANCODE_NONUSBACKSLASH:return 0xe2;
+    case SDL_SCANCODE_LGUI:return 0x5b;case SDL_SCANCODE_RGUI:return 0x5c;
     case SDL_SCANCODE_RETURN:case SDL_SCANCODE_KP_ENTER:return 0x0d;
     case SDL_SCANCODE_ESCAPE:return 0x1b;
     case SDL_SCANCODE_BACKSPACE:return 8;
@@ -60,7 +75,7 @@ void tsfp_native_key_name(int key,char *out,size_t bytes) {
     case 4:name="Mouse 3";break;case 5:name="Mouse 4";break;case 6:name="Mouse 5";break;
     case 0x86:name="Wheel up";break;case 0x87:name="Wheel down";break;
     case 0x10:name="Shift";break;case 0x11:name="Control";break;case 0x12:name="Option";break;}
-    if(!name)for(int sc=1;sc<SDL_SCANCODE_COUNT;sc++)if(virtual_key(sc)==key){name=SDL_GetScancodeName(sc);break;}
+    if(!name)for(int sc=1;sc<SDL_SCANCODE_COUNT;sc++)if(tsfp_native_virtual_key(sc)==key){name=SDL_GetScancodeName(sc);break;}
     if(name&&*name)snprintf(out,bytes,"%s",name);else snprintf(out,bytes,"Key %d",key);
 }
 static void clear_mouse(void) {
@@ -97,9 +112,13 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
         fprintf(stderr,"[native-input] focus lost; controls released\n");
     }
     if(e->type==SDL_EVENT_KEY_DOWN||e->type==SDL_EVENT_KEY_UP){
-        int vk=virtual_key(e->key.scancode),down=e->type==SDL_EVENT_KEY_DOWN;
+        int vk=tsfp_native_virtual_key(e->key.scancode),down=e->type==SDL_EVENT_KEY_DOWN;
         if(vk)atomic_store(&keys[vk],down);
         if(down && !e->key.repeat)pc_prompts_keyboard();
+        if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F9){pc_debug_toggle_fps();return;}
+        if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F12 && window){
+            tsfp_native_settings_release_input(window);pc_debug_show(NULL);return;
+        }
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F2 && window){
             tsfp_native_settings_show(window);return;
         }
@@ -215,6 +234,14 @@ int tsfp_native_input_test(void) {
     recomp_bindings_sample(0,&pad);int ok=prompt_ok && pad.bAnalogButtons[XBOX_BUTTON_A]==255;
     e.type=SDL_EVENT_KEY_UP;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= pad.bAnalogButtons[XBOX_BUTTON_A]==0;
+    PcDebugOptions debug_before,debug_now;pc_debug_get(&debug_before);
+    e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_F9;tsfp_native_input_event(&e,NULL);
+    pc_debug_get(&debug_now);ok &= debug_now.show_fps==!debug_before.show_fps;
+    e.key.repeat=true;tsfp_native_input_event(&e,NULL);
+    pc_debug_get(&debug_now);ok &= debug_now.show_fps==!debug_before.show_fps;
+    e.type=SDL_EVENT_KEY_UP;e.key.repeat=false;tsfp_native_input_event(&e,NULL);
+    pc_debug_get(&debug_now);ok &= debug_now.show_fps==!debug_before.show_fps;
+    pc_debug_set(&debug_before);
     e.type=SDL_EVENT_KEY_DOWN;e.key.scancode=SDL_SCANCODE_DOWN;tsfp_native_input_event(&e,NULL);
     recomp_bindings_sample(0,&pad);ok &= !!(pad.wButtons&XBOX_GAMEPAD_DPAD_DOWN);
     e.key.scancode=SDL_SCANCODE_W;tsfp_native_input_event(&e,NULL);
@@ -247,6 +274,19 @@ int tsfp_native_input_test(void) {
     ok &= fabsf(*yaw+.6f)<.001f && fabsf(*pitch-.3f)<.001f;
     *yaw=*pitch=0;*fov=27.5f;tsfp_native_input_event(&e,NULL);
     pc_controls_apply_mouse(16,512,offset);ok &= fabsf(*yaw+.2f)<.001f && fabsf(*pitch-.3f)<.001f;
+    /* Compare batched counts with per-event camera updates, then pitch limits
+     * and old motion suppression through the native guest-field adapter. */
+    *yaw=*pitch=0;*fov=55;tsfp_native_mouse_config(1,0.1,0);
+    e.motion.xrel=400;e.motion.yrel=100;tsfp_native_input_event(&e,NULL);
+    pc_controls_apply_mouse(16,512,offset);float batched_yaw=*yaw,batched_pitch=*pitch;
+    *yaw=*pitch=0;
+    for(int n=0;n<100;n++){e.motion.xrel=4;e.motion.yrel=1;tsfp_native_input_event(&e,NULL);pc_controls_apply_mouse(16,512,offset);}
+    ok &= fabsf(*yaw-batched_yaw)<.001f && fabsf(*pitch-batched_pitch)<.001f;
+    e.motion.yrel=100000;e.motion.xrel=0;tsfp_native_input_event(&e,NULL);pc_controls_apply_mouse(16,512,offset);ok &= *pitch==-80;
+    e.motion.yrel=-100000;tsfp_native_input_event(&e,NULL);pc_controls_apply_mouse(16,512,offset);ok &= *pitch==80;
+    e.motion.yrel=10;tsfp_native_input_event(&e,NULL);
+    pthread_mutex_lock(&camera_lock);camera_input.motion_at=SDL_GetTicks()-101;pthread_mutex_unlock(&camera_lock);
+    *yaw=*pitch=0;pc_controls_apply_mouse(16,512,offset);ok &= *yaw==0 && *pitch==0;
     tsfp_native_mouse_config(0,0.1,0);recomp_bindings_sample(0,&pad);
     ok &= pad.sThumbRX==0 && pad.sThumbRY==0;
     captured=0;tsfp_native_mouse_config(1,0.1,0);release_all();
