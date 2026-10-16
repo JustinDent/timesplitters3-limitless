@@ -1,5 +1,38 @@
 # Measured progress
 
+## Controller sensitivity slider (issue #24) — 2026-10-16
+
+- Source base `c17336b` (fetched `origin/main`); this revision adds regression
+  coverage/documentation on `24-controller-sensitivity-slider-not-working-correctly`.
+  The runtime correction is already present in `837692d`, through the shared
+  `patches/recomp-float-joins.patch`. No additional runtime change is required.
+- Located the original controller sensitivity callback `0x002EAB30` and its
+  shared clamp at `0x002EABEB`. Older generation discarded the comparison when
+  decrement and increment paths met, causing the clamp to overwrite intermediate
+  values with an endpoint. Restoring that older join behavior in an isolated
+  translation reproduces the failure; the current translator preserves it.
+- Added `tests/controller_sensitivity.c`, invoked by
+  `tests/test_recomp_float_joins.py`: compile the actual checksum-verified US
+  routine, retaining its original 0.05 step and clamp constants. All 188 checks
+  passed: 0.5 to 0.45/0.55, full ascending/descending ranges on four profiles,
+  both endpoints, near-boundary clamping, no input and guest register/stack
+  preservation. UI and audio callees are stubs; this is callback execution,
+  not live menu or physical-controller validation. No saves/settings are used.
+- All 44 float-comparison and patch upgrade/tracking tests passed under MSVC;
+  the final float-comparison suite also passed independently (17 tests).
+- Host: Windows x64 build 26300, MSVC 14.42.34433, SDK 10.0.22621.0,
+  Python 3.14.2, pinned upstream `d90c929`, SDL 3.4.16. The supported US XBE
+  SHA-256 and full patch stack were verified. `tsfp.ps1 -Action Build` compiled
+  Release successfully; network, DDS and display checks passed before its
+  prompts test failed at `pc_controls_accept_pad()` because its test window
+  did not obtain foreground input. The targeted Windows controls test passed
+  separately with disposable save/display paths. Do not count the full build
+  script as passing. Evidence: `logs/issue-24-build.log` and
+  `logs/issue-24-tests.log`.
+- No game process or renderer was exercised; live menu/controller checks and
+  native Mac compilation/execution remain pending. Personal settings, saves and
+  the tracked input fixture were preserved. See [MAC-016](MAC_PORT_BACKLOG.md#mac-016--shared-pickup-range-comparison-fix-issue-6).
+
 ## Nonzero-player mouse look (issue #18) — 2026-10-16
 
 - Implemented in `8dee97f` on `18-mouse-input-only-works-for-player-1`, based on

@@ -487,6 +487,12 @@ zoomed, and does not pass through the controller's stick deadzone or turn-speed
 curve. WASD diagonals are normalized. The supplied configuration uses keyboard
 input on player 1; it does not require a controller.
 
+Controller sensitivity uses the original in-game slider, with 0.05 steps
+between 0 and 1. Older builds could jump straight to an endpoint (issue #24).
+The shared float-comparison fix in `837692d` restores intermediate values;
+rebuild with `tsfp.ps1 -Action Build` to refresh older generated code and the
+executable. This setting is separate from raw mouse sensitivity in F2.
+
 In-game button prompts automatically show the **first assigned keyboard or mouse
 binding** for each control, for example **[E] Select** and **[F] Back**. Saving
 bindings in F2 updates the prompts immediately. Unassigned controls show

@@ -1,4 +1,4 @@
-"""Execute float-compare joins and the US game's actual pickup-range routine.
+"""Execute float-compare joins and the US pickup and sensitivity routines.
 
 The XBE integration test requires a local supported dump; generated game code
 stays in pytest's temporary directory and is never checked into the repository.
@@ -8,6 +8,7 @@ import importlib.util
 import os
 from pathlib import Path
 import shutil
+import struct
 import subprocess
 import sys
 
@@ -79,24 +80,27 @@ def test_generator_change_invalidates_existing_game_c(tmp_path):
     assert generation.current(tmp_path)
 
 
-def compile_and_run(tmp_path, source):
+def compile_and_run(tmp_path, source, expect_success=True):
     compiler = shutil.which(os.environ.get('CC', 'cl' if os.name == 'nt' else 'cc'))
     if not compiler:
         pytest.skip('C compiler required; on Windows run inside the MSVC x64 environment')
-    path = tmp_path / 'pickup_collision.c'
+    path = tmp_path / 'float_join.c'
     path.write_text(source, encoding='utf-8')
-    executable = tmp_path / ('pickup_collision.exe' if os.name == 'nt' else 'pickup_collision')
+    executable = tmp_path / ('float_join.exe' if os.name == 'nt' else 'float_join')
     includes = RUNTIME / 'templates/runtime'
     if Path(compiler).stem.lower() == 'cl':
         command = [compiler, '/nologo', '/O2', '/I' + str(includes), str(path),
-                   '/Fe:' + str(executable), '/Fo:' + str(tmp_path / 'pickup_collision.obj')]
+                   '/Fe:' + str(executable), '/Fo:' + str(tmp_path / 'float_join.obj')]
     else:
         command = [compiler, '-std=c11', '-O2', '-I', str(includes), str(path), '-lm', '-o', str(executable)]
     built = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True)
     assert built.returncode == 0, built.stdout + built.stderr
     result = subprocess.run([str(executable)], capture_output=True, text=True, timeout=15)
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert 'PASS:' in result.stdout
+    assert (result.returncode == 0) == expect_success, result.stdout + result.stderr
+    if expect_success:
+        assert 'PASS:' in result.stdout
+    else:
+        assert 'FAIL: sensitivity' in result.stderr
     return result.stdout
 
 
@@ -112,3 +116,36 @@ def test_original_pickup_range_function(tmp_path):
     assert '_flags /* jbe:' not in code, 'Pickup radius branch became a constant'
     harness = (ROOT / 'tests/pickup_collision.c').read_text(encoding='utf-8')
     compile_and_run(tmp_path, harness.replace('/* GENERATED_PICKUP_ROUTINE */', code))
+
+
+@pytest.mark.parametrize('legacy_join', [False, True], ids=['fixed', 'pre-fix-reproduction'])
+def test_original_controller_sensitivity(tmp_path, monkeypatch, legacy_join):
+    from tools.recomp import translator
+
+    xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        pytest.skip('Supported US XBE required for the sensitivity integration test')
+    image = xbe.read_bytes()
+    assert hashlib.sha256(image).hexdigest() == '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
+    config.configure_from_xbe(str(xbe))
+    if legacy_join:
+        merge = translator._merge_flag_states
+
+        def without_sse_join(states):
+            # Reproduce the generator before recomp-float-joins.patch: distinct
+            # float comparisons at the shared clamp lost their flag snapshot.
+            if (states and all(s and s[0] in {'comiss', 'ucomiss', 'comisd', 'ucomisd'} for s in states)
+                    and any(s != states[0] for s in states[1:])):
+                return None
+            return merge(states)
+
+        monkeypatch.setattr(translator, '_merge_flag_states', without_sse_join)
+    info = {'end': 0x2EACA7, 'name': 'sub_002EAB30'}
+    code = FunctionTranslator(image, {0x2EAB30: info}).translate_function(0x2EAB30, info)
+    constants = '\n'.join(
+        f'MEM32(0x{address:X}) = 0x{struct.unpack_from("<I", image, config.va_to_file_offset(address))[0]:08X};'
+        for address in (0x475C78, 0x475CE8, 0x47D674))
+    harness = (ROOT / 'tests/controller_sensitivity.c').read_text(encoding='utf-8')
+    source = harness.replace('/* GENERATED_SENSITIVITY_ROUTINE */', code)
+    source = source.replace('/* ORIGINAL_SLIDER_CONSTANTS */', constants)
+    compile_and_run(tmp_path, source, expect_success=not legacy_join)
