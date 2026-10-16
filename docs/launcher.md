@@ -2,8 +2,9 @@
 
 [Back to the README](../README.md)
 
-Download the [Windows launcher ZIP](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.1.2),
-extract it completely into a writable folder and open **TimeSplitters Launcher.exe**.
+Open the [latest Windows launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest)
+and download its `TimeSplitters-Launcher-…-windows-x64.zip` asset. Extract it
+completely into a writable folder and open **TimeSplitters Launcher.exe**.
 Keep the companion files in `Bin` and `Support` with it. Windows 10/11 x64 and
 .NET Framework 4.8 are required; no developer tools or GitHub login are needed.
 

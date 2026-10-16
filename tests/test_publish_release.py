@@ -151,6 +151,18 @@ def test_draft_option_never_publishes(publisher):
     assert len(publication_calls(publisher)) == 1
 
 
+@pytest.mark.parametrize('version', ['0.2.0-alpha.3', '0.2.0'])
+@pytest.mark.parametrize('draft', [False, True])
+def test_game_releases_preserve_latest_launcher(publisher, version, draft):
+    (publisher.root/'VERSION').write_text(version)
+    publisher.preflight(); publisher.prepare(); publisher.publish(draft=draft)
+    calls = publication_calls(publisher)
+    assert len(calls) == (1 if draft else 2)
+    # Both draft creation and final publication must keep the launcher Latest.
+    assert all('--latest=false' in call[1] for call in calls)
+    assert ('--prerelease' in calls[0][1]) == ('-' in version)
+
+
 def test_package_manifest_rejects_changed_stage(publisher):
     publisher.preflight(); publisher.output.mkdir(parents=True); publisher.build_package()
     (publisher.stage/'Bin/game.exe').write_bytes(b'changed after packaging')

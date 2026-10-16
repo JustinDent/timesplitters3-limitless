@@ -331,11 +331,11 @@ Online hosts need TCP 30820 and their game UDP port (default 30821) forwarded to
                 raise ValueError('GitHub tag did not match the tested commit; no release was created')
         self.validate_remote()
         arguments = ['release', 'create', self.tag, '--repo', self.repo, '--target', self.commit,
-                     '--verify-tag',
+                     '--verify-tag', '--latest=false',
                      '--title', 'TimeSplitters: Future Perfect PC '+self.tag,
                      '--notes-file', self.notes, '--draft', self.archive, self.checksum, self.metadata]
         if self.prerelease:
-            arguments.extend(['--prerelease', '--latest=false'])
+            arguments.append('--prerelease')
         self.gh(*arguments)
         uploaded = json.loads(self.gh('release', 'view', self.tag, '--repo', self.repo,
                                      '--json', 'assets,isDraft,targetCommitish,url'))
@@ -345,7 +345,8 @@ Online hosts need TCP 30820 and their game UDP port (default 30821) forwarded to
             raise ValueError('Draft metadata/assets did not match. Inspect the draft on GitHub; it was not published.')
         if not draft:
             self.validate_remote()
-            self.gh('release', 'edit', self.tag, '--repo', self.repo, '--draft=false')
+            # Reserve /releases/latest for the stable launcher download.
+            self.gh('release', 'edit', self.tag, '--repo', self.repo, '--draft=false', '--latest=false')
         print(('Draft created: ' if draft else 'Published: ')+uploaded['url'], flush=True)
 
 
