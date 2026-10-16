@@ -1,5 +1,31 @@
 # Measured progress
 
+## Release regression compiler discovery — 2026-10-16
+
+- Source base `cc35200`, changes on `fix-release-msvc-tests`.
+  Host: Windows x64, CPython 3.14.2, Visual Studio 2022 Build Tools / MSVC
+  19.42.34435.0. No game or renderer behavior changed.
+- The old `vswhere` queries excluded standalone Build Tools. Audio discovery
+  also preferred a stale mixed-case `Path` entry after reading uppercase `PATH`.
+  `tests/native_compiler.py` now includes all Visual Studio products, loads
+  `vcvars64.bat`, normalizes Windows environment names, and shares the resulting
+  compiler/headers/libraries across audio, cutscene, framebuffer and lifted-float
+  regressions. A ready x64 developer shell is preserved; POSIX retains `CC`/`cc`.
+- The 40 affected native regressions and four discovery checks passed from an
+  ordinary PowerShell environment. Native checks include the original supported
+  US cutscene/pickup/controller routines; the tests verify the executable hash.
+  Complete patch-stack validation passed with zero runtime files changed.
+- The complete release Python suite subsequently passed from ordinary
+  PowerShell: **129 passed, 9 skipped in 116.38 seconds**. Test output is local
+  at `logs/release-msvc-validation.log`; disposable fixtures were isolated under
+  `build/release-validation-tests`. No existing settings or saves were used.
+- Native/full-suite fixture trees were recycled. Recycling the small
+  `build/compiler-discovery-tests` directory was denied/unsupported, so it was
+  retained; no alternative deletion or permission change was attempted.
+- No package, tag, release, main-branch merge, or publication was performed.
+  Mac execution and synchronization with the other device remain unverified;
+  see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-distribution).
+
 ## Adaptive cutscene letterboxing (issue #33) — 2026-10-16
 
 - Source base `5c9effd`, branch `33-remove-the-letter-boxes-in-cut-scenes`.
