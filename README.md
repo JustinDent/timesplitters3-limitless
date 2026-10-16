@@ -4,7 +4,7 @@
 customizable controls, in-game resolution settings, ultrawide support, and
 experimental Online multiplayer—with a native Apple Silicon port in development.
 
-[Download for Windows](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases)
+[Download the Windows launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.1.2)
 · [Multiplayer setup](docs/multiplayer.md)
 · [Build from source](docs/building.md)
 · [Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues)
@@ -15,8 +15,8 @@ required to run the Windows release. Original game files are not included.
 
 > **Experimental prerelease.** Windows gameplay has been tested, but a complete
 > campaign playthrough and full rendering fidelity remain unverified. Features
-> below describe current `main`; check your release notes for what is included
-> in a particular download.
+> below describe current `main` and the published Windows launcher. Check the
+> launcher's **Release notes** for what is included in your installed game version.
 
 ## What the port adds
 
@@ -28,7 +28,7 @@ required to run the Windows release. Original game files are not included.
 | **1080p, 1440p and 4K** | Choose the native rendering resolution from the game's own Settings or paused Options menu. |
 | **Ultrawide support** | Monitor-reported resolutions, a wider gameplay view, proportionate menus and HUD, and adaptive in-engine cutscene framing. |
 | **Online and LAN multiplayer** | Player-hosted competitive matches, invitations, private join codes and a compatible-build lobby browser. Online is experimental. |
-| **Portable Windows setup** | Import your game once, then launch with Play.cmd. Settings and saves stay alongside the release. |
+| **Windows launcher** | Install published game releases, import your ISO once, check for updates and launch with **Play Game**. Updates preserve your saves and settings. |
 | **Performance tools** | Optional FPS, frame-time and network-latency displays, plus debug information for troubleshooting. |
 | **Texture replacement support** | An optional local preview path for the ongoing texture overhaul, with a 6 GiB pack budget. |
 | **Native Apple Silicon work** | An ARM64 build with mouse look, native settings and an experimental up-to-120 FPS presentation mode. |
@@ -38,22 +38,51 @@ adjustment, story audio transitions, Khallos Express scenery rendering, and
 multiplayer movement updates. See [measured progress](STATUS.md) for the evidence
 and remaining validation.
 
-## Download and play on Windows
+## Download the launcher and play
 
-**Requirements:** Windows 10/11 x64, about 5 GB free for initial setup, and your
-own supported US Xbox ISO or extracted game folder. Optional texture artwork
-needs additional space. Python, Visual Studio and Git are not required to play.
+The **TimeSplitters Launcher** is the main entry point for Windows: install the
+PC runtime, import your game and start playing from one window.
 
-1. Download the Windows x64 ZIP from [Releases](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases).
-2. Extract the **entire ZIP** to a writable folder.
-3. Double-click **Play.cmd**.
-4. On first launch, select your ISO or a folder containing `default.xbe`, `pak`
-   and `xmv`. The importer checks the game version and copies the required files.
-5. Launch with **Play.cmd** afterward. The imported data stays in `Data`; the
-   ISO is no longer needed for play.
+**Requirements:** Windows 10/11 x64 with .NET Framework 4.8, your supported US
+Xbox ISO or extracted game data, and internet access for the initial runtime
+download. Allow about 5 GB for the game plus extra space for update staging and
+rollback. Python, Visual Studio and Git are not required.
 
-**Keep `Data`, `Settings` and `Saves` when upgrading.** Keep the rest of the
-extracted package together, including its `Support` directory and licenses.
+1. Download **TimeSplitters-Launcher-v1.1.2-windows-x64.zip** from the
+   [launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/tag/launcher-v1.1.2).
+2. Extract the whole launcher ZIP to a writable installation folder and open
+   **TimeSplitters Launcher.exe**. Keep its `Bin` and `Support` subfolders together.
+3. Set **Update channel** to **Preview**, then select **Install release** when
+   the game package appears. Current game releases are prereleases; **Stable**
+   excludes them. The launcher downloads and verifies the published runtime.
+4. Select **Locate ISO** and choose your US Xbox disc image. Alternatively,
+   select **Use extracted files** for a folder containing `default.xbe`, `pak`
+   and `xmv`. This is a one-time import; the launcher checks the game version.
+5. Select **Play Game**. The launcher minimizes once the game window appears
+   and returns when the game closes.
+
+For future sessions, open **TimeSplitters Launcher.exe → Play Game**. Once the
+runtime and game data are installed, the ISO is no longer needed for play and
+installed play remains available offline.
+
+### Updates, settings and saves
+
+- **Check updates** looks for published game releases in your selected channel.
+  Select **Update release** to install one after closing the game. Launcher
+  updates are checked separately at startup.
+- **Restore previous** returns to the retained game release after an update,
+  when a rollback is available. Game updates and rollback preserve imported
+  data, saves and existing settings.
+- **Saves** opens your save folder; **Game files** opens the installation;
+  **View logs** and **Support** help with troubleshooting.
+- To customize play, launch the game and use **F2** for keyboard/mouse settings
+  or the in-game **Display settings** menu for resolution. These settings
+  remain available the next time you start through the launcher.
+
+Keep the complete installation together, including `Data`, `Settings`, `Saves`
+and the launcher's recovery files. You do not need to manually replace runtime
+files for normal updates. See the [launcher guide](docs/launcher.md) for channels,
+recovery and older portable-package instructions.
 
 Only the supported US Xbox revision is accepted: title ID `45410066`.
 The exact executable hash is in the [build guide](docs/building.md#inputs-and-generated-files).
@@ -156,6 +185,7 @@ separately; Windows tests do not establish Mac support.
 
 | Guide | Use it for |
 | --- | --- |
+| [Windows launcher](docs/launcher.md) | Install, import game data, play, update and recover |
 | [Build and development](docs/building.md) | Windows prerequisites, setup, everyday commands, patch workflow and source layout |
 | [Windows settings](docs/windows-settings.md) | Full control mapping, display settings, cursor capture and diagnostics |
 | [Multiplayer](docs/multiplayer.md) | Online invitations, hosting, LAN and compatibility |
