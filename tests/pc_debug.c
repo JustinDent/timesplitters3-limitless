@@ -141,6 +141,17 @@ int main(int argc, char **argv)
     pc_debug_poll(); pc_debug_snapshot(&snapshot); CHECK(snapshot.warnings==1);
     file=fopen(log,"wb"); CHECK(file); fputs("[ERROR] after truncation\n",file); fclose(file);
     pc_debug_poll(); pc_debug_snapshot(&snapshot); CHECK(snapshot.errors==1);
+    /* Quiet mode suppresses log processing without persisting debug changes
+       or stopping the FPS measurement needed for the A/B experiment. */
+    before=load(config); CHECK(before);
+    CHECK(!_putenv_s("TSFP_DEBUG_QUIET","1"));
+    file=fopen(log,"ab"); CHECK(file); fputs("[ERROR] quiet-mode probe\n",file); fclose(file);
+    pc_debug_poll(); pc_debug_snapshot(&snapshot); CHECK(snapshot.errors==1);
+    pc_debug_sample(55,55); pc_debug_snapshot(&snapshot); CHECK(snapshot.fps==55);
+    pc_debug_get(&readback); CHECK(!memcmp(&options,&readback,sizeof options));
+    text=load(config); CHECK(text && !strcmp(before,text)); free(text); free(before);
+    CHECK(!_putenv_s("TSFP_DEBUG_QUIET","0"));
+    pc_debug_poll(); pc_debug_snapshot(&snapshot); CHECK(snapshot.errors==2);
     owner=CreateWindowExA(0,"STATIC","PC debug test",WS_OVERLAPPEDWINDOW,0,0,640,480,NULL,NULL,GetModuleHandle(NULL),NULL);
     CHECK(owner); pc_settings_attach(owner);
     CHECK(GetMenuItemID(GetSubMenu(GetMenu(owner),0),1)==PC_DEBUG_COMMAND);

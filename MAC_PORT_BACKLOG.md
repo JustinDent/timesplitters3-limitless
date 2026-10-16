@@ -218,6 +218,35 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 ### MAC-013 — System Link and Online multiplayer
 
 - **Status:** Queued
+- **Temporary diagnostics experiment (uncommitted, 2026-10-16):** Windows
+  `Play-Quiet.cmd` / `TSFP_DEBUG_QUIET=1` routes stdout/stderr to `NUL` and skips
+  Debug log polling and performance-log writes, retaining FPS measurement and
+  saved options. Sources: `src/pc_debug_output.h`, `src/pc_debug.c`,
+  `tools/play.py`, `patches/zzzzzzzzzzzzzzzzz-pc-debug-quiet.patch`,
+  `tests/pc_debug.c`. Native defaults are unchanged. Mac adaptation is queued:
+  native startup would need equivalent stream suppression; shared Debug checks
+  alone do not verify a full native quiet run. Acceptance: isolated normal/quiet
+  comparison with unchanged personal settings, no quiet diagnostic writes, FPS
+  still measured, and reporting restored on a normal launch.
+- **Issue #20 follow-up (2026-10-16, uncommitted):** Active Windows PC matches
+  open the movement-send gate once per guest tick instead of waiting seven
+  ticks. A subsequent candidate bounds full movement-state refresh to three
+  match ticks (20 Hz), including unchanged held keys and mouse-only turning.
+  This retains the original packet encoder; it does not remove host frame
+  stalls. The existing network epoch and simulation/heartbeat/timeout clocks
+  are preserved. Sources: `src/pc_network_guest.inc`,
+  `patches/zzzzzzzzzzzzzzz-pc-network-movement.patch`,
+  `patches/zzzzzzzzzzzzzzzz-pc-network-state-refresh.patch`,
+  `tests/network_guest_dispatch.c`, `tests/test_patch_updates.py` on
+  `20-player-desync-when-strafing-multiplayer` over `c8f8b31`.
+  The native fallback still delegates to the original guest pump; portable
+  boundary tests exercise it on Windows, not on a Mac host. No native transport
+  is added here. When porting the transport, reuse this guest send policy,
+  regenerate/rebuild the wrapper, and verify rapid remote strafe reversals in
+  both directions, mouse-only turns and recovery from bounded frame stalls,
+  with unchanged 60 Hz guest and timeout clocks. Native
+  execution and other-device synchronization remain unverified.
+  [Measured Windows scope](STATUS.md#multiplayer-strafe-updates-issue-20--2026-10-16).
 - **PC behavior:** System Link uses the native UDP/XNet bridge; Online offers
   host/join discovery and routes compatible peers through the directory bridge.
 - **PC source:** Main through `16fcea5` (PRs #4 and #5);

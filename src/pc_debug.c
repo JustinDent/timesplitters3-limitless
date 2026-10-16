@@ -2,6 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include "pc_debug.h"
+#include "pc_debug_output.h"
 #ifdef __APPLE__
 #include "platform/win32_compat.h"
 #include <sys/stat.h>
@@ -94,7 +95,7 @@ void pc_debug_init(HWND window)
     length = GetEnvironmentVariableW(L"RECOMP_LOG_FILE", log_path, (DWORD)(sizeof log_path / sizeof *log_path));
     if (!length || length >= sizeof log_path / sizeof *log_path) log_path[0] = 0;
     debug_window = window;
-    if (window) SetTimer(window, PC_DEBUG_TIMER, 500, NULL);
+    if (window && !pc_debug_output_quiet()) SetTimer(window, PC_DEBUG_TIMER, 500, NULL);
 #endif
     pc_debug_poll();
 }
@@ -135,7 +136,7 @@ void pc_debug_sample(double fps, double shown_fps)
     ms = 1000.0 / fps;
     AcquireSRWLockExclusive(&debug_lock);
     stats.fps = fps; stats.shown_fps = shown_fps; stats.frame_ms = ms;
-    log = options.log_performance;
+    log = options.log_performance && !pc_debug_output_quiet();
     ReleaseSRWLockExclusive(&debug_lock);
     if (log) {
         fprintf(stderr, "[PC-DEBUG] %.1f game fps, %.1f shown fps, %.2f ms average frame interval\n", fps, shown_fps, ms);
@@ -199,6 +200,7 @@ static void record_line(const char *line)
 
 void pc_debug_poll(void)
 {
+    if (pc_debug_output_quiet()) return;
 #ifdef __APPLE__
     char buffer[4096];size_t budget=65536;int available=0;
     struct stat current,opened;
