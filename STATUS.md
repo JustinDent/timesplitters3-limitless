@@ -1,5 +1,73 @@
 # Measured progress
 
+## Terminal mouse routing (issue #7) — 2026-10-16
+
+Implemented on `7-breaking-and-entering-camera-turret-not-working`, based on
+main `696421f` merged at `093e30f`. On Windows x64, a bounded isolated run
+of the supported US XBE reproduced the Breaking and Entering terminal failure:
+player mode was `0x2000`; physical mouse movement changed hidden player angles
+while the active console pointer stayed fixed. The user confirmed the terminal
+menu pointer, rather than a selected camera view, was blocked. Disassembly of
+US `sub_003700D0` identifies local-index console ownership, pointer coordinates,
+4–251 bounds, inactivity reset, scripted input and pause gates.
+
+The shared `src/pc_terminal.h` now routes counts to that pointer and consumes
+terminal input without changing player angles, including invalid transitions.
+Coordinates stay in the game's logical space, independent of screen resolution,
+FOV or aiming inversion. Windows and SDL adapters use the same helper.
+The guarded-memory regression and full MSVC x64 Release build passed on Windows,
+including patch-stack validation and the real Windows adapter regression in
+`tests/pc_controls.c`. The user confirmed physical pointer movement, but left-click initially still
+sent Fire instead of the terminal's Confirm action. The follow-up shared input
+context and `zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch` now suppress the
+normal left-button binding while selecting and emit A/Confirm. A held button
+must be released across either transition to prevent accidental selection or
+firing. Windows regression covers the native adapter-to-binding path with bounded synthetic input; the shared
+fixture covers click state, and the native SDL fixture has equivalent checks.
+The updated MSVC x64 Release build and native checks passed, including Confirm
+without Fire and release-before-fire on terminal exit. All 27 patch tracking/
+transition cases passed (the historical-upgrade fixture was updated to exclude
+this new dependent overlay, then rerun). The shared terminal regression passed.
+The user confirmed the final physical playtest: pointer movement, left-click
+camera selection, and ordinary aiming/firing after leaving the terminal work.
+The read-only capture also records return to mode `0x2` with no active terminal.
+Native Mac compilation/execution remain
+unverified; see MAC-001.
+
+## Terminal mouse routing (issue #7) — 2026-10-16
+
+Implemented on `7-breaking-and-entering-camera-turret-not-working`, based on
+main `696421f` merged at `093e30f`. On Windows x64, a bounded isolated run
+of the supported US XBE reproduced the Breaking and Entering terminal failure:
+player mode was `0x2000`; physical mouse movement changed hidden player angles
+while the active console pointer stayed fixed. The user confirmed the terminal
+menu pointer, rather than a selected camera view, was blocked. Disassembly of
+US `sub_003700D0` identifies local-index console ownership, pointer coordinates,
+4–251 bounds, inactivity reset, scripted input and pause gates.
+
+The shared `src/pc_terminal.h` now routes counts to that pointer and consumes
+terminal input without changing player angles, including invalid transitions.
+Coordinates stay in the game's logical space, independent of screen resolution,
+FOV or aiming inversion. Windows and SDL adapters use the same helper.
+The guarded-memory regression and full MSVC x64 Release build passed on Windows,
+including patch-stack validation and the real Windows adapter regression in
+`tests/pc_controls.c`. The user confirmed physical pointer movement, but left-click initially still
+sent Fire instead of the terminal's Confirm action. The follow-up shared input
+context and `zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch` now suppress the
+normal left-button binding while selecting and emit A/Confirm. A held button
+must be released across either transition to prevent accidental selection or
+firing. Windows regression covers the native adapter-to-binding path with bounded synthetic input; the shared
+fixture covers click state, and the native SDL fixture has equivalent checks.
+The updated MSVC x64 Release build and native checks passed, including Confirm
+without Fire and release-before-fire on terminal exit. All 27 patch tracking/
+transition cases passed (the historical-upgrade fixture was updated to exclude
+this new dependent overlay, then rerun). The shared terminal regression passed.
+The user confirmed the final physical playtest: pointer movement, left-click
+camera selection, and ordinary aiming/firing after leaving the terminal work.
+The read-only capture also records return to mode `0x2` with no active terminal.
+Native Mac compilation/execution remain
+unverified; see MAC-001.
+
 ## Issue 19 decal projection (2026-10-16)
 
 - Source: decal fix on `19-floating-decals` (this revision), based on
@@ -1972,3 +2040,31 @@ unverified (MAC-021). Release preparation targets stable `launcher-v1.2.1` on
 main, using the documented launcher-only packaging channel. `Publish-Release.ps1`
 publishes the game `VERSION`; no new game version is needed for this option.
 The Windows CI workflow now runs the launcher and portable-script regressions.
+
+## Embedded launcher settings (2026-10-16)
+
+Windows launcher v1.2.2 implementation `5eea0ca` on `feat/launcher-inline-settings`,
+based on main `696421fd080a5bd57cb894b76302080f59f52485`. `SettingsPage.cs`
+replaces the separate settings window: controls, graphics, startup options,
+binding capture and confirmations stay in the main content area with the sidebar
+visible. `Launcher.xaml`/`Launcher.cs` switch between Command center and settings
+with active navigation styling. Home keeps the draft/tab and dismisses capture;
+Cancel discards the draft; Save validates and keeps the page open. Atomic file
+save, backup, stale-edit detection and rollback remain in the existing model.
+The preview commands now render the whole launcher rather than a separate window.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both launcher binaries compiled.
+The full launcher build passed 71 updater checks and 19 isolated settings
+checks, including actual WPF sidebar/page navigation, 1000 × 720 minimum and
+1152 × 772 layout sizes, draft retention/cancel, inline binding-conflict cancellation and
+reassignment, successful/invalid save, and existing settings/environment checks.
+Five portable-script and packaging checks passed. Both full-shell 1152 × 772
+controls/graphics previews were visually reviewed; captures are in ignored
+`build/launcher/inline-controls.png` and `inline-graphics.png`.
+
+Evidence for the complete build/test pass: ignored
+`build/launcher/inline-build-test.log`. No game runtime source changed or game
+playtest was needed. Release preparation targets stable `launcher-v1.2.2` on
+main through the documented launcher-only channel; no game update is required.
+Native Mac settings/navigation adaptation remains
+queued under MAC-021; other-device synchronization is unverified.

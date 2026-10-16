@@ -90,3 +90,25 @@ int pc_input_look(PcInput *s, uint64_t now, float sensitivity, int invert_y,
     if (*pitch < -80) *pitch = -80;
     return 1;
 }
+
+/* Do not carry a held shot into terminal selection, or a held selection back
+ * into firing. A fresh press after release is required at either transition. */
+void pc_input_terminal_context(PcInput *s, int active, int left_down)
+{
+    if (!!active != s->terminal_active) s->terminal_blocked = !!left_down;
+    s->terminal_active = !!active;
+    if (!left_down) s->terminal_blocked = 0;
+}
+
+int pc_input_terminal_click(PcInput *s, int left_down)
+{
+    if (!left_down) s->terminal_blocked = 0;
+    return s->focused && s->captured && s->terminal_active &&
+           !s->terminal_blocked && left_down;
+}
+
+int pc_input_terminal_suppresses_left(PcInput *s, int left_down)
+{
+    if (!left_down) s->terminal_blocked = 0;
+    return s->terminal_active || s->terminal_blocked;
+}

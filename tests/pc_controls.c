@@ -13,7 +13,7 @@ int main(int argc, char **argv)
     PcInput s = {0}, a = {0}, b = {0};
     float yaw = 0, pitch = 0, ya = 0, yb = 0, pa = 0, pb = 0;
     XBOX_GAMEPAD pad;
-    char replay_file[MAX_PATH];
+    char replay_file[MAX_PATH], state_file[MAX_PATH];
     FILE *f;
     unsigned char *guest;
     int i;
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     CHECK(pad.wButtons & XBOX_GAMEPAD_RIGHT_THUMB);
     CHECK(pad.wButtons & XBOX_GAMEPAD_DPAD_RIGHT);
     CHECK(recomp_bindings_present_mask() == 1);
-    guest = VirtualAlloc(NULL, 0x30000, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE); CHECK(guest);
+    guest = VirtualAlloc(NULL, 0x800000, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE); CHECK(guest);
     *(float *)(guest + 0x20384) = 55;
     /* A network client's current player can have a nonzero guest player ID,
        even though its keyboard/controller is on local port 1 (index 0). */
@@ -108,6 +108,47 @@ int main(int argc, char **argv)
     CHECK(fabs(*(float *)(guest + 0x10104) + 2) < .001);
     pc_controls_apply_mouse(0x10000, 0x20000, (ptrdiff_t)guest);
     CHECK(fabs(*(float *)(guest + 0x10100) + 10) < .001);
+    /* Reproduce issue #7 through the real host adapter: raw mouse counts
+       move the active terminal pointer instead of the hidden player view. */
+    *(uint32_t *)(guest + 0x10114) = 0x2000;
+    *(uint32_t *)(guest + 0x76c27c) = 0x21000;
+    *(uint32_t *)(guest + 0x2107c) = 0x22000;
+    *(uint32_t *)(guest + 0x22014) = 0x10000;
+    *(uint32_t *)(guest + 0x22030) = 0x23000;
+    *(uint32_t *)(guest + 0x4e7944) = 1;
+    *(float *)(guest + 0x22038) = 100;
+    *(float *)(guest + 0x2203c) = 100;
+    *(float *)(guest + 0x20384) = 27.5f; /* Pointer ignores scoped FOV. */
+    snprintf(state_file, sizeof state_file, "%s\\terminal-state.txt", argv[2]);
+    f = fopen(state_file, "w"); CHECK(f); fputs("1 1", f); fclose(f);
+    _putenv_s("TSFP_PC_INPUT_STATE", state_file);
+    pc_controls_attach(NULL); /* Restart the bounded replay with fresh motion. */
+    pc_controls_apply_mouse(0x10000, 0x20000, (ptrdiff_t)guest);
+    CHECK(fabs(*(float *)(guest + 0x22038) - 110) < .001);
+    CHECK(fabs(*(float *)(guest + 0x2203c) - 102) < .001);
+    CHECK(fabs(*(float *)(guest + 0x10100) + 10) < .001);
+    CHECK(fabs(*(float *)(guest + 0x10104) + 2) < .001);
+    CHECK(recomp_bindings_sample(0, &pad));
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_A] == 0); /* held entry shot is blocked */
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 0);
+    f = fopen(state_file, "w"); CHECK(f); fputs("1 0", f); fclose(f); Sleep(50);
+    CHECK(recomp_bindings_sample(0, &pad));
+    f = fopen(state_file, "w"); CHECK(f); fputs("1 1", f); fclose(f); Sleep(50);
+    CHECK(recomp_bindings_sample(0, &pad));
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_A] == 255);
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 0);
+    *(uint32_t *)(guest + 0x10114) = 2;
+    pc_controls_apply_mouse(0x10000, 0x20000, (ptrdiff_t)guest);
+    CHECK(fabs(*(float *)(guest + 0x10100) + 10) < .001);
+    CHECK(recomp_bindings_sample(0, &pad));
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_A] == 0);
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 0); /* held selection cannot fire */
+    f = fopen(state_file, "w"); CHECK(f); fputs("1 0", f); fclose(f); Sleep(50);
+    CHECK(recomp_bindings_sample(0, &pad));
+    f = fopen(state_file, "w"); CHECK(f); fputs("1 1", f); fclose(f); Sleep(50);
+    CHECK(recomp_bindings_sample(0, &pad));
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_A] == 0);
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 255);
     VirtualFree(guest, 0, MEM_RELEASE);
     puts("PASS: PC input focus/capture, released buttons, wheel queue, raw-count camera math, pitch limits, FOV scaling, poll independence, WASD/reload/fire bindings and guest camera integration");
     return 0;

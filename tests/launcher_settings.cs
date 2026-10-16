@@ -15,6 +15,15 @@ public static class LauncherSettingsChecks
     static void Put(string root,string file,string data) { string path=Path.Combine(root,file);Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,data); }
     static string Read(string root,string file) { return File.ReadAllText(Path.Combine(root,file)); }
     static void Test(string name,Action action) { action();count++;Console.WriteLine("PASS "+name); }
+    static void STA(Action action)
+    {
+        Exception failure=null;
+        var thread=new System.Threading.Thread(()=> { try {action();} catch(Exception ex){failure=ex;} });
+        thread.IsBackground=true;thread.SetApartmentState(System.Threading.ApartmentState.STA);thread.Start();
+        Require(thread.Join(10000));if(failure!=null)throw failure;
+    }
+    static void Click(System.Windows.Controls.Button button)
+    { button.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); }
     static System.Collections.Generic.IEnumerable<System.Windows.DependencyObject> Descendants(System.Windows.DependencyObject parent)
     {
         foreach(var child in System.Windows.LogicalTreeHelper.GetChildren(parent).OfType<System.Windows.DependencyObject>())
@@ -56,9 +65,9 @@ public static class LauncherSettingsChecks
             Test("launcher resolution arrows select both directions, wrap and leave files untouched",()=>{
                 Exception failure=null;string root=Root("arrow-controls");
                 var thread=new System.Threading.Thread(()=>{try {
-                    var owner=new System.Windows.Window();var editor=new SettingsWindow(owner,root,true);
-                    var tabs=Descendants(editor.Window).OfType<System.Windows.Controls.TabControl>().Single();tabs.SelectedIndex=1;
-                    var nodes=Descendants(editor.Window).ToList();
+                    var owner=new System.Windows.Window();var editor=new SettingsPage(owner.Resources,root,true);owner.Content=editor.View;
+                    var tabs=Descendants(editor.View).OfType<System.Windows.Controls.TabControl>().Single();tabs.SelectedIndex=1;
+                    var nodes=Descendants(editor.View).ToList();
                     var startup=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>Convert.ToString(c.Content)=="Skip startup splash screens");
                     Require(startup.IsChecked==false);startup.IsChecked=true;
                     var picker=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.SelectedItem is DisplayMode);
@@ -70,11 +79,73 @@ public static class LauncherSettingsChecks
                     next.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Require(picker.SelectedIndex==0);
                     next.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Require(picker.SelectedIndex==1%picker.Items.Count);
                     previous.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Require(picker.SelectedIndex==0);
-                    editor.Window.Close();owner.Close();
+                    owner.Close();
                 } catch(Exception ex) {failure=ex;} });
                 thread.SetApartmentState(System.Threading.ApartmentState.STA);thread.Start();thread.Join();
                 if(failure!=null) throw failure;
                 Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+            });
+            Test("settings stay in the main window, preserve the sidebar and retain drafts across navigation",()=>{
+                string root=Root("inline-navigation");STA(()=>{
+                    var ui=new LauncherWindow(root,true);
+                    try {
+                        int windows=System.Windows.Application.Current==null?0:System.Windows.Application.Current.Windows.Count;
+                        var sidebar=(System.Windows.Controls.Border)ui.Window.FindName("SidebarPanel");
+                        var host=(System.Windows.Controls.ContentControl)ui.Window.FindName("SettingsHost");
+                        var home=(System.Windows.Controls.Grid)ui.Window.FindName("CommandCenter");
+                        Click((System.Windows.Controls.Button)ui.Window.FindName("SettingsNav"));
+                        Require(host.Visibility==System.Windows.Visibility.Visible && home.Visibility==System.Windows.Visibility.Collapsed && sidebar.Visibility==System.Windows.Visibility.Visible && sidebar.IsEnabled);
+                        Require(System.Windows.Window.GetWindow((System.Windows.DependencyObject)host.Content)==ui.Window);
+                        var shell=(System.Windows.Controls.Panel)ui.Window.Content;
+                        foreach(var size in new[]{new System.Windows.Size(1000,720),new System.Windows.Size(1152,772)}) {
+                            shell.Measure(size);shell.Arrange(new System.Windows.Rect(new System.Windows.Point(),size));shell.UpdateLayout();
+                            Require(sidebar.ActualWidth==204 && host.ActualWidth==size.Width-204);
+                            Require(((System.Windows.FrameworkElement)host.Content).ActualWidth>600);
+                        }
+                        var input=Descendants(host).OfType<System.Windows.Controls.TextBox>().Single(t=>t.Name=="MouseSensitivity");input.Text="0.42";
+                        var draft=host.Content;
+                        Click((System.Windows.Controls.Button)ui.Window.FindName("HomeNav"));Require(home.Visibility==System.Windows.Visibility.Visible && host.Visibility==System.Windows.Visibility.Collapsed);
+                        Click((System.Windows.Controls.Button)ui.Window.FindName("SettingsNav"));Require(ReferenceEquals(host.Content,draft) && input.Text=="0.42");
+                        Require(System.Windows.Application.Current==null || System.Windows.Application.Current.Windows.Count==windows);
+                        Click(Descendants(host).OfType<System.Windows.Controls.Button>().Single(b=>b.Name=="SettingsCancelButton"));
+                        Require(host.Content==null && home.Visibility==System.Windows.Visibility.Visible);
+                        Click((System.Windows.Controls.Button)ui.Window.FindName("SettingsNav"));
+                        Require(Descendants(host).OfType<System.Windows.Controls.TextBox>().Single(t=>t.Name=="MouseSensitivity").Text=="0.1");
+                    } finally {ui.Window.Close();}
+                });Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+            });
+            Test("inline binding capture, conflict cancellation and reassignment save without another window",()=>{
+                string root=Root("inline-bindings");STA(()=>{
+                    var ui=new LauncherWindow(root,true);
+                    try {
+                        ui.ShowSettings();var host=(System.Windows.Controls.ContentControl)ui.Window.FindName("SettingsHost");
+                        Func<string,System.Windows.Controls.Button> button=label=>Descendants(host).OfType<System.Windows.Controls.Button>().Single(b=>b.IsEnabled && Convert.ToString(b.Content)==label);
+                        var binding=Descendants(host).OfType<System.Windows.Controls.Button>().First(b=>Convert.ToString(b.ToolTip)==GameSettings.Labels[0]+", binding 1");
+                        Click(binding);Require(Descendants(host).OfType<System.Windows.Controls.Border>().Any(b=>b.Name=="BindingCaptureArea"));
+                        Click(button("Bind Escape"));Click(button("Cancel"));Require(Convert.ToString(binding.Content)=="E");
+                        Click(binding);Click(button("Bind Escape"));Click(button("Move binding"));Require(Convert.ToString(binding.Content)=="Escape");
+                        Click(Descendants(host).OfType<System.Windows.Controls.Button>().Single(b=>b.Name=="SettingsSaveButton"));
+                        var saved=GameSettings.Load(root,null);Require(GameSettings.KeyCode(saved.Binding(0)[0])==27 && saved.Binding(6).All(t=>GameSettings.KeyCode(t)!=27));
+                        Require(host.Visibility==System.Windows.Visibility.Visible);
+                        Click(binding);Click((System.Windows.Controls.Button)ui.Window.FindName("HomeNav"));ui.ShowSettings();
+                        Require(!Descendants(host).OfType<System.Windows.Controls.Border>().Any(b=>b.Name=="BindingCaptureArea"));
+                    } finally {ui.Window.Close();}
+                });
+            });
+            Test("inline save validates input and keeps the page open after a successful save",()=>{
+                string root=Root("inline-save");STA(()=>{
+                    var ui=new LauncherWindow(root,true);
+                    try {
+                        ui.ShowSettings(1);var host=(System.Windows.Controls.ContentControl)ui.Window.FindName("SettingsHost");
+                        var nodes=Descendants(host).ToList();
+                        var sensitivity=nodes.OfType<System.Windows.Controls.TextBox>().Single(t=>t.Name=="MouseSensitivity");
+                        var save=nodes.OfType<System.Windows.Controls.Button>().Single(b=>b.Name=="SettingsSaveButton");
+                        sensitivity.Text="invalid";Click(save);Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+                        Require(Descendants(host).OfType<System.Windows.Controls.TextBlock>().Any(t=>t.Text.Contains("numeric sensitivity")));
+                        sensitivity.Text="0.33";var skip=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>Convert.ToString(c.Content)=="Skip startup splash screens");skip.IsChecked=true;Click(save);
+                        var saved=GameSettings.Load(root,null);Require(saved.SkipStartupSplashes && saved.Sensitivity==.33 && host.Visibility==System.Windows.Visibility.Visible);
+                    } finally {ui.Window.Close();}
+                });
             });
             Test("opening settings does not create files; defaults have PC bindings",()=>{
                 string root=Root("cancel");var model=GameSettings.Load(root,null);

@@ -37,7 +37,7 @@
   <Grid>
     <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="35"/></Grid.RowDefinitions>
     <Grid.ColumnDefinitions><ColumnDefinition Width="204"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-    <Border Background="#101E2D" BorderBrush="#2C4258" BorderThickness="0,0,1,0">
+    <Border x:Name="SidebarPanel" Background="#101E2D" BorderBrush="#2C4258" BorderThickness="0,0,1,0">
       <Grid Margin="20,26,20,18">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="58"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <StackPanel>
@@ -78,7 +78,8 @@
         </StackPanel>
       </Grid>
     </Border>
-    <Grid Grid.Column="1" Margin="30,24,30,18">
+    <Grid Grid.Column="1">
+    <Grid x:Name="CommandCenter" Margin="30,24,30,18">
       <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="20"/><RowDefinition Height="264"/><RowDefinition Height="18"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
       <DockPanel LastChildFill="False">
         <StackPanel DockPanel.Dock="Left"><TextBlock Text="COMMAND CENTER" FontSize="11" FontWeight="SemiBold" Foreground="#C0D1E1"/><TextBlock Text="Your next jump starts here." FontSize="13" Foreground="#8CA2B7" Margin="0,5,0,0"/></StackPanel>
@@ -169,6 +170,8 @@
         </Grid>
         <ProgressBar x:Name="OperationProgress" Grid.Row="1" Minimum="0" Maximum="100" Value="0" Background="#253D54" Foreground="#86CDFF" BorderThickness="0" Height="3"/>
       </Grid>
+    </Grid>
+    <ContentControl x:Name="SettingsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>
     <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="#2C435A" BorderThickness="0,1,0,0" Background="#0D1926" Padding="20,0">
       <DockPanel><TextBlock x:Name="LauncherVersionLabel" Text="TSFP  /  COMMUNITY PC PROJECT" FontFamily="Consolas" FontSize="9" Foreground="#809BB2" VerticalAlignment="Center"/><TextBlock Text="EXPERIMENTAL PORT     ·     BRING YOUR OWN GAME" FontSize="9" Foreground="#809BB2" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>

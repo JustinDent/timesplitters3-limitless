@@ -72,7 +72,7 @@ $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Program',
     ('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml')) + $commonSources + @(
     (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'))
 $arguments += $bannerArguments
-$settingsSources = @((Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'SettingsWindow.cs'))
+$settingsSources = @((Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'SettingsPage.cs'))
 $defaultControls = '/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'
 $arguments += $settingsSources + @($defaultControls)
 & $compiler @arguments
@@ -115,6 +115,8 @@ if ($Test) {
         (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'),
         (Join-Path $project 'tests\launcher_updates.cs'))
     $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher_settings.cs'))
+    $testArgs += @(('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml'),
+        ('/resource:' + (Join-Path $Output 'launcher.ico') + ',launcher.ico')) + $bannerArguments + $logoArguments
     & $compiler @testArgs
     if ($LASTEXITCODE -ne 0) { throw 'Launcher test compilation failed.' }
     & (Join-Path $Output 'launcher-tests.exe')

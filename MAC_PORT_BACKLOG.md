@@ -59,6 +59,22 @@ runtime readiness. No full campaign playthrough is required.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **Issue #7 follow-up (2026-10-16):** `src/pc_terminal.h`
+  on `7-breaking-and-entering-camera-turret-not-working` routes relative mouse
+  counts to the active terminal's logical pointer in
+  mode `0x2000`, preserving its 4–251 bounds and normal aiming on exit.
+  Left-click emits Confirm only in terminal menus; release is required when
+  entering/leaving with a held button. Shared context is in `src/pc_input.c`
+  and the sampling hook in `patches/zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch`.
+  Both `src/pc_controls.c` and `src/native/input_sdl.c` call this shared helper;
+  no additional Mac adapter is required. `tests/test_terminal_mouse.py` is
+  included in Windows/macOS CI. Windows build and physical terminal checks
+  passed, including user-confirmed left-click selection and return to ordinary
+  aiming/firing; results are recorded in [Issue #7 validation](STATUS.md#terminal-mouse-routing-issue-7--2026-10-16).
+  Native Mac compilation and physical-pointer validation remain pending:
+  check terminal selection/clicks, scripted/paused states and ordinary aiming
+  after exit using isolated saves/settings.
+
 - **Status:** Awaiting validation
 - **Issue #18 follow-up (2026-10-16, commit 8dee97f):** `src/pc_camera.h` no longer
   requires guest player ID zero. Both Windows `src/pc_controls.c` and native
@@ -174,7 +190,7 @@ runtime readiness. No full campaign playthrough is required.
   v1.2.0 use primary-display modes, the console default, lower modes down to
   640×480, refresh-rate deduplication and preservation of saved custom modes.
   `src/pc_display_menu.c` uses the game's native arrow choice widget. Sources:
-  `src/pc_display.c`, `tools/launcher/DisplayModes.cs`, `SettingsWindow.cs`;
+  `src/pc_display.c`, `tools/launcher/DisplayModes.cs`, `SettingsPage.cs`;
   implementation `e3e99c1`, integrated on `release/resolution-v0.2.0-alpha.4`.
   SDL discovery otherwise retains its existing behavior. Mac mode discovery,
   native arrow spacing, lower modes and Apply/Keep/Revert/timeout still need
@@ -507,13 +523,25 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Embedded settings (2026-10-16, commit `5eea0ca` on `feat/launcher-inline-settings`):**
+  Windows launcher v1.2.2 replaces the separate settings window with an
+  embedded `SettingsPage` in `Launcher.xaml`/`Launcher.cs`. Both tabs, binding
+  capture and confirmations keep the sidebar visible. Home navigation keeps
+  drafts; Cancel discards them; Save keeps the page open. Build references and
+  isolated WPF checks are in `tools/build-launcher.ps1` and
+  `tests/launcher_settings.cs`. Native Mac pre-game UI remains queued; its
+  existing in-game Cocoa settings are unchanged. Reuse shared configuration
+  semantics when adapting navigation, focus, inline capture/confirmation and
+  save/cancel; verify sidebar visibility and resize/keyboard accessibility on
+  Mac. Windows evidence: [Embedded launcher settings](STATUS.md#embedded-launcher-settings-2026-10-16).
 - **Startup skipping (2026-10-16, commit `bad108c` on `feat/launcher-skip-startup`):**
   Windows launcher v1.2.1 adds an off-by-default Startup checkbox under Graphics
   & resolution. It preserves `launcher.skip_startup_splashes` in the existing
   controls JSON and explicitly sets `RECOMP_XMV_PLAY=0/1` for each game launch;
   opening logos and the idle attract movie are skipped, while rendered story
   cutscenes use a separate system. Sources: `tools/launcher/GameSettings.cs`,
-  `tools/launcher/SettingsWindow.cs`, `tools/playable-launch.ps1`.
+  `tools/launcher/SettingsPage.cs` (formerly `SettingsWindow.cs`),
+  `tools/playable-launch.ps1`.
   Existing Mac HLE has no host XMV player, so this does not establish Mac movie
   playback or a new native checkbox. When adding Mac movie playback/pre-game UI,
   honor the same saved boolean and switch, preserve unknown JSON members, and

@@ -5,6 +5,7 @@
 typedef struct PcInput {
     unsigned char keys[256];
     int focused, captured;
+    int terminal_active, terminal_blocked;
     double dx, dy;
     uint64_t motion_at;
     int wheel_queue, wheel_key;
@@ -17,6 +18,9 @@ void pc_input_key(PcInput *s, unsigned key, int down);
 void pc_input_motion(PcInput *s, double dx, double dy, uint64_t now);
 void pc_input_wheel(PcInput *s, int steps);
 int pc_input_down(PcInput *s, unsigned key, uint64_t now);
+void pc_input_terminal_context(PcInput *s, int active, int left_down);
+int pc_input_terminal_click(PcInput *s, int left_down);
+int pc_input_terminal_suppresses_left(PcInput *s, int left_down);
 void pc_input_normalize_movement(int16_t *x, int16_t *y);
 int pc_input_look(PcInput *s, uint64_t now, float sensitivity, int invert_y,
                   float fov_scale, float *yaw, float *pitch);
