@@ -112,6 +112,20 @@ Match**; the other selects that match, then Ready. The host starts the match.
 The native transport uses UDP 1000 (gameplay), 3000 (session information), and
 9999 (discovery). Allow the game through Windows Firewall on the private LAN.
 
+Active PC matches sample outgoing movement once per 60 Hz guest tick. The
+original Xbox send gate waited seven ticks (about 117 ms), which delayed rapid
+keyboard strafe reversals and caused remote players to snap back to corrected
+positions (issue #20). The PC gate applies to both Online and System Link;
+the game clock, network epoch, heartbeat/timeout calculations and input encoding
+remain unchanged. Full movement state is refreshed at least every three match
+ticks (20 Hz), even when keys remain held or only the raw mouse camera changes.
+The original controller-byte change detector could otherwise leave prediction
+uncorrected for about a second after independent frame stalls. This increases
+movement traffic; it does not eliminate host frame-rate drops. Both peers need
+the updated matching build. Two-instance loopback measurements are recorded in
+[STATUS.md](../STATUS.md#multiplayer-strafe-updates-issue-20--2026-10-16);
+physical-controller, cross-machine and WAN checks remain pending.
+
 If LAN broadcasts do not reach the other PC, explicitly name its LAN IPv4:
 
 ```powershell
