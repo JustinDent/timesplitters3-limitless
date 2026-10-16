@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 
 
@@ -12,8 +13,18 @@ def fingerprint(runtime):
     paths.extend(p for p in (runtime / 'tools/recomp').rglob('*')
                  if p.is_file() and p.suffix in ('.py', '.json', '.txt')
                  and '__pycache__' not in p.parts and not p.name.startswith('test_'))
-    return {p.relative_to(runtime).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in sorted(paths)}
+    result = {p.relative_to(runtime).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
+              for p in sorted(paths)}
+    # The lift scans these declarations to emit wrappers and original-body
+    # pointers. Function-body edits only require compiling, but changing the
+    # exported/imported names requires regenerating the guest C first.
+    declarations = set()
+    pattern = re.compile(r"^\s*(HLE_EXPORT|HLE_ORIGINAL|HLE_IMPORT_VAR)\(\s*([A-Za-z_]\w*)\s*\)", re.M)
+    for source in (runtime / 'src/hle').rglob('*.c'):
+        declarations.update(pattern.findall(source.read_text(encoding='utf-8')))
+    result['hle-declarations'] = hashlib.sha256(
+        json.dumps(sorted(declarations)).encode('utf-8')).hexdigest()
+    return result
 
 
 def marker(runtime):
