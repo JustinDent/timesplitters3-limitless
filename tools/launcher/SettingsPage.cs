@@ -194,10 +194,13 @@ namespace TimeSplitters.Launcher
                 Width=290, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
             System.Windows.Automation.AutomationProperties.SetName(fov,"Vertical field of view in degrees");
             fov.ValueChanged+=(s,e)=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°";
+            fov.IsEnabled=model.CanAdjustFov;
             fieldOfView.Children.Add(fov); Field(graphics,"Vertical FOV (40–100°)",fieldOfView);
             var resetFov=Button("Reset FOV to 55°"); resetFov.Name="ResetFovButton";
+            resetFov.IsEnabled=model.CanAdjustFov;
             resetFov.HorizontalAlignment=HorizontalAlignment.Left; resetFov.Click+=(s,e)=>fov.Value=GameSettings.FovDefault;
             graphics.Children.Add(resetFov);
+            if(!model.CanAdjustFov) graphics.Children.Add(Text("Custom FOV requires a game release newer than v0.2.0-alpha.4. Resolution settings remain available.",12));
             graphics.Children.Add(Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative. Cinematic and terminal framing is unchanged.",12));
             fullscreen=Check("Borderless fullscreen",model.Fullscreen); graphics.Children.Add(fullscreen);
             var quality=new WrapPanel(); graphics.Children.Add(quality);

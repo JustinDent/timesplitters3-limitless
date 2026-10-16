@@ -1,5 +1,41 @@
 # Measured progress
 
+## Bootstrap argument diagnostics (2026-10-16)
+
+Launcher v1.2.3 release preparation on `fix/launcher-bootstrap-arguments`, based on
+main `de23272`. The installed launcher log records `Unknown bootstrap arguments`
+at 2026-10-16 21:45:56 UTC (17:45:56 local). The resolution-development task ran
+`TimeSplitters Launcher.exe --render-settings-graphics ...`, although that flag
+was only accepted by `Bin/TimeSplitters.App.exe`. Its subsequent command used
+the correct EXE. This establishes a concrete trigger for the recorded failure;
+the old log did not retain actual arguments for distinguishing other reports.
+Both installed launcher files matched their local v1.2.2 manifest. They were
+local development builds, not byte-identical to the published v1.2.2 assets.
+
+`Bootstrap.cs` now delegates only the three known application preview modes
+before taking the startup mutex, preserves relative/spaced output paths and
+child exit codes, and bounds preview execution to 30 seconds. Normal startup,
+startup-splash rendering and updater routes retain their behavior. Other
+arguments remain rejected, with bounded JSON-escaped argument details in both
+the log and error. Startup logging now includes version/count/arguments.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both binaries compiled. Three
+isolated bootstrap checks passed using real synthetic child processes, covering
+all forwarded modes, quoting, relative paths, exit status, preserved startup and
+helper command routes, and bounded/escaped diagnostics. All 23 settings checks
+passed. Real bootstrap execution rendered both the delegated graphics preview
+and its own splash successfully into ignored `build/bootstrap-validation`.
+The full updater suite stopped at the existing game-running safety guard; the
+active game session and installed launcher/user settings were left untouched.
+No game runtime source changed, and no new game build/playtest was performed.
+Publication is pending the release PR and hosted Windows updater checks.
+Compatibility review found that published alpha.4 reads only V1 display settings.
+The newer main-branch FOV controls are disabled for installed releases through
+alpha.4, and model validation rejects custom FOV before writing any settings.
+Two additional checks cover compatible resolution saves, atomic rejection, the
+newer-version path, and disabled controls with explanatory text. Native Mac adaptation remains queued under
+MAC-021; other-device synchronization is unverified.
+
 ## Launcher settings CI startup budget — 2026-10-16
 
 - PR #65's Windows run `38969601167` passed patch transitions and all 71 launcher
