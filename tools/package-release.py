@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -17,8 +18,10 @@ def main():
     parser.add_argument('--version', default='v'+(ROOT/'VERSION').read_text().strip())
     parser.add_argument('--output', type=Path, default=ROOT / 'build/releases')
     args = parser.parse_args()
-    if not all(c.isalnum() or c in '.-+_' for c in args.version):
-        parser.error('Version must contain only letters, numbers, dots, dashes, plus signs, or underscores.')
+    if not re.fullmatch(r'v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?', args.version):
+        parser.error('Use a semantic release version, such as v1.2.3 or v1.2.3-alpha.1.')
+    if '-' in args.version and any(part.isdecimal() and len(part)>1 and part[0]=='0' for part in args.version.split('-',1)[1].split('.')):
+        parser.error('Numeric prerelease identifiers must not contain leading zeros.')
     name = f'TimeSplitters-Future-Perfect-PC-{args.version}-windows-x64'
     # Only a successfully built executable with matching content can be packaged.
     subprocess.run([os.sys.executable, str(ROOT/'tools/network-identity.py'), '--verify',
@@ -27,12 +30,19 @@ def main():
     stage.mkdir(parents=True, exist_ok=False)
     upstream = ROOT / 'external/ts3FPrecomp'
 
+    powershell = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
+    subprocess.run([str(powershell), '-NoProfile', '-ExecutionPolicy', 'Bypass',
+                    '-File', str(ROOT/'tools/build-launcher.ps1')], check=True)
+
     def copy(source, dest):
         target = stage / dest
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, target)
 
     copy(ROOT / 'build/windows/Release/futureperfect_recomp.exe', 'Bin/futureperfect_recomp.exe')
+    copy(ROOT/'build/launcher/TimeSplitters Launcher.exe', 'TimeSplitters Launcher.exe')
+    copy(ROOT/'build/launcher/Bin/TimeSplitters.App.exe', 'Bin/TimeSplitters.App.exe')
+    copy(ROOT/'build/launcher/Support/Launcher/manifest.json', 'Support/Launcher/manifest.json')
     for dll in ['avcodec-62.dll', 'avutil-60.dll', 'swresample-6.dll']:
         copy(upstream / 'third_party/ffmpeg/bin' / dll, 'Bin/' + dll)
     installations = [Path(os.environ.get(variable, default))/'Microsoft Visual Studio'
@@ -78,7 +88,9 @@ def main():
     (stage / 'README.txt').write_text(f'''TimeSplitters: Future Perfect PC {args.version} - experimental prerelease
 
 Requires 64-bit Windows 10/11 and your own US Xbox game files.
-Extract this entire ZIP to a writable folder. Double-click Play.cmd.
+Extract this entire ZIP to a writable folder. Open TimeSplitters Launcher.exe.
+Play.cmd opens the same launcher. Game settings changes controls and graphics
+before play; resolution arrows include the primary display modes and Original.
 On first launch choose your Xbox ISO or an extracted folder containing
 default.xbe, pak, and xmv. Setup validates the supported executable and copies
 the game files to Data. Allow at least 5 GB of free space for setup.
@@ -132,6 +144,7 @@ Third-party notices are in Licenses. Microsoft Visual C++ runtime is bundled.
 ''', encoding='utf-8')
     info = {
         'version': args.version,
+        'launcher_version': json.loads((stage/'Support/Launcher/manifest.json').read_text())['version'],
         'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         'source_changes': subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True).splitlines(),
         'online': online,

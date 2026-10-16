@@ -1,5 +1,23 @@
 # Measured progress
 
+## Resolution release preparation — October 16, 2026
+
+Game v0.2.0-alpha.4 and launcher v1.2.0 are prepared together on
+`release/resolution-v0.2.0-alpha.4`, based on main `92384df`. This integrates
+launcher settings commits `caa6f5e`/`3b93941` and issue #28 fix `e3e99c1`
+without replacing newer main runtime/Online/audio/rendering changes. The release
+package includes both launcher executables and their self-update manifest,
+alongside the current portable Online companion, licenses and source bundle.
+
+Earlier issue-branch validation passed 71 updater and 14 settings checks, native
+display tests and an 86-second real D3D11 guest-menu replay covering left/right
+selection, 720×480 apply/keep/save, Original preview, timed rollback and return.
+Both native value-column and WPF graphics-tab captures were reviewed. The US XBE
+hash was verified; those earlier tests used an isolated relink, so the main-based
+full build and package are being validated separately before publication.
+Native Mac execution and paused-Options gameplay traversal remain unverified for
+this change; adaptation is tracked in MAC-010 and MAC-021.
+
 ## Release regression compiler discovery — 2026-10-16
 
 - Source base `cc35200`, changes on `fix-release-msvc-tests`.
