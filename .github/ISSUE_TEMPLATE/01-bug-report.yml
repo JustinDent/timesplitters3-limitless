@@ -1,0 +1,142 @@
+name: Bug report
+description: Report a crash, broken feature, rendering problem, or performance issue.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Report one problem per issue. Search [existing issues](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues) first; add evidence to an existing report when it matches.
+
+        **Game and launcher versions are different.** Copy the installed game version, not the latest available update. In the Windows launcher, use **Game files** to find `BUILD.json`: its `version` identifies the game and `source_commit` identifies its source. The launcher header shows **LAUNCHER v...**. If it will not open, the installed launcher version is in `Support/Launcher/manifest.json` under `version`.
+
+        For source builds, include `VERSION`, `git rev-parse HEAD`, and whether you have local changes (`git status --short`). For an older package, include its exact ZIP filename or release link. Do not guess a version or write only "latest"; say "unknown" and explain what you checked if identification fails.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Launcher / installation / updates
+        - Startup / crash / freeze
+        - Gameplay / missions / objectives
+        - Graphics / textures / display
+        - Audio / movies
+        - Controls / controller / mouse
+        - Performance / frame pacing
+        - Saves / settings
+        - Online / System Link / multiplayer
+        - Other / unsure
+    validations:
+      required: true
+  - type: input
+    id: game-version
+    attributes:
+      label: Installed game version
+      description: Copy the installed version or BUILD.json version. For setup problems, use NOT INSTALLED; for unidentified builds, use UNVERSIONED or unknown and explain below.
+      placeholder: "Example only: v0.2.0-alpha.4 (not the launcher version)"
+    validations:
+      required: true
+  - type: input
+    id: launcher-version
+    attributes:
+      label: Launcher version
+      description: Copy LAUNCHER v... or Support/Launcher/manifest.json version. Enter not used for a direct source build, or unknown if you cannot identify it.
+      placeholder: "Example only: v1.2.0"
+    validations:
+      required: true
+  - type: textarea
+    id: build-source
+    attributes:
+      label: Build source and identity
+      description: State launcher install, manual ZIP, or source build; include Stable/Preview if applicable, the release link or ZIP filename, and BUILD.json source_commit if available. Source builds must include commit and local-change status. Explain any unknown version above.
+      placeholder: |
+        Installed using:
+        Update channel (if used):
+        Release link / exact ZIP filename:
+        source_commit / Git commit:
+        Local source changes (source builds only):
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Windows - native PC build
+        - macOS - native Apple Silicon build
+        - Other environment / compatibility layer (describe below)
+    validations:
+      required: true
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system version and architecture
+      description: Include the OS version/build and x64 or ARM64. If using Wine, a VM, or another compatibility layer, include its name and version.
+      placeholder: "Example: Windows 11 24H2, build 26100, x64; or macOS 15.5, ARM64"
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Hardware and graphics driver
+      description: Especially helpful for graphics, performance, startup, and audio issues. On a Mac, include the Apple chip and memory.
+      placeholder: |
+        CPU / Apple chip:
+        GPU and VRAM:
+        RAM:
+        Graphics driver version:
+        Controller / audio device (if relevant):
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Start from launching the game. Include mode, level/map, difficulty, player count, and the exact menu/action/location. If it happened once, describe what happened immediately before it.
+      placeholder: |
+        1. Launch using...
+        2. Select mode / level...
+        3. Perform this action...
+        4. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: Describe what should happen.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include the exact error text, crash/freeze behavior, or measured FPS/frame-time change when relevant.
+      placeholder: Describe what happens instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How often does it happen?
+      options:
+        - Every time
+        - Often
+        - Sometimes
+        - Once so far
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: settings
+    attributes:
+      label: Relevant settings and modifications
+      description: Include resolution, fullscreen/windowed mode, FPS/interpolation options, texture packs/modifications, and input device when relevant. For multiplayer, include host/guest role, LAN/Online, player count, and each player's build version. Do not post invitations or connection secrets.
+  - type: textarea
+    id: regression
+    attributes:
+      label: Did it work in an earlier build? Any workaround?
+      description: Give the exact last working version if known and any workaround you already tried. Unknown is fine; do not delete saves/settings just to complete this report.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs, screenshots, and video
+      description: Use View logs for launcher diagnostics (.launcher/launcher.log); game logs are under Logs. Attach relevant files or paste a short excerpt with the time of the failure. For source/native Mac builds, include the relevant logs from the checkout's logs folder. Remove personal paths, IP addresses, invitations, and secrets. Do not upload game data, ISOs, BIOS files, or personal saves.
+      placeholder: Drag screenshots/log files here, link a video, or explain if no logs were produced.

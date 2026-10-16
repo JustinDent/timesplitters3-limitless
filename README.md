@@ -153,9 +153,12 @@ account, paid service or centrally operated server is required. Choose
 | [Multiplayer](docs/multiplayer.md) — Online, invitations and LAN | [Measured progress](STATUS.md) — evidence and remaining work |
 | [Native Mac](docs/macos.md) — Apple Silicon setup and controls | [Project rules](AGENTS.md) — reproducibility and data preservation |
 
-**Found a problem? [Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues)**
-with your game version/build ID, OS/GPU, level or mode, and reproduction steps.
-Relevant logs or screenshots help; keep personal saves and game data private.
+**[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
+or **[request an enhancement](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)**.
+The forms ask for separate game and launcher versions, your platform, and the
+details needed to understand the problem or suggestion.
+[Find your build version and logs](docs/launcher.md#report-a-problem-or-request-an-improvement);
+keep personal saves and game data private.
 
 ---
 

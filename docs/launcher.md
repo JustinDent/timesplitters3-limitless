@@ -67,6 +67,37 @@ Xbox data are installed and that another game instance is not already running.
 An unsupported or incomplete existing `Data` folder is retained for inspection,
 not overwritten. Check the status message and logs before changing files.
 
+## Report a problem or request an improvement
+
+Use the [bug report](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)
+or [enhancement request](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)
+form. Search existing issues first and report one problem or suggestion at a time.
+
+Game and launcher versions are separate, and an available update may differ from
+the version you have installed:
+
+- **Game version:** copy the installed game version from the launcher. Select
+  **Game files** and open `BUILD.json` for its `version` and `source_commit`.
+  Report `NOT INSTALLED` if setup failed before installing the game, or
+  `UNVERSIONED` if that is what the launcher shows.
+- **Launcher version:** copy **LAUNCHER v...** from the header. If it will not
+  open, check `version` in `Support/Launcher/manifest.json` in the installation.
+  The `launcher_version` in a game's `BUILD.json` describes the launcher bundled
+  with that game package; a separately updated launcher can be newer.
+- **Build source:** include Stable/Preview when used, the exact release link or
+  ZIP filename, and whether you installed through the launcher or manually.
+  Source builds should include `VERSION`, `git rev-parse HEAD`, and any local
+  changes shown by `git status --short`. These commands work on Windows and Mac.
+  If you cannot identify a version, say unknown and describe what you checked.
+- **Evidence:** use **View logs** for `.launcher/launcher.log`, and check `Logs`
+  for game output. Source builds, including native Mac builds, write diagnostics
+  under the checkout's `logs` folder. Attach the relevant log and screenshots,
+  with reproduction steps, OS version, hardware and relevant settings.
+
+Remove personal paths, IP addresses, invitations and secrets before posting.
+Keep original game files, ISOs, BIOS files and personal saves private. You do not
+need to delete settings or saves to complete a report.
+
 ## Older portable packages and source builds
 
 A standalone game runtime ZIP is an alternative for manual installation. Extract
