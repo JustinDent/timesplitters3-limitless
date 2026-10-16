@@ -54,6 +54,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-014 | Patch upgrades and branch-switch transitions | Awaiting validation |
 | MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
 | MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
+| MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
 
 ### MAC-001 — Direct-camera mouse look
 
@@ -378,6 +379,31 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   settings, and check audible story dialogue/music and A/V synchronization.
 - **Mac implementation and evidence:** Shared fixes are present locally; native
   Mac compilation/listening and other-device synchronization remain unverified.
+
+### MAC-019 — Framebuffer refresh between effects (issue #9)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Khallos Express's final glow samples the scene including
+  the train and weapon, instead of overlaying an earlier background-only copy.
+  Consecutive effect taps retain a stable snapshot; rebinding after other
+  textures refreshes it within the same frame.
+- **PC source:** `patches/zzzzzzz-framebuffer-sampling-passes.patch`, modifying
+  shared `src/hle/hle_d3d8_texture.c`; `tests/framebuffer_sampling.c`,
+  `tests/test_framebuffer_sampling.py`, `tests/test_patch_updates.py`,
+  `tsfp.ps1` and `.github/workflows/runtime-patches.yml`. Delivered on branch
+  `9-khallos-express-level-is-transparent`, source base `800687d`.
+- **PC validation:** Windows build/native checks and 29 patch/cache checks pass.
+  A mutation check detects the stale-copy bug; the user confirmed solid walls
+  after moving/turning in Khallos Express. Evidence and limits are in
+  [STATUS.md](STATUS.md#khallos-express-see-through-scenery-issue-9--2026-10-16).
+- **Existing Mac support:** Native OpenGL already implements screen copying in
+  `src/native/gl_screen_copy.inc`; both hosts consume this shared HLE cache.
+  No separate platform implementation is expected for the refresh rule.
+- **Remaining adaptation/acceptance:** Build on macOS and run the new native
+  cache regression, GPU screen-copy checks and an isolated Khallos Express
+  scene at 60 and interpolated 120 FPS. Check solid walls/weapon, windows and
+  glow, plus a first-mission effects smoke test. Native rendering and other-device
+  synchronization are unverified; Windows results do not establish Mac support.
 
 ## Entry template
 
