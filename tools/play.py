@@ -17,6 +17,14 @@ def main():
                         '--verify', '--executable', str(executable),
                         '--game', os.environ['RECOMP_GAME_DIR']], check=True)
     log_directory = Path(sys.argv[2]).resolve()
+    if os.environ.get('TSFP_DEBUG_QUIET') == '1':
+        environment = dict(os.environ)
+        environment.pop('RECOMP_LOG_FILE', None)
+        return subprocess.run(
+            [str(executable)], cwd=executable.parent, env=environment,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0,
+        ).returncode
     log_directory.mkdir(parents=True, exist_ok=True)
     tag = datetime.now().strftime("play-%Y%m%d-%H%M%S")
     environment = dict(os.environ, RECOMP_LOG_FILE=str(log_directory / f"{tag}.err"))

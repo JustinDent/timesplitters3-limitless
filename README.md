@@ -512,6 +512,16 @@ The Xbox action mapping was checked against the publisher's original
 
 ### Debug settings
 
+For the temporary five-second-stall investigation, **Play-Quiet.cmd** in the
+source checkout launches
+with diagnostic output discarded and Debug log polling/performance logging
+disabled. FPS measurement and your saved debug options remain intact. The next
+normal **Play.cmd** launch restores reporting. For terminal/System Link launches,
+set `$env:TSFP_DEBUG_QUIET = '1'` before your usual launch command; afterward use
+`Remove-Item Env:TSFP_DEBUG_QUIET` to restore normal launches. Restart both game
+instances when comparing modes. Quiet mode tests reporting I/O; internal report
+formatting still runs, and diagnostic logs/counters are unavailable for that run.
+
 Press **F12** or choose **PC Settings > Debug**.
 The shortcuts also work in fullscreen. Pause a mission first: settings block gameplay input but do not
 pause the simulation. The Debug window offers:

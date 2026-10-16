@@ -1,5 +1,180 @@
 # Measured progress
 
+## Temporary diagnostic-output comparison — 2026-10-16
+
+- User confirms the angle improvement but persistent remote strafe lag, with
+  FPS dips about every five seconds even while stationary. The cause remains
+  unresolved. Added an opt-in Windows quiet experiment on the existing issue
+  branch; no personal debug preferences or gameplay clocks are changed.
+- `Play-Quiet.cmd` sets `TSFP_DEBUG_QUIET=1` for its child launch only. The
+  Windows entry point routes stdout/stderr to `NUL`, the kernel logger skips
+  its separate `xbox_kernel.log`, and Debug skips log polling/performance-log
+  writes. FPS sampling and overlay options remain active. `tools/play.py` also
+  avoids creating play logs in this mode. A normal launch restores reporting.
+  Internal periodic report formatting still runs; this isolates reporting I/O
+  and polling rather than eliminating all diagnostic computation.
+- Sources are `src/pc_debug_output.h`, `src/pc_debug.c`, `tests/pc_debug.c`,
+  `tools/play.py`, `Play-Quiet.cmd` and the separate reproducible
+  `patches/zzzzzzzzzzzzzzzzz-pc-debug-quiet.patch`. The entry-point define is
+  source-specific so generated game C does not need unrelated recompilation.
+  MAC-013 records the deferred native startup adaptation.
+- Supported Windows Release build completed all native build-script checks
+  after earlier attempts hit the existing foreground-window prompt assertion.
+  The affected Debug regression additionally verifies suppressed log reads,
+  continuing FPS updates, unchanged persisted options and restored polling.
+  Windows x64 build 26300, Direct3D 11, pinned upstream and verified US XBE;
+  build identity `e73e10e8`, executable SHA-256
+  `df66f4ef4a3da023926263310e739c616dd60daf24e4e7e374fe18d108545c72`.
+  Evidence: `logs/issue-20-quiet-final-build.log` and
+  `logs/issue-20-quiet-debug-test.log`. Final patch-upgrade/transition suite:
+  14 passed in 76.18 s (`logs/issue-20-quiet-patch-tests.log`). The preceding
+  full suite had 37 passes and one temporary-file PermissionError in a patch
+  transition case; the final patch suite covers that case successfully.
+- An isolated 42-second quiet startup/menu run produced zero captured stdout
+  bytes and zero stderr lines; the existing kernel log was not changed. A fresh
+  22-second normal process restored diagnostic output without changing options.
+  Both runs used disposable controls and explicit save/runtime-display/PC-display
+  paths. These are startup/menu checks, not evidence that live multiplayer FPS
+  dips are fixed. Evidence: ignored
+  `private/network-validation/issue20-quiet-validation.json`,
+  `issue20-quiet-profile-pipe.json` and `issue20-restored-profile-pipe.json`.
+- Personal controls/display and the pre-existing tracked input-fixture edit
+  and its backup retain their pre-task hashes. They were not repaired or used
+  as mutable automated-test settings. Changes remain local and uncommitted;
+  native Mac execution and other-device synchronization are unverified.
+
+## Multiplayer strafe updates (issue #20) — 2026-10-16
+
+- **Further candidate, local and uncommitted:** The full-state sampler
+  `0x003588D0` compares six controller bytes and otherwise refreshes only after
+  60 match ticks. Direct host mouse look bypasses those bytes; independent
+  stalls also change prediction without changing a held key. A separate patch
+  now wraps the sampler and requests the original full-state packet after
+  three match ticks (20 Hz). The original input-change trigger remains active.
+  The wrapper preserves the original encoder and ABI, handles up to four
+  local players per peer, and retains disabled/lobby/native fallback behavior.
+  This bounds state age; it does not diagnose or eliminate host FPS dips.
+- Isolated menu pipe/file logging tests did not reproduce periodic clock gaps
+  after startup. Two subsequent System Link tests, including a disposable 4K
+  client configuration, also had no >30 ms clock gaps in their 15-second
+  timing-only windows (largest about 22 ms). Players were at different spawn
+  locations rather than mutually visible. These tests do not rule out a
+  renderer/input/terminal stall in the user's specific situation. Process-local
+  sampling profiles are retained under the isolated host/client directories.
+- A further controlled baseline used held strafe keys, repeated mouse turns
+  and three deliberate 120 ms suspensions of each test-owned sender. Full-state
+  receive gaps were typically 61 ticks and reached 68. Maximum near-simultaneous
+  position error was 0.772 client-to-host and 1.466 host-to-client; maximum
+  yaw mismatch was about 9.6 degrees. This baseline includes the first faster
+  send gate. Input, save and both display paths were isolated; suspensions
+  affected only child processes launched for this experiment. Evidence:
+  `private/network-validation/issue20-baseline-stall.jsonl` and
+  `issue20-stall-comparison.json`.
+- The candidate repeated the same input/pause schedule in a separate match
+  start with different spawn positions. Full-state receive gaps had median
+  three ticks and maximum ten across injected pauses; maximum sampled sender
+  full-state age was three ticks. Maximum yaw mismatch fell to 1.60 degrees.
+  Maximum position error was 0.642 client-to-host and 0.817 host-to-client;
+  maximum remote sampled steps were 0.734 and 0.933 respectively. These are
+  improvements, not elimination of the pause-associated snaps. Both tests use
+  a default-resolution host and an isolated 4K client, with the same original
+  simulation clocks. Evidence: `issue20-refresh-stall.jsonl`,
+  `issue20-stall-comparison.json`, `issue20-refresh-validation.json` in ignored
+  `private/network-validation`. This does not establish performance with both
+  players mutually visible, physical input, a full room or WAN latency/loss.
+  The cause of the user's approximately five-second live stalls remains
+  unresolved; hidden-console menu testing did not reproduce that periodicity.
+- The further candidate regenerated and compiled successfully through the
+  supported Windows build; all build-script checks and completed executable/
+  content verification passed. Identity `969f9c4a`, executable SHA-256
+  `54bd194371473bd6afd051a3eb668869e8d5ca96c1914ac559157d6821cf983e`.
+  The redirected outer PowerShell invocation returned 1 while its log completed
+  all checks; executable sealing and explicit verification succeeded. All 38
+  affected Python/native-wrapper regressions passed in 88.62 s after routing
+  pytest to an existing workspace temporary parent. Initial attempts hit an
+  inaccessible system temp root, then a missing workspace temp parent; a relay
+  timing test also failed during the initial concurrent compile. Evidence:
+  `logs/issue-20-refresh-build.log`, `logs/issue-20-refresh-tests-final.log`.
+- **Still unresolved in live play:** A subsequent user-driven, 12-second
+  observation of both running Windows instances reproduced substantial remote
+  corrections with players facing each other on build identity `a6bb2366`.
+  Read-only position sampling caught a remote actor step of 1.314 world units
+  and maximum near-simultaneous replication error of 1.314; the moving player's
+  largest local sampled step was 0.346. The other player remained stationary
+  during this capture, so it establishes only one direction of this live case.
+  Large corrections coincided with advances of the last full-state receive
+  timestamp, despite frequent movement updates. This points to remaining
+  prediction/state-reconciliation behavior; it does not establish its cause.
+  Eighteen window-only screenshots per instance and samples are retained in
+  ignored `private/network-validation/issue20-live-*` and `issue20-live.jsonl`.
+  Observation sent no inputs, wrote no game memory, and changed no settings or
+  saves. The earlier isolated measurements below do not establish a complete
+  fix for issue #20.
+- **Frame-drop follow-up:** Two further 15-second, read-only observations used
+  memory sampling only, without window captures or injected inputs. The first
+  recorded a 0.651-unit correction about 5 ms after a 131 ms pause in sampled
+  game-clock progress. The user-cued repeat recorded a 0.939-unit correction
+  about 11 ms after the other process resumed from a 55 ms pause. Other jumps
+  had no nearby pause, so causality and the complete trigger remain unresolved.
+  The repeat's largest game-clock gaps were 116/114 ms, compared with median
+  intervals of 16.5 ms. One process had approximately 105/105/116 ms gaps at
+  elapsed 1.05/6.05/11.05 seconds, suggesting periodic work worth profiling.
+  These are sampled clock-progress gaps, not directly measured GPU presents.
+  The network frame counter can be reset by incoming synchronization packets;
+  it must not be treated as an independent monotonic render-frame counter.
+  Evidence: ignored `private/network-validation/issue20-live-timing.jsonl`,
+  `issue20-live-timing.summary.json` and the earlier retained
+  `issue20-live-timing-initial.summary.json`. No further runtime change was made
+  from this correlation alone.
+- Local, uncommitted on `20-player-desync-when-strafing-multiplayer`, based on
+  fetched main `c8f8b31`. User clarified that this is the other player's
+  movement in multiplayer, not a Story-mode problem; only keyboard/mouse had
+  been tested. No Story movement, console clock or rendering changes are made.
+- Reproduced with two isolated Windows System Link processes in Vietnam
+  Deathmatch. Forty alternating A/D holds of 150 ms produced remote position
+  jumps up to 1.338 world units at approximately 20 ms sample intervals; the
+  sender's largest sampled step was 0.218. Maximum near-simultaneous replicated
+  position error was 1.493. The guest receive timestamps advanced seven ticks
+  at a time even over loopback: about 117 ms between movement opportunities.
+- The US pump `0x003559A0` computes an eight-Hz network epoch by dividing the
+  game clock by `60 / 8`, truncated to seven. The active-match state (15) in
+  `0x003544B0` waits for that epoch before sampling movement. The new wrapper
+  opens only that send gate once per guest tick; it keeps the original pump,
+  packet encoding, network epoch, heartbeat/timeout calculations and idle
+  full-state refresh. Both PC transports share this path. Duplicate calls in
+  one guest tick, inactive states and disabled/native fallback are covered.
+- After rebuilding, the same rapid-reversal input on the same map reduced
+  the remote maximum sampled step to 0.153 (sender 0.153) and maximum measured
+  replication error to 0.0844. Receive timestamp gaps had median one tick,
+  maximum two. Reversing roles and moving the host produced maximum replicated
+  error 0.1154 on the client. These are separate match starts with different spawn locations,
+  not an identical-position replay. The comparison establishes substantially
+  smaller corrections under this loopback workload, not zero jitter on WANs.
+- Windows x64 build 26300, MSVC 14.42.34433, SDK 10.0.22621.0, Python 3.14.2,
+  SDL 3.4.16 and Direct3D 11. Supported US XBE checksum and pinned upstream
+  `d90c929` verified. Complete patch stack applied; generated code refreshed
+  through `tsfp.ps1 -Action Build`. Release build and all build-script checks
+  passed. The completed executable/content compatibility check passed before
+  the fixed run (identity prefix `a6bb2366`, baseline `1d13b6bc`).
+- All 38 targeted guest-boundary, identity, Online relay and patch upgrade/
+  tracking regressions passed. The historical pre-network Mac fixture now
+  excludes the new networking-dependent patch until the upgrade step.
+  Native-fallback checks preserve original calls without host transport symbols.
+  Evidence: `logs/issue-20-tests-final.log`.
+- Tests use `private/network-validation/host` and `client` saves with explicit
+  disposable controls and both display configuration paths. Personal saves,
+  personal settings and the tracked input fixture were preserved. Evidence:
+  `logs/issue-20-build.log`, `private/network-validation/issue20-before.jsonl`,
+  `issue20-before-network.jsonl`, `issue20-net-samples.jsonl` and
+  `issue20-host-net-samples.jsonl`, `issue20-comparison.json` and
+  `issue20-validation.json` in that validation directory. Both processes stopped
+  and their disposable virtual disks were recycled. Input is synthetic;
+  live Online gameplay, physical controllers, other PCs, WAN conditions and
+  sustained/full-capacity matches remain pending. The faster send opportunities
+  increase network traffic; full-room bandwidth was not measured. Native Mac
+  build/execution and synchronization remain unverified; see
+  [MAC-013](MAC_PORT_BACKLOG.md#mac-013--system-link-and-online-multiplayer).
+
 ## Controller sensitivity slider (issue #24) — 2026-10-16
 
 - Source base `c17336b` (fetched `origin/main`); this revision adds regression

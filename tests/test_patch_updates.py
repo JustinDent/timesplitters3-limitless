@@ -73,7 +73,9 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches = tmp_path / 'mac-only-patches'
     old_patches.mkdir()
     for patch in PATCHES.glob('*.patch'):
-        if patch.name not in ('zz-pc-network.patch', 'zzz-pc-online.patch'):
+        if patch.name not in ('zz-pc-network.patch', 'zzz-pc-online.patch',
+                              'zzzzzzzzzzzzzzz-pc-network-movement.patch',
+                              'zzzzzzzzzzzzzzzz-pc-network-state-refresh.patch'):
             shutil.copyfile(patch, old_patches / patch.name)
     assert installer.apply_patches(checkout, old_patches)
     assert installer.apply_patches(checkout, PATCHES)

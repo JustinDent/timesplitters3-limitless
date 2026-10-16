@@ -26,4 +26,4 @@
     { "port": 3, "device": "none" },
     { "port": 4, "device": "none" }
   ]
-}
+,"debug":{"show_fps":true,"show_frame_time":false,"show_issues":false,"log_performance":false,"show_latency":false}}
