@@ -335,7 +335,7 @@ per stream and reused on the next launch.
 Portable patch, launcher and test-isolation checks:
 
 ```sh
-.venv/bin/python -m pytest tests/test_patch_updates.py tests/test_native_mac_tools.py tests/test_native_mac_launcher.py -q
+.venv/bin/python -m pytest tests/test_patch_updates.py tests/test_patch_tracking.py tests/test_native_mac_tools.py tests/test_native_mac_launcher.py -q
 ```
 
 ## Local workflow
@@ -578,10 +578,22 @@ The launcher copies `config/pc-controls.default.json` to the ignored personal
 `config/pc-controls.json` on first use. Existing personal bindings are preserved.
 
 The runtime under `external/ts3FPrecomp` is shared when switching branches.
-Build removes exact recognized patches from `patches/legacy/` before applying
-the current branch's stack. This handles a runtime previously built on the
-texture branch without enabling its Classic/4K switch on `main`. Unrelated
-runtime edits are retained; conflicting edits stop validation before any writes.
+Each successful patch check records the applied patch contents, SHA-256 hashes,
+order and context options in the runtime's Git metadata (`tsfp-patches.json`).
+Subsequent builds unwind that recorded stack before applying the current branch's
+patches, including patches removed, renamed or edited since the previous build.
+This requires the updated loader on each branch. Branches running an older loader
+do not update the record; update those branches before switching builds.
+
+Existing runtimes without a record bootstrap using the active stack and the
+unwind-only archive in `patches/legacy/`. The complete transition is validated on
+temporary source copies before runtime writes. Unrelated edits are retained;
+conflicting edits stop the update. Write failures restore changed sources and
+leave the old record intact. The record contains patch text only, stays outside
+tracked source, and requires no duplicate game data or build directory.
+
+The Runtime patch transitions workflow runs source-only transition and upgrade
+tests on Windows, Linux and macOS for patch-loader changes and pull requests.
 
 ## Inputs and generated files
 
@@ -637,7 +649,7 @@ Setup, Test, Generate, and Build validate the complete patch stack in a temporar
 source-only directory before changing runtime files. Conflicts name the failing
 patch and leave the runtime checkout untouched. Existing patches should remain
 stable; add subsequent changes as separate patches. Run the upgrade regression
-tests with `.venv\Scripts\python.exe -m pytest tests/test_patch_updates.py -q`.
+tests with `.venv\Scripts\python.exe -m pytest tests/test_patch_updates.py tests/test_patch_tracking.py -q`.
 
 `patches/pc-input-vocabulary.patch` keeps the Python input UI's key names in sync
 with the mouse-button and F23/F24 names added to the runtime by the PC controls

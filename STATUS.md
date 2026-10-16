@@ -1274,3 +1274,53 @@ Evidence: `logs/runtime-patch-switch-build.log` and
 was retained before the transition. No game launch, end-to-end multiplayer
 session, packaging or release publication was performed. MAC-014 tracks pending
 macOS validation; other-device synchronization is unverified.
+
+
+## Automatic runtime patch tracking — October 16, 2026
+
+Implemented on `fix/automatic-patch-tracking`, based on main `979a16c`, for
+commit and publication at the user's request. Each successful loader invocation
+records exact patch bytes, SHA-256 hashes, order and context options in the
+runtime's per-worktree Git metadata (`tsfp-patches.json`). The next invocation
+unwinds that recorded stack before applying the current branch's stack, so
+removed, renamed or edited patch files no longer require a manual archive.
+Existing runtimes bootstrap through the active/legacy recognition path once.
+Branches need the updated loader to maintain this record.
+
+The entire transition is validated on disposable source copies. Invalid records
+and conflicting edits fail before runtime writes. Concurrent source/record edits
+observed during validation are preserved. Failed source writes or metadata
+publication roll back source changes and retain the old record. Successful
+records are replaced atomically; repeated no-op runs do not rewrite metadata.
+No game data, generated C or build tree is duplicated.
+
+Validation on Windows 11 x64 10.0.26300, Python 3.12.14, MSVC 14.44.35207,
+Release / Direct3D 11, pinned runtime `d90c929` and the verified supported US XBE:
+
+- Existing patch-upgrade and new tracking tests: 27 passed. Real Git branch
+  switches cover unknown patch removal, edited patch content, both directions,
+  LF/CRLF and unrelated edits. Additional cases cover rename/empty stacks,
+  exact-byte/hash retention, corrupt/unsupported records, partial write and
+  record-publication rollback, and concurrent edit detection.
+- Native Mac tools/launcher Python suites on Windows: 16 passed, one skip for
+  Windows symlink privilege. These are shared-tool checks, not Mac game tests.
+- The actual runtime enrolled 27 patches in a 152,426-byte record without source
+  changes. A subsequent Build used the record successfully. Compilation and
+  network, texture and display checks passed; Build then stopped at the existing
+  tests/pc_prompts.c:55 foreground-window assertion. A direct retry failed the
+  same assertion. Save-path, controls, settings and debug checks passed when run
+  separately. The executable SHA-256 remains
+  `625769a2fdfa5497a5bdf735b960f5c3100882d3d3b6b68389f515877e04176a`, identical to
+  the preceding successful build; multiplayer content verification passed.
+- Personal controls/display and the existing package-playable.py edit retain
+  their baseline hashes. Disposable native test data was recycled after checks.
+
+The Runtime patch transitions GitHub Actions workflow uses pinned actions,
+reads the upstream/pytest pins from shared configuration, and runs both patch
+suites on Windows, Linux and macOS without game data or submodules. Remote
+matrix results are available in GitHub Actions. `tsfp.ps1 Test` includes the new tracking suite.
+Evidence: logs/patch-tracking-tests.log, logs/patch-tracking-unit.log,
+logs/patch-tracking-shared-tests.log, logs/automatic-patch-tracking-build.log,
+logs/patch-tracking-prompt-retry.log and build/patch-tracking-validation/VALIDATION.json.
+No gameplay session, binary packaging or release publication was performed.
+MAC-014 retains pending native Mac validation and other-device synchronization.

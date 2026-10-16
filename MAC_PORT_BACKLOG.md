@@ -269,21 +269,31 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   unrelated runtime edits. Conflicting code still fails before runtime writes.
   Branch switches can now unwind the recognized texture-toggle patch when
   building a branch that does not enable it.
+  Automatic tracking stores the applied stack in runtime Git metadata so
+  removed, renamed and edited patches migrate without a manual legacy archive.
 - **PC source:** Original watermark fix is integrated in `main`. Branch-switch
-  repair is on `fix/runtime-patch-branch-switch` (this commit), based on `837692d`:
-  `tools/apply-patches.py`, `tests/test_patch_updates.py`, and
-  `patches/legacy/texture-toggle.patch` (unwind-only).
+  repair is commit `979a16c`. Automatic tracking is on
+  `fix/automatic-patch-tracking` (this commit), based on `979a16c`:
+  `tools/apply-patches.py`, `tests/test_patch_tracking.py`, `tsfp.ps1`, and
+  `.github/workflows/runtime-patches.yml`. The legacy archive remains a
+  migration aid for runtimes without a record.
 - **PC validation:** Eleven patch-loader tests passed on Windows, plus fresh and
   existing-Windows fixtures using the complete main patch stack; repeated
   application made no changes. See `STATUS.md`, 2026-10-15 patch preparation.
   Branch-switch repair: 14 patch-loader tests and the complete Windows Release
   build/native checks passed; see the October 16 runtime branch-switch record.
+  Automatic tracking: 27 patch checks and 16 shared-tool checks passed, with
+  one Windows symlink-privilege skip. Compilation and remaining native checks
+  passed; the existing foreground-window prompt assertion failed twice.
+  See the automatic tracking entry in `STATUS.md` for the scope and evidence.
 - **Existing Mac support:** The same Python patch loader serves both hosts.
 - **Mac adaptation needed:** No native adapter changes; validate the shared
   loader on macOS. Legacy patches are never enabled by their archive location.
 - **Mac acceptance checks:** Run patch-loader tests and apply/reapply the
   complete merged stack on disposable sources, preserving actual code conflicts.
   Include texture-to-main-to-texture transitions and unrelated-edit preservation.
+  Cross-platform CI now covers source-only transitions, record corruption,
+  changed/removed patches and rollback. Native Mac build validation is separate.
 - **Mac implementation and evidence:** Shared fix present locally; macOS checks
   and other-device synchronization remain unverified.
 

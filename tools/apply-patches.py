@@ -3,12 +3,15 @@
 Unwind recognized patches in reverse order in a small temporary tree, then
 reapply the stack in order. Later patches may extend earlier patches' context;
 checking each patch independently incorrectly reports those as conflicts.
-Keep existing patches stable and put new changes in a separate patch.
-Recognized patches in legacy/ are unwind-only: switching branches can remove
-their exact changes without enabling a feature absent from the current branch.
+Record the exact applied patch stack in runtime Git metadata so later builds
+can migrate removed or edited patches after a branch switch. Legacy patches
+are unwind-only migration inputs for runtimes built before tracking existed.
 """
 from pathlib import Path
 import argparse
+import hashlib
+import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -24,48 +27,96 @@ def git(tree, *args):
     )
 
 
-def apply_patches(runtime, patch_dir):
-    runtime, patch_dir = Path(runtime).resolve(), Path(patch_dir).resolve()
-    patches = sorted(patch_dir.glob('*.patch'))
-    # A runtime checkout survives branch switches. Keep exact historical patches
-    # available to unwind dependencies that the current branch no longer enables.
-    # Prefer an active copy when the same patch is present in both locations.
-    known = {patch.name: patch for patch in sorted((patch_dir / 'legacy').glob('*.patch'))}
-    known.update({patch.name: patch for patch in patches})
-    unwind_patches = sorted(known.values(), key=lambda patch: patch.name)
+def state_path(runtime):
+    """Per-runtime/worktree metadata survives source branch switches."""
+    result = git(runtime, 'rev-parse', '--absolute-git-dir')
+    if result.returncode:
+        raise RuntimeError(f'Cannot locate runtime Git metadata: {result.stderr}')
+    return Path(result.stdout.strip()) / 'tsfp-patches.json'
+
+
+def patch_records(paths):
+    paths = sorted(paths, key=lambda patch: patch.name)
     # These existing network patches target the original title CMake context.
     # Apply them before native boot inserts platform guards at that location;
     # retain the established order of all other patches and unwind in reverse.
-    native_boot = patch_dir / 'zz-mac-native-boot.patch'
-    for stack in (patches, unwind_patches):
-        if native_boot in stack:
-            for name in ('zz-pc-network.patch', 'zzz-pc-online.patch'):
-                network = patch_dir / name
-                if network in stack:
-                    stack.remove(network)
-                    stack.insert(stack.index(native_boot), network)
-    def context_options(patch):
+    by_name = {patch.name: patch for patch in paths}
+    native_boot = by_name.get('zz-mac-native-boot.patch')
+    if native_boot:
+        for name in ('zz-pc-network.patch', 'zzz-pc-online.patch'):
+            if name in by_name:
+                network = by_name[name]
+                paths.remove(network)
+                paths.insert(paths.index(native_boot), network)
+    records = []
+    for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate
         # guarded block immediately before it. Require its unchanged adjacent
         # context line, rather than the older two lines across that insertion.
         # The Windows watermark also borders native boot's overlay guard.
         # Match its adjacent context without requiring the older unguarded
         # comment/function boundary. Removed/added code must still match.
-        if patch.name == 'zzzz-pc-debug-latency-watermark.patch' and native_boot in patches:
-            return ['-C1']
-        return ['-C1'] if patch == native_boot and (patch_dir / 'zz-pc-network.patch') in patches else []
+        reduced_context = native_boot and (patch.name == 'zzzz-pc-debug-latency-watermark.patch'
+                                           or patch == native_boot and 'zz-pc-network.patch' in by_name)
+        content = patch.read_bytes()
+        records.append(dict(name=patch.name, content=content.decode('utf-8'),
+                            sha256=hashlib.sha256(content).hexdigest(),
+                            options=['-C1'] if reduced_context else []))
+    return records
+
+
+def read_state(path):
+    if not path.exists():
+        return None, None
+    raw = path.read_bytes()
+    try:
+        state = json.loads(raw)
+        if state['version'] != 1 or not isinstance(state['patches'], list):
+            raise ValueError('unsupported schema')
+        names = set()
+        for patch in state['patches']:
+            name = patch['name']
+            if (not isinstance(name, str) or not name.endswith('.patch') or
+                    '/' in name or '\\' in name or name in names):
+                raise ValueError('invalid or duplicate patch name')
+            names.add(name)
+            if patch['options'] not in ([], ['-C1']):
+                raise ValueError('unsupported patch options')
+            if hashlib.sha256(patch['content'].encode('utf-8')).hexdigest() != patch['sha256']:
+                raise ValueError(f'{name} content hash mismatch')
+    except (ValueError, KeyError, TypeError, AttributeError) as error:
+        raise RuntimeError(f'Invalid runtime patch record {path}: {error}. No runtime files were changed.') from error
+    return raw, state['patches']
+
+
+def apply_patches(runtime, patch_dir):
+    runtime, patch_dir = Path(runtime).resolve(), Path(patch_dir).resolve()
+    record_path = state_path(runtime)
+    record_before, previous = read_state(record_path)
+    patches = patch_records(patch_dir.glob('*.patch'))
+    if previous is None:
+        # Bootstrap runtimes built before automatic tracking. Legacy patches
+        # remain an unwind-only migration aid; an active copy takes precedence.
+        known = {patch.name: patch for patch in sorted((patch_dir / 'legacy').glob('*.patch'))}
+        known.update({patch.name: patch for patch in patch_dir.glob('*.patch')})
+        unwind_patches = patch_records(known.values())
+    else:
+        # Preserve the exact old bytes, order and context options, including
+        # patches removed, renamed or edited on the newly checked-out branch.
+        unwind_patches = previous
     names = set()
-    for patch in unwind_patches:
-        for line in patch.read_text(encoding='utf-8').splitlines():
+    for patch in [*unwind_patches, *patches]:
+        for line in patch['content'].splitlines():
             if line.startswith('+++ b/'):
                 name = line[6:]
                 target = runtime / name
                 if not target.resolve().is_relative_to(runtime) or not target.is_file():
-                    raise RuntimeError(f'{patch.name}: invalid or missing target {name}')
+                    raise RuntimeError(f'{patch["name"]}: invalid or missing target {name}')
                 names.add(name)
     originals = {name: (runtime / name).read_bytes() for name in names}
     with tempfile.TemporaryDirectory(prefix='tsfp-patches-') as directory:
-        stage = Path(directory)
+        stage = Path(directory) / 'runtime'
+        stage.mkdir()
         initialized = git(stage, 'init', '-q')
         if initialized.returncode:
             raise RuntimeError(initialized.stderr)
@@ -73,31 +124,55 @@ def apply_patches(runtime, patch_dir):
             target = stage / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(content)
-        for patch in reversed(unwind_patches):
-            options = context_options(patch)
-            if git(stage, 'apply', *options, '--reverse', '--check', patch).returncode == 0:
-                result = git(stage, 'apply', *options, '--reverse', patch)
+        for phase, stack in [('unwind', reversed(unwind_patches)), ('apply', patches)]:
+            for index, patch in enumerate(stack):
+                payload = Path(directory) / f'{phase}-{index}.patch'
+                payload.write_bytes(patch['content'].encode('utf-8'))
+                options = patch['options'] + (['--reverse'] if phase == 'unwind' else [])
+                result = git(stage, 'apply', *options, '--check', payload)
                 if result.returncode:
-                    raise RuntimeError(f'{patch.name}: {result.stderr}')
-        for patch in patches:
-            options = context_options(patch)
-            result = git(stage, 'apply', *options, '--check', patch)
-            if result.returncode:
-                raise RuntimeError(
-                    f'{patch.name} conflicts with the runtime checkout. '
-                    f'No runtime files were changed.\n{result.stderr}'
-                )
-            result = git(stage, 'apply', *options, patch)
-            if result.returncode:
-                raise RuntimeError(f'{patch.name}: {result.stderr}')
+                    if phase == 'unwind' and previous is None:
+                        continue
+                    raise RuntimeError(
+                        f'{patch["name"]} conflicts with the runtime checkout during {phase}. '
+                        f'No runtime files were changed.\n{result.stderr}'
+                    )
+                result = git(stage, 'apply', *options, payload)
+                if result.returncode:
+                    raise RuntimeError(f'{patch["name"]}: {result.stderr}')
         changed = [name for name in sorted(names)
                    if (stage / name).read_bytes() != originals[name]]
         # Do not overwrite an edit made while the stack was being validated.
         for name in names:
             if (runtime / name).read_bytes() != originals[name]:
                 raise RuntimeError(f'{name} changed during patch validation; retry.')
-        for name in changed:
-            shutil.copyfile(stage / name, runtime / name)
+        if (record_path.read_bytes() if record_path.exists() else None) != record_before:
+            raise RuntimeError('Runtime patch record changed during validation; retry.')
+        record_after = (json.dumps(dict(version=1, patches=patches), indent=2) + '\n').encode('utf-8')
+        if not changed and record_after == record_before:
+            return []
+        # Prepare metadata before source writes and publish it last. On a write
+        # failure restore sources while keeping the previous record intact.
+        temporary = None
+        written = []
+        try:
+            with tempfile.NamedTemporaryFile(dir=record_path.parent, prefix='tsfp-patches-',
+                                             suffix='.tmp', delete=False) as stream:
+                temporary = Path(stream.name)
+                stream.write(record_after)
+                stream.flush()
+                os.fsync(stream.fileno())
+            for name in changed:
+                written.append(name)
+                shutil.copyfile(stage / name, runtime / name)
+            os.replace(temporary, record_path)
+        except OSError as error:
+            for name in reversed(written):
+                (runtime / name).write_bytes(originals[name])
+            raise RuntimeError(f'Patch update failed; restored runtime sources and kept the previous record: {error}') from error
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
     return changed
 
 

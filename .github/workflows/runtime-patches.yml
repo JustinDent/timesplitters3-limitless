@@ -1,0 +1,70 @@
+name: Runtime patch transitions
+
+on:
+  push:
+    paths:
+      - .github/workflows/runtime-patches.yml
+      - tools/apply-patches.py
+      - tests/test_patch_updates.py
+      - tests/test_patch_tracking.py
+      - patches/**
+      - tsfp.ps1
+      - requirements.txt
+  pull_request:
+    paths:
+      - .github/workflows/runtime-patches.yml
+      - tools/apply-patches.py
+      - tests/test_patch_updates.py
+      - tests/test_patch_tracking.py
+      - patches/**
+      - tsfp.ps1
+      - requirements.txt
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  patch-transitions:
+    name: Patch transitions (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Read shared runtime and test dependency pins
+        id: pins
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          import sys
+          revision = re.search(r"\$revision = '([0-9a-f]{40})'", Path('tsfp.ps1').read_text()).group(1)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'revision={revision}\n')
+          dependency = next(line for line in Path('requirements.txt').read_text().splitlines()
+                            if line.startswith('pytest=='))
+          subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
+          PY
+      - name: Check out pinned upstream source only
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: nemonicicon/ts3FPrecomp
+          ref: ${{ steps.pins.outputs.revision }}
+          path: external/ts3FPrecomp
+          persist-credentials: false
+      - name: Test patch tracking, branch switches and historical upgrades
+        run: python -m pytest tests/test_patch_tracking.py tests/test_patch_updates.py -q --tb=short

@@ -108,6 +108,7 @@ try {
                     Apply-LocalPatches
                     Invoke-Checked $envPython @('-m', 'pytest',
                         (Join-Path $projectRoot 'tests\test_patch_updates.py'),
+                        (Join-Path $projectRoot 'tests\test_patch_tracking.py'),
                         (Join-Path $projectRoot 'tests\test_recomp_float_joins.py'), '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'pytest', 'tools', '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'tools.conformance')
