@@ -57,7 +57,7 @@ runtime readiness. No full campaign playthrough is required.
 ### MAC-001 — Direct-camera mouse look
 
 - **Status:** Awaiting validation
-- **Issue #18 follow-up (2026-10-16, uncommitted):** `src/pc_camera.h` no longer
+- **Issue #18 follow-up (2026-10-16, commit 8dee97f):** `src/pc_camera.h` no longer
   requires guest player ID zero. Both Windows `src/pc_controls.c` and native
   `src/native/input_sdl.c` already call this shared helper, so no additional
   Mac adapter is required. Windows regression `tests/pc_controls.c` reproduces

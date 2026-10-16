@@ -2,7 +2,7 @@
 
 ## Nonzero-player mouse look (issue #18) — 2026-10-16
 
-- Local, uncommitted on `18-mouse-input-only-works-for-player-1`, based on
+- Implemented in `8dee97f` on `18-mouse-input-only-works-for-player-1`, based on
   `4189924` (matching fetched `origin/main`). The shared camera helper rejected
   every player whose first guest word was nonzero. Removed that restriction
   from `src/pc_camera.h`; current-player selection remains in the existing
