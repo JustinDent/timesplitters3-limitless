@@ -57,6 +57,16 @@ runtime readiness. No full campaign playthrough is required.
 ### MAC-001 — Direct-camera mouse look
 
 - **Status:** Awaiting validation
+- **Issue #18 follow-up (2026-10-16, commit 8dee97f):** `src/pc_camera.h` no longer
+  requires guest player ID zero. Both Windows `src/pc_controls.c` and native
+  `src/native/input_sdl.c` already call this shared helper, so no additional
+  Mac adapter is required. Windows regression `tests/pc_controls.c` reproduces
+  the former rejection for ID 1 and checks fields for IDs 0–15; Release build
+  and build-script checks passed. Mac compilation/execution remains pending.
+  Acceptance: verify the native camera adapter with a nonzero guest ID as well
+  as ID zero, retaining FOV, focus/capture and single-consumption behavior.
+  Native multiplayer still depends on MAC-013; Windows checks do not establish
+  native multiplayer support. [Measured scope](STATUS.md#nonzero-player-mouse-look-issue-18--2026-10-16).
 - **PC behavior:** PC mouse counts update camera angles directly, with zoom/FOV scaling and no controller deadzone or turn-speed curve.
 - **PC source:** Audited revision above; `src/pc_controls.c`, `src/pc_input.c`, `patches/pc-controls.patch`, `tests/pc_controls.c`.
 - **PC validation:** Input regression and deterministic mission replay, including zoom scaling, are recorded in [Windows validation](STATUS.md#validation); physical mouse fidelity remains a separate check.

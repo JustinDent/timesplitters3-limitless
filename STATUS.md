@@ -1,5 +1,32 @@
 # Measured progress
 
+## Nonzero-player mouse look (issue #18) — 2026-10-16
+
+- Implemented in `8dee97f` on `18-mouse-input-only-works-for-player-1`, based on
+  `4189924` (matching fetched `origin/main`). The shared camera helper rejected
+  every player whose first guest word was nonzero. Removed that restriction
+  from `src/pc_camera.h`; current-player selection remains in the existing
+  guest wrapper, and memory/FOV validation remains intact.
+- Reproduced the failure in the Windows controls regression by setting the
+  guest player ID to 1 while using keyboard port 1. Before the fix the camera
+  stayed still; afterward 100/20 mouse counts at sensitivity 0.1 produced
+  -10/-2 degrees yaw/pitch. The same regression checks camera field selection
+  for IDs 0–15, null player/FOV pointers, invalid FOV and single consumption.
+- Windows x64, OS build 26300, MSVC 14.42.34433, Windows SDK 10.0.22621.0,
+  SDL 3.4.16, Python 3.14.2; pinned upstream `d90c929` and supported US XBE
+  SHA-256 verified by `tsfp.ps1 -Action Build`. Full Release build and all
+  build-script regressions passed, including controls, settings, prompts,
+  display, save routing, texture formats, debug and network checks. Complete
+  runtime patch stack validation passed; all 27 patch upgrade/tracking Python
+  regressions also passed. Evidence: `logs/issue-18-build.log`.
+- These are adapter/model and build checks; no game was launched and no
+  rendering backend or live Online/System Link mouse behavior was validated.
+  Confirm mouse look on both host and non-host clients in an actual match,
+  including controller input and pause/focus transitions. Personal saves and
+  settings were preserved; disposable build test data was recycled by the
+  supported build script. Native Mac build/execution and other-device
+  synchronization remain unverified; see [MAC-001](MAC_PORT_BACKLOG.md#mac-001--direct-camera-mouse-look).
+
 Tested on Windows and Apple Silicon macOS on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
