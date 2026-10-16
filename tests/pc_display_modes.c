@@ -29,17 +29,28 @@ int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return 1;
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x);return 1; } } while(0)
 int main(int argc,char **argv)
 {
-    PcDisplayMode modes[8], custom={3440,1440}; int n;
+    PcDisplayMode modes[128], custom={3000,1400}; int n;
     CHECK(argc==2);CHECK(!_putenv_s("TSFP_DISPLAY_CONFIG",argv[1]));
     {FILE *f=fopen(argv[1],"wb");CHECK(f);fputs("TSFP_DISPLAY_V1 0 0\n",f);fclose(f);}
-    n=pc_display_modes((HWND)123,modes,8);
-    CHECK(n==5 && calls==9);CHECK(!modes[0].width && !modes[0].height);
-    CHECK(modes[1].width==640 && modes[2].width==1280 && modes[3].width==1920 && modes[4].width==3840);
-    CHECK(pc_display_apply(custom));CHECK(pc_display_modes(NULL,modes,8)==6);
-    CHECK(modes[5].width==3440 && modes[5].height==1440);
+    n=pc_display_modes((HWND)123,modes,128);
+    CHECK(n>40 && calls==9);CHECK(!modes[0].width && !modes[0].height);
+    CHECK(modes[1].width==640 && modes[n-1].width==7680);
+    for(int i=0;i<n;i++) {
+        CHECK(pc_display_valid(modes[i]));
+        for(int j=0;j<i;j++)CHECK(modes[i].width!=modes[j].width || modes[i].height!=modes[j].height);
+    }
+    CHECK(pc_display_aspect((PcDisplayMode){854,480})==3);
+    CHECK(pc_display_aspect((PcDisplayMode){1366,768})==3);
+    CHECK(pc_display_aspect((PcDisplayMode){3440,1440})==5);
+    CHECK(pc_display_aspect((PcDisplayMode){5120,1440})==6);
+    CHECK(pc_display_aspect((PcDisplayMode){1280,1024})==2);
+    CHECK(pc_display_aspect(custom)==-1);
+    CHECK(pc_display_apply(custom));CHECK(pc_display_modes(NULL,modes,128)==n+1);
+    CHECK(modes[n].width==3000 && modes[n].height==1400);
     modes[2].width=12345;CHECK(pc_display_modes(NULL,modes,2)==2);CHECK(modes[2].width==12345);
-    present=0;CHECK(pc_display_modes(NULL,modes,8)==2);CHECK(!modes[0].width && modes[1].width==3440);
+    CHECK(modes[1].width==3000); /* Capacity reserves the saved mode. */
+    present=0;CHECK(pc_display_modes(NULL,modes,128)>40);CHECK(!modes[0].width);
     CHECK(!pc_display_modes(NULL,NULL,8) && !pc_display_modes(NULL,modes,0));
-    puts("PASS: primary adapter, physical modes, default, refresh deduplication, filtering, custom preservation, fallback and capacity");
+    puts("PASS: shared presets, primary modes, deduplication, aspect groups, bounds, custom preservation, fallback and capacity");
     return 0;
 }

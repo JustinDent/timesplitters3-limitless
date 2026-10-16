@@ -33,11 +33,13 @@ def main():
     def key(at,vk): events.extend([(at,f'{at} key {vk} 1'),(at+180,f'{at+180} key {vk} 0')])
     for at in [15000,18000,23000,27000]: key(at,13)
     for at,vk in [(33000,38),(34000,38),(35000,13),(43000,40),(44000,40),(45000,13),
-                  (48000,39),(49000,37),(50000,39),(50500,39),(51000,40),(51500,40),(52000,13), # right, left to Original, two right; apply 720x480
-                  (55000,38),(56000,13), # keep
-                  (58000,37),(59000,37),(60000,40),(61000,40),(62000,13), # preview Original
-                  # let timeout revert
-                  (80000,40),(80500,40),(81000,40),(81500,40),(83000,13)]: key(at,vk)
+                  (48000,39),(49000,39),(50000,39), # 4:3, 5:4, 16:9; nearest available height
+                  (52000,40),(53000,37),(54000,39), # resolution previous/next
+                  (55000,40),(56000,40),(57000,13), # Apply
+                  (60000,38),(61000,13), # Keep
+                  (63000,40),(64000,39),(65000,40),(66000,40),(67000,13),
+                  # Unconfirmed next mode must revert after 15 seconds.
+                  (85000,8)]: key(at,vk)
     replay=folder/'input.txt'; replay.write_text('\n'.join(t for _,t in sorted(events))+'\n')
     env={k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_','TSFP_'))}
     controls=folder/'pc-controls.json';controls.write_bytes((root/'tests/fixtures/pc-controls.json').read_bytes())
@@ -47,19 +49,27 @@ def main():
         RECOMP_TRACE_BUDGET='0', RECOMP_PC_MOUSE='1',RECOMP_WINDOW_BACKGROUND='1',
         TSFP_PC_INPUT_REPLAY=str(replay),RECOMP_HLE_D3D8_DUMP=str(frames/'frame'),
         RECOMP_HLE_D3D8_DUMP_EVERY='60',RECOMP_HLE_D3D8_DUMP_KEEP_LAST='3')
+    for name in ('xdg-config','xdg-data'):
+        (folder/name).mkdir(exist_ok=True)
+    env.update(XDG_CONFIG_HOME=str(folder/'xdg-config'),XDG_DATA_HOME=str(folder/'xdg-data'))
     exe=(args.exe or root/'build/windows/Release/futureperfect_recomp.exe').resolve()
-    shots=set()
+    shots=set();confirmed=None
     with (folder/'game.out').open('wb') as out,(folder/'game.err').open('wb') as err:
         p=subprocess.Popen([str(exe)],cwd=exe.parent,env=env,stdout=out,stderr=err)
         start=time.monotonic()
         try:
             while time.monotonic()-start<86:
                 assert p.poll() is None,'Game exited'
-                files=sorted(frames.glob('*.bmp'),key=lambda x:x.stat().st_mtime_ns)
+                files=[]
+                for frame in frames.glob('*.bmp'):
+                    try: files.append((frame.stat().st_mtime_ns,frame))
+                    except FileNotFoundError: pass
+                files=[frame for _,frame in sorted(files)]
                 # These are this test's own disposable frames; preserve only the newest three.
-                for f in files[:-3]: f.unlink()
+                for f in files[:-3]: f.unlink(missing_ok=True)
                 elapsed=time.monotonic()-start
-                for at,label in [(49.5,'original-picker'),(51,'picker'),(54,'confirmation'),(57,'saved'),(79,'reverted')]:
+                if elapsed>=62 and confirmed is None: confirmed=config.read_text()
+                for at,label in [(47,'original-picker'),(55,'picker'),(59,'confirmation'),(63,'saved'),(84,'reverted')]:
                     if elapsed>=at and label not in shots and files:
                         try:
                             with Image.open(files[-1]) as im: im.save(folder/f'{label}.png')
@@ -77,9 +87,11 @@ def main():
     assert '[CRASH]' not in log and '[ICALL] unresolved' not in log
     for expected in ['added to main Settings','Opened,','Native scene target','[PC-DISPLAY] Saved','[PC-DISPLAY-MENU] Reverted','Returned to original menu']:
         assert expected in log,expected+'\n'+log[-8000:]
-    assert '[PC-DISPLAY] Saved 720x480' in log
-    assert '[PC-DISPLAY] Applied 0x0' in log
-    assert config.read_text()=='TSFP_DISPLAY_V1 720 480\n'
+    assert confirmed is not None and config.read_text()==confirmed
+    version,w,h=confirmed.split();w,h=int(w),int(h)
+    assert version=='TSFP_DISPLAY_V1' and w and abs(w/h-16/9)<.01
+    assert f'[PC-DISPLAY] Saved {w}x{h}' in log
+    assert log.count(f'[PC-DISPLAY] Applied {w}x{h}')>=2
     print('PASS: actual guest menu, native scene resize, confirmation/save, timeout rollback, return')
 
 if __name__=='__main__': main()

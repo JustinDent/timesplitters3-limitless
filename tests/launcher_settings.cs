@@ -76,15 +76,38 @@ public static class LauncherSettingsChecks
                 Require(GameSettings.Load(root,null).VerticalFov==75);owner.Close();
             }));
             Test("primary mode list deduplicates, sorts, includes default and preserves saved custom",()=>{
-                var modes=DisplayModes.Choices(new[]{new DisplayMode(1920,1080),new DisplayMode(640,480),new DisplayMode(1920,1080),new DisplayMode(3840,2160),new DisplayMode(1080,1920),new DisplayMode(0,720),new DisplayMode(7680,4320)},3440,1440);
-                Require(modes.Count==5 && modes[0].Width==0 && modes[0].Height==0);
-                Require(modes[1].Width==640 && modes[2].Width==1920 && modes[3].Width==3840);
-                Require(modes[4].Width==3440 && modes[4].SavedCustom);
-                var empty=DisplayModes.Choices(new DisplayMode[0],0,0);Require(empty.Count==1);
-                Require(DisplayModes.Choices(new DisplayMode[0],0,1080).Count==1);
+                var modes=DisplayModes.Choices(new[]{new DisplayMode(1920,1080),new DisplayMode(640,480),new DisplayMode(1920,1080),new DisplayMode(3840,2160),new DisplayMode(1080,1920),new DisplayMode(0,720),new DisplayMode(7680,4320)},3000,1400);
+                Require(modes.Count>40 && modes[0].Width==0 && modes[0].Height==0);
+                Require(modes[1].Width==640 && modes.Any(m=>m.Width==7680 && m.Height==4320));
+                Require(modes.GroupBy(m=>m.Width+"x"+m.Height).All(g=>g.Count()==1));
+                Require(modes.Last().Width==3000 && modes.Last().SavedCustom);
+                Require(!modes.Any(m=>m.Width==1080 && m.Height==1920));
+                var empty=DisplayModes.Choices(new DisplayMode[0],0,0);Require(empty.Count>40);
+                Require(DisplayModes.Choices(new DisplayMode[0],0,1080).Count==empty.Count);
                 var actual=DisplayModes.Primary(0,0);Require(actual.Count>=1 && actual[0].Width==0);
                 Console.WriteLine("Primary display modes: "+String.Join(", ",actual));
             });
+            Test("aspect groups and launcher filtering preserve proportional resolutions",()=>STA(()=>{
+                Require(DisplayModes.Aspects.Length==7);
+                foreach(var size in DisplayModes.Presets())Require(DisplayMode.Valid(size.Width,size.Height));
+                Require(DisplayModes.AspectIndex(1366,768)==3 && DisplayModes.AspectIndex(3440,1440)==5);
+                Require(DisplayModes.AspectIndex(5120,1440)==6 && DisplayModes.AspectIndex(1280,1024)==2);
+                string root=Root("aspect-filter");var owner=new System.Windows.Window();var editor=new SettingsPage(owner.Resources,root,true);editor.SelectTab(1);
+                var nodes=Descendants(editor.View).ToList();
+                var aspect=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="AspectRatio");
+                var picker=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.SelectedItem is DisplayMode);
+                var label=nodes.OfType<System.Windows.Controls.TextBlock>().Single(c=>c.Name=="CurrentAspectRatio");
+                for(int i=1;i<DisplayModes.Aspects.Length;i++) {
+                    aspect.SelectedIndex=i;Require(picker.Items.Count>0);
+                    Require(picker.Items.Cast<DisplayMode>().All(m=>DisplayModes.AspectIndex(m.Width,m.Height)==i));
+                    Require(label.Text=="Current ratio: "+DisplayModes.Aspects[i].Label);
+                }
+                aspect.SelectedIndex=3;
+                picker.SelectedItem=picker.Items.Cast<DisplayMode>().Single(m=>m.Width==1920 && m.Height==1080);
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
+                var saved=GameSettings.Load(root,null);Require(saved.Width==1920 && saved.Height==1080);
+                aspect.SelectedIndex=0;Require(picker.Items.Count>40);owner.Close();
+            }));
             Test("lower supported modes and original resolution persist without changing other settings",()=>{
                 string root=Root("lower-resolution");var model=GameSettings.Load(root,null);model.Width=800;model.Height=600;model.Save();
                 var loaded=GameSettings.Load(root,null);Require(loaded.Width==800 && loaded.Height==600);

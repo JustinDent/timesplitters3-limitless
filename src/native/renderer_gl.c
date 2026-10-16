@@ -1396,7 +1396,10 @@ static void native_apply_scissor(void) {
     double left=g_scissor_rect.x1*sx,right=g_scissor_rect.x2*sx;
     if(native_scene_active){double anchor=native_scene_w*native_hud_anchor;
         left=anchor+(left-anchor)*native_hud_k;right=anchor+(right-anchor)*native_hud_k;}
-    int top=(int)(g_scissor_rect.y1*sy),bottom=(int)(g_scissor_rect.y2*sy);
+    double top_y=g_scissor_rect.y1*sy,bottom_y=g_scissor_rect.y2*sy;
+    if(native_scene_active){double cy=native_scene_h*.5;
+        top_y=cy+(top_y-cy)*native_hud_ky;bottom_y=cy+(bottom_y-cy)*native_hud_ky;}
+    int top=(int)top_y,bottom=(int)bottom_y;
     int x=(int)left,r=(int)right,height=(int)(native_target_height*sy);
     glEnable(GL_SCISSOR_TEST);glScissor(x,height-bottom,r>x?r-x:0,bottom>top?bottom-top:0);
 }

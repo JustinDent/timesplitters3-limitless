@@ -24,8 +24,8 @@ static char path[32768];
 int pc_display_valid(PcDisplayMode m)
 {
     return (!m.width && !m.height) || (m.width >= 640 && m.height >= 480 &&
-        m.width <= 7680 && m.height <= 2160 &&
-        (unsigned long long)m.width * m.height <= 16588800 &&
+        m.width <= 7680 && m.height <= 4320 &&
+        (unsigned long long)m.width * m.height <= 33177600 &&
         m.width >= m.height && m.width <= 4 * m.height);
 }
 
@@ -84,6 +84,35 @@ static void config_text(char *text,size_t size)
 
 PcDisplayMode pc_display_current(void) { init(); return current; }
 
+typedef struct PcAspect { const char *name; unsigned width,height; } PcAspect;
+static const PcAspect aspects[]={ {"All",0,0},
+#define PC_DISPLAY_ASPECT(label,w,h) {label,w,h},
+#define PC_DISPLAY_PRESET(w,h)
+#include "pc_display_modes.inc"
+#undef PC_DISPLAY_ASPECT
+#undef PC_DISPLAY_PRESET
+};
+static const PcDisplayMode presets[]={
+#define PC_DISPLAY_ASPECT(label,w,h)
+#define PC_DISPLAY_PRESET(w,h) {w,h},
+#include "pc_display_modes.inc"
+#undef PC_DISPLAY_ASPECT
+#undef PC_DISPLAY_PRESET
+};
+const char *pc_display_aspect_name(int aspect)
+{ return aspect>=0 && aspect<PC_DISPLAY_ASPECT_COUNT?aspects[aspect].name:"Custom"; }
+int pc_display_aspect(PcDisplayMode mode)
+{
+    if(!mode.width && !mode.height) return 1; /* Original 4:3 picture. */
+    if(!pc_display_valid(mode)) return -1;
+    for(int i=1;i<PC_DISPLAY_ASPECT_COUNT;i++) {
+        double ratio=(double)mode.width*aspects[i].height/(mode.height*aspects[i].width);
+        /* Marketed 21:9 modes include 2560x1080 and 3440x1440; other
+           groups tolerate only pixel rounding (e.g. 1366x768). */
+        if(fabs(ratio-1.)< (i==5?.02:.002)) return i;
+    }
+    return -1;
+}
 static void add_mode(PcDisplayMode *out,int *count,int cap,unsigned w,unsigned h)
 {
     int i; PcDisplayMode m={w,h};
@@ -100,8 +129,11 @@ int pc_display_modes(HWND window,PcDisplayMode *out,int capacity)
     if(!out || capacity<=0) return 0;
     init(); reported_capacity=capacity-(current.width?1:0);
     add_mode(out,&count,capacity,0,0);
-    /* Use the primary adapter, even if the game window is on another screen.
-       Never manufacture unsupported presets when enumeration is unavailable. */
+    /* These are render targets, not exclusive-fullscreen display modes.
+       Offer common presets even when the monitor does not enumerate them. */
+    for(int preset=0;preset<sizeof presets/sizeof presets[0];preset++)
+        add_mode(out,&count,reported_capacity,presets[preset].width,presets[preset].height);
+    /* Also include the primary adapter's reported modes. */
     for(i=0;;i++) {
         memset(&primary,0,sizeof primary); primary.cb=sizeof primary;
         if(!EnumDisplayDevicesA(NULL,i,&primary,0)) { primary.DeviceName[0]=0; break; }
@@ -115,18 +147,17 @@ int pc_display_modes(HWND window,PcDisplayMode *out,int capacity)
             add_mode(out,&count,reported_capacity,dm.dmPelsWidth,dm.dmPelsHeight);
     }
 #else
-    int count=0,n=0;
+    int count=0,n=0,reported_capacity;
     if(!out || capacity<=0)return 0;
     add_mode(out,&count,capacity,0,0);
+    init();reported_capacity=capacity-(current.width?1:0);
     SDL_DisplayID display=window?SDL_GetDisplayForWindow((SDL_Window *)window):SDL_GetPrimaryDisplay();
     const SDL_DisplayMode *desktop=SDL_GetDesktopDisplayMode(display);
-    if(desktop)add_mode(out,&count,capacity,desktop->w,desktop->h);
-    add_mode(out,&count,capacity,1280,720);
-    add_mode(out,&count,capacity,1920,1080);
-    add_mode(out,&count,capacity,2560,1440);
-    add_mode(out,&count,capacity,3840,2160);
+    if(desktop)add_mode(out,&count,reported_capacity,desktop->w,desktop->h);
+    for(int preset=0;preset<sizeof presets/sizeof presets[0];preset++)
+        add_mode(out,&count,reported_capacity,presets[preset].width,presets[preset].height);
     SDL_DisplayMode **modes=SDL_GetFullscreenDisplayModes(display,&n);
-    for(int i=0;modes&&i<n;i++)add_mode(out,&count,capacity,modes[i]->w,modes[i]->h);
+    for(int i=0;modes&&i<n;i++)add_mode(out,&count,reported_capacity,modes[i]->w,modes[i]->h);
     SDL_free(modes);
 #endif
     /* Stable ascending dimensions, with the console default first. Keep the
@@ -195,8 +226,10 @@ void pc_display_scene_size(unsigned gw,unsigned gh,unsigned *w,unsigned *h)
 void pc_display_shape(unsigned *w,unsigned *h)
 {
     init();
-    if(w) *w=camera_frame && current.width?current.width:4;
-    if(h) *h=camera_frame && current.height?current.height:3;
+    /* Backgrounds use the complete canvas; 2D widgets fit proportionally. */
+    int output=current.width!=0;
+    if(w) *w=output?current.width:4;
+    if(h) *h=output?current.height:3;
 }
 
 float pc_display_camera_factor(void)
@@ -206,9 +239,9 @@ float pc_display_camera_factor(void)
 }
 float pc_display_hud_scale(void)
 {
-    return camera_frame && current.width?(4.f*(float)current.height)/(3.f*(float)current.width):1.f;
+    init();return current.width?(4.f*(float)current.height)/(3.f*(float)current.width):1.f;
 }
-int pc_display_wide_now(void) { return camera_frame && current.width>current.height*4u/3u; }
+int pc_display_wide_now(void) { init(); return current.width && current.width*3u!=current.height*4u; }
 void pc_display_frame_done(void)
 {
     camera_frame=0;

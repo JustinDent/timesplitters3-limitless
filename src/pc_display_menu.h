@@ -4,6 +4,13 @@
 #define PC_DISPLAY_MENU_CALLBACK 0x00012008u
 void pc_display_menu_button(void (*original)(void));
 void pc_display_camera(void (*original)(void));
+void pc_display_ui(void (*original)(void),uint32_t tag);
+void pc_display_radar_begin(void);
+void pc_display_health(void (*original)(void));
+void pc_display_health_side(void);
+void pc_display_tutorial(void (*original)(void));
+void pc_display_tutorial_wrap(void (*original)(void));
+void pc_display_tutorial_text(void (*original)(void));
 void pc_display_decal_projection(void (*original)(void));
 void (*pc_display_menu_lookup(uint32_t address))(void);
 #endif

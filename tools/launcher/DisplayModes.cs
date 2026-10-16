@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
+using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Runtime.InteropServices;
 
 namespace TimeSplitters.Launcher
@@ -12,10 +15,44 @@ namespace TimeSplitters.Launcher
         public DisplayMode(int width, int height) { Width=width; Height=height; }
         public override string ToString() { return Width==0 ? "Original console resolution" : Width+" × "+Height+(SavedCustom?" (saved custom)":""); }
         public static bool Valid(int w,int h)
-        { return (w==0 && h==0) || (w>=640 && h>=480 && w<=7680 && h<=2160 && (long)w*h<=16588800 && w>=h && w<=4*h); }
+        { return (w==0 && h==0) || (w>=640 && h>=480 && w<=7680 && h<=4320 && (long)w*h<=33177600 && w>=h && w<=4*h); }
     }
     public static class DisplayModes
     {
+        public sealed class Aspect
+        {
+            public string Label; public int Width,Height;
+            public override string ToString() { return Label; }
+        }
+        static readonly string Catalog=ReadCatalog();
+        static string ReadCatalog()
+        {
+            using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("display-modes.inc"))
+            using(var reader=new StreamReader(stream)) return reader.ReadToEnd();
+        }
+        public static readonly Aspect[] Aspects=new[]{new Aspect{Label="All",Width=0,Height=0}}.Concat(
+            Regex.Matches(Catalog,"PC_DISPLAY_ASPECT\\(\"([^\"]+)\", ([0-9]+), ([0-9]+)\\)").Cast<Match>()
+            .Select(m=>new Aspect{Label=m.Groups[1].Value,Width=Int32.Parse(m.Groups[2].Value),Height=Int32.Parse(m.Groups[3].Value)})).ToArray();
+        public static int AspectIndex(int width,int height)
+        {
+            if(width==0 && height==0)return 1;
+            if(!DisplayMode.Valid(width,height))return -1;
+            for(int i=1;i<Aspects.Length;i++)
+                if(Math.Abs((double)width*Aspects[i].Height/(height*Aspects[i].Width)-1)<(Aspects[i].Label=="21:9"?.02:.002))return i;
+            return -1;
+        }
+        public static string RatioLabel(int width,int height)
+        {
+            int group=AspectIndex(width,height);if(group>=0)return Aspects[group].Label;
+            if(!DisplayMode.Valid(width,height))return "Invalid size";
+            int a=width,b=height;while(b!=0){int next=a%b;a=b;b=next;}
+            return (width/a)+":"+(height/a);
+        }
+        public static IEnumerable<DisplayMode> Presets()
+        {
+            return Regex.Matches(Catalog,@"PC_DISPLAY_PRESET\(([0-9]+), ([0-9]+)\)").Cast<Match>()
+                .Select(m=>new DisplayMode(Int32.Parse(m.Groups[1].Value),Int32.Parse(m.Groups[2].Value)));
+        }
         // DEVMODEW's physical-pixel fields; fixed native layout is independent of DPI.
         [StructLayout(LayoutKind.Explicit, Size=220, CharSet=CharSet.Unicode)]
         struct Mode
@@ -32,7 +69,7 @@ namespace TimeSplitters.Launcher
         public static List<DisplayMode> Choices(IEnumerable<DisplayMode> reported,int savedWidth,int savedHeight)
         {
             var list=new List<DisplayMode>{new DisplayMode(0,0)};
-            list.AddRange(reported.Where(m=>m.Width!=0 && DisplayMode.Valid(m.Width,m.Height))
+            list.AddRange(Presets().Concat(reported).Where(m=>m.Width!=0 && DisplayMode.Valid(m.Width,m.Height))
                 .GroupBy(m=>new {m.Width,m.Height}).Select(g=>new DisplayMode(g.Key.Width,g.Key.Height))
                 .OrderBy(m=>m.Width).ThenBy(m=>m.Height));
             if(DisplayMode.Valid(savedWidth,savedHeight) && !list.Any(m=>m.Width==savedWidth && m.Height==savedHeight))

@@ -164,7 +164,7 @@ namespace TimeSplitters.Launcher
         {
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
-            Core.Require(DisplayMode.Valid(Width,Height), "Choose a resolution from 640×480 through 7680×2160, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default.");
+            Core.Require(DisplayMode.Valid(Width,Height), "Choose a resolution from 640×480 through 7680×4320, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default.");
             Core.Require(Scale >= 1 && Scale <= 8 && Anisotropy >= 1 && Anisotropy <= 16 && Interpolation >= 1 && Interpolation <= 4, "A graphics setting is outside the supported range.");
             Core.Require(new[] { "adaptive", "30", "60", "0" }.Contains(FrameCap), "Unsupported frame pacing option.");
             Core.Require(new[] { "keyboard", "none", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "xinput:0", "xinput:1", "xinput:2", "xinput:3" }.Contains(Device), "Unsupported Player 1 input device.");

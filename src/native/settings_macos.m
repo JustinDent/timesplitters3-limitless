@@ -24,7 +24,7 @@ static NSTextField *label(NSView *view,NSString *text,NSRect frame) {
     NSTextField *sensitivity;
     NSButton *enabled,*invert,*fullscreen;
     NSPopUpButton *resolution;
-    PcDisplayMode modes[65];int mode_count;
+    PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY];int mode_count;
     PcSettings original;
     int keys[256],key_count;
 }
@@ -101,7 +101,7 @@ static TSFPSettings *settings;
     NSView *gv=[[NSView alloc] initWithFrame:cv.frame];graphics.view=gv;[tabs addTabViewItem:graphics];
     label(gv,@"Render resolution",NSMakeRect(25,450,180,25));
     resolution=[[NSPopUpButton alloc] initWithFrame:NSMakeRect(220,447,340,30) pullsDown:NO];[gv addSubview:resolution];
-    modes[0]=(PcDisplayMode){0,0};mode_count=1+pc_display_modes(game_window,modes+1,64);
+    mode_count=pc_display_modes(game_window,modes,PC_DISPLAY_MODE_CAPACITY);
     PcDisplayMode current=pc_display_current();
     for(int i=0;i<mode_count;i++){[resolution addItemWithTitle:i?[NSString stringWithFormat:@"%u × %u",modes[i].width,modes[i].height]:@"Original (640 × 480)"];if(modes[i].width==current.width&&modes[i].height==current.height)[resolution selectItemAtIndex:i];}
     fullscreen=[NSButton checkboxWithTitle:@"Fullscreen" target:nil action:NULL];fullscreen.frame=NSMakeRect(25,390,300,30);fullscreen.state=!!(SDL_GetWindowFlags(game_window)&SDL_WINDOW_FULLSCREEN);[gv addSubview:fullscreen];
