@@ -396,7 +396,12 @@ is that monitor's current desktop resolution. These settings change the native
 3D rendering resolution; the window still follows its existing size. Use
 **Alt+Enter** for fullscreen. Desktop resolution and refresh rate are unchanged.
 Game menus retain their original proportions with bars; gameplay uses the
-selected aspect ratio and a wider horizontal camera view.
+selected aspect ratio and a wider horizontal camera view. Cutscene bars adapt to
+the selected aspect ratio while preserving the original cinematic framing:
+wide screens use thinner bars, and screens wider than the cinematic picture
+use side bars to fit its full height. The cutscene camera and scripted bar
+animations adapt together, preserving the original composition. This affects
+in-engine cutscenes; startup video framing is unchanged.
 
 Settings live in `config/pc-display.ini` beside the keyboard/mouse configuration
 (`Settings/pc-display.ini` in packaged builds). `TSFP_DISPLAY_CONFIG` can override

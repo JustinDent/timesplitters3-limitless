@@ -11,6 +11,10 @@ on:
       - tests/test_patch_tracking.py
       - tests/test_audio_timing.py
       - tests/test_framebuffer_sampling.py
+      - tests/test_cutscene_letterbox.py
+      - tests/cutscene_letterbox.c
+      - src/pc_cutscene.h
+      - src/pc_display_menu.c
       - tests/framebuffer_sampling.c
       - tests/audio_stream_timing.c
       - tests/audio_buffer_timing.c
@@ -72,3 +76,5 @@ jobs:
         run: python -m pytest tests/test_audio_timing.py tests/test_recomp_generation.py -q --tb=short
       - name: Test framebuffer sampling across rendering passes
         run: python -m pytest tests/test_framebuffer_sampling.py -q --tb=short
+      - name: Test adaptive cutscene letterboxing
+        run: python -m pytest tests/test_cutscene_letterbox.py -q --tb=short

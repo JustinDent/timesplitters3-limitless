@@ -1,5 +1,57 @@
 # Measured progress
 
+## Adaptive cutscene letterboxing (issue #33) — 2026-10-16
+
+- Source base `5c9effd`, branch `33-remove-the-letter-boxes-in-cut-scenes`.
+  The requested behavior is adaptive cinematic bars, rather than removal.
+  Story routine `0x0006F150` draws its top/bottom matte at return PCs
+  `0x0006F322`/`0x0006F34B`; scripted scene routine `0x001396B0` uses
+  `0x0013970E`/`0x0013972E`. All four call solid rectangle routine `0x0001EFB0`.
+- Added a reproducible manual wrapper and shared `src/pc_cutscene.h` geometry.
+  Preserve the aperture of the original 4:3 presentation (approximately 1.88:1,
+  with the game's original integer rounding). Adjust bar height for the selected
+  output aspect and retain the original animation fraction. 4:3/legacy output
+  keeps its original layout; wider-than-cinematic output uses side bars.
+  This changes only identified bar rectangles and restores their guest stack
+  arguments after drawing. Subtitles, full-screen fades, menu rectangles,
+  scopes and prerecorded startup videos retain their existing paths.
+- The first live test exposed orange scenery around the opening space backdrop.
+  Capture frame 9140 reproduces this: draw 37 is the authored 3D starfield plane;
+  the widened camera looks past its edges. Replaying with camera projection
+  constants scaled to fit the cinematic aperture eliminates the exposed scenery.
+  `pc_display_camera` now adjusts both projection axes and CPU frustum extents
+  along with the matte, retaining normal gameplay widening outside cutscenes.
+  Source-only checks cover story, no-matte special mode, animated scenes,
+  4:3 and ultrawide framing, and detect removing the camera correction.
+- The Windows Release build and all build-script native checks passed.
+  All 27 patch tracking/upgrade checks and four adaptive-letterbox checks passed.
+  The focused suite includes mutations that remove either bar adaptation or
+  camera correction, and detects both regressions.
+  The new regression compiles the actual wrapper, checks bar anchoring and
+  unchanged unrelated rectangle arguments/ABI, and detects bypassing the filter.
+  A private-XBE test executes both original routines across legacy, 4:3, 16:9,
+  16:10 and ultrawide modes plus three animation phases, comparing original and
+  adaptive draws, fade rectangles, subtitle invocations and render-state calls.
+  It uses disposable guest RAM and skips in public CI without game data.
+- Host: Windows x64, MSVC 14.44.35207, SDK 10.0.26100.0; pinned runtime
+  `d90c929`, supported US XBE SHA-256 verified. Executable SHA-256:
+  `b42b8511c2abd4df6314fe7059fcb574993ee78e856e659ac8c5a0787b6eaca4`.
+  Evidence: ignored `logs/issue-33-build.log`, `logs/issue-33-tests.log` and
+  `build/issue-33-letterbox`. In an isolated 1280x720 Windows run, the user
+  confirmed the first mission space scene now looks correct. That run lasted
+  48.73 seconds and exited successfully. The original diagnostic capture and
+  corrected replay are retained; no second capture of the corrected live space
+  shot was received. Live ultrawide and other scripted scenes remain unverified.
+  Mac execution remains unverified (MAC-020). Personal settings and saves are
+  preserved. Source changes are on `33-remove-the-letter-boxes-in-cut-scenes`.
+
+- PR #37 CI follow-up: macOS Clang rejected the test fixture's unsigned
+  `g_fp_top`, which conflicts with the runtime header's signed `int` declaration.
+  Corrected the fixture type and made MSVC C4142 fatal in the focused test
+  compiler. The stricter Windows check reproduced the original failure, then
+  all four cutscene tests passed after correction (4.88 s). Production game
+  code and the validated executable are unchanged. Hosted CI is pending rerun.
+
 ## Khallos Express see-through scenery (issue #9) — 2026-10-16
 
 - Reproduced the transparent train walls and weapon in an isolated Windows

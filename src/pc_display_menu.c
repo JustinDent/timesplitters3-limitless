@@ -3,6 +3,7 @@
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
 #include "pc_display.h"
+#include "pc_cutscene.h"
 #ifndef _WIN32
 #include "platform/win32_compat.h"
 /* Win32 protection values not produced by the POSIX mapper. */
@@ -65,11 +66,36 @@ static int guest_writable(uint32_t address,size_t bytes)
         host+bytes>=host && host+bytes<=(uintptr_t)m.BaseAddress+m.RegionSize;
 }
 
+static float cutscene_camera_zoom(void)
+{
+    PcDisplayMode mode = pc_display_current();
+    uint32_t viewport = WORD_AT(0x007E71C8u);
+    int height, full, animated;
+    if (WORD_AT(0x007DE458u) & 0x20000000u) {
+        /* sub_001CEBC0's story renderer calls sub_0006F150; its special
+         * 9/16 mode omits the matte (sub_0003C420). */
+        if (WORD_AT(0x004C045Cu)==9 && WORD_AT(0x004C0458u)==16) return 1.f;
+        height = (int32_t)WORD_AT(0x004E8CF4u);
+        full = animated = (int)(height * .145f);
+    } else {
+        float phase;
+        uint32_t bits = WORD_AT(0x007490ECu);
+        memcpy(&phase,&bits,sizeof phase);
+        if (WORD_AT(0x007490E8u) || !(phase>0 && phase<=1) ||
+            !guest_writable(viewport,0x1C)) return 1.f;
+        height = (int32_t)WORD_AT(viewport+0x18u) -
+                 (int32_t)WORD_AT(viewport+0x14u) + 1;
+        full = 71;
+        animated = (int)(70 * phase) + 1;
+    }
+    return pc_cutscene_camera_zoom(mode.width,mode.height,height,full,animated);
+}
+
 void pc_display_camera(void (*original)(void))
 {
     static float last_factor;
     uint32_t player, matrix;
-    float factor;
+    float factor, zoom;
     original();
     /* US build sub_000C77C0 creates the player's perspective matrix through
        sub_00151CF0, then writes tan(vertical FOV/2) at +0x37c and the
@@ -81,15 +107,22 @@ void pc_display_camera(void (*original)(void))
     matrix=WORD_AT(player+0x204u);
     if(!guest_writable(matrix,64)) return;
     factor=pc_display_camera_factor();
+    zoom=cutscene_camera_zoom();
     if(factor!=last_factor) {
         last_factor=factor;
         fprintf(stderr,"[PC-DISPLAY] Camera horizontal factor %.6f; projection and CPU frustum\n",factor);
     }
-    if(factor!=1.f) {
+    if(factor!=1.f || zoom!=1.f) {
         float *projection=(float *)((uintptr_t)matrix+g_xbox_mem_offset);
         float *horizontal=(float *)((uintptr_t)(player+0x380u)+g_xbox_mem_offset);
-        projection[0]/=factor;
-        *horizontal*=factor;
+        float *vertical=(float *)((uintptr_t)(player+0x37cu)+g_xbox_mem_offset);
+        /* Fit the original cinematic aperture with the adaptive matte. Only
+         * widening the camera reveals beyond authored cutscene backdrops.
+         * Keep GPU projection and CPU culling in agreement on both axes. */
+        projection[0]*=zoom/factor;
+        projection[5]*=zoom;
+        *horizontal*=factor/zoom;
+        *vertical/=zoom;
     }
 }
 
