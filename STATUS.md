@@ -36,7 +36,8 @@ transactions, staged versions, ISO/personal backup protection, locked-file retry
 junction refusal and safe staging replacement. Two full updater cases cover
 obsolete file removal/rollback, modified/untracked file preservation, and ISO
 protection in the old snapshot. One settings run encountered a transient Windows
-file-replacement IOException; its isolated rerun passed all 23 checks. The final build passed all 98 updater and 23 settings checks.
+file-replacement IOException; its isolated rerun passed all 23 checks. The final
+build passed all 98 updater and 23 settings checks.
 Hosted CI is pending. Tests use tiny synthetic packages and fake
 ISO markers only; no real game data, personal saves, or installed runtime were
 changed and no actual game session was launched. MAC-021 adaptation is queued;

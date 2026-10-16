@@ -81,6 +81,7 @@ static class LauncherTests
     {
         Assert(File.ReadAllText(Path.Combine(root, "Settings/pc-controls.json")) == "personal bindings");
         Assert(File.ReadAllText(Path.Combine(root, "Settings/pc-display.ini")) == "personal display");
+        Assert(File.ReadAllText(Path.Combine(root, "Settings/runtime.conf")) == "personal runtime");
         Assert(File.ReadAllText(Path.Combine(root, "Saves/profile")) == "personal save");
         Assert(File.ReadAllText(Path.Combine(root, "Data/default.xbe")) == "personal data");
         Assert(File.ReadAllText(Path.Combine(root, "Textures/pack.dds")) == "personal textures");
