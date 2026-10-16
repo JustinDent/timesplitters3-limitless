@@ -267,7 +267,8 @@ Online hosts need TCP 30820 and their game UDP port (default 30821) forwarded to
         self.run([self.python, self.root/'tools/apply-patches.py', self.root/'external/ts3FPrecomp', self.root/'patches'], live=True)
         self.run(['powershell.exe', '-NoProfile', '-File', self.root/'tsfp.ps1', 'Build'], live=True)
         try:
-            self.run([self.python, '-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider', '--basetemp', tests], live=True)
+            self.run([self.python, '-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider',
+                      '-o', 'tmp_path_retention_policy=failed', '--basetemp', tests], live=True)
         except Exception:
             if tests.exists():
                 try:

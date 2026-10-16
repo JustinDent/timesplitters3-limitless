@@ -34,6 +34,30 @@ def test_pytest_alias_cleanup_keeps_target_files(tmp_path):
     module.check_directory(tmp_path,tests)
 
 
+def test_successful_pytest_link_fixtures_are_discarded_before_release_cleanup(tmp_path):
+    tests=tmp_path/'build/release-tests'
+    tests.parent.mkdir()
+    fixture=tmp_path/'fixture_test.py'
+    fixture.write_text('''import pytest
+@pytest.fixture(scope="session")
+def compiled(tmp_path_factory):
+    cache=tmp_path_factory.mktemp("compiler")
+    (cache/"fixture.txt").write_text("keep")
+    return cache
+def test_fixture(tmp_path,compiled):
+    target=tmp_path/"target";target.mkdir()
+    try: (tmp_path/"nested-link").symlink_to(target,target_is_directory=True)
+    except OSError: pytest.skip("symlinks unavailable")
+''')
+    result=subprocess.run([sys.executable,'-m','pytest',str(fixture),'-q',
+                           '-o','tmp_path_retention_policy=failed','--basetemp',str(tests)],
+                          cwd=tmp_path,capture_output=True,text=True,timeout=30)
+    assert result.returncode==0,result.stdout+result.stderr
+    module.clean_pytest_current_links(tmp_path,tests)
+    module.check_directory(tmp_path,tests)
+    assert (tests/'compiler0/fixture.txt').read_text()=='keep'
+
+
 @pytest.mark.parametrize('kind',['external','unexpected','nested'])
 def test_pytest_alias_cleanup_rejects_unrecognized_links_without_mutation(tmp_path,kind):
     tests=tmp_path/'build/release-tests'; target=tests/'fixture0'
