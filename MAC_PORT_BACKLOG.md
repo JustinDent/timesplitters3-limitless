@@ -53,6 +53,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-013 | System Link and Online multiplayer | Queued |
 | MAC-014 | Patch upgrades and branch-switch transitions | Awaiting validation |
 | MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
+| MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
 
 ### MAC-001 — Direct-camera mouse look
 
@@ -337,6 +338,46 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   cleanup and capture must still reject redirects and preserve target files.
 - **Mac implementation and evidence:** macOS checks and other-device
   synchronization remain unverified.
+
+### MAC-018 — Story audio timing, queue retry and ADPCM resume (issue #8)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Stream packets complete against the device's reported
+  position even after an underrun; submission, flush and pause preserve the
+  correct timeline. Refused buffer PCM is retried, and ADPCM resume preserves
+  partial-block offsets without stepping beyond packet data. Stream volume also
+  includes XDK headroom attenuation, previously omitted for stereo streams.
+  Final stream release retires the host queue; immediate and zero-time async
+  FlushEx return packets correctly during story/level transitions.
+- **PC source:** Audio fix prepared on `fix/issue-8-audio-timing`, published through
+  the user-requested `8-audio-issues` branch; original validation base is main
+  `4189924`: `patches/dsound-audio-timing.patch`,
+  `patches/dsound-stream-lifecycle.patch`, `tools/recomp-generation.py`,
+  `tests/test_recomp_generation.py`, `tests/audio_stream_timing.c`,
+  `tests/audio_buffer_timing.c`, `tests/test_audio_timing.py`, `tsfp.ps1`, and
+  `.github/workflows/runtime-patches.yml`.
+- **PC validation:** Eight of thirteen deterministic scenarios fail on the
+  original pinned runtime; all thirteen pass after the fix. A further headroom
+  regression reproduced the omitted attenuation and passes with its correction.
+  The first fourteen checks and full headroom Build passed, but the user
+  still heard distortion. Live capture then isolated corrupted stale music
+  packets; three additional lifecycle regressions failed before the new hooks
+  and passed afterward. All 45 current regression checks and the full Windows
+  Build pass. The user confirmed the first-mission opening sounds clean; eight
+  captured music packets had valid headers and no clipped decoded samples.
+  Rebuild results and measured probe evidence,
+  including limitations, is recorded in `STATUS.md` under issue #8.
+- **Existing Mac support:** Both adapters consume the patched shared DirectSound
+  code. Buffer retry and ADPCM copying apply to Mac. SDL currently reports no
+  hardware position, so its existing wall-clock fallback remains in use.
+- **Mac adaptation needed:** Validate shared changes on macOS; device-driven
+  stream completion additionally needs trustworthy SDL playback-position
+  accounting. Native adapter work is deferred; no audio API was changed here.
+- **Mac acceptance checks:** Run source-only audio and patch suites, validate
+  pause/resume, repeated level starts, starvation and device loss with isolated
+  settings, and check audible story dialogue/music and A/V synchronization.
+- **Mac implementation and evidence:** Shared fixes are present locally; native
+  Mac compilation/listening and other-device synchronization remain unverified.
 
 ## Entry template
 

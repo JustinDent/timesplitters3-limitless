@@ -4,18 +4,28 @@ on:
   push:
     paths:
       - .github/workflows/runtime-patches.yml
+      - tools/recomp-generation.py
+      - tests/test_recomp_generation.py
       - tools/apply-patches.py
       - tests/test_patch_updates.py
       - tests/test_patch_tracking.py
+      - tests/test_audio_timing.py
+      - tests/audio_stream_timing.c
+      - tests/audio_buffer_timing.c
       - patches/**
       - tsfp.ps1
       - requirements.txt
   pull_request:
     paths:
       - .github/workflows/runtime-patches.yml
+      - tools/recomp-generation.py
+      - tests/test_recomp_generation.py
       - tools/apply-patches.py
       - tests/test_patch_updates.py
       - tests/test_patch_tracking.py
+      - tests/test_audio_timing.py
+      - tests/audio_stream_timing.c
+      - tests/audio_buffer_timing.c
       - patches/**
       - tsfp.ps1
       - requirements.txt
@@ -68,3 +78,7 @@ jobs:
           persist-credentials: false
       - name: Test patch tracking, branch switches and historical upgrades
         run: python -m pytest tests/test_patch_tracking.py tests/test_patch_updates.py -q --tb=short
+      - name: Apply shared runtime patches
+        run: python tools/apply-patches.py external/ts3FPrecomp patches
+      - name: Test audio clocks, ADPCM resume and queue backpressure
+        run: python -m pytest tests/test_audio_timing.py tests/test_recomp_generation.py -q --tb=short

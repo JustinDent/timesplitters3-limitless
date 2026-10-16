@@ -649,6 +649,22 @@ generator sources change; native Mac builds request `--generate` when needed.
 The isolated `tests/test_recomp_float_joins.py` regression executes the actual
 pickup routine when the supported XBE and a C compiler are available.
 
+`patches/dsound-audio-timing.patch` fixes stream-clock handling after underruns,
+packet submission, flush and pause; preserves refused buffer audio for retry;
+resumes ADPCM at the exact decoded sample inside a block; and applies the
+Xbox stream headroom setting so stereo audio retains its intended mix volume.
+`patches/dsound-stream-lifecycle.patch` cancels queued host audio on stream
+release and immediate/zero-time asynchronous FlushEx, preventing freed packet
+memory from playing during level transitions. The build tracks HLE declarations
+so adding audio hooks automatically regenerates the game wrappers.
+The device clock
+drives Windows stream completion, with the existing fallback retained for
+backends that cannot report a play position. `tests/test_audio_timing.py` runs
+the actual adapters and ADPCM decoder against a deterministic fake backend,
+without game files or audio hardware. It discovers installed MSVC x64 tools on
+Windows. The user confirmed the first-mission opening sounds clean after the
+stream-lifecycle fix. Other levels and full A/V synchronization need playtesting.
+
 `patches/pc-display.patch` adds the display menu and camera hooks separately
 from the original controls patch, so existing checkouts can upgrade after a merge.
 Setup, Test, Generate, and Build validate the complete patch stack in a temporary
