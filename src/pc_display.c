@@ -21,7 +21,7 @@ static char path[32768];
 
 int pc_display_valid(PcDisplayMode m)
 {
-    return (!m.width && !m.height) || (m.width >= 1280 && m.height >= 720 &&
+    return (!m.width && !m.height) || (m.width >= 640 && m.height >= 480 &&
         m.width <= 7680 && m.height <= 2160 &&
         (unsigned long long)m.width * m.height <= 16588800 &&
         m.width >= m.height && m.width <= 4 * m.height);
@@ -61,7 +61,7 @@ PcDisplayMode pc_display_current(void) { init(); return current; }
 static void add_mode(PcDisplayMode *out,int *count,int cap,unsigned w,unsigned h)
 {
     int i; PcDisplayMode m={w,h};
-    if(!w || !pc_display_valid(m)) return;
+    if(!pc_display_valid(m)) return;
     for(i=0;i<*count;i++) if(out[i].width==w && out[i].height==h) return;
     if(*count<cap) out[(*count)++]=m;
 }
@@ -69,28 +69,29 @@ static void add_mode(PcDisplayMode *out,int *count,int cap,unsigned w,unsigned h
 int pc_display_modes(HWND window,PcDisplayMode *out,int capacity)
 {
 #ifdef _WIN32
-    MONITORINFOEXA monitor; DEVMODEA dm; int count=0; DWORD i;
-    if(capacity<=0) return 0;
-    memset(&monitor,0,sizeof monitor); monitor.cbSize=sizeof monitor;
-    if(GetMonitorInfoA(MonitorFromWindow(window,MONITOR_DEFAULTTONEAREST),(MONITORINFO *)&monitor)) {
-        memset(&dm,0,sizeof dm); dm.dmSize=sizeof dm;
-        if(EnumDisplaySettingsA(monitor.szDevice,ENUM_CURRENT_SETTINGS,&dm))
-            add_mode(out,&count,capacity,dm.dmPelsWidth,dm.dmPelsHeight);
+    DISPLAY_DEVICEA primary; DEVMODEA dm; int count=0,reported_capacity; DWORD i;
+    (void)window;
+    if(!out || capacity<=0) return 0;
+    init(); reported_capacity=capacity-(current.width?1:0);
+    add_mode(out,&count,capacity,0,0);
+    /* Use the primary adapter, even if the game window is on another screen.
+       Never manufacture unsupported presets when enumeration is unavailable. */
+    for(i=0;;i++) {
+        memset(&primary,0,sizeof primary); primary.cb=sizeof primary;
+        if(!EnumDisplayDevicesA(NULL,i,&primary,0)) { primary.DeviceName[0]=0; break; }
+        if((primary.StateFlags & (DISPLAY_DEVICE_PRIMARY_DEVICE|DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)) ==
+            (DISPLAY_DEVICE_PRIMARY_DEVICE|DISPLAY_DEVICE_ATTACHED_TO_DESKTOP)) break;
     }
-    add_mode(out,&count,capacity,1920,1080);
-    add_mode(out,&count,capacity,2560,1440);
-    add_mode(out,&count,capacity,3840,2160);
-    /* Include actual driver-reported ultrawide and other native modes.
-       Refresh rates are deduplicated: the desktop refresh is unchanged. */
-    if(monitor.szDevice[0]) for(i=0;i<1024;i++) {
+    if(primary.DeviceName[0]) for(i=0;;i++) {
         memset(&dm,0,sizeof dm); dm.dmSize=sizeof dm;
-        if(!EnumDisplaySettingsA(monitor.szDevice,i,&dm)) break;
-        if(dm.dmPelsHeight>=1080 && dm.dmBitsPerPel>=24)
-            add_mode(out,&count,capacity,dm.dmPelsWidth,dm.dmPelsHeight);
+        if(!EnumDisplaySettingsA(primary.DeviceName,i,&dm)) break;
+        if(dm.dmBitsPerPel>=24)
+            add_mode(out,&count,reported_capacity,dm.dmPelsWidth,dm.dmPelsHeight);
     }
 #else
     int count=0,n=0;
-    if(capacity<=0)return 0;
+    if(!out || capacity<=0)return 0;
+    add_mode(out,&count,capacity,0,0);
     SDL_DisplayID display=window?SDL_GetDisplayForWindow((SDL_Window *)window):SDL_GetPrimaryDisplay();
     const SDL_DisplayMode *desktop=SDL_GetDesktopDisplayMode(display);
     if(desktop)add_mode(out,&count,capacity,desktop->w,desktop->h);
@@ -102,6 +103,13 @@ int pc_display_modes(HWND window,PcDisplayMode *out,int capacity)
     for(int i=0;modes&&i<n;i++)add_mode(out,&count,capacity,modes[i]->w,modes[i]->h);
     SDL_free(modes);
 #endif
+    /* Stable ascending dimensions, with the console default first. Keep the
+       current custom mode visible separately, so opening cannot change it. */
+    for(int a=1;a<count;a++) for(int b=a;b>1;b--) {
+        PcDisplayMode left=out[b-1],right=out[b];
+        if(left.width<right.width || (left.width==right.width && left.height<=right.height)) break;
+        out[b-1]=right; out[b]=left;
+    }
     init(); add_mode(out,&count,capacity,current.width,current.height);
     return count;
 }

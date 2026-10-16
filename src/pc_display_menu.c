@@ -188,9 +188,11 @@ void pc_display_menu_button(void (*original)(void))
 extern void sub_00079B70(void), sub_00075B70(void), sub_00071B10(void);
 extern void sub_00071C50(void), sub_00079D60_gen(void), sub_000771D0(void);
 extern void sub_00078980(void), sub_000770E0(void);
+extern void sub_0007D480(void), sub_000717D0(void), sub_00075430(void);
 static uint32_t storage, parent_menu, previous_menu, current_menu;
 static PcDisplayMode modes[64], staged, previous;
 static int mode_count, selected_mode, page;
+static uint32_t resolution_row;
 static ULONGLONG deadline;
 static char status[192];
 /* Fixed backing storage survives transitions and renderer references. */
@@ -223,13 +225,32 @@ static void row(int id,const char *label)
 }
 static void labels(void)
 {
-    char b[192];
+    resolution_row=0;
     if(page==0) {
-        if(staged.width) snprintf(b,sizeof b,"Resolution: %u x %u",staged.width,staged.height);
-        else snprintf(b,sizeof b,"Resolution: Original");
-        row(0,b); row(1,"Previous resolution"); row(2,"Apply resolution"); row(3,"Back");
+        int i;
+        /* The same native choice builder as the original Controls menu
+           (US sub_002EA3F0): it owns arrow drawing, input repeat and wrapping.
+           +0xC8 is its selected choice, not its +0xC0 text alignment. */
+        resolution_row=guest_call(sub_00079D60_gen,6,text_at(1,"Resolution"),0u,0u,0u,0u,0u);
+        /* 0x8000 selects the native right-aligned value column; the second
+           parameter is extra row height, not a horizontal offset. */
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        for(i=0;i<mode_count;i++) {
+            uint32_t caption=modes[i].width?text_at(12+i,"%u x %u",modes[i].width,modes[i].height):
+                text_at(12+i,"Original");
+            guest_call(sub_000717D0,1,caption);
+        }
+        guest_call(sub_00075430,2,resolution_row,(uint32_t)(selected_mode<0?0:selected_mode));
+        row(1,"Apply resolution"); row(2,"Back");
     } else if(page==1) { row(0,"Keep resolution"); row(1,"Revert"); }
     else row(0,"Back");
+}
+static void read_resolution(void)
+{
+    if(page==0 && resolution_row) {
+        unsigned choice=WORD_AT(resolution_row+0xc8);
+        if(choice<(unsigned)mode_count) { selected_mode=(int)choice; staged=modes[choice]; }
+    }
 }
 static void build_menu(void)
 {
@@ -278,11 +299,8 @@ static void select_callback(void)
     save_registers(&r);
     fprintf(stderr,"[PC-DISPLAY-MENU] Selected page %d row %d\n",page,selected);
     if(page==0) {
-        if((selected==0 || selected==1) && mode_count) {
-            selected_mode=selected_mode<0?(selected==0?0:mode_count-1):
-                (selected_mode+(selected==0?1:mode_count-1))%mode_count;
-            staged=modes[selected_mode]; refresh(0,selected);
-        } else if(selected==2) {
+        read_resolution();
+        if(selected==1) {
             previous=pc_display_current();
             if(pc_display_preview(staged)) {
                 deadline=GetTickCount64()+15000;
@@ -290,7 +308,7 @@ static void select_callback(void)
             } else {
                 snprintf(status,sizeof status,"Cannot apply"); refresh(2,0);
             }
-        } else if(selected==3) leave();
+        } else if(selected==2) leave();
     } else if(page==1) {
         if(selected==0) {
             if(pc_display_save()) { deadline=0; refresh(0,0); }
@@ -302,6 +320,7 @@ static void select_callback(void)
 static void tick_menu(void)
 {
     GuestRegisters r; save_registers(&r);
+    read_resolution();
     if(page==1) {
         ULONGLONG now=GetTickCount64();
         if(now>=deadline) revert();
@@ -314,9 +333,9 @@ static void activate(void)
     GuestRegisters r; uint32_t source=WORD_AT(g_esp+4); int i;
     save_registers(&r);
     if(!storage) {
-        storage=xbox_HeapAlloc(64+TEXT_BYTES*12,4);
+        storage=xbox_HeapAlloc(64+TEXT_BYTES*(12+64),4);
         if(storage) {
-            memset((void *)((uintptr_t)storage+g_xbox_mem_offset),0,64+TEXT_BYTES*12);
+            memset((void *)((uintptr_t)storage+g_xbox_mem_offset),0,64+TEXT_BYTES*(12+64));
             WORD_AT(storage)=BUILD_CB; WORD_AT(storage+4)=TICK_CB;
         }
     }

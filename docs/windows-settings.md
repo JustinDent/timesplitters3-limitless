@@ -7,14 +7,17 @@
 These instructions describe the current Windows source build. Downloaded releases may predate individual features.
 
 Open **Settings → Display settings** from the main menu, or **Options → Display
-settings** while paused. Select the resolution row to cycle forward, or use
-**Previous resolution** to cycle backward. Choose **Apply resolution**, then
+settings** while paused. Use the resolution row's left/right arrows to choose
+a mode, including **Original** for the game's default. Choose **Apply resolution**, then
 **Keep resolution** within 15 seconds. Back, Revert, or letting the countdown
 expire restores the previous mode. Only confirmed settings are saved.
 
-The picker includes 1920×1080, 2560×1440, 3840×2160, and modes reported by the
-monitor nearest the game window, including ultrawide sizes. The first candidate
-is that monitor's current desktop resolution. These settings change the native
+The Windows launcher and in-game picker use the primary display's reported modes,
+including ultrawide sizes within 640×480–7680×2160 and a maximum 4:1 aspect ratio.
+Refresh-rate duplicates are removed, the console default appears first, and saved
+custom modes remain available after a display change. The launcher provides
+previous/next buttons beside its dropdown, plus editable custom dimensions.
+These settings change the native
 3D rendering resolution; the window still follows its existing size. Use
 **Alt+Enter** for fullscreen. Desktop resolution and refresh rate are unchanged.
 Game menus retain their original proportions with bars; gameplay uses the

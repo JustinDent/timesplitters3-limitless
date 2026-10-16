@@ -55,6 +55,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
 | MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
 | MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
+| MAC-021 | Published-release launcher and pre-game settings | Queued |
 
 ### MAC-001 — Direct-camera mouse look
 
@@ -168,6 +169,16 @@ runtime readiness. No full campaign playthrough is required.
   [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
 
 ### MAC-010 — In-game resolution preview and rollback
+
+- **Issue #28 release follow-up:** Windows game v0.2.0-alpha.4 and launcher
+  v1.2.0 use primary-display modes, the console default, lower modes down to
+  640×480, refresh-rate deduplication and preservation of saved custom modes.
+  `src/pc_display_menu.c` uses the game's native arrow choice widget. Sources:
+  `src/pc_display.c`, `tools/launcher/DisplayModes.cs`, `SettingsWindow.cs`;
+  implementation `e3e99c1`, integrated on `release/resolution-v0.2.0-alpha.4`.
+  SDL discovery otherwise retains its existing behavior. Mac mode discovery,
+  native arrow spacing, lower modes and Apply/Keep/Revert/timeout still need
+  native verification; Windows results do not verify Mac support.
 
 - **Status:** Awaiting validation
 - **PC behavior:** Display settings offers Apply/Keep/Revert with a 15-second automatic rollback, persisted resolution and widescreen camera/HUD handling.
@@ -477,6 +488,23 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ## Entry template
 
 Copy this template into the queue for each new entry. Replace all placeholders.
+
+### MAC-021 — Published-release launcher and pre-game settings
+
+- **Status:** Queued
+- **PC behavior:** Launcher v1.2.0 retains verified release-only game updates,
+  independent self-updates, import, rollback and minimize/restore; it adds
+  pre-game bindings, graphics, resolution and fullscreen editing with backups,
+  external-edit protection and transactional saves. The banner, blue/silver theme
+  and icon remain embedded. Release source: `tools/launcher`, `tools/build-launcher.ps1`,
+  `tools/package-release.py`, branch `release/resolution-v0.2.0-alpha.4`.
+- **Mac support/adaptation:** Existing in-game Cocoa settings remain separate.
+  Add native release discovery, import, update/rollback and pre-game UI adapters;
+  reuse shared binding/display/config rules. Do not ship Windows binaries on Mac.
+- **Acceptance:** Safe archive paths/checksums, stable/preview channels, failed
+  update recovery, isolated settings save/cancel, conflicts, file preservation,
+  primary display modes, and actual runtime consumption of all selected settings.
+  Windows results do not verify Mac adapters or rendering.
 
 ### MAC-NNN — Feature name
 

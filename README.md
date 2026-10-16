@@ -76,6 +76,10 @@ movement updates. [See measured progress →](STATUS.md)
 
 ### Make it yours
 
+**Game settings** in launcher v1.2.0 lets you set keybinds and graphics before
+playing. Resolution selectors use your primary display's reported modes, include
+the console default, and provide left/right arrows. Saved custom modes are retained.
+
 | Controls | Display | Launcher |
 | --- | --- | --- |
 | **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects resolution. Confirm within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Saves**, **Game files**, **View logs** and **Support** keep essentials close. |
