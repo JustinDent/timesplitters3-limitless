@@ -234,6 +234,14 @@ runtime readiness. No full campaign playthrough is required.
 
 ### MAC-012 — Standalone Mac runtime distribution
 
+- **Windows CI harness follow-up (PR #65, 2026-10-16):**
+  `tests/launcher_settings.cs` gives cold WPF UI initialization a bounded
+  60-second worker budget and preserves named assertion/timeout diagnostics.
+  No Mac adaptation is needed: this is the Windows-only launcher test harness,
+  not shared runtime behavior. Hosted Mac patch checks passed on the preceding
+  PR revision; native Mac functionality is not inferred from that result.
+  [Validation](STATUS.md#launcher-settings-ci-startup-budget--2026-10-16).
+
 - **Release-test compiler discovery follow-up (2026-10-16, branch
   `fix-release-msvc-tests`):** `tests/native_compiler.py` supplies one compiler
   environment to audio, framebuffer, cutscene, and lifted-float regressions.
