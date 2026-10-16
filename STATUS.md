@@ -1,5 +1,47 @@
 # Measured progress
 
+## Khallos Express see-through scenery (issue #9) — 2026-10-16
+
+- Reproduced the transparent train walls and weapon in an isolated Windows
+  Khallos Express session. Captured frame 3376 samples a framebuffer texture
+  for background blur at draws 142–143, then samples that same texture again
+  for additive glow at draws 462–463, after drawing the train and weapon.
+  The HLE refreshed this texture only once per swap, so the final effect
+  painted the earlier background over otherwise solid geometry.
+- Added `patches/zzzzzzz-framebuffer-sampling-passes.patch`. Switching away
+  from a framebuffer texture invalidates its cached copy. Rebinding it captures
+  the scene including intervening geometry; consecutive taps retain a stable
+  snapshot. Frame-zero initialization, changed texture identity and failed-copy
+  retry are also handled. This is shared HLE logic, with no generated game C edits.
+- `tests/framebuffer_sampling.c` executes the actual texture adapter with a
+  fake copy device, through its texture-binding path. Tests cover the two-pass
+  sequence, stable adjacent taps, a new frame, unbinding on another sampler,
+  changed backing data and copy failure/retry. Deliberately removing the binding
+  invalidation makes the regression fail. Added the test to `tsfp.ps1 Test` and
+  CI on supported renderer hosts; Linux skips this Windows/macOS HLE test.
+- Full Windows `tsfp.ps1 Build` and its native checks passed. All 29 patch
+  tracking/upgrade and framebuffer regression checks passed in 93.29 seconds;
+  repeated complete-stack application changed zero files. The historical upgrade
+  fixture excludes this later patch until the complete-stack upgrade step.
+- The user confirmed **walls now stay solid** during movement/turning in the
+  rebuilt game. Reviewed the resulting train-interior screenshot: opaque walls
+  and weapon, with the window still visible. The isolated fixed run lasted
+  88.11 seconds and exited with code 0. No full-level completion or other-level
+  visual regression sweep was performed; Mac execution remains unverified.
+- Source base `800687d`; fix delivered on branch
+  `9-khallos-express-level-is-transparent`. Windows x64 build 26300,
+  MSVC 14.44.35207, SDK 10.0.26100.0,
+  SDL 3.4.16, Direct3D 11, NVIDIA RTX 4070 SUPER driver 32.0.16.1742. Upstream
+  `d90c929`; supported US XBE SHA-256 verified. Build executable SHA-256:
+  `ad897ef0e868de013a28eaf5515e86ece7c182470959a9a027babba48ac061df`.
+- Ignored evidence: `build/issue-9-render/{before,after}.bmp`, two adjacent
+  `sequence_0337*.d3dcap` reference frames, build/test logs and `validation.json`.
+  Replay alone did not reproduce the live ghosting because the capture format
+  omits GPU screen-copy contents; live screenshots and playtesting establish the
+  visual result. Test saves/configs were isolated under
+  `private/test-saves/pickup-range`; personal settings and saves were untouched.
+  Redundant captures and disposable test partitions were removed. See MAC-019.
+
 ## Controller sensitivity slider (issue #24) — 2026-10-16
 
 - Source base `c17336b` (fetched `origin/main`); this revision adds regression
