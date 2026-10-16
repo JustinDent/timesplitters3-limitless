@@ -533,6 +533,24 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Game version cleanup (2026-10-16, commit `d1f4e42` on
+  `fix/game-update-cleanup`, [PR #69](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/69),
+  prepared for launcher v1.2.5):** `tools/launcher/Core.cs` removes retired game
+  backups and obsolete/incomplete game staging after a window was observed and
+  the game exited normally, then all managed runtime hashes verified. Confirmation
+  is tied to the BUILD.json hash; later startup retries cannot confirm a new
+  version. `Launcher.cs` uses the existing window observation/exit path, with
+  background cleanup and busy-state protection. Updates transactionally remove
+  unchanged files owned by an old manifest but absent from the incoming package.
+  Modified/untracked files, personal settings, independent launchers, saves,
+  extracted data, texture packs and ISOs are protected. ISO files inside managed
+  cleanup folders prevent deletion. Retired snapshots are renamed before removal
+  to avoid offering a partial rollback. `tests/launcher_updates.cs` covers these
+  boundaries, retries, junctions and restoration. Mac has no corresponding
+  published-release launcher; implementation remains queued. Reuse these retention
+  and ownership rules in its future adapter, then verify POSIX deletion/locking,
+  manifest validation, clean-exit observation and protected data with isolated
+  fixtures. See [Windows game cleanup evidence](STATUS.md#game-version-cleanup-2026-10-16).
 - **Launcher update cleanup (2026-10-16, commit `dc019bf` on
   `fix/launcher-update-cleanup`, [PR #68](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/68),
   prepared for v1.2.4):** `tools/launcher/SelfUpdate.cs` removes the

@@ -1,5 +1,58 @@
 # Measured progress
 
+## Launcher v1.2.5 release preparation (2026-10-16)
+
+The user requested stable publication of the game-version cleanup in PR #69.
+Version and assembly metadata are bumped to 1.2.5. The cleanup implementation is
+unchanged from validated `6e49e0a`; the release requires CI on the new revision,
+a clean build from its main merge commit, public checksum verification and the
+previous v1.2.4 client compatibility check. This is a launcher-only release; the
+game remains v0.2.0-alpha.4. Native Mac launcher execution is unverified.
+
+## Game version cleanup (2026-10-16)
+
+Implementation commit `d1f4e42` on `fix/game-update-cleanup`, based on main
+`2b3ada8`.
+The previous game snapshot is kept until a session has shown a game window and
+exited with code zero. Installed runtime files must still match BUILD.json before
+cleanup; personal controls and independently updated launcher files are excluded
+from game checksums. Confirmation is bound to the manifest hash, so a successful
+old version does not authorize deletion of a newer version's recovery copy.
+Incomplete installations, failed starts and unfinished transactions keep recovery.
+The existing UI window-observation/exit path supplies the observation; this does
+not claim verified gameplay or full rendering correctness.
+
+Confirmed cleanup removes the previous game snapshot and obsolete/incomplete
+staging only. A retired snapshot is renamed before recursive deletion, so a
+partially locked copy is not offered as a usable rollback; startup retries handle
+it for the same confirmed build. Cleanup is serialized with other launcher work
+and runs off the UI thread. Runtime installation/rollback still refuse while a
+game runs. ISOs in managed folders, linked paths and personal backup directories
+block deletion. Root saves, settings, ISO, Data and Textures remain untouched.
+Newer/unknown staged releases are retained. Unrelated/manual game folders are not
+cleanup candidates.
+
+During an update, unchanged old manifest-owned files absent from the new manifest
+are removed through the existing transaction journal; rollback restores them.
+Modified and untracked files, all personal settings and independent launcher files
+remain. Missing/invalid old manifests skip optional pruning. The restore button
+tooltip explains the retention boundary.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: local synthetic validation passed
+98 updater/bootstrap/cleanup checks, 23 settings checks and five startup/packaging
+checks. Ten focused game cleanup cases cover confirmation, changed/corrupt builds,
+transactions, staged versions, ISO/personal backup protection, locked-file retry,
+junction refusal and safe staging replacement. Two full updater cases cover
+obsolete file removal/rollback, modified/untracked file preservation, and ISO
+protection in the old snapshot. One settings run encountered a transient Windows
+file-replacement IOException; its isolated rerun passed all 23 checks. The final
+build passed all 98 updater and 23 settings checks.
+Windows CI on `6e49e0a` passed all 98 updater checks and 23 settings checks;
+the Mac shared-check job also passed. Tests use tiny synthetic packages and fake
+ISO markers only; no real game data, personal saves, or installed runtime were
+changed and no actual game session was launched. MAC-021 adaptation is queued;
+native Mac execution and other-device synchronization remain unverified.
+
 ## Launcher v1.2.4 release preparation (2026-10-16)
 
 Version and assembly metadata are bumped to 1.2.4 for stable launcher-only
