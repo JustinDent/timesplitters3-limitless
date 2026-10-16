@@ -28,6 +28,9 @@
   the mock and promoted MSVC parameter-mismatch warnings C4028/C4029 to errors.
   Both Windows framebuffer checks pass with the stricter compiler flags;
   restoring the old signature now fails compilation with C4029 on Windows too.
+  The next macOS CI run exposed a missing `GetTickCount` link dependency in the
+  standalone mock; its diagnostic clock now uses a deterministic test function
+  on both hosts, without linking the operating-system compatibility layer.
   This changes the test harness only, not the runtime fix or game binary.
 - The user confirmed **walls now stay solid** during movement/turning in the
   rebuilt game. Reviewed the resulting train-interior screenshot: opaque walls

@@ -1,6 +1,12 @@
 /* Exercise the real HLE framebuffer cache with a deterministic screen copy.
  * No game data, GPU, saves or settings are used. */
+#include "platform/xbox_winnt.h"
+/* The adapter's diagnostic throttling must not require an OS clock/linker
+ * shim in this standalone test. Keep diagnostics deterministic on both hosts. */
+static DWORD test_tick_count(void) { return 0; }
+#define GetTickCount test_tick_count
 #include "hle/hle_d3d8_texture.c"
+#undef GetTickCount
 #include <assert.h>
 
 static uint8_t memory[4096];
