@@ -9,7 +9,7 @@ public static class LauncherSettingsChecks
 {
     static int count;
     static string temp;
-    static void Require(bool condition) { if (!condition) throw new Exception("Settings assertion failed."); }
+    static void Require(bool condition, string message = "Settings assertion failed.") { if (!condition) throw new Exception(message); }
     static void Reject(Action action) { bool rejected=false; try { action(); } catch { rejected=true; } Require(rejected); }
     static string Root(string name) { string root=Path.Combine(temp,name);Directory.CreateDirectory(root);return root; }
     static void Put(string root,string file,string data) { string path=Path.Combine(root,file);Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,data); }
@@ -73,11 +73,11 @@ public static class LauncherSettingsChecks
                 string root=Root("legacy-fov-ui");Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.4\"}");
                 var owner=new System.Windows.Window();var editor=new SettingsPage(owner.Resources,root,true);editor.SelectTab(1);
                 var nodes=Descendants(editor.View).ToList();
-                Require(!nodes.OfType<System.Windows.Controls.Slider>().Single(c=>c.Name=="VerticalFovSlider").IsEnabled);
-                Require(!nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="ResetFovButton").IsEnabled);
-                Require(nodes.OfType<System.Windows.Controls.TextBlock>().Any(c=>c.Text.Contains("newer than v0.2.0-alpha.4")));
+                Require(!nodes.OfType<System.Windows.Controls.Slider>().Single(c=>c.Name=="VerticalFovSlider").IsEnabled,"Legacy FOV slider must be disabled.");
+                Require(!nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="ResetFovButton").IsEnabled,"Legacy FOV reset must be disabled.");
+                Require(nodes.OfType<System.Windows.Controls.TextBlock>().Any(c=>c.Text.Contains("newer than v0.2.0-alpha.4")),"Missing capability explanation.");
                 Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
-                Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V1 0 0\n");owner.Close();
+                Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V1 0 0\n","Legacy UI resolution output: "+Read(root,"Settings/pc-display.ini"));owner.Close();
             }));
             Test("FOV legacy defaults, range checks and shared V2 round trip",()=>{
                 string root=Root("fov-settings");Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V1 1920 1080\n");
