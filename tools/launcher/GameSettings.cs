@@ -21,6 +21,8 @@ namespace TimeSplitters.Launcher
         string runtime;
         public double Sensitivity = .10;
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
+        public const int FovDefault = 55, FovMin = 40, FovMax = 100;
+        public int VerticalFov = FovDefault;
         public int Width, Height, Scale = 1, Anisotropy = 1, Interpolation = 1;
         public string FrameCap = "adaptive";
         public string Device { get { return Convert.ToString(controller["device"], CultureInfo.InvariantCulture); } set { controller["device"] = value; } }
@@ -58,8 +60,9 @@ namespace TimeSplitters.Launcher
             string display = Text(model.originals[Files[1]]);
             if (display.Length > 0)
             {
-                var match = Regex.Match(display, @"^\s*TSFP_DISPLAY_V1\s+(\d+)\s+(\d+)\s*$");
-                Core.Require(match.Success, "The resolution file is invalid. No settings were changed.");
+                var match = Regex.Match(display, @"^\s*TSFP_DISPLAY_V(?<version>[12])\s+(\d+)\s+(\d+)(?:\s+(?<fov>\d+))?\s*$");
+                Core.Require(match.Success && (match.Groups["version"].Value == "2") == match.Groups["fov"].Success, "The display settings file is invalid. No settings were changed.");
+                if(match.Groups["fov"].Success) model.VerticalFov = Int32.Parse(match.Groups["fov"].Value, CultureInfo.InvariantCulture);
                 model.Width = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
                 model.Height = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             }
@@ -160,6 +163,7 @@ namespace TimeSplitters.Launcher
         public void Validate()
         {
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
+            Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
             Core.Require(DisplayMode.Valid(Width,Height), "Choose a resolution from 640×480 through 7680×2160, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default.");
             Core.Require(Scale >= 1 && Scale <= 8 && Anisotropy >= 1 && Anisotropy <= 16 && Interpolation >= 1 && Interpolation <= 4, "A graphics setting is outside the supported range.");
             Core.Require(new[] { "adaptive", "30", "60", "0" }.Contains(FrameCap), "Unsupported frame pacing option.");
@@ -212,7 +216,7 @@ namespace TimeSplitters.Launcher
             if (!document.TryGetValue("launcher", out value)) document["launcher"] = value = new Dictionary<string, object>();
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
-            var payload = new[] { Json.Encode(document) + "\n", "TSFP_DISPLAY_V1 " + Width + " " + Height + "\n", UpdateRuntime(runtime, graphics) };
+            var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics) };
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch

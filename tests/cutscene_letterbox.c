@@ -10,6 +10,8 @@
 #include "pc_cutscene.h"
 #define TSFP_PC_CONTROLS
 static PcDisplayMode mode;
+static float fov_scale=1.f;
+float pc_display_fov_scale(void) { return fov_scale; }
 PcDisplayMode pc_display_current(void) { return mode; }
 float pc_display_camera_factor(void)
 { return mode.height ? (float)mode.width*3.f/(mode.height*4.f) : 1.f; }
@@ -70,6 +72,24 @@ static void camera_tests(void)
     mode.width=1920;mode.height=1080;
     MEM32(0x7DE458)=0; MEMF(0x7490EC)=0;
     camera_check(1); /* Normal gameplay retains its wide camera. */
+    /* The setting changes both frustum axes, never the original zoom state.
+       Rebuilding each frame prevents scaling from accumulating. */
+    MEM32(0x7B0C7C)=0x6000; MEM32(0x6008)=0x4000; MEM32(0x6114)=2;
+    fov_scale=2.f;
+    for(int i=0;i<2;i++) {
+        g_esp=0x10000; MEM32(g_esp)=0xCDD35;
+        pc_display_camera(original_camera);
+        CHECK(fabsf(MEMF(0x5000)-.75f)<.00001f);
+        CHECK(fabsf(MEMF(0x5014)-1.5f)<.00001f);
+        CHECK(fabsf(MEMF(0x437C)-.5f)<.00001f);
+        CHECK(fabsf(MEMF(0x4380)-8.f/9.f)<.00001f);
+    }
+    MEM32(0x6114)=0x2000; camera_check(1); /* Terminal unchanged. */
+    MEM32(0x6114)=2;
+    MEM32(0x6008)=0; camera_check(1); /* Other cameras unchanged. */
+    MEM32(0x6008)=0x4000;
+    MEM32(0x10000)=0xC999E; camera_check(1); /* Story caller unchanged. */
+    MEM32(0x10000)=0xCDD35; /* Non-default FOV through cinematic tests. */
     MEM32(0x7DE458)=0x20000000;
     camera_check(4.f/3.f); /* Story composition fits the thinner matte. */
     mode.width=3440;mode.height=1440;
@@ -84,8 +104,9 @@ static void camera_tests(void)
     camera_check(466.f/408.f);
     MEMF(0x7490EC)=1;
     camera_check(450.f/338.f);
-    MEM32(0x7490E8)=1;camera_check(1);
+    MEM32(0x7490E8)=1; MEM32(0x10000)=0;camera_check(1);
     MEM32(0x7490E8)=0;MEMF(0x7490EC)=0;camera_check(1);
+    fov_scale=1.f;
 }
 
 #ifdef ORIGINAL_CUTSCENES
