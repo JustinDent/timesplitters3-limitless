@@ -91,11 +91,27 @@ static float cutscene_camera_zoom(void)
     return pc_cutscene_camera_zoom(mode.width,mode.height,height,full,animated);
 }
 
+static float gameplay_fov_scale(uint32_t caller)
+{
+    uint32_t actor=WORD_AT(0x007B0C7Cu), phase_bits=WORD_AT(0x007490ECu);
+    float phase;
+    memcpy(&phase,&phase_bits,4);
+    /* Only the two player-camera projections in sub_000CCAB0. Story camera
+       sub_000C95E0, terminal views and scripted letterbox transitions retain
+       their authored lens. Do not rewrite gameplay/weapon zoom state. */
+    if((caller!=0x000CCBEDu && caller!=0x000CDD35u) ||
+       (WORD_AT(0x007DE458u)&0x20000000u) ||
+       (!WORD_AT(0x007490E8u) && phase>0.f) ||
+       !guest_writable(actor,0x118) || WORD_AT(actor+0x114)!=2 ||
+       WORD_AT(actor+8)!=WORD_AT(0x007B0CC0u)) return 1.f;
+    return pc_display_fov_scale();
+}
+
 void pc_display_camera(void (*original)(void))
 {
     static float last_factor;
     uint32_t player, matrix;
-    float factor, zoom;
+    float factor, zoom, fov_scale=gameplay_fov_scale(WORD_AT(g_esp));
     original();
     /* US build sub_000C77C0 creates the player's perspective matrix through
        sub_00151CF0, then writes tan(vertical FOV/2) at +0x37c and the
@@ -112,17 +128,17 @@ void pc_display_camera(void (*original)(void))
         last_factor=factor;
         fprintf(stderr,"[PC-DISPLAY] Camera horizontal factor %.6f; projection and CPU frustum\n",factor);
     }
-    if(factor!=1.f || zoom!=1.f) {
+    if(factor!=1.f || zoom!=1.f || fov_scale!=1.f) {
         float *projection=(float *)((uintptr_t)matrix+g_xbox_mem_offset);
         float *horizontal=(float *)((uintptr_t)(player+0x380u)+g_xbox_mem_offset);
         float *vertical=(float *)((uintptr_t)(player+0x37cu)+g_xbox_mem_offset);
         /* Fit the original cinematic aperture with the adaptive matte. Only
          * widening the camera reveals beyond authored cutscene backdrops.
          * Keep GPU projection and CPU culling in agreement on both axes. */
-        projection[0]*=zoom/factor;
-        projection[5]*=zoom;
-        *horizontal*=factor/zoom;
-        *vertical/=zoom;
+        projection[0]*=zoom/(factor*fov_scale);
+        projection[5]*=zoom/fov_scale;
+        *horizontal*=factor*fov_scale/zoom;
+        *vertical*=fov_scale/zoom;
     }
 }
 
@@ -204,13 +220,15 @@ void pc_display_menu_button(void (*original)(void))
 #define TICK_CB 0x1200au
 #define SELECT_CB 0x1200bu
 #define BACK_CB 0x1200cu
+#define FOV_DRAW_CB 0x1200eu
 extern void sub_00079B70(void), sub_00075B70(void), sub_00071B10(void);
 extern void sub_00071C50(void), sub_00079D60_gen(void), sub_000771D0(void);
 extern void sub_00078980(void), sub_000770E0(void);
+extern void sub_00079710(void), sub_000814B0(void), sub_00154FE0(void), sub_00074910(void);
 extern void sub_0007D480(void), sub_000717D0(void), sub_00075430(void);
 static uint32_t storage, parent_menu, previous_menu, current_menu;
 static PcDisplayMode modes[64], staged, previous;
-static int mode_count, selected_mode, page;
+static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static uint32_t resolution_row;
 static ULONGLONG deadline;
 static char status[192];
@@ -228,7 +246,7 @@ static uint32_t text_at(int i,const char *format,...)
 static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 {
     GuestRegisters r;
-    uint32_t args[8],result; unsigned i;
+    uint32_t args[9],result; unsigned i;
     va_list ap;
     save_registers(&r);
     va_start(ap,count); for(i=0;i<count;i++) args[i]=va_arg(ap,uint32_t); va_end(ap);
@@ -241,6 +259,24 @@ static uint32_t bits(float f) { uint32_t u; memcpy(&u,&f,4); return u; }
 static void row(int id,const char *label)
 {
     guest_call(sub_00079D60_gen,6,text_at(id+1,"%s",label),(uint32_t)id,0u,0u,SELECT_CB,0u);
+}
+static void fov_label(void) { text_at(8,"Vertical FOV: %d",staged_fov); }
+static void fov_draw(void)
+{
+    GuestRegisters r;
+    uint32_t menu=WORD_AT(g_esp+4), rect=WORD_AT(g_esp+12);
+    save_registers(&r);
+    if(guest_writable(menu,0xf8) && guest_writable(rect,16)) {
+        float bounds[4]; uint32_t dark,light;
+        memcpy(bounds,(void *)((uintptr_t)rect+g_xbox_mem_offset),sizeof bounds);
+        dark=guest_call(sub_00154FE0,2,0x11193c7fu,WORD_AT(menu+0xf4));
+        light=guest_call(sub_00154FE0,2,0x69737f7fu,WORD_AT(menu+0xf4));
+        /* Original sensitivity-slider painter, in the menu's logical units. */
+        guest_call(sub_000814B0,9,bits((float)(staged_fov-PC_FOV_MIN)/(PC_FOV_MAX-PC_FOV_MIN)),
+            (uint32_t)(int)(bounds[2]-102.f),(uint32_t)(int)((bounds[1]+bounds[3]-8.f)*.5f),
+            100u,8u,dark,dark,light,0u);
+    }
+    restore_registers(&r); g_esp+=4;
 }
 static void labels(void)
 {
@@ -260,7 +296,10 @@ static void labels(void)
             guest_call(sub_000717D0,1,caption);
         }
         guest_call(sub_00075430,2,resolution_row,(uint32_t)(selected_mode<0?0:selected_mode));
-        row(1,"Apply resolution"); row(2,"Back");
+        fov_label();
+        guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),1u,0x400u,0u,0u,FOV_DRAW_CB);
+        guest_call(sub_00079710,1,1u);
+        row(2,"Apply settings"); row(3,"Reset FOV to 55"); row(4,"Back");
     } else if(page==1) { row(0,"Keep resolution"); row(1,"Revert"); }
     else row(0,"Back");
 }
@@ -296,6 +335,7 @@ static void revert(void)
 {
     if(pc_display_apply(previous)) {
         int i;
+        pc_display_set_fov(previous_fov); staged_fov=previous_fov;
         staged=previous; deadline=0;
         selected_mode=-1;
         for(i=0;i<mode_count;i++) if(modes[i].width==staged.width && modes[i].height==staged.height) selected_mode=i;
@@ -319,15 +359,23 @@ static void select_callback(void)
     fprintf(stderr,"[PC-DISPLAY-MENU] Selected page %d row %d\n",page,selected);
     if(page==0) {
         read_resolution();
-        if(selected==1) {
-            previous=pc_display_current();
-            if(pc_display_preview(staged)) {
+        if(selected==2) {
+            previous=pc_display_current(); previous_fov=pc_display_fov();
+            if(staged.width==previous.width && staged.height==previous.height) {
+                pc_display_set_fov(staged_fov);
+                if(!pc_display_save()) {
+                    pc_display_set_fov(previous_fov);
+                    snprintf(status,sizeof status,"Save failed"); refresh(2,0);
+                }
+            } else if(pc_display_preview(staged)) {
+                pc_display_set_fov(staged_fov);
                 deadline=GetTickCount64()+15000;
                 snprintf(status,sizeof status,"Keep changes? 15s"); refresh(1,1);
             } else {
                 snprintf(status,sizeof status,"Cannot apply"); refresh(2,0);
             }
-        } else if(selected==2) leave();
+        } else if(selected==3) { staged_fov=PC_FOV_DEFAULT; fov_label(); }
+        else if(selected==4) leave();
     } else if(page==1) {
         if(selected==0) {
             if(pc_display_save()) { deadline=0; refresh(0,0); }
@@ -338,8 +386,15 @@ static void select_callback(void)
 }
 static void tick_menu(void)
 {
-    GuestRegisters r; save_registers(&r);
+    GuestRegisters r; uint32_t menu=WORD_AT(g_esp+4); save_registers(&r);
     read_resolution();
+    if(page==0 && WORD_AT(menu+0x18c)==1) {
+        uint32_t buttons=WORD_AT(menu+0xc4);
+        guest_call(sub_00074910,3,menu,0u,1u);
+        if((buttons&0x40000u) && staged_fov>PC_FOV_MIN) --staged_fov;
+        else if((buttons&0x80000u) && staged_fov<PC_FOV_MAX) ++staged_fov;
+        fov_label();
+    }
     if(page==1) {
         ULONGLONG now=GetTickCount64();
         if(now>=deadline) revert();
@@ -359,7 +414,7 @@ static void activate(void)
         }
     }
     if(storage) {
-        staged=pc_display_current();
+        staged=pc_display_current(); staged_fov=pc_display_fov();
         mode_count=pc_display_modes(xbox_D3D8Window(),modes,64); selected_mode=-1;
         for(i=0;i<mode_count;i++) if(modes[i].width==staged.width && modes[i].height==staged.height) selected_mode=i;
         parent_menu=WORD_AT(source+0x2c); previous_menu=WORD_AT(source+4);
@@ -394,6 +449,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case TICK_CB: return tick_menu;
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
+    case FOV_DRAW_CB: return fov_draw;
 #ifdef _WIN32
     case 0x1200du: return online_activate;
     /* Any remaining indirect reference to the retired Live entry uses Online. */

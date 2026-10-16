@@ -56,6 +56,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
 | MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
 | MAC-021 | Published-release launcher and pre-game settings | Queued |
+| MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
 
 ### MAC-001 — Direct-camera mouse look
 
@@ -573,3 +574,24 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 - **Mac acceptance checks:** Concrete behavior to verify with isolated tests.
 - **Mac implementation and evidence:** Commit/files, host checks and a link to
   the relevant `STATUS.md` validation record; pending until performed.
+
+### MAC-022 — Configurable gameplay FOV (issue #29)
+
+- **PC behavior:** Vertical FOV slider with numeric value, 40–100°, default/reset
+  55°, in the guest Display settings menu and Windows launcher graphics settings.
+  Camera projection and CPU frustum change together; weapon zoom remains relative.
+  Story/letterboxed cameras, terminals and menu framing retain their authored lens.
+- **Source:** issue #29 implementation on `29-fov-support-in-video-settings`, based on main
+  `ef17e2a`; `src/pc_display.c`, `src/pc_display.h`, `src/pc_display_menu.c`,
+  `tools/launcher/GameSettings.cs`, `tools/launcher/SettingsPage.cs`.
+- **Shared Mac support:** the existing shared camera/menu hooks and config model
+  use the same behavior. Config accepts legacy V1 (55°) and V2 with explicit FOV;
+  existing Cocoa resolution saves retain the loaded FOV through the shared writer.
+  No native Mac execution has been performed for this change.
+- **Remaining:** validate native compilation, menu slider drawing/input, gameplay
+  and zoom on Mac. Adding a slider to the separate Cocoa settings window is
+  deferred; Windows launcher UI does not constitute a Mac launcher implementation.
+- **Acceptance:** default framing unchanged; 40/55/75/100° at 4:3, 16:9 and
+  ultrawide; zoom retains relative magnification; cinematics/terminals unchanged;
+  configuration round trips and resolution timeout reverts both choices. See
+  [Windows FOV evidence](STATUS.md#configurable-gameplay-fov-issue-29--2026-10-16).

@@ -18,6 +18,7 @@ namespace TimeSplitters.Launcher
         public event Action Saved, Cancelled;
         readonly GameSettings model;
         readonly TextBlock status;
+        readonly Slider fov;
         readonly TextBox sensitivity, width, height;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes;
         readonly ComboBox device, resolution, scale, filtering, pacing, interpolation;
@@ -184,6 +185,20 @@ namespace TimeSplitters.Launcher
             graphics.Children.Add(Text("Modes reported by your primary display, plus the console default. A saved custom resolution is retained if it is no longer reported by the display.",12));
             var dimensions=new WrapPanel(); width=Entry(model.Width.ToString()); height=Entry(model.Height.ToString()); Field(dimensions,"Width",width); Field(dimensions,"Height",height); graphics.Children.Add(dimensions);
             resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); } };
+            var fieldOfView=new DockPanel { MaxWidth=460, HorizontalAlignment=HorizontalAlignment.Left };
+            var fovValue=Text(model.VerticalFov.ToString(CultureInfo.InvariantCulture)+"°",14); fovValue.Name="VerticalFovValue";
+            fovValue.MinWidth=48; fovValue.TextAlignment=TextAlignment.Right;
+            DockPanel.SetDock(fovValue,Dock.Right); fieldOfView.Children.Add(fovValue);
+            fov=new Slider { Name="VerticalFovSlider", Minimum=GameSettings.FovMin, Maximum=GameSettings.FovMax,
+                Value=model.VerticalFov, TickFrequency=1, IsSnapToTickEnabled=true, SmallChange=1, LargeChange=5,
+                Width=290, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
+            System.Windows.Automation.AutomationProperties.SetName(fov,"Vertical field of view in degrees");
+            fov.ValueChanged+=(s,e)=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°";
+            fieldOfView.Children.Add(fov); Field(graphics,"Vertical FOV (40–100°)",fieldOfView);
+            var resetFov=Button("Reset FOV to 55°"); resetFov.Name="ResetFovButton";
+            resetFov.HorizontalAlignment=HorizontalAlignment.Left; resetFov.Click+=(s,e)=>fov.Value=GameSettings.FovDefault;
+            graphics.Children.Add(resetFov);
+            graphics.Children.Add(Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative. Cinematic and terminal framing is unchanged.",12));
             fullscreen=Check("Borderless fullscreen",model.Fullscreen); graphics.Children.Add(fullscreen);
             var quality=new WrapPanel(); graphics.Children.Add(quality);
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString()); Field(quality,"Render scale / supersampling",scale);
@@ -254,6 +269,7 @@ namespace TimeSplitters.Launcher
                 Core.Require(Int32.TryParse(width.Text,out w) && Int32.TryParse(height.Text,out h),"Enter a whole-number width and height (0 × 0 keeps the console resolution).");
                 model.Sensitivity=number; model.MouseEnabled=enabled.IsChecked==true; model.InvertY=invert.IsChecked==true;
                 string chosenDevice=Devices[device.SelectedIndex]; if(chosenDevice!=model.Device.Replace("xinput:","gamepad:")) model.Device=chosenDevice;
+                model.VerticalFov=(int)Math.Round(fov.Value);
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem); model.FrameCap=(string)pacing.SelectedItem; model.Interpolation=Int32.Parse((string)interpolation.SelectedItem);

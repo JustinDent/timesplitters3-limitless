@@ -1,5 +1,58 @@
 # Measured progress
 
+## Configurable gameplay FOV (issue #29) — 2026-10-16
+
+Implemented on `29-fov-support-in-video-settings`, starting from
+main `ef17e2a`. Windows x64, MSVC 14.44.35207, the pinned runtime and
+complete verified patch stack; supported US XBE SHA-256
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+The shared display model now retains a vertical FOV preference (40–100°, default
+55°), reading legacy display files and the explicit V2 format. The guest Display
+settings menu and Windows launcher graphics tab expose sliders with numeric
+values, reset and existing save/cancel behavior. Combined resolution previews
+revert both fields. Gameplay projection and CPU culling use the same tangent
+scale without changing the original weapon zoom state. Scripted cinematic and
+terminal cameras keep their authored lens.
+
+Validation on Windows:
+
+- Six targeted pytest cases passed: shared cinematic/camera production wrapper
+  tests (including mutation checks and the original US cinematic routines),
+  display mode discovery, and production FOV settings/menu callbacks. The latter
+  covers old/new files, range limits, slider drawing/input, unsaved drafts,
+  reset, read-only save failure, keep and resolution timeout rollback.
+- Windows launcher built with Windows PowerShell 5.1/.NET Framework; all 71
+  launcher regressions and 21 settings checks passed. The added checks exercise
+  the WPF slider, numeric label, reset, cancel/save, legacy defaults and V2
+  persistence. Reviewed `build/issue-29-fov/launcher.png` from its preview renderer.
+- MSVC Release game and native test targets compiled and linked successfully.
+  Network, texture format, display, save paths, PC controls, settings and debug
+  checks passed. The build runner stopped at the existing controller prompt
+  fixture's foreground-window assertion (`tests/pc_prompts.c:55`); the same
+  assertion failed when rerun directly. No input/prompt implementation changed.
+  The remaining checks were run individually, and executable identity was sealed.
+- A bounded 65-second isolated game run navigated the actual guest menu with
+  recorded input, moved the slider 55 → 58, and saved
+  `TSFP_DISPLAY_V2 1280 720 58`. Reviewed the menu capture and found both the
+  number and original-style slider inside the panel. Evidence is in
+  `build/issue-29-fov/menu-{47,55,62}.png` and `menu.err`.
+
+- First-mission gameplay with isolated 1280×720 / 75° settings produced a
+  vertical CPU frustum of `0.76732695` (tan(75°/2)) and projection Y coefficient
+  `1.30322552` (its reciprocal), while the original game zoom field stayed 55°.
+  This confirms the requested lens reaches the real projection and culling
+  paths. The diagnostic run collected 117.25 seconds before its screenshot
+  watcher hit a rotating-file race and stopped its owned game in `finally`;
+  the game had not crashed. Retained evidence: `gameplay-camera.json`,
+  `gameplay-result.json`, `gameplay-final.png` under `build/issue-29-fov`.
+
+The user confirmed that the FOV slider works in the rebuilt game during a
+separate isolated playtest (155 seconds, normal exit).
+
+Personal saves and settings were not used. Shared/native Mac integration is
+source-reviewed only; Mac build, physical controller navigation, all weapons
+and split-screen gameplay are unverified. See MAC-022 in `MAC_PORT_BACKLOG.md`.
+
 ## Terminal mouse routing (issue #7) — 2026-10-16
 
 Implemented on `7-breaking-and-entering-camera-turret-not-working`, based on

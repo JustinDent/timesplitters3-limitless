@@ -47,6 +47,34 @@ public static class LauncherSettingsChecks
         Directory.CreateDirectory(temp);
         try
         {
+            Test("FOV legacy defaults, range checks and shared V2 round trip",()=>{
+                string root=Root("fov-settings");Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V1 1920 1080\n");
+                var model=GameSettings.Load(root,null);Require(model.VerticalFov==55);
+                model.VerticalFov=75;model.Save();
+                Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V2 1920 1080 75\n");
+                var loaded=GameSettings.Load(root,null);Require(loaded.Width==1920 && loaded.Height==1080 && loaded.VerticalFov==75);
+                loaded.VerticalFov=101;Reject(()=>loaded.Save());loaded.VerticalFov=39;Reject(()=>loaded.Save());
+                Require(GameSettings.Load(root,null).VerticalFov==75);
+                loaded.VerticalFov=55;loaded.Save();Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V1 1920 1080\n");
+                foreach(string invalid in new[]{"TSFP_DISPLAY_V2 1920 1080", "TSFP_DISPLAY_V1 1920 1080 75", "TSFP_DISPLAY_V2 1920 1080 999", "TSFP_DISPLAY_V2 1920 1080 NaN"}) {
+                    Put(root,"Settings/pc-display.ini",invalid);Reject(()=>GameSettings.Load(root,null));
+                }
+            });
+            Test("FOV slider number, reset, cancel and save",()=>STA(()=>{
+                string root=Root("fov-slider");var owner=new System.Windows.Window();
+                var editor=new SettingsPage(owner.Resources,root,true);editor.SelectTab(1);
+                var nodes=Descendants(editor.View).ToList();
+                var slider=nodes.OfType<System.Windows.Controls.Slider>().Single(c=>c.Name=="VerticalFovSlider");
+                var value=nodes.OfType<System.Windows.Controls.TextBlock>().Single(c=>c.Name=="VerticalFovValue");
+                Require(slider.Value==55 && slider.Minimum==40 && slider.Maximum==100 && slider.IsSnapToTickEnabled);
+                slider.Value=80;Require(value.Text=="80°");
+                bool cancelled=false;editor.Cancelled+=()=>cancelled=true;
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsCancelButton"));
+                Require(cancelled && !File.Exists(Path.Combine(root,"Settings/pc-display.ini")));
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="ResetFovButton"));Require(slider.Value==55);
+                slider.Value=75;Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
+                Require(GameSettings.Load(root,null).VerticalFov==75);owner.Close();
+            }));
             Test("primary mode list deduplicates, sorts, includes default and preserves saved custom",()=>{
                 var modes=DisplayModes.Choices(new[]{new DisplayMode(1920,1080),new DisplayMode(640,480),new DisplayMode(1920,1080),new DisplayMode(3840,2160),new DisplayMode(1080,1920),new DisplayMode(0,720),new DisplayMode(7680,4320)},3440,1440);
                 Require(modes.Count==5 && modes[0].Width==0 && modes[0].Height==0);
