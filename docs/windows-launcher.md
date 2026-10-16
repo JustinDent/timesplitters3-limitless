@@ -93,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build. The build produces these assets
-in `build/launcher`; for version 1.2.2, publish all three together:
+in `build/launcher`; for version 1.2.5, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.2-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.2-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.5-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.5-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.2`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.5`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -137,6 +137,44 @@ Data, Settings, Saves and Textures are never launcher-update targets. Game
 updates/rollback preserve a newer independently installed launcher. Keep the
 complete `.launcher` folder for recovery. No launcher-only release is published
 automatically by building these files.
+
+Starting with launcher v1.2.4, after a normal launcher window loads successfully and both installed launcher
+executables match their manifest, automatic cleanup removes the previous
+launcher backup (`self-rollback`), obsolete or incomplete launcher staging
+(`self-pending`), and unused `self-helper.exe` / `update-helper.exe` copies.
+There is no retained history of older launcher versions after successful startup.
+The backup remains available until that startup succeeds. An unfinished launcher
+transaction or an invalid installation prevents cleanup. A newer prepared update,
+an unreadable staging marker, and helpers needed by pending updates are retained.
+Locked files are logged and retried at the next normal startup. Failed or cancelled
+launcher downloads also discard their staging files immediately when possible.
+
+Cleanup only targets these launcher-owned paths. It preserves game rollback,
+game data, settings, saves, preferences, logs, and unrelated/manual downloads.
+Developer render previews never perform startup cleanup. Run the isolated
+cleanup regressions with `build/launcher/launcher-tests.exe --cleanup` after
+building the test executable with `tools/build-launcher.ps1 -Test`.
+
+## Startup argument troubleshooting
+
+`Unknown bootstrap arguments` means the startup EXE received unsupported
+command-line arguments before opening the main application. Normal startup uses
+`TimeSplitters Launcher.exe` with no arguments. In launcher v1.2.2, developer
+commands such as `--render-settings-graphics output.png` belong to
+`Bin/TimeSplitters.App.exe`; passing them to the startup EXE causes this error.
+
+The local v1.2.3 fix also accepts `--render-preview`, `--render-settings-preview`
+and `--render-settings-graphics` at the startup EXE and forwards them to the
+application without an update check. Relative output paths resolve against the
+caller's current directory; the child exit code is preserved and preview time is
+bounded to 30 seconds. `--render-splash` remains the startup EXE's own preview.
+Unknown/malformed commands are still rejected. The startup log now records the
+launcher version, argument count and bounded, JSON-escaped arguments, rather
+than losing the arguments that caused a rejection. It remains capped at 1 MiB.
+
+`launcher-tests.exe --bootstrap` runs the isolated preview-routing/diagnostic
+checks without running game-update installation tests. Actual preview commands
+operate on disposable output paths and do not launch the game or save settings.
 
 ## Pre-game settings
 
@@ -228,9 +266,38 @@ Every replaced file is backed up before any installed file is changed. A
 Failures restore old files and remove newly introduced files. On the next
 startup an interrupted transaction is recovered before play/update is enabled.
 If recovery files are missing or locked, the launcher stops and retains recovery
-evidence. Successful updates retain one `.launcher/rollback` snapshot; Restore
-previous swaps releases without replacing user settings. The downloaded ZIP is
+evidence. Successful updates retain one `.launcher/rollback` snapshot until the
+new game opens a window and exits normally. Until then, Restore previous swaps
+releases without replacing user settings. The downloaded ZIP is
 discarded after successful extraction, and staging is discarded after install.
+
+### Automatic game cleanup (launcher v1.2.5)
+
+After a game session opens a window and exits with code zero, the launcher checks
+that the installed runtime still matches its release manifest and removes the
+previous game snapshot. The Restore previous button then becomes unavailable.
+A failed launch, crash, incomplete installation or unfinished update keeps recovery
+available. This check establishes startup/clean-exit behavior, not full gameplay
+compatibility. Cleanup runs in the background; a locked file is retried on later
+launcher startups only for the same confirmed build. Developer previews do not
+confirm a game session or run startup cleanup.
+
+Game updates also remove unchanged files listed in the old release manifest when
+the incoming release no longer uses them, including old source archives and DLLs.
+Those removals are transactional and restored by rollback before confirmation.
+Modified files, untracked files, personal settings and independent launcher files
+are retained. Missing or invalid old manifests skip this optional pruning.
+
+Cleanup only removes updater-managed game backups and obsolete/incomplete staging.
+Current game data, saves, settings, texture packs, and the original ISO remain in
+place. An ISO found inside a managed folder prevents that folder from being
+deleted; linked paths and personal backup directories are also refused. A newer
+or unreadable staged release is retained. Normal ISO storage and manually
+extracted game folders are never searched for cleanup candidates.
+
+Run `build/launcher/launcher-tests.exe --game-cleanup` for the focused synthetic
+game cleanup checks. The full updater suite additionally covers manifest-based
+file removal, rollback restoration, and protected ISO handling during updates.
 Do not delete `.launcher` while an operation is active.
 
 The interface imports only into an absent `Data` directory. Existing data is
@@ -245,3 +312,8 @@ its `Logs` folder. Saves and config are not used for automated launcher checks.
 
 Windows-specific source lives in `tools/launcher`; Mac release updating remains
 queued as `MAC-014` in `MAC_PORT_BACKLOG.md`.
+
+Launcher v1.2.3 keeps custom FOV disabled for installed game releases through
+v0.2.0-alpha.4, which only read V1 display settings. Resolution changes continue
+to save in that compatible format. FOV becomes available with a newer game
+release; unpackaged development builds retain access for testing.

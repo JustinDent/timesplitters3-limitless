@@ -20,7 +20,7 @@ left/right handedness; radar placement starts after world target markers; status
 and scope controls receive scoped placement tags. Guest sprite batches flush at
 placement changes, and viewport/scissor transforms agree. Split-screen retains
 its existing layout. Native Mac shares the catalog and layout rules; its separate
-Cocoa aspect selector is deferred in MAC-023 and native execution is unverified.
+Cocoa aspect selector is deferred in MAC-024 and native execution is unverified.
 
 Health/armor follow-up: the gauges were still using the centred canvas, and
 opening a larger submenu increased their authored scale beyond its horizontal
@@ -62,6 +62,18 @@ animations, tutorial 90% font sizing and measured columns are retained. Original
 shared with native Mac, whose runtime validation remains pending.
 
 Validation so far:
+
+- Main integration: feature commit `2d69459` was combined with main `9e08fa3`.
+  Both branches wrapped `sub_0013AB60`; a subsequent reproducible patch now
+  routes Objectives fitting and ordinary health draws through the shared
+  placement helper exactly once, preserving the upstream panel and split-view
+  sizing. The combined Windows Release build and all eight build checks pass;
+  twenty-six Objectives/UI/patch-transition cases pass. The launcher rebuild
+  under Windows PowerShell 5.1 passes 98 regressions and 24 settings checks.
+  Logs: `build/issue-27-display/build-main-integration.log`, `merged-tests.log`
+  and `launcher-main-integration.log`. Earlier isolated visual captures below
+  precede this integration; the combined build has automated validation only.
+  Native Mac compilation/playtesting and actual 8K GPU allocation remain unrun.
 
 - Edge captions: the Release rebuild and all eight build checks pass, as do all
   nineteen UI/patch-transition cases. A bounded isolated 3440x1440 Windows run
@@ -145,6 +157,148 @@ Validation so far:
   `build/issue-27-display/validation.json`. Actual 8K GPU allocation and native Mac
   execution were not tested. An isolated 1920×1080 build is prepared for user
   radar/sniper and resolution-switching playtests; no personal settings were changed.
+## Launcher v1.2.5 release preparation (2026-10-16)
+
+The user requested stable publication of the game-version cleanup in PR #69.
+Version and assembly metadata are bumped to 1.2.5. The cleanup implementation is
+unchanged from validated `6e49e0a`; the release requires CI on the new revision,
+a clean build from its main merge commit, public checksum verification and the
+previous v1.2.4 client compatibility check. This is a launcher-only release; the
+game remains v0.2.0-alpha.4. Native Mac launcher execution is unverified.
+
+## Game version cleanup (2026-10-16)
+
+Implementation commit `d1f4e42` on `fix/game-update-cleanup`, based on main
+`2b3ada8`.
+The previous game snapshot is kept until a session has shown a game window and
+exited with code zero. Installed runtime files must still match BUILD.json before
+cleanup; personal controls and independently updated launcher files are excluded
+from game checksums. Confirmation is bound to the manifest hash, so a successful
+old version does not authorize deletion of a newer version's recovery copy.
+Incomplete installations, failed starts and unfinished transactions keep recovery.
+The existing UI window-observation/exit path supplies the observation; this does
+not claim verified gameplay or full rendering correctness.
+
+Confirmed cleanup removes the previous game snapshot and obsolete/incomplete
+staging only. A retired snapshot is renamed before recursive deletion, so a
+partially locked copy is not offered as a usable rollback; startup retries handle
+it for the same confirmed build. Cleanup is serialized with other launcher work
+and runs off the UI thread. Runtime installation/rollback still refuse while a
+game runs. ISOs in managed folders, linked paths and personal backup directories
+block deletion. Root saves, settings, ISO, Data and Textures remain untouched.
+Newer/unknown staged releases are retained. Unrelated/manual game folders are not
+cleanup candidates.
+
+During an update, unchanged old manifest-owned files absent from the new manifest
+are removed through the existing transaction journal; rollback restores them.
+Modified and untracked files, all personal settings and independent launcher files
+remain. Missing/invalid old manifests skip optional pruning. The restore button
+tooltip explains the retention boundary.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: local synthetic validation passed
+98 updater/bootstrap/cleanup checks, 23 settings checks and five startup/packaging
+checks. Ten focused game cleanup cases cover confirmation, changed/corrupt builds,
+transactions, staged versions, ISO/personal backup protection, locked-file retry,
+junction refusal and safe staging replacement. Two full updater cases cover
+obsolete file removal/rollback, modified/untracked file preservation, and ISO
+protection in the old snapshot. One settings run encountered a transient Windows
+file-replacement IOException; its isolated rerun passed all 23 checks. The final
+build passed all 98 updater and 23 settings checks.
+Windows CI on `6e49e0a` passed all 98 updater checks and 23 settings checks;
+the Mac shared-check job also passed. Tests use tiny synthetic packages and fake
+ISO markers only; no real game data, personal saves, or installed runtime were
+changed and no actual game session was launched. MAC-021 adaptation is queued;
+native Mac execution and other-device synchronization remain unverified.
+
+## Launcher v1.2.4 release preparation (2026-10-16)
+
+Version and assembly metadata are bumped to 1.2.4 for stable launcher-only
+publication from main through PR #68. The cleanup implementation is unchanged
+from validated `a7246b5`; publication requires the new revision to pass CI and
+checks of the public assets and previous v1.2.3 update path. The published game
+remains alpha.4.
+
+## Launcher update cleanup (2026-10-16)
+
+Implementation commit `dc019bf` on `fix/launcher-update-cleanup`, based on
+main `b1860c6`.
+The release launcher previously retained one old launcher snapshot and its helper
+copies; snapshots were replaced at each update, rather than accumulating an
+unlimited history. Successful normal main-window startup now verifies the current
+launcher and removes that prior snapshot, obsolete/incomplete launcher staging,
+and helpers no longer needed by an update. Failed preparation cleans its staging
+without replacing the original failure. Cleanup errors are logged and retried
+on subsequent startups. No cleanup runs during developer render previews.
+
+Recovery transactions and unverified installations prevent cleanup. Newer staged
+launcher releases and unknown staging markers remain available; pending game work
+keeps its helper. The game rollback, installed game, settings, saves, data,
+preferences, logs and unrelated downloads remain untouched. Cleanup rejects
+linked paths through the existing checked launcher-owned deletion API.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both launcher binaries compiled,
+nine isolated cleanup checks and all 23 settings checks passed. Cleanup checks
+include three consecutive upgrades, protected files, damaged installation,
+unfinished transactions, semantic version comparisons, newer/unknown staging,
+locked files with retry, pending game work, and a real directory junction.
+Five startup/packaging checks also passed. Windows CI on `a7246b5` passed all
+86 updater/bootstrap/cleanup checks and 23 settings checks, including checksum,
+invalid-archive and cancellation preparation failures. The Mac CI job also
+passed its shared checks. Full local updater validation was blocked by an active game;
+that session and the installed launcher were preserved. No game build/playtest
+is required for this Windows launcher change. MAC-021 adaptation remains queued;
+native Mac execution and other-device synchronization are unverified.
+
+## Bootstrap argument diagnostics (2026-10-16)
+
+Launcher v1.2.3 release preparation on `fix/launcher-bootstrap-arguments`, based on
+main `de23272`. The installed launcher log records `Unknown bootstrap arguments`
+at 2026-10-16 21:45:56 UTC (17:45:56 local). The resolution-development task ran
+`TimeSplitters Launcher.exe --render-settings-graphics ...`, although that flag
+was only accepted by `Bin/TimeSplitters.App.exe`. Its subsequent command used
+the correct EXE. This establishes a concrete trigger for the recorded failure;
+the old log did not retain actual arguments for distinguishing other reports.
+Both installed launcher files matched their local v1.2.2 manifest. They were
+local development builds, not byte-identical to the published v1.2.2 assets.
+
+`Bootstrap.cs` now delegates only the three known application preview modes
+before taking the startup mutex, preserves relative/spaced output paths and
+child exit codes, and bounds preview execution to 30 seconds. Normal startup,
+startup-splash rendering and updater routes retain their behavior. Other
+arguments remain rejected, with bounded JSON-escaped argument details in both
+the log and error. Startup logging now includes version/count/arguments.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both binaries compiled. Three
+isolated bootstrap checks passed using real synthetic child processes, covering
+all forwarded modes, quoting, relative paths, exit status, preserved startup and
+helper command routes, and bounded/escaped diagnostics. All 23 settings checks
+passed. Real bootstrap execution rendered both the delegated graphics preview
+and its own splash successfully into ignored `build/bootstrap-validation`.
+The full updater suite stopped at the existing game-running safety guard; the
+active game session and installed launcher/user settings were left untouched.
+No game runtime source changed, and no new game build/playtest was performed.
+Publication is pending the release PR and hosted Windows updater checks.
+Compatibility review found that published alpha.4 reads only V1 display settings.
+The newer main-branch FOV controls are disabled for installed releases through
+alpha.4, and model validation rejects custom FOV before writing any settings.
+Two additional checks cover compatible resolution saves, atomic rejection, the
+newer-version path, and disabled controls with explanatory text. Native Mac adaptation remains queued under
+MAC-021; other-device synchronization is unverified.
+
+## Launcher settings CI startup budget — 2026-10-16
+
+- PR #65's Windows run `38969601167` passed patch transitions and all 71 launcher
+  updater checks, then stopped in the first FOV WPF UI check at the ten-second
+  STA-thread deadline. Local runs passed, including the CI fallback without
+  private banner/logo resources. This is a test-harness change, not game behavior.
+- `tests/launcher_settings.cs` now allows up to 60 seconds for a UI worker,
+  reports a timeout distinctly, preserves the original worker exception stack,
+  and prints each check's name and duration. Cold initialization remains bounded;
+  UI assertions and save/cancel checks are retained.
+- Windows x64 local `tools/build-launcher.ps1 -Test` passed 71 updater and 21
+  settings checks. Hosted Windows validation of the updated commit is pending.
+  The previous PR revision's macOS patch-transition job passed; this WPF-only
+  harness has no Mac adapter impact. No game data or personal settings were used.
 
 ## Configurable gameplay FOV (issue #29) — 2026-10-16
 
@@ -2267,3 +2421,86 @@ playtest was needed. Release preparation targets stable `launcher-v1.2.2` on
 main through the documented launcher-only channel; no game update is required.
 Native Mac settings/navigation adaptation remains
 queued under MAC-021; other-device synchronization is unverified.
+
+## Story Objectives health and shield (issue #11) — 2026-10-16
+
+- Implemented on `11-objectives-tab-not-showing-health-and-shield`,
+  based on main `d83ca5e`. Windows x64, CPython 3.14.2, MSVC x64, D3D11.
+  Supported US XBE SHA-256 verified before generation and isolated testing.
+- The before capture shows the Story Status/Objectives panel without indicators.
+  A read-only sample of the user's open Objectives screen found menu flags
+  `0x191`, a valid health/shield data pointer, and the display enable flag set.
+  The original quick-menu opener sets `0x100`; the original menu renderer tests
+  this bit and skips `sub_0013AB60`, its health/shield renderer.
+- The shared `story-objectives-health` patch temporarily masks `0x100` only while
+  drawing active Story quick menus, then restores it and transient `0x80`.
+  The original indicator data, animation and remaining visibility guards stay
+  in use. Input/pause state and other game modes retain their behavior.
+- The first corrected live capture confirmed both indicators and calls to the
+  original renderer, but the user reported clipped sides. Replay identified
+  indicator vertices at guest x=-48.64 in a 640-wide viewport. The new
+  `src/pc_objectives.h` and health-draw wrapper shrink the menu indicators to
+  the current viewport with a 4% inset on each side, retaining a common scale
+  for both axes and smaller animation phases. Guest viewport coordinates map
+  through the existing renderer to any selected output resolution. The scale
+  is recomputed each draw, supports split-screen, and leaves normal gameplay
+  HUD draws alone. Caller arguments are restored afterward.
+- The user confirmed the viewport fit, then reported the crescents covering
+  the Objectives panel edges. `build/windows/Release/frame001.d3dcap` reproduced
+  this with a nonempty first-mission objective. The panel still used its original
+  80% width while the gauges had shrunk. The shared Objectives builder now uses
+  the same fit ratio for both container and text-measurement widths, restoring
+  the shared US constants immediately afterward. Font size remains unchanged;
+  long objectives use the original wrapping/scrolling layout. Live verification
+  of this additional spacing correction initially failed: the next capture was
+  unchanged. The builder wrapper incorrectly treated the camera base as its
+  viewport, so invalid dimensions bypassed sizing. The US menu renderer uses
+  the viewport embedded at camera+0x224. The wrapper now uses that same offset,
+  and the fixture separates the camera base from its embedded viewport.
+  Seven focused tests pass, including a mutant reproducing the missing offset;
+  the user confirmed the rebuilt correction is working on 2026-10-16.
+- Seven focused regressions passed: production visibility and sizing wrappers,
+  deliberately broken variants, and the original checksum-verified US menu
+  routine. Tests cover full pause/inactive menus, other modes, invalid indices,
+  hidden widgets, display-disabled state, guest stack/register preservation,
+  changing 4:3/16:9/16:10/ultrawide/portrait dimensions, local viewports 1–4,
+  off-center animation, matching panel/text-measurement width and restoration
+  of shared constants. A deliberately unscaled panel reproduces the regression.
+  Portable tests run in the Windows/macOS transition
+  workflow; the original-XBE test skips in CI without private game data.
+- Final camera-offset correction: the complete Windows Release build and all
+  native build checks passed, including the prompts/focus test. Seven focused
+  Objectives tests passed. Before this last offset correction, all 34 focused
+  and patch-transition regressions passed together in 207.45 seconds. The
+  historical upgrade fixture excludes the new patch when constructing its
+  pre-letterbox state, then upgrades to the complete stack. `git diff --check`
+  passed. Earlier sizing builds intermittently failed the unchanged prompts
+  test's foreground-window assertion; both later full builds passed it.
+- The user confirmed the indicators fit inside the screen and, after correcting
+  the camera+0x224 viewport lookup, confirmed the panel-spacing fix is working.
+  This is user-reported Windows visual validation. Automated UI verification
+  was stopped by the user's Escape key. Live coverage of all resolutions,
+  split-screen and long/multiple objectives remains unverified; numerical
+  layout cases cover the viewport sizes listed above. Mac compilation/gameplay
+  remain unverified; see MAC-023. Local captures and test provenance are under
+  `build/issue-11-objectives`; the final full-build log is
+  `logs/issue-11-build.log`, and the earlier combined 34-test result is in
+  `logs/issue-11-regressions.log`.
+- PR #55 conflict resolution integrates main `de23272` while retaining the
+  Objectives implementation and fixtures byte-for-byte. CI keeps the Objectives,
+  cinematic/decal, terminal, FOV and launcher checks; the historical-upgrade
+  fixture retains all dependent-patch exclusions. Objectives is now MAC-023,
+  preserving main's MAC-022 FOV entry and all existing validation notes.
+  On Windows x64 / Python 3.12.14 / MSVC x64, all 44 merged Objectives, cinematic,
+  decal, terminal, FOV and patch-transition checks passed in 129.91 seconds.
+  The supported US XBE hash was reverified. The complete patch stack was applied
+  to an isolated 3,986,182-byte source fixture from pinned upstream `d90c929`;
+  no game assets were copied, and the other task's runtime/build was untouched.
+  No full game rebuild or new live playtest was performed for this conflict-only
+  update. Evidence: ignored `build/pr55-validation/tests.log` and
+  `fixture-provenance.json`. The PR diff passes `git diff --check origin/main`.
+  The follow-up main merge adds release documentation and the bounded cold-WPF
+  startup allowance; native sources/patches are unchanged from the 44-test pass.
+  The current launcher build passes 71 updater and 21 settings checks
+  (`build/pr55-validation/launcher.log`). Objectives notes are appended here so
+  new status entries at the top do not repeatedly conflict with this PR.

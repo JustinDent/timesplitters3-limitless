@@ -96,6 +96,51 @@ namespace TimeSplitters.Launcher
             }
             catch (Exception ex) { LauncherLog.Write(root, "Launcher file validation: " + ex.Message); return false; }
         }
+        // Called with the installation mutex held, after the main window loads.
+        // Until then the previous launcher remains available for recovery.
+        public static void CleanupAfterStartup(string root)
+        {
+            try
+            {
+                if (Directory.Exists(Core.PathIn(root, ".launcher/self-transaction")) || !Complete(root)) return;
+                TryCleanup(root, ".launcher/self-rollback", true);
+                string pending = Core.PathIn(root, ".launcher/self-pending");
+                if (Directory.Exists(pending))
+                {
+                    string marker = Core.PathIn(pending, "release.json");
+                    // An uncommitted download can be discarded. Keep a newer
+                    // staged update (or unreadable marker) for its helper/recovery.
+                    bool obsolete = !File.Exists(marker);
+                    if (!obsolete)
+                    {
+                        try { obsolete = GameVersion.Parse(Json.String(Json.Object(File.ReadAllText(marker)), "version"))
+                            .CompareTo(GameVersion.Parse(InstalledVersion(root))) <= 0; }
+                        catch (Exception ex) { LauncherLog.Write(root, "Launcher staging cleanup deferred: " + ex.Message); }
+                    }
+                    if (obsolete) TryCleanup(root, ".launcher/self-pending", true);
+                }
+                // A prepared update still owns its helper, even while waiting
+                // for the installation mutex. Windows also protects running EXEs.
+                if (!Directory.Exists(pending)) TryCleanup(root, ".launcher/self-helper.exe", false);
+                if (!Directory.Exists(Core.PathIn(root, ".launcher/transaction")) &&
+                    !Directory.Exists(Core.PathIn(root, ".launcher/pending")))
+                    TryCleanup(root, ".launcher/update-helper.exe", false);
+            }
+            catch (Exception ex) { LauncherLog.Write(root, "Launcher cleanup deferred: " + ex.Message); }
+        }
+        static void TryCleanup(string root, string relative, bool directory)
+        {
+            try
+            {
+                if (directory) Core.RemoveOwned(root, relative);
+                else
+                {
+                    string path = Core.PathIn(root, relative);
+                    if (File.Exists(path)) File.Delete(path);
+                }
+            }
+            catch (Exception ex) { LauncherLog.Write(root, "Launcher cleanup deferred for " + relative + ": " + ex.Message); }
+        }
         public static List<Change> Unpack(string archive, string destination, string expected)
         {
             Core.Require(!Directory.Exists(destination), "Launcher staging already exists.");
@@ -154,14 +199,22 @@ namespace TimeSplitters.Launcher
             Core.CheckSpace(root, release.Size * 4 + 32 * 1024 * 1024);
             Core.RemoveOwned(root, ".launcher/self-pending");
             string pending = Core.PathIn(root, ".launcher/self-pending"); Directory.CreateDirectory(pending);
-            string archive = Path.Combine(pending, "launcher.zip");
-            await client.Download(release, archive, progress, token).ConfigureAwait(false);
-            token.ThrowIfCancellationRequested();
-            await Task.Run(() => Unpack(archive, Path.Combine(pending, "payload"), release.Tag), token).ConfigureAwait(false);
-            token.ThrowIfCancellationRequested();
-            Core.Write(Path.Combine(pending, "release.json"), Json.Encode(new { version = release.Tag }));
-            File.Delete(archive);
-            return true;
+            try
+            {
+                string archive = Path.Combine(pending, "launcher.zip");
+                await client.Download(release, archive, progress, token).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+                await Task.Run(() => Unpack(archive, Path.Combine(pending, "payload"), release.Tag), token).ConfigureAwait(false);
+                token.ThrowIfCancellationRequested();
+                Core.Write(Path.Combine(pending, "release.json"), Json.Encode(new { version = release.Tag }));
+                File.Delete(archive);
+                return true;
+            }
+            catch
+            {
+                TryCleanup(root, ".launcher/self-pending", true);
+                throw;
+            }
         }
         public static void InstallPending(string root)
         {

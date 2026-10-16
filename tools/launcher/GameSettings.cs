@@ -23,6 +23,17 @@ namespace TimeSplitters.Launcher
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
+        public bool CanAdjustFov
+        {
+            get {
+                // alpha.4 and earlier accept only the V1 display format.
+                // Unpackaged development builds have no BUILD.json.
+                try {
+                    string version = Core.InstalledVersion(root);
+                    return version.Length == 0 || GameVersion.Parse(version).CompareTo(GameVersion.Parse("v0.2.0-alpha.4")) > 0;
+                } catch { return false; }
+            }
+        }
         public int Width, Height, Scale = 1, Anisotropy = 1, Interpolation = 1;
         public string FrameCap = "adaptive";
         public string Device { get { return Convert.ToString(controller["device"], CultureInfo.InvariantCulture); } set { controller["device"] = value; } }
@@ -163,6 +174,7 @@ namespace TimeSplitters.Launcher
         public void Validate()
         {
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
+            Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
             Core.Require(DisplayMode.Valid(Width,Height), "Choose a resolution from 640×480 through 7680×4320, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default.");
             Core.Require(Scale >= 1 && Scale <= 8 && Anisotropy >= 1 && Anisotropy <= 16 && Interpolation >= 1 && Interpolation <= 4, "A graphics setting is outside the supported range.");

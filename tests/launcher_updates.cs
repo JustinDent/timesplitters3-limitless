@@ -25,8 +25,10 @@ static class LauncherTests
         throw new Exception("Expected rejection.");
     }
     static string Hash(string text)
+    { return HashBytes(Encoding.UTF8.GetBytes(text)); }
+    static string HashBytes(byte[] bytes)
     {
-        using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(text))).Replace("-", "").ToLowerInvariant();
+        using (var sha = SHA256.Create()) return BitConverter.ToString(sha.ComputeHash(bytes)).Replace("-", "").ToLowerInvariant();
     }
     static void Put(string root, string name, string text)
     {
@@ -79,6 +81,7 @@ static class LauncherTests
     {
         Assert(File.ReadAllText(Path.Combine(root, "Settings/pc-controls.json")) == "personal bindings");
         Assert(File.ReadAllText(Path.Combine(root, "Settings/pc-display.ini")) == "personal display");
+        Assert(File.ReadAllText(Path.Combine(root, "Settings/runtime.conf")) == "personal runtime");
         Assert(File.ReadAllText(Path.Combine(root, "Saves/profile")) == "personal save");
         Assert(File.ReadAllText(Path.Combine(root, "Data/default.xbe")) == "personal data");
         Assert(File.ReadAllText(Path.Combine(root, "Textures/pack.dds")) == "personal textures");
@@ -133,6 +136,8 @@ static class LauncherTests
     { return Json.Encode(new { schema = 1, version = version, size = size, sha256 = hash, asset_name = "TimeSplitters-Launcher-v" + version + "-windows-x64.zip" }); }
     public static int Main(string[] args)
     {
+        if (args.Length == 2 && (args[0] == "--render-preview" || args[0] == "--render-settings-preview" || args[0] == "--render-settings-graphics"))
+        { File.WriteAllText(args[1],args[0]);return 17; } // Synthetic preview child, not a UI/game launch.
         if (args.Length == 1 && args[0] == "--settings-child") return LauncherSettingsChecks.Child();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();
         if (args.Length == 2 && args[0] == "--helper")
@@ -167,6 +172,44 @@ static class LauncherTests
         Directory.CreateDirectory(temp);
         try
         {
+            if (args.Length == 1 && args[0] == "--cleanup") {
+                CleanupTests(); Console.WriteLine("PASS: " + passed + " isolated launcher cleanup checks."); return 0;
+            }
+            if (args.Length == 1 && args[0] == "--game-cleanup") {
+                GameCleanupTests(); Console.WriteLine("PASS: " + passed + " isolated game cleanup checks."); return 0;
+            }
+            Test("bootstrap forwards application previews and preserves spaced output paths and child status", () => {
+                string root=Path.Combine(temp,"preview launcher root");Directory.CreateDirectory(Path.Combine(root,"Bin"));
+                File.Copy(typeof(LauncherTests).Assembly.Location,Path.Combine(root,Core.AppPath));
+                foreach(string flag in new[]{"--render-preview","--render-settings-preview","--render-settings-graphics"}) {
+                    string output=Path.Combine(root,flag.Substring(2)+" image.png");int result;
+                    Assert(Bootstrap.TryForwardPreview(root,new[]{flag,output},out result));
+                    Assert(result==17 && File.ReadAllText(output)==flag);
+                }
+                string previous=Environment.CurrentDirectory;
+                try {
+                    Environment.CurrentDirectory=temp;int result;
+                    Assert(Bootstrap.TryForwardPreview(root,new[]{"--render-preview","relative preview.png"},out result));
+                    Assert(result==17 && File.ReadAllText(Path.Combine(temp,"relative preview.png"))=="--render-preview");
+                } finally { Environment.CurrentDirectory=previous; }
+                Assert(!Directory.Exists(Path.Combine(root,"Settings")) && !Directory.Exists(Path.Combine(root,"Data")));
+            });
+            Test("bootstrap preserves normal startup, splash and updater argument routes", () => {
+                foreach(var input in new[]{new string[0],new[]{"--after-self-update"},new[]{"--render-splash","output.png"},new[]{"--apply-launcher","root","123"},new[]{"--from-bootstrap","123"},new[]{"--unknown","value"},new[]{"--render-preview"}}) {
+                    int result;Assert(!Bootstrap.TryForwardPreview(temp,input,out result));
+                }
+            });
+            Test("rejected bootstrap argument diagnostics are escaped and bounded", () => {
+                Assert(Bootstrap.DescribeArguments(new string[0])=="[]");
+                string text=Bootstrap.DescribeArguments(new[]{"--bad\nargument",new string('x',10000)});
+                Assert(!text.Contains("\n") && text.Contains("\\n") && text.Length<400);
+                Assert(Bootstrap.DescribeArguments(Enumerable.Repeat("argument",20).ToArray()).Contains("additional arguments omitted"));
+            });
+            if (args.Length == 1 && args[0] == "--bootstrap") {
+                Console.WriteLine("PASS: " + passed + " isolated bootstrap checks.");return 0;
+            }
+            CleanupTests();
+            GameCleanupTests();
             Test("semantic version ordering", () => {
                 var ordered = new[] { "v1.0.0-alpha", "v1.0.0-alpha.2", "v1.0.0-alpha.10", "v1.0.0-beta", "v1.0.0", "v1.0.1", "v1.10.0", "v2.0.0" };
                 for (int i = 1; i < ordered.Length; i++) Assert(GameVersion.Parse(ordered[i]).CompareTo(GameVersion.Parse(ordered[i-1])) > 0);
@@ -281,6 +324,7 @@ static class LauncherTests
             });
             Test("cleanup cannot target user data", () => Reject(() => Core.RemoveOwned(NewRoot("cleanup"), "Data")));
             SelfUpdateTests();
+            GamePruningTests();
             Console.WriteLine("PASS: " + passed + " isolated launcher regressions.");
             return 0;
         }
@@ -291,6 +335,253 @@ static class LauncherTests
             string baseDir = Path.GetFullPath(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location)) + Path.DirectorySeparatorChar;
             if (Path.GetFullPath(temp).StartsWith(baseDir, StringComparison.OrdinalIgnoreCase) && Path.GetFileName(temp) == "updater-tests") Directory.Delete(temp, true);
         }
+    }
+    static string GameRoot(string name)
+    {
+        string root = NewRoot(name);
+        Put(root, "Launch.ps1", "old launch");
+        var files = new Dictionary<string, string> { { "Bin/futureperfect_recomp.exe", Hash("old game") },
+            { "Launch.ps1", Hash("old launch") }, { "Settings/pc-controls.json", Hash("default controls") },
+            { Core.LauncherName, Hash("packaged launcher") } };
+        Put(root, "BUILD.json", Json.Encode(new { version = "v1.0.0", files = files }));
+        Put(root, ".launcher/rollback/files/BUILD.json", "{\"version\":\"v0.9.0\"}");
+        Put(root, ".launcher/rollback/files/Bin/futureperfect_recomp.exe", "older game");
+        Put(root, ".launcher/rollback/journal.json", "[]");
+        Put(root, "OriginalGame.ISO", "personal ISO");
+        return root;
+    }
+    static void GameCleanupTests()
+    {
+        Test("game backup waits for a visible game and clean exit, then preserves personal files and ISO", () => {
+            string root = GameRoot("game cleanup success"); string build = Core.GameBuildHash(root);
+            Put(root, ".launcher/pending/release.zip", "incomplete download");
+            Core.CleanupGameAfterStartup(root); Assert(Core.CanRollback(root));
+            Core.FinishGameSession(root, build, false, 0); Assert(Core.CanRollback(root));
+            Core.FinishGameSession(root, build, true, 1); Assert(Core.CanRollback(root));
+            Assert(!File.Exists(Path.Combine(root, ".launcher/game-confirmed.json")));
+            Core.FinishGameSession(root, build, true, 0);
+            Assert(!Directory.Exists(Path.Combine(root, ".launcher/rollback")) && !Directory.Exists(Path.Combine(root, ".launcher/game-obsolete")));
+            Assert(!Directory.Exists(Path.Combine(root, ".launcher/pending")) && !Core.CanRollback(root));
+            Assert(File.Exists(Path.Combine(root, ".launcher/game-confirmed.json")));
+            Assert(File.ReadAllText(Path.Combine(root, "OriginalGame.ISO")) == "personal ISO"); Personal(root);
+            Assert(File.ReadAllText(Path.Combine(root, "Bin/futureperfect_recomp.exe")) == "old game");
+        });
+        Test("a different or damaged installed build keeps the game backup", () => {
+            string root = GameRoot("game cleanup damaged"); string build = Core.GameBuildHash(root);
+            Put(root, "Launch.ps1", "changed"); Core.FinishGameSession(root, build, true, 0); Assert(Core.CanRollback(root));
+            Put(root, "Launch.ps1", "old launch");
+            Put(root, "BUILD.json", File.ReadAllText(Path.Combine(root, "BUILD.json")) + "\n");
+            Core.FinishGameSession(root, build, true, 0); Assert(Core.CanRollback(root));
+            Assert(!File.Exists(Path.Combine(root, ".launcher/game-confirmed.json"))); Personal(root);
+        });
+        Test("confirmation never carries across game versions", () => {
+            string root = GameRoot("game cleanup fingerprint");
+            Core.FinishGameSession(root, Core.GameBuildHash(root), true, 0);
+            Put(root, ".launcher/rollback/files/BUILD.json", "backup"); Put(root, ".launcher/rollback/journal.json", "[]");
+            Put(root, "BUILD.json", File.ReadAllText(Path.Combine(root, "BUILD.json")).Replace("v1.0.0", "v1.1.0"));
+            Core.CleanupGameAfterStartup(root); Assert(Core.CanRollback(root));
+        });
+        Test("unfinished game or launcher transactions block game cleanup", () => {
+            string root = GameRoot("game cleanup transaction");
+            foreach (string name in new[] { "transaction", "self-transaction" }) {
+                Put(root, ".launcher/" + name + "/keep", "recovery");
+                Core.FinishGameSession(root, Core.GameBuildHash(root), true, 0); Assert(Core.CanRollback(root));
+                Core.RemoveOwned(root, ".launcher/" + name);
+            }
+        });
+        Test("newer and unreadable game staging remains available", () => {
+            string root = GameRoot("game cleanup newer stage");
+            foreach (string marker in new[] { "{\"version\":\"v1.0.1\"}", "invalid JSON" }) {
+                Put(root, ".launcher/pending/release.json", marker); Put(root, ".launcher/pending/release.zip", "keep");
+                Core.FinishGameSession(root, Core.GameBuildHash(root), true, 0);
+                Assert(File.Exists(Path.Combine(root, ".launcher/pending/release.zip")));
+            }
+        });
+        Test("obsolete ready game staging is removed after confirmation", () => {
+            string root = GameRoot("game cleanup old stage"); Core.FinishGameSession(root, Core.GameBuildHash(root), true, 0);
+            foreach (string version in new[] { "v0.9.0", "v1.0.0-alpha.10", "v1.0.0" }) {
+                Put(root, ".launcher/pending/release.json", Json.Encode(new { version = version }));
+                Core.CleanupGameAfterStartup(root); Assert(!Directory.Exists(Path.Combine(root, ".launcher/pending")));
+            }
+        });
+        Test("ISO and personal backups inside managed game folders prevent deletion", () => {
+            foreach (string name in new[] { "rollback", "pending", "game-obsolete" }) {
+                string root = GameRoot("game cleanup ISO " + name);
+                Put(root, ".launcher/" + name + "/MyGame.IsO", "keep ISO");
+                Core.FinishGameSession(root, Core.GameBuildHash(root), true, 0);
+                Assert(File.ReadAllText(Path.Combine(root, ".launcher/" + name + "/MyGame.IsO")) == "keep ISO"); Personal(root);
+            }
+            string settings = GameRoot("game cleanup personal backup");
+            Put(settings, ".launcher/rollback/files/Settings/runtime.conf", "personal backup");
+            Core.FinishGameSession(settings, Core.GameBuildHash(settings), true, 0);
+            Assert(File.ReadAllText(Path.Combine(settings, ".launcher/rollback/files/Settings/runtime.conf")) == "personal backup");
+        });
+        Test("locked old game files retry without offering a partial rollback", () => {
+            string root = GameRoot("game cleanup lock");
+            string file = Path.Combine(root, ".launcher/rollback/files/Bin/futureperfect_recomp.exe");
+            using (var locked = File.Open(file, FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                Core.FinishGameSession(root, Core.GameBuildHash(root), true, 0);
+                bool retired = Directory.Exists(Path.Combine(root, ".launcher/game-obsolete"));
+                Assert(retired || Directory.Exists(Path.Combine(root, ".launcher/rollback")));
+                if (retired) Assert(!Core.CanRollback(root));
+            }
+            Core.CleanupGameAfterStartup(root);
+            Assert(!Directory.Exists(Path.Combine(root, ".launcher/rollback")) && !Directory.Exists(Path.Combine(root, ".launcher/game-obsolete"))); Personal(root);
+        });
+        Test("game staging cannot discard an assigned ISO", () => {
+            string root = GameRoot("game cleanup retry ISO"); Put(root, ".launcher/pending/Game.ISO", "keep ISO");
+            Reject(() => Core.DiscardGameStaging(root));
+            Assert(File.ReadAllText(Path.Combine(root, ".launcher/pending/Game.ISO")) == "keep ISO");
+        });
+        Test("game cleanup refuses junctions without changing their target", () => {
+            string root = GameRoot("game cleanup link"); string target = Path.Combine(temp, "game link target"); Directory.CreateDirectory(target); Put(target, "keep", "outside");
+            string link = Core.PathIn(root, ".launcher/game-obsolete");
+            try {
+                using (var command = Process.Start(new ProcessStartInfo("cmd.exe", "/c mklink /J " + SelfUpdate.Quote(link) + " " + SelfUpdate.Quote(target)) { UseShellExecute = false, CreateNoWindow = true }))
+                    Assert(command.WaitForExit(5000) && command.ExitCode == 0);
+                Core.FinishGameSession(root, Core.GameBuildHash(root), true, 0);
+                Assert(File.ReadAllText(Path.Combine(target, "keep")) == "outside" && Directory.Exists(link));
+            } finally {
+                if (Directory.Exists(link)) {
+                    Assert(Path.GetDirectoryName(link) == Path.Combine(root, ".launcher") && (File.GetAttributes(link) & FileAttributes.ReparsePoint) != 0);
+                    Directory.Delete(link);
+                }
+            }
+        });
+    }
+    static void GamePruningTests()
+    {
+        Test("game update prunes unchanged retired files transactionally and rollback restores them", () => {
+            string root = GameRoot("game pruning upgrade");
+            var files = (Dictionary<string, object>)Json.Object(File.ReadAllText(Path.Combine(root, "BUILD.json")))["files"];
+            foreach (string name in new[] { "Bin/retired.dll", "Source/old-source.zip", "Support/modified.txt" }) {
+                Put(root, name, "old package file"); files[name] = Hash("old package file");
+            }
+            Put(root, "Support/modified.txt", "user modification"); Put(root, "Support/untracked.txt", "user file");
+            // A legacy manifest may vary filename casing on Windows.
+            files.Remove(Core.LauncherName); files[Core.LauncherName.ToLowerInvariant()] = Hash("old launcher");
+            Put(root, "BUILD.json", Json.Encode(new { version = "v1.0.0", files = files }));
+            string pending = Path.Combine(root, ".launcher/pending"); Directory.CreateDirectory(pending);
+            Core.Unpack(Zip("game pruning", f => f.Remove(Core.LauncherName), null, false), Path.Combine(pending, "payload"), "v1.1.0");
+            Put(pending, "release.json", "{\"version\":\"v1.1.0\"}"); Core.InstallPending(root);
+            Assert(!File.Exists(Path.Combine(root, "Bin/retired.dll")) && !File.Exists(Path.Combine(root, "Source/old-source.zip")));
+            Assert(File.ReadAllText(Path.Combine(root, "Support/modified.txt")) == "user modification" && File.Exists(Path.Combine(root, "Support/untracked.txt")));
+            Assert(File.Exists(Path.Combine(root, "OriginalGame.ISO"))); Personal(root);
+            Assert(File.ReadAllText(Path.Combine(root, Core.LauncherName)) == "old launcher");
+            Core.Rollback(root);
+            Assert(File.ReadAllText(Path.Combine(root, "Bin/retired.dll")) == "old package file" && File.ReadAllText(Path.Combine(root, "Source/old-source.zip")) == "old package file");
+            Assert(Core.InstalledVersion(root) == "v1.0.0"); Personal(root);
+        });
+        Test("a protected ISO in the previous snapshot blocks its replacement safely", () => {
+            string root = GameRoot("game pruning protected snapshot"); Put(root, ".launcher/rollback/My.ISO", "keep ISO");
+            string pending = Path.Combine(root, ".launcher/pending"); Directory.CreateDirectory(pending);
+            Core.Unpack(Zip("game pruning ISO", null, null, false), Path.Combine(pending, "payload"), "v1.1.0");
+            Put(pending, "release.json", "{\"version\":\"v1.1.0\"}"); Reject(() => Core.InstallPending(root));
+            Assert(Core.InstalledVersion(root) == "v1.0.0" && File.ReadAllText(Path.Combine(root, "Bin/futureperfect_recomp.exe")) == "old game");
+            Assert(File.ReadAllText(Path.Combine(root, ".launcher/rollback/My.ISO")) == "keep ISO"); Personal(root);
+        });
+    }
+    static void CleanupTests()
+    {
+        Test("successful startup removes old launcher files across repeated upgrades and preserves user files", () => {
+            string root = NewRoot("cleanup repeated upgrades");
+            Put(root, ".launcher/rollback/keep", "game rollback");
+            Put(root, ".launcher/preferences.json", "preferences");
+            Put(root, ".launcher/last-result.txt", "game result");
+            Put(root, ".launcher/self-last-result.txt", "launcher result");
+            Put(root, ".launcher/unrelated/keep", "unknown files");
+            Put(root, "TimeSplitters-Launcher-v0.1.0-windows-x64.zip", "manual download");
+            for (int i = 1; i <= 3; i++) {
+                PutSelf(root, "1.0." + i);
+                Put(root, ".launcher/self-rollback/files/" + Core.LauncherName, "older launcher");
+                Put(root, ".launcher/self-pending/launcher.zip", "partial download");
+                Put(root, ".launcher/self-helper.exe", "old bootstrap helper");
+                Put(root, ".launcher/update-helper.exe", "old application helper");
+                SelfUpdate.CleanupAfterStartup(root);
+                foreach (string name in new[] { "self-rollback", "self-pending", "self-helper.exe", "update-helper.exe" })
+                    Assert(!File.Exists(Path.Combine(root, ".launcher", name)) && !Directory.Exists(Path.Combine(root, ".launcher", name)));
+                Assert(SelfUpdate.Complete(root)); Personal(root);
+                Assert(Core.InstalledVersion(root) == "v1.0.0");
+            }
+            Assert(File.ReadAllText(Path.Combine(root, ".launcher/rollback/keep")) == "game rollback");
+            Assert(File.ReadAllText(Path.Combine(root, ".launcher/preferences.json")) == "preferences");
+            Assert(File.Exists(Path.Combine(root, ".launcher/last-result.txt")) && File.Exists(Path.Combine(root, ".launcher/self-last-result.txt")));
+            Assert(File.Exists(Path.Combine(root, ".launcher/unrelated/keep")) && File.Exists(Path.Combine(root, "TimeSplitters-Launcher-v0.1.0-windows-x64.zip")));
+        });
+        Test("unverified launcher retains recovery and staging files", () => {
+            string root = NewRoot("cleanup incomplete"); PutSelf(root, "1.0.0"); Put(root, Core.AppPath, "corrupt");
+            foreach (string name in new[] { "self-rollback/keep", "self-pending/launcher.zip", "self-helper.exe", "update-helper.exe" }) Put(root, ".launcher/" + name, "keep");
+            SelfUpdate.CleanupAfterStartup(root);
+            foreach (string name in new[] { "self-rollback/keep", "self-pending/launcher.zip", "self-helper.exe", "update-helper.exe" }) Assert(File.Exists(Path.Combine(root, ".launcher", name)));
+        });
+        Test("unfinished launcher transaction prevents cleanup until recovery", () => {
+            string root = NewRoot("cleanup interrupted"); PutSelf(root, "1.0.0");
+            Put(root, ".launcher/self-transaction/files/" + Core.LauncherName, "recovery copy");
+            Put(root, ".launcher/self-rollback/keep", "backup"); Put(root, ".launcher/self-helper.exe", "helper");
+            SelfUpdate.CleanupAfterStartup(root);
+            Assert(File.Exists(Path.Combine(root, ".launcher/self-transaction/files/" + Core.LauncherName)));
+            Assert(File.Exists(Path.Combine(root, ".launcher/self-rollback/keep")) && File.Exists(Path.Combine(root, ".launcher/self-helper.exe")));
+        });
+        Test("newer staged launcher and its helper are preserved", () => {
+            string root = NewRoot("cleanup newer pending"); PutSelf(root, "1.0.0");
+            Put(root, ".launcher/self-pending/release.json", "{\"version\":\"1.0.1\"}");
+            Put(root, ".launcher/self-pending/payload/keep", "new update"); Put(root, ".launcher/self-helper.exe", "helper");
+            SelfUpdate.CleanupAfterStartup(root);
+            Assert(File.Exists(Path.Combine(root, ".launcher/self-pending/payload/keep")) && File.Exists(Path.Combine(root, ".launcher/self-helper.exe")));
+        });
+        Test("already installed or older staging is removed using semantic versions", () => {
+            string root = NewRoot("cleanup old pending"); PutSelf(root, "1.10.0");
+            foreach (string version in new[] { "1.9.0", "1.10.0-beta.1", "1.10.0" }) {
+                Put(root, ".launcher/self-pending/release.json", Json.Encode(new { version = version }));
+                Put(root, ".launcher/self-pending/payload/keep", "old payload");
+                SelfUpdate.CleanupAfterStartup(root); Assert(!Directory.Exists(Path.Combine(root, ".launcher/self-pending")));
+            }
+        });
+        Test("unreadable staging marker is retained for diagnosis", () => {
+            string root = NewRoot("cleanup unknown pending"); PutSelf(root, "1.0.0");
+            Put(root, ".launcher/self-pending/release.json", "invalid JSON"); Put(root, ".launcher/self-helper.exe", "helper");
+            SelfUpdate.CleanupAfterStartup(root);
+            Assert(File.Exists(Path.Combine(root, ".launcher/self-pending/release.json")) && File.Exists(Path.Combine(root, ".launcher/self-helper.exe")));
+        });
+        Test("locked cleanup files are retried without failing startup", () => {
+            string root = NewRoot("cleanup locked"); PutSelf(root, "1.0.0");
+            Put(root, ".launcher/self-rollback/locked", "backup"); Put(root, ".launcher/self-helper.exe", "helper");
+            using (var backup = File.Open(Path.Combine(root, ".launcher/self-rollback/locked"), FileMode.Open, FileAccess.Read, FileShare.Read))
+            using (var helper = File.Open(Path.Combine(root, ".launcher/self-helper.exe"), FileMode.Open, FileAccess.Read, FileShare.Read)) {
+                SelfUpdate.CleanupAfterStartup(root);
+                Assert(File.Exists(Path.Combine(root, ".launcher/self-rollback/locked")) && File.Exists(Path.Combine(root, ".launcher/self-helper.exe")));
+                Assert(File.ReadAllText(Path.Combine(root, ".launcher/launcher.log")).Contains("cleanup deferred"));
+            }
+            SelfUpdate.CleanupAfterStartup(root);
+            Assert(!Directory.Exists(Path.Combine(root, ".launcher/self-rollback")) && !File.Exists(Path.Combine(root, ".launcher/self-helper.exe")));
+        });
+        Test("pending game updates and transactions keep their helper and rollback", () => {
+            string root = NewRoot("cleanup game work"); PutSelf(root, "1.0.0"); Put(root, ".launcher/rollback/keep", "game rollback");
+            foreach (string folder in new[] { "pending", "transaction" }) {
+                Put(root, ".launcher/" + folder + "/keep", "game work"); Put(root, ".launcher/update-helper.exe", "game helper");
+                SelfUpdate.CleanupAfterStartup(root);
+                Assert(File.Exists(Path.Combine(root, ".launcher/update-helper.exe")) && File.Exists(Path.Combine(root, ".launcher/" + folder + "/keep")));
+                Core.RemoveOwned(root, ".launcher/" + folder);
+            }
+            Assert(File.ReadAllText(Path.Combine(root, ".launcher/rollback/keep")) == "game rollback");
+        });
+        Test("cleanup refuses junctions without touching their target", () => {
+            string root = NewRoot("cleanup linked"); PutSelf(root, "1.0.0");
+            string target = Path.Combine(temp, "junction target"); Directory.CreateDirectory(target); Put(target, "keep", "outside cleanup");
+            string link = Core.PathIn(root, ".launcher/self-rollback"); Directory.CreateDirectory(Path.GetDirectoryName(link));
+            try {
+                using (var command = Process.Start(new ProcessStartInfo("cmd.exe", "/c mklink /J " + SelfUpdate.Quote(link) + " " + SelfUpdate.Quote(target)) {
+                    UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true }))
+                    Assert(command.WaitForExit(5000) && command.ExitCode == 0);
+                SelfUpdate.CleanupAfterStartup(root);
+                Assert(File.ReadAllText(Path.Combine(target, "keep")) == "outside cleanup" && Directory.Exists(link));
+            } finally {
+                if (Directory.Exists(link)) {
+                    Assert(Path.GetDirectoryName(link) == Path.Combine(root, ".launcher") && (File.GetAttributes(link) & FileAttributes.ReparsePoint) != 0);
+                    Directory.Delete(link); // Remove only this test-created junction, never its target.
+                }
+            }
+        });
     }
     static void SelfUpdateTests()
     {
@@ -340,6 +631,25 @@ static class LauncherTests
                 Assert(SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromSeconds(1), CancellationToken.None).GetAwaiter().GetResult() == null);
         });
         string zip = SelfZip("self-valid", "1.1.0", null, false);
+        foreach (string failure in new[] { "checksum", "archive", "cancelled" })
+            Test("failed launcher preparation removes staging: " + failure, () => {
+                string root = NewRoot("self preparation " + failure); PutSelf(root, "1.0.0");
+                byte[] bytes = failure == "archive" ? Encoding.UTF8.GetBytes("not a ZIP") : File.ReadAllBytes(zip);
+                string hash = failure == "checksum" ? new string('0', 64) : HashBytes(bytes);
+                var release = new Release { Tag = "1.1.0", Size = bytes.Length, Digest = "sha256:" + hash,
+                    AssetUrl = "https://github.com/" + ReleaseClient.Repository + "/releases/download/launcher-v1.1.0/launcher.zip" };
+                using (var cancel = new CancellationTokenSource())
+                using (var client = new ReleaseClient(new Handler { Reply = r => new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(bytes) } })) {
+                    if (failure == "cancelled") cancel.Cancel();
+                    bool failed = false;
+                    try { SelfUpdate.Prepare(root, release, client, new Progress(), cancel.Token).GetAwaiter().GetResult(); }
+                    catch (Exception ex) {
+                        failed = !ex.Message.Contains("Close the game") && (failure == "cancelled" ? ex is OperationCanceledException :
+                            failure == "checksum" ? ex.Message.Contains("Checksum mismatch") : ex is InvalidDataException);
+                    }
+                    Assert(failed && !Directory.Exists(Path.Combine(root, ".launcher/self-pending")) && SelfUpdate.Complete(root)); Personal(root);
+                }
+            });
         Test("launcher-only ZIP verifies exactly three files", () => Assert(SelfUpdate.Unpack(zip, Path.Combine(temp, "self-valid-payload"), "1.1.0").Count == 3));
         Test("launcher archive rejects game executable", () => Reject(() => SelfUpdate.Unpack(SelfZip("self-game", "1.1.0", "Bin/futureperfect_recomp.exe", false), Path.Combine(temp, "self-game-payload"), "1.1.0")));
         Test("launcher archive rejects personal settings", () => Reject(() => SelfUpdate.Unpack(SelfZip("self-settings", "1.1.0", "Settings/pc-controls.json", false), Path.Combine(temp, "self-settings-payload"), "1.1.0")));

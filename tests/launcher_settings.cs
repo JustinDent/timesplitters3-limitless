@@ -9,18 +9,30 @@ public static class LauncherSettingsChecks
 {
     static int count;
     static string temp;
-    static void Require(bool condition) { if (!condition) throw new Exception("Settings assertion failed."); }
+    static void Require(bool condition, string message = "Settings assertion failed.") { if (!condition) throw new Exception(message); }
     static void Reject(Action action) { bool rejected=false; try { action(); } catch { rejected=true; } Require(rejected); }
     static string Root(string name) { string root=Path.Combine(temp,name);Directory.CreateDirectory(root);return root; }
     static void Put(string root,string file,string data) { string path=Path.Combine(root,file);Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,data); }
     static string Read(string root,string file) { return File.ReadAllText(Path.Combine(root,file)); }
-    static void Test(string name,Action action) { action();count++;Console.WriteLine("PASS "+name); }
+    static void Test(string name,Action action)
+    {
+        Console.WriteLine("START "+name);
+        var elapsed=Stopwatch.StartNew();
+        try { action(); }
+        catch(Exception failure) { throw new Exception("Launcher settings check failed: "+name,failure); }
+        count++;Console.WriteLine("PASS "+name+" ("+elapsed.ElapsedMilliseconds+" ms)");
+    }
     static void STA(Action action)
     {
         Exception failure=null;
         var thread=new System.Threading.Thread(()=> { try {action();} catch(Exception ex){failure=ex;} });
         thread.IsBackground=true;thread.SetApartmentState(System.Threading.ApartmentState.STA);thread.Start();
-        Require(thread.Join(10000));if(failure!=null)throw failure;
+        // The first WPF control initializes fonts, themes and the graphics
+        // stack. Cold hosted Windows runners can take more than ten seconds.
+        // Keep the wait bounded, but distinguish startup timeouts from failed
+        // assertions and preserve the original UI-thread stack for diagnosis.
+        if(!thread.Join(60000)) throw new TimeoutException("Launcher settings UI thread did not finish within 60 seconds.");
+        if(failure!=null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
     }
     static void Click(System.Windows.Controls.Button button)
     { button.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); }
@@ -47,6 +59,26 @@ public static class LauncherSettingsChecks
         Directory.CreateDirectory(temp);
         try
         {
+            Test("published alpha.4 retains V1 resolution settings and rejects custom FOV atomically",()=>{
+                string root=Root("legacy-fov");Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.4\"}");
+                var model=GameSettings.Load(root,null);Require(!model.CanAdjustFov);
+                model.Width=1920;model.Height=1080;model.Save();
+                string original=Read(root,"Settings/pc-display.ini");
+                Require(original=="TSFP_DISPLAY_V1 1920 1080\n");
+                model.VerticalFov=75;Reject(()=>model.Save());Require(Read(root,"Settings/pc-display.ini")==original);
+                Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.5\"}");
+                Require(model.CanAdjustFov);model.Save();Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V2 1920 1080 75\n");
+            });
+            Test("alpha.4 FOV controls explain unavailable capability while resolution saves",()=>STA(()=>{
+                string root=Root("legacy-fov-ui");Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.4\"}");
+                var owner=new System.Windows.Window();var editor=new SettingsPage(owner.Resources,root,true);editor.SelectTab(1);
+                var nodes=Descendants(editor.View).ToList();
+                Require(!nodes.OfType<System.Windows.Controls.Slider>().Single(c=>c.Name=="VerticalFovSlider").IsEnabled,"Legacy FOV slider must be disabled.");
+                Require(!nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="ResetFovButton").IsEnabled,"Legacy FOV reset must be disabled.");
+                Require(nodes.OfType<System.Windows.Controls.TextBlock>().Any(c=>c.Text.Contains("newer than v0.2.0-alpha.4")),"Missing capability explanation.");
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
+                Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V1 0 0\n","Legacy UI resolution output: "+Read(root,"Settings/pc-display.ini"));owner.Close();
+            }));
             Test("FOV legacy defaults, range checks and shared V2 round trip",()=>{
                 string root=Root("fov-settings");Put(root,"Settings/pc-display.ini","TSFP_DISPLAY_V1 1920 1080\n");
                 var model=GameSettings.Load(root,null);Require(model.VerticalFov==55);

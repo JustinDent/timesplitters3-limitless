@@ -213,6 +213,10 @@ namespace TimeSplitters.Launcher
             Button("LogsButton").Click += (s, e) => OpenFolder(".launcher");
             Window.Loaded += async (s, e) =>
             {
+                SelfUpdate.CleanupAfterStartup(root);
+                busy = true; Refresh();
+                try { await Task.Run(() => Core.CleanupGameAfterStartup(root)); }
+                finally { busy = false; }
                 await Check();
                 string result = Core.PathIn(root, ".launcher/last-result.txt");
                 if (File.Exists(result)) { SetStatus(File.ReadAllText(result)); File.Delete(result); }
@@ -379,7 +383,7 @@ namespace TimeSplitters.Launcher
             try
             {
                 Core.CheckSpace(root, available.Size * 4 + 256L * 1024 * 1024);
-                Core.RemoveOwned(root, ".launcher/pending");
+                Core.DiscardGameStaging(root);
                 string pending = Core.PathIn(root, ".launcher/pending"); Directory.CreateDirectory(pending);
                 string archive = Path.Combine(pending, "release.zip");
                 SetStatus("Downloading " + available.Tag + "…");
@@ -433,6 +437,7 @@ namespace TimeSplitters.Launcher
         internal async Task MonitorGame(Process process)
         {
             bool minimizedForGame = false;
+            string observedBuild = Core.GameBuildHash(root);
             WindowState previousState = Window.WindowState;
             try
             {
@@ -453,6 +458,7 @@ namespace TimeSplitters.Launcher
             {
                 if (minimizedForGame) { Window.WindowState = previousState; Window.Activate(); }
             }
+            await Task.Run(() => Core.FinishGameSession(root, observedBuild, minimizedForGame, process.ExitCode));
         }
         async Task Play()
         {

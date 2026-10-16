@@ -57,7 +57,8 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
 | MAC-021 | Published-release launcher and pre-game settings | Queued |
 | MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
-| MAC-023 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
+| MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
+| MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
 
 ### MAC-001 — Direct-camera mouse look
 
@@ -233,6 +234,14 @@ runtime readiness. No full campaign playthrough is required.
 - **Mac implementation and evidence:** Synthetic DDS/GPU replacement and corrupt-fallback regressions passed again in this batch. Actual installed-art coverage remains pending because the real pack is unavailable on this device. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 
 ### MAC-012 — Standalone Mac runtime distribution
+
+- **Windows CI harness follow-up (PR #65, 2026-10-16):**
+  `tests/launcher_settings.cs` gives cold WPF UI initialization a bounded
+  60-second worker budget and preserves named assertion/timeout diagnostics.
+  No Mac adaptation is needed: this is the Windows-only launcher test harness,
+  not shared runtime behavior. Hosted Mac patch checks passed on the preceding
+  PR revision; native Mac functionality is not inferred from that result.
+  [Validation](STATUS.md#launcher-settings-ci-startup-budget--2026-10-16).
 
 - **Release-test compiler discovery follow-up (2026-10-16, branch
   `fix-release-msvc-tests`):** `tests/native_compiler.py` supplies one compiler
@@ -525,6 +534,50 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Game version cleanup (2026-10-16, commit `d1f4e42` on
+  `fix/game-update-cleanup`, [PR #69](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/69),
+  prepared for launcher v1.2.5):** `tools/launcher/Core.cs` removes retired game
+  backups and obsolete/incomplete game staging after a window was observed and
+  the game exited normally, then all managed runtime hashes verified. Confirmation
+  is tied to the BUILD.json hash; later startup retries cannot confirm a new
+  version. `Launcher.cs` uses the existing window observation/exit path, with
+  background cleanup and busy-state protection. Updates transactionally remove
+  unchanged files owned by an old manifest but absent from the incoming package.
+  Modified/untracked files, personal settings, independent launchers, saves,
+  extracted data, texture packs and ISOs are protected. ISO files inside managed
+  cleanup folders prevent deletion. Retired snapshots are renamed before removal
+  to avoid offering a partial rollback. `tests/launcher_updates.cs` covers these
+  boundaries, retries, junctions and restoration. Mac has no corresponding
+  published-release launcher; implementation remains queued. Reuse these retention
+  and ownership rules in its future adapter, then verify POSIX deletion/locking,
+  manifest validation, clean-exit observation and protected data with isolated
+  fixtures. See [Windows game cleanup evidence](STATUS.md#game-version-cleanup-2026-10-16).
+- **Launcher update cleanup (2026-10-16, commit `dc019bf` on
+  `fix/launcher-update-cleanup`, [PR #68](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/68),
+  prepared for v1.2.4):** `tools/launcher/SelfUpdate.cs` removes the
+  prior launcher backup, obsolete/incomplete staging and unused helper EXEs
+  after the normal main window loads and the installed file hashes verify.
+  `Launcher.cs` invokes cleanup under the installation mutex; render previews
+  do not invoke it. Failed preparation also cleans its own staging. Active
+  transactions, newer/unknown pending releases, linked paths, game rollback and
+  personal files are protected; locked files retry on the next startup.
+  `tests/launcher_updates.cs` covers repeated upgrades, deferred cleanup,
+  preservation, junction refusal and preparation failures. Mac has no equivalent
+  published-release launcher implementation; adaptation remains queued. When
+  implementing it, retain these success/recovery boundaries and test POSIX
+  executable replacement/deletion independently. Windows results do not verify
+  Mac integration. See [cleanup validation](STATUS.md#launcher-update-cleanup-2026-10-16).
+- **Startup argument handling (2026-10-16, release preparation on
+  `fix/launcher-bootstrap-arguments`):** A resolution-preview command passed an
+  application-only flag to the startup EXE, producing `Unknown bootstrap
+  arguments`. The Windows v1.2.3 local fix in `tools/launcher/Bootstrap.cs`
+  delegates the three application preview flags, preserves output paths/exit
+  status, and logs bounded escaped startup arguments. Tests are in
+  `tests/launcher_updates.cs`; normal startup and updater command routes remain
+  separate. These WPF commands have no existing native Mac counterpart. When
+  adapting MAC-021, test native argument routing, safe preview isolation and
+  diagnostics independently; Windows results do not verify Mac integration.
+  Evidence: [Bootstrap diagnostics](STATUS.md#bootstrap-argument-diagnostics-2026-10-16).
 - **Embedded settings (2026-10-16, commit `5eea0ca` on `feat/launcher-inline-settings`):**
   Windows launcher v1.2.2 replaces the separate settings window with an
   embedded `SettingsPage` in `Launcher.xaml`/`Launcher.cs`. Both tabs, binding
@@ -597,9 +650,43 @@ Copy this template into the queue for each new entry. Replace all placeholders.
   configuration round trips and resolution timeout reverts both choices. See
   [Windows FOV evidence](STATUS.md#configurable-gameplay-fov-issue-29--2026-10-16).
 
+Launcher v1.2.3 release compatibility (MAC-021/MAC-022): `GameSettings.cs` and
+`SettingsPage.cs` disable custom FOV for packaged game versions through alpha.4
+to retain V1 display compatibility. Windows model/UI regression coverage is in
+`tests/launcher_settings.cs`; Mac launcher capability gating remains queued.
 
-### MAC-023 — Resolution catalog and proportional UI (issues #27/#31)
+### MAC-023 — Story Objectives health/shield (issue #11)
 
+- **Status:** Awaiting validation
+- **PC behavior:** Story quick Objectives (Tab/Back) displays the original
+  health/shield indicators while retaining quick-menu input and pause behavior.
+  Indicators automatically fit the current viewport with a 4% edge inset at
+  every output resolution, including split-screen. The Objectives panel uses
+  the same fit ratio for its width and text measurement to reserve clearance
+  from the indicators; original font size and wrapping remain in use.
+- **Source:** [PR #55](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/55),
+  branch `11-objectives-tab-not-showing-health-and-shield` (issue #11);
+  `patches/zzzzzzzzzzzzzzzzz-story-objectives-health.patch`,
+  `src/pc_objectives.h`, `tests/test_objectives_health.py`,
+  `tests/objectives_health.c`, `tests/objectives_layout.c`.
+- **Mac support:** Shared guest wrapper with no operating-system or renderer
+  API dependency; no additional adapter is expected. Native Mac compilation and
+  gameplay are not yet verified.
+- **Remaining checks:** Apply the full stack, run the regression on native Mac,
+  then check Story quick Objectives at full/partial health and shield, normal
+  pause-menu entry/exit, controller Back and keyboard input, live resolution
+  changes, portrait/ultrawide displays, edge insets, panel-border clearance,
+  long/multiple objectives with wrapping/scrolling, and split-screen.
+  Other game modes must keep their existing menu behavior.
+- **PC validation:** Final Windows build and native checks passed; seven
+  focused regressions passed. The user confirmed the viewport fit and corrected
+  panel spacing on 2026-10-16. Live coverage of all display shapes remains
+  unverified; shared numerical tests cover those dimensions.
+- **Evidence:** [Windows scope](STATUS.md#story-objectives-health-and-shield-issue-11--2026-10-16).
+
+### MAC-024 — Resolution catalog and proportional UI (issues #27/#31)
+
+- **Status:** Awaiting validation
 - **PC behavior:** Common render presets and six aspect groups, up to 7680×4320,
   shared by the guest menu and Windows launcher. Full-canvas menu backgrounds,
   proportional widgets, and single-player edge placement for ammo, radar, status
@@ -622,9 +709,12 @@ Copy this template into the queue for each new entry. Replace all placeholders.
   proportions. This uses shared title hooks (`story-caption` patch and
   `src/pc_tutorial_ui.inc`) and the existing native LEFT adapter; Mac visual
   checks remain pending.
-  Preview, timeout rollback and saved custom modes remain.
-- **Source:** This revision on `27-add-aspect-ratio-169-and-more-resolutions`, originally based
-  on main `4124557`. `src/pc_display*`, `src/pc_ui_layout.h`, the `ui-layout` and
+  Preview, timeout rollback and saved custom modes remain. The subsequent
+  `objectives-ui-integration` patch combines MAC-023 sizing with side placement
+  in one health renderer wrapper, preserving its split-screen and panel fit.
+- **Source:** Feature commit `2d69459` on
+  `27-add-aspect-ratio-169-and-more-resolutions`, integrated with main `9e08fa3`.
+  `src/pc_display*`, `src/pc_ui_layout.h`, the `ui-layout` and
   `ui-narrow`/`tutorial-layout` runtime patches, `src/pc_tutorial_ui.inc`, and
   `tools/launcher/DisplayModes.cs`/`SettingsPage.cs`.
 - **Shared Mac support:** The catalog, config bounds, guest picker and title HUD
