@@ -61,8 +61,8 @@
           </StackPanel>
         </StackPanel>
         <StackPanel Grid.Row="2">
-          <TextBlock Text="OPERATIONS" Style="{StaticResource Label}" Margin="12,0,0,10"/>
-          <Button x:Name="HomeNav" Style="{StaticResource Nav}" Background="#1D3A55" Foreground="#86CDFF" Content="◈    Command center" ToolTip="Game, release updates and setup"/>
+          <TextBlock Text="NAVIGATION" Style="{StaticResource Label}" Margin="12,0,0,10"/>
+          <Button x:Name="HomeNav" Style="{StaticResource Nav}" Background="#1D3A55" Foreground="#86CDFF" Content="◈    Home" ToolTip="Game, release updates and setup"/>
           <Button x:Name="SettingsNav" Style="{StaticResource Nav}" Content="⚙    Game settings" ToolTip="Keybinds, mouse, graphics and resolution"/>
           <Button x:Name="FilesNav" Style="{StaticResource Nav}" Content="▤    Game files" ToolTip="Open the installation folder"/>
           <Button x:Name="SavesNav" Style="{StaticResource Nav}" Content="◇    Saves" ToolTip="Open your local saves folder"/>
@@ -72,7 +72,6 @@
           <Border BorderBrush="#2D445A" BorderThickness="0,1,0,0" Padding="0,17,0,0">
             <StackPanel>
               <TextBlock Text="PC RECOMPILATION" FontSize="10" FontWeight="SemiBold" Foreground="#B7C8D8"/>
-              <TextBlock Text="Original era. New timeline." FontSize="11" Foreground="#849AAF" Margin="0,7,0,0"/>
             </StackPanel>
           </Border>
         </StackPanel>
@@ -82,7 +81,7 @@
     <Grid x:Name="CommandCenter" Margin="30,24,30,18">
       <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="20"/><RowDefinition Height="264"/><RowDefinition Height="18"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
       <DockPanel LastChildFill="False">
-        <StackPanel DockPanel.Dock="Left"><TextBlock Text="COMMAND CENTER" FontSize="11" FontWeight="SemiBold" Foreground="#C0D1E1"/><TextBlock Text="Your next jump starts here." FontSize="13" Foreground="#8CA2B7" Margin="0,5,0,0"/></StackPanel>
+        <TextBlock DockPanel.Dock="Left" Text="LAUNCHER" FontSize="11" FontWeight="SemiBold" Foreground="#C0D1E1" VerticalAlignment="Center"/>
         <Border DockPanel.Dock="Right" BorderBrush="#416685" BorderThickness="1" Background="#162F45" Padding="10,6" CornerRadius="3" VerticalAlignment="Center">
           <TextBlock x:Name="ChannelBadge" Text="●  STABLE CHANNEL" FontSize="10" Foreground="#A8D8FF"/>
         </Border>
@@ -103,15 +102,12 @@
             </Ellipse>
             <Path Stroke="#86CDFF" StrokeThickness="1.5" Data="M271,22 L271,69 M271,177 L271,224 M170,123 L217,123 M325,123 L372,123 M253,123 L289,123 M271,105 L271,141"/>
             <Path Fill="#132A3D" Stroke="#B5CADB" StrokeThickness="1" Data="M243,124 L255,93 L254,74 L262,61 L276,60 L287,71 L284,94 L300,105 L304,127 L322,146 L315,154 L289,137 L290,178 L302,221 L282,224 L267,185 L260,223 L240,221 L247,174 L246,143 L220,154 L214,145 Z"/>
-            <TextBlock Canvas.Left="22" Canvas.Top="222" Text="TEMPORAL SIGNATURE  //  2005" FontFamily="Consolas" FontSize="9" Foreground="#98B7D0"/>
           </Canvas>
           <StackPanel Margin="28,25,0,20" Width="435" HorizontalAlignment="Left">
-            <TextBlock Text="THE FUTURE IS IN YOUR HANDS" FontSize="10" FontWeight="SemiBold" Foreground="#B7DFFF"/>
             <TextBlock Text="TIMESPLITTERS" FontFamily="Bahnschrift" FontWeight="Bold" FontStyle="Italic" FontSize="43" Margin="-3,10,0,0">
               <TextBlock.Foreground><LinearGradientBrush StartPoint="0,0" EndPoint="0,1"><GradientStop Color="#F0F8FF"/><GradientStop Color="#C5D4E1" Offset="0.48"/><GradientStop Color="#7F97AE" Offset="0.52"/><GradientStop Color="#E1EBF4" Offset="1"/></LinearGradientBrush></TextBlock.Foreground>
             </TextBlock>
             <TextBlock Text="F U T U R E   P E R F E C T" FontFamily="Bahnschrift" FontWeight="Bold" FontSize="20" Foreground="#86CDFF" Margin="0,-1,0,0"/>
-            <TextBlock Text="Back through time. Ready for PC." FontSize="13" Foreground="#B0C2D2" Margin="0,17,0,0"/>
             <StackPanel Orientation="Horizontal" Margin="0,19,0,0">
               <Border BorderBrush="#46637D" BorderThickness="1" Padding="8,4" CornerRadius="2"><TextBlock Text="WINDOWS x64" FontSize="9" Foreground="#CAD9E6"/></Border>
               <Border BorderBrush="#46637D" BorderThickness="1" Padding="8,4" CornerRadius="2" Margin="7,0,0,0"><TextBlock Text="NATIVE PC PORT" FontSize="9" Foreground="#CAD9E6"/></Border>
@@ -127,8 +123,8 @@
         <Border Background="#152435" BorderBrush="#30485F" BorderThickness="1" CornerRadius="4" Padding="20,17">
           <Grid>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-            <DockPanel><TextBlock Text="MISSION CONTROL" Style="{StaticResource Label}"/><TextBlock x:Name="InstalledLabel" Text="NOT INSTALLED" Foreground="#86CDFF" FontFamily="Consolas" FontSize="10" HorizontalAlignment="Right"/></DockPanel>
-            <TextBlock x:Name="ReadyTitle" Grid.Row="1" Text="Prepare your next jump" FontSize="21" FontWeight="SemiBold" Margin="0,12,0,0"/>
+            <DockPanel><TextBlock Text="GAME" Style="{StaticResource Label}"/><TextBlock x:Name="InstalledLabel" Text="NOT INSTALLED" Foreground="#86CDFF" FontFamily="Consolas" FontSize="10" HorizontalAlignment="Right"/></DockPanel>
+            <TextBlock x:Name="ReadyTitle" Grid.Row="1" Text="Install game" FontSize="21" FontWeight="SemiBold" Margin="0,12,0,0"/>
             <TextBlock x:Name="ReadyDescription" Grid.Row="2" Text="Install a release, then import your US Xbox ISO." Foreground="#A4B8CA" FontSize="12" Margin="0,6,0,13"/>
             <Button x:Name="PlayButton" Grid.Row="3" Background="{StaticResource PlayChrome}" Foreground="#091C2C" BorderBrush="#D6EDFF" FontSize="16" Padding="20,13" Content="▶    PLAY GAME" ToolTip="Launch your installed game" IsEnabled="False"/>
             <StackPanel Grid.Row="5" Margin="0,13,0,0">
@@ -143,14 +139,14 @@
         <Border Grid.Column="2" Background="#152435" BorderBrush="#30485F" BorderThickness="1" CornerRadius="4" Padding="20,17">
           <Grid>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-            <DockPanel><TextBlock Text="RELEASE UPLINK" Style="{StaticResource Label}"/><Button x:Name="ReleaseNotesButton" Content="Release notes ↗" Padding="0" Background="Transparent" BorderThickness="0" Foreground="#86CDFF" FontSize="10" HorizontalAlignment="Right"/></DockPanel>
-            <TextBlock x:Name="ReleaseTitle" Grid.Row="1" Text="Checking the timeline…" FontSize="19" FontWeight="SemiBold" Margin="0,13,0,0"/>
-            <TextBlock x:Name="ReleaseDescription" Grid.Row="2" Text="Published releases, delivered straight from GitHub." FontSize="12" Foreground="#A4B8CA" Margin="0,7,0,12"/>
+            <DockPanel><TextBlock Text="UPDATES" Style="{StaticResource Label}"/><Button x:Name="ReleaseNotesButton" Content="Release notes ↗" Padding="0" Background="Transparent" BorderThickness="0" Foreground="#86CDFF" FontSize="10" HorizontalAlignment="Right"/></DockPanel>
+            <TextBlock x:Name="ReleaseTitle" Grid.Row="1" Text="Checking for updates…" FontSize="19" FontWeight="SemiBold" Margin="0,13,0,0"/>
+            <TextBlock x:Name="ReleaseDescription" Grid.Row="2" Text="Game releases from GitHub." FontSize="12" Foreground="#A4B8CA" Margin="0,7,0,12"/>
             <StackPanel Grid.Row="3">
               <DockPanel Margin="0,0,0,8"><TextBlock Text="UPDATE CHANNEL" Style="{StaticResource Label}" VerticalAlignment="Center"/>
                 <ComboBox x:Name="ChannelPicker" SelectedIndex="0" Width="104" HorizontalAlignment="Right" FontSize="11" Foreground="#101E2D" ToolTip="Stable excludes prereleases. Preview includes published test releases."><ComboBoxItem Content="Stable"/><ComboBoxItem Content="Preview"/></ComboBox>
               </DockPanel>
-              <TextBlock Text="Your saves and settings stay with you." Foreground="#8CA6BE" FontSize="10"/>
+              <TextBlock Text="Updates preserve saves and settings." Foreground="#8CA6BE" FontSize="10"/>
             </StackPanel>
             <Grid Grid.Row="4" Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/></Grid.ColumnDefinitions>
               <Button x:Name="UpdateButton" Content="Install release" IsEnabled="False" Padding="8,10"/>
@@ -162,7 +158,7 @@
       <Grid Grid.Row="5" Margin="0,14,0,0">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="5"/></Grid.RowDefinitions>
         <Grid Margin="0,0,0,7"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-          <TextBlock x:Name="StatusText" Text="Establishing release uplink…" FontSize="11" Foreground="#B4C7D8" VerticalAlignment="Center"/>
+          <TextBlock x:Name="StatusText" Text="Checking for updates…" FontSize="11" Foreground="#B4C7D8" VerticalAlignment="Center"/>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
             <Button x:Name="RollbackButton" Content="Restore previous" FontSize="10" Foreground="#A5BDD1" Padding="0" BorderThickness="0" Background="Transparent" IsEnabled="False"
                     ToolTip="Kept until this game version opens and exits normally. Older game files are then cleaned automatically." ToolTipService.ShowOnDisabled="True"/>
@@ -175,7 +171,7 @@
     <ContentControl x:Name="SettingsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>
     <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="#2C435A" BorderThickness="0,1,0,0" Background="#0D1926" Padding="20,0">
-      <DockPanel><TextBlock x:Name="LauncherVersionLabel" Text="TSFP  /  COMMUNITY PC PROJECT" FontFamily="Consolas" FontSize="9" Foreground="#809BB2" VerticalAlignment="Center"/><TextBlock Text="EXPERIMENTAL PORT     ·     BRING YOUR OWN GAME" FontSize="9" Foreground="#809BB2" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>
+      <DockPanel><TextBlock x:Name="LauncherVersionLabel" Text="TSFP  /  COMMUNITY PC PROJECT" FontFamily="Consolas" FontSize="9" Foreground="#809BB2" VerticalAlignment="Center"/><TextBlock Text="EXPERIMENTAL PORT     ·     US XBOX GAME DATA REQUIRED" FontSize="9" Foreground="#809BB2" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>
     </Border>
   </Grid>
 </Window>

@@ -534,6 +534,15 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Neutral interface copy (2026-10-16, uncommitted on
+  `cleanup/readme-launcher-copy`):** README and Windows launcher slogans/quips
+  are removed. `Launcher.xaml`, `Launcher.cs`, `Bootstrap.cs` and `SettingsPage.cs`
+  use functional labels/status messages, including Home/Game/Updates. The README
+  screenshot and launcher usage guide match the labels. No shared game logic or
+  native Mac adapter changed, so no Mac runtime adaptation is needed for this
+  copy-only edit. The future Mac release launcher should use the same neutral
+  wording; existing native Mac UI copy is not audited or verified here. Evidence:
+  [Windows copy validation](STATUS.md#readme-and-launcher-copy-cleanup-2026-10-16).
 - **Game version cleanup (2026-10-16, commit `d1f4e42` on
   `fix/game-update-cleanup`, [PR #69](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/69),
   prepared for launcher v1.2.5):** `tools/launcher/Core.cs` removes retired game

@@ -132,7 +132,7 @@ namespace TimeSplitters.Launcher
             heading.Children.Add(Text("Game settings",25));
             var subtitle=Text("Set controls and graphics before starting the game. Changes apply on your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
             var footer=new StackPanel(); DockPanel.SetDock(footer,Dock.Bottom); layout.Children.Add(footer);
-            status=Text("Save to apply on your next launch. Command center keeps your draft; Cancel discards unsaved edits.",12); status.Foreground=Muted; footer.Children.Add(status);
+            status=Text("Save to apply on your next launch. Home keeps your draft; Cancel discards unsaved edits.",12); status.Foreground=Muted; footer.Children.Add(status);
             var actions=new StackPanel { Orientation=Orientation.Horizontal, HorizontalAlignment=HorizontalAlignment.Right };
             var cancel=Button("Cancel"); cancel.Name="SettingsCancelButton"; cancel.Click+=(s,e)=> { if(Cancelled!=null)Cancelled(); }; actions.Children.Add(cancel);
             var save=Button("Save settings"); save.Name="SettingsSaveButton"; save.Background=Accent; save.Foreground=new SolidColorBrush(Color.FromRgb(9,28,44)); save.Click+=(s,e)=>Save(); actions.Children.Add(save); footer.Children.Add(actions);

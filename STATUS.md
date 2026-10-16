@@ -1,5 +1,27 @@
 # Measured progress
 
+## README and launcher copy cleanup (2026-10-16)
+
+Copy-only work on `cleanup/readme-launcher-copy`, based on main `2608580`.
+Removed slogans, game-themed quips and promotional headings from the README,
+launcher home screen, default banner, startup splash and runtime status messages.
+Visible navigation now uses Home, Game and Updates; stable element IDs and event
+handlers remain unchanged. The settings draft hint and launcher guide use Home.
+The README screenshot was replaced with the actual updated development UI, with
+its source-preview status and executable hash recorded in docs/assets/README.md.
+Game branding, artwork, functional instructions and prerequisite notices remain.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both themed launcher EXEs
+compiled. Main, keyboard/mouse settings, graphics settings and startup-splash
+preview commands succeeded. A separate build without private banner/logo assets
+compiled and its fallback preview rendered successfully. Main and fallback
+previews were visually inspected. A source scan found no remaining removed
+phrases; the README reference to the game having no jump action is functional
+controls documentation and remains. No new tests were added for these text-only
+edits; no game build, game execution, update or personal settings changes were
+performed. Native Mac UI wording is unverified. Publication is not part of this
+change.
+
 ## Resolution groups and adaptive UI (issues #27/#31) — 2026-10-16
 
 Implemented on `27-add-aspect-ratio-169-and-more-resolutions`, originally based on main
