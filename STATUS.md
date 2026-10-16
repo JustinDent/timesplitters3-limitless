@@ -13,8 +13,18 @@ Earlier issue-branch validation passed 71 updater and 14 settings checks, native
 display tests and an 86-second real D3D11 guest-menu replay covering left/right
 selection, 720×480 apply/keep/save, Original preview, timed rollback and return.
 Both native value-column and WPF graphics-tab captures were reviewed. The US XBE
-hash was verified; those earlier tests used an isolated relink, so the main-based
-full build and package are being validated separately before publication.
+hash was verified; those earlier tests used an isolated relink. The main-based
+full MSVC x64 Release build and native checks subsequently passed, along with
+138 Python tests (5 platform/prerequisite skips), 2 launcher packaging tests,
+71 updater checks, 14 settings checks and 3 launcher lifecycle checks.
+The full executable passed the same isolated 86-second D3D11 resolution replay:
+720×480 apply/keep/save, Original preview, 15-second rollback and menu return.
+Fresh disposable saves and explicit input/display/runtime paths were used.
+Both GitHub patch-transition jobs (Windows and macOS) passed on `647a42a`;
+these source-level Mac checks do not establish native Mac game execution.
+Publication follows `Publish-Release.ps1` on clean main, including a fresh
+package manifest/checksum and portable Online validation. Final artifact/source
+hashes and publication records stay under ignored `build/releases`.
 Native Mac execution and paused-Options gameplay traversal remain unverified for
 this change; adaptation is tracked in MAC-010 and MAC-021.
 
