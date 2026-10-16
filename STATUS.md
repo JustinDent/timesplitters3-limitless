@@ -1,5 +1,44 @@
 # Measured progress
 
+## Launcher v1.2.4 release preparation (2026-10-16)
+
+Version and assembly metadata are bumped to 1.2.4 for stable launcher-only
+publication from main through PR #68. The cleanup implementation is unchanged
+from validated `a7246b5`; publication requires the new revision to pass CI and
+checks of the public assets and previous v1.2.3 update path. The published game
+remains alpha.4.
+
+## Launcher update cleanup (2026-10-16)
+
+Implementation commit `dc019bf` on `fix/launcher-update-cleanup`, based on
+main `b1860c6`.
+The release launcher previously retained one old launcher snapshot and its helper
+copies; snapshots were replaced at each update, rather than accumulating an
+unlimited history. Successful normal main-window startup now verifies the current
+launcher and removes that prior snapshot, obsolete/incomplete launcher staging,
+and helpers no longer needed by an update. Failed preparation cleans its staging
+without replacing the original failure. Cleanup errors are logged and retried
+on subsequent startups. No cleanup runs during developer render previews.
+
+Recovery transactions and unverified installations prevent cleanup. Newer staged
+launcher releases and unknown staging markers remain available; pending game work
+keeps its helper. The game rollback, installed game, settings, saves, data,
+preferences, logs and unrelated downloads remain untouched. Cleanup rejects
+linked paths through the existing checked launcher-owned deletion API.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both launcher binaries compiled,
+nine isolated cleanup checks and all 23 settings checks passed. Cleanup checks
+include three consecutive upgrades, protected files, damaged installation,
+unfinished transactions, semantic version comparisons, newer/unknown staging,
+locked files with retry, pending game work, and a real directory junction.
+Five startup/packaging checks also passed. Windows CI on `a7246b5` passed all
+86 updater/bootstrap/cleanup checks and 23 settings checks, including checksum,
+invalid-archive and cancellation preparation failures. The Mac CI job also
+passed its shared checks. Full local updater validation was blocked by an active game;
+that session and the installed launcher were preserved. No game build/playtest
+is required for this Windows launcher change. MAC-021 adaptation remains queued;
+native Mac execution and other-device synchronization are unverified.
+
 ## Bootstrap argument diagnostics (2026-10-16)
 
 Launcher v1.2.3 release preparation on `fix/launcher-bootstrap-arguments`, based on

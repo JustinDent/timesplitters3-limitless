@@ -93,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build. The build produces these assets
-in `build/launcher`; for version 1.2.3, publish all three together:
+in `build/launcher`; for version 1.2.4, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.3-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.3-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.4-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.4-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.3`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.4`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -137,6 +137,23 @@ Data, Settings, Saves and Textures are never launcher-update targets. Game
 updates/rollback preserve a newer independently installed launcher. Keep the
 complete `.launcher` folder for recovery. No launcher-only release is published
 automatically by building these files.
+
+Starting with launcher v1.2.4, after a normal launcher window loads successfully and both installed launcher
+executables match their manifest, automatic cleanup removes the previous
+launcher backup (`self-rollback`), obsolete or incomplete launcher staging
+(`self-pending`), and unused `self-helper.exe` / `update-helper.exe` copies.
+There is no retained history of older launcher versions after successful startup.
+The backup remains available until that startup succeeds. An unfinished launcher
+transaction or an invalid installation prevents cleanup. A newer prepared update,
+an unreadable staging marker, and helpers needed by pending updates are retained.
+Locked files are logged and retried at the next normal startup. Failed or cancelled
+launcher downloads also discard their staging files immediately when possible.
+
+Cleanup only targets these launcher-owned paths. It preserves game rollback,
+game data, settings, saves, preferences, logs, and unrelated/manual downloads.
+Developer render previews never perform startup cleanup. Run the isolated
+cleanup regressions with `build/launcher/launcher-tests.exe --cleanup` after
+building the test executable with `tools/build-launcher.ps1 -Test`.
 
 ## Startup argument troubleshooting
 
