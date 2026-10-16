@@ -405,6 +405,35 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   glow, plus a first-mission effects smoke test. Native rendering and other-device
   synchronization are unverified; Windows results do not establish Mac support.
 
+### MAC-020 — Adaptive cutscene letterboxing (issue #33)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Story and scripted in-game cutscene bars adapt to the selected
+  display aspect ratio. The original 4:3 cinematic aperture is the reference;
+  wider displays have thinner bars, with side bars when wider than that aperture.
+  The cinematic camera and its CPU culling adapt together to retain composition
+  and avoid revealing outside authored backdrops. Animated entry/exit, fades,
+  subtitles and scope overlays remain.
+- **PC source:** Branch `33-remove-the-letter-boxes-in-cut-scenes`, based
+  on `5c9effd`: `src/pc_cutscene.h`, `src/pc_display_menu.c`,
+  `patches/zzzzzzzzzzzzzzz-cutscene-letterbox.patch`,
+  `tests/cutscene_letterbox.c`, `tests/test_cutscene_letterbox.py`.
+- **PC validation:** Full Windows Release build/native checks, 27 patch transition
+  checks and four letterbox tests passed. Original US cinematic routines execute
+  in disposable memory and compare bars, other rectangles, subtitle calls and
+  guest ABI across resolutions and animation phases. Mutations detect missing
+  bar and camera corrections. The user confirmed the opening space scene looks
+  correct in an isolated 1280x720 run. Live ultrawide/other scenes remain unverified;
+  see [STATUS.md](STATUS.md#adaptive-cutscene-letterboxing-issue-33--2026-10-16).
+- **Existing Mac support:** The same manual guest wrapper is enabled by
+  `TSFP_NATIVE_DISPLAY`; both hosts use the shared display mode and bar-height
+  helper. Original guest coordinates still pass through each renderer's normal
+  scaling. No OpenGL-specific implementation is required by the sizing rule.
+- **Remaining adaptation/acceptance:** Run the source-only regression and native
+  build on macOS, then check story and scripted cutscenes at 4:3, 16:9, 16:10 and
+  ultrawide output, including resolution changes, fades, subtitles, scopes and
+  60/120 FPS. Mac compilation, GPU execution and other-device sync are unverified.
+
 ## Entry template
 
 Copy this template into the queue for each new entry. Replace all placeholders.
