@@ -31,6 +31,10 @@ on:
       - tests/test_cutscene_letterbox.py
       - tests/test_decal_projection.py
       - tests/cutscene_letterbox.c
+      - tests/test_objectives_health.py
+      - tests/objectives_health.c
+      - tests/objectives_layout.c
+      - src/pc_objectives.h
       - src/pc_cutscene.h
       - src/pc_terminal.h
       - src/pc_input.c
@@ -102,6 +106,8 @@ jobs:
         run: python -m pytest tests/test_framebuffer_sampling.py -q --tb=short
       - name: Test cinematic and decal projections
         run: python -m pytest tests/test_cutscene_letterbox.py tests/test_decal_projection.py -q --tb=short
+      - name: Test Story Objectives health and shield visibility
+        run: python -m pytest tests/test_objectives_health.py -q --tb=short
       - name: Test terminal mouse routing
         run: python -m pytest tests/test_terminal_mouse.py -q --tb=short
       - name: Test primary display resolution discovery
