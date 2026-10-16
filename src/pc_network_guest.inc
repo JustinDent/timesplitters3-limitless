@@ -1,4 +1,5 @@
 /* Each explicit wrapper lives in recomp_manual.c so the lifter can find it. */
+#ifdef _WIN32
 #include "pc_network.h"
 #include "pc_debug.h"
 static void pc_network_guest(uint32_t address, void (*original)(void))
@@ -12,3 +13,11 @@ static void pc_network_guest(uint32_t address, void (*original)(void))
     pc_debug_latency(mode,latency,count);
     g_esp+=4+n*4;
 }
+#else
+/* Native Mac has no PC XNet transport yet; keep the original guest path. */
+static void pc_network_guest(uint32_t address, void (*original)(void))
+{
+    (void)address;
+    original();
+}
+#endif

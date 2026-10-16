@@ -3,7 +3,7 @@
  * Restart the game after changing a pack. No file I/O when both options are off. */
 #include "d3d8_internal.h"
 #include "texture_pack.h"
-#include "texture_pack_format.h"
+#include "texture_pack_io.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +12,7 @@
 static char pack_root[2048], dump_root[2048];
 static int initialized;
 static uint64_t resident_bytes;
-#define PACK_BUDGET (UINT64_C(512)*1024*1024)
+#define PACK_BUDGET TSFP_PACK_RESIDENT_BUDGET
 
 void tsfp_texture_release(D3D8Texture *tex) {
     if(tex->pack_srv) rhi_view_destroy(tex->pack_srv);
@@ -22,7 +22,7 @@ void tsfp_texture_release(D3D8Texture *tex) {
 }
 
 static void dump_original(const D3D8Texture *tex, uint64_t key, uint32_t bytes) {
-    char path[2304];FILE *f;uint32_t header[32]={0};
+    char path[2304];uint32_t header[32]={0};
     if(!dump_root[0]) return;
     snprintf(path,sizeof(path),"%s/%016" PRIx64 ".dds",dump_root,key);
     f=fopen(path,"rb");if(f) {fclose(f);return;}
@@ -36,8 +36,8 @@ static void dump_original(const D3D8Texture *tex, uint64_t key, uint32_t bytes) 
 }
 
 void tsfp_texture_upload(D3D8Texture *tex) {
-    uint32_t bytes,i;uint64_t key;char path[2304];FILE *f;
-    unsigned char *data;long length;TsfpDDS dds;
+    uint32_t bytes,i;uint64_t key;char path[2304];
+    unsigned char *data;TsfpDDS dds;
     RhiImageDesc desc={0};RhiViewDesc view={0};RhiSubresourceData initial[13];
     if(!initialized) {
         const char *v=getenv("TSFP_TEXTURE_PACK_DIR");
@@ -57,19 +57,8 @@ void tsfp_texture_upload(D3D8Texture *tex) {
     dump_original(tex,key,bytes);
     if(!pack_root[0]) return;
     snprintf(path,sizeof(path),"%s/%016" PRIx64 ".dds",pack_root,key);
-    f=fopen(path,"rb");if(!f) return;
-    if(fseek(f,0,SEEK_END) || (length=ftell(f))<128 || length>24*1024*1024 || fseek(f,0,SEEK_SET)) {fclose(f);return;}
-    data=(unsigned char *)malloc((size_t)length);if(!data) {fclose(f);return;}
-    if(fread(data,1,(size_t)length,f)!=(size_t)length) {fclose(f);free(data);return;}
-    fclose(f);
-    if(!tsfp_dds_parse(data,(size_t)length,&dds) ||
-       dds.width*tex->height!=dds.height*tex->width ||
-       dds.width<tex->width || dds.height<tex->height) {
-        fprintf(stderr,"[TEXTURE-PACK] rejected invalid DDS/aspect: %s\n",path);free(data);return;
-    }
-    if(resident_bytes+dds.bytes>PACK_BUDGET) {
-        fprintf(stderr,"[TEXTURE-PACK] budget reached; original retained: %016" PRIx64 "\n",key);free(data);return;
-    }
+    data=tsfp_pack_read(path,tex->width,tex->height,PACK_BUDGET-resident_bytes,&dds);
+    if(!data)return;
     desc.type=RHI_IMAGE_2D;desc.width=dds.width;desc.height=dds.height;desc.depth=1;
     desc.mip_levels=dds.levels;desc.format=d3d8_to_dxgi_format((D3DFORMAT)dds.format);
     desc.samples=1;desc.usage=RHI_USAGE_DEFAULT;desc.bind=RHI_BIND_SAMPLED;
