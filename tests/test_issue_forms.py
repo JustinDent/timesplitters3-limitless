@@ -17,11 +17,14 @@ def release(tag, **changes):
     return dict(tag_name=tag, draft=False, published_at='2026-10-16T00:00:00Z', **changes)
 
 
-def report(platform='Windows 11', enhancement=False):
+def report(platform='Windows 11', enhancement=False, legacy=False):
     heading = 'What would you like to add or change?' if enhancement else 'What happened?'
+    if enhancement and not legacy:
+        return f'### {heading}\n\nAn idea\n\n### Anything else? (optional)\n\n_No response_\n'
     return (f'### Game version\n\nv0.2.0-alpha.4\n\n'
             f'### Launcher version\n\nv1.2.1\n\n'
-            f'### Platform\n\n{platform}\n\n### {heading}\n\nDescription\n')
+            f'### Platform\n\n{platform}\n\n### {heading}\n\nDescription\n'
+            + ('\n### How would this help?\n\nA reason\n' if enhancement else ''))
 
 
 def http_error(code):
@@ -75,9 +78,9 @@ class VersionTests(unittest.TestCase):
                 shutil.copyfile(ROOT / relative, root / relative)
             records = [release('v3.0.0'), release('launcher-v4.0.0')]
             originals = [(root / p).read_bytes() for p in forms.FORMS]
-            self.assertEqual(len(forms.refresh_versions(root, records, check=True)), 2)
+            self.assertEqual(len(forms.refresh_versions(root, records, check=True)), 1)
             self.assertEqual(originals, [(root / p).read_bytes() for p in forms.FORMS])
-            self.assertEqual(len(forms.refresh_versions(root, records)), 2)
+            self.assertEqual(len(forms.refresh_versions(root, records)), 1)
             self.assertEqual(forms.refresh_versions(root, records), [])
             for relative in forms.FORMS:
                 text = (root / relative).read_text()
@@ -91,19 +94,33 @@ class VersionTests(unittest.TestCase):
             self.assertNotIn('- "v3.0.0"', (root / forms.FORMS[0]).read_text())
             self.assertIn('Not installed yet', (root / forms.FORMS[0]).read_text())
 
-    def test_bad_second_form_does_not_partially_update_first(self):
+    def test_bad_launcher_block_does_not_partially_update_game_versions(self):
         with tempfile.TemporaryDirectory(prefix='tsfp-issue-forms-test-') as directory:
             root = Path(directory)
             for relative in forms.FORMS:
                 (root / relative).parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT / relative, root / relative)
-            second = root / forms.FORMS[1]
-            second.write_text(second.read_text().replace('END AUTO GAME VERSIONS', 'missing marker'))
             first = root / forms.FORMS[0]
+            first.write_text(first.read_text().replace('END AUTO LAUNCHER VERSIONS', 'missing marker'))
             before = first.read_bytes()
             with self.assertRaises(ValueError):
                 forms.refresh_versions(root, [release('v3.0.0')])
             self.assertEqual(first.read_bytes(), before)
+
+    def test_enhancement_stays_without_versions_or_platform_after_refresh(self):
+        relative = '.github/ISSUE_TEMPLATE/02-enhancement.yml'
+        with tempfile.TemporaryDirectory(prefix='tsfp-issue-forms-test-') as directory:
+            root = Path(directory)
+            for name in (*forms.FORMS, relative):
+                (root / name).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / name, root / name)
+            path = root / relative
+            before = path.read_bytes()
+            forms.refresh_versions(root, [release('v3.0.0'), release('launcher-v4.0.0')])
+            self.assertEqual(path.read_bytes(), before)
+            for removed in ('game-version', 'launcher-version', 'id: platform', 'id: reason', 'AUTO GAME', 'AUTO LAUNCHER'):
+                self.assertNotIn(removed, path.read_text())
+            self.assertEqual(path.read_text().count('  - type: textarea'), 2)
 
 
 class LabelTests(unittest.TestCase):
@@ -113,10 +130,13 @@ class LabelTests(unittest.TestCase):
                                 ('macOS', 'platform: macos')]:
             with self.subTest(platform=platform):
                 self.assertEqual(forms.report_labels(report(platform)), {'bug', label})
-                self.assertEqual(forms.report_labels(report(platform, True)), {'enhancement', label})
+                self.assertEqual(forms.report_labels(report(platform, True, legacy=True)), {'enhancement', label})
         self.assertEqual(forms.report_labels(report('Other / not sure')), {'bug'})
         self.assertEqual(forms.report_labels(report().replace('\n', '\r\n')),
                          {'bug', 'platform: windows'})
+
+    def test_short_enhancement_gets_type_label_without_versions_or_platform(self):
+        self.assertEqual(forms.report_labels(report(enhancement=True)), {'enhancement'})
 
     def test_manual_reports_and_pull_requests_are_untouched(self):
         client = Mock()
@@ -132,7 +152,7 @@ class LabelTests(unittest.TestCase):
         self.assertTrue(forms.label_report(client, issue))
         mutations = [call.args for call in client.request.call_args_list if call.args[0] != 'GET']
         self.assertIn(('POST', 'issues/5/labels',
-                       {'labels': ['enhancement', 'platform: macos']}), mutations)
+                       {'labels': ['enhancement']}), mutations)
         self.assertIn(('DELETE', 'issues/5/labels/bug'), mutations)
         self.assertIn(('DELETE', 'issues/5/labels/platform%3A%20windows'), mutations)
         self.assertFalse(any('major' in str(call) or 'accessibility' in str(call) for call in mutations))

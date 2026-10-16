@@ -7,65 +7,11 @@ body:
     attributes:
       value: |
         Share one idea at a time. Check [existing suggestions](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues) first.
-        Not sure about a version? Choose **I don't know**. If you choose **Other**, add your version with your idea below.
-  - type: dropdown
-    id: game-version
-    attributes:
-      label: Game version
-      description: Shown as the installed game version in the launcher.
-      options:
-        # BEGIN AUTO GAME VERSIONS
-        - "v0.2.0-alpha.4"
-        - "v0.2.0-alpha.3"
-        - "v0.2.0-alpha.2"
-        - "v0.1.0-alpha.1"
-        # END AUTO GAME VERSIONS
-        - "Other / source build"
-        - "I don't know"
-        - "Not installed yet"
-    validations:
-      required: true
-  - type: dropdown
-    id: launcher-version
-    attributes:
-      label: Launcher version
-      description: Look for LAUNCHER v... at the top of the launcher window.
-      options:
-        # BEGIN AUTO LAUNCHER VERSIONS
-        - "v1.2.1"
-        - "v1.2.0"
-        - "v1.1.2"
-        - "v1.1.1"
-        - "v1.1.0"
-        # END AUTO LAUNCHER VERSIONS
-        - "Other / custom build"
-        - "I don't know"
-        - "Not using the launcher"
-    validations:
-      required: true
-  - type: dropdown
-    id: platform
-    attributes:
-      label: Platform
-      options:
-        - Windows 11
-        - Windows 10
-        - macOS
-        - Other / not sure
-    validations:
-      required: true
   - type: textarea
     id: idea
     attributes:
       label: What would you like to add or change?
       placeholder: "Example: Let me change the text size in the menus."
-    validations:
-      required: true
-  - type: textarea
-    id: reason
-    attributes:
-      label: How would this help?
-      description: Tell us why you want it or what would be easier.
     validations:
       required: true
   - type: textarea
