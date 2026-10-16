@@ -71,8 +71,11 @@ def main():
         run(PYTHON, 'scripts/recompile.py', xbe, '--work-dir', ROOT / 'private/pipeline',
             '--project', 'titles/futureperfect', '--game-name', 'TimeSplitters: Future Perfect',
             '--trace-all-entries', cwd=UPSTREAM)
+        run(PYTHON, ROOT / 'tools/recomp-generation.py', UPSTREAM, '--record')
     if not generated.exists():
         raise SystemExit('Generated game sources are missing; run with --generate.')
+    if subprocess.run([str(PYTHON), str(ROOT / 'tools/recomp-generation.py'), str(UPSTREAM)]).returncode:
+        raise SystemExit('Generator sources changed; regenerate with --generate before building.')
     manual = (UPSTREAM / 'titles/futureperfect/src/recomp_manual.c').read_text()
     missing = [name for name in re.findall(r'extern void (sub_[0-9A-Fa-f]+_gen)\(void\)', manual)
                if name not in generated.read_text()]

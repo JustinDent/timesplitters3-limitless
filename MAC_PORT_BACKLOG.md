@@ -51,6 +51,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-011 | Real texture-pack gameplay coverage | Awaiting validation |
 | MAC-012 | Standalone Mac runtime distribution | Queued |
 | MAC-013 | System Link and Online multiplayer | Queued |
+| MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
 
 ### MAC-001 — Direct-camera mouse look
 
@@ -223,6 +224,30 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** Deferred. Conflict resolution preserves
   the Mac build boundary; host-independent dispatch and Windows checks are
   recorded in `STATUS.md`. Native Mac execution remains unverified for this merge.
+
+### MAC-016 — Shared pickup-range comparison fix (issue #6)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Restore the original horizontal-distance rejection for pickups
+  by preserving SSE comparison snapshots across control-flow joins. The old
+  translation ignored this rejection; pickup radii and input bindings are unchanged.
+- **PC source:** Focused `fix-pickup-range` change (this commit): `patches/recomp-float-joins.patch`,
+  `tools/recomp-generation.py`, `tsfp.ps1`, `tests/test_recomp_float_joins.py`,
+  `tests/pickup_collision.c`.
+- **PC validation:** The original US pickup tick reproduces the out-of-range grant
+  with the pinned translator and passes isolated range/height/ABI cases with the
+  patch. Build and gameplay evidence is recorded in
+  [STATUS.md](STATUS.md#pickup-range-comparison-fix--october-16-2026).
+- **Existing Mac support:** The same patch stack and generator are used by both
+  builds. `tools/build-native-mac.py` now rejects stale generator hashes and records
+  them after `--generate`.
+- **Mac adaptation needed:** No platform adapter is required for this math fix.
+  Transfer the patch through Git, regenerate the game C and rebuild on Apple Silicon.
+- **Mac acceptance checks:** Run the shared regression with the supported US XBE
+  and Clang; verify near/far pickup behavior while turning and strafing in a bounded
+  isolated native gameplay run. Body-collision symptoms need separate confirmation.
+- **Mac implementation and evidence:** Shared implementation is present; native
+  compilation/gameplay and cross-device synchronization remain unverified.
 
 ## Status meanings
 

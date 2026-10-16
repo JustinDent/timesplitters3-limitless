@@ -107,7 +107,8 @@ try {
                 'Test' {
                     Apply-LocalPatches
                     Invoke-Checked $envPython @('-m', 'pytest',
-                        (Join-Path $projectRoot 'tests\test_patch_updates.py'), '-q', '--tb=short')
+                        (Join-Path $projectRoot 'tests\test_patch_updates.py'),
+                        (Join-Path $projectRoot 'tests\test_recomp_float_joins.py'), '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'pytest', 'tools', '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'tools.conformance')
                 }
@@ -119,6 +120,7 @@ try {
                     Invoke-Checked $envPython @('scripts/recompile.py', $xbe,
                         '--work-dir', (Join-Path $privateRoot 'pipeline'), '--project', 'titles/futureperfect',
                         '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries')
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\recomp-generation.py'), $toolRoot, '--record')
                 }
                 'Build' {
                     Assert-Game
@@ -133,11 +135,14 @@ try {
                     $generated = Get-Content -LiteralPath 'titles/futureperfect/src/recomp/gen/recomp_funcs.h' -Raw
                     $missingWrappers = @([regex]::Matches($manual, 'extern void (sub_[0-9A-Fa-f]+_gen)\(void\)') |
                         Where-Object { $generated -notmatch ('\b' + $_.Groups[1].Value + '\b') })
-                    if ($missingWrappers.Count) {
-                        Write-Output 'Runtime hooks changed; refreshing generated game code before building.'
+                    & $envPython (Join-Path $projectRoot 'tools\recomp-generation.py') $toolRoot
+                    $generatorChanged = $LASTEXITCODE -ne 0
+                    if ($missingWrappers.Count -or $generatorChanged) {
+                        Write-Output 'Runtime hooks or generator changed; refreshing generated game code before building.'
                         Invoke-Checked $envPython @('scripts/recompile.py', (Join-Path $gameRoot 'default.xbe'),
                             '--work-dir', (Join-Path $privateRoot 'pipeline'), '--project', 'titles/futureperfect',
                             '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries', '--only', 'lift')
+                        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\recomp-generation.py'), $toolRoot, '--record')
                     }
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'))
                     Invoke-Checked $cmake @('-S', 'titles/futureperfect', '-B', $buildRoot,

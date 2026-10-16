@@ -1163,3 +1163,72 @@ No game build, release preparation/upload, game launch, or Mac checks were
 performed. Personal saves/settings and existing release outputs were untouched.
 MAC-015 tracks Mac validation. Changes are local, uncommitted and unpushed;
 other-device synchronization remains unverified.
+
+## Pickup range comparison fix — October 16, 2026
+
+Issue [#6](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/6):
+the US pickup tick at `0x000C15B0` compares the original radius squared with
+horizontal distance on two paths (`COMISS xmm3,xmm0` and `COMISS xmm0,xmm1`).
+At their shared branch, `0x000C17D9`, the translator discarded the differing
+operand states and emitted `if (_flags)` with `_flags` initialized to zero.
+The horizontal rejection therefore never ran. Eligibility and vertical checks
+still ran, explaining early pickups rather than indiscriminate item grants.
+
+`patches/recomp-float-joins.patch` merges SSE comparison snapshots across those
+paths, retaining their original ordered/unordered conditions. Pickup radii,
+weapon grants and input bindings are unchanged. No generated game C was edited.
+`tools/recomp-generation.py` records generator source hashes; Windows Build
+regenerates stale C, while native Mac requests `--generate`. The normal Windows
+Test command includes the new regression. Existing generated checkouts migrate
+on their next build.
+
+Local validation baseline `f847832ef3588000b6d4251de657ea34f308fac1`, in
+the existing `codex/integrate-display-textures` checkout; branch, HEAD and user
+edits were preserved. The fix is isolated on `fix-pickup-range` over newer main for the user-requested push. No binary release is included.
+Runtime pin `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`; the supported US XBE SHA-256
+was verified before generation and execution. Host: Windows x64, Python 3.12.14,
+MSVC 19.44.35224.0, Release, Direct3D 11.
+
+Validation:
+
+- The pinned original translator reproduced a real out-of-range grant in the
+  compiled pickup tick: radius 100, position `(101,0,0)`, grant 1 instead of 0.
+  Before the patch, 13 new structural/integration checks failed; after it, all
+  15 new tests pass. The actual translated pickup function passes 208 isolated
+  cases covering both shape paths, 32 directions, near/far and exact-radius
+  boundaries, vertical separation, NaN/infinite coordinates and guest register,
+  stack and x87-stack preservation. Only eligibility/grant callbacks are stubbed.
+- 25 patch-stack and upstream flag/float checks passed. Mac build-tool/launcher
+  tests: 16 passed, one Windows symlink-privilege skip. Native Mac compilation
+  and gameplay were unavailable and remain unverified.
+- All Windows build targets compiled. The full Build command stopped at the
+  unchanged controller-prompt test's foreground-window check (line 78), also
+  reproduced on retry. This is **not an all-tests-passed build**. Network, DDS,
+  texture switching and display regressions passed; save routing, PC controls,
+  settings and debug tests then ran separately and passed. The executable's
+  network identity was sealed after those checks; the focus-test failure remains
+  recorded rather than hidden.
+- A bounded 178-second isolated run loaded the first mission opening sequence at
+  1280x720. Synthetic left/right strafe keys were injected and 12 raw mouse yaw
+  updates were logged. Reviewed captures show the opening animation; this does
+  not establish a normal gameplay route, on-scene pickup collection, every story
+  level or the separately reported body-collision behavior. No crash or unresolved
+  call was logged. Personal controls/display hashes remained unchanged; saves
+  and both runtime/PC display configuration paths were isolated.
+- Recycled 18 disposable test partition images after their test passes, retaining
+  profiles, settings and diagnostics. Their apparent size was 15,730,220,544 bytes;
+  physical allocation was only 138,752 bytes. No personal saves were used.
+
+Evidence: `build/collision-validation/VALIDATION.json`, `baseline.json`,
+`build.log`, the native test logs, `game.json`, `game-150.png`, `game-172.png`
+and `disk-cleanup.json`. Fixed executable:
+`build/windows/Release/futureperfect_recomp.exe`, SHA-256
+`4e6c801ed83e123fcfe43e32d3ace1332ac62daeaa5f1367d3c30e330bebf929`.
+The launcher-installed running game was left alone; it retains its previous
+executable until updated. Mac regeneration/validation and cross-device Git
+synchronization remain pending under MAC-016.
+
+Publication source note: this focused change is based on main `8f5e1bd2b500ad1d87379a81254ad936df10df3f`. The executable and gameplay evidence above were produced in the
+earlier local checkout, not from this publication commit. Its source-only
+patch stack and regressions passed 51 checks before the push, including the
+208-case compiled pickup regression; one Windows symlink-privilege check skipped.

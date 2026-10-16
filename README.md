@@ -617,6 +617,14 @@ and `src/pc_input.c`, and adds a manual wrapper around the US build's
 generated code automatically when newly added wrappers are missing. The native
 `tests/pc_controls.c` suite runs during Build.
 
+`patches/recomp-float-joins.patch` preserves floating-point comparisons when
+different code branches meet. This restores the original horizontal pickup-range
+rejection in the supported US game. Windows Build also regenerates when the
+generator sources change; native Mac builds request `--generate` when needed.
+`tools/recomp-generation.py` records the source hashes beside the ignored game C.
+The isolated `tests/test_recomp_float_joins.py` regression executes the actual
+pickup routine when the supported XBE and a C compiler are available.
+
 `patches/pc-display.patch` adds the display menu and camera hooks separately
 from the original controls patch, so existing checkouts can upgrade after a merge.
 Setup, Test, Generate, and Build validate the complete patch stack in a temporary
