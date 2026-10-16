@@ -3,6 +3,7 @@
 /.venv/
 /build/
 /logs/
+/.pytest_cache/
 
 # Original game data and all generated derivatives stay local.
 /private/

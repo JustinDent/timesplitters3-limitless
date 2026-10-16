@@ -10,9 +10,11 @@ import shutil
 import ssl
 import subprocess
 import threading
+from datetime import datetime, timedelta, timezone
 
 from lobby_server import Directory, Server
 from online_client import Client, Session
+from online_paths import directory_folder
 
 
 def fetch_public_ipv4():
@@ -65,11 +67,30 @@ def certificate(folder):
             raise ValueError('Another directory is creating its certificate. Try again shortly.') from None
         try:
             os.close(descriptor)
-            subprocess.run([openssl_path(), 'req', '-x509', '-newkey', 'rsa:2048', '-sha256',
-                            '-nodes', '-days', '730', '-subj', '/CN=TimeSplitters Player Directory',
-                            '-keyout', str(key), '-out', str(cert)],
-                           check=True, capture_output=True, timeout=30,
-                           creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            try:
+                from cryptography import x509
+                from cryptography.hazmat.primitives import hashes, serialization
+                from cryptography.hazmat.primitives.asymmetric import rsa
+            except ImportError:
+                # Source environments can continue to use Git's OpenSSL.
+                subprocess.run([openssl_path(), 'req', '-x509', '-newkey', 'rsa:2048', '-sha256',
+                                '-nodes', '-days', '730', '-subj', '/CN=TimeSplitters Player Directory',
+                                '-keyout', str(key), '-out', str(cert)],
+                               check=True, capture_output=True, timeout=30,
+                               creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            else:
+                private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+                subject = x509.Name([x509.NameAttribute(x509.NameOID.COMMON_NAME,
+                                                      'TimeSplitters Player Directory')])
+                now = datetime.now(timezone.utc)
+                signed = (x509.CertificateBuilder().subject_name(subject).issuer_name(subject)
+                          .public_key(private_key.public_key()).serial_number(x509.random_serial_number())
+                          .not_valid_before(now-timedelta(minutes=5)).not_valid_after(now+timedelta(days=730))
+                          .add_extension(x509.BasicConstraints(ca=True, path_length=0), critical=True)
+                          .sign(private_key, hashes.SHA256()))
+                key.write_bytes(private_key.private_bytes(serialization.Encoding.PEM,
+                                serialization.PrivateFormat.PKCS8, serialization.NoEncryption()))
+                cert.write_bytes(signed.public_bytes(serialization.Encoding.PEM))
         finally:
             lock.unlink()
     fingerprint = hashlib.sha256(ssl.PEM_cert_to_DER_cert(cert.read_text())).hexdigest()
@@ -84,7 +105,7 @@ class LocalDirectory:
         self.server = Server(('0.0.0.0', port), Directory(public_address=str(address)))
         self.thread = None
         try:
-            cert, key, self.fingerprint = certificate(Path(root)/'private/online-directory')
+            cert, key, self.fingerprint = certificate(directory_folder(root))
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             context.minimum_version = ssl.TLSVersion.TLSv1_2
             context.load_cert_chain(cert, key)

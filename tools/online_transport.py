@@ -17,7 +17,8 @@ WIRE = struct.Struct('!8s32s16sQBBHH')
 LOCAL_MAGIC = b'TSFB\x01\0\0\0'
 WIRE_MAGIC = b'TSFO\x01\0\0\0'
 MAX_PAYLOAD = 4096
-HELLO, ACK, DATA = 1, 2, 3
+HELLO, ACK, DATA, PING, PONG = 1, 2, 3, 4, 5
+METRICS = struct.Struct('!4sIH')
 
 
 def virtual_ip(peer):
@@ -67,6 +68,27 @@ class Bridge:
         self.host_sequence = -1
         self.last_hello = -10
         self.received = self.sent = self.dropped = 0
+        self.last_ping = self.last_metrics = -10
+        self.pending_pings, self.latencies = {}, {}
+
+    def latency_snapshot(self):
+        now = self.clock()
+        values = [milliseconds for milliseconds, sampled in list(self.latencies.values()) if now-sampled <= 5]
+        return (max(values), len(values)) if values else (-1, 0)
+
+    def latency_control(self, kind, source, target, payload, endpoint, key):
+        if kind not in (PING, PONG):
+            return False
+        if target != self.peer_id or len(payload) != 8:
+            return True
+        if kind == PING:
+            self.send_wire(endpoint, key, PONG, self.peer_id, source, payload=payload)
+        else:
+            pending = self.pending_pings.get(source)
+            if pending and hmac.compare_digest(payload, pending[0]):
+                self.latencies[source] = ((self.clock()-pending[1])*1000, self.clock())
+                del self.pending_pings[source]
+        return True
 
     @property
     def config(self):
@@ -80,11 +102,15 @@ class Bridge:
             for i in list(self.peers):
                 if i not in wanted:
                     del self.peers[i]
+                    self.latencies.pop(i, None)
+                    self.pending_pings.pop(i, None)
             for i, key in wanted.items():
                 if not 2 <= i <= 254 or len(key) != 32:
                     raise ValueError('Invalid directory roster')
                 if i not in self.peers or self.peers[i]['key'] != key:
                     self.peers[i] = dict(key=key, endpoint=None, sequence=-1, seen=0)
+                    self.latencies.pop(i, None)
+                    self.pending_pings.pop(i, None)
 
     def send_wire(self, endpoint, key, kind, source=0, target=0, sport=0, dport=0, payload=b''):
         self.sequence += 1
@@ -161,6 +187,8 @@ class Bridge:
                     peer['endpoint'] = endpoint
                     self.send_wire(endpoint, peer['key'], ACK, 1, source)
                     return
+                if self.latency_control(kind, source, target, packet[WIRE.size+1:-32], endpoint, peer['key']):
+                    return
         else:
             if (endpoint != self.host or sequence <= self.host_sequence or
                 not hmac.compare_digest(hmac.digest(self.key, body, 'sha256'), signature)):
@@ -169,6 +197,8 @@ class Bridge:
             self.host_sequence = sequence
             if kind == ACK and target == self.peer_id:
                 self.ready.set()
+                return
+            if source == 1 and self.latency_control(kind, source, target, packet[WIRE.size+1:-32], endpoint, self.key):
                 return
         if kind != DATA or dport not in (1000, 3000, 9999) or sport not in (1000, 3000, 9999):
             return
@@ -186,6 +216,27 @@ class Bridge:
         if self.peer_id != 1 and now-self.last_hello >= 1:
             self.send_wire(self.host, self.key, HELLO, self.peer_id, 1)
             self.last_hello = now
+        if now-self.last_ping >= 1:
+            with self.lock:
+                targets = [(i, peer['endpoint'], peer['key']) for i, peer in self.peers.items()
+                           if peer['endpoint'] and now-peer['seen'] <= 5] if self.peer_id == 1 else (
+                               [(1, self.host, self.key)] if self.ready.is_set() else [])
+                for peer, endpoint, key in targets:
+                    pending = self.pending_pings.get(peer)
+                    if pending and now-pending[1] <= 5:
+                        continue
+                    nonce = secrets.token_bytes(8)
+                    self.pending_pings[peer] = (nonce, now)
+                    self.send_wire(endpoint, key, PING, self.peer_id, peer, payload=nonce)
+            self.last_ping = now
+        if now-self.last_metrics >= 1 and self.ports:
+            milliseconds, count = self.latency_snapshot()
+            metrics = METRICS.pack(b'RTT1', min(int(milliseconds*1000), 0xfffffffe) if milliseconds >= 0 else 0xffffffff, count)
+            packet = LOCAL.pack(LOCAL_MAGIC, self.compatibility, self.local_token,
+                                virtual_ip(self.peer_id), virtual_ip(self.peer_id), 0, 0) + metrics
+            for endpoint in set(self.ports.values()):
+                self.local.sendto(packet, endpoint)
+            self.last_metrics = now
         for selected, _ in self.selector.select(timeout):
             for _ in range(64):
                 try:

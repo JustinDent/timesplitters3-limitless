@@ -1,0 +1,368 @@
+"""Publish a tested main commit with matching version, notes, tag and assets.
+
+No checkout switching, version edits, force pushes or published-release updates.
+GitHub CLI authentication is used; tokens never enter command arguments or files.
+"""
+import argparse
+from contextlib import contextmanager
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import stat
+import subprocess
+import sys
+from urllib.parse import urlsplit
+import zipfile
+
+ROOT = Path(__file__).resolve().parents[1]
+SEMVER = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?\Z')
+
+
+def version_key(version):
+    match = SEMVER.fullmatch(version.removeprefix('v'))
+    if not match:
+        raise ValueError('VERSION must contain a semantic version, for example 0.2.0-alpha.3')
+    major, minor, patch, prerelease, _ = match.groups()
+    identifiers = []
+    for item in prerelease.split('.') if prerelease else []:
+        if item.isdigit() and len(item)>1 and item.startswith('0'):
+            raise ValueError('Numeric prerelease identifiers must not start with zero')
+        identifiers.append((0, int(item)) if item.isdigit() else (1, item))
+    return int(major), int(minor), int(patch), prerelease is None, tuple(identifiers)
+
+
+def github_repository(remote):
+    if remote.startswith('git@github.com:'):
+        path = remote[len('git@github.com:'):]
+    else:
+        url = urlsplit(remote)
+        if url.scheme != 'https' or url.hostname != 'github.com' or url.username or url.password:
+            raise ValueError('origin must use a GitHub HTTPS or git@github.com SSH URL')
+        path = url.path.lstrip('/')
+    path = path.rstrip('/').removesuffix('.git')
+    if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', path):
+        raise ValueError('Could not determine the GitHub repository from origin')
+    return path
+
+
+def last_published(pages):
+    releases = [release for page in pages for release in page]
+    published = [release for release in releases if not release['draft'] and release.get('published_at')]
+    return releases, max(published, key=lambda release: release['published_at'], default=None)
+
+
+def digest(path):
+    with path.open('rb') as stream:
+        return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def check_directory(root, path):
+    """Validate all ancestors before tools recursively create/clean work files."""
+    root, path = Path(root).absolute(), Path(path).absolute()
+    if path == root or not path.is_relative_to(root):
+        raise ValueError('Release work must stay inside the workspace')
+    for item in [root, *[parent for parent in reversed(path.parents) if parent.is_relative_to(root)], path]:
+        if item.is_symlink() or (item.exists() and os.name == 'nt' and item.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT):
+            raise ValueError(f'Redirected release work path: {item}')
+    if path.is_dir():
+        for item in path.rglob('*'):
+            if item.is_symlink() or (os.name == 'nt' and item.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT):
+                raise ValueError(f'Redirected release work path: {item}')
+
+
+@contextmanager
+def release_lock(path):
+    with path.open('a+b') as stream:
+        if not stream.tell():
+            stream.write(b'0'); stream.flush()
+        stream.seek(0)
+        try:
+            if os.name == 'nt':
+                import msvcrt
+                msvcrt.locking(stream.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(stream, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as error:
+            raise ValueError('Another release preparation is already running') from error
+        try:
+            yield
+        finally:
+            stream.seek(0)
+            if os.name == 'nt':
+                msvcrt.locking(stream.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(stream, fcntl.LOCK_UN)
+
+
+class Publisher:
+    def __init__(self, root=ROOT):
+        self.root = Path(root).resolve()
+        self.output = self.root/'build/releases'
+        self.python = self.root/'.venv/Scripts/python.exe'
+
+    def run(self, arguments, *, live=False, payload=None):
+        environment = dict(os.environ, GH_PROMPT_DISABLED='1', GIT_TERMINAL_PROMPT='0',
+                           PYTHONDONTWRITEBYTECODE='1')
+        result = subprocess.run([str(arg) for arg in arguments], cwd=self.root, env=environment,
+                                input=json.dumps(payload) if payload is not None else None,
+                                capture_output=not live, text=True, encoding='utf-8', errors='replace')
+        if result.returncode:
+            raise RuntimeError(f'{Path(arguments[0]).name} failed (exit {result.returncode}).\n'
+                               + ((result.stderr or result.stdout or '') if not live else 'See output above.'))
+        return (result.stdout or '').strip()
+
+    def git(self, *arguments):
+        return self.run(['git', *arguments])
+
+    def gh(self, *arguments, payload=None):
+        return self.run(['gh', *arguments], payload=payload)
+
+    def clean(self):
+        if self.git('status', '--porcelain'):
+            raise ValueError('Commit/merge all source changes first. Releases require a clean main checkout.')
+
+    def preflight(self):
+        self.clean()
+        if self.git('branch', '--show-current') != 'main':
+            raise ValueError('Merge this work, then run on main: git switch main; git pull --ff-only origin main')
+        if not shutil.which('gh'):
+            raise ValueError('Install GitHub CLI (gh), then run gh auth login before releasing.')
+        self.repo = github_repository(self.git('remote', 'get-url', 'origin'))
+        self.gh('auth', 'status', '--hostname', 'github.com')
+        self.git('fetch', 'origin', 'refs/heads/main:refs/remotes/origin/main', '--tags')
+        self.commit = self.git('rev-parse', 'HEAD')
+        if self.commit != self.git('rev-parse', 'refs/remotes/origin/main'):
+            raise ValueError('main must match origin/main exactly. Push merged work or pull --ff-only, then retry.')
+        self.version = (self.root/'VERSION').read_text().strip()
+        if self.version.startswith('v'):
+            raise ValueError('VERSION contains the number without the v prefix')
+        key = version_key(self.version)
+        self.tag = 'v'+self.version
+        self.prerelease = not key[3]
+        self.name = 'TimeSplitters-Future-Perfect-PC-'+self.tag+'-windows-x64'
+        self.stage = self.output/self.name
+        self.archive = self.output/(self.name+'.zip')
+        self.checksum = self.output/(self.name+'.zip.sha256')
+        self.metadata = self.output/(self.name+'.BUILD.json')
+        self.notes = self.output/(self.name+'.notes.md')
+        self.plan = self.output/(self.name+'.release.json')
+        pages = json.loads(self.gh('api', '--paginate', '--slurp', f'repos/{self.repo}/releases?per_page=100'))
+        releases, self.previous = last_published(pages)
+        if any(release['tag_name'] == self.tag for release in releases):
+            raise ValueError(f'{self.tag} already has a release or draft. Inspect it on GitHub; it will not be overwritten.')
+        if self.previous:
+            try:
+                previous_key = version_key(self.previous['tag_name'])
+            except ValueError:
+                previous_key = None  # Older non-versioned tags still work as note baselines.
+            if previous_key is not None and key <= previous_key:
+                raise ValueError(f'Update VERSION beyond the last published version, {self.previous["tag_name"]}, and commit it.')
+            self.baseline = self.git('rev-parse', '--verify', 'refs/tags/'+self.previous['tag_name']+'^{commit}')
+            if self.baseline == self.commit:
+                raise ValueError('There are no new source commits since the last published release')
+        else:
+            self.baseline = None
+        self.validate_remote()
+
+    def validate_remote(self):
+        if self.git('rev-parse', 'HEAD') != self.commit or self.git('branch', '--show-current') != 'main':
+            raise ValueError('The checkout changed during release preparation')
+        self.clean()
+        rows = self.git('ls-remote', 'origin', 'refs/heads/main', 'refs/tags/'+self.tag, 'refs/tags/'+self.tag+'^{}').splitlines()
+        refs = dict((row.split()[1], row.split()[0]) for row in rows)
+        if refs.get('refs/heads/main') != self.commit:
+            raise ValueError('GitHub main changed. Update main and prepare the release again.')
+        tagged = refs.get('refs/tags/'+self.tag+'^{}', refs.get('refs/tags/'+self.tag))
+        if tagged and tagged != self.commit:
+            raise ValueError('The release tag already points at a different commit; it will not be moved')
+
+    def write_notes(self):
+        payload = dict(tag_name=self.tag, target_commitish=self.commit)
+        if self.previous:
+            payload['previous_tag_name'] = self.previous['tag_name']
+        generated = json.loads(self.gh('api', '--method', 'POST', f'repos/{self.repo}/releases/generate-notes',
+                                       '--input', '-', payload=payload)).get('body', '').strip()
+        history = self.git('log', '--no-merges', '--format=%H%x09%s',
+                           f'{self.baseline}..{self.commit}' if self.baseline else self.commit)
+        commits = []
+        for row in history.splitlines():
+            sha, subject = row.split('\t', 1)
+            subject = subject.replace('<', '&lt;').replace('>', '&gt;')
+            commits.append(f'- {subject} ([{sha[:8]}](https://github.com/{self.repo}/commit/{sha}))')
+        baseline = self.previous['tag_name'] if self.previous else 'the beginning of the project'
+        body = f'''TimeSplitters: Future Perfect PC **{self.tag}** for Windows 10/11 x64.
+
+This is an experimental PC port. Original US Xbox game files are required and are not included.
+
+## Changes since {baseline}
+
+{generated}
+
+### Source changes
+
+{chr(10).join(commits) or 'No non-merge commits in this range; see the comparison above.'}
+
+## Download and play
+
+Download **{self.archive.name}**, extract the entire ZIP and run **Play.cmd**.
+On first launch, select your US Xbox ISO or extracted game folder. Python, Git,
+Visual Studio and an emulator are not required. Preserve **Data**, **Settings**
+and **Saves** when upgrading. The companion `.zip.sha256` file verifies the download.
+
+## Build and validation
+
+- Source: https://github.com/{self.repo}/commit/{self.commit}
+- Version: `{self.version}`; tag: `{self.tag}`.
+- Native Release build checks and Python tests passed.
+- Packaged Python/Tk, HTTPS hosting, invitations and three-peer UDP relay passed the portable check.
+- The archive was checked for corruption and against its build manifest; original game data and personal files are excluded.
+
+Full campaign completion and multiplayer across different internet connections remain unverified.
+Online hosts need TCP 30820 and their game UDP port (default 30821) forwarded to their PC.
+'''
+        self.notes.write_text(body, encoding='utf-8', newline='\n')
+
+    def recycle(self, path):
+        check_directory(self.root, path)
+        self.run(['powershell.exe', '-NoProfile', '-File', self.root/'tools/recycle-release-work.ps1',
+                  '-LiteralPath', path], live=True)
+
+    def build_package(self):
+        for path in (self.stage, self.archive, self.checksum, self.metadata):
+            if path.exists():
+                raise ValueError(f'Existing release output: {path.name}. Preserve/recycle the old output or use a new VERSION; nothing was overwritten.')
+        tests = self.root/'build/release-tests'
+        check_directory(self.root, tests)
+        self.run([self.python, self.root/'tools/apply-patches.py', self.root/'external/ts3FPrecomp', self.root/'patches'], live=True)
+        self.run(['powershell.exe', '-NoProfile', '-File', self.root/'tsfp.ps1', 'Build'], live=True)
+        try:
+            self.run([self.python, '-m', 'pytest', 'tests', '-q', '-p', 'no:cacheprovider', '--basetemp', tests], live=True)
+        finally:
+            if tests.exists():
+                self.recycle(tests)
+        self.run([self.python, self.root/'tools/package-release.py'], live=True)
+        self.verify_package()
+        self.run([self.python, self.root/'tests/portable_online.py', '--stage', self.stage,
+                  '--game', self.root/'private/game'], live=True)
+        self.verify_package()  # A check must not modify files being distributed.
+        shutil.copyfile(self.stage/'BUILD.json', self.metadata)
+
+    def verify_package(self):
+        build = json.loads((self.stage/'BUILD.json').read_text())
+        if build['source_commit'] != self.commit or build['version'] != self.tag or build['source_changes']:
+            raise ValueError('Package source/version does not match the clean release commit')
+        expected = self.checksum.read_text(encoding='ascii').split()
+        if expected != [digest(self.archive), self.archive.name]:
+            raise ValueError('Package checksum mismatch')
+        if self.archive.stat().st_size >= 2*1024**3:
+            raise ValueError('ZIP exceeds the GitHub per-asset limit; do not publish an incomplete download')
+        with zipfile.ZipFile(self.archive) as archive:
+            if archive.testzip() is not None:
+                raise ValueError('Package ZIP is corrupt')
+            names = archive.namelist()
+            if len(names) != len(set(names)):
+                raise ValueError('Duplicate ZIP members')
+            prefix = self.name+'/'
+            if set(names) != {prefix+name for name in build['files']} | {prefix+'BUILD.json'}:
+                raise ValueError('ZIP members do not match BUILD.json')
+            for name, expected_hash in build['files'].items():
+                if name.startswith('/') or '\\' in name or ':' in name or '..' in name.split('/'):
+                    raise ValueError(f'Unsafe package path: {name}')
+                if name.startswith(('Data/', 'Saves/', 'Logs/')) or name.lower().endswith(('.iso', '.xbe', '.pak', '.img', '.pdb')):
+                    raise ValueError(f'Unexpected private game/test file in package: {name}')
+                if digest(self.stage/name) != expected_hash:
+                    raise ValueError(f'Staged file changed: {name}')
+                with archive.open(prefix+name) as stream:
+                    if hashlib.file_digest(stream, 'sha256').hexdigest() != expected_hash:
+                        raise ValueError(f'Archived file changed: {name}')
+            if json.loads(archive.read(prefix+'BUILD.json')) != build:
+                raise ValueError('Archived build metadata differs from the validated stage')
+
+    def prepare(self):
+        self.output.mkdir(parents=True, exist_ok=True)
+        if self.plan.exists():
+            prepared = json.loads(self.plan.read_text())
+            if prepared['commit'] != self.commit or prepared['tag'] != self.tag or prepared['repo'] != self.repo:
+                raise ValueError('Prepared output belongs to another commit/version/repository')
+            if set(prepared['assets']) != {path.name for path in (self.archive, self.checksum, self.metadata)}:
+                raise ValueError('Prepared release has an incomplete asset list')
+            for name, expected in prepared['assets'].items():
+                if Path(name).name != name or digest(self.output/name) != expected:
+                    raise ValueError('Prepared release assets changed; they will not be published')
+            print('Reusing the validated package for this exact main commit.', flush=True)
+        else:
+            self.build_package()
+        assets = {path.name: digest(path) for path in (self.archive, self.checksum, self.metadata)}
+        temporary = self.plan.with_suffix('.json.tmp')
+        temporary.write_text(json.dumps(dict(commit=self.commit, tag=self.tag, repo=self.repo,
+                              previous=self.previous['tag_name'] if self.previous else None, assets=assets), indent=2)+'\n')
+        temporary.replace(self.plan)
+        self.validate_remote()
+        self.write_notes()  # Refresh the baseline; a network failure can resume without rebuilding.
+        if self.stage.exists():
+            self.verify_package()
+            self.recycle(self.stage)
+        print(f'Notes: {self.notes}\nPackage: {self.archive}', flush=True)
+
+    def publish(self, draft=False):
+        self.validate_remote()
+        plan = json.loads(self.plan.read_text())
+        for path in (self.archive, self.checksum, self.metadata):
+            if digest(path) != plan['assets'][path.name]:
+                raise ValueError('Prepared assets changed before upload')
+        # Pin the tag before creating the draft. GitHub rejects a concurrent
+        # attempt to create the same ref, so an existing tag is never moved.
+        existing = self.git('ls-remote', 'origin', 'refs/tags/'+self.tag)
+        if not existing:
+            created = json.loads(self.gh('api', '--method', 'POST', f'repos/{self.repo}/git/refs', '--input', '-',
+                                 payload=dict(ref='refs/tags/'+self.tag, sha=self.commit)))
+            if created['ref'] != 'refs/tags/'+self.tag or created['object']['sha'] != self.commit:
+                raise ValueError('GitHub tag did not match the tested commit; no release was created')
+        self.validate_remote()
+        arguments = ['release', 'create', self.tag, '--repo', self.repo, '--target', self.commit,
+                     '--verify-tag',
+                     '--title', 'TimeSplitters: Future Perfect PC '+self.tag,
+                     '--notes-file', self.notes, '--draft', self.archive, self.checksum, self.metadata]
+        if self.prerelease:
+            arguments.extend(['--prerelease', '--latest=false'])
+        self.gh(*arguments)
+        uploaded = json.loads(self.gh('release', 'view', self.tag, '--repo', self.repo,
+                                     '--json', 'assets,isDraft,targetCommitish,url'))
+        actual = {asset['name']: asset['size'] for asset in uploaded['assets']}
+        expected = {path.name: path.stat().st_size for path in (self.archive, self.checksum, self.metadata)}
+        if not uploaded['isDraft'] or actual != expected or uploaded['targetCommitish'] != self.commit:
+            raise ValueError('Draft metadata/assets did not match. Inspect the draft on GitHub; it was not published.')
+        if not draft:
+            self.validate_remote()
+            self.gh('release', 'edit', self.tag, '--repo', self.repo, '--draft=false')
+        print(('Draft created: ' if draft else 'Published: ')+uploaded['url'], flush=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('--prepare-only', action='store_true', help='Build, test and save notes locally; no tag/release is created')
+    group.add_argument('--draft', action='store_true', help='Upload a draft instead of publishing it')
+    args = parser.parse_args()
+    publisher = Publisher()
+    check_directory(publisher.root, publisher.output)
+    publisher.output.mkdir(parents=True, exist_ok=True)
+    with release_lock(publisher.output/'.publish.lock'):
+        publisher.preflight()
+        publisher.prepare()
+        if not args.prepare_only:
+            publisher.publish(args.draft)
+        else:
+            print('Prepared locally. Run Publish-Release.ps1 again to publish this validated package.')
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, ValueError, RuntimeError, KeyError) as error:
+        print(f'Release stopped: {error}', file=sys.stderr)
+        sys.exit(1)

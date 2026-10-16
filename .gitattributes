@@ -7,3 +7,5 @@ AGENTS.md text eol=lf
 *.patch text eol=lf -whitespace
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
+# Preserve literal CRLF context for the upstream overlay source in this patch.
+patches/zzzz-pc-debug-latency-watermark.patch -text

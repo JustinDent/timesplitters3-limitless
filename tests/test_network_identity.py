@@ -1,6 +1,9 @@
 import importlib.util
 import pytest
 from pathlib import Path
+import os
+import shutil
+import subprocess
 
 spec = importlib.util.spec_from_file_location('network_identity', Path(__file__).resolve().parents[1] / 'tools/network-identity.py')
 module = importlib.util.module_from_spec(spec)
@@ -15,7 +18,8 @@ def test_identity_is_relocatable_and_rejects_gameplay_changes(tmp_path):
         (root / 'private/game').mkdir(parents=True)
         (root / 'src/example.c').write_bytes(b'int version = 1;\n')
         (root / 'private/game/default.xbe').write_bytes(b'executable')
-        (root / 'private/game/map.pak').write_bytes(b'map')
+        (root / 'private/game/pak').mkdir()
+        (root / 'private/game/pak/map.pak').write_bytes(b'map')
     def digest(root):
         return module.identity(root, root / 'private/game')[0]
     original = digest(roots[0])
@@ -25,12 +29,72 @@ def test_identity_is_relocatable_and_rejects_gameplay_changes(tmp_path):
     assert digest(roots[1]) == original
     (roots[0] / 'private/game/default_analysis.json').write_text('diagnostic metadata')
     assert digest(roots[0]) == original
-    (roots[0] / 'private/game/map.pak').write_bytes(b'modded map')
+    (roots[0] / 'private/game/pak/map.pak').write_bytes(b'modded map')
     assert digest(roots[0]) != original
     with pytest.raises(ValueError, match='content differs'):
         module.verify_content(roots[0] / 'private/game', manifest)
     (roots[1] / 'src/example.c').write_bytes(b'int version = 2;\n')
     assert digest(roots[1]) != original
+
+
+def test_import_layout_ignores_updaters_and_runtime_cache_but_checks_assets(tmp_path):
+    game = tmp_path/'game'
+    (game/'PAK').mkdir(parents=True)
+    (game/'xmv').mkdir()
+    (game/'default.xbe').write_bytes(b'executable')
+    (game/'PAK/map.pak').write_bytes(b'map')
+    (game/'xmv/intro.xmv').write_bytes(b'movie')
+    (game/'dashupdate.xbe').write_bytes(b'Xbox dashboard updater')
+    (game/'update.xbe').write_bytes(b'Xbox updater')
+    (game/'CACHE').mkdir()
+    cache = game/'CACHE/localcache00.bin'
+    cache.write_bytes(b'old cache')
+    before = module.identity(tmp_path, game)[0]
+    entries = module.game_entries(game)
+    assert len(entries) == 3
+    # A folder import omits the updater/cache files; launching creates cache.
+    cache.write_bytes(b'new runtime cache')
+    (game/'dashupdate.xbe').unlink()
+    (game/'update.xbe').unlink()
+    assert module.identity(tmp_path, game)[0] == before
+    manifest = dict(protocol=module.PROTOCOL, files=list(reversed(entries)))
+    module.verify_content(game, manifest)  # Enumeration order is irrelevant.
+    (game/'PAK/map.pak').write_bytes(b'modded map')
+    with pytest.raises(ValueError, match='Changed: pak/map.pak'):
+        module.verify_content(game, manifest)
+    (game/'xmv/intro.xmv').unlink()
+    with pytest.raises(ValueError, match='Missing: xmv/intro.xmv'):
+        module.verify_content(game, manifest)
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Windows release importer')
+def test_actual_folder_import_is_accepted_without_copying_full_game(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    executable = root/'private/game/default.xbe'
+    if not executable.is_file():
+        pytest.skip('Requires the supported extracted executable')
+    source, imported = tmp_path/'source', tmp_path/'Data'
+    (source/'pak').mkdir(parents=True)
+    (source/'xmv').mkdir()
+    shutil.copyfile(executable, source/'default.xbe')
+    (source/'pak/test.pak').write_bytes(b'fixture asset')
+    (source/'xmv/test.xmv').write_bytes(b'fixture movie')
+    (source/'update.xbe').write_bytes(b'not imported')
+    (source/'CACHE').mkdir()
+    (source/'CACHE/localcache00.bin').write_bytes(b'not imported')
+    manifest = dict(protocol=module.PROTOCOL, files=module.game_entries(source))
+    def quote(path):
+        return "'"+str(path).replace("'", "''")+"'"
+    result = subprocess.run(['powershell.exe', '-NoProfile', '-Command',
+        "$ErrorActionPreference='Stop'; Add-Type -Path "+quote(root/'tools/release/ImportGame.cs')+
+        '; [TsfpImport]::ImportFolder('+quote(source)+','+quote(imported)+')'],
+        capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout+result.stderr
+    assert not (imported/'CACHE').exists() and not (imported/'update.xbe').exists()
+    module.verify_content(imported, manifest)
+    (imported/'CACHE').mkdir()
+    (imported/'CACHE/localcache00.bin').write_bytes(b'created after game startup')
+    module.verify_content(imported, manifest)
 
 
 def test_runtime_edits_change_identity(tmp_path):

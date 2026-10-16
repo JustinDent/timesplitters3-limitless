@@ -10,10 +10,33 @@
 #include <math.h>
 #include <string.h>
 
+#ifdef _MSC_VER
+/* Opt every executable using these dialogs into Windows visual styles. */
+#pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
+#endif
+
 enum { ID_ACTIONS=100, ID_SLOT, ID_CHANGE, ID_CLEAR, ID_DEFAULTS, ID_SENSITIVITY,
        ID_INVERT, ID_ENABLED, ID_STATUS, ID_HELP, ID_SENS_LABEL };
 typedef struct Editor { PcSettings settings; HWND list; int slot; } Editor;
 typedef struct Capture { int key, accepted; } Capture;
+typedef struct DialogContext { DLGPROC procedure; LPARAM data; HFONT font; } DialogContext;
+static const WCHAR dialog_context_property[]=L"TSFP.Settings.DialogContext";
+
+static INT_PTR CALLBACK themed_dialog(HWND window,UINT message,WPARAM wp,LPARAM lp)
+{
+    DialogContext *context=(DialogContext *)GetPropW(window,dialog_context_property);
+    INT_PTR result;
+    if(message==WM_INITDIALOG) {
+        context=(DialogContext *)lp;
+        if(!SetPropW(window,dialog_context_property,(HANDLE)context)) { EndDialog(window,-1); return TRUE; }
+        SendMessage(window,WM_SETFONT,(WPARAM)(context->font?context->font:GetStockObject(DEFAULT_GUI_FONT)),FALSE);
+        lp=context->data;
+    }
+    if(!context) return FALSE;
+    result=context->procedure(window,message,wp,lp);
+    if(message==WM_NCDESTROY) RemovePropW(window,dialog_context_property);
+    return result;
+}
 
 /* DialogBox owns the message loop and keyboard navigation. Controls are
    created in WM_INITDIALOG, so no external resource files are required. */
@@ -25,6 +48,9 @@ static INT_PTR dialog(HWND owner, const WCHAR *title, int width, int height,
     WORD *p=(WORD *)(t+1);
     const WCHAR *c=title;
     DWORD units=GetDialogBaseUnits();
+    NONCLIENTMETRICSW metrics={sizeof metrics};
+    DialogContext context={procedure,data,NULL};
+    INT_PTR result;
     RECT work;
     SystemParametersInfo(SPI_GETWORKAREA,0,&work,0);
     if(width>work.right-work.left-40) width=work.right-work.left-40;
@@ -34,14 +60,20 @@ static INT_PTR dialog(HWND owner, const WCHAR *title, int width, int height,
     *p++=0; *p++=0;
     while (*c) *p++=(WORD)*c++;
     *p=0;
-    return DialogBoxIndirectParamW(GetModuleHandleW(NULL),t,owner,procedure,data);
+    if(SystemParametersInfoW(SPI_GETNONCLIENTMETRICS,sizeof metrics,&metrics,0))
+        context.font=CreateFontIndirectW(&metrics.lfMessageFont);
+    result=DialogBoxIndirectParamW(GetModuleHandleW(NULL),t,owner,themed_dialog,(LPARAM)&context);
+    /* Each modal dialog owns its font, including nested binding dialogs. */
+    if(context.font) DeleteObject(context.font);
+    return result;
 }
 
 static HWND control(HWND parent, const char *kind, const char *text, DWORD style, int id)
 {
     HWND h=CreateWindowExA(!strcmp(kind,"EDIT")?WS_EX_CLIENTEDGE:0,kind,text,
         WS_CHILD|WS_VISIBLE|style,0,0,1,1,parent,(HMENU)(INT_PTR)id,GetModuleHandle(NULL),NULL);
-    SendMessage(h,WM_SETFONT,(WPARAM)GetStockObject(DEFAULT_GUI_FONT),TRUE);
+    HFONT font=(HFONT)SendMessage(parent,WM_GETFONT,0,0);
+    SendMessage(h,WM_SETFONT,(WPARAM)(font?font:GetStockObject(DEFAULT_GUI_FONT)),TRUE);
     return h;
 }
 
@@ -302,17 +334,22 @@ void pc_settings_show(HWND game)
 }
 
 enum { ID_DEBUG_FPS=200, ID_DEBUG_TIME, ID_DEBUG_ISSUES, ID_DEBUG_LOG,
-       ID_DEBUG_STATS, ID_DEBUG_RECENT, ID_DEBUG_FOLDER, ID_DEBUG_CLEAR, ID_DEBUG_HELP };
+       ID_DEBUG_STATS, ID_DEBUG_RECENT, ID_DEBUG_FOLDER, ID_DEBUG_CLEAR, ID_DEBUG_HELP, ID_DEBUG_LATENCY };
 
 static void debug_refresh(HWND d)
 {
     PcDebugSnapshot stats;
-    char text[512], old[6144];
+    char text[512], old[6144], latency[128];
     pc_debug_poll();
     pc_debug_snapshot(&stats);
+    if(!stats.network_mode) snprintf(latency,sizeof latency,"Network latency: offline");
+    else if(stats.latency_ms<0 || !stats.latency_peers)
+        snprintf(latency,sizeof latency,"%s latency: waiting for a peer / reply",stats.network_mode==2?"Online":"LAN");
+    else snprintf(latency,sizeof latency,"%s RTT: %.1f ms (highest of %u peer%s)",
+        stats.network_mode==2?"Online":"LAN",stats.latency_ms,stats.latency_peers,stats.latency_peers==1?"":"s");
     snprintf(text,sizeof text,"Game: %.1f FPS   Shown: %.1f FPS   Average frame interval: %.2f ms\r\n"
-        "Log matches: %lu errors, %lu warnings   Frames over 50 ms: %lu (includes loading)",
-        stats.fps,stats.shown_fps,stats.frame_ms,stats.errors,stats.warnings,stats.slow_frames);
+        "Log matches: %lu errors, %lu warnings   Frames over 50 ms: %lu (includes loading)\r\n%s",
+        stats.fps,stats.shown_fps,stats.frame_ms,stats.errors,stats.warnings,stats.slow_frames,latency);
     SetDlgItemTextA(d,ID_DEBUG_STATS,text);
     if (!stats.log_available) snprintf(stats.recent,sizeof stats.recent,"Live log unavailable. Launch with Play.cmd to enable log diagnostics.");
     else if (!stats.recent[0]) snprintf(stats.recent,sizeof stats.recent,"No matching errors or warnings since startup / last clear.");
@@ -337,19 +374,22 @@ static INT_PTR CALLBACK debug_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
         control(d,"BUTTON","Show average frame time",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_TIME);
         control(d,"BUTTON","Show error / warning counters (E / W)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_ISSUES);
         control(d,"BUTTON","Write performance samples to log (twice per second)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_LOG);
+        control(d,"BUTTON","Show network latency (round-trip time)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_LATENCY);
         place(d,ID_DEBUG_FPS,16,12,width-32,24);
         place(d,ID_DEBUG_TIME,16,40,width-32,24);
         place(d,ID_DEBUG_ISSUES,16,68,width-32,24);
         place(d,ID_DEBUG_LOG,16,96,width-32,24);
+        place(d,ID_DEBUG_LATENCY,16,124,width-32,24);
         CheckDlgButton(d,ID_DEBUG_FPS,options.show_fps?BST_CHECKED:BST_UNCHECKED);
         CheckDlgButton(d,ID_DEBUG_TIME,options.show_frame_time?BST_CHECKED:BST_UNCHECKED);
         CheckDlgButton(d,ID_DEBUG_ISSUES,options.show_issues?BST_CHECKED:BST_UNCHECKED);
         CheckDlgButton(d,ID_DEBUG_LOG,options.log_performance?BST_CHECKED:BST_UNCHECKED);
-        control(d,"STATIC","",0,ID_DEBUG_STATS); place(d,ID_DEBUG_STATS,16,132,width-32,42);
+        CheckDlgButton(d,ID_DEBUG_LATENCY,options.show_latency?BST_CHECKED:BST_UNCHECKED);
+        control(d,"STATIC","",0,ID_DEBUG_STATS); place(d,ID_DEBUG_STATS,16,164,width-32,62);
         control(d,"STATIC","Recent log diagnostics (up to 12). Matches include failed calls, unsupported features and warnings;\nthis does not detect every gameplay or visual anomaly. Pause the game before opening settings.",0,ID_DEBUG_HELP);
-        place(d,ID_DEBUG_HELP,16,180,width-32,40);
+        place(d,ID_DEBUG_HELP,16,236,width-32,40);
         control(d,"EDIT","",WS_TABSTOP|WS_VSCROLL|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL,ID_DEBUG_RECENT);
-        place(d,ID_DEBUG_RECENT,16,228,width-32,height-326);
+        place(d,ID_DEBUG_RECENT,16,284,width-32,height-382);
         control(d,"BUTTON","Open logs folder",WS_TABSTOP|BS_PUSHBUTTON,ID_DEBUG_FOLDER);
         place(d,ID_DEBUG_FOLDER,16,height-84,145,28);
         control(d,"BUTTON","Clear counters / recent",WS_TABSTOP|BS_PUSHBUTTON,ID_DEBUG_CLEAR);
@@ -372,6 +412,7 @@ static INT_PTR CALLBACK debug_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
             options.show_frame_time=IsDlgButtonChecked(d,ID_DEBUG_TIME)==BST_CHECKED;
             options.show_issues=IsDlgButtonChecked(d,ID_DEBUG_ISSUES)==BST_CHECKED;
             options.log_performance=IsDlgButtonChecked(d,ID_DEBUG_LOG)==BST_CHECKED;
+            options.show_latency=IsDlgButtonChecked(d,ID_DEBUG_LATENCY)==BST_CHECKED;
             if (!pc_debug_config_save(&options,error,sizeof error)) {
                 MessageBoxA(d,error,"Debug settings were not saved",MB_OK|MB_ICONERROR); return TRUE;
             }
@@ -392,5 +433,5 @@ static INT_PTR CALLBACK debug_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
 
 void pc_debug_show(HWND owner)
 {
-    dialog(owner,L"Debug - TimeSplitters Future Perfect",760,570,debug_dialog,0);
+    dialog(owner,L"Debug - TimeSplitters Future Perfect",760,620,debug_dialog,0);
 }

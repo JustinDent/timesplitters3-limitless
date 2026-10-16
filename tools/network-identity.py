@@ -14,20 +14,44 @@ PROTOCOL = 'tsfp-pc-system-link-v1'
 
 def game_entries(game):
     entries = []
-    for path in sorted(game.rglob('*')):
-        if path.is_file() and path.suffix.lower() not in ('.json', '.log'):
+    # Match both import methods: title executable and asset trees. Xbox dash
+    # updaters and runtime CACHE files are outside the playable content set.
+    # In particular, launching the game must not change its own identity.
+    for child in game.iterdir():
+        if child.is_file() and child.name.lower() == 'default.xbe':
+            paths = [child]
+        elif child.is_dir() and child.name.lower() in ('pak', 'xmv'):
+            paths = (path for path in child.rglob('*') if path.is_file())
+        else:
+            continue
+        for path in paths:
             with path.open('rb') as stream:
                 digest = hashlib.file_digest(stream, 'sha256').hexdigest()
             entries.append(('game/' + path.relative_to(game).as_posix().lower(), digest))
     if not any(name == 'game/default.xbe' for name, _ in entries):
         raise ValueError('Missing game/default.xbe')
-    return entries
+    if len({name for name, _ in entries}) != len(entries):
+        raise ValueError('Duplicate case-insensitive game content paths')
+    return sorted(entries)
 
 
 def verify_content(game, manifest):
-    expected = [(name, digest) for name, digest in manifest['files'] if name.startswith('game/')]
-    if manifest.get('protocol') != PROTOCOL or game_entries(game) != expected:
-        raise ValueError('Game content differs from the multiplayer build. Run tsfp.ps1 Build again.')
+    expected = {name: digest for name, digest in manifest['files'] if name.startswith('game/')}
+    actual = dict(game_entries(game))
+    if manifest.get('protocol') == PROTOCOL and actual == expected:
+        return
+    missing = sorted(expected.keys() - actual.keys())
+    extra = sorted(actual.keys() - expected.keys())
+    changed = sorted(name for name in expected.keys() & actual.keys() if expected[name] != actual[name])
+    details = []
+    for label, names in [('Missing', missing), ('Changed', changed), ('Unexpected', extra)]:
+        if names:
+            details.append(f'{label}: '+', '.join(name.removeprefix('game/') for name in names[:3]))
+    if manifest.get('protocol') != PROTOCOL:
+        details.append('Unsupported compatibility manifest')
+    raise ValueError('Game content differs from the multiplayer build. '
+                     'Use matching game files and the same package version on every PC. '
+                     'Source builds: run tsfp.ps1 Build again.\n'+'\n'.join(details))
 
 
 def executable_hash(path):
@@ -43,6 +67,8 @@ def verify_build(executable, manifest, stamp):
 
 def identity(root, game):
     entries = []
+    if (root/'VERSION').is_file():
+        entries.append(('VERSION', hashlib.sha256((root/'VERSION').read_bytes().replace(b'\r\n', b'\n')).hexdigest()))
     for folder in ('src', 'patches'):
         for path in sorted((root / folder).rglob('*')):
             if path.is_file():
@@ -50,7 +76,7 @@ def identity(root, game):
                 # separate otherwise identical Windows/Linux source checkouts.
                 data = path.read_bytes().replace(b'\r\n', b'\n')
                 entries.append((path.relative_to(root).as_posix(), hashlib.sha256(data).hexdigest()))
-    for name in ('online_transport.py', 'online_client.py', 'online.py', 'online_host.py', 'lobby_server.py'):
+    for name in ('online_transport.py', 'online_client.py', 'online.py', 'online_host.py', 'online_paths.py', 'lobby_server.py'):
         path = root / 'tools' / name
         if path.is_file():
             entries.append(('tools/' + name, hashlib.sha256(path.read_bytes().replace(b'\r\n', b'\n')).hexdigest()))

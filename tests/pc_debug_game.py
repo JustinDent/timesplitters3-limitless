@@ -6,7 +6,6 @@ import json
 import os
 from pathlib import Path
 import re
-import shutil
 import subprocess
 import time
 
@@ -81,14 +80,13 @@ finally { $graphics.Dispose(); $bitmap.Dispose() }
 
 
 def main():
-    tag = str(time.time_ns())
-    work = ROOT / 'private/captures/debug-settings' / tag
-    work.mkdir(parents=True)
+    work = ROOT / 'private/network-validation/host/debug'
+    work.mkdir(parents=True, exist_ok=True)
     config = work / 'controls.json'
     config.write_bytes((ROOT / 'config/pc-controls.default.json').read_bytes())
     original = json.loads(config.read_text())
     error_log = work / 'runtime.err'
-    save_directory = ROOT / 'private/test-saves/debug-settings' / tag
+    save_directory = ROOT / 'private/network-validation/host/saves'
     environment = {key: value for key, value in os.environ.items()
                    if not key.startswith(('RECOMP_', 'TSFP_'))}
     environment.update(RECOMP_GAME_DIR=str(ROOT / 'private/game'),
@@ -103,13 +101,15 @@ def main():
         try:
             game = ui.wait_window(process.pid, 'TimeSplitters FP')
             time.sleep(2)
+            screenshot(game, work / 'watermark-only.png')
             user.PostMessageW(game, 0x111, 0x7e21, 0)
             debug = ui.wait_window(process.pid, 'Debug -')
             assert not user.IsWindowEnabled(game)
             wait_for(lambda: re.search(r'Game: [1-9][0-9]*\.', text(user.GetDlgItem(debug, 204))),
                      'No live FPS statistics')
             assert 'unavailable' not in text(user.GetDlgItem(debug, 205)).lower()
-            for item in range(200, 204):
+            assert 'latency: offline' in text(user.GetDlgItem(debug, 204)).lower()
+            for item in (200, 201, 202, 203, 209):
                 user.SendMessageW(user.GetDlgItem(debug, item), 0xF1, 1, 0)
             user.SetForegroundWindow(debug)
             time.sleep(.3)
@@ -196,7 +196,7 @@ def main():
             debug = ui.wait_window(process.pid, 'Debug -')
             assert not user.IsWindowEnabled(game)
             before_cancel = config.read_bytes()
-            for item in range(200, 204):
+            for item in (200, 201, 202, 203, 209):
                 assert user.SendMessageW(user.GetDlgItem(debug, item), 0xF0, 0, 0) == 1
                 user.SendMessageW(user.GetDlgItem(debug, item), 0xF1, 0, 0)
             user.PostMessageW(debug, 0x111, 2, 0)
@@ -214,12 +214,8 @@ def main():
             if process.poll() is None:
                 process.terminate()
                 process.wait(timeout=5)
+            subprocess.run(['powershell.exe', '-NoProfile', '-File', str(ROOT/'tools/cleanup-network-tests.ps1')], check=True)
     assert '[CRASH]' not in error_log.read_text(errors='replace')
-    if save_directory.is_dir():
-        resolved = save_directory.resolve()
-        allowed = (ROOT / 'private/test-saves/debug-settings').resolve()
-        assert resolved != allowed and resolved.is_relative_to(allowed)
-        shutil.rmtree(resolved)
     print('PASS: F1/menu bar toggle, Escape/click mouse capture, hidden-menu F2/F12, Debug settings, fullscreen controls/checkmarks, and clean exit')
     print(f'Screenshots and isolated test artifacts: {work}')
 

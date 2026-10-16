@@ -8,7 +8,8 @@ required. Campaign co-op is a separate future effort.
 Two local processes have used Online, an HTTPS directory, and separate virtual
 network addresses to join a match and enter gameplay. Real routers, different
 internet connections, and full-match stability remain unverified. This feature
-is experimental and is not in the existing downloadable portable release.
+is experimental. Packages produced with the current release script include it;
+older downloadable packages may predate this feature.
 
 ## Set up Online
 
@@ -130,6 +131,9 @@ code, patches, and game data. Paths are relative and source line endings are
 normalized. Online companion source is included too. User settings, saves,
 diagnostic metadata and external texture
 packs are excluded. Other source changes are conservatively incompatible.
+Game content means `default.xbe` and the `pak`/`xmv` asset trees, matching the
+folder importer. Xbox dashboard updaters and generated `CACHE` files are excluded;
+creating or changing runtime cache files does not invalidate multiplayer.
 
 Every discovery and gameplay datagram carries the compiled identity. Traffic
 with a different identity, an unknown header, or no header is discarded before
@@ -147,6 +151,22 @@ compatibility enforcement for cooperating builds, not authentication, encryption
 or protection against a deliberately modified client.
 
 ## Online transport
+
+### Latency display and build version
+
+Open **PC Settings > Debug** (F12) and enable **Show network latency** to display
+round-trip time in milliseconds. Online guests measure their host; hosts and LAN
+players show the highest fresh peer RTT. The Debug window also shows the number
+of peers measured. Samples refresh about once a second and expire after five
+seconds without a reply. Offline and waiting states are labelled; the lobby
+directory response time is not used as gameplay latency. Online probes are
+authenticated and replay-checked with the normal room credentials. LAN probes
+check build identity and the outstanding reply nonce. Control packets stay out
+of the original game's packet decoder.
+
+A persistent lower-right watermark shows the PC version from `VERSION` and the
+first eight characters of the multiplayer build identity. It remains visible
+when Debug counters are off, including interpolated frames and fullscreen.
 
 Online presents `10.254.0.0/24` addresses to the title, preserving addresses inside
 Xbox session data across different networks. Game sockets talk to their own
@@ -174,7 +194,12 @@ The client accepts HTTP only on localhost for development.
 
 Remaining validation includes real internet routing, different NAT behavior,
 disconnect/rejoin in a full match and sustained play across modes. Packaging
-Python/Tk and the companion for portable releases is a separate release step.
+The release script bundles Python/Tk, the companion, and certificate-generation
+dependencies under `Support`. No separate Python, Git, or OpenSSL installation
+is required by players. Portable Online preferences and hosting certificates live
+under `Settings`, and transient handshakes/diagnostics under `Logs/Online`.
+Keep the entire extracted package together, and preserve `Data`, `Settings`, and
+`Saves` when upgrading. Both players should use the same package and game data.
 
 ## Validation and storage
 

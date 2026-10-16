@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "pc_network.h"
+#include "pc_network_build.h"
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x); return 1; } } while(0)
 static uint32_t a[12];
 static unsigned char *memory;
@@ -47,6 +48,12 @@ int main(void)
     /* Mismatched versions and raw Xbox packets must never reach discovery or
        gameplay, even when the caller bypasses a browser and knows the address. */
     raw=socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP); CHECK(raw!=INVALID_SOCKET);
+    {
+        struct sockaddr_in source={0}; DWORD timeout=1000;
+        source.sin_family=AF_INET; source.sin_addr.s_addr=htonl(0x7f000003);
+        CHECK(!bind(raw,(struct sockaddr *)&source,sizeof source));
+        setsockopt(raw,SOL_SOCKET,SO_RCVTIMEO,(const char *)&timeout,sizeof timeout);
+    }
     memset(memory+600,0,60); memcpy(memory+600,"TSFP\1\0\0\0",8);
     CHECK(sendto(raw,(char *)memory+600,60,0,(struct sockaddr *)&to,sizeof to)==60);
     CHECK(sendto(raw,"unframed",8,0,(struct sockaddr *)&to,sizeof to)==8);
@@ -54,6 +61,25 @@ int main(void)
     CHECK(call(0x43184c)==UINT32_MAX); CHECK(call(0x431d53)==WSAEWOULDBLOCK);
     a[0]=receiver; a[1]=0xffffffff; a[2]=100; a[3]=0;
     CHECK(call(0x43184c)==UINT32_MAX); CHECK(call(0x431d53)==WSAEFAULT);
+    {
+        const unsigned char version[32]=TSFP_NETWORK_COMPATIBILITY;
+        char packet[80]; struct sockaddr_in native={0}; int size=sizeof native; double ms; unsigned count;
+        CHECK(pc_network_latency(&ms,&count)==1 && count==0 && ms<0);
+        memcpy(packet,"TSFP\1\0\0\0",8); memcpy(packet+8,version,32); memcpy(packet+40,"ping test",10);
+        CHECK(sendto(raw,packet,50,0,(struct sockaddr *)&to,sizeof to)==50);
+        Sleep(20); a[0]=receiver; a[1]=address(500); a[2]=100; a[3]=0;
+        CHECK(call(0x43184c)==10);
+        CHECK(recvfrom(raw,packet,sizeof packet,0,(struct sockaddr *)&native,&size)==49);
+        CHECK(!memcmp(packet,"TSFQ\1\0\0\0",8) && packet[40]==1);
+        packet[40]=2; packet[41]^=1;
+        CHECK(sendto(raw,packet,49,0,(struct sockaddr *)&native,sizeof native)==49);
+        Sleep(20); CHECK(call(0x43184c)==UINT32_MAX);
+        CHECK(pc_network_latency(&ms,&count)==1 && !count);
+        packet[41]^=1;
+        CHECK(sendto(raw,packet,49,0,(struct sockaddr *)&native,sizeof native)==49);
+        Sleep(20); CHECK(call(0x43184c)==UINT32_MAX);
+        CHECK(pc_network_latency(&ms,&count)==1 && count==1 && ms>=0);
+    }
     closesocket(raw); pc_network_shutdown();
     /* Exercise the exact loopback bridge wire format used by online.py. */
     {
@@ -87,6 +113,17 @@ int main(void)
         CHECK(call(0x431866)==15); CHECK(!memcmp(memory+500,"bridge payload",15));
         CHECK(((struct sockaddr_in *)(memory+420))->sin_addr.s_addr==htonl(0x0afe0002));
         CHECK(((struct sockaddr_in *)(memory+420))->sin_port==htons(3000));
+        /* Authenticated telemetry is consumed, never passed to the title. */
+        memcpy(packet+56,memory+100,4); memset(packet+64,0,4);
+        memcpy(packet+68,"RTT1",4); *(uint32_t *)(packet+72)=htonl(42500); *(uint16_t *)(packet+76)=htons(2);
+        packet[40]^=1;
+        CHECK(sendto(raw,packet,78,0,(struct sockaddr *)&native,sizeof native)==78);
+        Sleep(20); CHECK(call(0x431866)==UINT32_MAX);
+        { double ms; unsigned count; CHECK(pc_network_latency(&ms,&count)==2 && !count); }
+        packet[40]^=1;
+        CHECK(sendto(raw,packet,78,0,(struct sockaddr *)&native,sizeof native)==78);
+        Sleep(20); CHECK(call(0x431866)==UINT32_MAX);
+        { double ms; unsigned count; CHECK(pc_network_latency(&ms,&count)==2 && count==2 && ms==42.5); }
         closesocket(raw); pc_network_set_online(NULL); WSACleanup();
     }
     VirtualFree(memory,0,MEM_RELEASE);

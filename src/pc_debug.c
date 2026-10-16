@@ -8,6 +8,10 @@
 #include <wchar.h>
 #include <ctype.h>
 #include <math.h>
+#include "pc_network_build.h"
+#ifndef TSFP_PC_VERSION
+#define TSFP_PC_VERSION "development"
+#endif
 
 static SRWLOCK debug_lock = SRWLOCK_INIT;
 static PcDebugOptions options;
@@ -20,6 +24,26 @@ static HANDLE log_file = INVALID_HANDLE_VALUE;
 static WCHAR log_path[1024];
 static char partial[1024];
 static size_t partial_size;
+static ULONGLONG latency_updated;
+
+const char *pc_debug_watermark(void)
+{
+    static const char identity[] = TSFP_NETWORK_COMPATIBILITY_HEX;
+    static char text[96];
+    /* Called on the presentation thread; fixed after the first frame. */
+    if(!text[0]) snprintf(text,sizeof text,"TSFP PC v%s  %.8s",TSFP_PC_VERSION,identity);
+    return text;
+}
+
+void pc_debug_latency(int mode, double milliseconds, unsigned peers)
+{
+    AcquireSRWLockExclusive(&debug_lock);
+    stats.network_mode=mode;
+    stats.latency_ms=isfinite(milliseconds) && milliseconds>=0 ? milliseconds : -1;
+    stats.latency_peers=peers;
+    latency_updated=GetTickCount64();
+    ReleaseSRWLockExclusive(&debug_lock);
+}
 
 void pc_debug_get(PcDebugOptions *out)
 {
@@ -94,10 +118,10 @@ void pc_debug_sample(double fps, double shown_fps)
 
 int pc_debug_overlay(char *text, size_t bytes, const char *cap)
 {
-    char fps[48] = "", ms[32] = "", issues[64] = "", cap_text[24] = "";
+    char fps[48] = "", ms[32] = "", issues[64] = "", cap_text[24] = "", latency[64]="";
     int shown;
     AcquireSRWLockShared(&debug_lock);
-    shown = options.show_fps || options.show_frame_time || options.show_issues;
+    shown = options.show_fps || options.show_frame_time || options.show_issues || options.show_latency;
     if (options.show_fps) {
         snprintf(cap_text, sizeof cap_text, " cap %s", cap);
         if (!stats.fps) snprintf(fps, sizeof fps, "-- fps  ");
@@ -113,7 +137,13 @@ int pc_debug_overlay(char *text, size_t bytes, const char *cap)
         if (stats.log_available) snprintf(issues, sizeof issues, "E:%lu W:%lu", stats.errors, stats.warnings);
         else snprintf(issues, sizeof issues, "Log unavailable");
     }
-    snprintf(text, bytes, "%s%s%s%s", fps, ms, issues, cap_text);
+    if(options.show_latency) {
+        if(!stats.network_mode) snprintf(latency,sizeof latency,"  RTT: offline");
+        else if(GetTickCount64()-latency_updated>5000 || stats.latency_ms<0 || !stats.latency_peers)
+            snprintf(latency,sizeof latency,"  RTT: waiting");
+        else snprintf(latency,sizeof latency,"  RTT: %.1f ms",stats.latency_ms);
+    }
+    snprintf(text, bytes, "%s%s%s%s%s", fps, ms, issues, cap_text,latency);
     ReleaseSRWLockShared(&debug_lock);
     return shown;
 }
@@ -181,6 +211,7 @@ void pc_debug_snapshot(PcDebugSnapshot *out)
     size_t used = 0;
     AcquireSRWLockShared(&debug_lock);
     *out = stats;
+    if(GetTickCount64()-latency_updated>5000) { out->latency_ms=-1; out->latency_peers=0; }
     out->recent[0] = 0;
     for (i = 0; i < history_count; i++) {
         unsigned index = (history_next + 12 - history_count + i) % 12;

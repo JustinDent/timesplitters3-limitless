@@ -24,6 +24,7 @@ static BOOL CALLBACK drive_dialog(HWND window, LPARAM unused)
     CheckDlgButton(window,201,BST_UNCHECKED);
     CheckDlgButton(window,202,BST_UNCHECKED);
     CheckDlgButton(window,203,BST_UNCHECKED);
+    CheckDlgButton(window,209,BST_UNCHECKED);
     driven=1;
     PostMessage(window,WM_COMMAND,save_dialog?IDOK:IDCANCEL,0);
     return TRUE;
@@ -59,7 +60,7 @@ int main(int argc, char **argv)
     if (argc==3 && !strcmp(argv[1],"--verify")) {
         _putenv_s("RECOMP_INPUT_CONFIG",argv[2]);
         pc_debug_config_read(&readback);
-        CHECK(readback.show_fps && readback.show_frame_time && readback.show_issues && readback.log_performance);
+        CHECK(readback.show_fps && readback.show_frame_time && readback.show_issues && readback.log_performance && readback.show_latency);
         puts("PASS: debug settings reload in a fresh process"); return 0;
     }
     CHECK(argc==3);
@@ -79,6 +80,7 @@ int main(int argc, char **argv)
     pc_debug_get(&options);
     CHECK(!options.show_fps && !options.show_frame_time && !options.show_issues && !options.log_performance);
     CHECK(!pc_debug_overlay(overlay,sizeof overlay,"auto"));
+    CHECK(strstr(pc_debug_watermark(),"TSFP PC v") && strlen(pc_debug_watermark())<96);
     pc_debug_snapshot(&snapshot);
     CHECK(snapshot.log_available && snapshot.errors==1 && snapshot.warnings==1);
     pc_debug_poll(); pc_debug_snapshot(&snapshot); CHECK(snapshot.errors==1 && snapshot.warnings==1);
@@ -86,7 +88,7 @@ int main(int argc, char **argv)
     pc_debug_poll(); pc_debug_snapshot(&snapshot); CHECK(snapshot.errors==1);
     file=fopen(log,"ab"); CHECK(file); fputs(" exception\r\n",file); fclose(file);
     pc_debug_poll(); pc_debug_snapshot(&snapshot); CHECK(snapshot.errors==2);
-    options.show_fps=options.show_frame_time=options.show_issues=options.log_performance=1;
+    options.show_fps=options.show_frame_time=options.show_issues=options.log_performance=options.show_latency=1;
     CHECK(pc_debug_config_save(&options,error,sizeof error));
     CHECK(pc_settings_read(&controls,error,sizeof error));
     CHECK(pc_settings_save(&controls,error,sizeof error)); /* controls must preserve debug settings */
@@ -118,6 +120,14 @@ int main(int argc, char **argv)
     pc_debug_sample(60,120);
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto"));
     CHECK(strstr(overlay,"60.0/120.0 fps") && strstr(overlay,"16.7 ms") && strstr(overlay,"E:2 W:1"));
+    CHECK(strstr(overlay,"RTT: offline"));
+    pc_debug_latency(2,42.5,1);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto") && strstr(overlay,"RTT: 42.5 ms"));
+    pc_debug_snapshot(&snapshot); CHECK(snapshot.network_mode==2 && snapshot.latency_peers==1 && snapshot.latency_ms==42.5);
+    pc_debug_latency(1,-1,0);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto") && strstr(overlay,"RTT: waiting"));
+    pc_debug_latency(1,NAN,1);
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto") && !strstr(overlay,"nan"));
     pc_debug_frame(); Sleep(65); pc_debug_frame();
     pc_debug_snapshot(&snapshot); CHECK(snapshot.slow_frames==1);
     pc_debug_toggle_fps(); pc_debug_get(&readback); CHECK(!readback.show_fps && readback.show_issues);
@@ -146,7 +156,7 @@ int main(int argc, char **argv)
     pc_debug_show(owner); KillTimer(NULL,timer);
     CHECK(driven && !timed_out);
     pc_debug_get(&readback); CHECK(!readback.show_fps && !readback.show_frame_time && !readback.show_issues && !readback.log_performance);
-    CHECK(!pc_debug_overlay(overlay,sizeof overlay,"auto"));
+    CHECK(!readback.show_latency && !pc_debug_overlay(overlay,sizeof overlay,"auto"));
     pc_debug_shutdown(); DestroyWindow(owner);
     puts("PASS: debug persistence, unrelated settings retention, failed save, live counters, partial lines, bounded reads, truncation, FPS/frame time, menu, Cancel, and dialog Save");
     return 0;

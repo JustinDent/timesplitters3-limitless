@@ -8,4 +8,6 @@ unsigned pc_network_arguments(uint32_t address);
 uint32_t pc_network_call(uint32_t address, const uint32_t *args, ptrdiff_t memory_offset);
 void pc_network_shutdown(void);
 int pc_network_set_online(const char *configuration);
+/* 0 offline, 1 LAN, 2 Online; RTT is negative when no fresh peer replied. */
+int pc_network_latency(double *milliseconds, unsigned *peers);
 #endif

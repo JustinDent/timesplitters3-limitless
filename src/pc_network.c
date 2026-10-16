@@ -35,6 +35,84 @@ static uint32_t online_ip;
 static unsigned char online_token[16];
 static struct sockaddr_in bridge_address;
 #define BRIDGE_HEADER 68
+typedef struct {
+    struct sockaddr_in address;
+    LARGE_INTEGER nonce;
+    ULONGLONG seen, sent, replied;
+    double ms;
+} LatencyPeer;
+static LatencyPeer latency_peers[MAX_PEERS];
+static double online_latency=-1;
+static unsigned online_latency_peers;
+static ULONGLONG online_latency_updated;
+
+int pc_network_latency(double *milliseconds, unsigned *count)
+{
+    unsigned i; ULONGLONG now=GetTickCount64(); int mode;
+    AcquireSRWLockShared(&network_lock);
+    mode=online?2:(initialized?1:0); *milliseconds=-1; *count=0;
+    if(online && now-online_latency_updated<=5000) {
+        *milliseconds=online_latency; *count=online_latency_peers;
+    } else if(!online) for(i=0;i<MAX_PEERS;i++) {
+        if(latency_peers[i].replied && now-latency_peers[i].replied<=5000) {
+            if(latency_peers[i].ms>*milliseconds) *milliseconds=latency_peers[i].ms;
+            (*count)++;
+        }
+    }
+    ReleaseSRWLockShared(&network_lock);
+    return mode;
+}
+
+/* Separate control frames never reach the title's own packet decoder. */
+static void latency_packet(NetSocket *s, const struct sockaddr_in *address,
+                           unsigned char kind, const LARGE_INTEGER *nonce)
+{
+    unsigned char packet[49];
+    memcpy(packet,"TSFQ\1\0\0\0",8); memcpy(packet+8,compatibility,32);
+    packet[40]=kind; memcpy(packet+41,nonce,8);
+    sendto(s->socket,(const char *)packet,sizeof packet,0,(const struct sockaddr *)address,sizeof *address);
+}
+
+static void latency_probe(NetSocket *s, const struct sockaddr_in *address)
+{
+    unsigned i,slot=0; ULONGLONG now=GetTickCount64(); LatencyPeer *peer;
+    if(address->sin_addr.s_addr==local_ip || !address->sin_port || !address->sin_addr.s_addr ||
+       ntohl(address->sin_addr.s_addr)>=0xe0000000u) return;
+    for(i=0;i<MAX_PEERS;i++) {
+        if(latency_peers[i].address.sin_addr.s_addr==address->sin_addr.s_addr) { slot=i; break; }
+        if(latency_peers[i].seen<latency_peers[slot].seen) slot=i;
+    }
+    peer=&latency_peers[slot];
+    if(i==MAX_PEERS) { memset(peer,0,sizeof *peer); peer->address=*address; }
+    else if(now-peer->replied>5000 && now-peer->sent>5000) peer->address=*address;
+    peer->seen=now;
+    if(!peer->sent || (now-peer->sent>=1000 && (!peer->nonce.QuadPart || now-peer->sent>5000))) {
+        peer->sent=now; QueryPerformanceCounter(&peer->nonce);
+        latency_packet(s,address,1,&peer->nonce);
+    }
+}
+
+static int latency_control(NetSocket *s, const struct sockaddr_in *address,
+                            const unsigned char *packet, int length)
+{
+    LARGE_INTEGER nonce,now,frequency; unsigned i;
+    if(length<8 || memcmp(packet,"TSFQ\1\0\0\0",8)) return 0;
+    if(length!=49 || memcmp(packet+8,compatibility,32)) return 1;
+    memcpy(&nonce,packet+41,8);
+    if(packet[40]==1) latency_packet(s,address,2,&nonce);
+    else if(packet[40]==2) for(i=0;i<MAX_PEERS;i++) {
+        LatencyPeer *peer=&latency_peers[i];
+        if(peer->nonce.QuadPart && peer->nonce.QuadPart==nonce.QuadPart &&
+           peer->address.sin_addr.s_addr==address->sin_addr.s_addr && peer->address.sin_port==address->sin_port &&
+           GetTickCount64()-peer->sent<=5000) {
+            QueryPerformanceCounter(&now); QueryPerformanceFrequency(&frequency);
+            peer->ms=1000.0*(now.QuadPart-nonce.QuadPart)/frequency.QuadPart;
+            peer->replied=GetTickCount64(); peer->nonce.QuadPart=0;
+            break;
+        }
+    }
+    return 1;
+}
 
 int pc_network_enabled(void)
 {
@@ -92,6 +170,8 @@ static int initialize(void)
 static void shutdown_locked(void)
 {
     unsigned i;
+    memset(latency_peers,0,sizeof latency_peers);
+    online_latency=-1; online_latency_peers=0; online_latency_updated=0;
     if(!initialized) return;
     for(i=0;i<MAX_SOCKETS;i++) if(sockets[i].socket!=INVALID_SOCKET) closesocket(sockets[i].socket);
     WSACleanup(); initialized=0; peer_count=0;
@@ -164,17 +244,29 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
             if(address.sin_addr.s_addr!=bridge_address.sin_addr.s_addr || address.sin_port!=bridge_address.sin_port ||
                n<BRIDGE_HEADER || memcmp(packet,"TSFB\1\0\0\0",8) || memcmp(packet+8,compatibility,32) ||
                memcmp(packet+40,online_token,16) || memcmp(packet+60,&online_ip,4)) continue;
-            memcpy(&destination,packet+66,2); if(ntohs(destination)!=s->port) continue;
+            memcpy(&destination,packet+66,2);
+            if(!destination && !packet[64] && !packet[65] && n==BRIDGE_HEADER+10 &&
+               !memcmp(packet+56,&online_ip,4) && !memcmp(packet+BRIDGE_HEADER,"RTT1",4)) {
+                uint32_t micros; uint16_t count;
+                memcpy(&micros,packet+BRIDGE_HEADER+4,4); memcpy(&count,packet+BRIDGE_HEADER+8,2);
+                online_latency_peers=ntohs(count);
+                online_latency=ntohl(micros)==UINT32_MAX?-1:ntohl(micros)/1000.0;
+                online_latency_updated=GetTickCount64();
+                continue;
+            }
+            if(ntohs(destination)!=s->port) continue;
             if(n-BRIDGE_HEADER>capacity) return (int)failure(WSAEMSGSIZE);
             memcpy(&address.sin_addr.s_addr,packet+56,4); memcpy(&address.sin_port,packet+64,2);
             memcpy(payload,packet+BRIDGE_HEADER,n-BRIDGE_HEADER); if(from) *from=address;
             return n-BRIDGE_HEADER;
         }
+        if(latency_control(s,&address,packet,n)) continue;
         if(n<HEADER || memcmp(packet,"TSFP\1\0\0\0",8) || memcmp(packet+8,compatibility,32)) {
             if(!rejected++) fprintf(stderr,"[PC-NET] Dropped incompatible/unframed peer traffic\n");
             continue;
         }
         if(n-HEADER>capacity) return (int)failure(WSAEMSGSIZE);
+        latency_probe(s,&address);
         if(received_logs++<12) fprintf(stderr,"[PC-NET] Receive %u <- %08x:%u, %d bytes\n",
             s->port,ntohl(address.sin_addr.s_addr),ntohs(address.sin_port),n-HEADER);
         memcpy(payload,packet+HEADER,n-HEADER); if(from) *from=address;
