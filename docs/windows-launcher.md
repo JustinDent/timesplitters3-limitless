@@ -266,9 +266,38 @@ Every replaced file is backed up before any installed file is changed. A
 Failures restore old files and remove newly introduced files. On the next
 startup an interrupted transaction is recovered before play/update is enabled.
 If recovery files are missing or locked, the launcher stops and retains recovery
-evidence. Successful updates retain one `.launcher/rollback` snapshot; Restore
-previous swaps releases without replacing user settings. The downloaded ZIP is
+evidence. Successful updates retain one `.launcher/rollback` snapshot until the
+new game opens a window and exits normally. Until then, Restore previous swaps
+releases without replacing user settings. The downloaded ZIP is
 discarded after successful extraction, and staging is discarded after install.
+
+### Automatic game cleanup
+
+After a game session opens a window and exits with code zero, the launcher checks
+that the installed runtime still matches its release manifest and removes the
+previous game snapshot. The Restore previous button then becomes unavailable.
+A failed launch, crash, incomplete installation or unfinished update keeps recovery
+available. This check establishes startup/clean-exit behavior, not full gameplay
+compatibility. Cleanup runs in the background; a locked file is retried on later
+launcher startups only for the same confirmed build. Developer previews do not
+confirm a game session or run startup cleanup.
+
+Game updates also remove unchanged files listed in the old release manifest when
+the incoming release no longer uses them, including old source archives and DLLs.
+Those removals are transactional and restored by rollback before confirmation.
+Modified files, untracked files, personal settings and independent launcher files
+are retained. Missing or invalid old manifests skip this optional pruning.
+
+Cleanup only removes updater-managed game backups and obsolete/incomplete staging.
+Current game data, saves, settings, texture packs, and the original ISO remain in
+place. An ISO found inside a managed folder prevents that folder from being
+deleted; linked paths and personal backup directories are also refused. A newer
+or unreadable staged release is retained. Normal ISO storage and manually
+extracted game folders are never searched for cleanup candidates.
+
+Run `build/launcher/launcher-tests.exe --game-cleanup` for the focused synthetic
+game cleanup checks. The full updater suite additionally covers manifest-based
+file removal, rollback restoration, and protected ISO handling during updates.
 Do not delete `.launcher` while an operation is active.
 
 The interface imports only into an absent `Data` directory. Existing data is

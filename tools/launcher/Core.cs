@@ -260,6 +260,7 @@ namespace TimeSplitters.Launcher
                     if (change.Source == null) { if (File.Exists(target)) File.Delete(target); }
                     else { Directory.CreateDirectory(Path.GetDirectoryName(target)); File.Copy(change.Source, target, true); }
                 }
+                if (!launcher && Directory.Exists(PathIn(root, rollback))) CheckGameCleanupTree(PathIn(root, rollback), false);
                 RemoveOwned(root, rollback);
                 Directory.Move(transaction, PathIn(root, rollback));
             }
@@ -274,6 +275,142 @@ namespace TimeSplitters.Launcher
         {
             string folder = PathIn(root, ".launcher/rollback");
             return File.Exists(Path.Combine(folder, "journal.json")) && File.Exists(Path.Combine(folder, "files", "BUILD.json"));
+        }
+        static Dictionary<string, string> GameFiles(string manifest)
+        {
+            Require(new FileInfo(manifest).Length <= 1024 * 1024, "Oversized installed game manifest.");
+            var metadata = Json.Object(File.ReadAllText(manifest));
+            GameVersion.Parse(Json.String(metadata, "version"));
+            object value;
+            Require(metadata.TryGetValue("files", out value) && value is Dictionary<string, object>, "Game manifest has no file checksums.");
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var pair in (Dictionary<string, object>)value)
+            {
+                string hash = Convert.ToString(pair.Value);
+                Require(Allowed(pair.Key) && pair.Key != "BUILD.json" && !result.ContainsKey(pair.Key) &&
+                    Regex.IsMatch(hash, "^[0-9a-fA-F]{64}$"), "Unsafe game manifest entry.");
+                result.Add(pair.Key, hash);
+            }
+            Require(result.ContainsKey("Bin/futureperfect_recomp.exe") && result.ContainsKey("Launch.ps1"), "Game manifest is incomplete.");
+            return result;
+        }
+        static bool PreserveGameFile(string name)
+        {
+            return name.StartsWith("Settings/", StringComparison.OrdinalIgnoreCase) ||
+                new[] { LauncherName, AppPath, SelfManifest }.Contains(name, StringComparer.OrdinalIgnoreCase);
+        }
+        public static string GameBuildHash(string root)
+        {
+            try {
+                string manifest = PathIn(root, "BUILD.json");
+                Require(new FileInfo(manifest).Length <= 1024 * 1024, "Oversized game manifest.");
+                return Hash(manifest);
+            }
+            catch (Exception ex) { LauncherLog.Write(root, "Game cleanup unavailable: " + ex.Message); return ""; }
+        }
+        static bool GameCleanupReady(string root, string expected)
+        {
+            // Only retired/cache files are deleted here, never the live runtime.
+            // Installation and rollback retain their separate game-running guard.
+            if (expected.Length != 64 || Directory.Exists(PathIn(root, ".launcher/transaction")) ||
+                Directory.Exists(PathIn(root, ".launcher/self-transaction")) || GameBuildHash(root) != expected) return false;
+            foreach (var pair in GameFiles(PathIn(root, "BUILD.json")))
+            {
+                // Controls are personal. Launcher files can be updated independently.
+                if (PreserveGameFile(pair.Key)) continue;
+                string path = PathIn(root, pair.Key);
+                if (!File.Exists(path) || !Hash(path).Equals(pair.Value, StringComparison.OrdinalIgnoreCase)) return false;
+            }
+            return true;
+        }
+        public static void FinishGameSession(string root, string observedBuild, bool windowShown, int exitCode)
+        {
+            if (!windowShown || exitCode != 0) return;
+            try
+            {
+                if (!GameCacheExists(root) || !GameCleanupReady(root, observedBuild)) return;
+                Write(PathIn(root, ".launcher/game-confirmed.json"), Json.Encode(new { manifest_sha256 = observedBuild }));
+                PruneGameFiles(root);
+            }
+            catch (Exception ex) { LauncherLog.Write(root, "Game cleanup deferred: " + ex.Message); }
+        }
+        public static void CleanupGameAfterStartup(string root)
+        {
+            try
+            {
+                if (!GameCacheExists(root)) return;
+                string marker = PathIn(root, ".launcher/game-confirmed.json");
+                if (!File.Exists(marker) || new FileInfo(marker).Length > 4096) return;
+                string expected = Json.String(Json.Object(File.ReadAllText(marker)), "manifest_sha256");
+                if (GameCleanupReady(root, expected)) PruneGameFiles(root);
+            }
+            catch (Exception ex) { LauncherLog.Write(root, "Game cleanup deferred: " + ex.Message); }
+        }
+        static bool GameCacheExists(string root)
+        {
+            return Directory.Exists(PathIn(root, ".launcher/rollback")) || Directory.Exists(PathIn(root, ".launcher/pending")) ||
+                Directory.Exists(PathIn(root, ".launcher/game-obsolete"));
+        }
+        static void CheckGameCleanupTree(string folder, bool pending, string relative = "")
+        {
+            // ISO files are never cache, even if manually placed in an updater
+            // folder. Refuse the entire cleanup before deleting any of its files.
+            foreach (string entry in Directory.GetFileSystemEntries(folder))
+            {
+                var attributes = File.GetAttributes(entry);
+                Require((attributes & FileAttributes.ReparsePoint) == 0, "Linked game cleanup path.");
+                string name = Path.GetFileName(entry);
+                if ((attributes & FileAttributes.Directory) != 0)
+                {
+                    bool installationRoot = relative.Length == 0 || relative.Equals(pending ? "payload" : "files", StringComparison.OrdinalIgnoreCase);
+                    Require(!installationRoot || (!new[] { "Saves", "Data", "Textures" }.Contains(name, StringComparer.OrdinalIgnoreCase) &&
+                        (pending || !name.Equals("Settings", StringComparison.OrdinalIgnoreCase))), "Protected data inside game cleanup folder: " + entry);
+                    CheckGameCleanupTree(entry, pending, relative.Length == 0 ? name : relative + "/" + name);
+                }
+                else Require(!Path.GetExtension(entry).Equals(".iso", StringComparison.OrdinalIgnoreCase), "ISO inside updater folder; files preserved: " + entry);
+            }
+        }
+        static void RemoveGameCache(string root, string relative)
+        {
+            try
+            {
+                string folder = PathIn(root, relative);
+                if (!Directory.Exists(folder)) return;
+                CheckGameCleanupTree(folder, relative == ".launcher/pending");
+                // Rename a finished rollback before deletion so a locked file
+                // cannot leave a partially deleted snapshot offered for restore.
+                if (relative == ".launcher/rollback")
+                {
+                    string retired = PathIn(root, ".launcher/game-obsolete");
+                    if (Directory.Exists(retired)) return;
+                    Directory.Move(folder, retired);
+                    relative = ".launcher/game-obsolete";
+                }
+                RemoveOwned(root, relative);
+            }
+            catch (Exception ex) { LauncherLog.Write(root, "Game cleanup deferred for " + relative + ": " + ex.Message); }
+        }
+        public static void DiscardGameStaging(string root)
+        {
+            string pending = PathIn(root, ".launcher/pending");
+            if (Directory.Exists(pending)) CheckGameCleanupTree(pending, true);
+            RemoveOwned(root, ".launcher/pending");
+        }
+        static void PruneGameFiles(string root)
+        {
+            RemoveGameCache(root, ".launcher/game-obsolete");
+            RemoveGameCache(root, ".launcher/rollback");
+            string pending = PathIn(root, ".launcher/pending");
+            if (!Directory.Exists(pending)) return;
+            string marker = PathIn(pending, "release.json");
+            bool obsolete = !File.Exists(marker);
+            if (!obsolete)
+            {
+                try { obsolete = GameVersion.Parse(Json.String(Json.Object(File.ReadAllText(marker)), "version"))
+                    .CompareTo(GameVersion.Parse(InstalledVersion(root))) <= 0; }
+                catch (Exception ex) { LauncherLog.Write(root, "Game staging cleanup deferred: " + ex.Message); }
+            }
+            if (obsolete) RemoveGameCache(root, ".launcher/pending");
         }
         public static void Rollback(string root)
         {
@@ -308,9 +445,30 @@ namespace TimeSplitters.Launcher
                 if (!keepLauncher || !LauncherFile(pair.Key)) changes.Add(new Change { Name = pair.Key, Source = path });
             }
             Require(hashes.ContainsKey("Bin/futureperfect_recomp.exe") && hashes.ContainsKey("Launch.ps1"), "Staged runtime is incomplete.");
+            // Remove only unchanged files explicitly owned by the old release.
+            // These removals share the install journal and therefore roll back
+            // normally if installation fails or the user restores the old game.
+            string oldManifest = PathIn(root, "BUILD.json");
+            if (File.Exists(oldManifest))
+            {
+                Dictionary<string, string> previous = null;
+                try { previous = GameFiles(oldManifest); }
+                catch (Exception ex) { LauncherLog.Write(root, "Old game file pruning skipped: " + ex.Message); }
+                if (previous != null)
+                {
+                    var incoming = new HashSet<string>(hashes.Keys, StringComparer.OrdinalIgnoreCase);
+                    foreach (var pair in previous)
+                    {
+                        if (incoming.Contains(pair.Key) || PreserveGameFile(pair.Key)) continue;
+                        string path = PathIn(root, pair.Key);
+                        if (File.Exists(path) && Hash(path).Equals(pair.Value, StringComparison.OrdinalIgnoreCase))
+                            changes.Add(new Change { Name = pair.Key, Source = null });
+                    }
+                }
+            }
             changes.Add(new Change { Name = "BUILD.json", Source = PathIn(payload, "BUILD.json") });
             Apply(root, changes, null);
-            RemoveOwned(root, ".launcher/pending");
+            RemoveGameCache(root, ".launcher/pending");
         }
     }
 }
