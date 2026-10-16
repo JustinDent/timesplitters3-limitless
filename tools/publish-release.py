@@ -233,10 +233,19 @@ This is an experimental PC port. Original US Xbox game files are required and ar
 
 ## Download and play
 
-Download **{self.archive.name}**, extract the entire ZIP and run **Play.cmd**.
-On first launch, select your US Xbox ISO or extracted game folder. Python, Git,
-Visual Studio and an emulator are not required. Preserve **Data**, **Settings**
-and **Saves** when upgrading. The companion `.zip.sha256` file verifies the download.
+**Recommended: use the [Windows launcher](https://github.com/{self.repo}/releases/latest).**
+Download and extract the launcher ZIP, then open **TimeSplitters Launcher.exe**.
+Set **Update channel → {'Preview' if self.prerelease else 'Stable'}** and choose
+**Install release**. Import your US Xbox game once using **Locate ISO** or
+**Use extracted files**, then select **Play Game**. The launcher downloads and
+verifies game releases and preserves your game data, settings and saves during updates.
+
+**Portable ZIP (alternative):** Download **{self.archive.name}**, extract the
+entire ZIP and run **Play.cmd**. On first launch, select your US Xbox ISO or
+extracted game folder. Preserve **Data**, **Settings** and **Saves** when upgrading.
+The companion `.zip.sha256` file verifies the portable download.
+
+Python, Git, Visual Studio and an emulator are not required to play.
 
 ## Build and validation
 

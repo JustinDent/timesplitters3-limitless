@@ -14,13 +14,25 @@ public static class LauncherSettingsChecks
     static string Root(string name) { string root=Path.Combine(temp,name);Directory.CreateDirectory(root);return root; }
     static void Put(string root,string file,string data) { string path=Path.Combine(root,file);Directory.CreateDirectory(Path.GetDirectoryName(path));File.WriteAllText(path,data); }
     static string Read(string root,string file) { return File.ReadAllText(Path.Combine(root,file)); }
-    static void Test(string name,Action action) { action();count++;Console.WriteLine("PASS "+name); }
+    static void Test(string name,Action action)
+    {
+        Console.WriteLine("START "+name);
+        var elapsed=Stopwatch.StartNew();
+        try { action(); }
+        catch(Exception failure) { throw new Exception("Launcher settings check failed: "+name,failure); }
+        count++;Console.WriteLine("PASS "+name+" ("+elapsed.ElapsedMilliseconds+" ms)");
+    }
     static void STA(Action action)
     {
         Exception failure=null;
         var thread=new System.Threading.Thread(()=> { try {action();} catch(Exception ex){failure=ex;} });
         thread.IsBackground=true;thread.SetApartmentState(System.Threading.ApartmentState.STA);thread.Start();
-        Require(thread.Join(10000));if(failure!=null)throw failure;
+        // The first WPF control initializes fonts, themes and the graphics
+        // stack. Cold hosted Windows runners can take more than ten seconds.
+        // Keep the wait bounded, but distinguish startup timeouts from failed
+        // assertions and preserve the original UI-thread stack for diagnosis.
+        if(!thread.Join(60000)) throw new TimeoutException("Launcher settings UI thread did not finish within 60 seconds.");
+        if(failure!=null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(failure).Throw();
     }
     static void Click(System.Windows.Controls.Button button)
     { button.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent)); }
