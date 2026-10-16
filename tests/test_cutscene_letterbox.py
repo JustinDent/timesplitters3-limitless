@@ -3,35 +3,19 @@ import hashlib
 import os
 from pathlib import Path
 import re
-import shutil
 import struct
 import subprocess
 import sys
 
 import pytest
+from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / 'external/ts3FPrecomp'
 
 
 def compile_and_run(tmp_path, source, fails=False):
-    environment = os.environ.copy()
-    compiler = shutil.which('cl' if os.name == 'nt' else 'cc')
-    if not compiler and os.name == 'nt':
-        locator = Path(os.environ['ProgramFiles(x86)']) / 'Microsoft Visual Studio/Installer/vswhere.exe'
-        install = subprocess.check_output([str(locator), '-latest', '-requires',
-                    'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
-                    '-property', 'installationPath'], text=True).strip()
-        setup = Path(install) / 'VC/Auxiliary/Build/vcvars64.bat'
-        assert install and setup.is_file(), 'MSVC x64 is required'
-        script = tmp_path / 'compiler-env.cmd'
-        script.write_text(f'@echo off\ncall "{setup}" >nul\nif errorlevel 1 exit /b 1\nset\n')
-        output = subprocess.check_output(f'cmd.exe /d /u /s /c ""{script}""', encoding='utf-16-le')
-        environment.update((key.upper(), value) for key, value in
-                           (line.split('=', 1) for line in output.splitlines()
-                            if '=' in line and not line.startswith('=')))
-        compiler = shutil.which('cl', path=environment.get('PATH'))
-    assert compiler, 'A native C compiler is required'
+    compiler, environment = native_compiler(tmp_path)
     fixture = tmp_path / 'letterbox.c'
     fixture.write_text(source, encoding='utf-8')
     exe = tmp_path / ('letterbox.exe' if os.name == 'nt' else 'letterbox')

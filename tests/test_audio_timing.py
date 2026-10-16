@@ -1,10 +1,10 @@
 """Execute actual audio adapters against a deterministic fake output device."""
 import os
 from pathlib import Path
-import shutil
 import subprocess
 
 import pytest
+from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNTIME = ROOT / 'external/ts3FPrecomp'
@@ -12,25 +12,7 @@ RUNTIME = ROOT / 'external/ts3FPrecomp'
 
 def compile_audio(kind, tmp_path_factory):
     directory = tmp_path_factory.mktemp('audio-' + kind)
-    environment = os.environ.copy()
-    compiler = shutil.which(os.environ.get('CC', 'cl' if os.name == 'nt' else 'cc'))
-    if not compiler and os.name == 'nt':
-        locator = Path(os.environ.get('ProgramFiles(x86)', r'C:\Program Files (x86)')) / 'Microsoft Visual Studio/Installer/vswhere.exe'
-        if locator.is_file():
-            found = subprocess.run([str(locator), '-latest', '-requires',
-                                    'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
-                                    '-property', 'installationPath'], capture_output=True, text=True, check=True)
-            setup = Path(found.stdout.strip()) / 'VC/Auxiliary/Build/vcvars64.bat'
-            if found.stdout.strip() and setup.is_file():
-                script = directory / 'msvc-env.cmd'
-                script.write_text(f'@echo off\ncall "{setup}" >nul\nif errorlevel 1 exit /b 1\nset\n', encoding='utf-8')
-                output = subprocess.check_output(f'cmd.exe /d /u /s /c ""{script}""',
-                                                 encoding='utf-16-le')
-                environment.update((key.upper(), value) for key, value in
-                                   (line.split('=', 1) for line in output.splitlines()
-                                    if '=' in line and not line.startswith('=')))
-                compiler = shutil.which('cl', path=environment.get('Path', environment.get('PATH')))
-    assert compiler, 'Audio regressions require a C compiler (MSVC x64 on Windows)'
+    compiler, environment = native_compiler(directory)
     exe = directory / (kind + ('.exe' if os.name == 'nt' else ''))
     source = ROOT / f'tests/audio_{kind}_timing.c'
     if Path(compiler).stem.lower() == 'cl':

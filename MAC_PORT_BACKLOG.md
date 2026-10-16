@@ -196,6 +196,17 @@ runtime readiness. No full campaign playthrough is required.
 
 ### MAC-012 — Standalone Mac runtime distribution
 
+- **Release-test compiler discovery follow-up (2026-10-16, branch
+  `fix-release-msvc-tests`):** `tests/native_compiler.py` supplies one compiler
+  environment to audio, framebuffer, cutscene, and lifted-float regressions.
+  Windows discovers standalone Build Tools as well as Visual Studio and loads
+  x64 headers/libraries without a developer shell. The POSIX path still uses
+  `CC` or `cc` and inherits its environment. No Mac adapter is needed for this
+  Windows discovery fix; simulated POSIX checks are separate from pending
+  execution on macOS. Acceptance: run `tests/test_native_compiler.py` and the
+  affected native regressions on Mac. See
+  [compiler validation](STATUS.md#release-regression-compiler-discovery--2026-10-16).
+
 - **Status:** Queued
 - **PC behavior:** Windows has a public runtime package with launcher, dependencies, licenses, checksums/build manifest and game-import workflow.
 - **PC source:** Audited revision above; `tools/package-release.py`, `tools/release/Import-game.ps1`, `tools/release/ImportGame.cs`, `tests/release_import.py`; `tools/play-native-mac.py`.

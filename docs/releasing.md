@@ -4,6 +4,10 @@
 
 Run these commands from the repository root. Players can use the ready-made ZIP linked in the README.
 
+Release regression tests can run from ordinary PowerShell. They discover Visual
+Studio or standalone Build Tools and load the MSVC x64 environment automatically.
+Install the C++ x64 toolchain; a Developer PowerShell session is not required.
+
 ## Package locally
 
 To produce the same public package after building:
