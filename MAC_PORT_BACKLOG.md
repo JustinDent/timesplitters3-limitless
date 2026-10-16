@@ -230,6 +230,25 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 If shared code already supplies the feature, record that fact and use awaiting
 validation until Mac checks pass. Do not infer Mac support from Windows results.
 
+### MAC-014 — Patch upgrades across Windows watermark and native overlay guards
+
+- **Status:** Awaiting validation
+- **PC behavior:** Release preparation accepts the complete shared patch stack
+  over fresh sources or an existing Windows watermark build, without losing
+  unrelated runtime edits. Conflicting code still fails before runtime writes.
+- **PC source:** Uncommitted on `mac-port`: `tools/apply-patches.py` and
+  `tests/test_patch_updates.py`; tested with `main` revision `5cf4866` patches.
+- **PC validation:** Eleven patch-loader tests passed on Windows, plus fresh and
+  existing-Windows fixtures using the complete main patch stack; repeated
+  application made no changes. See `STATUS.md`, 2026-10-15 patch preparation.
+- **Existing Mac support:** The same Python patch loader serves both hosts.
+- **Mac adaptation needed:** No native adapter changes; validate the shared
+  loader on macOS. This does not add the Windows watermark patch to this branch.
+- **Mac acceptance checks:** Run patch-loader tests and apply/reapply the
+  complete merged stack on disposable sources, preserving actual code conflicts.
+- **Mac implementation and evidence:** Shared fix present locally; macOS checks
+  and other-device synchronization remain unverified.
+
 ## Entry template
 
 Copy this template into the queue for each new entry. Replace all placeholders.

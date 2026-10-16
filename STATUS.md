@@ -1023,3 +1023,25 @@ exited normally at its bound (exit 0), with at least 1800 completed guest frames
 and 1993 successful host presents, no sampled GL errors or native fault.
 Evidence: `logs/mac-capture-final-summary.json` and `logs/mac-capture-final.err`.
 No gameplay or physical-input claim is made from this short startup check.
+
+## 2026-10-15 — Windows release patch preparation
+
+Local, uncommitted change on `mac-port` base `e83e074`; release patch inputs
+were read from local `main` revision `5cf4866`. Host: Windows 11 x64
+10.0.26300, Python 3.14.2, Git 2.47.0.windows.2. The native boot overlay guard
+invalidated the Windows watermark patch's original surrounding context.
+The loader now requires one adjacent context line for that specific patch
+when native boot is present; added/removed code must still match.
+
+`python -m pytest tests/test_patch_updates.py -q`: 11 passed. Added regression
+cases cover fresh application, an existing watermark, repeated application,
+and rejection of conflicting watermark code without writes. Separate temporary
+source-only fixtures using all patches from main reproduced the original error
+before the fix and passed afterward for fresh upstream sources and a copy of
+the existing Windows runtime (34 and 28 files updated respectively); a second
+application changed nothing. The actual runtime was not modified. No game
+build, packaging, publishing, or gameplay test was needed or performed for
+this Python loader fix. No game data or personal settings were used.
+
+MAC-014 tracks pending macOS validation. Changes have not been committed,
+pushed, or merged to main; synchronization with the other device is unverified.
