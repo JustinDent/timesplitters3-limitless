@@ -45,6 +45,13 @@
   Mac execution remains unverified (MAC-020). Personal settings and saves are
   preserved. Source changes are on `33-remove-the-letter-boxes-in-cut-scenes`.
 
+- PR #37 CI follow-up: macOS Clang rejected the test fixture's unsigned
+  `g_fp_top`, which conflicts with the runtime header's signed `int` declaration.
+  Corrected the fixture type and made MSVC C4142 fatal in the focused test
+  compiler. The stricter Windows check reproduced the original failure, then
+  all four cutscene tests passed after correction (4.88 s). Production game
+  code and the validated executable are unchanged. Hosted CI is pending rerun.
+
 ## Khallos Express see-through scenery (issue #9) — 2026-10-16
 
 - Reproduced the transparent train walls and weapon in an isolated Windows

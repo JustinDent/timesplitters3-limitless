@@ -37,7 +37,7 @@ def compile_and_run(tmp_path, source, fails=False):
     exe = tmp_path / ('letterbox.exe' if os.name == 'nt' else 'letterbox')
     includes = RUNTIME / 'templates/runtime'
     if os.name == 'nt':
-        command = [compiler, '/nologo', '/std:c11', '/O2', '/we4028', '/we4029',
+        command = [compiler, '/nologo', '/std:c11', '/O2', '/we4028', '/we4029', '/we4142',
                    '/I' + str(includes), '/I' + str(ROOT / 'src'), str(fixture), '/Fe:' + str(exe),
                    '/Fo:' + str(tmp_path / 'test.obj')]
     else:

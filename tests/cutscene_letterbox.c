@@ -21,7 +21,7 @@ ptrdiff_t g_xbox_mem_offset;
 RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi, g_ebp, g_seh_ebp;
 RECOMP_TLS RecompXmm g_xmm0, g_xmm1;
 RECOMP_TLS double g_fp_stack[8];
-RECOMP_TLS unsigned g_fp_top;
+RECOMP_TLS int g_fp_top;
 #define FP_MEM32(va) MEM32(va)
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"FAIL: %s\n",#x); exit(1); } } while (0)
 
