@@ -20,7 +20,7 @@ namespace TimeSplitters.Launcher
         Dictionary<string, object> document, controller, bindings;
         string runtime;
         public double Sensitivity = .10;
-        public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay;
+        public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public int Width, Height, Scale = 1, Anisotropy = 1, Interpolation = 1;
         public string FrameCap = "adaptive";
         public string Device { get { return Convert.ToString(controller["device"], CultureInfo.InvariantCulture); } set { controller["device"] = value; } }
@@ -39,6 +39,15 @@ namespace TimeSplitters.Launcher
             model.document = Json.Object(model.originals[Files[0]] == null ? DefaultControls() : Text(model.originals[Files[0]]));
             model.ReadController();
             object value;
+            if (model.document.TryGetValue("launcher", out value))
+            {
+                var launcher = Map(value);
+                if (launcher.TryGetValue("skip_startup_splashes", out value))
+                {
+                    Core.Require(value is bool, "Skip startup splash screens must be true or false. No settings were changed.");
+                    model.SkipStartupSplashes = (bool)value;
+                }
+            }
             if (model.document.TryGetValue("mouse", out value))
             {
                 var mouse = Map(value);
@@ -200,6 +209,8 @@ namespace TimeSplitters.Launcher
             object value;
             if (!document.TryGetValue("mouse", out value)) document["mouse"] = value = new Dictionary<string, object>();
             var mouse = Map(value); mouse["sensitivity"] = Sensitivity; mouse["enabled"] = MouseEnabled; mouse["invert_y"] = InvertY;
+            if (!document.TryGetValue("launcher", out value)) document["launcher"] = value = new Dictionary<string, object>();
+            Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             var payload = new[] { Json.Encode(document) + "\n", "TSFP_DISPLAY_V1 " + Width + " " + Height + "\n", UpdateRuntime(runtime, graphics) };
             int committed = 0;
@@ -222,6 +233,9 @@ namespace TimeSplitters.Launcher
             foreach (var pair in new Dictionary<string, string> {
                 {"RECOMP_GAME_DIR","Data"}, {"RECOMP_SAVE_DIR","Saves"}, {"RECOMP_INPUT_CONFIG",Files[0]}, {"RECOMP_FFMPEG_DIR","Bin"}, {"RECOMP_DISPLAY_CONFIG",Files[2]}, {"TSFP_DISPLAY_CONFIG",Files[1]}, {"TSFP_TEXTURE_PACK_DIR","Textures"}, {"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"} }) info.EnvironmentVariables[pair.Key] = Core.PathIn(root, pair.Value);
             info.EnvironmentVariables["RECOMP_TRACE_BUDGET"] = "0";
+            // The existing XMV HLE completes skipped movies normally. Story
+            // cutscenes are rendered by the game and do not use this player.
+            info.EnvironmentVariables["RECOMP_XMV_PLAY"] = model.SkipStartupSplashes ? "0" : "1";
             info.EnvironmentVariables["RECOMP_PC_MOUSE"] = model.MouseEnabled ? "1" : "0";
             info.EnvironmentVariables["RECOMP_MOUSE_INVERT_Y"] = model.InvertY ? "1" : "0";
             info.EnvironmentVariables["RECOMP_MOUSE_SENSITIVITY"] = model.Sensitivity.ToString("R", CultureInfo.InvariantCulture);

@@ -498,6 +498,18 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Startup skipping (2026-10-16, uncommitted on `feat/launcher-skip-startup`):**
+  Windows launcher v1.2.1 adds an off-by-default Startup checkbox under Graphics
+  & resolution. It preserves `launcher.skip_startup_splashes` in the existing
+  controls JSON and explicitly sets `RECOMP_XMV_PLAY=0/1` for each game launch;
+  opening logos and the idle attract movie are skipped, while rendered story
+  cutscenes use a separate system. Sources: `tools/launcher/GameSettings.cs`,
+  `tools/launcher/SettingsWindow.cs`, `tools/playable-launch.ps1`.
+  Existing Mac HLE has no host XMV player, so this does not establish Mac movie
+  playback or a new native checkbox. When adding Mac movie playback/pre-game UI,
+  honor the same saved boolean and switch, preserve unknown JSON members, and
+  verify enabled/disabled launches with isolated paths. Windows evidence:
+  [Launcher startup skipping](STATUS.md#launcher-startup-skipping-2026-10-16).
 - **PC behavior:** Launcher v1.2.0 retains verified release-only game updates,
   independent self-updates, import, rollback and minimize/restore; it adds
   pre-game bindings, graphics, resolution and fullscreen editing with backups,

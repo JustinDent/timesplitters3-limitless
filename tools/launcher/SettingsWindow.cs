@@ -15,7 +15,7 @@ namespace TimeSplitters.Launcher
         readonly GameSettings model;
         readonly TextBlock status;
         readonly TextBox sensitivity, width, height;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes;
         readonly ComboBox device, resolution, scale, filtering, pacing, interpolation;
         readonly Button[,] bindingButtons = new Button[24,4];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
@@ -153,6 +153,11 @@ namespace TimeSplitters.Launcher
             reset.Click+=(s,e)=> { if (MessageBox.Show(Window,"Replace Player 1 bindings and mouse settings with the defaults? Changes are applied only when you save.","Restore defaults",MessageBoxButton.YesNo,MessageBoxImage.Question)==MessageBoxResult.Yes) { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); } };
             controls.Children.Add(reset); tabs.Items.Add(new TabItem { Header="Keyboard & mouse", Content=Scroll(controls) });
             var graphics=new StackPanel();
+            graphics.Children.Add(Text("Startup",20));
+            skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);
+            graphics.Children.Add(skipSplashes);
+            var startupHint=Text("Skip the opening logo videos on your next launch. Also disables the idle attract video. Story cutscenes still play.",12);
+            startupHint.Foreground=Muted; graphics.Children.Add(startupHint);
             graphics.Children.Add(Text("Display & graphics",20));
             graphics.Children.Add(Text("Higher render scale and resolution increase GPU load. These options use the game runtime’s supported settings.",12));
             var sizes=DisplayModes.Primary(model.Width,model.Height);
@@ -223,6 +228,7 @@ namespace TimeSplitters.Launcher
                 model.Sensitivity=number; model.MouseEnabled=enabled.IsChecked==true; model.InvertY=invert.IsChecked==true;
                 string chosenDevice=Devices[device.SelectedIndex]; if(chosenDevice!=model.Device.Replace("xinput:","gamepad:")) model.Device=chosenDevice;
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
+                model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem); model.FrameCap=(string)pacing.SelectedItem; model.Interpolation=Int32.Parse((string)interpolation.SelectedItem);
                 model.Save(); Window.DialogResult=true;
             }
