@@ -18,6 +18,39 @@ spec.loader.exec_module(module)
 HEAD, PREVIOUS = 'a'*40, 'b'*40
 
 
+def link_fixture(link, target):
+    try:
+        link.symlink_to(target, target_is_directory=True)
+    except OSError as error:
+        pytest.skip(f'Directory symlink prerequisite unavailable: {error}')
+
+
+def test_pytest_alias_cleanup_keeps_target_files(tmp_path):
+    tests=tmp_path/'build/release-tests'; target=tests/'audio-buffer0'
+    target.mkdir(parents=True);(target/'fixture.txt').write_text('keep')
+    link=tests/'audio-buffercurrent'; link_fixture(link,target)
+    module.clean_pytest_current_links(tmp_path,tests)
+    assert not link.is_symlink() and (target/'fixture.txt').read_text()=='keep'
+    module.check_directory(tmp_path,tests)
+
+
+@pytest.mark.parametrize('kind',['external','unexpected','nested'])
+def test_pytest_alias_cleanup_rejects_unrecognized_links_without_mutation(tmp_path,kind):
+    tests=tmp_path/'build/release-tests'; target=tests/'fixture0'
+    target.mkdir(parents=True)
+    good=tests/'fixturecurrent'; link_fixture(good,target)
+    if kind=='external':
+        other=tmp_path/'outside0';other.mkdir();bad=tests/'outsidecurrent'
+    elif kind=='nested':
+        other=target;bad=target/'fixturecurrent'
+    else:
+        other=target;bad=tests/'unexpected'
+    link_fixture(bad,other)
+    with pytest.raises(ValueError,match='Unexpected link'):
+        module.clean_pytest_current_links(tmp_path,tests)
+    assert good.is_symlink() and bad.is_symlink() and target.is_dir()
+
+
 class FakePublisher(module.Publisher):
     def __init__(self, root):
         super().__init__(root)

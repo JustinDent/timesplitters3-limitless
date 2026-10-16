@@ -59,7 +59,7 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
-def check_directory(root, path):
+def check_directory(root, path, *, descendants=True):
     """Validate all ancestors before tools recursively create/clean work files."""
     root, path = Path(root).absolute(), Path(path).absolute()
     if path == root or not path.is_relative_to(root):
@@ -67,10 +67,35 @@ def check_directory(root, path):
     for item in [root, *[parent for parent in reversed(path.parents) if parent.is_relative_to(root)], path]:
         if item.is_symlink() or (item.exists() and os.name == 'nt' and item.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT):
             raise ValueError(f'Redirected release work path: {item}')
-    if path.is_dir():
+    if descendants and path.is_dir():
         for item in path.rglob('*'):
             if item.is_symlink() or (os.name == 'nt' and item.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT):
                 raise ValueError(f'Redirected release work path: {item}')
+
+
+def clean_pytest_current_links(root, path):
+    """Unlink pytest's sibling aliases, never their targets or arbitrary links."""
+    root, path = Path(root).absolute(), Path(path).absolute()
+    if path != root/'build/release-tests':
+        return
+    check_directory(root, path, descendants=False)
+    if not path.is_dir():
+        return
+    links = []
+    for item in path.rglob('*'):
+        redirected = item.is_symlink() or (os.name == 'nt' and item.lstat().st_file_attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT)
+        if not redirected:
+            continue
+        target = item.resolve()
+        if (not item.is_symlink() or item.parent != path or not item.name.endswith('current') or
+                target.parent != path.resolve() or
+                not re.fullmatch(re.escape(item.name[:-7])+r'[0-9]+', target.name) or
+                (target.exists() and not target.is_dir())):
+            raise ValueError(f'Unexpected link in release test files: {item}')
+        links.append(item)
+    # Validate every link before mutating any; unlink never follows the target.
+    for link in links:
+        link.unlink()
 
 
 @contextmanager
@@ -227,6 +252,7 @@ Online hosts need TCP 30820 and their game UDP port (default 30821) forwarded to
         self.notes.write_text(body, encoding='utf-8', newline='\n')
 
     def recycle(self, path):
+        clean_pytest_current_links(self.root, path)
         check_directory(self.root, path)
         self.run(['powershell.exe', '-NoProfile', '-File', self.root/'tools/recycle-release-work.ps1',
                   '-LiteralPath', path], live=True)
@@ -236,6 +262,7 @@ Online hosts need TCP 30820 and their game UDP port (default 30821) forwarded to
             if path.exists():
                 raise ValueError(f'Existing release output: {path.name}. Preserve/recycle the old output or use a new VERSION; nothing was overwritten.')
         tests = self.root/'build/release-tests'
+        clean_pytest_current_links(self.root, tests)
         check_directory(self.root, tests)
         self.run([self.python, self.root/'tools/apply-patches.py', self.root/'external/ts3FPrecomp', self.root/'patches'], live=True)
         self.run(['powershell.exe', '-NoProfile', '-File', self.root/'tsfp.ps1', 'Build'], live=True)

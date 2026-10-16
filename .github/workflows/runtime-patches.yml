@@ -12,6 +12,8 @@ on:
       - tests/test_audio_timing.py
       - tests/native_compiler.py
       - tests/test_pc_display_modes.py
+      - tools/publish-release.py
+      - tests/test_publish_release.py
       - tests/pc_display_modes.c
       - src/pc_display.c
       - tests/test_native_compiler.py
@@ -86,3 +88,5 @@ jobs:
       - name: Test primary display resolution discovery
         if: runner.os == 'Windows'
         run: python -m pytest tests/test_pc_display_modes.py -q --tb=short
+      - name: Test release validation and disposable fixture cleanup
+        run: python -m pytest tests/test_publish_release.py -q --tb=short
