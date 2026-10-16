@@ -533,6 +533,20 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Launcher update cleanup (2026-10-16, uncommitted on
+  `fix/launcher-update-cleanup`):** `tools/launcher/SelfUpdate.cs` removes the
+  prior launcher backup, obsolete/incomplete staging and unused helper EXEs
+  after the normal main window loads and the installed file hashes verify.
+  `Launcher.cs` invokes cleanup under the installation mutex; render previews
+  do not invoke it. Failed preparation also cleans its own staging. Active
+  transactions, newer/unknown pending releases, linked paths, game rollback and
+  personal files are protected; locked files retry on the next startup.
+  `tests/launcher_updates.cs` covers repeated upgrades, deferred cleanup,
+  preservation, junction refusal and preparation failures. Mac has no equivalent
+  published-release launcher implementation; adaptation remains queued. When
+  implementing it, retain these success/recovery boundaries and test POSIX
+  executable replacement/deletion independently. Windows results do not verify
+  Mac integration. See [cleanup validation](STATUS.md#launcher-update-cleanup-2026-10-16).
 - **Startup argument handling (2026-10-16, release preparation on
   `fix/launcher-bootstrap-arguments`):** A resolution-preview command passed an
   application-only flag to the startup EXE, producing `Unknown bootstrap

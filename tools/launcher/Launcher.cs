@@ -213,6 +213,7 @@ namespace TimeSplitters.Launcher
             Button("LogsButton").Click += (s, e) => OpenFolder(".launcher");
             Window.Loaded += async (s, e) =>
             {
+                SelfUpdate.CleanupAfterStartup(root);
                 await Check();
                 string result = Core.PathIn(root, ".launcher/last-result.txt");
                 if (File.Exists(result)) { SetStatus(File.ReadAllText(result)); File.Delete(result); }

@@ -138,6 +138,23 @@ updates/rollback preserve a newer independently installed launcher. Keep the
 complete `.launcher` folder for recovery. No launcher-only release is published
 automatically by building these files.
 
+After a normal launcher window loads successfully and both installed launcher
+executables match their manifest, automatic cleanup removes the previous
+launcher backup (`self-rollback`), obsolete or incomplete launcher staging
+(`self-pending`), and unused `self-helper.exe` / `update-helper.exe` copies.
+There is no retained history of older launcher versions after successful startup.
+The backup remains available until that startup succeeds. An unfinished launcher
+transaction or an invalid installation prevents cleanup. A newer prepared update,
+an unreadable staging marker, and helpers needed by pending updates are retained.
+Locked files are logged and retried at the next normal startup. Failed or cancelled
+launcher downloads also discard their staging files immediately when possible.
+
+Cleanup only targets these launcher-owned paths. It preserves game rollback,
+game data, settings, saves, preferences, logs, and unrelated/manual downloads.
+Developer render previews never perform startup cleanup. Run the isolated
+cleanup regressions with `build/launcher/launcher-tests.exe --cleanup` after
+building the test executable with `tools/build-launcher.ps1 -Test`.
+
 ## Startup argument troubleshooting
 
 `Unknown bootstrap arguments` means the startup EXE received unsupported
