@@ -112,6 +112,7 @@ try {
                         (Join-Path $projectRoot 'tests\test_audio_timing.py'),
                         (Join-Path $projectRoot 'tests\test_framebuffer_sampling.py'),
                         (Join-Path $projectRoot 'tests\test_cutscene_letterbox.py'),
+                        (Join-Path $projectRoot 'tests\test_decal_projection.py'),
                         (Join-Path $projectRoot 'tests\test_recomp_generation.py'),
                         (Join-Path $projectRoot 'tests\test_recomp_float_joins.py'), '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'pytest', 'tools', '-q', '--tb=short')

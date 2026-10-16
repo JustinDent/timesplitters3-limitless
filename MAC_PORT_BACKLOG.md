@@ -198,6 +198,15 @@ runtime readiness. No full campaign playthrough is required.
 
 - **Status:** Awaiting validation
 - **PC behavior:** Display settings offers Apply/Keep/Revert with a 15-second automatic rollback, persisted resolution and widescreen camera/HUD handling.
+- **Issue #19 decal projection follow-up (`19-floating-decals`):** `src/pc_display_menu.c`,
+  `src/pc_display_menu.h` and `patches/zzzzzzzzzz-decal-projection.patch` make
+  both depth-biased decal passes use the active camera's horizontal and vertical
+  aperture, preserving their depth bias. This is shared guest code; the existing
+  Mac build includes the same manual wrappers and display source, so no native
+  adapter is required. Mac rendering remains unverified. Acceptance: in Arcade,
+  shoot a wall and strafe/look around at default, 4:3, 16:9 and ultrawide modes;
+  impacts must stay attached and HUD proportions must remain unchanged. Also
+  check cinematic camera zoom and split-screen cameras with isolated settings.
 - **PC source:** Audited revision above; `src/pc_display.c`, `src/pc_display_menu.c`, `src/pc_display_renderer.inc`, `tests/pc_display_game.py`, `tests/pc_display_gameplay.py`.
 - **PC validation:** [Display settings and texture preview](STATUS.md#display-settings-and-texture-preview--october-15) records Windows apply/save, timeout rollback, 4K and ultrawide render-target checks.
 - **Existing Mac support:** Mac shares the menu/model and has working resolution targets, Cocoa save/reload and fullscreen. The in-game timeout interaction was not exercised end-to-end.
