@@ -373,6 +373,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-015 — Release test privileges and disposable cleanup
 
+- **Release follow-up:** `tools/publish-release.py` recognizes only pytest's
+  `*current` sibling symlinks in `build/release-tests`, validates all targets
+  before unlinking, and retains the normal recursive-cleanup guards. Native
+  fixtures cover containment and target preservation. This affects Windows
+  publication; a Mac publisher still needs its own native adapter/validation.
+
 - **Status:** Awaiting validation
 - **PC behavior:** Native-tool symlink tests skip only Windows privilege error
   1314; other errors still fail. Release test/staging cleanup removes validated

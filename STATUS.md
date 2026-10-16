@@ -25,6 +25,13 @@ these source-level Mac checks do not establish native Mac game execution.
 Publication follows `Publish-Release.ps1` on clean main, including a fresh
 package manifest/checksum and portable Online validation. Final artifact/source
 hashes and publication records stay under ignored `build/releases`.
+The first preparation stopped on pytest's retained `*current` aliases.
+Publisher cleanup now validates and unlinks only those direct sibling aliases
+inside its own test tree; targets and arbitrary/external/nested links remain
+protected. Passed per-test fixtures are discarded by pytest so intentional
+hostile-link test cases do not remain in the cleanup tree. Regression fixtures
+cover accepted/rejected aliases and a real nested pytest session with retained
+session-cache targets. The earlier diagnostic fixtures are preserved separately.
 Native Mac execution and paused-Options gameplay traversal remain unverified for
 this change; adaptation is tracked in MAC-010 and MAC-021.
 
