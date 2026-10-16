@@ -239,6 +239,17 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 ### MAC-016 — Shared pickup-range comparison fix (issue #6)
 
 - **Status:** Awaiting validation
+- **Issue #24 follow-up (2026-10-16, this revision):** The same existing
+  `patches/recomp-float-joins.patch` from `837692d` also fixes the controller
+  sensitivity slider's shared clamp at guest address `0x002EABEB`.
+  `tests/controller_sensitivity.c` and `tests/test_recomp_float_joins.py` execute
+  the original slider callback with its XBE constants, covering 0.05 steps,
+  endpoints, no input and guest register preservation on all four profiles.
+  A test restoring the older generator behavior reproduces the endpoint jump.
+  No new platform adapter or runtime patch is needed. On Mac, regenerate/rebuild
+  and run this shared regression with Clang, then check the slider in the menu
+  with isolated settings. Native validation and other-device synchronization
+  remain pending. [Windows evidence](STATUS.md#controller-sensitivity-slider-issue-24--2026-10-16).
 - **PC behavior:** Restore the original horizontal-distance rejection for pickups
   by preserving SSE comparison snapshots across control-flow joins. The old
   translation ignored this rejection; pickup radii and input bindings are unchanged.
