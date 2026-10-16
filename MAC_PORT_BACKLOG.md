@@ -59,6 +59,22 @@ runtime readiness. No full campaign playthrough is required.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **Issue #7 follow-up (2026-10-16):** `src/pc_terminal.h`
+  on `7-breaking-and-entering-camera-turret-not-working` routes relative mouse
+  counts to the active terminal's logical pointer in
+  mode `0x2000`, preserving its 4–251 bounds and normal aiming on exit.
+  Left-click emits Confirm only in terminal menus; release is required when
+  entering/leaving with a held button. Shared context is in `src/pc_input.c`
+  and the sampling hook in `patches/zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch`.
+  Both `src/pc_controls.c` and `src/native/input_sdl.c` call this shared helper;
+  no additional Mac adapter is required. `tests/test_terminal_mouse.py` is
+  included in Windows/macOS CI. Windows build and physical terminal checks
+  passed, including user-confirmed left-click selection and return to ordinary
+  aiming/firing; results are recorded in [Issue #7 validation](STATUS.md#terminal-mouse-routing-issue-7--2026-10-16).
+  Native Mac compilation and physical-pointer validation remain pending:
+  check terminal selection/clicks, scripted/paused states and ordinary aiming
+  after exit using isolated saves/settings.
+
 - **Status:** Awaiting validation
 - **Issue #18 follow-up (2026-10-16, commit 8dee97f):** `src/pc_camera.h` no longer
   requires guest player ID zero. Both Windows `src/pc_controls.c` and native
