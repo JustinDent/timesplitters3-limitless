@@ -56,6 +56,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
 | MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
 | MAC-021 | Published-release launcher and pre-game settings | Queued |
+| MAC-022 | Story Objectives health/shield (issue #11) | Awaiting validation |
 
 ### MAC-001 — Direct-camera mouse look
 
@@ -524,3 +525,31 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 - **Mac acceptance checks:** Concrete behavior to verify with isolated tests.
 - **Mac implementation and evidence:** Commit/files, host checks and a link to
   the relevant `STATUS.md` validation record; pending until performed.
+
+### MAC-022 — Story Objectives health/shield (issue #11)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Story quick Objectives (Tab/Back) displays the original
+  health/shield indicators while retaining quick-menu input and pause behavior.
+  Indicators automatically fit the current viewport with a 4% edge inset at
+  every output resolution, including split-screen. The Objectives panel uses
+  the same fit ratio for its width and text measurement to reserve clearance
+  from the indicators; original font size and wrapping remain in use.
+- **Source:** Branch `11-objectives-tab-not-showing-health-and-shield` (issue #11);
+  `patches/zzzzzzzzzzzzzzzzz-story-objectives-health.patch`,
+  `src/pc_objectives.h`, `tests/test_objectives_health.py`,
+  `tests/objectives_health.c`, `tests/objectives_layout.c`.
+- **Mac support:** Shared guest wrapper with no operating-system or renderer
+  API dependency; no additional adapter is expected. Native Mac compilation and
+  gameplay are not yet verified.
+- **Remaining checks:** Apply the full stack, run the regression on native Mac,
+  then check Story quick Objectives at full/partial health and shield, normal
+  pause-menu entry/exit, controller Back and keyboard input, live resolution
+  changes, portrait/ultrawide displays, edge insets, panel-border clearance,
+  long/multiple objectives with wrapping/scrolling, and split-screen.
+  Other game modes must keep their existing menu behavior.
+- **PC validation:** Final Windows build and native checks passed; seven
+  focused regressions passed. The user confirmed the viewport fit and corrected
+  panel spacing on 2026-10-16. Live coverage of all display shapes remains
+  unverified; shared numerical tests cover those dimensions.
+- **Evidence:** [Windows scope](STATUS.md#story-objectives-health-and-shield-issue-11--2026-10-16).

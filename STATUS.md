@@ -1,5 +1,70 @@
 # Measured progress
 
+## Story Objectives health and shield (issue #11) — 2026-10-16
+
+- Implemented on `11-objectives-tab-not-showing-health-and-shield`,
+  based on main `d83ca5e`. Windows x64, CPython 3.14.2, MSVC x64, D3D11.
+  Supported US XBE SHA-256 verified before generation and isolated testing.
+- The before capture shows the Story Status/Objectives panel without indicators.
+  A read-only sample of the user's open Objectives screen found menu flags
+  `0x191`, a valid health/shield data pointer, and the display enable flag set.
+  The original quick-menu opener sets `0x100`; the original menu renderer tests
+  this bit and skips `sub_0013AB60`, its health/shield renderer.
+- The shared `story-objectives-health` patch temporarily masks `0x100` only while
+  drawing active Story quick menus, then restores it and transient `0x80`.
+  The original indicator data, animation and remaining visibility guards stay
+  in use. Input/pause state and other game modes retain their behavior.
+- The first corrected live capture confirmed both indicators and calls to the
+  original renderer, but the user reported clipped sides. Replay identified
+  indicator vertices at guest x=-48.64 in a 640-wide viewport. The new
+  `src/pc_objectives.h` and health-draw wrapper shrink the menu indicators to
+  the current viewport with a 4% inset on each side, retaining a common scale
+  for both axes and smaller animation phases. Guest viewport coordinates map
+  through the existing renderer to any selected output resolution. The scale
+  is recomputed each draw, supports split-screen, and leaves normal gameplay
+  HUD draws alone. Caller arguments are restored afterward.
+- The user confirmed the viewport fit, then reported the crescents covering
+  the Objectives panel edges. `build/windows/Release/frame001.d3dcap` reproduced
+  this with a nonempty first-mission objective. The panel still used its original
+  80% width while the gauges had shrunk. The shared Objectives builder now uses
+  the same fit ratio for both container and text-measurement widths, restoring
+  the shared US constants immediately afterward. Font size remains unchanged;
+  long objectives use the original wrapping/scrolling layout. Live verification
+  of this additional spacing correction initially failed: the next capture was
+  unchanged. The builder wrapper incorrectly treated the camera base as its
+  viewport, so invalid dimensions bypassed sizing. The US menu renderer uses
+  the viewport embedded at camera+0x224. The wrapper now uses that same offset,
+  and the fixture separates the camera base from its embedded viewport.
+  Seven focused tests pass, including a mutant reproducing the missing offset;
+  the user confirmed the rebuilt correction is working on 2026-10-16.
+- Seven focused regressions passed: production visibility and sizing wrappers,
+  deliberately broken variants, and the original checksum-verified US menu
+  routine. Tests cover full pause/inactive menus, other modes, invalid indices,
+  hidden widgets, display-disabled state, guest stack/register preservation,
+  changing 4:3/16:9/16:10/ultrawide/portrait dimensions, local viewports 1–4,
+  off-center animation, matching panel/text-measurement width and restoration
+  of shared constants. A deliberately unscaled panel reproduces the regression.
+  Portable tests run in the Windows/macOS transition
+  workflow; the original-XBE test skips in CI without private game data.
+- Final camera-offset correction: the complete Windows Release build and all
+  native build checks passed, including the prompts/focus test. Seven focused
+  Objectives tests passed. Before this last offset correction, all 34 focused
+  and patch-transition regressions passed together in 207.45 seconds. The
+  historical upgrade fixture excludes the new patch when constructing its
+  pre-letterbox state, then upgrades to the complete stack. `git diff --check`
+  passed. Earlier sizing builds intermittently failed the unchanged prompts
+  test's foreground-window assertion; both later full builds passed it.
+- The user confirmed the indicators fit inside the screen and, after correcting
+  the camera+0x224 viewport lookup, confirmed the panel-spacing fix is working.
+  This is user-reported Windows visual validation. Automated UI verification
+  was stopped by the user's Escape key. Live coverage of all resolutions,
+  split-screen and long/multiple objectives remains unverified; numerical
+  layout cases cover the viewport sizes listed above. Mac compilation/gameplay
+  remain unverified; see MAC-022. Local captures and test provenance are under
+  `build/issue-11-objectives`; the final full-build log is
+  `logs/issue-11-build.log`, and the earlier combined 34-test result is in
+  `logs/issue-11-regressions.log`.
+
 ## Resolution release preparation — October 16, 2026
 
 Game v0.2.0-alpha.4 and launcher v1.2.0 are prepared together on
