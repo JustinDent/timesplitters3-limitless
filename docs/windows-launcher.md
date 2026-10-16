@@ -93,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build. The build produces these assets
-in `build/launcher`; for version 1.2.1, publish all three together:
+in `build/launcher`; for version 1.2.2, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.1-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.1-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.2-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.2-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.1`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.2`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -140,12 +140,20 @@ automatically by building these files.
 
 ## Pre-game settings
 
-The sidebar **Game settings** window edits Player 1's keyboard/mouse bindings
+The sidebar **Game settings** page edits Player 1's keyboard/mouse bindings
 (four alternatives per action), input device, sensitivity, mouse look and invert Y.
 Click a binding to capture a key, mouse button or wheel direction. Reserved game
-keys are refused. Reusing another action's key requires confirming the move;
-Cancel and closing the window discard unsaved edits. Restore default controls
-affects Player 1 only and does not write until Save.
+keys are refused. Reusing another action's key requires confirming the move.
+Restore default controls affects Player 1 only and does not write until Save.
+
+Launcher v1.2.2 opens both tabs inside the main launcher, with the sidebar
+visible and usable. Binding capture, conflict reassignment and restore-defaults
+confirmations also appear inside that page. **Command center** retains your draft
+and dismisses any active binding prompt; reopening **Game settings** restores the
+same tab and edits. **Save settings** keeps the page open and reports validation
+or save results in its footer. **Cancel** discards unsaved edits and returns to
+Command center; closing the launcher also discards unsaved edits. Existing
+backup, rollback and external-edit protection are unchanged.
 
 Graphics include output resolution (presets, attached display sizes and custom
 dimensions), borderless fullscreen, supersampling (1–8), anisotropic filtering
@@ -184,7 +192,8 @@ needed for the existing supported Windows package.
 `launcher-tests.exe --settings` runs isolated settings/preservation/rollback and
 child-process environment checks. `TimeSplitters.App.exe --render-settings-preview
 preview.png` and `--render-settings-graphics graphics.png` render the two tabs
-without saving settings or starting a game.
+without saving settings or starting a game. These previews now include the whole
+launcher and its sidebar, at 1152 × 772, using the same embedded settings page.
 
 ## Installation and recovery
 
