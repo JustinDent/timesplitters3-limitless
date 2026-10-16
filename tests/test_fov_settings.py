@@ -12,6 +12,7 @@ def test_fov_settings(tmp_path):
     exe = tmp_path / 'fov.exe'
     result = subprocess.run([compiler, '/nologo', '/std:c11', '/O2', '/W3',
         '/I' + str(ROOT / 'src'), '/I' + str(ROOT / 'external/ts3FPrecomp/templates/runtime'),
+        '/I' + str(ROOT / 'external/ts3FPrecomp/src/input'),
         str(ROOT / 'tests/fov_settings.c'), '/Fe:' + str(exe), '/link', 'user32.lib'],
         cwd=tmp_path, env=environment, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr

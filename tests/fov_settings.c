@@ -23,6 +23,14 @@ int pc_online_connect(void) { return 0; }
 void pc_online_disconnect(void) {}
 uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) { (void)size;(void)alignment;return 0x100000; }
 #define STUB(name) void name(void) { g_esp+=4; }
+/* The menu translation unit also contains tutorial hooks. Their drawing and
+ * input behavior is covered by tutorial_layout.c; these paths must not run
+ * during the FOV/settings test. */
+int pc_prompts_keyboard_active(void) { CHECK(0); return 0; }
+#define TUTORIAL_STUB(name) void name(void) { CHECK(0); }
+TUTORIAL_STUB(sub_00147080) TUTORIAL_STUB(sub_00042D10)
+TUTORIAL_STUB(sub_0003FA10) TUTORIAL_STUB(sub_0003FCF0) TUTORIAL_STUB(sub_0003F8D0)
+#undef TUTORIAL_STUB
 STUB(sub_00075B70) STUB(sub_00071B10) STUB(sub_00071C50)
 STUB(sub_000771D0) STUB(sub_000770E0)
 void sub_00078980(void) {

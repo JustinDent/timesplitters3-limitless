@@ -63,6 +63,17 @@ shared with native Mac, whose runtime validation remains pending.
 
 Validation so far:
 
+- PR #70 CI follow-up: Windows run `38981957451` passed patch tracking,
+  application and UI checks, then failed compiling the standalone FOV fixture.
+  Its production menu include now also compiles tutorial hooks, requiring the
+  runtime input-header directory and five guest drawing functions plus the prompt
+  device query. The fixture now supplies that include path and fail-fast stubs
+  for the unrelated tutorial paths; production runtime behavior is unchanged.
+  The exact failing display/FOV step and shared UI suite pass locally (7 cases).
+  The original macOS CI job passed its shared tests; this does not establish
+  native game compilation or visual support. The correction only changes the
+  Windows fixture and requires no Mac adapter change.
+
 - Main integration: feature commit `2d69459` was combined with main `9e08fa3`.
   Both branches wrapped `sub_0013AB60`; a subsequent reproducible patch now
   routes Objectives fitting and ordinary health draws through the shared
