@@ -21,6 +21,7 @@
 #include "input_sdl.h"
 #include "settings_macos.h"
 #include "pc_display.h"
+#include "pc_debug.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
 #include <OpenGL/gl3.h>
@@ -109,6 +110,7 @@ static int native_depth_enabled=1;
 static void native_apply_scissor(void);
 static UINT native_target_width,native_target_height;
 #include "gl_context.inc"
+#include "gl_debug.inc"
 #include "gl_display.inc"
 #ifdef __APPLE__
 static float *native_shader_vertices(const void *,UINT,UINT);
@@ -662,6 +664,7 @@ static HRESULT __stdcall dev_Reset(IDirect3DDevice8 *s, D3DPRESENT_PARAMETERS *p
  * not wait for the GPU or claim display scanout timing. At most 20,000 rows
  * (under 2 MiB), with no per-frame flush or readback. */
 static void native_frame_timing(Uint64 swap_start,Uint64 now) {
+    native_debug_present(now,!native_interp_on);
     static int checked;
     static FILE *output;
     static Uint64 first,last;

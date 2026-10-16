@@ -24,7 +24,8 @@ def test_existing_fixture_is_supported():
 
 def test_native_routes_and_stale_automation(tmp_path):
     env = launcher.game_environment({'PATH':'/usr/bin', 'RECOMP_INPUT_SEQ':'stale',
-                                    'TSFP_NATIVE_TEST_KEYS':'stale', 'TSFP_NATIVE_TRACE_RENDER':'stale'}, tmp_path)
+                                    'RECOMP_LOG_FILE':'/personal/log', 'TSFP_NATIVE_TEST_KEYS':'stale', 'TSFP_NATIVE_TRACE_RENDER':'stale'}, tmp_path)
+    assert env['RECOMP_LOG_FILE'] == str(tmp_path / 'logs/native-play.err')
     assert env['RECOMP_SAVE_DIR'] == str(tmp_path / 'private/saves')
     assert env['RECOMP_INPUT_CONFIG'] == str(tmp_path / 'config/pc-controls.json')
     assert env['TSFP_DISPLAY_CONFIG'] == str(tmp_path / 'config/pc-display.ini')

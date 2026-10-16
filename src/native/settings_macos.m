@@ -9,8 +9,6 @@
 #include <string.h>
 #include "binding_capture.inc"
 static SDL_Window *game_window;
-static PcDebugOptions debug_options;
-void pc_debug_set(const PcDebugOptions *s) { debug_options=*s; }
 static void alert_text(const char *text) {
     NSAlert *alert=[NSAlert new];alert.messageText=@"TimeSplitters Settings";
     alert.informativeText=[NSString stringWithUTF8String:text];[alert runModal];
@@ -18,6 +16,7 @@ static void alert_text(const char *text) {
 static NSTextField *label(NSView *view,NSString *text,NSRect frame) {
     NSTextField *l=[NSTextField labelWithString:text];l.frame=frame;[view addSubview:l];return l;
 }
+#include "debug_macos.inc"
 @interface TSFPSettings : NSObject <NSWindowDelegate> {
     NSWindow *panel;
     NSTabView *tabs;
@@ -164,19 +163,24 @@ static TSFPSettings *settings;
 @interface TSFPMenu : NSObject
 - (void)settings:(id)sender;
 - (void)fullscreen:(id)sender;
+- (void)debug:(id)sender;
 @end
 @implementation TSFPMenu
+- (void)debug:(id)sender {pc_debug_show(NULL);}
 - (void)settings:(id)sender {tsfp_native_settings_show(game_window);}
 - (void)fullscreen:(id)sender {tsfp_native_settings_release_input(game_window);SDL_SetWindowFullscreen(game_window,!(SDL_GetWindowFlags(game_window)&SDL_WINDOW_FULLSCREEN));}
 @end
 static TSFPMenu *menu_target;
 void tsfp_native_settings_attach(SDL_Window *window) {
     game_window=window;if(menu_target)return;menu_target=[TSFPMenu new];
+    native_debug_attach();
     NSMenu *menu=[[NSMenu alloc] initWithTitle:@"Game Settings"];
     NSMenuItem *settings_item=[[NSMenuItem alloc] initWithTitle:@"Keyboard, Mouse & Graphics…" action:@selector(settings:) keyEquivalent:@","];
     settings_item.target=menu_target;[menu addItem:settings_item];
     NSMenuItem *full=[[NSMenuItem alloc] initWithTitle:@"Toggle Fullscreen" action:@selector(fullscreen:) keyEquivalent:@"f"];
     full.keyEquivalentModifierMask=NSEventModifierFlagCommand|NSEventModifierFlagControl;full.target=menu_target;[menu addItem:full];
+    NSMenuItem *debug=[[NSMenuItem alloc] initWithTitle:@"Debug & Performance…" action:@selector(debug:) keyEquivalent:@""];
+    debug.target=menu_target;[menu addItem:debug];
     NSMenuItem *top=[[NSMenuItem alloc] initWithTitle:@"Game Settings" action:NULL keyEquivalent:@""];top.submenu=menu;[NSApp.mainMenu addItem:top];
 }
 void tsfp_native_settings_show(SDL_Window *window) {

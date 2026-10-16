@@ -110,18 +110,18 @@ def main():
                        RECOMP_DISPLAY_CONFIG=str(test / 'runtime.conf'),
                        TSFP_DISPLAY_CONFIG=str(test / 'pc-display.ini'),
                        XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'))
-            for check in ('--renderer-self-test', '--input-self-test', '--settings-self-test'):
-                if check == '--settings-self-test':
+            for check in ('--renderer-self-test', '--input-self-test', '--settings-self-test', '--debug-self-test'):
+                if check in ('--settings-self-test', '--debug-self-test'):
                     settings = json.loads((ROOT / 'tests/fixtures/pc-controls.json').read_text())
                     settings['keep_test_member'] = {'value': 42}
                     settings['controllers'][1] = {'port': 2, 'device': 'none', 'keep': 'second-player'}
-                    control_path = test / 'settings-test.json'
+                    control_path = test / ('debug-test.json' if check == '--debug-self-test' else 'settings-test.json')
                     control_path.write_text(json.dumps(settings))
                     before = control_path.read_bytes()
                     env['RECOMP_INPUT_CONFIG'] = str(control_path)
                 subprocess.run([str(BUILD / 'futureperfect_recomp'), check],
                                cwd=ROOT, env=env, check=True, timeout=20)
-                if check == '--settings-self-test':
+                if check in ('--settings-self-test', '--debug-self-test'):
                     saved = json.loads(control_path.read_text())
                     assert saved['keep_test_member'] == settings['keep_test_member']
                     assert saved['controllers'][1:] == settings['controllers'][1:]
