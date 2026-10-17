@@ -7,7 +7,7 @@
   The game's confirmation screen defaults to Cancel, supports normal menu
   controls, and posts WM_CLOSE only after confirmation. Existing Quit retains
   its return-to-menu behavior. Only player one's menus expose desktop exit.
-- **Source:** Uncommitted, dependent on the #86 menu controls branch;
+- **Source:** Commit `e18baa9` on the #86 menu controls branch;
   `src/pc_quit_menu.inc`, `src/pc_display_menu.c/.h`, `quit-desktop.patch`,
   and `tests/quit_menu.c` / `tests/test_quit_menu.py`.
 - **Shared Mac support:** Shared finalizer hooks preserve original Mac menus.
@@ -46,7 +46,7 @@
   Right-click closes root Pause/Objectives through the original pause handler.
   Returning to gameplay restores mouse capture automatically while preserving
   focus-loss protection and suppressing held menu clicks.
-- **Source:** Uncommitted on `86-enhancement-use-mouse-to-control-main-menu`,
+- **Source:** Commit `e18baa9` on `86-enhancement-use-mouse-to-control-main-menu`,
   based on main `e942ef0`; `src/pc_menu_mouse.h`,
   `src/pc_menu_mouse_guest.inc`, `src/pc_controls.c/.h`, the final
   `menu-mouse*.patch` stack, and `tests/menu_mouse.c`.
@@ -74,6 +74,26 @@
   transitions without further pointer motion, and prevent held selection clicks
   from becoming gameplay shots. Run `tests/test_menu_mouse.py` and native input
   tests. Windows evidence is recorded in the issue #86 entry in `STATUS.md`.
+
+### MAC-029 — Skippable idle demo video (#50)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The menu idle demo accepts the game's existing skip controls,
+  closes its host audio/video and returns to the menu. Repeated stops are safe;
+  subsequent movies and normal end-of-file playback remain functional.
+- **Source:** Branch `50-cannot-skip-menu-idle-video`, initially based on main
+  `abaf001`; final `xmv-stop.patch`, `tools/recomp-generation.py`, `tsfp.ps1`,
+  `tests/xmv_stop.c` and `tests/test_xmv_stop.py`.
+- **Shared Mac support:** Stop handling and the corrected US symbol map are
+  shared. Native generation already refreshes symbols; metadata edits now
+  invalidate generated wrappers. This does not add native host XMV playback.
+- **Remaining:** Run the portable stop regression and generation checks on Mac.
+  Native build/live validation and other-device synchronization are unverified.
+- **Acceptance:** A stop reports EOF even without a host decoder; destroy is
+  safe afterward. When native movie playback is available, verify idle-demo
+  skipping, overlay/audio cleanup and returning to a responsive menu. Preserve
+  original-body fallback and genuine Start behavior for other titles.
+  See the issue #50 validation entry in `STATUS.md`.
 
 ### MAC-028 — Preserve frontend camera FOV (#82)
 
@@ -199,6 +219,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-026 | Character picker and weapon proportions (issue #22) | Awaiting validation |
 | MAC-027 | Arcade RANK widget left placement | Awaiting validation |
 | MAC-028 | Preserve frontend camera FOV (issue #82) | Awaiting validation |
+| MAC-029 | Skippable idle demo video (issue #50) | Awaiting validation |
 
 ### MAC-027 — Arcade RANK widget left placement
 
@@ -755,6 +776,82 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Embedded What's new page (2026-10-17, commit `cfbfe6c`, [PR #93](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/93)):** Merged as `7ed93cb`, prepared for launcher v1.2.11. `ReleaseNews.cs`, `WhatsNewPage.cs`,
+  `ReleaseClient.cs`, `Launcher.cs`/XAML and bootstrap preview routing add game/
+  launcher views, installed/latest version comparison, exact installed notes,
+  published known-issues extraction, native text rendering and retry with
+  session-only retention. The footer contains Refresh notes and View release on
+  GitHub; Home navigation uses the sidebar. Windows uses the existing compatible-release selection
+  and launcher metadata verification. The current Mac launcher has no equivalent
+  release browser. Native adaptation is **queued**: reuse release/channel/version
+  rules, exact-tag lookup and bounded display-only text, with native embedded
+  navigation and cancellable requests. Acceptance includes stable/preview filtering,
+  older/unpublished installs, offline refresh with stale-note labeling, long text,
+  code/HTML/image safety, channel changes during requests, preserved settings
+  drafts and small-window/keyboard usability. See STATUS.md for Windows evidence;
+  native Mac launcher execution remains unverified.
+- **Resumable downloads and recovery (2026-10-17, commit `c21df35` on
+  `feature/launcher-download-recovery`):** Merged through [PR #91](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/91) as `69204af`, prepared for launcher v1.2.10. `DownloadTransfer.cs`, `ReleaseClient.cs`,
+  `SelfUpdate.cs`, `InstallationMaintenance.cs`, `Bootstrap.cs`, `Launcher.cs`/XAML
+  and `MaintenancePage.cs` add separate bounded game/launcher caches, strict HTTP
+  resume handling and complete-file checksum verification, cancellable copy and
+  hashing, measured speed/ETA, pause/retry and embedded recovery actions. Cached
+  bytes survive staging cleanup, restarts and cancelled preparation. Unknown and
+  redirected paths are preserved/refused; successful staging cleans owned cache
+  data. No game runtime or config format changes. The existing Mac launcher has
+  no equivalent release-download UI. Native adaptation remains **queued**: reuse
+  release identity, Range/If-Range validation, complete hash and bounded cache
+  rules, with POSIX-safe atomic metadata and locking plus native progress/cancel
+  and recovery controls. Acceptance includes connection loss/restart, ignored or
+  malformed ranges, changed releases, cancelled verification/preparation,
+  storage failures, long estimates, retained user files and usable offline entry.
+  See the download-recovery entry in STATUS.md; Windows checks do not establish
+  native Mac launcher execution.
+- **Embedded page and sidebar polish (2026-10-17, commit `0f30cbe` on
+  `feature/launcher-page-polish`):** Merged through [PR #89](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/89)
+  as `1728f21`, prepared for launcher v1.2.9. `PageTheme.cs`, `MaintenancePage.cs`,
+  `SettingsPage.cs` and `Launcher.xaml` provide shared blue/silver control styling,
+  game/launcher health cards, expandable verification details, grouped settings,
+  a fixed Save/Cancel footer, and fixed sidebar icon/label columns with explicit
+  accessible navigation names. Settings draft/save/cancel, capture prompts,
+  verification and repair ownership rules remain unchanged. New status text
+  opens details for unhealthy verification results; smaller windows scroll the
+  content while retaining the sidebar and footer. Existing Mac has no matching
+  release-launcher UI; its Cocoa settings window remains separate. Native Mac
+  adaptation is **queued**: follow the grouping, readable native controls and
+  aligned navigation in that future UI, preserving keyboard/assistive access,
+  all settings and user data. Acceptance includes minimum-size layout, dropdown
+  and slider keyboard behavior, expand/collapse, repair busy/results states and
+  retained settings drafts. See the page-polish validation entry in STATUS.md;
+  Windows render tests do not establish native Mac launcher support.
+- **Repair/Verify and Diagnostics for v1.2.8 (2026-10-17, commit `920b789` on
+  `feature/launcher-repair-diagnostics`):** `InstallationMaintenance.cs`,
+  `MaintenancePage.cs`, `Launcher.cs`/XAML, `ReleaseClient.cs`, `SelfUpdate.cs`
+  and `Core.cs` add embedded repair/diagnostic pages with the sidebar retained.
+  Verification is read-only against installed manifests. Repairs pin exact
+  published versions, validate archives and files, protect personal directories,
+  preserve the independent launcher during game repair and retain the previous
+  game rollback using separate repair transactions/recovery/cleanup. Diagnostics
+  provide versions, GPU/driver/settings/health and allowlisted error summaries;
+  clipboard reports exclude personal paths, arbitrary log text, saves and ISOs.
+  Existing Mac has no corresponding release-launcher adapter. Reuse version,
+  manifest ownership and transaction rules in its future native implementation;
+  adapt WPF/WMI/clipboard and POSIX atomic recovery separately. Verify corruption,
+  cancellation, staged updates, recovery, retained backups, privacy and page
+  navigation with disposable fixtures. Shared game runtime is unchanged; native
+  Mac execution is unverified. See the v1.2.8 validation entry in STATUS.md.
+  Follow-up on the same branch (2026-10-17, commit `e640b2f`): `DiagnosticIssueDraft.cs`
+  and Diagnostics buttons open the bug/enhancement GitHub form with the filtered
+  report, bounded URL prefills and full-report clipboard fallback. Both issue
+  templates add an optional matching field. Future Mac adapters must preserve
+  the review-before-submit flow, use a native browser/clipboard adapter, retain
+  long/Unicode reports and avoid automatic issue submission. Acceptance checks
+  include both form IDs, URI round-trips, privacy, busy state and clipboard fallback.
+  Additional PR #88 UI follow-up moves Game files from the sidebar into
+  Repair / Verify, below the repair cards as Open game folder. Preserve this
+  placement, install-root target and busy state in the future Mac launcher; the
+  Windows preview avoids opening Finder/Explorer. See the folder-action entry in
+  STATUS.md for Windows build, regression and rendered-layout evidence.
 - **Preserve launcher artwork (2026-10-16, commit `f1011f8`,
   [PR #75](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/75),
   prepared for launcher v1.2.7):** `Core.cs` preserves verified independent

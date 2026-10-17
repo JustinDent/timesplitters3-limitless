@@ -18,7 +18,7 @@ def affected(paths, *, full=False):
             selected.update(SUITES)
         elif (path.startswith('tools/launcher/') or path in (
                 'tools/build-launcher.ps1', 'tools/playable-launch.ps1',
-                'tests/launcher_updates.cs', 'tests/launcher_settings.cs',
+                'tests/launcher_updates.cs', 'tests/launcher_settings.cs', 'tests/launcher_maintenance.cs', 'tests/launcher_downloads.cs', 'tests/launcher_news.cs',
                 'tests/test_launcher_startup.py', 'tests/package_launcher.py',
                 'tools/release/ImportGame.cs', 'config/pc-controls.default.json')):
             selected.add('launcher')

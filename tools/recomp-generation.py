@@ -13,6 +13,7 @@ def fingerprint(runtime):
     paths.extend(p for p in (runtime / 'tools/recomp').rglob('*')
                  if p.is_file() and p.suffix in ('.py', '.json', '.txt')
                  and '__pycache__' not in p.parts and not p.name.startswith('test_'))
+    paths.extend((runtime / 'config/extra_symbols').glob('*.json'))
     result = {p.relative_to(runtime).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
               for p in sorted(paths)}
     # The lift scans these declarations to emit wrappers and original-body

@@ -2,6 +2,17 @@
 
 ## Issue #86 frontend mouse menus (2026-10-17)
 
+PR integration: feature commit `e18baa9` is pushed to
+`86-enhancement-use-mouse-to-control-main-menu`. Integrated main `7e8cd8d`,
+retaining both sets of validation/backlog entries and the XMV/menu test list.
+All 62 targeted integration checks passed across the initial run and corrected
+runtime rerun. The initial two XMV failures were caused by the local runtime
+still having the pre-main symbol patch; applying the complete stack updated two
+runtime files, then all 12 affected runtime/menu/UI/generation checks passed.
+Evidence: `build/issue-86-menu-mouse/pr-integration-tests.log` and
+`pr-integration-runtime-tests.log`. The full build and human confirmation below
+precede this main integration; no new binary or Mac validation is claimed.
+
 Profile footer and pause-tab follow-up (2026-10-17): profile Select, Back and
 Delete Profile now use measured spans from their centered label rows for hover
 and clicks. Disabled prompts retain their original appearance; text alignment
@@ -312,6 +323,344 @@ stable in the corrected fullscreen build. The concurrent read-only capture
 retained valid controller mappings and zero directional held bits across the
 observed focus changes (`physical-source-after.json`). Changes remain local and
 uncommitted on the issue #86 branch; native Mac and hosted CI remain unverified.
+
+## Launcher v1.2.11 release preparation (2026-10-17)
+
+PR #93 is merged as `7ed93cb`. Branch `release/launcher-v1.2.11` raises the
+shared launcher and assembly/file versions to 1.2.11 / 1.2.11.0 for the embedded
+What's new page, including the footer cleanup. README and launcher guides now
+identify its release version. Game VERSION and runtime code are unchanged;
+MAC-021 retains queued native launcher adaptation. This records preparation;
+publication and final package evidence are confirmed separately by the GitHub
+release and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+185 isolated checks (99 updater/bootstrap/cleanup, 27 download/recovery, 15
+release-news, 25 settings and 19 maintenance). Startup, packaging, issue-form
+and CI-scope Python suites passed 43 tests with seven subtests. Three disposable
+minimize/restore/startup-failure checks passed. The actual public v1.2.10 ZIP
+upgraded to v1.2.11; installed manifests, correct assembly version, embedded
+banner/logo/icon, news page/navigation and absent redundant Home footer action,
+personal-file preservation, corruption detection, same-version repair and
+confirmed cleanup passed. Live read-only GitHub notes for game v0.2.0-alpha.5
+and launcher v1.2.10, bootstrap preview routing, normal/minimum-size pages,
+known-issues scrolling and offline retention were reviewed. The initial
+transaction run was blocked by an active game; all final local checks completed
+after that game process exited. Tests used disposable synthetic fixtures. No
+real game was launched for this release task, and no personal saves, settings,
+data or ISO were modified. Native Mac launcher execution remains unverified.
+
+## Embedded launcher What's new page (2026-10-17)
+
+Footer follow-up on the same PR: removed the redundant **Open Home** button;
+Home remains available in the sidebar. The footer now contains only Refresh
+notes and View release on GitHub. Updated documentation and the existing inert-
+content control-count assertion. Required-artwork compilation, all 15 release-
+news checks and live normal/minimum-size preview rendering passed. A broader
+updater transaction rerun stopped at the existing active-game guard; the user's
+running game was preserved. The full 185-check pass below predates this footer
+follow-up. No game/runtime behavior changed.
+
+Implemented on `feature/launcher-whats-new`, based on main `3cac654`; implementation
+commit `cfbfe6c`, [PR #93](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/93). The aligned sidebar and Home's notes
+button open an embedded blue/silver release center. Game and launcher views
+compare installed/running and available versions for the selected channel, with
+separate installed/latest notes, published titles/dates and explicit newer,
+current, older-channel, absent and unversioned states. Compatible release
+selection and launcher metadata verification remain shared with the updater.
+Older installed notes use their exact GitHub tag; unavailable/draft records
+never substitute another version's notes. Published known-issue headings are
+separated from the remaining changes. Missing sections do not claim no issues.
+Native text supports headings/bullets/code, omits images and never executes
+HTML/XAML/scripts or opens content links automatically. Long descriptions show
+a shortened notice and a link to the complete release.
+
+Requests have a 25-second bound even if transport ignores cancellation; old
+request results cannot replace a changed version/channel context. A failed
+refresh retains same-context notes in memory with their checked time. A first
+offline load offers refresh guidance. No persistent notes cache is introduced.
+Settings drafts and main-window sidebar navigation are preserved. Updates remain
+separate actions through Home or startup. The launcher version is unchanged;
+this feature has not been merged or published. MAC-021 records queued Mac
+adaptation; native Mac launcher execution remains unverified.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required build and
+185 isolated checks passed (99 updater/bootstrap/cleanup, 27 downloads/recovery,
+15 release-news, 25 settings, 19 maintenance). The news suite includes strict
+stable/preview and exact installed selection, missing/mismatched/draft releases,
+invalid metadata, cancellation/rate limits and ignored-cancellation timeout,
+bounded text/known issues, inert HTML/images, session retention and navigation
+with unchanged settings drafts. Python startup/packaging/issue-form/CI-scope:
+43 tests with seven subtests passed. Live read-only GitHub selection found game
+v0.2.0-alpha.5 and launcher 1.2.10 and their exact installed notes. Preview,
+minimum 1000×720, known-issues scroll, actual game/launcher notes and offline
+retention screenshots were inspected. Preview routing works through bootstrap.
+Only disposable synthetic fixtures were used; no actual game was launched,
+and no personal saves, settings, game data or ISO were modified.
+
+## Launcher v1.2.10 release preparation (2026-10-17)
+
+PR #91 is merged as `69204af`. The release preparation branch
+`release/launcher-v1.2.10` raises the shared launcher version and assembly/file
+versions to 1.2.10 / 1.2.10.0 for resumable downloads, transfer speed and ETA,
+and the Home, repair and startup recovery actions. Game VERSION and runtime
+code are unchanged. MAC-021 retains queued native launcher adaptation. This
+records preparation; public publication is confirmed by the GitHub release
+and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+99 updater/bootstrap/cleanup, 27 download/recovery, 25 settings and 19 maintenance
+checks (170 total). Startup, packaging, issue-form and CI-scope Python suites
+passed 42 tests with seven subtests. Three disposable minimize/restore/startup-
+failure checks passed. The actual public v1.2.9 ZIP upgraded to the v1.2.10
+package; installed manifests, embedded banner/logo/icon, assembly version,
+personal-file preservation, corruption detection, same-version repair and
+confirmed cleanup passed. A public GitHub v1.2.9 download interrupted at 65,536
+bytes resumed in a new client with HTTP 206 and passed full SHA-256 verification.
+Transfer, pause and recovery previews were reviewed at normal/minimum window
+sizes, including the startup recovery window. All fixtures were synthetic and
+disposable; no real game was launched and no personal saves, settings, data or
+ISO were modified. Native Mac launcher execution remains unverified.
+
+## Resumable launcher downloads and recovery (2026-10-17)
+
+Implemented on `feature/launcher-download-recovery`, based on main `78104de`;
+implementation commit `c21df35`. Downloads use independent game/launcher cache
+slots pinned by release URL, size and expected SHA-256. They survive staging
+cleanup, cancellation and restart, including a completed verified cache when
+preparation is cancelled. Strict Range/Content-Range and optional strong If-Range
+handling prevents unsafe append; a complete SHA-256 and package validation still
+precede installation. Cache locking, metadata/path bounds, ownership checks and
+exact named-file cleanup retain unknown files and refuse redirects through links.
+Direct attribute checks also refuse dangling file/directory links before cache
+or destination creation; the junction fixture covers missing targets as well.
+Connection/read stalls are bounded to 30 seconds and ignored stream cancellation
+is handled by disposal. Full-file hashing and staging copies can be cancelled.
+
+Game updates, startup self-updates and repairs show measured speed, transferred
+bytes and ETA, with an explicit unknown estimate and separate verification/
+preparation phases. Home offers Pause/Resume and Retry/Repair/View logs recovery;
+maintenance has inline retry/log actions. Startup download failures retain Retry
+update/Open installed launcher/View logs choices, while initial offline release
+checks still enter the installed launcher automatically. The existing repaired
+file ownership/transaction behavior remains; its cancellation fixture now allows
+only the explicitly named cache entries while comparing every installed/personal
+file unchanged. MAC-021 records queued native launcher adaptation.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required build passed;
+27 isolated download/recovery checks, 25 settings and 13 read-only maintenance
+checks passed. Startup/packaging/CI-scope Python suites passed 27 tests with two
+subtests. Download fixtures cover fresh/resumed/cancelled/stalled streams, complete
+cache reuse and cancelled preparation, ignored/invalid/416 ranges, ETag changes,
+changed releases, corrupt prefixes, oversized data, unknown caches, locks/links,
+staging cleanup, ETA and recovery controls. A live GitHub launcher v1.2.9 download
+was interrupted at 65,536 bytes, resumed in a new client with HTTP 206, and passed
+its complete SHA-256; no downloaded executable was run. UI previews at 1152×772
+and minimum 1000×720, plus startup recovery, were reviewed. Full local transaction
+checks were blocked by an active game; the hosted Windows job runs the complete
+suites. Tests used disposable files and never modified personal saves, settings,
+ISOs or game data. Native Mac launcher execution remains unverified. Not published.
+
+## Launcher v1.2.9 release preparation (2026-10-17)
+
+PR #89 is merged as `1728f21`. The release preparation branch
+`release/launcher-v1.2.9` raises the shared launcher version and assembly/file
+versions to 1.2.9 / 1.2.9.0 for the cleaner settings, repair page and aligned
+sidebar. Game VERSION and runtime code are unchanged. MAC-021 retains queued
+native launcher UI adaptation. This records preparation; public publication is
+confirmed separately by the GitHub release and its build provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks. Startup,
+packaging, issue-form and CI-scope Python suites passed 41 tests with seven
+subtests. Three disposable minimize/restore/startup-failure checks passed.
+The actual public v1.2.8 ZIP upgraded to the v1.2.9 package; installed manifest
+verification, embedded banner/logo/icon, assembly version, personal-file
+preservation, corruption detection, same-version repair and confirmed cleanup
+passed. Versioned Home, Repair / Verify and both settings previews rendered.
+All fixtures were synthetic and disposable; no real game was launched and no
+personal saves, settings, data or ISO were modified.
+
+## Launcher page and sidebar polish (2026-10-17)
+
+Implemented on `feature/launcher-page-polish`, based on main `d6f0d56`; implementation commit `0f30cbe`. Repair / Verify now uses separate game/launcher cards
+with textual health badges, version/file counts, prominent verification actions
+and expandable file details. An unhealthy check expands its details; operation
+status/cancellation remain outside the scroll area. Open game folder stays below
+the cards alongside the preservation explanation.
+
+Settings retains native tab navigation with compact underlined headers, grouped
+input/mouse and key-binding cards, separate display/camera/performance/startup
+cards, and a fixed Save/Cancel footer. Custom width/height move into an expandable
+section. The shared page theme styles buttons, dropdowns/popups, entries,
+checkboxes, scrollbars, expanders and the FOV slider. Settings models, validation,
+capture/conflict prompts and save/cancel/draft semantics are retained. Sidebar
+buttons now have equal icon columns and a shared label offset instead of padded
+text; explicit accessible names preserve navigation labels. Home action alignment
+continues to use centered content through the shared button template.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required launcher build
+passed all 99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks.
+Startup and packaging tests passed six tests with two missing-artwork rejection
+subtests. Rendered/reviewed 1152×772 and minimum 1000×720 pages, including input,
+custom resolution, lower graphics/startup sections, repair attention/details and
+busy states. An offscreen WPF smoke check verified themed dropdown expansion and
+collapse at input width, the native FOV increase command, checkbox automation,
+and custom-resolution expansion; its dropdown image was reviewed. Tests used
+synthetic disposable settings/files and never launched the real game or modified
+personal data. No game runtime/build changes. MAC-021 records queued native UI
+adaptation; native Mac launcher execution remains unverified. Not published.
+
+## Game folder action moved into Repair / Verify (2026-10-17)
+
+Follow-up on `feature/launcher-repair-diagnostics`, PR #88. Removed Game files
+from the sidebar and added **Open game folder** below the two Repair / Verify
+cards. The existing installation-folder action is retained; preview mode reports
+the action without opening Explorer, and maintenance busy state disables it.
+Updated missing-data guidance and launcher usage documentation. MAC-021 records
+the corresponding placement for a future native release launcher.
+
+Windows x64 / .NET Framework 4.8: rebuilt with required themed artwork; all
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks passed.
+Existing UI checks cover sidebar removal, page-specific folder action and busy
+state. Rendered and reviewed Home, Repair / Verify and Diagnostics previews: the
+folder action fits below the cards and the shorter sidebar remains visible.
+No game launched and no personal game files, settings or saves changed.
+Mac launcher adaptation remains queued; launcher v1.2.8 is not published.
+
+## Diagnostics to GitHub issue drafts (2026-10-17)
+
+Follow-up on `feature/launcher-repair-diagnostics` / PR #88, based on its
+`b990140` implementation; follow-up commit `e640b2f`. Diagnostics adds Report a bug and Request
+enhancement actions. `DiagnosticIssueDraft.cs` selects the matching repository
+issue form and prefills its optional diagnostics text field, with the complete
+report also copied to the clipboard. Only the displayed privacy-filtered report
+is used; symptoms, steps and enhancement descriptions remain for the reporter.
+No token, issue POST, automatic submission or automatic upload is added.
+The user explicitly opens a browser draft, reviews the form and submits on GitHub.
+
+URLs are limited to 1800 characters for the Windows browser handoff. Long reports
+use an explicit summary/paste instruction and preserve the full text on the
+clipboard; Unicode/query syntax is escaped and never silently truncated. Clipboard
+or browser failures leave the report visible with recovery instructions. Reporting
+controls are disabled during maintenance; preview actions never open GitHub.
+The bug/enhancement YAML forms share the same optional plain-text diagnostics
+field. Existing version choices and enhancement simplicity are retained.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both themed EXEs compiled and
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks passed.
+Added checks cover both forms, Unicode/newline/query-character round-trips,
+large-report fallback, filtered payloads and report-control busy state. Issue-form
+schema/field contract and version-refresh checks passed (15 tests, including
+five subtests). The preceding startup/packaging/CI-scope run passed 26 checks;
+only the changed form test expectation needed an update for the optional field. No actual GitHub issue was created or submitted and no
+personal clipboard was changed by tests. Live prefilling of the new field requires
+the issue templates to merge into the default branch. MAC-021 records queued Mac
+browser/clipboard adaptation; native Mac execution remains unverified. Not published.
+
+## Launcher v1.2.8 Repair/Verify and Diagnostics (2026-10-17)
+
+Implemented on `feature/launcher-repair-diagnostics`, commit `920b789`, based on main `65b6903`. Launcher/assembly version is 1.2.8. New Repair / Verify and
+Diagnostics sidebar pages stay in the existing window and retain settings drafts.
+Verification is offline/read-only against installed manifest SHA-256 hashes;
+protected settings and independent launcher files are excluded from game scans.
+Reports distinguish missing, changed, unreadable and invalid manifest cases.
+
+Repairs fetch only the exact installed game or running launcher release and
+verify the published archive digest/size, package layout and every file before
+using the existing helper/recovery flow. Game repair replaces damaged/missing
+owned runtime files and official BUILD metadata, preserving personal files,
+untracked files and the independent launcher. It retains the previous game
+rollback through separate repair transactions/backups; repair backups follow
+confirmed-game cleanup. Existing staged updates are retained. Cancellation and
+failed preparation remove only owned safe staging, preserving ISOs/links/locked
+recovery data. Interrupted repair transactions recover on startup. No game code
+or native Mac adapter changed. A live v1.2.8 launcher self-repair needs that exact
+release to be published; developer builds report its absence without downgrading.
+
+Diagnostics report versions, Windows/process/CLR information, GPU/driver, free
+space, embedded artwork, saved graphics, last verification and structured recent
+exception types. Background GPU lookup has a bounded wait and one shared in-flight
+query. Clipboard reports omit personal paths, arbitrary log messages, raw files,
+saves and ISO information; they are never automatically uploaded.
+
+Windows x64 / .NET Framework 4.8 / pinned Python 3.12.14: required-artwork builds
+passed 99 updater/bootstrap/cleanup checks, 25 settings checks and 15 maintenance
+checks. Six startup/packaging plus 20 CI-scope Python checks passed (26 total,
+including two missing-artwork subtests). Coverage includes exact-version lookup,
+corrupt/cancelled downloads, damaged runtime repair, equal-version forced launcher
+repair, preserved previous-game rollback, interrupted recovery, confirmed cleanup,
+ISO retention inside staging, report privacy and embedded navigation/drafts.
+The first local full run respected an active game guard; that game was not stopped.
+Once it was no longer running, full disposable transaction suites passed. No
+automated real-game session or personal settings/saves were used. GPU discovery
+reported NVIDIA GeForce RTX 4070 SUPER / driver 32.0.16.1742 in 54 ms.
+Home, input/graphics, Repair/Verify, Diagnostics and bootstrap previews rendered;
+new pages were visually inspected with their sidebar and theme intact. Preview
+versions/system state are explicitly sample data. Native Mac execution is
+unverified; adaptation/acceptance checks are queued in MAC-021. Not published.
+
+## Issue #50 idle-demo skipping (2026-10-17)
+
+Initial implementation and live validation on `50-cannot-skip-menu-idle-video`,
+based on main `abaf001`.
+Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 / CMake 4.4.4.
+The supported US XBE SHA-256 was verified before decoding and live testing.
+Issue #82 was merged afterward; the branch was rebased onto main `e942ef0`
+before publication, preserving both fixes. All 55 targeted tests passed after
+rebasing, including the issue #82 camera/cutscene suite. The live build
+evidence below predates this rebase; no post-rebase full game rebuild is claimed.
+
+The US movie loop at `0x30594` calls `0x445252` only when skipping is enabled
+and controller input matches mask `0x280`. That routine sets object byte
+`+0x78`; the original Update checks it at `0x445843`/`0x445853` to terminate
+packet playback/looping. The symbol had been guessed as `XMVPlaybackStart`,
+so a skip press instead entered the host player's start handler. Correct the
+US symbol to the descriptive `XMVPlaybackStop` and add the corresponding HLE
+handler. It closes the movie voice and overlay, marks EOF, keeps the guest
+object valid until Destroy, and makes repeated Stop/Update/Destroy safe.
+Original-body fallback and genuine Start handling for other titles remain.
+
+The final `xmv-stop.patch` carries runtime and symbol changes. The generation
+fingerprint now includes extra-symbol metadata. Windows Build refreshes the
+symbol scan when regeneration is required; native --generate already does so.
+The generated US thunk was inspected: `sub_00445252` calls the Stop handler
+and pops eight bytes (return address plus its one argument).
+
+50 targeted tests passed across XMV lifetime/incorrect-binding detection,
+generation invalidation, CI scope, patch tracking and full historical patch
+transitions. The HLE test compiles production code with a deterministic host
+player and checks early skip, EOF stability, a later movie, repeated cleanup,
+unavailable playback, null status output and original-body fallback/ABI.
+The deliberately restored Start binding fails the regression. The test is in
+both Windows/macOS runtime CI and the local Test command.
+
+Full patch stack applied successfully; Windows Release game and build-test
+targets compiled. Network, channel clear, texture format, display, save paths,
+controls, settings and debug checks passed. The unchanged prompt test again
+failed `pc_controls_accept_pad` at line 55 when its window failed to gain
+foreground focus, so the full Build command is not reported as passing.
+Remaining checks and executable identity sealing were completed separately.
+
+The rebuilt executable SHA-256 is
+`4f2b2eba7624293677be776253bfdd2035b9b6a7114a1cae44f995a7bfb2239f`.
+A bounded 240-second exploratory run reached the signed-in main menu but did
+not trigger an attract movie there; returning to player selection late in the
+run did not leave enough idle time. A fresh untouched title-screen run started
+`attract.xmv` at 60.56 seconds. A synthetic Enter/A press at 64.59 seconds
+closed the movie at 64.69 seconds, after 108 pictures. A separate untouched
+run started the demo at 60.50 seconds; Escape/Start at 64.55 seconds closed it
+at 64.64 seconds. Subsequent navigation reached the responsive signed-in main
+menu, verified in `title-skip-escape.png`. Startup EA/Free Radical movies both
+played and closed normally. This is internal input-model replay, not a
+physical keyboard/controller test. Test saves, controls, both display
+configs and XDG paths are isolated copies of the unlocked fixture. Personal
+settings and the canonical fixture are preserved. Logs are bounded and local
+evidence is under `build/issue-50-video-skip`.
+
+Native build/live validation is pending (MAC-029). The stop path is shared;
+this change does not implement native host XMV decoding. No full campaign or
+hosted CI result is claimed.
 
 ## Issue #82 frontend FOV isolation (2026-10-17)
 

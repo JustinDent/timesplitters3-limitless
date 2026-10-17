@@ -114,6 +114,7 @@ try {
                         (Join-Path $projectRoot 'tests\test_ghost_rendering.py'),
                         (Join-Path $projectRoot 'tests\test_menu_mouse.py'),
                         (Join-Path $projectRoot 'tests\test_quit_menu.py'),
+                        (Join-Path $projectRoot 'tests\test_xmv_stop.py'),
                         (Join-Path $projectRoot 'tests\test_cutscene_letterbox.py'),
                         (Join-Path $projectRoot 'tests\test_decal_projection.py'),
                         (Join-Path $projectRoot 'tests\test_channel_clears.py'),
@@ -149,6 +150,8 @@ try {
                     $generatorChanged = $LASTEXITCODE -ne 0
                     if ($missingWrappers.Count -or $generatorChanged) {
                         Write-Output 'Runtime hooks or generator changed; refreshing generated game code before building.'
+                        # Corrected per-title symbols must replace the cached scan before lifting.
+                        Invoke-Checked $envPython @('-m', 'tools.xdk_symbols', (Join-Path $gameRoot 'default.xbe'))
                         Invoke-Checked $envPython @('scripts/recompile.py', (Join-Path $gameRoot 'default.xbe'),
                             '--work-dir', (Join-Path $privateRoot 'pipeline'), '--project', 'titles/futureperfect',
                             '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries', '--only', 'lift')
