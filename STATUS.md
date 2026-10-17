@@ -7,9 +7,11 @@ its newer network-bot, release and documentation changes. Resolved only the
 validation-history insertion conflict by retaining both entries. Windows x64
 supported build and native build tests passed (`transition-main-build.log`).
 The combined UI, FOV, menu, cutscene, patch-upgrade and bot-results selection
-passed 33 tests in 190.64s; three guest-dispatch tests skipped because their
-standalone cc/gcc compiler prerequisite is unavailable on this Windows host
-(`transition-main-regressions.log`, both logs in ignored `build/menu-footer`).
+passed 33 tests in 190.64s. Three guest-dispatch tests initially skipped because
+the compiler was not on the shell PATH, then all three passed in 0.31s with the
+configured MSVC environment (36 passing checks in total). Logs are
+`transition-main-regressions.log` and `transition-main-dispatch.log` in ignored
+`build/menu-footer`.
 Earlier live loading/fade captures below are from the pre-integration build;
 this integration reran build/regression checks. Native Mac remains unverified.
 
