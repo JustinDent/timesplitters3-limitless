@@ -64,7 +64,7 @@ This page reads release information; installing an update remains a separate act
 
 - **Saves** opens the local save folder.
 - **Repair / Verify → Open game folder** opens the installation directory.
-- **Repair / Verify** contains file-check/repair and **Diagnostics** tabs in current source; Diagnostics includes system reports and GitHub report buttons.
+- **Repair / Verify** contains file-check/repair and **Diagnostics** tabs in launcher v1.2.12; Diagnostics includes system reports and GitHub report buttons.
 - **View logs** opens the local launcher log folder from Home or either maintenance tab; game logs are also under `Logs`.
 - **Support** opens this project's GitHub issues.
 - **Restore previous** swaps back to the retained game release when available,

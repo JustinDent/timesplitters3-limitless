@@ -336,6 +336,31 @@ retained valid controller mappings and zero directional held bits across the
 observed focus changes (`physical-source-after.json`). Changes remain local and
 uncommitted on the issue #86 branch; native Mac and hosted CI remain unverified.
 
+## Launcher v1.2.12 release preparation (2026-10-17)
+
+PR #98 is merged as `860dccd`. Branch `release/launcher-v1.2.12` raises the
+shared launcher and assembly/file versions to 1.2.12 / 1.2.12.0 for Diagnostics
+inside Repair / Verify, native tabs and View logs available in both. README and
+launcher guides identify the release version. Game VERSION and runtime code are
+unchanged; MAC-021 retains queued native launcher adaptation. This records
+preparation; publication and final package evidence are confirmed by the GitHub
+release and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+185 isolated checks (99 updater/bootstrap/cleanup, 27 downloads/recovery, 15
+release news, 25 settings, 19 maintenance). Startup, packaging, issue-form and
+CI-scope Python suites passed 43 tests with seven subtests. Three disposable
+minimize/restore/startup-failure checks passed. The actual public v1.2.11 ZIP
+upgraded to v1.2.12; installed manifests, assembly version, embedded banner/logo/
+icon, retained What's new page, tabbed maintenance area and removed Diagnostics
+sidebar entry were verified. Personal-file preservation, corruption detection,
+same-version repair and confirmed cleanup passed. Normal 1152×772 and minimum
+1000×720 repair/diagnostics, attention and busy previews were reviewed; Cancel
+and View logs remain usable, and bootstrap repair/diagnostic previews select
+the correct tab. Tests used disposable synthetic fixtures; no real game was
+launched and no personal saves, settings, game data or ISO were modified.
+Native Mac launcher execution remains unverified.
+
 ## Repair / Verify and Diagnostics tabs (2026-10-17)
 
 Implemented on `feature/launcher-maintenance-tabs`, based on main `bd3f0e2`;

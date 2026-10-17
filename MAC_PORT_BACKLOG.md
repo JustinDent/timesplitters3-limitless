@@ -776,7 +776,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Repair / Verify and Diagnostics tabs (2026-10-17, commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98)):** `MaintenancePage.cs`, `Launcher.cs`/XAML
+- **Repair / Verify and Diagnostics tabs (2026-10-17, commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98)):** Merged as `860dccd`, prepared for launcher v1.2.12. `MaintenancePage.cs`, `Launcher.cs`/XAML
   and the shared `PageTheme.cs` tab styling group both pages behind one Repair /
   Verify sidebar entry. Native tabs retain reports, verification results and
   settings drafts; Diagnostics is collected on first selection or manual refresh.
