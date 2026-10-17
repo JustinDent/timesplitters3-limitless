@@ -177,6 +177,20 @@ runtime readiness. No full campaign playthrough is required.
 
 - **Status:** In progress
 - **PC behavior:** Windows can copy the full backbuffer or a rectangle into a texture for later draws.
+- **Issue #21 channel-clear follow-up (this revision):** The lobby uses destination
+  alpha as a temporary text mask. `src/pc_clear_rhi.inc` and
+  `patches/zzzzzzzzzzzzzzzzz-channel-clears.patch` preserve partial colour clears,
+  including clearing alpha without erasing the finished RGB image. Capture
+  version 8 records the channel flags and still accepts older captures.
+  `tests/pc_clear.c` checks all 15 masks on the Windows GPU; portable mapping
+  and capture tests are in `tests/test_channel_clears.py`. The shared mapping
+  also feeds Mac, so `src/native/renderer_gl.c` now applies the corresponding
+  GL colour mask and restores the existing render state. No additional native
+  adapter is needed; native build/GPU validation is pending. Acceptance:
+  repeatedly cycle lobby information pages at default and enlarged resolutions;
+  verify readable text without white fill or stale page masks, unchanged
+  backgrounds, and preserved clipping, depth/stencil and offscreen targets.
+  [Windows validation and remaining checks](STATUS.md#issue-21-lobby-text-masks-2026-10-16).
 - **PC source:** Audited revision above; `external/ts3FPrecomp/src/d3d/d3d8_screencopy.c`, `external/ts3FPrecomp/src/d3d/d3d8_device.c`; `src/native/renderer_gl.c`.
 - **PC validation:** Windows copy implementation exists; not every effect has a recorded visual comparison.
 - **Existing Mac support:** Full and rectangular current-scene copies now support 32-bit ARGB/XRGB and their linear formats. Copies preserve clipping, offsets, orientation and framebuffer state, including enlarged scenes. Image surfaces support validated full/subrectangle locks, BGRA writes and read-only locks.

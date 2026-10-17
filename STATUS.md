@@ -32,6 +32,47 @@ the previously unused `UserData/45410066/544553544C41` slot. Hash checks confirm
 all pre-existing title save files and both personal controls/display settings
 were unchanged. This local copy is for manual play only; automated checks still
 use disposable copies. No personal-save game session was launched for testing.
+## Issue 21 lobby text masks (2026-10-16)
+
+- Source: lobby text-mask fix in this revision on
+  `21-online-lobby-lower-half-of-screen-is-all-white-and-unreadable`, based on
+  `041340a`; pinned upstream `d90c929` and checksum-verified US XBE. Host:
+  Windows x64 build 26300, MSVC 19.42, Python 3.14.2, CMake 4.4.4, D3D11.
+  Release executable SHA-256:
+  `0cc1e596f8f4e9de381f45c0337340a1e99c0d92270aead800d6adb6cea3c982`;
+  multiplayer identity `406bfbba`.
+- Reproduced the issue in an isolated System Link lobby: white fill covered
+  overlapping information pages. These pages draw into destination alpha,
+  then use it as a text mask. The old Xbox-to-host mapping dropped alpha-only
+  clears, leaving both background alpha and previous page masks intact.
+- Fix: preserve partial colour-clear flags, clear only selected channels through
+  an RHI pass, and retain ordinary full/depth/stencil clears. The pass leaves guest
+  state unchanged and restores its output targets/viewports. The existing Mac GL
+  clear now honours the same channel flags and restores its render state.
+  Capture version 8 records the flags; readers still accept versions 5–7.
+- Validation: complete patch-stack validation, supported Windows Release build,
+  all native build tests, and executable/content seal verification passed. The
+  new real-GPU regression passed all 15 channel masks with pixel readback,
+  unchanged unselected channels, inherited scissor ignored and output state
+  restored. Portable mapping/capture, framebuffer, shared UI and patch-transition
+  suites passed: 36 tests. The GPU test is part of the supported build; portable
+  clear/capture checks also run in `tsfp.ps1 -Action Test` and patch CI.
+- Live check: a bounded 1920x1080 System Link host lobby showed readable pages
+  without white fill or stale text, including after changing match options and
+  returning to the lobby. Backgrounds remained visible. The unmodified live
+  capture now contains three `0x80` alpha clears where the baseline capture
+  contained three zero-flag clears. Replaying the new capture succeeded with
+  no failed host calls or malformed chunks and showed the corrected panel.
+  No crash, unresolved-call or clear-setup error occurred in the live run.
+- All save/input/runtime-display/PC-display routes were isolated under
+  `private/lobby-validation`; personal settings and saves were preserved.
+  Selected before/after captures and screenshots remain ignored there. Six
+  disposable partition images were recycled: 5,243,406,848 apparent bytes but
+  only 133,632 physically allocated bytes. Profiles and metadata were retained.
+- Limits: no remote online peer, new gameplay run, Vulkan GPU run, or live
+  default/4K resolution check was performed. Native Mac build/GPU validation and
+  other-device synchronization remain unverified; see
+  [MAC-007](MAC_PORT_BACKLOG.md#mac-007--screen-copy-effects-and-image-surfaces).
 
 ## Game release comparisons and readable titles (2026-10-16)
 
