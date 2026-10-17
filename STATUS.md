@@ -3461,3 +3461,30 @@ queued under MAC-021; other-device synchronization is unverified.
 - No runtime rebuild or game launch. Model UV/lighting, scene adjacency,
   1080p/4K/ultrawide rendering, residency and full-pack stability remain pending
   the existing near-completion gate. This is a partial preview, not a full remaster.
+
+
+### Texture overhaul batch 60 - machinery (issue #74)
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures`; no game launches.
+- Added three offline-reviewed machinery replacements: steel mechanism/vent atlas,
+  circular disc, and industrial atlas with corrected vertical ULTRANET lettering.
+  Actual compressed DDS comparisons, repeat sheets and lettering crop were reviewed.
+  The cable-panel draft remains excluded because its small ochre marking changed;
+  its eight center louvers match the original (the initial prompt miscounted ten).
+- All 239 installed DDS files passed the native format validator and the worklist's
+  hash, mip-chain, dimensions, aspect-ratio and 6 GiB budget checks on Windows x64.
+  Model UV sampling, scene appearance and runtime residency remain unverified for
+  this batch. This is asset-only work; no runtime code or binaries changed.
+- Selected 1254-square generated sources were resampled into two 2048-square and
+  one 1024-square DXT1 textures; these are not native 4K source images.
+- Catalog remains 6,812 supported keys: 239 installed, 6,563 awaiting art and ten
+  held drafts. Reviewed 32 further candidates with native alpha checks, bringing
+  provisional visual classifications to 451; category-wide review is incomplete.
+- Pack: 399,120,159 bytes (380.63 MiB). Texture workspace at audit: 1,245,492,034
+  allocated bytes (1.16 GiB). Superseded V1 art was recycled with provenance and
+  comparison evidence retained; no game copies or packaging trees were created.
+- Private evidence: `review/machinery-60-final-1.jpg`,
+  `review/machinery-60-final-repeat-1.jpg`, `review/machinery-60-lettering-final.jpg`,
+  `review/machinery-60-final-metrics.json`, `review/machinery-60-native-audit.txt`,
+  and `review/inventory-60-alpha.jpg` under `private/texture-remaster`.
+  Artwork and pack remain ignored/local. Consolidated playtesting stays deferred.
