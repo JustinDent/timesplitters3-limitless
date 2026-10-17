@@ -103,8 +103,11 @@ static float gameplay_fov_scale(uint32_t caller)
     if((caller!=0x000CCBEDu && caller!=0x000CDD35u) ||
        (WORD_AT(0x007DE458u)&0x20000000u) ||
        (!WORD_AT(0x007490E8u) && phase>0.f) ||
-       !guest_writable(actor,0x118) || WORD_AT(actor+0x114)!=2 ||
+       !guest_writable(actor,0x118) ||
+       (WORD_AT(actor+0x114)!=2 && WORD_AT(actor+0x114)!=4) ||
        WORD_AT(actor+8)!=WORD_AT(0x007B0CC0u)) return 1.f;
+    /* US sub_00258F50 enters state 4 when ground contact is lost; the
+       landing path returns to state 2. Both retain the player's own lens. */
     return pc_display_fov_scale();
 }
 
