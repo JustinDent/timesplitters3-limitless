@@ -631,6 +631,17 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-022 — Configurable gameplay FOV (issue #29)
 
+- **Issue #66 follow-up (2026-10-16, uncommitted):**
+  `66-bug-fov-returns-to-default-when-falling-from-a-ledge` updates
+  `src/pc_display_menu.c` to keep the selected FOV in falling state 4 as well
+  as grounded state 2. The shared camera hook needs no Mac-specific adapter.
+  `tests/cutscene_letterbox.c` covers both call sites through a fall/landing,
+  default/90-degree FOV and excluded cameras. Windows regressions and build
+  checks passed; the user confirmed stable falling/landing FOV on Windows.
+  Native Mac compilation and ledge/landing playtesting remain pending. Check that FOV stays steady while falling, zoom remains relative,
+  and cutscene/terminal lenses are unchanged. See
+  [Issue #66 evidence](STATUS.md#falling-gameplay-fov-issue-66--2026-10-16).
+
 - **PC behavior:** Vertical FOV slider with numeric value, 40–100°, default/reset
   55°, in the guest Display settings menu and Windows launcher graphics settings.
   Camera projection and CPU frustum change together; weapon zoom remains relative.
