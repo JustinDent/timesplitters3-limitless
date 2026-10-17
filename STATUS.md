@@ -2,7 +2,8 @@
 
 ## Launcher v1.2.6 release preparation (2026-10-16)
 
-Prepared on `release/launcher-v1.2.6`, based on main `293295b`, which includes
+Prepared in PR #73 on `release/launcher-v1.2.6`, based on main `293295b` and
+merged with main `9c87069` (PR #72 FOV fix). The release includes
 PR #71 README/launcher copy cleanup and PR #70 resolution/aspect filters.
 Version and assembly metadata are 1.2.6. Release compatibility review found
 that the published alpha.4 game accepts heights only through 2160. The launcher
@@ -21,6 +22,35 @@ Tests used disposable fixtures; no actual game session was launched or personal
 settings changed. Native Mac launcher execution is unverified; adaptation and
 acceptance checks remain queued in MAC-021. Publication is pending exact-main
 build, hosted checks and public-download/previous-client verification.
+## Falling gameplay FOV (issue #66) — 2026-10-16
+
+Implemented on `66-bug-fov-returns-to-default-when-falling-from-a-ledge`,
+based on main `2608580`. Windows x64, MSVC 14.44.35207, D3D11, pinned runtime
+and complete patch stack; supported US XBE SHA-256 verified as
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+
+The FOV camera hook accepted grounded player state 2 only. The original US
+`sub_00258F50` switches to state 4 on lost ground contact (call at `0x0025954D`),
+and `sub_000D4100` restores state 2 on landing. `src/pc_display_menu.c` now
+accepts both states for the owned gameplay camera. Existing projection-call,
+cinematic and camera-ownership exclusions remain. GPU projection and CPU frustum
+continue to scale together without rewriting the guest weapon/zoom lens.
+
+Validation:
+
+- Added grounded/falling/repeated-falling/landing checks at both gameplay camera
+  call sites in `tests/cutscene_letterbox.c`. The new regression failed against
+  the old hook, then passed with the fix.
+- Default and reported 90-degree falling FOV, unchanged guest state/lens,
+  non-accumulating projection and excluded terminal/non-gameplay states covered.
+- `test_cutscene_letterbox.py`, `test_decal_projection.py` and
+  `test_fov_settings.py`: 9 passed, including the lifted original US camera path.
+- Complete patch stack verified; `tsfp.ps1 Build` and all build-script checks passed.
+- Isolated Windows test game opened at 3440x1440 and 90-degree FOV, with
+  separate save/input/display paths, 30-minute limit and capped logs. The user
+  confirmed FOV stays consistent through falling and landing on 2026-10-16.
+  No native Mac execution performed.
+  Shared hook needs no separate Mac adapter; follow-up is recorded in MAC-022.
 
 ## README and launcher copy cleanup (2026-10-16)
 

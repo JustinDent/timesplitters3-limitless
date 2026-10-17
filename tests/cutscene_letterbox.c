@@ -76,15 +76,28 @@ static void camera_tests(void)
        Rebuilding each frame prevents scaling from accumulating. */
     MEM32(0x7B0C7C)=0x6000; MEM32(0x6008)=0x4000; MEM32(0x6114)=2;
     fov_scale=2.f;
-    for(int i=0;i<2;i++) {
-        g_esp=0x10000; MEM32(g_esp)=0xCDD35;
+    const unsigned states[]={2,4,4,2}; /* Grounded, falling, falling, landed. */
+    const unsigned callers[]={0xCCBED,0xCDD35};
+    for(unsigned c=0;c<2;c++)for(unsigned i=0;i<4;i++) {
+        MEM32(0x6114)=states[i];
+        MEMF(0x4384)=55.f; /* Original gameplay/weapon lens must not be rewritten. */
+        g_esp=0x10000; MEM32(g_esp)=callers[c];
         pc_display_camera(original_camera);
         CHECK(fabsf(MEMF(0x5000)-.75f)<.00001f);
         CHECK(fabsf(MEMF(0x5014)-1.5f)<.00001f);
         CHECK(fabsf(MEMF(0x437C)-.5f)<.00001f);
         CHECK(fabsf(MEMF(0x4380)-8.f/9.f)<.00001f);
+        CHECK(MEM32(0x6114)==states[i] && MEMF(0x4384)==55.f);
     }
-    MEM32(0x6114)=0x2000; camera_check(1); /* Terminal unchanged. */
+    MEM32(0x6114)=4;
+    fov_scale=1.f; camera_check(1); /* Default FOV unchanged while falling. */
+    fov_scale=tanf(90.f*.00872664626f)/tanf(55.f*.00872664626f);
+    camera_check(1.f/fov_scale); /* Reported 90-degree setting. */
+    fov_scale=2.f;
+    const unsigned excluded[]={0,1,0x10,0x100,0x2000,0x2004};
+    for(unsigned i=0;i<sizeof excluded/sizeof *excluded;i++) {
+        MEM32(0x6114)=excluded[i]; camera_check(1); /* Non-gameplay/terminal unchanged. */
+    }
     MEM32(0x6114)=2;
     MEM32(0x6008)=0; camera_check(1); /* Other cameras unchanged. */
     MEM32(0x6008)=0x4000;
