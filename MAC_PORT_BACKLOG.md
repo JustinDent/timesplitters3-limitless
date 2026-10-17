@@ -1,5 +1,80 @@
 # PC features awaiting Mac adaptation
 
+### MAC-031 — Quit to Desktop menu entries
+
+- **Status:** Queued
+- **PC behavior:** Main Story/Arcade menu and Pause append Quit to Desktop.
+  The game's confirmation screen defaults to Cancel, supports normal menu
+  controls, and posts WM_CLOSE only after confirmation. Existing Quit retains
+  its return-to-menu behavior. Only player one's menus expose desktop exit.
+- **Source:** Uncommitted, dependent on the #86 menu controls branch;
+  `src/pc_quit_menu.inc`, `src/pc_display_menu.c/.h`, `quit-desktop.patch`,
+  and `tests/quit_menu.c` / `tests/test_quit_menu.py`.
+- **Shared Mac support:** Shared finalizer hooks preserve original Mac menus.
+  Confirmation code is currently gated to Windows (or the portable C test).
+- **Remaining:** Add a native window-thread shutdown adapter, enable the guest
+  confirmation code and verify native input; no Mac runtime validation yet.
+- **Acceptance:** Cancel and Back restore main/Pause without exiting; Pause
+  stays paused; confirmed exit closes normally from both screens with mouse
+  and keyboard/controller. Verify menu layout at supported aspect ratios.
+  Windows evidence belongs to the issue #86 entry in `STATUS.md`.
+
+### MAC-030 — Menu mouse selection (#86)
+
+- **Status:** Queued
+- **PC behavior:** Move the visible cursor over a main, pause or Tab/Objectives menu item to select
+  it, left-click to activate, and right-click to go back. The hit test follows
+  the proportional UI and presentation bars, using the full UI canvas rather
+  than the cropped world viewport during paused updates. Keyboard/controller selection
+  remains active until the pointer moves; mouse ownership suppresses old
+  directional repeats until a fresh direction takes over, including after a click
+  opens a submenu or goes back with the pointer stationary. Held clicks do not
+  cross screens or fire when gameplay resumes. Confirm callbacks receive a scoped
+  player-one pad edge, so mouse selection preserves valid controller mappings.
+  Wheel notches navigate menu rows (including level selection) without activation;
+  queued steps are bounded and discarded on clicks, menu changes, or focus loss.
+  Wheel ownership spans the gaps between packets and continuous pointer motion;
+  hover resumes on a new move after both inputs briefly settle. Clicks stay immediate.
+  Bottom prompts use measured rendered text bounds and original enabled/hidden
+  checks; clicks feed the existing actions before menu shortcut callbacks.
+  Enabled footer prompts turn light blue under the pointer, preserving menu
+  fade alpha. Profile-picker prompts are measured separately within their
+  centered text rows, including Select, Back and enabled Delete Profile.
+  Pause/Objectives Options and Status headings highlight and accept clicks;
+  tab replacement waits until the original input dispatch has returned.
+  Drawing reads pointer state without consuming wheel input.
+  Right-click closes root Pause/Objectives through the original pause handler.
+  Returning to gameplay restores mouse capture automatically while preserving
+  focus-loss protection and suppressing held menu clicks.
+- **Source:** Uncommitted on `86-enhancement-use-mouse-to-control-main-menu`,
+  based on main `e942ef0`; `src/pc_menu_mouse.h`,
+  `src/pc_menu_mouse_guest.inc`, `src/pc_controls.c/.h`, the final
+  `menu-mouse*.patch` stack, and `tests/menu_mouse.c`.
+- **Shared Mac support:** Pointer geometry and button-edge rules are shared.
+  The guest hook calls the original layout unchanged on Mac until an adapter
+  is supplied. Existing native keyboard/controller input is preserved.
+- **Remaining:** Supply an SDL client-position/button/wheel snapshot, release/hide
+  transitions, focus handling and gameplay button suppression; then enable
+  the shared guest adapter. Native build and physical input are unverified.
+- **Acceptance:** Hover/click main/profile/settings menus at 4:3, 16:9 and
+  ultrawide sizes; reject disabled/clipped items and presentation bars, retain
+  keyboard/controller navigation, select the profile using only the mouse and
+  verify controller mappings stay valid, wheel up/down through level selection
+  without activating a level or leaking steps across screens; move the pointer
+  up/down while scrolling and verify selection follows only the wheel until
+  the gesture settles, then verify hover and immediate clicks work; click enabled footer
+  prompts in main/pause/Objectives menus and verify hidden/disabled prompts are inert;
+  verify hover tint follows the same hit area, clears on focus loss, retains
+  fade transparency and does not drain queued scrolling; check profile Select/Back
+  independently and disabled/enabled Delete Profile; switch Options/Status in
+  both Pause and Objectives and reject stale labels during transitions;
+  close root Pause/Objectives with right-click and resume mouse look without an
+  extra click, including after Escape, while unfocused windows stay uncaptured;
+  keep selection stable after mouse-driven
+  transitions without further pointer motion, and prevent held selection clicks
+  from becoming gameplay shots. Run `tests/test_menu_mouse.py` and native input
+  tests. Windows evidence is recorded in the issue #86 entry in `STATUS.md`.
+
 ### MAC-028 — Preserve frontend camera FOV (#82)
 
 - **Status:** Awaiting validation

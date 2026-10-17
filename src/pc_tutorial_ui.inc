@@ -93,8 +93,13 @@ void pc_display_tutorial_wrap(void (*original)(void))
 }
 void pc_display_tutorial_text(void (*original)(void))
 {
-    uint32_t frame=g_esp,saved=WORD_AT(frame+4);
+    if(menu_mouse_profile_text(original)) return;
+    uint32_t frame=g_esp,saved=WORD_AT(frame+4),color=WORD_AT(frame+16);
+    /* Guest UI RGB uses half intensity (0x7f is white); its text pass doubles
+       it. The text ABI packs RGBA with alpha in the low byte. Keep menu fades,
+       and restore the argument so other text/shadow passes are unaffected. */
+    if(menu_mouse_footer_text()) WORD_AT(frame+16)=0x405a7f00u|(color&0xffu);
     if(tutorial_extra>0.f && tutorial_normal_row && WORD_AT(frame)==0x00147D17u)
         tutorial_set_float(frame+4,tutorial_float(frame+4)+tutorial_extra);
-    original();WORD_AT(frame+4)=saved;
+    original();WORD_AT(frame+4)=saved;WORD_AT(frame+16)=color;
 }
