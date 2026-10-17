@@ -297,7 +297,6 @@ namespace TimeSplitters.Launcher
             if(newsPage==null) {
                 newsPage=new WhatsNewPage();Find<ContentControl>("NewsHost").Content=newsPage.View;
                 newsPage.Refresh.Click+=async(s,e)=>await RefreshNews();
-                newsPage.Home.Click+=(s,e)=>ShowHome();
                 newsPage.OnGitHub.Click+=(s,e)=> {if(!previewMode && newsPage.SelectedUrl!=null)Open(newsPage.SelectedUrl);};
             }
             Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;

@@ -705,7 +705,8 @@ Copy this template into the queue for each new entry. Replace all placeholders.
   `ReleaseClient.cs`, `Launcher.cs`/XAML and bootstrap preview routing add game/
   launcher views, installed/latest version comparison, exact installed notes,
   published known-issues extraction, native text rendering and retry with
-  session-only retention. Windows uses the existing compatible-release selection
+  session-only retention. The footer contains Refresh notes and View release on
+  GitHub; Home navigation uses the sidebar. Windows uses the existing compatible-release selection
   and launcher metadata verification. The current Mac launcher has no equivalent
   release browser. Native adaptation is **queued**: reuse release/channel/version
   rules, exact-tag lookup and bounded display-only text, with native embedded

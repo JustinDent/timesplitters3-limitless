@@ -10,7 +10,7 @@ namespace TimeSplitters.Launcher
     public sealed class WhatsNewPage
     {
         public readonly Grid View=new Grid();
-        public readonly Button Refresh, Home, OnGitHub, GameTab, LauncherTab;
+        public readonly Button Refresh, OnGitHub, GameTab, LauncherTab;
         public readonly ComboBox Edition=new ComboBox { MinWidth=190,Margin=new Thickness(0,0,0,10) };
         readonly TextBlock status,installedLabel,availableLabel,availability,channel,title,published;
         readonly StackPanel changes=new StackPanel(),issues=new StackPanel();
@@ -50,8 +50,8 @@ namespace TimeSplitters.Launcher
             var known=PageTheme.Section(body,"Known issues","");issues.Margin=new Thickness(0,12,0,0);known.Children.Add(issues);
             var footer=new StackPanel {Margin=new Thickness(0,12,0,0)};Grid.SetRow(footer,2);View.Children.Add(footer);
             var actions=new WrapPanel();footer.Children.Add(actions);
-            Refresh=Button("Refresh notes","RefreshReleaseNotes");Home=Button("Open Home","NewsHome");OnGitHub=Button("View release on GitHub ↗","NewsOnGitHub");
-            actions.Children.Add(Refresh);actions.Children.Add(Home);actions.Children.Add(OnGitHub);
+            Refresh=Button("Refresh notes","RefreshReleaseNotes");OnGitHub=Button("View release on GitHub ↗","NewsOnGitHub");
+            actions.Children.Add(Refresh);actions.Children.Add(OnGitHub);
             OnGitHub.ToolTip="Opens this published release in your browser.";
             status=PageTheme.Text("Refresh to load published release notes.",12,"#9EB4C8");footer.Children.Add(status);
             Render();

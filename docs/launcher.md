@@ -57,7 +57,7 @@ channel. Switch between **Game releases** and **Launcher releases**, then choose
 Published known issues appear in their own section when supplied by the release.
 **Refresh notes** checks GitHub again; a failed refresh keeps notes already loaded
 for this session and shows their last checked time. **View release on GitHub**
-opens the original release, and **Open Home** returns to the update controls.
+opens the original release. Use **Home** in the sidebar to return to update controls.
 This page reads release information; installing an update remains a separate action.
 
 ## Saves, logs and recovery

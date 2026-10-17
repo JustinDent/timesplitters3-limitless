@@ -109,7 +109,7 @@ public static class LauncherNewsChecks
                 Notes="<script>alert('test')</script>\n<Window><Button>Injected</Button></Window>\n![Remote](https://invalid.example/image.png)"}});
             string text=String.Join("\n",All<TextBlock>(page.View).Select(t=>t.Text));
             Need(text.Contains("<script>") && text.Contains("<Window>") && text.Contains("Image: view on GitHub"));
-            Need(!All<WebBrowser>(page.View).Any() && !All<Image>(page.View).Any() && All<Button>(page.View).Count()==5);
+            Need(!All<WebBrowser>(page.View).Any() && !All<Image>(page.View).Any() && All<Button>(page.View).Count()==4);
         });
         Test("installed preview notes remain readable when stable has no compatible game release",()=>{
             var page=new WhatsNewPage();page.SetVersions("v1.0.0-beta.1","1.0.0",false);page.SetNews(new ReleaseNews {InstalledGame=new Release {Tag="v1.0.0-beta.1",Notes="Installed preview",Url=ReleaseClient.ReleasesPage},CheckedUtc=DateTime.UtcNow});

@@ -2,6 +2,15 @@
 
 ## Embedded launcher What's new page (2026-10-17)
 
+Footer follow-up on the same PR: removed the redundant **Open Home** button;
+Home remains available in the sidebar. The footer now contains only Refresh
+notes and View release on GitHub. Updated documentation and the existing inert-
+content control-count assertion. Required-artwork compilation, all 15 release-
+news checks and live normal/minimum-size preview rendering passed. A broader
+updater transaction rerun stopped at the existing active-game guard; the user's
+running game was preserved. The full 185-check pass below predates this footer
+follow-up. No game/runtime behavior changed.
+
 Implemented on `feature/launcher-whats-new`, based on main `3cac654`; implementation
 commit `cfbfe6c`, [PR #93](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/93). The aligned sidebar and Home's notes
 button open an embedded blue/silver release center. Game and launcher views
