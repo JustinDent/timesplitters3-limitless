@@ -3958,3 +3958,18 @@ queued under MAC-021; other-device synchronization is unverified.
 - No game launches, source-tool or runtime changes. Existing compiler tests retained; offline native DDS checks and visual audits used for this art-only batch. Mac artwork scene validation pending. One active private pack, no duplicate game, pack, ZIP or staging; personal saves/settings untouched.
 - Storage at audit: pack 632,772,769 bytes (603.46 MiB) including metadata / 6 GiB; adds 11,368,134 bytes. Texture workspace 2,639,910,022 allocated/logical bytes (2.46 GiB); temporary originals/review/previews 231,422,431 bytes (220.70 MiB) / 256 MiB; free disk 130,381,619,200 bytes. Texture totals are not whole-project totals.
 - Private evidence `review/hybrid-89-*`: triage/classifications, exact prompts/selection, compiled/repeat and strip detail comparisons, seam profiles, functional diagnostics, retirement hashes, native audit and acceptance. Source art `authored/*-hybrid-v1.png`, canonical per-key provenance retained. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
+
+### Texture hybrid batch 90: twelve material and machinery replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `aacd007`, Windows x64. Twelve additions; 538 installed/offline-approved total. Runtime scenes remain unverified.
+- Four environment panels/molding and eight individually reviewed machinery/prop atlases accepted. No additional held drafts. Classification remains 1,049 keys.
+- All twelve original/compiled comparison and repeat rows visually reviewed; three enlarged mechanical details inspected.
+- Pipe classification/prompt said four incorrectly. Original shows five main horizontal highlight bands plus a lower partial band, retained by the compiled texture. Exact generation prompt retained unchanged; source image controls acceptance.
+- Ladder rungs, circular assembly holes/rivets, gray equipment slots/eight circles/triangular windows, rib stacks, lamp inset and plaque relief reviewed at original-relative positions.
+- Material detail and local highlights are stronger. Scene lighting, mapped UV appearance and adjacency remain pending. No launch.
+- Possible sibling 122caee769fd7eb4 reuse deferred: low RGB difference alone is insufficient to establish matching UV/functional content. No replacement installed for this key.
+- Twelve built-in imagegen sources: eight 1254-square and four 1774x887; downsampled RGB into five 1024-square, three 512-square and four 1024x512 full-mip DXT1 replacements. Original/compiled alpha opaque. No native 4K source claim.
+- Accepted luminance changes range -10.60% ladder to +9.88% gray equipment atlas. Offline approval does not establish scene appearance.
+- All 538 DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks; 6229 need art, 45 held corrections. Full category, scene and embedded/procedural coverage remains unfinished.
+- Storage at audit: pack 638,197,263 bytes (608.63 MiB) including metadata / 6 GiB; adds 5,424,494 bytes. Texture workspace 2,685,965,594 allocated bytes (2.50 GiB); temporary originals/review/previews 234,132,617 bytes (223.29 MiB) / 256 MiB. These are texture totals, not whole-project totals.
+- No launches, runtime/tool changes, duplicate game, pack, ZIP or staging. Saves/settings untouched. Existing compiler tests retained; art-only work validated offline. Private evidence `review/hybrid-90-*`, source art and exact prompts retained. Worklist, inventory, hybrid plan and progress reconciled; only progress documentation tracked.
