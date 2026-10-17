@@ -4080,3 +4080,13 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 658 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,105 need art and 49 drafts need correction; full overhaul unfinished. Zero new game launches, runtime changes or shared-tool edits. Playtesting remains deferred to the near-completion gate.
 - Pack: 712,366,655 bytes (679.37 MiB / 6144 MiB). Texture workspace at worklist audit: 3,241,918,728 logical/allocated bytes (3.02 GiB). Temporary exports/reviews: 246,454,153 bytes (235.04 MiB / 256 MiB). Free disk at audit: 128,133,189,632 bytes. No duplicate game/pack/ZIP/staging; saves and settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-100-*`, exact prompts, authored art and progress. Artwork remains local and ignored; this commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 101
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `3b85fcd`. Inspected 32 catalog-verified opaque originals; 1,305 provisionally classified keys. Faces, labels, equipment and ambiguous effects remain separately queued.
+- Accepted sixteen material/prop replacements including stained walls, recessed panels, tartan, molding, riveted plates, gravel, plaster, masonry, brick/stone patch and wood end grain. Eleven 1254-square and five 1774x887 built-in imagegen sources produce seven 1024-square, three 512-square, one 2048-square and five 1024x512 full-mip DXT1 files. The 2048-square concrete panel is upsampled from 1254-square; no native 2K/4K claim.
+- Four comparisons, four repeat sheets and four enlarged details reviewed. Main divisions, folds, stripe, molding, rivet rows, patch boundary and ring focus retained. Mean luminance changes -10.95% to +13.67%; local relief, exact hardware spacing, scene lighting, scale and adjacency remain scene checks.
+- All 674 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,089 need art and 49 drafts need correction; full overhaul unfinished. Zero game launches, runtime changes or shared-tool edits. Near-completion testing gate retained.
+- Pack: 722,337,312 bytes (688.87 MiB / 6144 MiB). Texture workspace at audit: 3,317,984,772 logical/allocated bytes (3.09 GiB). Temporary exports/reviews: 253,204,287 bytes (241.47 MiB / 256 MiB). Free disk at audit: 127,513,735,168 bytes. No duplicate game/pack/ZIP/staging; saves and settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-101-*`, exact prompts, authored sources and progress. Corrected one mistyped identifier before successful generation; all 32 triage identifiers verified against the catalog. Artwork remains local and ignored; this commit records progress only.
