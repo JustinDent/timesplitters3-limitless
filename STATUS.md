@@ -3,7 +3,7 @@
 ## Diagnostics to GitHub issue drafts (2026-10-17)
 
 Follow-up on `feature/launcher-repair-diagnostics` / PR #88, based on its
-`b990140` implementation (uncommitted). Diagnostics adds Report a bug and Request
+`b990140` implementation; follow-up commit `e640b2f`. Diagnostics adds Report a bug and Request
 enhancement actions. `DiagnosticIssueDraft.cs` selects the matching repository
 issue form and prefills its optional diagnostics text field, with the complete
 report also copied to the clipboard. Only the displayed privacy-filtered report
