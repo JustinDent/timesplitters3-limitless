@@ -31,7 +31,7 @@ Three bounded, 55-second D3D11 Arcade Vietnam sessions used disposable Test Lab
 copies, synthetic keyboard input and isolated input/both display configurations.
 Reviewed 1920x1080, 1280x960 and 3440x1440 captures show the complete RANK widget
 above the status icons at its original left inset. At 1920x1080, its label moved
-from X=125â€“146 to X=45â€“66 in the retained 640-pixel-wide window capture: exactly
+from X=125–146 to X=45–66 in the retained 640-pixel-wide window capture: exactly
 the missing 80-pixel side-anchor offset, with the same 22-pixel text width.
 The 4:3 layout is unchanged; 4th/5th rank labels were captured. The bounded
 runtime trace confirms the actual panel caller is `0012EC8B`. Captures and logs
@@ -174,7 +174,7 @@ use disposable copies. No personal-save game session was launched for testing.
   an RHI pass, and retain ordinary full/depth/stencil clears. The pass leaves guest
   state unchanged and restores its output targets/viewports. The existing Mac GL
   clear now honours the same channel flags and restores its render state.
-  Capture version 8 records the flags; readers still accept versions 5â€“7.
+  Capture version 8 records the flags; readers still accept versions 5–7.
 - Validation: complete patch-stack validation, supported Windows Release build,
   all native build tests, and executable/content seal verification passed. The
   new real-GPU regression passed all 15 channel masks with pixel readback,
@@ -202,9 +202,9 @@ use disposable copies. No personal-save game session was launched for testing.
 ## Game release comparisons and readable titles (2026-10-16)
 
 Branch `fix/game-release-history-titles`, based on main `e18a381`.
-The publisher selects the most recently published valid game `vâ€¦` tag, including
+The publisher selects the most recently published valid game `v…` tag, including
 prereleases, while retaining all release records for duplicate-tag protection.
-New game titles use `TSFP vâ€¦`; manual launcher titles use `Launcher vâ€¦`.
+New game titles use `TSFP v…`; manual launcher titles use `Launcher v…`.
 Release notes retain generated PR/contributor content beneath "Changes since"
 and omit the redundant "What's Changed" heading, source commit list and
 "Build and validation" section. Packaging validation and verification assets
@@ -288,7 +288,7 @@ Tests used disposable fixtures; no actual game session was launched or personal
 settings changed. Native Mac launcher execution is unverified; adaptation and
 acceptance checks remain queued in MAC-021. Publication is pending exact-main
 build, hosted checks and public-download/previous-client verification.
-## Falling gameplay FOV (issue #66) â€” 2026-10-16
+## Falling gameplay FOV (issue #66) — 2026-10-16
 
 Implemented on `66-bug-fov-returns-to-default-when-falling-from-a-ledge`,
 based on main `2608580`. Windows x64, MSVC 14.44.35207, D3D11, pinned runtime
@@ -341,7 +341,7 @@ edits; no game build, game execution, update or personal settings changes were
 performed. Native Mac UI wording is unverified. Publication is not part of this
 change.
 
-## Resolution groups and adaptive UI (issues #27/#31) â€” 2026-10-16
+## Resolution groups and adaptive UI (issues #27/#31) — 2026-10-16
 
 Implemented on `27-add-aspect-ratio-169-and-more-resolutions`, originally based on main
 `4124557`. Windows x64, MSVC 14.44.35207, D3D11, pinned runtime and complete
@@ -349,7 +349,7 @@ patch stack, supported US XBE SHA-256
 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
 
 The guest menu and Windows launcher share 41 common render presets and six
-aspect groups, supplemented by reported monitor modes. Bounds are 7680Ã—4320,
+aspect groups, supplemented by reported monitor modes. Bounds are 7680×4320,
 33,177,600 pixels and 4:1; saved custom modes and V1/V2 FOV files remain supported.
 Aspect selection filters/stages a resolution rather than stretching it. The guest
 refresh restores choice indices by row ID, so the new filtered index is reapplied
@@ -369,7 +369,7 @@ bounds. `sub_0013AB60` now fits the full curve mesh with a four-percent inset.
 The primitive-allocation hook separates the three left/right mesh passes before
 they are batched, retaining the centred directional hit marker and restoring the
 previous placement afterward. Single-player layout is shared with native Mac;
-split-screen keeps its previous behavior. A user screenshot at 3440Ã—1440
+split-screen keeps its previous behavior. A user screenshot at 3440×1440
 identified the clipped health/armor curves on Audio/Video Options.
 
 Tutorial follow-up: the original card reserved 40 units for controller icons,
@@ -453,7 +453,7 @@ Validation so far:
 
 - Tutorial follow-up: all eight Release build checks, four shared UI cases
   (including production tutorial hooks) and fourteen patch-transition cases pass.
-  The isolated first-mission run at 3440Ã—1440 shows distinct key/action columns
+  The isolated first-mission run at 3440×1440 shows distinct key/action columns
   and a fully contained two-line fire-mode description. Reviewed capture:
   `build/issue-27-display/tutorial-fixed-3440x1440.png`. Longer rebound labels,
   bounded panel growth, wrapping space, original controller/split-screen geometry
@@ -469,12 +469,12 @@ Validation so far:
   `GetForegroundWindow` acceptance assertion (line 55). Input code was unchanged;
   those intermediate runs were not all-green. The subsequent tutorial rebuild
   passed all eight checks without changing input code.
-- A bounded isolated 3440Ã—1440 run using the existing input-state test interface
+- A bounded isolated 3440×1440 run using the existing input-state test interface
   reached first-mission gameplay, pause Options and Audio/Video Options. Reviewed
   complete, separate left/right gauges with clear panel spacing in
   `health-pause-3440x1440.png` and `health-audio-video-3440x1440.png` under
-  `build/issue-27-display`. Recorded mesh bounds are 25.6â€“217.0 on the left and
-  423.0â€“614.4 on the right in the 640-unit guest canvas. Return to gameplay
+  `build/issue-27-display`. Recorded mesh bounds are 25.6–217.0 on the left and
+  423.0–614.4 on the right in the 640-unit guest canvas. Return to gameplay
   retained the centred crosshair and right-edge ammo. Earlier timed attempts
   stopped at the briefing/profile editor and are not gameplay evidence.
   Human confirmation of the revised gauges and native Mac validation remain.
@@ -492,22 +492,22 @@ Validation so far:
 - Fourteen complete patch upgrade/transition cases pass, including historical
   controls and texture-branch round trips. The historical fixture excludes these
   later UI patches until their display dependencies are installed.
-- Initial 1280Ã—720 actual menu capture confirms a full-width animated background,
+- Initial 1280×720 actual menu capture confirms a full-width animated background,
   proportional text/panel/FOV slider and a functioning aspect selector. An
-  86-second recorded-input guest run then filtered 16:9 modes, confirmed 960Ã—540,
-  previewed 1280Ã—720, timed out back to 960Ã—540 and returned to the original menu.
-- A fresh isolated 135-second first-mission run at 2560Ã—1080 reached gameplay.
+  86-second recorded-input guest run then filtered 16:9 modes, confirmed 960×540,
+  previewed 1280×720, timed out back to 960×540 and returned to the original menu.
+- A fresh isolated 135-second first-mission run at 2560×1080 reached gameplay.
   Reviewed the right-edge ammo counter, centred crosshair and pause Options panel;
   recorder tags confirm the ammo group uses RIGHT and the next menu returns AUTO.
   The first attempt used an existing test profile and stopped at its name editor;
   only the fresh-save run is gameplay evidence. Its tutorial key-label overlap
   prompted the separate measured-column correction described above.
   Radar and sniper scope placement still need a representative manual playtest.
-- Reviewed final 1280Ã—1024 (5:4) and 2560Ã—720 (32:9) menu captures: full-width
+- Reviewed final 1280×1024 (5:4) and 2560×720 (32:9) menu captures: full-width
   animated backgrounds, proportional text/buttons/FOV slider, and unclipped panels.
   Executable provenance and selected evidence are recorded in
   `build/issue-27-display/validation.json`. Actual 8K GPU allocation and native Mac
-  execution were not tested. An isolated 1920Ã—1080 build is prepared for user
+  execution were not tested. An isolated 1920×1080 build is prepared for user
   radar/sniper and resolution-switching playtests; no personal settings were changed.
 ## Launcher v1.2.5 release preparation (2026-10-16)
 
@@ -637,7 +637,7 @@ Two additional checks cover compatible resolution saves, atomic rejection, the
 newer-version path, and disabled controls with explanatory text. Native Mac adaptation remains queued under
 MAC-021; other-device synchronization is unverified.
 
-## Launcher settings CI startup budget â€” 2026-10-16
+## Launcher settings CI startup budget — 2026-10-16
 
 - PR #65's Windows run `38969601167` passed patch transitions and all 71 launcher
   updater checks, then stopped in the first FOV WPF UI check at the ten-second
@@ -652,14 +652,14 @@ MAC-021; other-device synchronization is unverified.
   The previous PR revision's macOS patch-transition job passed; this WPF-only
   harness has no Mac adapter impact. No game data or personal settings were used.
 
-## Configurable gameplay FOV (issue #29) â€” 2026-10-16
+## Configurable gameplay FOV (issue #29) — 2026-10-16
 
 Implemented on `29-fov-support-in-video-settings`, starting from
 main `ef17e2a`. Windows x64, MSVC 14.44.35207, the pinned runtime and
 complete verified patch stack; supported US XBE SHA-256
 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
-The shared display model now retains a vertical FOV preference (40â€“100Â°, default
-55Â°), reading legacy display files and the explicit V2 format. The guest Display
+The shared display model now retains a vertical FOV preference (40–100°, default
+55°), reading legacy display files and the explicit V2 format. The guest Display
 settings menu and Windows launcher graphics tab expose sliders with numeric
 values, reset and existing save/cancel behavior. Combined resolution previews
 revert both fields. Gameplay projection and CPU culling use the same tangent
@@ -684,14 +684,14 @@ Validation on Windows:
   assertion failed when rerun directly. No input/prompt implementation changed.
   The remaining checks were run individually, and executable identity was sealed.
 - A bounded 65-second isolated game run navigated the actual guest menu with
-  recorded input, moved the slider 55 â†’ 58, and saved
+  recorded input, moved the slider 55 → 58, and saved
   `TSFP_DISPLAY_V2 1280 720 58`. Reviewed the menu capture and found both the
   number and original-style slider inside the panel. Evidence is in
   `build/issue-29-fov/menu-{47,55,62}.png` and `menu.err`.
 
-- First-mission gameplay with isolated 1280Ã—720 / 75Â° settings produced a
-  vertical CPU frustum of `0.76732695` (tan(75Â°/2)) and projection Y coefficient
-  `1.30322552` (its reciprocal), while the original game zoom field stayed 55Â°.
+- First-mission gameplay with isolated 1280×720 / 75° settings produced a
+  vertical CPU frustum of `0.76732695` (tan(75°/2)) and projection Y coefficient
+  `1.30322552` (its reciprocal), while the original game zoom field stayed 55°.
   This confirms the requested lens reaches the real projection and culling
   paths. The diagnostic run collected 117.25 seconds before its screenshot
   watcher hit a rotating-file race and stopped its owned game in `finally`;
@@ -705,7 +705,7 @@ Personal saves and settings were not used. Shared/native Mac integration is
 source-reviewed only; Mac build, physical controller navigation, all weapons
 and split-screen gameplay are unverified. See MAC-022 in `MAC_PORT_BACKLOG.md`.
 
-## Terminal mouse routing (issue #7) â€” 2026-10-16
+## Terminal mouse routing (issue #7) — 2026-10-16
 
 Implemented on `7-breaking-and-entering-camera-turret-not-working`, based on
 main `696421f` merged at `093e30f`. On Windows x64, a bounded isolated run
@@ -714,7 +714,7 @@ player mode was `0x2000`; physical mouse movement changed hidden player angles
 while the active console pointer stayed fixed. The user confirmed the terminal
 menu pointer, rather than a selected camera view, was blocked. Disassembly of
 US `sub_003700D0` identifies local-index console ownership, pointer coordinates,
-4â€“251 bounds, inactivity reset, scripted input and pause gates.
+4–251 bounds, inactivity reset, scripted input and pause gates.
 
 The shared `src/pc_terminal.h` now routes counts to that pointer and consumes
 terminal input without changing player angles, including invalid transitions.
@@ -739,7 +739,7 @@ The read-only capture also records return to mode `0x2` with no active terminal.
 Native Mac compilation/execution remain
 unverified; see MAC-001.
 
-## Terminal mouse routing (issue #7) â€” 2026-10-16
+## Terminal mouse routing (issue #7) — 2026-10-16
 
 Implemented on `7-breaking-and-entering-camera-turret-not-working`, based on
 main `696421f` merged at `093e30f`. On Windows x64, a bounded isolated run
@@ -748,7 +748,7 @@ player mode was `0x2000`; physical mouse movement changed hidden player angles
 while the active console pointer stayed fixed. The user confirmed the terminal
 menu pointer, rather than a selected camera view, was blocked. Disassembly of
 US `sub_003700D0` identifies local-index console ownership, pointer coordinates,
-4â€“251 bounds, inactivity reset, scripted input and pause gates.
+4–251 bounds, inactivity reset, scripted input and pause gates.
 
 The shared `src/pc_terminal.h` now routes counts to that pointer and consumes
 terminal input without changing player angles, including invalid transitions.
@@ -806,7 +806,7 @@ unverified; see MAC-001.
   wrapper, but native build/rendering and other-device synchronization remain
   unverified. See [MAC-010](MAC_PORT_BACKLOG.md#mac-010--in-game-resolution-preview-and-rollback).
 
-## Resolution release preparation â€” October 16, 2026
+## Resolution release preparation — October 16, 2026
 
 Game v0.2.0-alpha.4 and launcher v1.2.0 are prepared together on
 `release/resolution-v0.2.0-alpha.4`, based on main `92384df`. This integrates
@@ -817,14 +817,14 @@ alongside the current portable Online companion, licenses and source bundle.
 
 Earlier issue-branch validation passed 71 updater and 14 settings checks, native
 display tests and an 86-second real D3D11 guest-menu replay covering left/right
-selection, 720Ã—480 apply/keep/save, Original preview, timed rollback and return.
+selection, 720×480 apply/keep/save, Original preview, timed rollback and return.
 Both native value-column and WPF graphics-tab captures were reviewed. The US XBE
 hash was verified; those earlier tests used an isolated relink. The main-based
 full MSVC x64 Release build and native checks subsequently passed, along with
 138 Python tests (5 platform/prerequisite skips), 2 launcher packaging tests,
 71 updater checks, 14 settings checks and 3 launcher lifecycle checks.
 The full executable passed the same isolated 86-second D3D11 resolution replay:
-720Ã—480 apply/keep/save, Original preview, 15-second rollback and menu return.
+720×480 apply/keep/save, Original preview, 15-second rollback and menu return.
 Fresh disposable saves and explicit input/display/runtime paths were used.
 Both GitHub patch-transition jobs (Windows and macOS) passed on `647a42a`;
 these source-level Mac checks do not establish native Mac game execution.
@@ -841,7 +841,7 @@ session-cache targets. The earlier diagnostic fixtures are preserved separately.
 Native Mac execution and paused-Options gameplay traversal remain unverified for
 this change; adaptation is tracked in MAC-010 and MAC-021.
 
-## Release regression compiler discovery â€” 2026-10-16
+## Release regression compiler discovery — 2026-10-16
 
 - Source base `cc35200`, changes on `fix-release-msvc-tests`.
   Host: Windows x64, CPython 3.14.2, Visual Studio 2022 Build Tools / MSVC
@@ -867,7 +867,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   Mac execution and synchronization with the other device remain unverified;
   see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-distribution).
 
-## Adaptive cutscene letterboxing (issue #33) â€” 2026-10-16
+## Adaptive cutscene letterboxing (issue #33) — 2026-10-16
 
 - Source base `5c9effd`, branch `33-remove-the-letter-boxes-in-cut-scenes`.
   The requested behavior is adaptive cinematic bars, rather than removal.
@@ -919,12 +919,12 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   all four cutscene tests passed after correction (4.88 s). Production game
   code and the validated executable are unchanged. Hosted CI is pending rerun.
 
-## Khallos Express see-through scenery (issue #9) â€” 2026-10-16
+## Khallos Express see-through scenery (issue #9) — 2026-10-16
 
 - Reproduced the transparent train walls and weapon in an isolated Windows
   Khallos Express session. Captured frame 3376 samples a framebuffer texture
-  for background blur at draws 142â€“143, then samples that same texture again
-  for additive glow at draws 462â€“463, after drawing the train and weapon.
+  for background blur at draws 142–143, then samples that same texture again
+  for additive glow at draws 462–463, after drawing the train and weapon.
   The HLE refreshed this texture only once per swap, so the final effect
   painted the earlier background over otherwise solid geometry.
 - Added `patches/zzzzzzz-framebuffer-sampling-passes.patch`. Switching away
@@ -970,7 +970,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   `private/test-saves/pickup-range`; personal settings and saves were untouched.
   Redundant captures and disposable test partitions were removed. See MAC-019.
 
-## Temporary diagnostic-output comparison â€” 2026-10-16
+## Temporary diagnostic-output comparison — 2026-10-16
 
 - User confirms the angle improvement but persistent remote strafe lag, with
   FPS dips about every five seconds even while stationary. The cause remains
@@ -1013,7 +1013,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   as mutable automated-test settings. Changes remain local and uncommitted;
   native Mac execution and other-device synchronization are unverified.
 
-## Multiplayer strafe updates (issue #20) â€” 2026-10-16
+## Multiplayer strafe updates (issue #20) — 2026-10-16
 
 - **Further candidate, local and uncommitted:** The full-state sampler
   `0x003588D0` compares six controller bytes and otherwise refreshes only after
@@ -1145,7 +1145,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   build/execution and synchronization remain unverified; see
   [MAC-013](MAC_PORT_BACKLOG.md#mac-013--system-link-and-online-multiplayer).
 
-## Controller sensitivity slider (issue #24) â€” 2026-10-16
+## Controller sensitivity slider (issue #24) — 2026-10-16
 
 - Source base `c17336b` (fetched `origin/main`); this revision adds regression
   coverage/documentation on `24-controller-sensitivity-slider-not-working-correctly`.
@@ -1178,7 +1178,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   native Mac compilation/execution remain pending. Personal settings, saves and
   the tracked input fixture were preserved. See [MAC-016](MAC_PORT_BACKLOG.md#mac-016--shared-pickup-range-comparison-fix-issue-6).
 
-## Nonzero-player mouse look (issue #18) â€” 2026-10-16
+## Nonzero-player mouse look (issue #18) — 2026-10-16
 
 - Implemented in `8dee97f` on `18-mouse-input-only-works-for-player-1`, based on
   `4189924` (matching fetched `origin/main`). The shared camera helper rejected
@@ -1189,7 +1189,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
   guest player ID to 1 while using keyboard port 1. Before the fix the camera
   stayed still; afterward 100/20 mouse counts at sensitivity 0.1 produced
   -10/-2 degrees yaw/pitch. The same regression checks camera field selection
-  for IDs 0â€“15, null player/FOV pointers, invalid FOV and single consumption.
+  for IDs 0–15, null player/FOV pointers, invalid FOV and single consumption.
 - Windows x64, OS build 26300, MSVC 14.42.34433, Windows SDK 10.0.22621.0,
   SDL 3.4.16, Python 3.14.2; pinned upstream `d90c929` and supported US XBE
   SHA-256 verified by `tsfp.ps1 -Action Build`. Full Release build and all
@@ -1208,7 +1208,7 @@ this change; adaptation is tracked in MAC-010 and MAC-021.
 Tested on Windows and Apple Silicon macOS on October 14-15, 2026. This is an experimental port bring-up;
 full gameplay and campaign completion have not been verified.
 
-## Mac branch update before publishing â€” October 15
+## Mac branch update before publishing — October 15
 
 - Incorporated the newer Mac camera/prompt/multistage-renderer commit `6e48241`
   into the prepared main compatibility merge, preserving both lines of work.
@@ -1224,7 +1224,7 @@ full gameplay and campaign completion have not been verified.
   revision remain pending; prior evidence is retained below. No game or personal
   settings/saves were used for this merge.
 
-## Mac/main merge compatibility â€” October 15
+## Mac/main merge compatibility — October 15
 
 - Reconciled `mac-port` at `93dc422` with main at `16fcea5` for PR #10.
   The shared display menu retains POSIX memory-query compatibility and the
@@ -1243,7 +1243,7 @@ full gameplay and campaign completion have not been verified.
   by this merge check. No game launches or personal settings/save changes were
   required; the existing Windows texture branch and overhaul files were preserved.
 
-## Shared Windows and Mac feature policy/input model â€” October 15
+## Shared Windows and Mac feature policy/input model — October 15
 
 - Added tracked shared-development rules to `AGENTS.md`: common behavior has one
   implementation wired into both builds; native API work stays in adapters, and
@@ -1271,7 +1271,7 @@ full gameplay and campaign completion have not been verified.
   Changes remain local and uncommitted on `mac-port`; personal saves/settings
   were untouched, and disposable native regression disks were recycled.
 
-## Native interpolation mesh-layout repair â€” October 15
+## Native interpolation mesh-layout repair — October 15
 
 - Investigated the user's missing first-mission terrain/character screenshots.
   Found a shared replay-state bug: vertex declarations changed during a guest
@@ -1292,10 +1292,10 @@ full gameplay and campaign completion have not been verified.
   full resolution remains unverified.** No full-level playthrough was attempted.
 - The final 145-second isolated 120-FPS run ended normally at its time limit,
   with no native fault, sampled GL error or skipped-declaration warning.
-  Movement/turning used synthetic SDL keys. In seconds 115â€“135 after the first
+  Movement/turning used synthetic SDL keys. In seconds 115–135 after the first
   host present, the stationary sample measured **120.00 host FPS**: 1,200 guest
   plus 1,200 interpolated presents (60.00 FPS each); p95 11.47 ms, worst 13.34 ms.
-  The moving/capture sample at seconds 95â€“110 measured 116.81 host FPS
+  The moving/capture sample at seconds 95–110 measured 116.81 host FPS
   (59.67 guest + 57.14 interpolated). These are presents, not display scanout.
 - Validation: 25 portable/native-tool tests passed, 2 Windows-only tests skipped;
   all three native CTests and real-GPU/SDL regressions passed. The new regression
@@ -1314,7 +1314,7 @@ full gameplay and campaign completion have not been verified.
   recycled. Personal saves/settings were untouched. Changes are local and
   uncommitted on `mac-port`; the other computer's synchronization is unverified.
 
-## CrossOver integration removed â€” October 15
+## CrossOver integration removed — October 15
 
 - Removed the compatibility launcher, Python implementation, dedicated tests
   and setup instructions. The native launcher owns its game-data/settings
@@ -1335,7 +1335,7 @@ full gameplay and campaign completion have not been verified.
 - Changes remain local on `mac-port`; synchronization on the other computer
   is unverified. Historical validation logs remain as recovery records.
 
-## Native Mac mouse-look â€” October 15
+## Native Mac mouse-look — October 15
 
 - Clicking inside the focused native game window now enables relative
   mouse-look. The capture click is consumed; subsequent clicks use the shared
@@ -1369,7 +1369,7 @@ full gameplay and campaign completion have not been verified.
   absent and remain absent; disposable test disks were recycled. Changes are
   local on `mac-port`; the other computer's synchronization is unverified.
 
-## Native Mac up-to-120 FPS mode â€” October 15
+## Native Mac up-to-120 FPS mode — October 15
 
 - Native launches now default to **2x render interpolation**, retaining the
   60 Hz console clock. `--fps 60` / `--fps 120` override only that launch;
@@ -1386,7 +1386,7 @@ full gameplay and campaign completion have not been verified.
   for depth isolation and restoration. Late cinematic frames consume an already
   delivered vblank rather than waiting an extra tick for interpolation.
 - The final **165-second** isolated run's stationary first-level canyon window
-  (120â€“145 seconds after the first present) measured **120.00 host FPS**:
+  (120–145 seconds after the first present) measured **120.00 host FPS**:
   **1,500 guest + 1,500 interpolated presents**, each **60.00 FPS**. Median host
   interval **10.02 ms**, p95 **13.47 ms**, p99 **15.61 ms**, worst **16.82 ms**;
   none exceeded 33.33 ms. Captures were enabled, with explicit paired readback
@@ -1395,7 +1395,7 @@ full gameplay and campaign completion have not been verified.
   to 8.33 ms. Background focus during this window is recorded in the evidence;
   a separate foreground input check is also retained.
 - A separate 110-second foreground run measured **119.90 host FPS** (60.00
-  guest + 59.90 interpolated) in seconds 80â€“90: median 9.81 ms, p95 11.76 ms,
+  guest + 59.90 interpolated) in seconds 80–90: median 9.81 ms, p95 11.76 ms,
   worst 16.00 ms. Reviewed fresh captures of movement, the pause menu, resumed
   gameplay and ammunition decreasing after firing. Keyboard events were synthetic
   SDL input; firing used macOS mouse-event delivery, not a human playtest. The
@@ -1419,11 +1419,11 @@ full gameplay and campaign completion have not been verified.
   `logs/mac-120-build.log`, `logs/mac-120-portable-tests.log`, and selected
   `private/captures/native-mac/native-120-*.png` / `interpolation-*.png`.
 
-## Earlier 120/144 FPS feasibility check (before implementation) â€” October 15
+## Earlier 120/144 FPS feasibility check (before implementation) — October 15
 
 - Tested `frame_cap = 0` only in the isolated runtime settings, keeping the
   console vblank clock at 60 Hz. The log confirmed the flip gate was off.
-  In the same stationary canyon window (120â€“145 seconds), 1,500 host-present
+  In the same stationary canyon window (120–145 seconds), 1,500 host-present
   intervals still measured **60.00 FPS**, median **16.57 ms**, p95 **18.99 ms**,
   and worst **31.63 ms**. Removing that gate is not a high-refresh solution for
   this build. The 150-second run had no native fault or sampled GL error.
@@ -1443,10 +1443,10 @@ full gameplay and campaign completion have not been verified.
   `logs/native-higher-fps-validation.json`, `logs/mac-perf-uncapped.csv`,
   `logs/mac-perf-uncapped-boot.json`, and `logs/mac-perf-uncapped-sample.txt`.
 
-## Native frame-time investigation and upload fix â€” October 15
+## Native frame-time investigation and upload fix — October 15
 
 - Confirmed the reported slowdown on `mac-port`. Measured host-present intervals
-  in the stationary first-level canyon, 120â€“145 seconds after the first present,
+  in the stationary first-level canyon, 120–145 seconds after the first present,
   excluding menus, loading, the opening animation and CPU sampling. Three bounded
   150-second runs used the same isolated profile and menu input sequence.
 
@@ -1481,7 +1481,7 @@ full gameplay and campaign completion have not been verified.
   `logs/mac-frame-fixed-build.log`, `logs/mac-frame-portable-tests.log`, and
   `private/captures/native-mac/native-frame-performance.png`.
 
-## Focused native combat smoke test â€” October 15
+## Focused native combat smoke test — October 15
 
 - Continued on `mac-port` with the same native binary and isolated test profile.
   Traversed the initial canyon beyond the spawn area, reached the first enemy
@@ -1507,11 +1507,11 @@ full gameplay and campaign completion have not been verified.
   `private/captures/native-mac/first-combat-smoke.png`. Disposable partition images
   were recycled after the run.
 
-## Visible native first-level gameplay â€” October 15
+## Visible native first-level gameplay — October 15
 
 - Fixed the black world on `mac-port`. A per-draw GPU trace showed the world
   rendered correctly, then a later clear erased it. The game switches to a
-  **160Ã—120 offscreen texture** for that pass; the Mac backend previously returned
+  **160×120 offscreen texture** for that pass; the Mac backend previously returned
   no surface from `GetSurfaceLevel` and ignored `SetRenderTarget`, so the clear
   landed on the visible back buffer.
 - Added real texture surfaces, OpenGL framebuffers and depth/stencil attachments,
@@ -1550,7 +1550,7 @@ full gameplay and campaign completion have not been verified.
   textures and screen-copy effects need further work. This is a first-level
   gameplay milestone, not a finished Mac release.
 
-## Native Mac controls and first story-level load â€” October 15
+## Native Mac controls and first story-level load — October 15
 
 - Added a Mac-only SDL event bridge to the shared JSON binding reader through
   `zzzz-mac-input.patch`. Keyboard/mouse state is published atomically for guest
@@ -1594,7 +1594,7 @@ full gameplay and campaign completion have not been verified.
   `private/captures/native-mac/first-native-level.png` and
   `private/captures/native-mac/native-gameplay-hud.png`.
 
-## First visible native Mac menu â€” October 15
+## First visible native Mac menu — October 15
 
 - On `mac-port`, connected the existing shared HLE graphics hooks to an Apple
   Silicon SDL3/Cocoa OpenGL 4.1 backend. The driver reports **GL 4.1 Metal - 91.7,
@@ -1637,7 +1637,7 @@ full gameplay and campaign completion have not been verified.
   gameplay, fullscreen and save/load are not verified. Vertex programs currently
   execute on the CPU; a menu result is not a performance claim for gameplay.
 
-## First native Apple Silicon execution â€” October 15
+## First native Apple Silicon execution — October 15
 
 - Built `build/macos/futureperfect_recomp` as a native ARM64 Mach-O executable
   on macOS 27.0.1 with Apple Clang 21, Python 3.12 and the shared pinned runtime,
@@ -1704,7 +1704,7 @@ an in-game scene. Movie presentation, PC settings/display/texture features and
 save/load remain separate milestones. The earlier execution-only observations
 in this section describe the state before the renderer connection.
 
-## Native Mac feasibility and ISO preparation â€” October 15
+## Native Mac feasibility and ISO preparation — October 15
 
 - Work is on `mac-port`; the user requires changes from this chat to stay on
   that branch unless explicitly directed to `main`.
@@ -1744,7 +1744,7 @@ in this section describe the state before the renderer connection.
   `logs/native-kernel-compile-summary.json`. Personal saves and settings were
   not used. No disposable virtual disk images were created.
 
-## Display settings and texture preview â€” October 15
+## Display settings and texture preview — October 15
 
 - The working build now adds **Display settings** through the US game's own
   button builder in main Settings and paused Options. Resolution selection,
@@ -1760,17 +1760,17 @@ in this section describe the state before the renderer connection.
   bounds, monitor-mode deduplication, failed allocation handling at the API
   boundary, aspect calculations and persistence. Original game files, saves
   and keyboard/mouse configuration passed 424 protected-file hash comparisons.
-- First-mission runs rendered 3840Ã—2160 and 3440Ã—1440 scene buffers and reached
+- First-mission runs rendered 3840×2160 and 3440×1440 scene buffers and reached
   paused Options without a recorded crash or unresolved indirect call. The
   resolution checks use GPU render targets on the available display; a physical
   ultrawide monitor, split screen, and a full campaign are not validated.
 - The expanded texture preview contains 11 replacements, approximately 44 MiB,
   covering selected terrain, masonry, timber, concrete, floor tiles, metal panels
   and one weapon atlas. Four replacements loaded in a 174-second opening-mission
-  run at 1920Ã—1080; gameplay and paused Options were reached without a recorded
+  run at 1920×1080; gameplay and paused Options were reached without a recorded
   crash or unresolved call. The remaining seven need scene-specific runtime checks.
-- DDS files have complete mip chains: two 4096Ã—4096, eight 2048Ã—2048, and one
-  2048Ã—1024. Square source art is 1254Ã—1254; stone masonry is 1774Ã—887. These are
+- DDS files have complete mip chains: two 4096×4096, eight 2048×2048, and one
+  2048×1024. Square source art is 1254×1254; stone masonry is 1774×887. These are
   resampled outputs, not native 4K generated art. A character draft shifted facial
   and ear UV details and was kept out of the active pack.
 - The coverage audit tracks 5,547 supported texture keys: 11 installed, one draft
@@ -1929,12 +1929,12 @@ interaction for this hardware playtest is still to be tried.
 
 ## PC controls menu (2026-10-15)
 
-Added a PC Settings â†’ Keyboard & Mouse entry to the native game window's menu
+Added a PC Settings → Keyboard & Mouse entry to the native game window's menu
 bar, with F2 access in windowed and fullscreen modes. The owned settings dialog
 lists all 24 Xbox actions with four keyboard/mouse binding slots each, mouse
 sensitivity, inversion, mouse enable/disable, defaults, and Cancel. Capture
 supports keys, five mouse buttons, and wheel directions; conflicting assignments
-can be moved after confirmation. F1/F2/F9â€“F11 and Windows keys are reserved.
+can be moved after confirmation. F1/F2/F9–F11 and Windows keys are reserved.
 Gameplay input is blocked while editing, but simulation is not paused: pause
 the mission first.
 
@@ -2016,7 +2016,7 @@ reached the first mission and performed short movement checks. Reviewed both
 rotating guest captures and an actual macOS window screenshot showing the world,
 weapons, NPC, fire and HUD; full campaign completion was not attempted. At least
 6,900 completed guest frames and 10,011 host presents were logged, with no sampled
-GL errors or native fault. The 90â€“110-second movement interval measured 86.84
+GL errors or native fault. The 90–110-second movement interval measured 86.84
 host presents/s: 56.17 guest + 30.66 interpolated, p95 19.32 ms, p99 31.48 ms.
 Captures were enabled; these are host intervals, not display scanout or a broad
 performance benchmark. The 60 Hz guest clock and personal FPS preferences remain
@@ -2299,7 +2299,7 @@ SDL events and application-driven modal tests do not establish physical macOS
 event delivery. Windows MSVC/runtime checks remain unavailable on this host.
 MAC-011 still awaits the user's real texture pack; no artwork was substituted.
 
-## 2026-10-15 â€” Windows release patch preparation
+## 2026-10-15 — Windows release patch preparation
 
 Local, uncommitted change on `mac-port` base `e83e074`; release patch inputs
 were read from local `main` revision `5cf4866`. Host: Windows 11 x64
@@ -2321,7 +2321,7 @@ this Python loader fix. No game data or personal settings were used.
 MAC-014 tracks pending macOS validation. Changes have not been committed,
 pushed, or merged to main; synchronization with the other device is unverified.
 
-## 2026-10-15 â€” Windows texture-dump compilation fix
+## 2026-10-15 — Windows texture-dump compilation fix
 
 Reported during release preparation on main `38f1a2f`. Fix is local and
 uncommitted on `mac-port` base `724b1a1`: restore the missing `FILE *f`
@@ -2341,7 +2341,7 @@ unverified. This fix must reach main before release preparation can use it.
 Patch validation: `python -m pytest tests/test_patch_updates.py -q` passed all
 11 tests on Python 3.14.2. `git diff --check` passed.
 
-## 2026-10-15 â€” Release cleanup and Windows test privileges
+## 2026-10-15 — Release cleanup and Windows test privileges
 
 Uncommitted on `fix/release-cleanup`, based on main `2ef7536`. The existing
 changes were carried intact from `mac-port` onto this focused branch following
@@ -2369,7 +2369,7 @@ performed. Personal saves/settings and existing release outputs were untouched.
 MAC-015 tracks Mac validation. Changes are local, uncommitted and unpushed;
 other-device synchronization remains unverified.
 
-## Pickup range comparison fix â€” October 16, 2026
+## Pickup range comparison fix — October 16, 2026
 
 Issue [#6](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/6):
 the US pickup tick at `0x000C15B0` compares the original radius squared with
@@ -2439,7 +2439,7 @@ patch stack and regressions passed 51 checks before the push, including the
 208-case compiled pickup regression; one Windows symlink-privilege check skipped.
 
 
-## Runtime patch branch-switch repair â€” October 16, 2026
+## Runtime patch branch-switch repair — October 16, 2026
 
 Branch-switch fix on `fix/runtime-patch-branch-switch`, based on main
 `837692d3ffbd81fbb6252ff819ff219f8e3ce097`. The same runtime directory had been
@@ -2481,7 +2481,7 @@ session, packaging or release publication was performed. MAC-014 tracks pending
 macOS validation; other-device synchronization is unverified.
 
 
-## Automatic runtime patch tracking â€” October 16, 2026
+## Automatic runtime patch tracking — October 16, 2026
 
 Implemented on `fix/automatic-patch-tracking`, based on main `979a16c`, for
 commit and publication at the user's request. Each successful loader invocation
@@ -2531,7 +2531,7 @@ No gameplay session, binary packaging or release publication was performed.
 MAC-014 retains pending native Mac validation and other-device synchronization.
 
 
-## Issue #8 audio timing and buffering â€” October 16, 2026
+## Issue #8 audio timing and buffering — October 16, 2026
 
 Local, uncommitted work on `fix/issue-8-audio-timing`, based on main
 `4189924038729030d890faa93edacdeccc74a1e1`. The user clarified that delayed
@@ -2707,7 +2707,7 @@ The audio implementation is unchanged from the clean human playtest above.
 ## Launcher startup skipping (2026-10-16)
 
 Launcher v1.2.1 implementation `bad108c` on `feat/launcher-skip-startup`, based on published main
-`d83ca5e57d36da163680f7c21e0b5f52dd785faf`. Game settings â†’ Graphics & resolution
+`d83ca5e57d36da163680f7c21e0b5f52dd785faf`. Game settings → Graphics & resolution
 now has a Startup checkbox, **Skip startup splash screens**, default off.
 Saving persists `launcher.skip_startup_splashes` in portable controls JSON with
 the existing backup, external-edit protection and rollback rules. Both the
@@ -2760,10 +2760,10 @@ The preview commands now render the whole launcher rather than a separate window
 
 Windows x64 / .NET Framework 4.8 / Python 3.12.14: both launcher binaries compiled.
 The full launcher build passed 71 updater checks and 19 isolated settings
-checks, including actual WPF sidebar/page navigation, 1000 Ã— 720 minimum and
-1152 Ã— 772 layout sizes, draft retention/cancel, inline binding-conflict cancellation and
+checks, including actual WPF sidebar/page navigation, 1000 × 720 minimum and
+1152 × 772 layout sizes, draft retention/cancel, inline binding-conflict cancellation and
 reassignment, successful/invalid save, and existing settings/environment checks.
-Five portable-script and packaging checks passed. Both full-shell 1152 Ã— 772
+Five portable-script and packaging checks passed. Both full-shell 1152 × 772
 controls/graphics previews were visually reviewed; captures are in ignored
 `build/launcher/inline-controls.png` and `inline-graphics.png`.
 
@@ -2774,7 +2774,7 @@ main through the documented launcher-only channel; no game update is required.
 Native Mac settings/navigation adaptation remains
 queued under MAC-021; other-device synchronization is unverified.
 
-## Story Objectives health and shield (issue #11) â€” 2026-10-16
+## Story Objectives health and shield (issue #11) — 2026-10-16
 
 - Implemented on `11-objectives-tab-not-showing-health-and-shield`,
   based on main `d83ca5e`. Windows x64, CPython 3.14.2, MSVC x64, D3D11.
@@ -2815,7 +2815,7 @@ queued under MAC-021; other-device synchronization is unverified.
   deliberately broken variants, and the original checksum-verified US menu
   routine. Tests cover full pause/inactive menus, other modes, invalid indices,
   hidden widgets, display-disabled state, guest stack/register preservation,
-  changing 4:3/16:9/16:10/ultrawide/portrait dimensions, local viewports 1â€“4,
+  changing 4:3/16:9/16:10/ultrawide/portrait dimensions, local viewports 1–4,
   off-center animation, matching panel/text-measurement width and restoration
   of shared constants. A deliberately unscaled panel reproduces the regression.
   Portable tests run in the Windows/macOS transition
@@ -2992,7 +2992,7 @@ processes exited; known partition images and temporary compiler-test trees
 were recycled/removed. Redundant rotating BMP captures were removed, preserving
 selected screenshots and validation logs.
 
-## 2026-10-17 â€” Issue #25 invisible bots and combat follow-up
+## 2026-10-17 — Issue #25 invisible bots and combat follow-up
 
 Local uncommitted work remains on `25-add-bot-support-to-online-matches`, base
 `33fc619`; nothing was committed, pushed or synchronized to another device.
@@ -3293,7 +3293,7 @@ Validation:
 The completed pair ran to its 355-second driver bound (360-second runner
 ceiling). Final recorded matrices match on both peers: guest slot 1 has nine
 bot kills and no human kills; host slot 0 has eight bot kills, two human kills
-and one suicide. Bot life counters reached 7â€“12, demonstrating repeated
+and one suicide. Bot life counters reached 7–12, demonstrating repeated
 deaths/respawns rather than a first-life-only test. The late read-only
 `issue25-authority-inspect-d.log` also records guest derived score 7 on both
 peers before the last two kills. Final summary is
