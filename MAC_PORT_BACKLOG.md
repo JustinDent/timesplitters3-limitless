@@ -702,7 +702,8 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 - **Status:** Queued
 - **Embedded page and sidebar polish (2026-10-17, commit `0f30cbe` on
-  `feature/launcher-page-polish`):** `PageTheme.cs`, `MaintenancePage.cs`,
+  `feature/launcher-page-polish`):** Merged through [PR #89](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/89)
+  as `1728f21`, prepared for launcher v1.2.9. `PageTheme.cs`, `MaintenancePage.cs`,
   `SettingsPage.cs` and `Launcher.xaml` provide shared blue/silver control styling,
   game/launcher health cards, expandable verification details, grouped settings,
   a fixed Save/Cancel footer, and fixed sidebar icon/label columns with explicit
