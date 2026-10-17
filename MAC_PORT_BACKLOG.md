@@ -224,8 +224,8 @@ runtime readiness. No full campaign playthrough is required.
   `--alpha-source` with its required SHA-256 to retain a verified original
   channel while compiling new RGB artwork. Metadata records source size/hash,
   bilinear resampling and lossy DDS caveats. Shared Python/Pillow code requires
-  no OS adapter or loader change. Source is on the issue #74 branch; commit
-  pending. Windows checks are recorded in the batch 85 STATUS entry; Mac
+  no OS adapter or loader change. Source commit `ab53ce3` is on the issue #74
+  branch. Windows checks are recorded in the batch 85 STATUS entry; Mac
   execution and real-art appearance remain unverified. Acceptance: run
   `tests/texture_pack_tools.py`, verify original-alpha provenance and decoded
   mask errors, then inspect cutout/material behavior in consolidated scene tests.
