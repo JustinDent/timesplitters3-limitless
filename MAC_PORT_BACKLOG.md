@@ -1,5 +1,28 @@
 # PC features awaiting Mac adaptation
 
+### MAC-026 — Spirit skull and eye rendering (#17)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The US spirit renderer uses clockwise culling for rigid
+  skull nodes while keeping skinned trails two sided. Its two eye-billboard
+  batches use unbiased clip-space positions and no fog, preserving their
+  red texture and depth testing. Overrides are restored after each node/batch.
+- **Source:** Spirit rendering change on
+  `17-ghosts-in-mansion-of-madness-and-what-lies-below-are-nonvisible`;
+  `src/pc_ghost_render_guest.inc`, the `spirit-rendering.patch` at the end of
+  the shared patch stack, and `tests/ghost_rendering.c`.
+- **Shared Mac support:** Guest wrappers and HLE render-state forwarding are
+  shared with Windows. No shader hash/string rewriting, geometry fingerprint,
+  Windows-only API, or diagnostic switch is required.
+- **Remaining:** Build on macOS and verify GPU and interpreted-vertex paths.
+  No native execution was available on this Windows host. Confirm the native
+  unwritten-fog fallback observes the scoped fog-disable state.
+- **Acceptance:** Check Mansion entrance-hall spirits from several angles;
+  preserve solid faces, wispy trails, red eyes and wall occlusion. Check
+  ordinary particles/fog immediately afterward and other ghost encounters in
+  both affected levels. Run `tests/test_ghost_rendering.py` and patch-transition
+  suites. See `STATUS.md` for measured Windows evidence and remaining limits.
+
 ### MAC-025 — Reusable unlocked testing profile
 
 - **Status:** Queued
