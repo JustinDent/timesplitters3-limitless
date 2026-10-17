@@ -2,8 +2,8 @@
 
 ## Embedded launcher What's new page (2026-10-17)
 
-Implemented on `feature/launcher-whats-new`, based on main `3cac654` (source
-commit/PR recorded below after commit). The aligned sidebar and Home's notes
+Implemented on `feature/launcher-whats-new`, based on main `3cac654`; implementation
+commit `cfbfe6c`, [PR #93](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/93). The aligned sidebar and Home's notes
 button open an embedded blue/silver release center. Game and launcher views
 compare installed/running and available versions for the selected channel, with
 separate installed/latest notes, published titles/dates and explicit newer,

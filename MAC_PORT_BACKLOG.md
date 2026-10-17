@@ -701,8 +701,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Embedded What's new page (2026-10-17, uncommitted on
-  `feature/launcher-whats-new`):** `ReleaseNews.cs`, `WhatsNewPage.cs`,
+- **Embedded What's new page (2026-10-17, commit `cfbfe6c`, [PR #93](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/93)):** `ReleaseNews.cs`, `WhatsNewPage.cs`,
   `ReleaseClient.cs`, `Launcher.cs`/XAML and bootstrap preview routing add game/
   launcher views, installed/latest version comparison, exact installed notes,
   published known-issues extraction, native text rendering and retry with
