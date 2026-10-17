@@ -186,11 +186,11 @@ Restore default controls affects Player 1 only and does not write until Save.
 
 Launcher v1.2.2 opens both tabs inside the main launcher, with the sidebar
 visible and usable. Binding capture, conflict reassignment and restore-defaults
-confirmations also appear inside that page. **Command center** retains your draft
+confirmations also appear inside that page. **Home** retains your draft
 and dismisses any active binding prompt; reopening **Game settings** restores the
 same tab and edits. **Save settings** keeps the page open and reports validation
 or save results in its footer. **Cancel** discards unsaved edits and returns to
-Command center; closing the launcher also discards unsaved edits. Existing
+Home; closing the launcher also discards unsaved edits. Existing
 backup, rollback and external-edit protection are unchanged.
 
 Graphics include output resolution (presets, attached display sizes and custom

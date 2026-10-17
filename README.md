@@ -2,21 +2,19 @@
 
 # TimeSplitters: Future Perfect
 
-### The Xbox classic. A new home on PC.
-
 Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
 
 <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-launcher.svg" alt="Download the latest Windows launcher" width="280" height="52"></a>
 
 **[Quick start](#start-playing)** · [Launcher guide](docs/launcher.md) · [Multiplayer](docs/multiplayer.md) · [Build from source](docs/building.md)
 
-<sub>Windows 10/11 x64 · Experimental PC port · Bring your own US Xbox game</sub>
+<sub>Windows 10/11 x64 · Experimental PC port · Supported US Xbox game required</sub>
 
 </div>
 
 ![TimeSplitters launcher with Play Game, game import, update channel and release controls](docs/assets/launcher-preview.png)
 
-<p align="center"><sub>Published launcher v1.1.2 interface preview. Version and channel shown are sample state; choose <strong>Preview</strong> to install current game prereleases.</sub></p>
+<p align="center"><sub>Launcher interface preview from the current source. Version and channel shown are sample state; choose <strong>Preview</strong> to install current game prereleases.</sub></p>
 
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it
@@ -25,7 +23,7 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
 
 ## Start playing
 
-| | Get ready for your next jump |
+| Step | Installation |
 | :---: | --- |
 | **01** | **Download the launcher.** Open the [latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest) and download its `TimeSplitters-Launcher-…-windows-x64.zip` asset. |
 | **02** | **Extract and open.** Extract the whole ZIP to a writable folder, keeping `Bin` and `Support` together. Open **TimeSplitters Launcher.exe**. |
@@ -53,20 +51,20 @@ Python, Git and Visual Studio are not required to play.
 
 </details>
 
-## Built for PC play
+## PC features
 
 <table>
 <tr>
-<td width="50%" valign="top"><strong>Precise mouse aiming</strong><br>Direct camera control, zoom-aware sensitivity and normalized WASD movement. Rebind actions and adjust sensitivity with <strong>F2</strong>.</td>
-<td width="50%" valign="top"><strong>A bigger view</strong><br>Native <strong>1080p, 1440p and 4K</strong> rendering, monitor-reported ultrawide modes and adaptive in-engine cutscene framing.</td>
+<td width="50%" valign="top"><strong>Mouse aiming</strong><br>Direct camera control, zoom-aware sensitivity and normalized WASD movement. Rebind actions and adjust sensitivity with <strong>F2</strong>.</td>
+<td width="50%" valign="top"><strong>Resolution and aspect ratio</strong><br>Native <strong>1080p, 1440p and 4K</strong> rendering, monitor-reported ultrawide modes and adaptive in-engine cutscene framing.</td>
 </tr>
 <tr>
-<td valign="top"><strong>Your controls, on screen</strong><br>Formatted menu and HUD prompts follow your bindings and switch back to controller icons when you use a controller.</td>
-<td valign="top"><strong>Jump in with friends</strong><br>Experimental player-hosted Online matches, invitations, private join codes and compatible-build browsing, plus LAN System Link.</td>
+<td valign="top"><strong>Input prompts</strong><br>Formatted menu and HUD prompts follow your bindings and switch back to controller icons when you use a controller.</td>
+<td valign="top"><strong>Online and LAN multiplayer</strong><br>Experimental player-hosted Online matches, invitations, private join codes and compatible-build browsing, plus LAN System Link.</td>
 </tr>
 <tr>
-<td valign="top"><strong>One place to launch and update</strong><br>Install releases, import game data, check updates and press <strong>Play Game</strong>. Roll back an update when a previous release is available.</td>
-<td valign="top"><strong>See how it runs</strong><br>Optional FPS, frame-time and network-latency displays. Use <strong>F9</strong> for the FPS overlay and <strong>F12</strong> for debug settings.</td>
+<td valign="top"><strong>Launcher</strong><br>Install releases, import game data, check updates and press <strong>Play Game</strong>. Roll back an update when a previous release is available.</td>
+<td valign="top"><strong>Performance diagnostics</strong><br>Optional FPS, frame-time and network-latency displays. Use <strong>F9</strong> for the FPS overlay and <strong>F12</strong> for debug settings.</td>
 </tr>
 </table>
 
@@ -74,7 +72,7 @@ Recent fixes improve pickup-range checks, controller sensitivity adjustment,
 story audio transitions, Khallos Express scenery rendering and multiplayer
 movement updates. [See measured progress →](STATUS.md)
 
-### Make it yours
+### Controls and settings
 
 **Game settings** in launcher v1.2.0 lets you set keybinds and graphics before
 playing. Resolution selectors use your primary display's reported modes, include
@@ -82,7 +80,7 @@ the console default, and provide left/right arrows. Saved custom modes are retai
 
 | Controls | Display | Launcher |
 | --- | --- | --- |
-| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects aspect-ratio groups, resolution and vertical FOV (40–100°, default 55°). Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Saves**, **Game files**, **View logs** and **Support** keep essentials close. |
+| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects aspect-ratio groups, resolution and vertical FOV (40–100°, default 55°). Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Saves**, **Game files**, **View logs** and **Support** open the related folders, logs and issue tracker. |
 
 Click the game to capture the mouse; **Escape** pauses and releases it. Use
 **Alt+Enter** for fullscreen. Settings saved in-game remain in place for your
@@ -114,7 +112,7 @@ original appearance. [Full controls and display guide →](docs/windows-settings
 
 </details>
 
-## Play with friends
+## Multiplayer
 
 **Online / System Link → Online** opens the experimental competitive mode.
 Host a match, share an invitation, or browse compatible public lobbies. No Steam
@@ -146,7 +144,7 @@ account, paid service or centrally operated server is required. Choose
 
 ## Guides & support
 
-| Play & customize | Build & contribute |
+| Player guides | Developer guides |
 | --- | --- |
 | [Windows launcher](docs/launcher.md) — installation, updates and recovery | [Build guide](docs/building.md) — prerequisites, setup and patch workflow |
 | [Controls & display](docs/windows-settings.md) — bindings, resolution and diagnostics | [Release publishing](docs/releasing.md) — package, validate and publish |
