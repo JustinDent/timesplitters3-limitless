@@ -162,6 +162,13 @@ keep personal saves and game data private.
 
 ---
 
+### Faster gameplay testing
+
+Use the local Test Lab profile for unlocked levels, characters and challenges,
+with collectible progress left fresh. A bounded isolated Windows session also
+skips startup videos: `python tools/testing_profile.py --play --seconds 120`.
+See [testing profile setup and isolation](docs/testing-profile.md).
+
 ### Credits
 
 Built on **[nemonicicon/ts3FPrecomp](https://github.com/nemonicicon/ts3FPrecomp)**,

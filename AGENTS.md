@@ -140,6 +140,15 @@ reproducibility, and validation requirements.
 
 ## Validation and user data
 
+- For routine Windows gameplay tests, use a disposable copy of the local
+  `private/test-fixtures/unlocked` Test Lab profile with
+  `python tools/testing_profile.py --play --seconds 120`. It unlocks story,
+  Arcade/characters and challenges while preserving fresh collectible progress.
+  The runner reuses the launcher's `RECOMP_XMV_PLAY=0` startup-video switch.
+  Keep the canonical fixture unchanged. Tests of first-run, startup videos or
+  unlock progression must explicitly use an appropriate fresh isolated save
+  instead. See `docs/testing-profile.md` for creation and routing details.
+
 - Preserve `private/saves`, `config/pc-controls.json`, and
   `config/pc-display.ini` on every device. Create defaults only when personal
   settings do not exist. Never use personal saves or settings for automated

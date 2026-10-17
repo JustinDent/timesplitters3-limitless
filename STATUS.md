@@ -1,5 +1,38 @@
 # Measured progress
 
+## Reusable testing profile (2026-10-16)
+
+Branch `test-profile-fast-start`, based on main `041340a`.
+`tools/testing_profile.py` created an ignored canonical Test Lab fixture from the
+fresh disposable lobby-validation profile. It sets the supported US game's
+story completion/award masks and 48 challenge grades while preserving all other
+profile bytes, including fresh collectible/pickup progress. The runtime HMAC-SHA1
+signature is regenerated; source saves and personal settings are untouched.
+
+Windows x64 / Python 3.14.2: 12 save/launcher regressions passed. Coverage includes
+signature rejection, version rejection, exact preservation outside unlock fields,
+canonical fixture protection, disposable-copy restoration, personal-save refusal,
+directory isolation and the existing startup-video option. An eight-second
+`--play` run exited at its bound, capped its logs, and recycled its known virtual
+disk images. The canonical manifest still verifies after game testing.
+
+A separate bounded D3D11 menu probe loaded Test Lab successfully, showed all three
+story difficulty completion marks, reached the late `Time To Split` mission
+briefing, and displayed unlocked Challenge sets with their awards.
+This was a compatibility test of the existing issue-21 build, SHA-256
+`0cc1e596f8f4e9de381f45c0337340a1e99c0d92270aead800d6adb6cea3c982`
+(source `f17026b`), not a build of this tools-only branch. The US XBE hash was
+verified before execution. Actual pickup collection and every individual
+character/map have not been playtested. No runtime patch or game rebuild was
+needed. Native macOS execution and other-device synchronization are unverified;
+see [MAC-025](MAC_PORT_BACKLOG.md#mac-025--reusable-unlocked-testing-profile).
+
+At the user's request, a separate Test Lab copy was added to personal saves in
+the previously unused `UserData/45410066/544553544C41` slot. Hash checks confirmed
+all pre-existing title save files and both personal controls/display settings
+were unchanged. This local copy is for manual play only; automated checks still
+use disposable copies. No personal-save game session was launched for testing.
+
 ## Game release comparisons and readable titles (2026-10-16)
 
 Branch `fix/game-release-history-titles`, based on main `e18a381`.
