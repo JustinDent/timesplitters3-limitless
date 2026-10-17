@@ -380,6 +380,46 @@ resumes it in a fresh client and verifies the checksum; it never installs or run
 the downloaded program and cleans its disposable files. Protocol reference:
 [HTTP range semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-range).
 
+## What's new (current source)
+
+**What's new** in the sidebar and on Home opens an embedded release-notes page;
+the sidebar stays visible. Choose **Game releases** or **Launcher releases**,
+then **Available release** or **Installed release**. The version overview compares
+the installed game or running launcher with the latest compatible release on the
+Home update channel. It distinguishes newer updates, up-to-date installations,
+versions newer than that channel and missing/unversioned installations. If Stable
+has no game release, notes for an installed preview remain available separately.
+
+The page reads published GitHub release descriptions; it never reads main or
+invents a change summary. Latest game/launcher selection follows the existing
+updater rules, including launcher metadata verification. Installed notes use the
+exact version, looking up an older release directly when it is outside the latest
+100 records. Unavailable or unpublished versions are not replaced with another
+version's notes. Release dates and titles appear when published.
+
+Headings, bullets and code blocks are displayed as native text. Images are omitted;
+HTML, scripts, embedded XAML and automatic link navigation are not executed.
+Descriptions are limited to 64,000 characters / 512 lines, with an explicit link
+to read the complete release if shortened. **View release on GitHub** opens the
+selected release only when clicked. **Known issues** displays a published heading
+such as `## Known issues` or `## Known limitations`; if none exists, the page says
+so rather than claiming there are no issues. Other sections remain in the change
+notes. Open GitHub for the original Markdown formatting and linked information.
+
+**Refresh notes** has a 25-second cancellation deadline. A failed refresh retains
+previously loaded notes for the same version/channel for this session and marks
+them with their last checked time; a first offline load shows retry guidance.
+These notes are held in memory, not saved for the next launcher session. Switching
+channel or installation version resets that view, and cancelled older requests
+cannot replace its newer result. Updates are still installed from Home or the
+startup updater; reading notes does not install anything or change settings.
+
+Developer preview: `--render-news-preview output.png` works through the bootstrap
+or app, with labeled sample releases and no network/filesystem maintenance.
+`launcher-tests.exe --news` exercises synthetic release selection, exact-version
+lookup, failures, safe text handling and embedded navigation without real game
+files. The standard `build-launcher.ps1 -Test` includes these checks.
+
 ## Repair / Verify (launcher v1.2.8)
 
 The **Repair / Verify** sidebar page stays inside the main window. Its **Open game

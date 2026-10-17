@@ -53,7 +53,7 @@ namespace TimeSplitters.Launcher
 
     public sealed class Release
     {
-        public string Tag, Notes, Url, AssetName, AssetUrl, ChecksumUrl, Digest;
+        public string Tag, Notes, Url, Name, Published, AssetName, AssetUrl, ChecksumUrl, Digest;
         public long Size;
     }
     public sealed class LauncherRelease
@@ -124,7 +124,7 @@ namespace TimeSplitters.Launcher
                 long size;
                 if (!long.TryParse(Json.String(asset, "size"), out size) || size <= 0 || size > 4L * 1024 * 1024 * 1024) continue;
                 if (best == null || version.CompareTo(GameVersion.Parse(best.Tag)) > 0)
-                    best = new Release { Tag = tag, Notes = Json.String(r, "body"), Url = ReleasesPage + "/tag/" + Uri.EscapeDataString(tag),
+                    best = new Release { Tag = tag, Notes = Json.String(r, "body"), Url = ReleasesPage + "/tag/" + Uri.EscapeDataString(tag), Name=Json.String(r,"name"),Published=Json.String(r,"published_at"),
                         AssetName = expected, AssetUrl = assetUrl, Size = size, ChecksumUrl = checkUrl, Digest = digest };
             }
             return best;
@@ -198,6 +198,7 @@ namespace TimeSplitters.Launcher
                     string url = Json.String(asset, "browser_download_url"), manifestUrl = Json.String(manifest, "browser_download_url");
                     ValidateDownloadUrl(url); ValidateDownloadUrl(manifestUrl);
                     best = new LauncherRelease { ManifestUrl = manifestUrl, Package = new Release { Tag = version, AssetName = name,
+                        Notes=Json.String(record,"body"),Name=Json.String(record,"name"),Published=Json.String(record,"published_at"),Url=ReleasesPage+"/tag/"+Uri.EscapeDataString(Json.String(record,"tag_name")),
                         Size = size, AssetUrl = url, Digest = Json.String(asset, "digest"), ChecksumUrl = "" } };
                 }
             }
@@ -226,6 +227,46 @@ namespace TimeSplitters.Launcher
             var candidate = SelectLauncher(json, preview);
             if (candidate == null) return null;
             return VerifyLauncherMetadata(candidate, await Text(candidate.ManifestUrl, 16384, token).ConfigureAwait(false));
+        }
+        public Task<ReleaseNews> ReadNews(bool preview,string installedGame,string installedLauncher,CancellationToken token)
+        { return ReadNewsWithTimeout(preview,installedGame,installedLauncher,TimeSpan.FromSeconds(25),token); }
+        internal async Task<ReleaseNews> ReadNewsWithTimeout(bool preview,string installedGame,string installedLauncher,TimeSpan limit,CancellationToken token)
+        {
+            using(var request=CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                request.CancelAfter(limit);
+                try {
+                    var pending=ReadNewsCore(preview,installedGame,installedLauncher,request.Token);
+                    if(await Task.WhenAny(pending,Task.Delay(Timeout.Infinite,request.Token)).ConfigureAwait(false)!=pending) {
+                        ObserveNewsFailure(pending);
+                        token.ThrowIfCancellationRequested();throw new TimeoutException("Release notes check timed out.");
+                    }
+                    return await pending.ConfigureAwait(false);
+                }finally{request.Cancel();}
+            }
+        }
+        static void ObserveNewsFailure(Task pending)
+        { pending.ContinueWith(task=>{var error=task.Exception;},TaskContinuationOptions.OnlyOnFaulted); }
+        async Task<ReleaseNews> ReadNewsCore(bool preview,string installedGame,string installedLauncher,CancellationToken token)
+        {
+            string json=await Text("https://api.github.com/repos/"+Repository+"/releases?per_page=100",4*1024*1024,token).ConfigureAwait(false);
+            Core.Require(!String.IsNullOrWhiteSpace(json),"GitHub returned no release information.");
+            var records=((object[])Json.Serializer().DeserializeObject(json)).Cast<Dictionary<string,object>>().ToArray();
+            var result=new ReleaseNews {Game=Select(json,preview),Preview=preview};
+            var launcher=SelectLauncher(json,preview);
+            if(launcher!=null)result.Launcher=VerifyLauncherMetadata(launcher,await Text(launcher.ManifestUrl,16384,token).ConfigureAwait(false));
+            result.InstalledGame=await InstalledNotes(records,installedGame,false,token).ConfigureAwait(false);
+            result.InstalledLauncher=await InstalledNotes(records,installedLauncher,true,token).ConfigureAwait(false);
+            result.CheckedUtc=DateTime.UtcNow;return result;
+        }
+        async Task<Release> InstalledNotes(Dictionary<string,object>[] records,string version,bool launcher,CancellationToken token)
+        {
+            if(String.IsNullOrEmpty(version))return null;
+            try{GameVersion.Parse(version);}catch(InvalidDataException){return null;}
+            string tag=launcher?"launcher-v"+version:version;
+            var notes=ReleaseNews.NotesFor(records,tag);if(notes!=null)return notes;
+            // Older installed releases may be outside the latest 100. No replacement version is substituted.
+            string json=await Text("https://api.github.com/repos/"+Repository+"/releases/tags/"+Uri.EscapeDataString(tag),4*1024*1024,token).ConfigureAwait(false);
+            return String.IsNullOrEmpty(json)?null:ReleaseNews.NotesFor(new[]{Json.Object(json)},tag);
         }
         public async Task Download(Release release, string destination, IProgress<double> progress, CancellationToken token, string cachePrefix = null)
         {

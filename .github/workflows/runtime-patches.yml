@@ -23,6 +23,7 @@ on:
       - tests/launcher_settings.cs
       - tests/launcher_maintenance.cs
       - tests/launcher_downloads.cs
+      - tests/launcher_news.cs
       - tests/test_launcher_startup.py
       - tests/package_launcher.py
       - tests/test_publish_release.py
@@ -98,6 +99,7 @@ on:
       - tests/launcher_settings.cs
       - tests/launcher_maintenance.cs
       - tests/launcher_downloads.cs
+      - tests/launcher_news.cs
       - tests/test_launcher_startup.py
       - tests/package_launcher.py
       - tests/test_publish_release.py

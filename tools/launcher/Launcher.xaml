@@ -70,6 +70,13 @@
               <TextBlock Grid.Column="1" Text="Home" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
+          <Button x:Name="NewsNav" Style="{StaticResource Nav}" ToolTip="Published release notes and known issues" AutomationProperties.Name="What's new">
+            <Grid>
+              <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+              <TextBlock Text="▧" FontSize="14" TextAlignment="Center" VerticalAlignment="Center"/>
+              <TextBlock Grid.Column="1" Text="What's new" Margin="10,0,0,0" VerticalAlignment="Center"/>
+            </Grid>
+          </Button>
           <Button x:Name="SettingsNav" Style="{StaticResource Nav}" ToolTip="Keybinds, mouse, graphics and resolution" AutomationProperties.Name="Game settings">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -213,6 +220,7 @@
         <ProgressBar x:Name="OperationProgress" Grid.Row="1" Minimum="0" Maximum="100" Value="0" Background="#253D54" Foreground="#86CDFF" BorderThickness="0" Height="3"/>
       </Grid>
     </Grid>
+    <ContentControl x:Name="NewsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="MaintenanceHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="SettingsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>

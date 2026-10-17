@@ -78,6 +78,9 @@ movement updates. [See measured progress →](STATUS.md)
 playing. Resolution selectors use your primary display's reported modes, include
 the console default, and provide left/right arrows. Saved custom modes are retained.
 
+Current launcher source adds **What's new** for game/launcher release notes,
+installed and available versions, and published known issues inside the main window.
+
 | Controls | Display | Launcher |
 | --- | --- | --- |
 | **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects aspect-ratio groups, resolution and vertical FOV (40–100°, default 55°). Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Repair / Verify → Open game folder** opens the installation folder. **Saves**, **View logs** and **Support** open the save folder, logs and issue tracker. |
