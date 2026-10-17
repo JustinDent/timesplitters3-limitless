@@ -17,7 +17,7 @@ import struct
 def dds_size(width, height, block):
     total, levels = 128, 0
     while True:
-        total += ((width + 3) // 4) * ((height + 3) // 4) * block
+        total += width*height*4 if block is None else ((width + 3) // 4) * ((height + 3) // 4) * block
         levels += 1
         if width == height == 1:
             return total, levels
@@ -44,7 +44,10 @@ def check_asset(dds, meta, original):
         raise ValueError(f'Invalid DDS: {dds.name}')
     height, width = struct.unpack_from('<II', data, 12)
     fourcc = data[84:88].decode('ascii')
-    if fourcc not in ('DXT1', 'DXT3', 'DXT5'):
+    rgba8=struct.unpack_from('<7I',data,80)==(0x41,0,32,0xff0000,0xff00,0xff,0xff000000)
+    if rgba8:
+        fourcc='RGBA8'
+    if fourcc not in ('DXT1', 'DXT3', 'DXT5','RGBA8'):
         raise ValueError(f'Unsupported DDS encoding: {dds.name}')
     if any(n <= 0 or n > 4096 or n & (n - 1) for n in (width, height)):
         raise ValueError(f'Invalid dimensions: {dds.name}')
@@ -52,13 +55,13 @@ def check_asset(dds, meta, original):
         raise ValueError(f'Changed UV aspect: {dds.name}')
     if width < original['width'] or height < original['height']:
         raise ValueError(f'Replacement below original resolution: {dds.name}')
-    size, mips = dds_size(width, height, 8 if fourcc == 'DXT1' else 16)
+    size, mips = dds_size(width, height, None if rgba8 else (8 if fourcc == 'DXT1' else 16))
     if len(data) != size or struct.unpack_from('<I', data, 28)[0] != mips:
         raise ValueError(f'Incomplete mip chain: {dds.name}')
     if (meta['key'] != dds.stem or meta['sha256'] != hashlib.sha256(data).hexdigest()
             or meta['output_size'] != [width, height] or meta['bytes'] != size):
         raise ValueError(f'Metadata mismatch: {dds.name}')
-    if original['xbox_format'] != 12 and fourcc == 'DXT1':
+    if original['xbox_format'] not in (0, 12) and fourcc == 'DXT1':
         raise ValueError(f'Alpha format lost: {dds.name}')
     return size
 
@@ -83,6 +86,9 @@ def build(root):
         row = dict(id=identity, original_size=[texture['width'], texture['height']],
                    archive_format=texture['archive_format'], archives=sources,
                    catalog_payloads=texture['payload_count'], occurrences=len(texture['sources']))
+        row['embedded_occurrences']=sum(bool(s.get('embedded')) for s in texture['sources'])
+        if row['embedded_occurrences']:
+            row['embedded_runtime_validation']='pending scene validation'
         if 'key' not in texture:
             row.update(status='unsupported_format', target_size=None, estimated_dds_bytes=None)
         else:
@@ -90,8 +96,9 @@ def build(root):
             # reviewed 4K surface exceptions and presently unsupported assets.
             scale = max(1, min(4, 2048 // max(texture['width'], texture['height'])))
             width, height = texture['width'] * scale, texture['height'] * scale
-            size, _ = dds_size(width, height, 8 if texture['xbox_format'] == 12 else 16)
+            size, _ = dds_size(width, height, 8 if texture['xbox_format'] in (0, 12) else 16)
             row.update(status='needs_art', target_size=[width, height], estimated_dds_bytes=size)
+            row['runtime_validation'] = texture.get('runtime_validation', 'not recorded')
             prompt_file = root / 'authored' / f'{identity}-prompt.json'
             if prompt_file.exists():
                 art = json.loads(prompt_file.read_text(encoding='utf-8'))

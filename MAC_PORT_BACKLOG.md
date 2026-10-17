@@ -233,6 +233,21 @@ runtime readiness. No full campaign playthrough is required.
 - **Mac acceptance checks:** Compare original/replacement mission captures, confirm expected key hits, mip behavior, eviction/fallback and the 512 MiB residency limit. Keep the 6 GiB pack budget and isolated saves; no duplicate extract.
 - **Mac implementation and evidence:** Synthetic DDS/GPU replacement and corrupt-fallback regressions passed again in this batch. Actual installed-art coverage remains pending because the real pack is unavailable on this device. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 
+- **Issue #74 transfer (2026-10-16):** Windows F10 and the PC Settings menu now
+  carry the existing live Classic/4K switch in `src/texture_mode.c`,
+  `src/pc_controls.c`, `src/pc_settings.c` and `patches/texture-toggle.patch`.
+  Uncompressed original identities and alpha-compatible replacement formats,
+  including RGBA DDS, are handled in `src/texture_pack_format.h` and
+  `src/texture_pack.c`. Catalog, embedded/non-PAK inventory and artwork tools
+  are under `tools/texture-*.py`. These changes were transferred from
+  `codex/integrate-display-textures` to the issue #74 branch.
+  Mac still needs a native toggle adapter and real-art scene/alpha validation;
+  shared format checks and Windows tests do not establish Mac parity.
+  Acceptance: switch both ways during rendering, retain originals on invalid,
+  missing or over-budget files, preserve alpha and the 512 MiB residency cap.
+  The 232 installed local replacements are partial coverage; consolidated
+  scene testing remains deferred. See the issue #74 transfer record in STATUS.
+
 ### MAC-012 — Standalone Mac runtime distribution
 
 - **Windows CI harness follow-up (PR #65, 2026-10-16):**

@@ -101,8 +101,20 @@ def texture_branch_patches(tmp_path):
     return patches
 
 
+def main_branch_patches(tmp_path):
+    """Model main without the optional active toggle, regardless of this branch."""
+    patches = tmp_path / 'main-patches'
+    patches.mkdir()
+    for patch in PATCHES.glob('*.patch'):
+        if patch.name != 'texture-toggle.patch':
+            shutil.copyfile(patch, patches / patch.name)
+    shutil.copytree(PATCHES / 'legacy', patches / 'legacy')
+    return patches
+
+
 @pytest.mark.parametrize('crlf', [False, True])
 def test_switch_from_texture_branch_to_main_and_back(checkout, tmp_path, crlf):
+    main_patches = main_branch_patches(tmp_path)
     texture_patches = texture_branch_patches(tmp_path)
     installer.apply_patches(checkout, texture_patches)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
@@ -110,7 +122,7 @@ def test_switch_from_texture_branch_to_main_and_back(checkout, tmp_path, crlf):
     if crlf:
         for name, content in snapshot(checkout).items():
             (checkout / name).write_bytes(content.replace(b'\r\n', b'\n').replace(b'\n', b'\r\n'))
-    assert installer.apply_patches(checkout, PATCHES)
+    assert installer.apply_patches(checkout, main_patches)
     cmake = (checkout / 'src/input/CMakeLists.txt').read_text()
     assert 'texture_mode.c' not in cmake
     assert 'pc_controls.c' in cmake
@@ -118,25 +130,26 @@ def test_switch_from_texture_branch_to_main_and_back(checkout, tmp_path, crlf):
     assert 'tsfp_texture_sync_bindings' not in (checkout / 'src/d3d/d3d8_device.c').read_text()
     assert 'unrelated local edit' in manual.read_text()
     complete = snapshot(checkout)
-    assert installer.apply_patches(checkout, PATCHES) == []
+    assert installer.apply_patches(checkout, main_patches) == []
     assert snapshot(checkout) == complete
     # The same legacy patch can become active again on the texture branch.
     shutil.copytree(PATCHES / 'legacy', texture_patches / 'legacy')
     assert installer.apply_patches(checkout, texture_patches)
     assert 'texture_mode.c' in (checkout / 'src/input/CMakeLists.txt').read_text()
     assert installer.apply_patches(checkout, texture_patches) == []
-    assert installer.apply_patches(checkout, PATCHES)
+    assert installer.apply_patches(checkout, main_patches)
     assert snapshot(checkout) == complete
 
 
 def test_modified_legacy_patch_rejects_switch_without_writes(checkout, tmp_path):
+    main_patches = main_branch_patches(tmp_path)
     installer.apply_patches(checkout, texture_branch_patches(tmp_path))
     source = checkout / 'src/d3d/d3d8_device.c'
     source.write_bytes(source.read_bytes().replace(b'tsfp_texture_is_4k()',
                                                  b'custom_texture_is_4k()'))
     before = snapshot(checkout)
     with pytest.raises(RuntimeError, match='conflicts with the runtime checkout'):
-        installer.apply_patches(checkout, PATCHES)
+        installer.apply_patches(checkout, main_patches)
     assert snapshot(checkout) == before
 
 

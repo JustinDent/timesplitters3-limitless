@@ -12,8 +12,10 @@ does not include the private development artwork or original game assets.
 From a Windows source checkout with a built runtime and an existing pack,
 double-click **Play-Textures.cmd**. It loads replacements from
 `private/texture-remaster/pack`; it does not download or generate a pack.
-Restart after changing pack files. Ordinary **Play.cmd** does not opt into this
-preview.
+On the issue #74 source branch, F10 or **PC Settings > 4K Textures**
+switches between cached originals and replacements live. This is separate from
+render resolution. Restart after changing pack files. Ordinary **Play.cmd** starts
+in Classic mode with the local pack available for switching.
 
 For a native Mac launch:
 
@@ -21,7 +23,8 @@ For a native Mac launch:
 ./Play-Native-Mac.command --texture-pack private/texture-remaster/pack
 ```
 
-The current shared loader accepts full-mip DXT1/DXT3/DXT5 DDS replacements.
+The current shared loader accepts full-mip DXT1/DXT3/DXT5 and RGBA DDS
+replacements with compatible alpha.
 Missing, invalid or over-budget replacements fall back to original textures.
 The active pack has a **6 GiB disk budget**, including metadata, and the loader
 limits resident replacement textures to **512 MiB**. Source artwork and temporary

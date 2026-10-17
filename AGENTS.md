@@ -194,3 +194,29 @@ this preference on all further work, including texture remastering and testing.
   Keep prompts, actual source resolution, resampling, and coverage recorded.
   Do not describe resampled 4K files as native 4K art or a partial pack as a full
   game remaster. Use built-in image generation for artwork.
+
+## Texture overhaul validation cadence
+
+- Prioritize artwork production and offline validation. The user requests minimal
+  gameplay testing until the overhaul is near completion.
+- Check every batch offline for UV/atlas alignment, tiling, alpha, dimensions,
+  mip chains, format compatibility, hashes, coverage and storage budgets. Use
+  contact sheets and selected comparisons instead of launching after each batch.
+- Before the final validation phase, launch only for a specific loader/format
+  blocker that cannot be resolved offline or a runtime integration change that
+  needs a brief smoke check. Reuse existing runtime evidence otherwise.
+- Begin consolidated scene testing when at least 90% of the audited in-scope
+  replacement textures are installed and pass offline checks, and all asset
+  categories have been reviewed. Unsupported or undiscovered assets remain
+  explicit gaps; do not shrink the scope merely to reach the threshold.
+- Final validation must cover representative environments, characters, weapons,
+  effects and UI across the game, plus 1080p, 4K and ultrawide rendering, memory
+  use and fallback behavior. Track untested scenes and hardware honestly. A full
+  campaign playthrough is separate from texture validation.
+
+## Active texture issue branch
+
+- Continue texture overhaul work for issue #74 on
+  `74-enhancement-gfx-overhaul-to-modernize-textures`. Keep its source, patches,
+  tests and progress together. Private artwork and the single active pack remain
+  ignored in this checkout; do not publish or duplicate them for a branch change.

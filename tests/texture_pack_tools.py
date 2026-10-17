@@ -14,6 +14,8 @@ def module(name):
     m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
 pack=module('texture-pack');catalog=module('texture-catalog')
 worklist=module('texture-worklist')
+inventory=module('texture-inventory')
+formats=module('texture-formats')
 
 def test_mip_chain_and_compressed_roundtrip():
     b,n=pack.encode(Image.new('RGBA',(8,4),(120,80,40,255)),'DXT1')
@@ -87,3 +89,97 @@ def test_budget_counts_metadata_before_writing(tmp_path):
         '--budget-mib','1','--output',str(output)],capture_output=True,text=True)
     assert result.returncode!=0 and 'including texture metadata' in result.stderr
     assert len(list(output.iterdir()))==1
+
+
+def test_inventory_keeps_uncataloged_entries_and_deduplicates_shared_assets(tmp_path):
+    import json
+    game=tmp_path/'game'; (game/'pak').mkdir(parents=True)
+    root=tmp_path/'art';root.mkdir()
+    # Two shared texture occurrences and an entry not proven texture-free.
+    data=bytearray(128)
+    struct.pack_into('<4sII',data,0,b'P5CK',12,48)
+    for index, crc in enumerate((1,2,3)):
+        struct.pack_into('<4I',data,12+index*16,crc,64+index*16,16,0)
+    (game/'pak/gun.pak').write_bytes(data)
+    textures=[dict(sha256=str(i),width=4,height=4,archive_format=0,
+                   xbox_format=12,key='1'*16,
+                   sources=[dict(archive='pak/gun.pak',crc=f'{i:08x}',offset=64+(i-1)*16,length=16)])
+              for i in (1,2)]
+    (root/'catalog.json').write_text(json.dumps(dict(scope='fixture',textures=textures)))
+    report=inventory.build(game,root)
+    assert report['totals']['cataloged_texture_entries']==2
+    assert report['totals']['unclassified_entries']==1
+    assert report['unique_supported_keys']==1
+    assert report['groups']['weapons']['texture_ids']==['1'*16]
+    assert report['budget_mib']==6144
+    assert not report['complete'] and not report['playtest_gate']['ready']
+    textures[0]['sources'][0]['offset']=65
+    (root/'catalog.json').write_text(json.dumps(dict(scope='fixture',textures=textures)))
+    with pytest.raises(ValueError,match='Stale catalog'):
+        inventory.build(game,root)
+
+
+def test_unknown_format_byte_counts_remain_hypotheses():
+    assert inventory.size_hypotheses(256,256,349504)==['32-bit 7 mip levels']
+    assert inventory.size_hypotheses(64,64,4096)==['8-bit base level']
+    assert inventory.size_hypotheses(64,64,4095)==[]
+
+
+def test_rectangular_morton_decode_uses_both_axes():
+    # Known 4x2 Morton ordering: rows take indices 0,1,4,5 and 2,3,6,7.
+    assert formats.unswizzle(bytes(range(8)),4,2,1)==bytes([0,1,4,5,2,3,6,7])
+    assert formats.unswizzle(bytes(range(8)),2,4,1)==bytes(range(8))
+    with pytest.raises(ValueError,match='truncated'):
+        formats.unswizzle(bytes(7),4,2,1)
+    with pytest.raises(ValueError,match='power-of-two'):
+        formats.unswizzle(bytes(8),3,2,1)
+
+
+def test_uncompressed_decode_preserves_channel_semantics():
+    assert formats.decode(2,1,1,bytes([10,20,30,40])).getpixel((0,0))==(30,20,10,40)
+    assert formats.decode(5,1,1,bytes([64])).getpixel((0,0))==(255,255,255,64)
+    assert formats.decode(6,1,1,bytes([64])).getpixel((0,0))==(64,64,64,255)
+    assert formats.decode(7,1,1,bytes([64,128])).getpixel((0,0))==(64,64,64,128)
+    with pytest.raises(ValueError,match='verified uncompressed'):
+        formats.decode(3,1,1,bytes(2))
+
+
+def test_format_proof_rejects_wrong_executable(tmp_path):
+    path=tmp_path/'wrong.xbe';path.write_bytes(bytes(512))
+    with pytest.raises(ValueError,match='pinned US'):
+        formats.verify_mapping(path)
+
+
+def test_uncompressed_catalog_keys_use_original_swizzled_base_level():
+    for kind,fmt,bpp in [(2,6,4),(5,25,1),(6,0,1),(7,26,2)]:
+        raw=bytes(range(8*bpp))
+        entry=catalog.classify(kind,4,2,raw+b'mip data')
+        assert entry['key']==catalog.texture_key(fmt,4,2,raw)
+        assert entry['xbox_format']==fmt
+        assert 'scene check pending' in entry['runtime_validation']
+        assert catalog.classify(kind,4,2,raw[:-1])=={}
+    assert catalog.classify(3,4,2,bytes(64))=={}
+
+
+def test_alpha_only_replacement_survives_bc3_encoding():
+    source=formats.decode(5,4,4,bytes([0,255]*8))
+    encoded,_=pack.encode(source,'DXT5')
+    decoded=Image.open(io.BytesIO(encoded)).convert('RGBA')
+    assert decoded.getchannel('A').getextrema()==(0,255)
+    assert decoded.convert('RGB').getextrema()==((255,255),(255,255),(255,255))
+
+
+def test_source_channel_conversion_preserves_original_semantics():
+    source=Image.new('RGBA',(2,2),(120,80,40,72))
+    lum=pack.channel_layout(source,'luminance').getpixel((0,0))
+    assert lum[0]==lum[1]==lum[2] and lum[3]==255
+    assert pack.channel_layout(source,'alpha').getpixel((0,0))==(255,255,255,72)
+    assert pack.channel_layout(source,'color').getpixel((0,0))==(120,80,40,72)
+
+
+def test_lossless_dds_preserves_gradient_and_alpha():
+    source=Image.new('RGBA',(8,4));source.putdata([(i*7,i*7,i*7,i*5) for i in range(32)])
+    data,mips=pack.encode(source,'RGBA8')
+    assert Image.open(io.BytesIO(data)).convert('RGBA').tobytes()==source.tobytes()
+    assert len(data)==128+128+32+8+4 and mips==4
+    assert struct.unpack_from('<I',data,20)[0]==32

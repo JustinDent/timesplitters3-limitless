@@ -1,7 +1,9 @@
 /* Optional host-only replacements. Guest dimensions, texels, and game archives
- * remain unchanged. Only compressed, non-render-target 2D textures participate.
+ * remain unchanged. Verified compressed and swizzled 2D formats participate;
+ * render targets and screen copies are excluded. Overrides use BC1/2/3 or
+ * lossless BGRA8 for small gradients and masks.
  * F10 switches cached views live. Restart after changing pack files on disk.
- * No file I/O when both options are off. */
+ * No file I/O when both pack and dump paths are off. */
 #include "d3d8_internal.h"
 #include "texture_pack.h"
 #include "texture_pack_io.h"
@@ -33,6 +35,16 @@ static void dump_original(const D3D8Texture *tex, uint64_t key, uint32_t bytes) 
     FILE *f;
     char path[2304];uint32_t header[32]={0};
     if(!dump_root[0]) return;
+    if(tex->d3d8_format!=12 && tex->d3d8_format!=14 && tex->d3d8_format!=15) {
+        /* TSFT: magic + little-endian format,width,height + raw swizzled
+         * level zero. This avoids mislabelling uncompressed bytes as DXT. */
+        uint32_t raw_header[4]={0x54465354,tex->d3d8_format,tex->width,tex->height};
+        snprintf(path,sizeof(path),"%s/%016" PRIx64 ".tsft",dump_root,key);
+        f=fopen(path,"rb");if(f) {fclose(f);return;}
+        f=fopen(path,"wb");if(!f) return;
+        fwrite(raw_header,1,sizeof(raw_header),f);fwrite(tex->sys_mem,1,bytes,f);fclose(f);
+        return;
+    }
     snprintf(path,sizeof(path),"%s/%016" PRIx64 ".dds",dump_root,key);
     f=fopen(path,"rb");if(f) {fclose(f);return;}
     f=fopen(path,"wb");if(!f) return;
@@ -57,9 +69,9 @@ void tsfp_texture_upload(D3D8Texture *tex) {
         if(pack_root[0]) fprintf(stderr,"[TEXTURE-PACK] directory=%s budget=512MiB\n",pack_root);
     }
     if(!pack_root[0] && !dump_root[0]) return;
-    if(tex->usage || tex->screen_copy ||
-       (tex->d3d8_format!=12 && tex->d3d8_format!=14 && tex->d3d8_format!=15)) return;
-    bytes=((tex->width+3)/4)*((tex->height+3)/4)*(tex->d3d8_format==12?8:16);
+    if(tex->usage || tex->screen_copy || !tex->sys_mem) return;
+    bytes=tsfp_texture_base_bytes(tex->d3d8_format,tex->width,tex->height);
+    if(!bytes) return;
     key=tsfp_texture_key(tex->d3d8_format,tex->width,tex->height,tex->sys_mem,bytes);
     if(tex->pack_checked && tex->pack_key==key) return;
     tsfp_texture_release(tex);tex->pack_key=key;tex->pack_checked=1;
@@ -68,6 +80,10 @@ void tsfp_texture_upload(D3D8Texture *tex) {
     snprintf(path,sizeof(path),"%s/%016" PRIx64 ".dds",pack_root,key);
     data=tsfp_pack_read(path,tex->width,tex->height,PACK_BUDGET-resident_bytes,&dds);
     if(!data)return;
+    if(!tsfp_texture_alpha_compatible(tex->d3d8_format,dds.format)) {
+        fprintf(stderr,"[TEXTURE-PACK] rejected incompatible alpha: %s\n",path);
+        free(data);return;
+    }
     desc.type=RHI_IMAGE_2D;desc.width=dds.width;desc.height=dds.height;desc.depth=1;
     desc.mip_levels=dds.levels;desc.format=d3d8_to_dxgi_format((D3DFORMAT)dds.format);
     desc.samples=1;desc.usage=RHI_USAGE_DEFAULT;desc.bind=RHI_BIND_SAMPLED;
