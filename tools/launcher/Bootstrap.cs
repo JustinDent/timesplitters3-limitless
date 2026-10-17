@@ -76,7 +76,7 @@ namespace TimeSplitters.Launcher
         internal static bool TryForwardPreview(string root, string[] args, out int exitCode)
         {
             exitCode = 0;
-            if (args.Length != 2 || (args[0] != "--render-preview" && args[0] != "--render-settings-preview" && args[0] != "--render-settings-graphics" && args[0] != "--render-repair-preview" && args[0] != "--render-diagnostics-preview")) return false;
+            if (args.Length != 2 || (args[0] != "--render-preview" && args[0] != "--render-settings-preview" && args[0] != "--render-settings-graphics" && args[0] != "--render-repair-preview" && args[0] != "--render-diagnostics-preview" && args[0] != "--render-news-preview")) return false;
             string application = Core.PathIn(root, Core.AppPath);
             Core.Require(File.Exists(application), "Launcher application files are missing. Extract the complete launcher ZIP into this folder and try again.");
             var info = new ProcessStartInfo(application, args[0] + " " + SelfUpdate.Quote(Path.GetFullPath(args[1]))) {

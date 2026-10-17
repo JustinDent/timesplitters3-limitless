@@ -63,7 +63,7 @@ foreach ($reference in $references) { $commonArguments += '/reference:' + (Join-
 foreach ($reference in @('PresentationCore.dll','PresentationFramework.dll','WindowsBase.dll')) {
     $commonArguments += '/reference:' + (Join-Path $framework "WPF\$reference")
 }
-$commonSources = @((Join-Path $source 'Core.cs'), (Join-Path $source 'DownloadTransfer.cs'), (Join-Path $source 'ReleaseClient.cs'),
+$commonSources = @((Join-Path $source 'Core.cs'), (Join-Path $source 'DownloadTransfer.cs'), (Join-Path $source 'ReleaseNews.cs'), (Join-Path $source 'ReleaseClient.cs'),
     (Join-Path $source 'SelfUpdate.cs'), (Join-Path $source 'LauncherVersion.cs'))
 $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Bootstrap',
     ('/out:' + (Join-Path $Output 'TimeSplitters Launcher.exe'))) + $commonSources + @((Join-Path $source 'Bootstrap.cs'))
@@ -74,7 +74,7 @@ $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Program',
     ('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml')) + $commonSources + @(
     (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'))
 $arguments += $bannerArguments
-$settingsSources = @((Join-Path $source 'PageTheme.cs'), (Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'SettingsPage.cs'), (Join-Path $source 'InstallationMaintenance.cs'), (Join-Path $source 'MaintenancePage.cs'), (Join-Path $source 'DiagnosticIssueDraft.cs'))
+$settingsSources = @((Join-Path $source 'PageTheme.cs'), (Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'SettingsPage.cs'), (Join-Path $source 'InstallationMaintenance.cs'), (Join-Path $source 'MaintenancePage.cs'), (Join-Path $source 'WhatsNewPage.cs'), (Join-Path $source 'DiagnosticIssueDraft.cs'))
 $defaultControls = @(('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'),
     ('/resource:' + (Join-Path $project 'src\pc_display_modes.inc') + ',display-modes.inc'))
 $arguments += $settingsSources + @($defaultControls)
@@ -117,7 +117,7 @@ if ($Test) {
     $testArgs += $commonSources + @((Join-Path $source 'Bootstrap.cs'),
         (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'),
         (Join-Path $project 'tests\launcher_updates.cs'))
-    $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher_settings.cs'), (Join-Path $project 'tests\launcher_maintenance.cs'), (Join-Path $project 'tests\launcher_downloads.cs'))
+    $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher_settings.cs'), (Join-Path $project 'tests\launcher_maintenance.cs'), (Join-Path $project 'tests\launcher_downloads.cs'), (Join-Path $project 'tests\launcher_news.cs'))
     $testArgs += @(('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml'),
         ('/resource:' + (Join-Path $Output 'launcher.ico') + ',launcher.ico')) + $bannerArguments + $logoArguments
     & $compiler @testArgs
@@ -126,6 +126,8 @@ if ($Test) {
     if ($LASTEXITCODE -ne 0) { throw 'Launcher regression tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --downloads
     if ($LASTEXITCODE -ne 0) { throw 'Launcher download tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --news
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher release news tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --settings
     if ($LASTEXITCODE -ne 0) { throw 'Launcher settings tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --maintenance

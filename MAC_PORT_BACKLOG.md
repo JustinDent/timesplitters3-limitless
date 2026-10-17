@@ -701,6 +701,20 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Embedded What's new page (2026-10-17, uncommitted on
+  `feature/launcher-whats-new`):** `ReleaseNews.cs`, `WhatsNewPage.cs`,
+  `ReleaseClient.cs`, `Launcher.cs`/XAML and bootstrap preview routing add game/
+  launcher views, installed/latest version comparison, exact installed notes,
+  published known-issues extraction, native text rendering and retry with
+  session-only retention. Windows uses the existing compatible-release selection
+  and launcher metadata verification. The current Mac launcher has no equivalent
+  release browser. Native adaptation is **queued**: reuse release/channel/version
+  rules, exact-tag lookup and bounded display-only text, with native embedded
+  navigation and cancellable requests. Acceptance includes stable/preview filtering,
+  older/unpublished installs, offline refresh with stale-note labeling, long text,
+  code/HTML/image safety, channel changes during requests, preserved settings
+  drafts and small-window/keyboard usability. See STATUS.md for Windows evidence;
+  native Mac launcher execution remains unverified.
 - **Resumable downloads and recovery (2026-10-17, commit `c21df35` on
   `feature/launcher-download-recovery`):** Merged through [PR #91](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/91) as `69204af`, prepared for launcher v1.2.10. `DownloadTransfer.cs`, `ReleaseClient.cs`,
   `SelfUpdate.cs`, `InstallationMaintenance.cs`, `Bootstrap.cs`, `Launcher.cs`/XAML

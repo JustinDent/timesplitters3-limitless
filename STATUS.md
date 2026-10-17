@@ -1,5 +1,44 @@
 # Measured progress
 
+## Embedded launcher What's new page (2026-10-17)
+
+Implemented on `feature/launcher-whats-new`, based on main `3cac654` (source
+commit/PR recorded below after commit). The aligned sidebar and Home's notes
+button open an embedded blue/silver release center. Game and launcher views
+compare installed/running and available versions for the selected channel, with
+separate installed/latest notes, published titles/dates and explicit newer,
+current, older-channel, absent and unversioned states. Compatible release
+selection and launcher metadata verification remain shared with the updater.
+Older installed notes use their exact GitHub tag; unavailable/draft records
+never substitute another version's notes. Published known-issue headings are
+separated from the remaining changes. Missing sections do not claim no issues.
+Native text supports headings/bullets/code, omits images and never executes
+HTML/XAML/scripts or opens content links automatically. Long descriptions show
+a shortened notice and a link to the complete release.
+
+Requests have a 25-second bound even if transport ignores cancellation; old
+request results cannot replace a changed version/channel context. A failed
+refresh retains same-context notes in memory with their checked time. A first
+offline load offers refresh guidance. No persistent notes cache is introduced.
+Settings drafts and main-window sidebar navigation are preserved. Updates remain
+separate actions through Home or startup. The launcher version is unchanged;
+this feature has not been merged or published. MAC-021 records queued Mac
+adaptation; native Mac launcher execution remains unverified.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required build and
+185 isolated checks passed (99 updater/bootstrap/cleanup, 27 downloads/recovery,
+15 release-news, 25 settings, 19 maintenance). The news suite includes strict
+stable/preview and exact installed selection, missing/mismatched/draft releases,
+invalid metadata, cancellation/rate limits and ignored-cancellation timeout,
+bounded text/known issues, inert HTML/images, session retention and navigation
+with unchanged settings drafts. Python startup/packaging/issue-form/CI-scope:
+43 tests with seven subtests passed. Live read-only GitHub selection found game
+v0.2.0-alpha.5 and launcher 1.2.10 and their exact installed notes. Preview,
+minimum 1000×720, known-issues scroll, actual game/launcher notes and offline
+retention screenshots were inspected. Preview routing works through bootstrap.
+Only disposable synthetic fixtures were used; no actual game was launched,
+and no personal saves, settings, game data or ISO were modified.
+
 ## Launcher v1.2.10 release preparation (2026-10-17)
 
 PR #91 is merged as `69204af`. The release preparation branch

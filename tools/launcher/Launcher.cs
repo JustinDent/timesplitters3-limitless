@@ -26,9 +26,10 @@ namespace TimeSplitters.Launcher
                     return Helper(args[0], Path.GetFullPath(args[1]), Int32.Parse(args[2]));
                 bool repairPreview = args.Length == 2 && args[0] == "--render-repair-preview";
                 bool diagnosticsPreview = args.Length == 2 && args[0] == "--render-diagnostics-preview";
+                bool newsPreview = args.Length == 2 && args[0] == "--render-news-preview";
                 bool graphicsPreview = args.Length == 2 && args[0] == "--render-settings-graphics";
                 bool settingsPreview = graphicsPreview || (args.Length == 2 && args[0] == "--render-settings-preview");
-                bool preview = repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
+                bool preview = newsPreview || repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
                 bool fromBootstrap = args.Length == 2 && args[0] == "--from-bootstrap";
                 if (args.Length == 0)
                 {
@@ -51,6 +52,7 @@ namespace TimeSplitters.Launcher
                         {
                             if (settingsPreview) ui.ShowSettings(graphicsPreview?1:0);
                             if (repairPreview || diagnosticsPreview) ui.ShowMaintenance(diagnosticsPreview);
+                            if (newsPreview) ui.ShowNews();
                             var window = ui.Window;
                             var visual = (Panel)window.Content;
                             visual.Background = window.Background;
@@ -126,6 +128,10 @@ namespace TimeSplitters.Launcher
         Release available;
         SettingsPage settings;
         MaintenancePage repairPage, diagnosticsPage;
+        WhatsNewPage newsPage;
+        CancellationTokenSource newsStop;
+        string newsContext="";
+        bool newsReady;
         VerificationResult gameVerification, launcherVerification;
         bool diagnosticsReady;
         CancellationTokenSource maintenanceStop, updateStop;
@@ -140,6 +146,7 @@ namespace TimeSplitters.Launcher
         ProgressBar Bar { get { return Find<ProgressBar>("OperationProgress"); } }
         ComboBox Channel { get { return Find<ComboBox>("ChannelPicker"); } }
         bool PreviewChannel { get { return Channel.SelectedIndex == 1; } }
+        string NewsGameVersion { get { return installed.Length>0?installed:gameInstalled?"Unversioned":""; } }
         public void SetStatus(string value) { Text("StatusText", value); }
         public LauncherWindow(string path, bool preview)
         {
@@ -183,6 +190,9 @@ namespace TimeSplitters.Launcher
             Button("HomeNav").Click += (s,e)=>ShowHome();
             Button("RepairNav").Click += (s,e)=>ShowMaintenance(false);
             Button("DiagnosticsNav").Click += (s,e)=>ShowMaintenance(true);
+            Button("NewsNav").Click += (s,e)=>ShowNews();
+            Button("ReleaseNotesButton").Content="What's new";
+            Button("ReleaseNotesButton").Click += (s,e)=>ShowNews();
             Button("PauseDownloadButton").Click+=(s,e)=> {if(updateStop!=null)updateStop.Cancel();};
             Button("RetryButton").Click+=async(s,e)=> {if(!busy && !checking && retryOperation!=null)await retryOperation();};
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
@@ -221,7 +231,6 @@ namespace TimeSplitters.Launcher
                 if (MessageBox.Show(Window, "Restore the previous installed release? Your game data, saves and settings will be kept.", "Restore previous release", MessageBoxButton.YesNo, MessageBoxImage.Question) != MessageBoxResult.Yes) return;
                 try { HandOff(true); } catch (Exception ex) { Fail(ex); }
             };
-            Button("ReleaseNotesButton").Click += (s, e) => Open(available == null ? ReleaseClient.ReleasesPage : available.Url);
             Button("SavesNav").Click += (s, e) => OpenFolder("Saves");
             Button("SupportNav").Click += (s, e) => Open("https://github.com/" + ReleaseClient.Repository + "/issues");
             Button("LogsButton").Click += (s, e) => OpenFolder(".launcher");
@@ -260,6 +269,7 @@ namespace TimeSplitters.Launcher
                 Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("SettingsHost").Visibility=Visibility.Visible;
                 Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
+                Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
                 SelectNavigation("SettingsNav");
             } catch(Exception ex) { Fail(ex); }
         }
@@ -269,14 +279,58 @@ namespace TimeSplitters.Launcher
             Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
             Find<Grid>("CommandCenter").Visibility=Visibility.Visible;
             Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
+            Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
             SelectNavigation("HomeNav");
         }
         void SelectNavigation(string active)
         {
-            foreach(string name in new[]{"HomeNav","SettingsNav","RepairNav","DiagnosticsNav"}) {
+            foreach(string name in new[]{"HomeNav","NewsNav","SettingsNav","RepairNav","DiagnosticsNav"}) {
                 bool selected=name==active;
                 Button(name).Background=selected?new SolidColorBrush(Color.FromRgb(29,58,85)):Brushes.Transparent;
                 Button(name).Foreground=new SolidColorBrush(selected?Color.FromRgb(134,205,255):Color.FromRgb(223,233,242));
+            }
+        }
+        public async void ShowNews()
+        {
+            if(busy)return;
+            if(settings!=null)settings.DismissPrompt();
+            if(newsPage==null) {
+                newsPage=new WhatsNewPage();Find<ContentControl>("NewsHost").Content=newsPage.View;
+                newsPage.Refresh.Click+=async(s,e)=>await RefreshNews();
+                newsPage.Home.Click+=(s,e)=>ShowHome();
+                newsPage.OnGitHub.Click+=(s,e)=> {if(!previewMode && newsPage.SelectedUrl!=null)Open(newsPage.SelectedUrl);};
+            }
+            Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
+            Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
+            Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
+            Find<ContentControl>("NewsHost").Visibility=Visibility.Visible;SelectNavigation("NewsNav");
+            string context=NewsGameVersion+"/"+LauncherVersion.Value+"/"+PreviewChannel;
+            if(newsContext!=context) {if(newsStop!=null){newsStop.Cancel();newsStop=null;}newsReady=false;newsContext=context;newsPage.Reset();}
+            newsPage.SetVersions(NewsGameVersion,LauncherVersion.Value,PreviewChannel);
+            if(previewMode) {
+                newsPage.SetVersions("v1.0.0",LauncherVersion.Value,false);
+                newsPage.SetNews(new ReleaseNews {CheckedUtc=DateTime.UtcNow,Game=new Release {Tag="v1.1.0",Name="Game update (interface sample)",Published="2026-10-17T12:00:00Z",Url=ReleaseClient.ReleasesPage,
+                    Notes="## Highlights\n- Updated display settings and resolution selection.\n- Improved update recovery and installation checks.\n\n## Known issues\n- Sample limitation: some effects are still being investigated.\n\n## Installation\nUpdate from Home. Your saves, settings and imported game data are preserved."},
+                    InstalledGame=new Release {Tag="v1.0.0",Notes="Initial release notes (interface sample).",Url=ReleaseClient.ReleasesPage},
+                    Launcher=new Release {Tag=LauncherVersion.Value,Name="Launcher update (interface sample)",Url=ReleaseClient.ReleasesPage,Notes="## Improvements\n- Resumable downloads with speed and time remaining.\n- Clearer recovery actions."},
+                    InstalledLauncher=new Release {Tag=LauncherVersion.Value,Notes="Installed launcher notes (interface sample).",Url=ReleaseClient.ReleasesPage}});
+                return;
+            }
+            if(!newsReady && newsStop==null)await RefreshNews();
+        }
+        async Task RefreshNews()
+        {
+            if(previewMode){ShowNews();return;}
+            if(newsStop!=null)return;
+            using(var timeout=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)) {
+                newsStop=timeout;timeout.CancelAfter(TimeSpan.FromSeconds(25));newsPage.SetLoading(true);
+                string context=newsContext;
+                try {
+                    var notes=await client.ReadNews(PreviewChannel,NewsGameVersion,LauncherVersion.Value,timeout.Token);
+                    if(!lifetime.IsCancellationRequested && !timeout.IsCancellationRequested && Object.ReferenceEquals(newsStop,timeout) && context==newsContext){newsPage.SetNews(notes);newsReady=true;}
+                }catch(Exception ex) {
+                    if(!lifetime.IsCancellationRequested && Object.ReferenceEquals(newsStop,timeout) && context==newsContext){newsPage.Failed();Program.Log(root,"Release notes: "+ex.GetType().Name);}
+                }finally {if(Object.ReferenceEquals(newsStop,timeout))newsStop=null;}
             }
         }
         public async void ShowMaintenance(bool diagnostics)
@@ -308,6 +362,7 @@ namespace TimeSplitters.Launcher
                 }
                 Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
+                Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
                 var host=Find<ContentControl>("MaintenanceHost");host.Content=page.View;host.Visibility=Visibility.Visible;
                 SelectNavigation(diagnostics?"DiagnosticsNav":"RepairNav");
                 page.SetBusy(busy || checking,Core.GameRunning());
@@ -457,7 +512,7 @@ namespace TimeSplitters.Launcher
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
-            Button("HomeNav").IsEnabled = Button("RepairNav").IsEnabled = Button("DiagnosticsNav").IsEnabled = !busy;
+            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("RepairNav").IsEnabled = Button("DiagnosticsNav").IsEnabled = !busy;
             if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
             if(diagnosticsPage!=null)diagnosticsPage.SetBusy(busy || checking,Core.GameRunning());
             Button("RetryButton").IsEnabled=!busy && !checking;
