@@ -1,5 +1,53 @@
 # PC features awaiting Mac adaptation
 
+### MAC-032 — Responsive menu backgrounds and scope masks
+
+- **Status:** Awaiting validation
+- **PC behavior:** The frontend footer's black background and decorative strips
+  fill widescreen/ultrawide output; the animated blue sheet also fills the
+  picture, with its original motion. Labels and mouse targets keep their existing
+  proportions. Background changes preserve original 4:3/narrow layouts and
+  partial viewports. Main-menu construction/measurement and row drawing share a 25%
+  smaller glyph scale, keeping the panel below the logo and scrolling description.
+  Objectives top/bottom bars and blue trim fill wide screens. The circular scope's
+  outer masks reach display edges while its aperture remains proportional.
+  Conventional and futuristic sniper groups explicitly cover the host area
+  outside the original canvas, even when the guest omits its own outer masks.
+  The Sci-Fi Sniper uses its destination-alpha tint instead of opaque black
+  margins. Shared aim shapes scale around their projected aim point, zoom
+  gauges use explicit edge anchors, and full-view crosshairs/borders stretch.
+  Lock-on box halves and orbiting pieces share their target anchor. Special
+  scope rings stay fitted while their gradients/composite cover the output.
+- **Source:** [Feature branch](https://github.com/TheDoffman/timesplitters-future-perfect-pc/tree/fix/responsive-menu-footer);
+  `src/pc_display_ui.inc`, `src/pc_display_menu.h`,
+  `menu-footer-background.patch`, `menu-backdrop.patch`,
+  `main-menu-font.patch`, `objectives-scope-coverage.patch`,
+  `sniper-scope-coverage.patch`, `weapon-aim-overlays.patch`,
+  `special-weapon-overlays.patch`, `tests/weapon_effects.c`, `src/pc_ui_layout.h`, and `tests/ui_layout.c`.
+- **Shared Mac support:** The same title hooks and scoped STRETCH placement are
+  compiled for `TSFP_NATIVE_DISPLAY`; the native renderer already supports this
+  placement. The blue sheet uses the shared guest projection setter and restores
+  it before subsequent layers. No new operating-system adapter is needed.
+- **Remaining:** Run shared regression tests and native visual validation.
+  Windows evidence is in the responsive frontend backgrounds and Objectives
+  bars/scope masks entries in `STATUS.md`, including the live 3440x1440
+  conventional and Sci-Fi Sniper checks. This does not establish Mac rendering
+  or pointer behavior.
+- **Acceptance:** At 4:3, 16:9, 16:10 and ultrawide, check the main and Story
+  footer backgrounds, both decorative halves, proportional prompt labels and
+  menu transitions; verify no background clipping. Check the smaller main-menu
+  rows fit below the header and retain matching mouse targets; other screens
+  keep their existing font sizes. Check Objectives bars and trim at both edges,
+  and circular scope masks/reticles at 4:3, 5:4, 16:9, 16:10 and ultrawide.
+  Verify displaced reticles remain over their aim point and zoom indicators
+  stay proportional. Check lock-on indicators on targets near the screen edges,
+  including lock acquisition/rotation, and special scope gradients during
+  activation/deactivation. Check the Sci-Fi tint has no hard black side margins.
+  Split-screen viewports must retain their original layout.
+  Watch a full blue-sheet animation cycle and check character previews, gameplay
+  and cutscenes retain their lens.
+
+
 ### MAC-031 — Quit to Desktop menu entries
 
 - **Status:** Queued

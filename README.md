@@ -93,7 +93,17 @@ remain immediate.
 Visible, enabled prompts along the bottom (Select, Back, Player Progress and
 other shortcuts) turn light blue on hover and accept left-click. This also applies
 to the profile picker's Select, Back and Delete Profile prompts. Disabled prompts
-keep their normal appearance. Click the Options/Status headings to switch pause or Objectives
+keep their normal appearance. The main-menu footer, decorative strips and animated
+blue backdrop fill widescreen and ultrawide displays while labels and buttons
+stay proportional. The in-game Objectives header/footer bars also fill wide
+screens. Older, conventional and futuristic weapon-scope masks extend to the output edges while the
+aperture and reticle keep their proportions. The Sci-Fi Sniper extends its translucent tint instead
+of adding opaque margins. Shared aim reticles keep their projected aim point while their shapes fit
+the display; zoom gauges follow the left/right edges and full-view aiming lines span the output.
+Lock-on indicator pieces scale around their target. Special scope gradients and screen effects
+reach the display edges while their ring artwork retains its proportions.
+The main Story/Arcade menu uses a smaller font so its list
+clears the logo and scrolling description. Click the Options/Status headings to switch pause or Objectives
 tabs; available headings highlight on hover. Keyboard and controller navigation
 still work.
 Closing Pause or Objectives restores gameplay mouse control automatically;

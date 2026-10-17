@@ -51,7 +51,7 @@ void sub_00078980(void) {
 }
 STUB(sub_0007D480) STUB(sub_000717D0)
 void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+=4; }
-STUB(sub_00022FF0)
+STUB(sub_00022FF0) STUB(sub_0001C5D0) STUB(sub_0001EFB0) STUB(sub_00019650) STUB(sub_00019D70)
 void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
 void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
 STUB(sub_00079710) STUB(sub_00074910) STUB(sub_001A0A60)

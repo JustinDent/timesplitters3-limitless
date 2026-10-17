@@ -38,6 +38,13 @@ void sub_0001EFB0_gen(void)
     g_esp += 4;
 }
 
+int pc_display_scope_mask(void (*original)(void))
+{ (void)original; return 0; }
+
+/* Footer dispatch must never intercept a cinematic rectangle. */
+void pc_display_footer_background(void (*original)(void))
+{ (void)original; CHECK(0); }
+
 #define sub_0001EFB0 filtered_rectangle
 /* PRODUCTION_WRAPPER */
 #undef sub_0001EFB0
