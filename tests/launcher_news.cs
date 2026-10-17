@@ -123,7 +123,7 @@ public static class LauncherNewsChecks
                 ((Button)ui.Window.FindName("ReleaseNotesButton")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 var host=(ContentControl)ui.Window.FindName("NewsHost");Need(host.Visibility==Visibility.Visible && settings.Visibility==Visibility.Collapsed && Window.GetWindow((DependencyObject)host.Content)==ui.Window);
                 Need(((Border)ui.Window.FindName("SidebarPanel")).Visibility==Visibility.Visible);
-                foreach(string name in new[]{"HomeNav","NewsNav","SettingsNav","RepairNav","DiagnosticsNav","SavesNav","SupportNav"})Need(((Grid)((Button)ui.Window.FindName(name)).Content).ColumnDefinitions[0].Width.Value==24);
+                foreach(string name in new[]{"HomeNav","NewsNav","SettingsNav","RepairNav","SavesNav","SupportNav"})Need(((Grid)((Button)ui.Window.FindName(name)).Content).ColumnDefinitions[0].Width.Value==24);
                 ui.ShowMaintenance(false);Need(host.Visibility==Visibility.Collapsed);ui.ShowNews();ui.ShowSettings();Need(ReferenceEquals(settings.Content,draft) && host.Visibility==Visibility.Collapsed);
                 Need(!Directory.GetFiles(root,"*",SearchOption.AllDirectories).Any());
             }finally{ui.Window.Close();Need(Path.GetDirectoryName(root)==Path.GetDirectoryName(typeof(LauncherNewsChecks).Assembly.Location) && (File.GetAttributes(root)&FileAttributes.ReparsePoint)==0);Directory.Delete(root,true);}

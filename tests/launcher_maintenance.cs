@@ -13,6 +13,8 @@ using TimeSplitters.Launcher;
 
 public static class LauncherMaintenanceChecks
 {
+    static IEnumerable<T> Descendants<T>(System.Windows.DependencyObject root) where T:System.Windows.DependencyObject
+    {foreach(var child in System.Windows.LogicalTreeHelper.GetChildren(root).OfType<System.Windows.DependencyObject>()){if(child is T)yield return (T)child;foreach(var item in Descendants<T>(child))yield return item;}}
     static string temp;
     static int passed;
     static bool readOnly;
@@ -248,12 +250,34 @@ public static class LauncherMaintenanceChecks
                 Exception failure=null;var thread=new Thread(()=> {try {
                     var ui=new LauncherWindow(Root(),true);
                     try {
-                        Require(ui.Window.FindName("FilesNav")==null);
+                        Require(ui.Window.FindName("FilesNav")==null && ui.Window.FindName("DiagnosticsNav")==null);
                         ui.ShowSettings();var settings=(System.Windows.Controls.ContentControl)ui.Window.FindName("SettingsHost");var draft=settings.Content;
-                        ui.ShowMaintenance(false);var host=(System.Windows.Controls.ContentControl)ui.Window.FindName("MaintenanceHost");
+                        ui.ShowMaintenance(false);var host=(System.Windows.Controls.ContentControl)ui.Window.FindName("MaintenanceHost");var area=host.Content;
                         Require(host.Visibility==System.Windows.Visibility.Visible && settings.Visibility==System.Windows.Visibility.Collapsed && System.Windows.Window.GetWindow((System.Windows.DependencyObject)host.Content)==ui.Window);
                         Require(((System.Windows.Controls.Border)ui.Window.FindName("SidebarPanel")).Visibility==System.Windows.Visibility.Visible);
-                        ui.ShowMaintenance(true);Require(host.Visibility==System.Windows.Visibility.Visible);
+                        var tabs=Descendants<System.Windows.Controls.TabControl>((System.Windows.DependencyObject)host.Content).Single();
+                        Require(tabs.Items.Count==2 && tabs.SelectedIndex==0);
+                        Require(((System.Windows.Controls.TextBlock)((System.Windows.Controls.TabItem)tabs.Items[0]).Header).Text=="Repair / Verify" && ((System.Windows.Controls.TextBlock)((System.Windows.Controls.TabItem)tabs.Items[1]).Header).Text=="Diagnostics");
+                        var repair=(System.Windows.DependencyObject)((System.Windows.Controls.TabItem)tabs.Items[0]).Content;
+                        var diagnostics=(System.Windows.DependencyObject)((System.Windows.Controls.TabItem)tabs.Items[1]).Content;
+                        var repairLogs=Descendants<System.Windows.Controls.Button>(repair).Single(c=>c.Name=="MaintenanceLogs");
+                        var diagnosticLogs=Descendants<System.Windows.Controls.Button>(diagnostics).Single(c=>c.Name=="MaintenanceLogs");
+                        Require(repairLogs.Visibility==System.Windows.Visibility.Visible && diagnosticLogs.Visibility==System.Windows.Visibility.Visible && repairLogs.Parent is System.Windows.Controls.DockPanel && diagnosticLogs.Parent is System.Windows.Controls.DockPanel);
+                        var verification=Descendants<System.Windows.Controls.TextBox>(repair).Single();verification.Text="Retained verification result";
+                        tabs.SelectedIndex=1;var report=Descendants<System.Windows.Controls.TextBox>(diagnostics).Single();Require(report.Text.Contains("interface preview"));report.Text="Retained diagnostics report";
+                        foreach(string button in new[]{"RefreshDiagnostics","CopyDiagnostics","ReportDiagnosticBug","RequestDiagnosticEnhancement"})Require(Descendants<System.Windows.Controls.Button>(diagnostics).Any(c=>c.Name==button));
+                        diagnosticLogs.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                        Require(Descendants<System.Windows.Controls.TextBlock>(diagnostics).Any(c=>c.Text.Contains("local launcher log folder")));
+                        tabs.SelectedIndex=0;repairLogs.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));tabs.SelectedIndex=1;
+                        Require(report.Text=="Retained diagnostics report" && verification.Text=="Retained verification result" && ReferenceEquals(host.Content,area));
+                        var busy=typeof(LauncherWindow).GetField("busy",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+                        var refresh=typeof(LauncherWindow).GetMethod("Refresh",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+                        try{busy.SetValue(ui,true);refresh.Invoke(ui,null);Require(tabs.IsEnabled && repairLogs.IsEnabled && diagnosticLogs.IsEnabled);tabs.SelectedIndex=0;Require(tabs.SelectedIndex==1 && Descendants<System.Windows.Controls.Button>(diagnostics).Single(c=>c.Name=="CancelMaintenance").IsEnabled);}finally{busy.SetValue(ui,false);refresh.Invoke(ui,null);}
+                        ((System.Windows.Controls.Button)ui.Window.FindName("RepairNav")).RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Require(tabs.SelectedIndex==0 && tabs.IsEnabled);
+                        ui.ShowMaintenance(true);Require(host.Visibility==System.Windows.Visibility.Visible && tabs.SelectedIndex==1 && report.Text=="Retained diagnostics report");
+                        var checking=typeof(LauncherWindow).GetField("checking",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic);
+                        try{checking.SetValue(ui,true);refresh.Invoke(ui,null);((System.Windows.Controls.Button)ui.Window.FindName("RepairNav")).RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Require(tabs.SelectedIndex==0 && repairLogs.IsEnabled);}finally{checking.SetValue(ui,false);refresh.Invoke(ui,null);}
+
                         ui.ShowSettings();Require(ReferenceEquals(settings.Content,draft) && host.Visibility==System.Windows.Visibility.Collapsed);
                     }finally{ui.Window.Close();}
                 }catch(Exception ex){failure=ex;}});

@@ -63,8 +63,9 @@ This page reads release information; installing an update remains a separate act
 ## Saves, logs and recovery
 
 - **Saves** opens the local save folder.
-- **Game files** opens the installation directory.
-- **View logs** opens launcher diagnostics; game logs are also under `Logs`.
+- **Repair / Verify → Open game folder** opens the installation directory.
+- **Repair / Verify** contains file-check/repair and **Diagnostics** tabs in current source; Diagnostics includes system reports and GitHub report buttons.
+- **View logs** opens the local launcher log folder from Home or either maintenance tab; game logs are also under `Logs`.
 - **Support** opens this project's GitHub issues.
 - **Restore previous** swaps back to the retained game release when available,
   preserving your data, saves and settings.

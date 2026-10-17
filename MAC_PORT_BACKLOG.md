@@ -701,6 +701,19 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Repair / Verify and Diagnostics tabs (2026-10-17, uncommitted on
+  `feature/launcher-maintenance-tabs`):** `MaintenancePage.cs`, `Launcher.cs`/XAML
+  and the shared `PageTheme.cs` tab styling group both pages behind one Repair /
+  Verify sidebar entry. Native tabs retain reports, verification results and
+  settings drafts; Diagnostics is collected on first selection or manual refresh.
+  View logs stays visible on each tab, including during operations. Busy navigation
+  is locked without disabling Cancel or logs. The separate Diagnostics sidebar
+  entry is removed. Windows repair/report/privacy behavior is unchanged. Mac has
+  no equivalent release maintenance UI; native adaptation is **queued** with the
+  existing maintenance work. Acceptance: default repair tab, keyboard selection,
+  preserved results/drafts, report/GitHub actions, visible logs in normal/recovery/
+  busy states, usable cancellation and small-window layout. Windows validation is
+  recorded in STATUS.md; native Mac launcher execution remains unverified.
 - **Embedded What's new page (2026-10-17, commit `cfbfe6c`, [PR #93](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/93)):** Merged as `7ed93cb`, prepared for launcher v1.2.11. `ReleaseNews.cs`, `WhatsNewPage.cs`,
   `ReleaseClient.cs`, `Launcher.cs`/XAML and bootstrap preview routing add game/
   launcher views, installed/latest version comparison, exact installed notes,
