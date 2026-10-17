@@ -78,7 +78,7 @@ movement updates. [See measured progress →](STATUS.md)
 playing. Resolution selectors use your primary display's reported modes, include
 the console default, and provide left/right arrows. Saved custom modes are retained.
 
-Current launcher source adds **What's new** for game/launcher release notes,
+Launcher v1.2.11 adds **What's new** for game/launcher release notes,
 installed and available versions, and published known issues inside the main window.
 
 | Controls | Display | Launcher |
