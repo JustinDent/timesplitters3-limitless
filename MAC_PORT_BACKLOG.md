@@ -89,7 +89,7 @@ runtime readiness. No full campaign playthrough is required.
   widget (caption, ordinal and frame) to the left inset, matching the status icons
   below it. Flush preceding/following sprite batches at the placement boundary.
   Preserve 4:3, narrower outputs and the existing split-screen layout.
-- **Source:** RANK placement follow-up to `6485069` on
+- **Source:** Commit `3e747a5`, [PR #83](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/83), on
   `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
   `src/pc_display_ui.inc`,
   `patches/zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch`,
@@ -112,7 +112,7 @@ runtime readiness. No full campaign playthrough is required.
   picker and first-person weapon projections for the selected output aspect.
   Keep each lens, zoom, depth and the original 4:3 behavior; do not reuse or
   repeatedly scale the preceding character's projection during model changes.
-- **Source:** Commit `6485069` on
+- **Source:** Commit `6485069`, [PR #83](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/83), on
   `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
   `src/pc_display_menu.c`, `src/pc_display_menu.h`,
   `patches/zzzzzzzzzzz-model-projection.patch`, `tests/test_decal_projection.py`.
