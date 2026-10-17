@@ -113,6 +113,7 @@ try {
                         (Join-Path $projectRoot 'tests\test_framebuffer_sampling.py'),
                         (Join-Path $projectRoot 'tests\test_cutscene_letterbox.py'),
                         (Join-Path $projectRoot 'tests\test_decal_projection.py'),
+                        (Join-Path $projectRoot 'tests\test_channel_clears.py'),
                         (Join-Path $projectRoot 'tests\test_recomp_generation.py'),
                         (Join-Path $projectRoot 'tests\test_recomp_float_joins.py'), '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'pytest', 'tools', '-q', '--tb=short')
@@ -156,8 +157,9 @@ try {
                         "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/save_paths.c",
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_clear_test', '--parallel', '4')
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_network_test.exe") @()
+                    Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_pc_clear_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_format_test.exe") @()
                     $testRoot = Join-Path $projectRoot 'build\path-tests'
                     $testConfig = Join-Path $projectRoot 'tests\fixtures\pc-controls.json'

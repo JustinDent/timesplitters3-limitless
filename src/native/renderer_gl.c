@@ -739,7 +739,8 @@ static HRESULT __stdcall dev_Clear(IDirect3DDevice8 *s, DWORD count, const D3DRE
 { NATIVE_GL_SCOPE;
     (void)s;if(count && !rects)return D3DERR_INVALIDCALL;
     GLbitfield m = 0;
-    if (flags & D3DCLEAR_TARGET) {
+    unsigned channels=(flags & D3DCLEAR_TARGET) ? 15u : (flags & D3DCLEAR_CHANNEL_MASK)>>4;
+    if (channels) {
         float a = ((color >> 24) & 0xFF) / 255.0f;
         float r = ((color >> 16) & 0xFF) / 255.0f;
         float gr= ((color >>  8) & 0xFF) / 255.0f;
@@ -752,7 +753,8 @@ static HRESULT __stdcall dev_Clear(IDirect3DDevice8 *s, DWORD count, const D3DRE
     if(m) {
         GLint old_box[4],old_stencil;GLboolean scissor=glIsEnabled(GL_SCISSOR_TEST);
         glGetIntegerv(GL_SCISSOR_BOX,old_box);glGetIntegerv(GL_STENCIL_WRITEMASK,&old_stencil);
-        glDepthMask(GL_TRUE);glColorMask(1,1,1,1);glStencilMask(~0u);glEnable(GL_SCISSOR_TEST);
+        glDepthMask(GL_TRUE);glColorMask(channels&1,!!(channels&2),!!(channels&4),!!(channels&8));
+        glStencilMask(~0u);glEnable(GL_SCISSOR_TEST);
         /* D3D clears are clipped to the viewport, even without explicit rects. */
         for(DWORD i=0;i<(count?count:1);i++) {
             int x=g.viewport.X,y=g.viewport.Y,right=x+g.viewport.Width,bottom=y+g.viewport.Height;
