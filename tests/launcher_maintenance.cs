@@ -115,6 +115,44 @@ public static class LauncherMaintenanceChecks
                 Require(!report.Contains(secret) && !report.Contains(root) && !report.Contains("user@example.com") && !report.Contains("10.2.3.4") && !report.Contains("personal save") && !report.Contains("owned.iso"));
                 Require(before.SequenceEqual(Snapshot(root)));
             });
+            Test("GitHub drafts route to the correct form and round-trip diagnostic text",()=> {
+                string report="TimeSplitters launcher diagnostics\nRunning launcher: "+LauncherVersion.Value+"\nGPU: Test & Renderer + details = 日本語 / é\nVerification: Support/example.txt: checksum mismatch";
+                foreach(bool enhancement in new[]{false,true}) {
+                    var draft=DiagnosticIssueDraft.Create(enhancement,report);var uri=new Uri(draft.Url);
+                    Require(uri.Scheme=="https" && uri.Host=="github.com" && uri.AbsolutePath=="/"+ReleaseClient.Repository+"/issues/new");
+                    var query=uri.Query.TrimStart('?').Split('&').Select(p=>p.Split(new[]{'='},2)).ToDictionary(p=>p[0],p=>Uri.UnescapeDataString(p[1]));
+                    Require(query["template"]==(enhancement?"02-enhancement.yml":"01-bug-report.yml"));
+                    Require(query[DiagnosticIssueDraft.DiagnosticsField]==report && draft.ClipboardText==report && !draft.RequiresPaste);
+                    Require(!query.ContainsKey("labels") && !query.ContainsKey("assignees"),"Draft must not require label/assignment privileges.");
+                }
+            });
+            Test("long diagnostic drafts retain the complete report with a bounded paste fallback",()=> {
+                foreach(string tail in new[]{new String('x',70000),String.Concat(Enumerable.Repeat("日本語 & \n",200))}) {
+                    string report="TimeSplitters launcher diagnostics\nRunning launcher: "+LauncherVersion.Value+"\nInstalled game: v1.0.0\n"+tail;
+                    var draft=DiagnosticIssueDraft.Create(false,report);
+                    Require(draft.RequiresPaste && draft.Url.Length<=DiagnosticIssueDraft.MaximumUrlLength && draft.ClipboardText==report);
+                    Require(Uri.UnescapeDataString(draft.Url).Contains("complete diagnostic report") && !draft.Url.Contains(tail));
+                }
+                Reject(()=>DiagnosticIssueDraft.Create(false,"   "));
+            });
+            Test("only the privacy-filtered report is transferred to GitHub drafts",()=> {
+                string root=Game(Root());string secret="DO_NOT_EXPORT_946834";
+                Put(root,".launcher/launcher.log","2026-10-17 01:00:00Z System.IO.IOException: "+root+" "+secret);
+                string report=InstallationMaintenance.Report(root,null,null,"Synthetic GPU");
+                foreach(bool enhancement in new[]{false,true}) {
+                    var draft=DiagnosticIssueDraft.Create(enhancement,report);
+                    Require(!draft.ClipboardText.Contains(root) && !draft.ClipboardText.Contains(secret));
+                    Require(!Uri.UnescapeDataString(draft.Url).Contains(secret) && !Uri.UnescapeDataString(draft.Url).Contains(root));
+                }
+            });
+            Test("GitHub report controls are available only on Diagnostics and disabled while busy",()=> {
+                Exception failure=null;var thread=new Thread(()=> {try {
+                    var page=new MaintenancePage(true);Require(page.ReportBug!=null && page.RequestEnhancement!=null);
+                    page.SetBusy(true,false);Require(!page.ReportBug.IsEnabled && !page.RequestEnhancement.IsEnabled);
+                    page.SetBusy(false,false);Require(page.ReportBug.IsEnabled && page.RequestEnhancement.IsEnabled);
+                    var repair=new MaintenancePage(false);Require(repair.ReportBug==null && repair.RequestEnhancement==null);
+                }catch(Exception ex){failure=ex;}});thread.IsBackground=true;thread.SetApartmentState(ApartmentState.STA);thread.Start();Require(thread.Join(60000));if(failure!=null)throw failure;
+            });
             Test("repair pins exact game version and refuses drafts and missing releases",()=> {
                 byte[] archive=Archive(false);
                 using(var client=GameClient(archive,r=> {if(r.RequestUri.Host=="api.github.com")Require(r.RequestUri.AbsolutePath.EndsWith("/releases/tags/v1.0.0"));}))

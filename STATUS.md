@@ -1,5 +1,35 @@
 # Measured progress
 
+## Diagnostics to GitHub issue drafts (2026-10-17)
+
+Follow-up on `feature/launcher-repair-diagnostics` / PR #88, based on its
+`b990140` implementation (uncommitted). Diagnostics adds Report a bug and Request
+enhancement actions. `DiagnosticIssueDraft.cs` selects the matching repository
+issue form and prefills its optional diagnostics text field, with the complete
+report also copied to the clipboard. Only the displayed privacy-filtered report
+is used; symptoms, steps and enhancement descriptions remain for the reporter.
+No token, issue POST, automatic submission or automatic upload is added.
+The user explicitly opens a browser draft, reviews the form and submits on GitHub.
+
+URLs are limited to 1800 characters for the Windows browser handoff. Long reports
+use an explicit summary/paste instruction and preserve the full text on the
+clipboard; Unicode/query syntax is escaped and never silently truncated. Clipboard
+or browser failures leave the report visible with recovery instructions. Reporting
+controls are disabled during maintenance; preview actions never open GitHub.
+The bug/enhancement YAML forms share the same optional plain-text diagnostics
+field. Existing version choices and enhancement simplicity are retained.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both themed EXEs compiled and
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks passed.
+Added checks cover both forms, Unicode/newline/query-character round-trips,
+large-report fallback, filtered payloads and report-control busy state. Issue-form
+schema/field contract and version-refresh checks passed (15 tests, including
+five subtests). The preceding startup/packaging/CI-scope run passed 26 checks;
+only the changed form test expectation needed an update for the optional field. No actual GitHub issue was created or submitted and no
+personal clipboard was changed by tests. Live prefilling of the new field requires
+the issue templates to merge into the default branch. MAC-021 records queued Mac
+browser/clipboard adaptation; native Mac execution remains unverified. Not published.
+
 ## Launcher v1.2.8 Repair/Verify and Diagnostics (2026-10-17)
 
 Implemented on `feature/launcher-repair-diagnostics`, commit `920b789`, based on main `65b6903`. Launcher/assembly version is 1.2.8. New Repair / Verify and

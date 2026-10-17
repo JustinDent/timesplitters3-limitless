@@ -74,7 +74,7 @@ $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Program',
     ('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml')) + $commonSources + @(
     (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'))
 $arguments += $bannerArguments
-$settingsSources = @((Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'SettingsPage.cs'), (Join-Path $source 'InstallationMaintenance.cs'), (Join-Path $source 'MaintenancePage.cs'))
+$settingsSources = @((Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'SettingsPage.cs'), (Join-Path $source 'InstallationMaintenance.cs'), (Join-Path $source 'MaintenancePage.cs'), (Join-Path $source 'DiagnosticIssueDraft.cs'))
 $defaultControls = @(('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'),
     ('/resource:' + (Join-Path $project 'src\pc_display_modes.inc') + ',display-modes.inc'))
 $arguments += $settingsSources + @($defaultControls)

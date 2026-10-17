@@ -127,6 +127,7 @@ namespace TimeSplitters.Launcher
         SettingsPage settings;
         MaintenancePage repairPage, diagnosticsPage;
         VerificationResult gameVerification, launcherVerification;
+        bool diagnosticsReady;
         CancellationTokenSource maintenanceStop;
         bool busy, checking, handingOff;
         bool validData, gameInstalled;
@@ -281,6 +282,8 @@ namespace TimeSplitters.Launcher
                     if(diagnostics) {
                         diagnosticsPage=page;
                         page.Refresh.Click+=async(s,e)=>await RefreshDiagnostics();
+                        page.ReportBug.Click+=(s,e)=>OpenDiagnosticIssue(false);
+                        page.RequestEnhancement.Click+=(s,e)=>OpenDiagnosticIssue(true);
                         page.Copy.Click+=(s,e)=> { try { Clipboard.SetText(page.Report.Text);page.Status("Diagnostic report copied. Nothing was uploaded."); }catch(Exception ex){page.Status("Clipboard unavailable ("+ex.GetType().Name+"). Select and copy the report text instead.");} };
                     } else {
                         repairPage=page;
@@ -332,9 +335,30 @@ namespace TimeSplitters.Launcher
                 diagnosticsPage.Status("Collecting system details…");
                 string graphics=await InstallationMaintenance.GraphicsWithTimeout(token);
                 string report=await Task.Run(()=>InstallationMaintenance.Report(root,gameVerification,launcherVerification,graphics),token);
-                token.ThrowIfCancellationRequested();diagnosticsPage.Report.Text=report;
+                token.ThrowIfCancellationRequested();diagnosticsPage.Report.Text=report;diagnosticsReady=true;
                 diagnosticsPage.Status("Report excludes raw logs, personal paths, saves and ISO information. Nothing is uploaded automatically.");
             });
+        }
+        void OpenDiagnosticIssue(bool enhancement)
+        {
+            if(busy || diagnosticsPage==null)return;
+            if(previewMode){diagnosticsPage.Status("Preview only. GitHub drafts open from the installed launcher; no report was sent.");return;}
+            if(!diagnosticsReady){diagnosticsPage.Status("Refresh diagnostics before preparing a GitHub report.");return;}
+            try {
+                var draft=DiagnosticIssueDraft.Create(enhancement,diagnosticsPage.Report.Text);
+                bool copied=false;
+                try {Clipboard.SetText(draft.ClipboardText);copied=true;}catch { /* The displayed report remains available for manual copying. */ }
+                try {Process.Start(new ProcessStartInfo(draft.Url){UseShellExecute=true});}
+                catch(Exception ex) {
+                    diagnosticsPage.Status(copied?"Could not open the browser. The full report is copied; open GitHub Support and paste it into the report form.":
+                        "Could not open the browser or clipboard. Copy the displayed report manually, then open GitHub Support.");
+                    Program.Log(root,"GitHub draft browser handoff failed ("+ex.GetType().Name+").");return;
+                }
+                diagnosticsPage.Status(draft.RequiresPaste?
+                    (copied?"GitHub draft opened. Paste the copied full report into Launcher diagnostics (optional), complete the form, and review before submitting.":
+                        "GitHub draft opened. Clipboard unavailable: copy the report text here and paste it into Launcher diagnostics (optional)."):
+                    "GitHub draft opened with diagnostics. Complete the form, review the details, and submit when ready."+(copied?" A full copy is on your clipboard.":" Clipboard copy was unavailable."));
+            }catch(Exception ex){diagnosticsPage.Status("Could not prepare the GitHub draft. Refresh diagnostics and try again.");Program.Log(root,"GitHub draft preparation failed ("+ex.GetType().Name+").");}
         }
         async Task RepairFiles(bool launcher)
         {

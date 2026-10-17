@@ -8,7 +8,7 @@ namespace TimeSplitters.Launcher
     public sealed class MaintenancePage
     {
         public readonly Grid View = new Grid();
-        public readonly Button VerifyGame, VerifyLauncher, RepairGame, RepairLauncher, Cancel, Refresh, Copy;
+        public readonly Button VerifyGame, VerifyLauncher, RepairGame, RepairLauncher, Cancel, Refresh, Copy, ReportBug, RequestEnhancement;
         public readonly TextBox Report;
         readonly TextBlock status, gameStatus, launcherStatus;
         readonly ProgressBar progress;
@@ -28,13 +28,17 @@ namespace TimeSplitters.Launcher
             View.RowDefinitions.Add(new RowDefinition { Height=new GridLength(1,GridUnitType.Star) });
             View.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
             var heading=new StackPanel();heading.Children.Add(Text(diagnostics?"Diagnostics":"Repair / Verify",26));
-            var hint=Text(diagnostics?"Review system details and installation health. Copy the report when asking for support.":
+            var hint=Text(diagnostics?"Review the report below. Report buttons open a GitHub draft with diagnostics; you review and submit it there.":
                 "Verify files without changing them. Repair downloads the exact installed release and replaces damaged release files.",12);
             hint.Foreground=Brush("#A4B8CA");heading.Children.Add(hint);View.Children.Add(heading);
             var actions=new Grid { Margin=new Thickness(0,10,0,16) };Grid.SetRow(actions,1);View.Children.Add(actions);
             if(diagnostics) {
                 var buttons=new WrapPanel();Refresh=Button("Refresh diagnostics","RefreshDiagnostics");Copy=Button("Copy diagnostic report","CopyDiagnostics");
-                buttons.Children.Add(Refresh);buttons.Children.Add(Copy);actions.Children.Add(buttons);
+                ReportBug=Button("Report a bug ↗","ReportDiagnosticBug");
+                RequestEnhancement=Button("Request enhancement ↗","RequestDiagnosticEnhancement");
+                ReportBug.ToolTip="Copies this report and opens the GitHub bug form. You review and submit it there.";
+                RequestEnhancement.ToolTip="Copies this report and opens the GitHub enhancement form. You review and submit it there.";
+                buttons.Children.Add(Refresh);buttons.Children.Add(Copy);buttons.Children.Add(ReportBug);buttons.Children.Add(RequestEnhancement);actions.Children.Add(buttons);
             } else {
                 actions.ColumnDefinitions.Add(new ColumnDefinition());actions.ColumnDefinitions.Add(new ColumnDefinition());
                 for(int i=0;i<2;i++) {
@@ -69,7 +73,7 @@ namespace TimeSplitters.Launcher
         }
         public void SetBusy(bool busy,bool gameRunning)
         {
-            foreach(var button in new[]{VerifyGame,VerifyLauncher,Refresh,Copy})if(button!=null)button.IsEnabled=!busy;
+            foreach(var button in new[]{VerifyGame,VerifyLauncher,Refresh,Copy,ReportBug,RequestEnhancement})if(button!=null)button.IsEnabled=!busy;
             if(RepairGame!=null)RepairGame.IsEnabled=!busy && !gameRunning && gameRepairable;
             if(RepairLauncher!=null)RepairLauncher.IsEnabled=!busy && !gameRunning && launcherRepairable;
             Cancel.Visibility=busy?Visibility.Visible:Visibility.Collapsed;

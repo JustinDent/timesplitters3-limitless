@@ -377,6 +377,25 @@ missing system information does not block the launcher. Use **Refresh diagnostic
 after verifying files, then **Copy diagnostic report** to put the displayed text
 on the clipboard. It is never uploaded automatically.
 
+Choose **Report a bug** or **Request enhancement** to open the matching GitHub
+issue form. The launcher converts the displayed filtered report into the optional
+**Launcher diagnostics** field and also copies the complete text to the clipboard.
+You fill in your description, select the requested version/platform choices,
+review the diagnostics and submit on GitHub using your account. The launcher
+needs no GitHub token and never creates or submits an issue automatically.
+Clicking a report button opens a browser draft and sends the prefilled diagnostic
+text to GitHub; review the displayed report before choosing it.
+
+Long reports use a short browser link with a clearly marked summary. Paste the
+complete copied text into **Launcher diagnostics (optional)** before submitting;
+the full report is never silently truncated. If clipboard access is unavailable,
+the report stays visible for manual copying. Refresh diagnostics after collecting
+new verification results. Bug/enhancement description fields remain blank so the
+launcher does not invent symptoms, reproduction steps or feature requests.
+Both issue templates include the same optional plain-text diagnostics field;
+they must be on the repository's default branch before publishing the launcher.
+The prefill uses GitHub's documented [issue-form URL query fields](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-an-issue#creating-an-issue-from-a-url-query).
+
 The report excludes raw logs, personal/installation paths, arbitrary error
 messages, file contents, save data and ISO information. Recent errors contain
 only recognized UTC timestamps and exception types. **View logs** remains
