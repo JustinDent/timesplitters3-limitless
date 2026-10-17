@@ -69,10 +69,24 @@ public static class LauncherSettingsChecks
                 Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.5\"}");
                 Require(model.CanAdjustFov);model.Save();Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V2 1920 1080 75\n");
             });
+            Test("published resolution bounds reject unsupported writes and preserve newer modes",()=>{
+                string root=Root("legacy-resolution");Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.4\"}");
+                var model=GameSettings.Load(root,null);model.Width=7680;model.Height=2160;model.Save();
+                string original=Read(root,"Settings/pc-display.ini");
+                Require(model.SupportsResolution(0,0) && model.SupportsResolution(3840,2160));
+                model.Width=7680;model.Height=4320;Reject(()=>model.Save());
+                Require(Read(root,"Settings/pc-display.ini")==original);
+                Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.5\"}");model.Save();
+                Require(GameSettings.Load(root,null).Height==4320);
+                Put(root,"BUILD.json","{\"version\":\"invalid\"}");Require(!model.SupportsResolution(7680,4320));
+            });
             Test("alpha.4 FOV controls explain unavailable capability while resolution saves",()=>STA(()=>{
                 string root=Root("legacy-fov-ui");Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.4\"}");
                 var owner=new System.Windows.Window();var editor=new SettingsPage(owner.Resources,root,true);editor.SelectTab(1);
                 var nodes=Descendants(editor.View).ToList();
+                var picker=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Items.OfType<DisplayMode>().Any());
+                Require(picker.Items.Cast<DisplayMode>().All(m=>m.Height<=2160),"Legacy presets exceed the installed game's resolution limit.");
+                Require(picker.Items.Cast<DisplayMode>().Any(m=>m.Width==3840 && m.Height==2160),"Legacy 4K must remain available.");
                 Require(!nodes.OfType<System.Windows.Controls.Slider>().Single(c=>c.Name=="VerticalFovSlider").IsEnabled,"Legacy FOV slider must be disabled.");
                 Require(!nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="ResetFovButton").IsEnabled,"Legacy FOV reset must be disabled.");
                 Require(nodes.OfType<System.Windows.Controls.TextBlock>().Any(c=>c.Text.Contains("newer than v0.2.0-alpha.4")),"Missing capability explanation.");

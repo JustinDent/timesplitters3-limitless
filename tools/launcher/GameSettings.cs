@@ -23,10 +23,10 @@ namespace TimeSplitters.Launcher
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
-        public bool CanAdjustFov
+        bool SupportsExtendedDisplay
         {
             get {
-                // alpha.4 and earlier accept only the V1 display format.
+                // alpha.4 and earlier accept only V1 and heights through 2160.
                 // Unpackaged development builds have no BUILD.json.
                 try {
                     string version = Core.InstalledVersion(root);
@@ -34,6 +34,9 @@ namespace TimeSplitters.Launcher
                 } catch { return false; }
             }
         }
+        public bool CanAdjustFov { get { return SupportsExtendedDisplay; } }
+        public bool SupportsResolution(int width, int height)
+        { return DisplayMode.Valid(width,height) && (SupportsExtendedDisplay || height <= 2160); }
         public int Width, Height, Scale = 1, Anisotropy = 1, Interpolation = 1;
         public string FrameCap = "adaptive";
         public string Device { get { return Convert.ToString(controller["device"], CultureInfo.InvariantCulture); } set { controller["device"] = value; } }
@@ -176,7 +179,7 @@ namespace TimeSplitters.Launcher
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
             Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
-            Core.Require(DisplayMode.Valid(Width,Height), "Choose a resolution from 640×480 through 7680×4320, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default.");
+            Core.Require(SupportsResolution(Width,Height), "Choose a supported landscape resolution from 640×480, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default. Maximum: " + (SupportsExtendedDisplay ? "7680×4320." : "7680×2160 for this game release."));
             Core.Require(Scale >= 1 && Scale <= 8 && Anisotropy >= 1 && Anisotropy <= 16 && Interpolation >= 1 && Interpolation <= 4, "A graphics setting is outside the supported range.");
             Core.Require(new[] { "adaptive", "30", "60", "0" }.Contains(FrameCap), "Unsupported frame pacing option.");
             Core.Require(new[] { "keyboard", "none", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "xinput:0", "xinput:1", "xinput:2", "xinput:3" }.Contains(Device), "Unsupported Player 1 input device.");

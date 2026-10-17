@@ -1,5 +1,27 @@
 # Measured progress
 
+## Launcher v1.2.6 release preparation (2026-10-16)
+
+Prepared on `release/launcher-v1.2.6`, based on main `293295b`, which includes
+PR #71 README/launcher copy cleanup and PR #70 resolution/aspect filters.
+Version and assembly metadata are 1.2.6. Release compatibility review found
+that the published alpha.4 game accepts heights only through 2160. The launcher
+now filters presets and rejects unsupported custom dimensions before any settings
+write for alpha.4 and earlier (or an unrecognized version); newer/unpackaged
+games retain heights through 4320. Compatible landscape 4K and ultrawide modes
+remain available. The game release remains v0.2.0-alpha.4.
+
+Windows x64 / .NET Framework 4.8 / pinned Python 3.12.14: both launcher EXEs
+compiled; all 98 updater/bootstrap/cleanup checks, 25 settings checks and five
+startup/packaging Python checks passed. Coverage includes atomic rejection of
+unsupported legacy resolutions, legacy preset filtering, retained 4K and newer
+8K model saves. Home, keyboard/mouse settings, graphics settings and bootstrap
+splash previews rendered successfully; Home and graphics were visually inspected.
+Tests used disposable fixtures; no actual game session was launched or personal
+settings changed. Native Mac launcher execution is unverified; adaptation and
+acceptance checks remain queued in MAC-021. Publication is pending exact-main
+build, hosted checks and public-download/previous-client verification.
+
 ## README and launcher copy cleanup (2026-10-16)
 
 Copy-only implementation `b9a05b9` on `cleanup/readme-launcher-copy`, based on
