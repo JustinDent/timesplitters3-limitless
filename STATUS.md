@@ -1,5 +1,56 @@
 # Measured progress
 
+## Native menu pointer adapter (2026-10-17)
+
+`codex/mac-menu-mouse` depends on unmerged display adaptation `e9545de` and
+its native build/renderer/Test Lab prerequisites. Enabled shared guest menu
+hit testing, footer/tab policy and button-edge handling on native builds. The
+SDL adapter publishes point coordinates, buttons and bounded/fractional wheel
+input under a mutex. Main-thread capture requests release the pointer in menus
+and restore it when returning to focused gameplay. Focus loss clears held input
+and pending wheel packets; held menu clicks remain blocked until release.
+The separate `native-menu-mode` patch enables the existing per-frame context
+hook on Mac, with regeneration through the supported builder.
+
+On the same macOS 27.0.1 arm64 / Clang 21 / SDL 3.4.16 / OpenGL 4.1 Metal 91.7
+host, the actual SDL-window test checks pointer coordinates, wheel accumulation,
+flipped direction, clamping and expiry, non-consuming hover reads, capture
+transitions, held-click suppression and focus recovery. Native GPU/settings/
+input/debug suites and three CTests passed again after regenerating and rebuilding
+with the final context-hook patch (`logs/native-menu-build.out` / `.err`).
+14 shared menu/quit/camera/UI tests passed; the Windows FOV fixture was skipped.
+Patch migration initially exposed the new dependent patch being included in a
+historical pre-display fixture. Excluded it from that historical subset; the
+upgrade scenario then passed. Remaining patch scenarios passed (26 passed,
+2 Windows-only skips on the initial run; the failing scenario passed on rerun).
+
+A 90.13-second isolated run at the 120-present target used only synthetic SDL
+pointer/button/wheel events to select 1 Player, Test Lab, Story, scroll two
+levels, return with right-click, and open Settings. Reviewed screenshots show
+the correct selected level (The Russian Connection). It logged at least 5,100
+guest frames and 5,456 successful host presents, no sampled GL errors and no
+native fault; this is not a claim of sustained 120 FPS. Evidence:
+`logs/native-menu-pointer-summary.json`, `logs/native-menu-pointer.log`,
+`private/captures/native-mac/native-menu-mouse-wheel.png`,
+`logs/native-menu-shared.log`, `logs/native-menu-patches.log` and
+`logs/native-menu-patch-recheck.log`. This binary records `e9545de` plus the
+uncommitted adapter, before the additional per-frame context patch.
+Physical input, pause/Objectives tabs/footers and the wide-ratio acceptance
+matrix remain unverified; MAC-030 stays Awaiting validation.
+
+The preceding 120.12-second 60-present baseline run reached visible first-mission
+gameplay with the canyon, weapon, HUD and tutorial panel. Across loading, menus,
+opening sequence and gameplay, 7,161 host presents averaged 59.80/sec, median
+16.644 ms, p95 18.792 ms and p99 22.701 ms; six intervals exceeded 33.33 ms.
+These are CPU intervals between successful host presents, not display scanout.
+Logged at least 6,900 guest/host frames, no sampled GL errors or native fault.
+Evidence: `logs/native-first-mission-60-summary.json`,
+`logs/native-first-mission-60-frames.csv`, `logs/native-first-mission-60.log` and
+`private/captures/native-mac/main-restored-first-mission.png`. That binary was
+built from `16a6a10` plus the display changes subsequently committed as
+`e9545de`; Git branch naming changed during the run. This establishes visible
+first-mission startup, not level completion or complete rendering fidelity.
+
 ## Native display settings parity (2026-10-17)
 
 `codex/mac-display-parity` depends on unmerged Test Lab runner `16a6a10` and

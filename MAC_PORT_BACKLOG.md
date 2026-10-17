@@ -1103,7 +1103,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-030 — Menu mouse selection (#86)
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** Move the visible cursor over a main, pause or Tab/Objectives menu item to select
   it, left-click to activate, and right-click to go back. The hit test follows
   the proportional UI and presentation bars, using the full UI canvas rather
@@ -1132,12 +1132,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   based on main `e942ef0`; `src/pc_menu_mouse.h`,
   `src/pc_menu_mouse_guest.inc`, `src/pc_controls.c/.h`, the final
   `menu-mouse*.patch` stack, and `tests/menu_mouse.c`.
-- **Shared Mac support:** Pointer geometry and button-edge rules are shared.
-  The guest hook calls the original layout unchanged on Mac until an adapter
-  is supplied. Existing native keyboard/controller input is preserved.
-- **Remaining:** Supply an SDL client-position/button/wheel snapshot, release/hide
-  transitions, focus handling and gameplay button suppression; then enable
-  the shared guest adapter. Native build and physical input are unverified.
+- **Shared Mac support (2026-10-17, `codex/mac-menu-mouse`):** Enabled the
+  shared guest policy using a locked SDL point/button/wheel snapshot. Window
+  operations stay on the main thread; gameplay transitions request recapture
+  only while focused. Held menu buttons cannot fire on return. Added the native
+  per-frame mode hook as a separate reproducible patch. Real SDL regression
+  checks pass; an isolated mouse-only run selected Test Lab, opened Story,
+  scrolled two levels, returned with right-click and opened Settings.
+  [Evidence and limits](STATUS.md#native-menu-pointer-adapter-2026-10-17).
+- **Remaining:** Full acceptance matrix below, physical input, pause/Objectives
+  tabs and footer prompts, widescreen/ultrawide alignment and gameplay recapture.
 - **Acceptance:** Hover/click main/profile/settings menus at 4:3, 16:9 and
   ultrawide sizes; reject disabled/clipped items and presentation bars, retain
   keyboard/controller navigation, select the profile using only the mouse and

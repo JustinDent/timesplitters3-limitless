@@ -1,0 +1,48 @@
+/* The real SDL adapter, independently of the guest-menu policy fixtures. */
+static int native_test_menu_input(SDL_Window *window) {
+    int ok=1;SDL_Event e={0};XBOX_GAMEPAD pad;PcMenuPointer p;
+    e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);
+    pc_controls_menu_mode(1);tsfp_native_input_frame(window);
+    ok &= !captured && !SDL_GetWindowRelativeMouseMode(window);
+    e=(SDL_Event){0};e.type=SDL_EVENT_MOUSE_MOTION;e.motion.x=160;e.motion.y=120;
+    e.motion.xrel=10;tsfp_native_input_event(&e,window);
+    p=pc_controls_menu_pointer();ok &= p.valid && p.x==160 && p.y==120 && p.width==320 && p.height==240;
+    e=(SDL_Event){0};e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;e.button.x=160;e.button.y=120;
+    tsfp_native_input_event(&e,window);recomp_bindings_sample(0,&pad);
+    ok &= pc_controls_menu_pointer().left && !captured && !pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER];
+    e.type=SDL_EVENT_MOUSE_BUTTON_UP;tsfp_native_input_event(&e,window);
+    e=(SDL_Event){0};e.type=SDL_EVENT_MOUSE_WHEEL;e.wheel.y=.5f;
+    tsfp_native_input_event(&e,window);ok &= !pc_controls_menu_pointer().wheel;
+    tsfp_native_input_event(&e,window);
+    ok &= !pc_controls_menu_hover_pointer().wheel && pc_controls_menu_pointer().wheel==1 && !pc_controls_menu_pointer().wheel;
+    e.wheel.y=20;tsfp_native_input_event(&e,window);ok &= pc_controls_menu_pointer().wheel==8;
+    e.wheel.y=2;e.wheel.direction=SDL_MOUSEWHEEL_FLIPPED;tsfp_native_input_event(&e,window);
+    ok &= pc_controls_menu_pointer().wheel==-2 && !tsfp_native_key_down(0x87);
+    tsfp_native_input_event(&e,window);menu_wheel_at=SDL_GetTicks()-251;
+    ok &= !pc_controls_menu_pointer().wheel;
+    e=(SDL_Event){0};e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;e.button.button=SDL_BUTTON_LEFT;
+    e.button.x=160;e.button.y=120;tsfp_native_input_event(&e,window);
+    pc_controls_menu_mode(0);tsfp_native_input_frame(window);
+    ok &= captured && SDL_GetWindowRelativeMouseMode(window) && !pc_controls_menu_pointer().valid;
+    /* Even a repeated held-button packet cannot become a gameplay shot. */
+    tsfp_native_input_event(&e,window);recomp_bindings_sample(0,&pad);
+    ok &= !pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER];
+    e.type=SDL_EVENT_MOUSE_BUTTON_UP;tsfp_native_input_event(&e,window);
+    e.type=SDL_EVENT_MOUSE_BUTTON_DOWN;tsfp_native_input_event(&e,window);recomp_bindings_sample(0,&pad);
+    ok &= pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER]==255;
+    pc_controls_menu_mode(1);tsfp_native_input_frame(window);
+    e=(SDL_Event){0};e.type=SDL_EVENT_WINDOW_FOCUS_LOST;tsfp_native_input_event(&e,window);
+    p=pc_controls_menu_pointer();ok &= !p.valid && !p.left && !p.wheel && !captured;
+    pc_controls_menu_mode(0);tsfp_native_input_frame(window);ok &= !captured;
+    e.type=SDL_EVENT_WINDOW_FOCUS_GAINED;tsfp_native_input_event(&e,window);tsfp_native_input_frame(window);
+    ok &= !captured; /* focus recovery must not steal the cursor */
+    pc_controls_menu_mode(1);tsfp_native_input_frame(window);
+    e=(SDL_Event){0};e.type=SDL_EVENT_MOUSE_MOTION;e.motion.x=-1;e.motion.y=120;
+    tsfp_native_input_event(&e,window);ok &= !pc_controls_menu_pointer().valid;
+    e.motion.x=160;tsfp_native_input_event(&e,window);ok &= pc_controls_menu_pointer().valid;
+    e=(SDL_Event){0};e.type=SDL_EVENT_WINDOW_MOUSE_LEAVE;tsfp_native_input_event(&e,window);
+    ok &= !pc_controls_menu_pointer().valid;
+    pc_controls_menu_mode(0);tsfp_native_input_frame(window);set_capture(window,0);release_all();
+    fprintf(stderr,"[native-menu-input-test] pointer, wheel accumulation/expiry, capture transitions, held-click suppression and focus: %s\n",ok?"PASS":"FAIL");
+    return ok;
+}

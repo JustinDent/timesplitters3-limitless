@@ -2,7 +2,7 @@
  * before sub_0007A7B0 consumes menu actions. Keep callbacks, transitions,
  * sound and disabled-item behavior owned by that original dispatcher. */
 #include "pc_menu_mouse.h"
-#if defined(_WIN32) || defined(TSFP_MENU_MOUSE_TEST)
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY) || defined(TSFP_MENU_MOUSE_TEST)
 #ifndef TSFP_MENU_MOUSE_TEST
 #include "pc_controls.h"
 #endif

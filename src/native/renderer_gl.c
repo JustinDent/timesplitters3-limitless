@@ -688,6 +688,10 @@ static void native_frame_timing(Uint64 swap_start,Uint64 now) {
     last=now;
 }
 
+/* Pointer hit testing must invert the same full-canvas shape as presentation. */
+void d3d8_display_output_shape(unsigned w,unsigned h,unsigned *out_w,unsigned *out_h)
+{ (void)w;(void)h;pc_display_shape(out_w,out_h); }
+
 static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const RECT *dst,
                                      HWND hwnd, void *dirty)
 { NATIVE_GL_SCOPE;

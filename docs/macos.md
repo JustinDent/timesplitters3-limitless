@@ -130,12 +130,16 @@ gameplay and save/load still need validation.
 Native controls use the same JSON bindings as Windows. Focus the game window:
 
 - Arrow keys navigate; **Enter**, **Space** or **E** selects; **Backspace** goes back.
-- **Click inside the game** to capture the pointer, then move the mouse to look
+- In menus, move the pointer to highlight a row, left-click to select, right-click
+  to go back, or scroll to change rows. Keyboard/controller navigation remains
+  available. Held menu clicks are suppressed when gameplay resumes.
+- **Click inside gameplay** to capture the pointer, then move the mouse to look
   around. This first click is consumed; subsequent left clicks fire. Relative
   mouse counts now update camera angles directly using the shared PC model,
   including zoom sensitivity and pitch limits; they no longer emulate a stick.
-- **Escape** pauses and releases the mouse. After resuming, click to capture
-  again. **F1** also toggles relative mouse capture
+- **Escape** pauses and releases the mouse. Resuming a menu automatically restores
+  mouse look while the game stays focused. Focus loss releases controls; click
+  inside gameplay to capture again. **F1** also toggles relative mouse capture
   (use Fn+F1 if macOS reserves the function key for brightness).
 - **WASD** moves; left mouse fires; right mouse activates the right-stick action;
   **R** reloads, **G** uses the left trigger, **Tab** maps to Xbox Back.
