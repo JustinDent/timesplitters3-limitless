@@ -422,9 +422,13 @@ namespace TimeSplitters.Launcher
         {
             if(busy || diagnosticsPage==null)return;
             if(previewMode){diagnosticsPage.Status("Preview only. GitHub drafts open from the installed launcher; no report was sent.");return;}
-            if(!diagnosticsReady){diagnosticsPage.Status("Refresh diagnostics before preparing a GitHub report.");return;}
+            if(!enhancement && !diagnosticsReady){diagnosticsPage.Status("Refresh diagnostics before preparing a GitHub report.");return;}
             try {
                 var draft=DiagnosticIssueDraft.Create(enhancement,diagnosticsPage.Report.Text);
+                if(enhancement) {
+                    Process.Start(new ProcessStartInfo(draft.Url){UseShellExecute=true});
+                    diagnosticsPage.Status("Improvement form opened. Describe your idea and review it before submitting.");return;
+                }
                 bool copied=false;
                 try {Clipboard.SetText(draft.ClipboardText);copied=true;}catch { /* The displayed report remains available for manual copying. */ }
                 try {Process.Start(new ProcessStartInfo(draft.Url){UseShellExecute=true});}

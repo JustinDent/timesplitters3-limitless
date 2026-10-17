@@ -81,7 +81,10 @@ releases after publication, editing, deletion or unpublishing. Game tags use
 version bumps are not offered as installed versions. Both stable and preview
 releases are included, newest version first, with up to 30 versions of each
 and fallbacks for older/custom, unknown and uninstalled builds. No version is
-preselected. The improvement form has no version or platform questions and is
+preselected: bug dropdowns have an empty first option outside the generated
+version blocks, explicitly selected with `default: 0`, and remain required.
+Release refreshes must preserve that blank selection. The improvement form
+asks only for the idea, has no version, platform or diagnostic questions, and is
 excluded from version refreshes.
 
 The workflow also refreshes on relevant pushes to `main` and can be run manually

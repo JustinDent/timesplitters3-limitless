@@ -21,7 +21,7 @@ def release(tag, **changes):
 def report(platform='Windows 11', enhancement=False, legacy=False):
     heading = 'What would you like to add or change?' if enhancement else 'What happened?'
     if enhancement and not legacy:
-        return f'### {heading}\n\nAn idea\n\n### Anything else? (optional)\n\n_No response_\n'
+        return f'### {heading}\n\nAn idea\n'
     return (f'### Game version\n\nv0.2.0-alpha.4\n\n'
             f'### Launcher version\n\nv1.2.1\n\n'
             f'### Platform\n\n{platform}\n\n### {heading}\n\nDescription\n'
@@ -90,7 +90,10 @@ class VersionTests(unittest.TestCase):
                 self.assertIn('Other / source build', text)
                 self.assertIn("I don't know", text)
                 self.assertIn('Anything else? (optional)', text)
-                self.assertNotIn('default:', text)
+                for field in ('game-version', 'launcher-version', 'platform'):
+                    section = text.split('    id: ' + field + '\n', 1)[1].split('\n  - type:', 1)[0]
+                    self.assertIn('      default: 0\n      options:\n        - ""\n', section)
+                    self.assertIn('      required: true', section)
             forms.refresh_versions(root, [])
             self.assertNotIn('- "v3.0.0"', (root / forms.FORMS[0]).read_text())
             self.assertIn('Not installed yet', (root / forms.FORMS[0]).read_text())
@@ -119,10 +122,9 @@ class VersionTests(unittest.TestCase):
             before = path.read_bytes()
             forms.refresh_versions(root, [release('v3.0.0'), release('launcher-v4.0.0')])
             self.assertEqual(path.read_bytes(), before)
-            for removed in ('game-version', 'launcher-version', 'id: platform', 'id: reason', 'AUTO GAME', 'AUTO LAUNCHER'):
+            for removed in ('game-version', 'launcher-version', 'id: platform', 'id: reason', 'id: extra', 'id: diagnostics', 'AUTO GAME', 'AUTO LAUNCHER'):
                 self.assertNotIn(removed, path.read_text())
-            self.assertEqual(path.read_text().count('  - type: textarea'), 3)
-            self.assertIn('    id: diagnostics\n', path.read_text())
+            self.assertEqual(path.read_text().count('  - type: textarea'), 1)
 
 
 class LabelTests(unittest.TestCase):
@@ -186,13 +188,16 @@ class LabelTests(unittest.TestCase):
 
 
 class LauncherDiagnosticsForms(unittest.TestCase):
-    def test_launcher_query_field_matches_both_optional_issue_form_fields(self):
+    def test_launcher_diagnostics_field_is_optional_and_only_in_bug_form(self):
         source = (ROOT / 'tools/launcher/DiagnosticIssueDraft.cs').read_text(encoding='utf-8')
         field = re.search(r'const string DiagnosticsField\s*=\s*"([a-z-]+)"', source).group(1)
         for filename in ['01-bug-report.yml', '02-enhancement.yml']:
             with self.subTest(filename=filename):
                 text = (ROOT / '.github/ISSUE_TEMPLATE' / filename).read_text(encoding='utf-8')
                 ids = re.findall(r'^    id: (.+)$', text, re.M)
+                if filename == '02-enhancement.yml':
+                    self.assertEqual(ids, ['idea'])
+                    continue
                 self.assertEqual(ids.count(field), 1)
                 section = text.split('    id: ' + field + '\n', 1)[1].split('\n  - type:', 1)[0]
                 self.assertIn('label: Launcher diagnostics (optional)', section)

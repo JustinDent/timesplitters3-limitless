@@ -1,5 +1,20 @@
 # Measured progress
 
+## Issue form selections and enhancement handoff (2026-10-17)
+
+On Windows x64, from main base `4defe1e`, GitHub's branch previews accepted the
+bug form with empty initial game-version, launcher-version and platform choices
+and the enhancement form with only its required idea field. Required bug fields
+remain enabled. Release refresh tests preserve the empty first choices.
+
+All 15 Python issue-form checks passed. The launcher and test executable compiled
+with the .NET Framework compiler under Windows PowerShell 5.1; all 14 isolated
+read-only maintenance checks passed, including clean enhancement URLs with no
+diagnostic query, clipboard payload or paste requirement. The complete updater
+and repair test pass was stopped by its existing active-game safeguard; no game
+process was closed. No real issue was submitted, no release was published, and
+native Mac execution is not claimed. See MAC-034 in the Mac backlog.
+
 ## Transition fixes integrated with main (2026-10-17)
 
 Rebased `fix/responsive-transition-overlay` onto main `4ad4c17`, preserving
