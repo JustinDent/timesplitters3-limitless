@@ -1,5 +1,22 @@
 # Measured progress
 
+## Game folder action moved into Repair / Verify (2026-10-17)
+
+Follow-up on `feature/launcher-repair-diagnostics`, PR #88. Removed Game files
+from the sidebar and added **Open game folder** below the two Repair / Verify
+cards. The existing installation-folder action is retained; preview mode reports
+the action without opening Explorer, and maintenance busy state disables it.
+Updated missing-data guidance and launcher usage documentation. MAC-021 records
+the corresponding placement for a future native release launcher.
+
+Windows x64 / .NET Framework 4.8: rebuilt with required themed artwork; all
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks passed.
+Existing UI checks cover sidebar removal, page-specific folder action and busy
+state. Rendered and reviewed Home, Repair / Verify and Diagnostics previews: the
+folder action fits below the cards and the shorter sidebar remains visible.
+No game launched and no personal game files, settings or saves changed.
+Mac launcher adaptation remains queued; launcher v1.2.8 is not published.
+
 ## Diagnostics to GitHub issue drafts (2026-10-17)
 
 Follow-up on `feature/launcher-repair-diagnostics` / PR #88, based on its

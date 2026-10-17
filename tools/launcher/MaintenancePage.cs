@@ -8,7 +8,7 @@ namespace TimeSplitters.Launcher
     public sealed class MaintenancePage
     {
         public readonly Grid View = new Grid();
-        public readonly Button VerifyGame, VerifyLauncher, RepairGame, RepairLauncher, Cancel, Refresh, Copy, ReportBug, RequestEnhancement;
+        public readonly Button VerifyGame, VerifyLauncher, RepairGame, RepairLauncher, Cancel, Refresh, Copy, ReportBug, RequestEnhancement, OpenFiles;
         public readonly TextBox Report;
         readonly TextBlock status, gameStatus, launcherStatus;
         readonly ProgressBar progress;
@@ -41,6 +41,8 @@ namespace TimeSplitters.Launcher
                 buttons.Children.Add(Refresh);buttons.Children.Add(Copy);buttons.Children.Add(ReportBug);buttons.Children.Add(RequestEnhancement);actions.Children.Add(buttons);
             } else {
                 actions.ColumnDefinitions.Add(new ColumnDefinition());actions.ColumnDefinitions.Add(new ColumnDefinition());
+                actions.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
+                actions.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
                 for(int i=0;i<2;i++) {
                     var body=new StackPanel();body.Children.Add(Text(i==0?"Game runtime":"Launcher",18));
                     var summary=Text("Not checked this session.",12);summary.Foreground=Brush("#A4B8CA");body.Children.Add(summary);
@@ -50,6 +52,10 @@ namespace TimeSplitters.Launcher
                     var card=Card(body);card.Margin=i==0?new Thickness(0,0,8,0):new Thickness(8,0,0,0);Grid.SetColumn(card,i);actions.Children.Add(card);
                     if(i==0){VerifyGame=verify;RepairGame=repair;gameStatus=summary;}else{VerifyLauncher=verify;RepairLauncher=repair;launcherStatus=summary;}
                 }
+                OpenFiles=Button("Open game folder ↗","OpenGameFiles");
+                OpenFiles.ToolTip="Open the installation folder to inspect game files.";
+                OpenFiles.HorizontalAlignment=HorizontalAlignment.Left;OpenFiles.Margin=new Thickness(0,12,0,0);
+                Grid.SetRow(OpenFiles,1);Grid.SetColumnSpan(OpenFiles,2);actions.Children.Add(OpenFiles);
             }
             Report=new TextBox { Name=diagnostics?"DiagnosticsReport":"VerificationReport",IsReadOnly=true,AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,
                 VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,
@@ -73,7 +79,7 @@ namespace TimeSplitters.Launcher
         }
         public void SetBusy(bool busy,bool gameRunning)
         {
-            foreach(var button in new[]{VerifyGame,VerifyLauncher,Refresh,Copy,ReportBug,RequestEnhancement})if(button!=null)button.IsEnabled=!busy;
+            foreach(var button in new[]{VerifyGame,VerifyLauncher,Refresh,Copy,ReportBug,RequestEnhancement,OpenFiles})if(button!=null)button.IsEnabled=!busy;
             if(RepairGame!=null)RepairGame.IsEnabled=!busy && !gameRunning && gameRepairable;
             if(RepairLauncher!=null)RepairLauncher.IsEnabled=!busy && !gameRunning && launcherRepairable;
             Cancel.Visibility=busy?Visibility.Visible:Visibility.Collapsed;

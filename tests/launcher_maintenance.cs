@@ -147,10 +147,12 @@ public static class LauncherMaintenanceChecks
             });
             Test("GitHub report controls are available only on Diagnostics and disabled while busy",()=> {
                 Exception failure=null;var thread=new Thread(()=> {try {
-                    var page=new MaintenancePage(true);Require(page.ReportBug!=null && page.RequestEnhancement!=null);
+                    var page=new MaintenancePage(true);Require(page.ReportBug!=null && page.RequestEnhancement!=null && page.OpenFiles==null);
                     page.SetBusy(true,false);Require(!page.ReportBug.IsEnabled && !page.RequestEnhancement.IsEnabled);
                     page.SetBusy(false,false);Require(page.ReportBug.IsEnabled && page.RequestEnhancement.IsEnabled);
-                    var repair=new MaintenancePage(false);Require(repair.ReportBug==null && repair.RequestEnhancement==null);
+                    var repair=new MaintenancePage(false);Require(repair.ReportBug==null && repair.RequestEnhancement==null && repair.OpenFiles!=null);
+                    repair.SetBusy(true,false);Require(!repair.OpenFiles.IsEnabled);
+                    repair.SetBusy(false,false);Require(repair.OpenFiles.IsEnabled);
                 }catch(Exception ex){failure=ex;}});thread.IsBackground=true;thread.SetApartmentState(ApartmentState.STA);thread.Start();Require(thread.Join(60000));if(failure!=null)throw failure;
             });
             Test("repair pins exact game version and refuses drafts and missing releases",()=> {
@@ -241,6 +243,7 @@ public static class LauncherMaintenanceChecks
                 Exception failure=null;var thread=new Thread(()=> {try {
                     var ui=new LauncherWindow(Root(),true);
                     try {
+                        Require(ui.Window.FindName("FilesNav")==null);
                         ui.ShowSettings();var settings=(System.Windows.Controls.ContentControl)ui.Window.FindName("SettingsHost");var draft=settings.Content;
                         ui.ShowMaintenance(false);var host=(System.Windows.Controls.ContentControl)ui.Window.FindName("MaintenanceHost");
                         Require(host.Visibility==System.Windows.Visibility.Visible && settings.Visibility==System.Windows.Visibility.Collapsed && System.Windows.Window.GetWindow((System.Windows.DependencyObject)host.Content)==ui.Window);

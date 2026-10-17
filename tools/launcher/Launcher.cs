@@ -216,7 +216,6 @@ namespace TimeSplitters.Launcher
                 try { HandOff(true); } catch (Exception ex) { Fail(ex); }
             };
             Button("ReleaseNotesButton").Click += (s, e) => Open(available == null ? ReleaseClient.ReleasesPage : available.Url);
-            Button("FilesNav").Click += (s, e) => Open(root);
             Button("SavesNav").Click += (s, e) => OpenFolder("Saves");
             Button("SupportNav").Click += (s, e) => Open("https://github.com/" + ReleaseClient.Repository + "/issues");
             Button("LogsButton").Click += (s, e) => OpenFolder(".launcher");
@@ -287,6 +286,7 @@ namespace TimeSplitters.Launcher
                         page.Copy.Click+=(s,e)=> { try { Clipboard.SetText(page.Report.Text);page.Status("Diagnostic report copied. Nothing was uploaded."); }catch(Exception ex){page.Status("Clipboard unavailable ("+ex.GetType().Name+"). Select and copy the report text instead.");} };
                     } else {
                         repairPage=page;
+                        page.OpenFiles.Click+=(s,e)=> { if(previewMode)page.Status("Preview: opens the game installation folder.");else Open(root); };
                         page.VerifyGame.Click+=async(s,e)=>await VerifyFiles(false);
                         page.VerifyLauncher.Click+=async(s,e)=>await VerifyFiles(true);
                         page.RepairGame.Click+=async(s,e)=>await RepairFiles(false);
@@ -422,7 +422,7 @@ namespace TimeSplitters.Launcher
             if (dataExists && !validData)
             {
                 Text("ReadyTitle", "Check your game data.");
-                Text("ReadyDescription", "Existing Data is incomplete or unsupported. Open Game files to inspect it; your files were kept.");
+                Text("ReadyDescription", "Existing Data is incomplete or unsupported. Choose Repair / Verify → Open game folder to inspect it; your files were kept.");
             }
             Text("DataLabel", validData ? "●  Verified US Xbox data" : dataExists ? "○  Data needs attention" : "○  ISO required");
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;

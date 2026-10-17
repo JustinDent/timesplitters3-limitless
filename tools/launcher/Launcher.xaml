@@ -66,7 +66,6 @@
           <Button x:Name="SettingsNav" Style="{StaticResource Nav}" Content="⚙    Game settings" ToolTip="Keybinds, mouse, graphics and resolution"/>
           <Button x:Name="RepairNav" Style="{StaticResource Nav}" Content="◇    Repair / Verify" ToolTip="Check and repair installed release files"/>
           <Button x:Name="DiagnosticsNav" Style="{StaticResource Nav}" Content="▤    Diagnostics" ToolTip="System details, installation health and support report"/>
-          <Button x:Name="FilesNav" Style="{StaticResource Nav}" Content="▤    Game files" ToolTip="Open the installation folder"/>
           <Button x:Name="SavesNav" Style="{StaticResource Nav}" Content="◇    Saves" ToolTip="Open your local saves folder"/>
           <Button x:Name="SupportNav" Style="{StaticResource Nav}" Content="↗    Support" ToolTip="Open the project's GitHub issues"/>
         </StackPanel>

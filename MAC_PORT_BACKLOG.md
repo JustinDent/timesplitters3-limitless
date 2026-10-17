@@ -724,6 +724,11 @@ Copy this template into the queue for each new entry. Replace all placeholders.
   the review-before-submit flow, use a native browser/clipboard adapter, retain
   long/Unicode reports and avoid automatic issue submission. Acceptance checks
   include both form IDs, URI round-trips, privacy, busy state and clipboard fallback.
+  Additional PR #88 UI follow-up moves Game files from the sidebar into
+  Repair / Verify, below the repair cards as Open game folder. Preserve this
+  placement, install-root target and busy state in the future Mac launcher; the
+  Windows preview avoids opening Finder/Explorer. See the folder-action entry in
+  STATUS.md for Windows build, regression and rendered-layout evidence.
 - **Preserve launcher artwork (2026-10-16, commit `f1011f8`,
   [PR #75](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/75),
   prepared for launcher v1.2.7):** `Core.cs` preserves verified independent

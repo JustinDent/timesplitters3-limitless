@@ -340,7 +340,9 @@ reinstalled by the existing launcher self-updater.
 
 ## Repair / Verify (launcher v1.2.8)
 
-The **Repair / Verify** sidebar page stays inside the main window. Choose
+The **Repair / Verify** sidebar page stays inside the main window. Its **Open game
+folder** button sits below the verification and repair cards and opens the
+installation folder for inspection. Choose
 **Verify files** separately for the game runtime or launcher. Verification works
 offline, compares SHA-256 hashes with the installed manifest, reports missing,
 changed or unreadable release-owned files, and creates or changes no files.
