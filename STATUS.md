@@ -3528,3 +3528,33 @@ queued under MAC-021; other-device synchronization is unverified.
 - Branch: `74-enhancement-gfx-overhaul-to-modernize-textures`, based on `fdfac3f`.
   Supported Xbox executable SHA-256 reverified. Zero game launches; consolidated
   playtesting remains deferred until 90% audited scope and category review.
+
+
+### Hybrid texture batch 63 - metal and surface materials (issue #74)
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` at `70d19b5`.
+  Added eight replacements after original/source and actual-DDS comparisons,
+  including 2x2 repetition and opaque-channel checks. No game launches or rebuild.
+- Materials include divided and yellow-striped panels, worn steel, muted metal,
+  polished trim, two small band atlases and a gray gridded surface. Small bottom
+  fittings retained their original variant-specific locations. Mean luminance
+  changes of -14.69% for the striped wall and -20.91% for worn steel remain explicit
+  final-scene brightness checks. Stronger grid detail also needs scene review.
+- Six 1774x887 and two 1254x1254 generated sources were resampled into five
+  1024x512, one 512x256, one 512x512 and one 2048x2048 full-mip DXT1 texture.
+  These are generated enhancements, not native 4K sources or verified game scenes.
+- All 256 retained DDS files passed the native format validator and the worklist
+  hash, mip-chain, size/aspect and fixed 6 GiB budget checks on Windows x64.
+  Supported catalog: 6,812 keys; 256 installed, 6,541 awaiting art, 15 held drafts.
+- Reviewed 64 additional originals and all 34 nonopaque alpha channels. The 547
+  provisional visual classifications now distinguish more reticles, warning and
+  grenade symbols, particle masks and robot atlases from environmental materials.
+  All-category review is unfinished; 6,251 keys remain in visual triage.
+- Pack: 408,479,691 bytes (389.56 MiB), including metadata.
+  Texture workspace audit: 1,340,936,887 allocated bytes
+  (1.25 GiB). Originals/reviews/previews: 118.76 MiB, below 256 MiB.
+  No duplicated game data, pack, ZIP or release staging. Private art stays local.
+- Private evidence under `private/texture-remaster`: `review/hybrid-63-final-*`,
+  `review/hybrid-63-native-audit.txt`, source/prompt/generated records and
+  `review/inventory-63-*` RGB/alpha sheets. Consolidated scene validation remains
+  deferred to 90% audited coverage and completed category review.
