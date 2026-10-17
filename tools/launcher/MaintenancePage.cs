@@ -8,7 +8,9 @@ namespace TimeSplitters.Launcher
     public sealed class MaintenancePage
     {
         public readonly Grid View = new Grid();
-        public readonly Button VerifyGame, VerifyLauncher, RepairGame, RepairLauncher, Cancel, Refresh, Copy, ReportBug, RequestEnhancement, OpenFiles;
+        public readonly Button VerifyGame, VerifyLauncher, RepairGame, RepairLauncher, Cancel, Refresh, Copy, ReportBug, RequestEnhancement, OpenFiles, Retry, ViewLogs;
+        public Func<System.Threading.Tasks.Task> RetryOperation;
+        readonly WrapPanel recoveryActions;
         public readonly TextBox Report;
         readonly TextBlock status, gameStatus, launcherStatus, gameBadge, launcherBadge;
         readonly Expander details;
@@ -74,6 +76,8 @@ namespace TimeSplitters.Launcher
                 var hint=PageTheme.Text("Start with Verify files. If a check finds a problem, review the details before choosing Repair files.",12,"#8FA8BD");hint.Margin=new Thickness(2,16,2,16);body.Children.Add(hint);
             }
             var footer=new StackPanel { Margin=new Thickness(0,16,0,0) };Grid.SetRow(footer,2);View.Children.Add(footer);
+            recoveryActions=new WrapPanel { Visibility=Visibility.Collapsed,Margin=new Thickness(0,0,0,12) };
+            Retry=Button("Retry","RetryMaintenance");ViewLogs=Button("View logs ↗","MaintenanceLogs");recoveryActions.Children.Add(Retry);recoveryActions.Children.Add(ViewLogs);footer.Children.Add(recoveryActions);
             var bottom=new DockPanel();Cancel=Button("Cancel operation","CancelMaintenance");Cancel.Visibility=Visibility.Collapsed;Cancel.Margin=new Thickness(14,0,0,0);
             DockPanel.SetDock(Cancel,Dock.Right);bottom.Children.Add(Cancel);
             status=PageTheme.Text(diagnostics?"Filtered report only. Review the details before submitting on GitHub.":"Verification works offline · Repair requires internet and a closed game",11,"#9EB4C8");status.VerticalAlignment=VerticalAlignment.Center;bottom.Children.Add(status);footer.Children.Add(bottom);
@@ -96,12 +100,14 @@ namespace TimeSplitters.Launcher
         }
         public void SetBusy(bool busy,bool gameRunning)
         {
-            foreach(var button in new[]{VerifyGame,VerifyLauncher,Refresh,Copy,ReportBug,RequestEnhancement,OpenFiles})if(button!=null)button.IsEnabled=!busy;
+            foreach(var button in new[]{VerifyGame,VerifyLauncher,Refresh,Copy,ReportBug,RequestEnhancement,OpenFiles,Retry,ViewLogs})if(button!=null)button.IsEnabled=!busy;
             if(RepairGame!=null)RepairGame.IsEnabled=!busy && !gameRunning && gameRepairable;
             if(RepairLauncher!=null)RepairLauncher.IsEnabled=!busy && !gameRunning && launcherRepairable;
             Cancel.Visibility=busy?Visibility.Visible:Visibility.Collapsed;
             progress.Visibility=busy?Visibility.Visible:Visibility.Collapsed;progress.IsIndeterminate=busy; if(!busy)progress.Value=0;
         }
+        public void ClearRecovery() { recoveryActions.Visibility=Visibility.Collapsed; }
+        public void ShowRecovery(RecoveryInfo info) { Retry.Content=info.RetryLabel;status.Text=info.Title+". "+info.Message;recoveryActions.Visibility=Visibility.Visible; }
         public void Status(string text) { status.Text=text; }
         public void Progress(double value) { progress.IsIndeterminate=false;progress.Value=value; }
     }

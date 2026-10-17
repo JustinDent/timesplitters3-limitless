@@ -1,5 +1,44 @@
 # Measured progress
 
+## Resumable launcher downloads and recovery (2026-10-17)
+
+Implemented on `feature/launcher-download-recovery`, based on main `78104de`;
+implementation commit `c21df35`. Downloads use independent game/launcher cache
+slots pinned by release URL, size and expected SHA-256. They survive staging
+cleanup, cancellation and restart, including a completed verified cache when
+preparation is cancelled. Strict Range/Content-Range and optional strong If-Range
+handling prevents unsafe append; a complete SHA-256 and package validation still
+precede installation. Cache locking, metadata/path bounds, ownership checks and
+exact named-file cleanup retain unknown files and refuse redirects through links.
+Direct attribute checks also refuse dangling file/directory links before cache
+or destination creation; the junction fixture covers missing targets as well.
+Connection/read stalls are bounded to 30 seconds and ignored stream cancellation
+is handled by disposal. Full-file hashing and staging copies can be cancelled.
+
+Game updates, startup self-updates and repairs show measured speed, transferred
+bytes and ETA, with an explicit unknown estimate and separate verification/
+preparation phases. Home offers Pause/Resume and Retry/Repair/View logs recovery;
+maintenance has inline retry/log actions. Startup download failures retain Retry
+update/Open installed launcher/View logs choices, while initial offline release
+checks still enter the installed launcher automatically. The existing repaired
+file ownership/transaction behavior remains; its cancellation fixture now allows
+only the explicitly named cache entries while comparing every installed/personal
+file unchanged. MAC-021 records queued native launcher adaptation.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required build passed;
+27 isolated download/recovery checks, 25 settings and 13 read-only maintenance
+checks passed. Startup/packaging/CI-scope Python suites passed 27 tests with two
+subtests. Download fixtures cover fresh/resumed/cancelled/stalled streams, complete
+cache reuse and cancelled preparation, ignored/invalid/416 ranges, ETag changes,
+changed releases, corrupt prefixes, oversized data, unknown caches, locks/links,
+staging cleanup, ETA and recovery controls. A live GitHub launcher v1.2.9 download
+was interrupted at 65,536 bytes, resumed in a new client with HTTP 206, and passed
+its complete SHA-256; no downloaded executable was run. UI previews at 1152×772
+and minimum 1000×720, plus startup recovery, were reviewed. Full local transaction
+checks were blocked by an active game; the hosted Windows job runs the complete
+suites. Tests used disposable files and never modified personal saves, settings,
+ISOs or game data. Native Mac launcher execution remains unverified. Not published.
+
 ## Launcher v1.2.9 release preparation (2026-10-17)
 
 PR #89 is merged as `1728f21`. The release preparation branch

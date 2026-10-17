@@ -47,8 +47,8 @@ namespace TimeSplitters.Launcher
                         {
                             var visual = (Grid)startup.Window.Content;
                             visual.Background = startup.Window.Background;
-                            visual.Measure(new Size(480, 208)); visual.Arrange(new Rect(0, 0, 480, 208)); visual.UpdateLayout();
-                            var bitmap = new RenderTargetBitmap(480, 208, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual);
+                            visual.Measure(new Size(544, 270)); visual.Arrange(new Rect(0, 0, 544, 270)); visual.UpdateLayout();
+                            var bitmap = new RenderTargetBitmap(544, 270, 96, 96, PixelFormats.Pbgra32); bitmap.Render(visual);
                             var encoder = new PngBitmapEncoder(); encoder.Frames.Add(BitmapFrame.Create(bitmap));
                             using (var output = File.Create(args[1])) encoder.Save(output);
                             return 0;
@@ -128,7 +128,8 @@ namespace TimeSplitters.Launcher
         readonly string root;
         readonly bool skip;
         readonly CancellationTokenSource stop = new CancellationTokenSource();
-        bool finished, closeRequested;
+        bool finished, closeRequested, running;
+        int attempt;
         TextBlock Status { get { return (TextBlock)Window.FindName("Status"); } }
         ProgressBar Progress { get { return (ProgressBar)Window.FindName("Progress"); } }
         public StartupWindow(string path, bool skipCheck, bool preview)
@@ -136,15 +137,33 @@ namespace TimeSplitters.Launcher
             root = path; skip = skipCheck;
             Window = (Window)XamlReader.Parse(@"<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                 xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='TimeSplitters — Starting'
-                Width='496' Height='247' ResizeMode='NoResize' WindowStartupLocation='CenterScreen'
+                Width='560' Height='310' ResizeMode='NoResize' WindowStartupLocation='CenterScreen'
                 Background='#101E2D' Foreground='#E4EDF5' FontFamily='Segoe UI' ShowInTaskbar='True'>
+                <Window.Resources>
+                  <Style TargetType='Button'>
+                    <Setter Property='Background' Value='#1B2C3E'/><Setter Property='Foreground' Value='#E4EDF5'/>
+                    <Setter Property='BorderBrush' Value='#506C86'/><Setter Property='Padding' Value='10,7'/>
+                    <Setter Property='VerticalAlignment' Value='Center'/><Setter Property='Cursor' Value='Hand'/>
+                    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Button'>
+                      <Border x:Name='Face' Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}' BorderThickness='1' CornerRadius='3' Padding='{TemplateBinding Padding}'>
+                        <ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center'/>
+                      </Border>
+                      <ControlTemplate.Triggers>
+                        <Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Face' Property='Opacity' Value='0.8'/></Trigger>
+                        <Trigger Property='IsKeyboardFocused' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#FFFFFF'/></Trigger>
+                        <Trigger Property='IsEnabled' Value='False'><Setter TargetName='Face' Property='Opacity' Value='0.4'/></Trigger>
+                      </ControlTemplate.Triggers>
+                    </ControlTemplate></Setter.Value></Setter>
+                  </Style>
+                </Window.Resources>
                 <Grid Margin='26,22'>
                   <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
                   <TextBlock Text='TIMESPLITTERS  /  FUTURE PERFECT' FontFamily='Bahnschrift' FontWeight='Bold' FontSize='14' Foreground='#86CDFF'/>
-                  <TextBlock Grid.Row='1' Text='Checking launcher updates…' FontSize='21' FontWeight='SemiBold' Margin='0,18,0,0'/>
+                  <TextBlock x:Name='Heading' Grid.Row='1' Text='Checking launcher updates…' FontSize='21' FontWeight='SemiBold' Margin='0,18,0,0'/>
                   <TextBlock x:Name='Status' Grid.Row='2' Text='Checking GitHub Releases.' FontSize='12' Foreground='#A4B8CA' TextWrapping='Wrap' Margin='0,7,0,15'/>
                   <ProgressBar x:Name='Progress' Grid.Row='3' Height='3' IsIndeterminate='True' Background='#30485F' Foreground='#86CDFF' BorderThickness='0'/>
-                  <DockPanel Grid.Row='4' Margin='0,15,0,0' LastChildFill='False'>
+                  <DockPanel Grid.Row='4' Margin='0,15,0,0' VerticalAlignment='Bottom' LastChildFill='False'>
+                    <StackPanel DockPanel.Dock='Left' Orientation='Horizontal'><Button x:Name='Retry' Content='Retry update' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Visibility='Collapsed' Padding='8,6' Margin='0,0,8,0'/><Button x:Name='Logs' Content='View logs' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Visibility='Collapsed' Padding='8,6'/></StackPanel>
                     <TextBlock x:Name='Version' DockPanel.Dock='Left' Foreground='#8CA6BE' FontSize='10' VerticalAlignment='Center'/>
                     <Button x:Name='Continue' DockPanel.Dock='Right' Content='Open installed launcher' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Padding='10,6' FontSize='11' Cursor='Hand'/>
                   </DockPanel>
@@ -156,12 +175,19 @@ namespace TimeSplitters.Launcher
             var open = (Button)Window.FindName("Continue");
             open.IsEnabled = File.Exists(Core.PathIn(root, Core.AppPath));
             if (preview) return;
-            open.Click += (s, e) => { Status.Text = "Opening your installed launcher…"; stop.Cancel(); };
-            Window.Closing += (s, e) => { if (!finished) { e.Cancel = true; closeRequested = true; stop.Cancel(); } };
+            open.Click += (s, e) => { Status.Text="Opening your installed launcher…";if(running)stop.Cancel();else Finish(false); };
+            ((Button)Window.FindName("Retry")).Click+=async(s,e)=>await Start();
+            ((Button)Window.FindName("Logs")).Click+=(s,e)=> {try{Process.Start(new ProcessStartInfo(Core.PathIn(root,".launcher")){UseShellExecute=true});}catch(Exception ex){Status.Text=RecoveryInfo.From(ex,false).Message;}};
+            Window.Closing += (s, e) => { if (!finished && running) { e.Cancel = true; closeRequested = true; stop.Cancel(); } };
             Window.Loaded += async (s, e) => await Start();
         }
         async Task Start()
         {
+            if(running)return;
+            running=true;int generation=++attempt;bool attemptedDownload=false;
+            ((Button)Window.FindName("Retry")).Visibility=Visibility.Collapsed;((Button)Window.FindName("Logs")).Visibility=Visibility.Collapsed;
+            ((TextBlock)Window.FindName("Version")).Visibility=Visibility.Visible;
+            ((TextBlock)Window.FindName("Heading")).Text="Checking launcher updates…";
             bool handedOff = false;
             using (var client = new ReleaseClient())
             {
@@ -172,11 +198,12 @@ namespace TimeSplitters.Launcher
                         var release = await SelfUpdate.CheckWithTimeout(client, SelfUpdate.PreviewChannel(root), TimeSpan.FromSeconds(8), stop.Token);
                         if (release != null)
                         {
-                            Status.Text = "Preparing launcher v" + release.Tag + "…";
+                            ((TextBlock)Window.FindName("Heading")).Text="Updating launcher…";Status.Text = "Preparing launcher v" + release.Tag + "…";
                             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(stop.Token))
                             {
                                 timeout.CancelAfter(TimeSpan.FromMinutes(2));
-                                var progress = new Progress<double>(value => { Progress.IsIndeterminate = false; Progress.Value = value; Status.Text = "Downloading launcher v" + release.Tag + " · " + value.ToString("0") + "%"; });
+                                var progress = new TransferProgress(value => { if(!running || generation!=attempt || stop.IsCancellationRequested)return;Progress.IsIndeterminate = value.Phase=="Verifying" || value.Phase=="Preparing"; Progress.Value = value.Percent; Status.Text = "Launcher v"+release.Tag+" · "+value.Summary; });
+                                attemptedDownload=true;
                                 if (await SelfUpdate.Prepare(root, release, client, progress, timeout.Token))
                                 {
                                     stop.Token.ThrowIfCancellationRequested();
@@ -190,8 +217,22 @@ namespace TimeSplitters.Launcher
                         LauncherLog.Write(root, release == null ? "Startup: no launcher update published for this channel." : "Startup: checked launcher " + release.Tag);
                     }
                 }
-                catch (Exception ex) { LauncherLog.Write(root, "Startup update skipped: " + ex.Message); }
+                catch (Exception ex) {
+                    LauncherLog.Write(root,"Startup update skipped: "+ex.Message);
+                    if(attemptedDownload && !stop.IsCancellationRequested){
+                        var info=RecoveryInfo.From(ex is OperationCanceledException?new TimeoutException("Launcher download timed out."):ex,true);
+                        ((TextBlock)Window.FindName("Heading")).Text=info.Title;Status.Text=info.Message;
+                        Progress.IsIndeterminate=false;Progress.Value=0;
+                        ((TextBlock)Window.FindName("Version")).Visibility=Visibility.Collapsed;
+                        ((Button)Window.FindName("Retry")).Visibility=Visibility.Visible;((Button)Window.FindName("Logs")).Visibility=Visibility.Visible;
+                        running=false;return;
+                    }
+                }
             }
+            running=false;Finish(handedOff);
+        }
+        void Finish(bool handedOff)
+        {
             if (!handedOff && !closeRequested)
             {
                 try { SelfUpdate.StartApplication(root, Process.GetCurrentProcess().Id); }

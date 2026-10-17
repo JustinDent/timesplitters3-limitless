@@ -338,6 +338,48 @@ and extract the complete verified launcher release ZIP into that installation.
 An equal version with internally valid fallback files is not automatically
 reinstalled by the existing launcher self-updater.
 
+## Resumable downloads and recovery (current source)
+
+Game updates, launcher updates and repair downloads keep matching saved bytes
+across retries and launcher restarts. Home offers **Resume download** for a saved
+game transfer with a matching published digest. **Pause download** keeps the saved
+bytes; closing during a game download requests a pause and waits for the current
+file operation to stop safely. **Cancel preparation** also retains a completed
+cached download so the next attempt can verify it again without downloading it.
+
+Progress shows bytes received, total size, measured download speed and estimated
+time remaining. Speed measures this attempt's new bytes; previously saved bytes
+are excluded from the rate. The launcher says **Estimating time remaining** until
+it has a useful measurement, and shows verification/preparation separately.
+
+Home failures offer **Retry** (or **Resume download** after a pause),
+**Repair / Verify** and **View logs**. Failed repair operations offer retry and
+logs in the same page. Interrupted startup launcher updates offer **Retry update**,
+**View logs** and **Open installed launcher** when one is present. A failed initial
+release check still opens the installed launcher automatically for offline use.
+
+The cache is separate from installation staging, with one game slot and one
+launcher slot under `.launcher/downloads`. It is retained for interruptions and
+cancelled preparation, then cleaned when staging succeeds. A different release
+URL, size or SHA-256 replaces its previous recognized cache. Unknown cache files
+and linked paths are refused and kept; cleanup only removes the named owned
+cache files and never recursively removes user folders.
+
+Resume uses HTTP byte ranges and a strong If-Range validator when available.
+Range boundaries and lengths must agree with the published asset. A server that
+ignores Range restarts the file; an invalid range is rejected, and an unsatisfiable
+saved range gets one fresh attempt. The complete file always passes the published
+SHA-256 before it reaches staging, and package manifests are checked as before.
+Checksum failures discard the damaged cache. A connection or stream that stalls
+is bounded to 30 seconds; retry can resume the saved bytes.
+
+Developer checks: `launcher-tests.exe --downloads` runs synthetic HTTP and
+scratch-file recovery tests without requiring the game to close.
+`--downloads-live` interrupts a small public standalone launcher ZIP after 64 KiB,
+resumes it in a fresh client and verifies the checksum; it never installs or runs
+the downloaded program and cleans its disposable files. Protocol reference:
+[HTTP range semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-range).
+
 ## Repair / Verify (launcher v1.2.8)
 
 The **Repair / Verify** sidebar page stays inside the main window. Its **Open game

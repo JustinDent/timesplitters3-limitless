@@ -701,6 +701,23 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Resumable downloads and recovery (2026-10-17, commit `c21df35` on
+  `feature/launcher-download-recovery`):** `DownloadTransfer.cs`, `ReleaseClient.cs`,
+  `SelfUpdate.cs`, `InstallationMaintenance.cs`, `Bootstrap.cs`, `Launcher.cs`/XAML
+  and `MaintenancePage.cs` add separate bounded game/launcher caches, strict HTTP
+  resume handling and complete-file checksum verification, cancellable copy and
+  hashing, measured speed/ETA, pause/retry and embedded recovery actions. Cached
+  bytes survive staging cleanup, restarts and cancelled preparation. Unknown and
+  redirected paths are preserved/refused; successful staging cleans owned cache
+  data. No game runtime or config format changes. The existing Mac launcher has
+  no equivalent release-download UI. Native adaptation remains **queued**: reuse
+  release identity, Range/If-Range validation, complete hash and bounded cache
+  rules, with POSIX-safe atomic metadata and locking plus native progress/cancel
+  and recovery controls. Acceptance includes connection loss/restart, ignored or
+  malformed ranges, changed releases, cancelled verification/preparation,
+  storage failures, long estimates, retained user files and usable offline entry.
+  See the download-recovery entry in STATUS.md; Windows checks do not establish
+  native Mac launcher execution.
 - **Embedded page and sidebar polish (2026-10-17, commit `0f30cbe` on
   `feature/launcher-page-polish`):** Merged through [PR #89](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/89)
   as `1728f21`, prepared for launcher v1.2.9. `PageTheme.cs`, `MaintenancePage.cs`,

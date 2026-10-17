@@ -209,12 +209,12 @@ namespace TimeSplitters.Launcher
             try
             {
                 string archive = Path.Combine(pending, "launcher.zip");
-                await client.Download(release, archive, progress, token).ConfigureAwait(false);
+                await client.Download(release, archive, progress, token, Core.PathIn(root,".launcher/downloads/launcher")).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
                 await Task.Run(() => Unpack(archive, Path.Combine(pending, "payload"), release.Tag, token), token).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
                 Core.Write(Path.Combine(pending, "release.json"), Json.Encode(new { version = release.Tag }));
-                File.Delete(archive);
+                File.Delete(archive);DownloadTransfer.Forget(Core.PathIn(root,".launcher/downloads/launcher"));
                 return true;
             }
             catch

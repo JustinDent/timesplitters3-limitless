@@ -128,7 +128,9 @@ namespace TimeSplitters.Launcher
         MaintenancePage repairPage, diagnosticsPage;
         VerificationResult gameVerification, launcherVerification;
         bool diagnosticsReady;
-        CancellationTokenSource maintenanceStop;
+        CancellationTokenSource maintenanceStop, updateStop;
+        Func<Task> retryOperation;
+        bool closeAfterTransfer;
         bool busy, checking, handingOff;
         bool validData, gameInstalled;
         string installed = "";
@@ -181,6 +183,10 @@ namespace TimeSplitters.Launcher
             Button("HomeNav").Click += (s,e)=>ShowHome();
             Button("RepairNav").Click += (s,e)=>ShowMaintenance(false);
             Button("DiagnosticsNav").Click += (s,e)=>ShowMaintenance(true);
+            Button("PauseDownloadButton").Click+=(s,e)=> {if(updateStop!=null)updateStop.Cancel();};
+            Button("RetryButton").Click+=async(s,e)=> {if(!busy && !checking && retryOperation!=null)await retryOperation();};
+            Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
+            Button("RecoveryLogsButton").Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
             Window.Closed += (s,e)=> { lifetime.Cancel(); client.Dispose(); };
             if (previewMode)
             {
@@ -233,7 +239,11 @@ namespace TimeSplitters.Launcher
             };
             Window.Closing += (s, e) =>
             {
-                if (busy && !handingOff) { e.Cancel = true; SetStatus("Please let the current operation finish before closing the launcher."); }
+                if (busy && !handingOff) {
+                    e.Cancel=true;
+                    if(updateStop!=null){closeAfterTransfer=true;updateStop.Cancel();SetStatus("Pausing download before closing…");}
+                    else SetStatus("Please let the current operation finish before closing the launcher.");
+                }
             };
         }
         public void ShowSettings(int tab=-1)
@@ -277,6 +287,8 @@ namespace TimeSplitters.Launcher
                 var page=diagnostics?diagnosticsPage:repairPage;
                 if(page==null) {
                     page=new MaintenancePage(diagnostics);
+                    page.Retry.Click+=async(s,e)=> {if(!busy && page.RetryOperation!=null)await page.RetryOperation();};
+                    page.ViewLogs.Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
                     page.Cancel.Click+=(s,e)=> { if(maintenanceStop!=null)maintenanceStop.Cancel();page.Status("Cancellation requested; finishing the current file…"); };
                     if(diagnostics) {
                         diagnosticsPage=page;
@@ -305,16 +317,17 @@ namespace TimeSplitters.Launcher
                 }
             }catch(Exception ex){Fail(ex);}
         }
-        async Task MaintenanceOperation(MaintenancePage page,Func<CancellationToken,Task> operation)
+        async Task MaintenanceOperation(MaintenancePage page,Func<CancellationToken,Task> operation,bool download=false)
         {
             if(busy)return;
             if(previewMode){page.Status("Preview only. Verification and repairs use the installed launcher.");return;}
+            page.ClearRecovery();page.RetryOperation=()=>MaintenanceOperation(page,operation,download);
             busy=true;
             using(var cancel=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)) {
                 maintenanceStop=cancel;Refresh();
                 try { await operation(cancel.Token); }
-                catch(OperationCanceledException){page.Status("Operation cancelled. Installed files were not changed.");}
-                catch(Exception ex){page.Status(ex.Message);Fail(ex);}
+                catch(OperationCanceledException ex){page.ShowRecovery(RecoveryInfo.From(ex,download));}
+                catch(Exception ex){Fail(ex);page.ShowRecovery(RecoveryInfo.From(ex,download));}
                 finally { maintenanceStop=null;busy=false;if(!handingOff)Refresh(); }
             }
         }
@@ -365,7 +378,8 @@ namespace TimeSplitters.Launcher
             await MaintenanceOperation(repairPage,async token=> {
                 Core.Require(!Core.GameRunning(),"Close the game before repairing files.");
                 repairPage.Status("Finding the exact published release, then downloading and verifying its files…");
-                var progress=new Progress<double>(value=> {repairPage.Progress(value);repairPage.Status("Downloading repair package · "+value.ToString("0")+"%. Installed files are unchanged until verification completes.");});
+                var operation=maintenanceStop;
+                var progress=new TransferProgress(value=> {if(maintenanceStop==operation){repairPage.Progress(value.Percent);repairPage.Status(value.Summary);}});
                 bool prepared=false;
                 try {
                     if(launcher) {
@@ -390,7 +404,7 @@ namespace TimeSplitters.Launcher
                     }catch { /* Retain locked or unsafe staging for recovery. */ }
                     throw;
                 }
-            });
+            },true);
         }
         void Open(string path)
         {
@@ -407,6 +421,21 @@ namespace TimeSplitters.Launcher
             if (lifetime.IsCancellationRequested) return;
             SetStatus(ex.Message);
             try { Program.Log(root, ex.ToString()); } catch { }
+        }
+        void ClearRecovery()
+        {
+            retryOperation=null;Find<Panel>("RecoveryActions").Visibility=Visibility.Collapsed;
+            Find<Grid>("UpdateActions").Visibility=Visibility.Visible;
+            Find<StackPanel>("UpdateChannelSection").Visibility=Visibility.Visible;
+            Find<TextBlock>("TransferDetails").Visibility=Visibility.Collapsed;
+        }
+        void ShowRecovery(Exception error,Func<Task> retry,bool download)
+        {
+            var info=RecoveryInfo.From(error,download);retryOperation=retry;Bar.IsIndeterminate=false;Bar.Value=0;
+            Text("ReleaseTitle",info.Title);Text("ReleaseDescription",info.Message);Button("RetryButton").Content=info.RetryLabel;
+            Find<Panel>("RecoveryActions").Visibility=Visibility.Visible;Find<Grid>("UpdateActions").Visibility=Visibility.Collapsed;
+            Find<StackPanel>("UpdateChannelSection").Visibility=Visibility.Collapsed;Find<TextBlock>("TransferDetails").Visibility=Visibility.Collapsed;
+            SetStatus(download?"The installed release is unchanged. Retry when ready.":"You can retry or inspect the installed files.");
         }
         void Refresh()
         {
@@ -431,10 +460,13 @@ namespace TimeSplitters.Launcher
             Button("HomeNav").IsEnabled = Button("RepairNav").IsEnabled = Button("DiagnosticsNav").IsEnabled = !busy;
             if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
             if(diagnosticsPage!=null)diagnosticsPage.SetBusy(busy || checking,Core.GameRunning());
+            Button("RetryButton").IsEnabled=!busy && !checking;
+            Button("RecoveryRepairButton").IsEnabled=!busy && !checking;
+            Button("RecoveryLogsButton").IsEnabled=!busy;
             Button("CheckButton").IsEnabled = !busy && !checking;
             Channel.IsEnabled = !busy && !checking;
             Button("UpdateButton").IsEnabled = !busy && !checking && CanUpdate();
-            Button("UpdateButton").Content = gameInstalled ? "Update release" : "Install release";
+            Button("UpdateButton").Content = DownloadTransfer.SavedBytes(Core.PathIn(root,".launcher/downloads/game"),available)>0?"Resume download":gameInstalled ? "Update release" : "Install release";
             Button("RollbackButton").IsEnabled = !busy && !checking && Core.CanRollback(root) && !Core.GameRunning();
             Text("ChannelBadge", PreviewChannel ? "●  PREVIEW CHANNEL" : "●  STABLE CHANNEL");
         }
@@ -448,7 +480,7 @@ namespace TimeSplitters.Launcher
         async Task Check()
         {
             if (busy || checking) return;
-            checking = true; available = null;
+            ClearRecovery();checking = true; available = null;
             Refresh();
             Text("ReleaseTitle", "Checking for updates…");
             Text("ReleaseDescription", "Looking for published " + (PreviewChannel ? "preview or stable" : "stable") + " releases on GitHub.");
@@ -473,8 +505,8 @@ namespace TimeSplitters.Launcher
                         SetStatus(newer ? "Release available. Select " + (gameInstalled ? "Update" : "Install") + " to download and verify." : "Ready.");
                     }
                 }
-                catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) { Text("ReleaseTitle", "Release check timed out."); Text("ReleaseDescription", "Your installed game is available offline. Check again when connected."); SetStatus("GitHub did not respond in time. You can retry the release check."); } }
-                catch (Exception ex) { Text("ReleaseTitle", "Update check failed."); Text("ReleaseDescription", "Your installed game is available offline. Try checking again later."); Fail(ex); }
+                catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) { Text("ReleaseTitle", "Release check timed out."); Text("ReleaseDescription", "Your installed game is available offline. Check again when connected."); ShowRecovery(new TimeoutException("Release check timed out."),Check,false); } }
+                catch (Exception ex) { Text("ReleaseTitle", "Update check failed."); Text("ReleaseDescription", "Your installed game is available offline. Try checking again later."); Fail(ex);ShowRecovery(ex,Check,false); }
             }
             checking = false; Refresh();
         }
@@ -514,29 +546,43 @@ namespace TimeSplitters.Launcher
         async Task Update()
         {
             if (busy || !CanUpdate()) return;
-            if (Core.GameRunning()) { SetStatus("Close the game before installing a release."); return; }
-            busy = true; Refresh();
-            try
-            {
-                Core.CheckSpace(root, available.Size * 4 + 256L * 1024 * 1024);
-                Core.DiscardGameStaging(root);
-                string pending = Core.PathIn(root, ".launcher/pending"); Directory.CreateDirectory(pending);
-                string archive = Path.Combine(pending, "release.zip");
-                SetStatus("Downloading " + available.Tag + "…");
-                var progress = new Progress<double>(value => { Bar.Value = value; SetStatus("Downloading " + available.Tag + " · " + value.ToString("0") + "%"); });
-                await client.Download(available, archive, progress, lifetime.Token);
-                Bar.IsIndeterminate = true;
-                SetStatus("Verifying and preparing the release…");
-                string tag = available.Tag;
-                await Task.Run(() => Core.Unpack(archive, Path.Combine(pending, "payload"), tag));
-                Core.Write(Path.Combine(pending, "release.json"), Json.Encode(new { version = tag }));
-                // Only payload and one previous release are retained, not the downloaded ZIP.
-                File.Delete(archive);
-                Program.Log(root, "Prepared " + tag + "; handing off to updater.");
-                HandOff(false);
+            if(previewMode){SetStatus("Preview only. No download was started.");return;}
+            if(Core.GameRunning()){SetStatus("Close the game before installing a release.");return;}
+            ClearRecovery();busy=true;
+            using(var cancel=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)) {
+                updateStop=cancel;Refresh();
+                Button("PauseDownloadButton").Visibility=Visibility.Visible;
+                Find<StackPanel>("UpdateChannelSection").Visibility=Visibility.Collapsed;
+                Find<TextBlock>("TransferDetails").Visibility=Visibility.Visible;
+                Text("ReleaseTitle","Downloading "+available.Tag);Text("ReleaseDescription","Matching saved downloads resume automatically. Installed files stay unchanged until verification completes.");
+                try {
+                    var release=available;
+                    Core.CheckSpace(root,release.Size*4+256L*1024*1024);
+                    Core.DiscardGameStaging(root);
+                    string pending=Core.PathIn(root,".launcher/pending");Directory.CreateDirectory(pending);
+                    string archive=Path.Combine(pending,"release.zip");
+                    SetStatus("Downloading game update…");
+                    var progress=new TransferProgress(value=> {
+                        if(updateStop!=cancel)return;
+                        Bar.IsIndeterminate=value.Phase=="Verifying" || value.Phase=="Preparing";Bar.Value=value.Percent;Text("TransferDetails",value.Summary);
+                        Button("PauseDownloadButton").Content=value.Phase=="Verifying" || value.Phase=="Preparing" || value.Phase=="Complete"?"Cancel preparation":"Pause download";
+                    });
+                    await client.Download(release,archive,progress,cancel.Token,Core.PathIn(root,".launcher/downloads/game"));
+                    Bar.IsIndeterminate=true;Button("PauseDownloadButton").Content="Cancel preparation";
+                    SetStatus("Verifying and preparing the release…");
+                    await Task.Run(()=>Core.Unpack(archive,Path.Combine(pending,"payload"),release.Tag,cancel.Token),cancel.Token);
+                    cancel.Token.ThrowIfCancellationRequested();
+                    Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new {version=release.Tag}));File.Delete(archive);DownloadTransfer.Forget(Core.PathIn(root,".launcher/downloads/game"));
+                    Program.Log(root,"Prepared "+release.Tag+"; handing off to updater.");HandOff(false);
+                }catch(Exception ex){
+                    if(!(ex is OperationCanceledException))Fail(ex);
+                    ShowRecovery(ex,Update,true);
+                    try{Core.DiscardGameStaging(root);}catch(Exception cleanup){Program.Log(root,"Update staging retained: "+cleanup.GetType().Name);}
+                }finally{
+                    updateStop=null;
+                    if(!handingOff){busy=false;Bar.IsIndeterminate=false;Bar.Value=0;Button("PauseDownloadButton").Visibility=Visibility.Collapsed;Refresh();if(closeAfterTransfer)Window.Close();}
+                }
             }
-            catch (Exception ex) { Fail(ex); }
-            finally { if (!handingOff) { busy = false; Bar.IsIndeterminate = false; Bar.Value = 0; Refresh(); } }
         }
         void HandOff(bool rollback)
         {

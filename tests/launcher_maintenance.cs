@@ -182,7 +182,12 @@ public static class LauncherMaintenanceChecks
                     using(var cancel=new CancellationTokenSource())using(var client=GameClient(archive,null,cancelDownload?null:Encoding.UTF8.GetBytes("bad"))) {
                         var progress=new Progress {Action=p=> {if(cancelDownload)cancel.Cancel();}};
                         Reject(()=>InstallationMaintenance.PrepareGameRepair(root,"v1.0.0",client,progress,cancel.Token).GetAwaiter().GetResult());
-                    }Require(before.SequenceEqual(Snapshot(root)) && !Directory.Exists(Core.PathIn(root,".launcher/pending")));
+                    }
+                    var after=Snapshot(root);
+                    var installed=after.Where(pair=>!pair.Key.Replace('\\','/').StartsWith("/.launcher/downloads/",StringComparison.OrdinalIgnoreCase));
+                    Require(before.SequenceEqual(installed) && !Directory.Exists(Core.PathIn(root,".launcher/pending")));
+                    string cache=Core.PathIn(root,".launcher/downloads");
+                    Require(!Directory.Exists(cache) || Directory.GetFiles(cache).All(file=>new[]{"game.part","game.json","game.lock"}.Contains(Path.GetFileName(file))));
                 }
             });
             TransactionTest("repair preserves pre-existing staging and rejects changed installed version",()=> {

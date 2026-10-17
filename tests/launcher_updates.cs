@@ -141,6 +141,8 @@ static class LauncherTests
         if (args.Length == 1 && args[0] == "--settings-child") return LauncherSettingsChecks.Child();
         if (args.Length == 1 && args[0] == "--maintenance-readonly") return LauncherMaintenanceChecks.Run(true);
         if (args.Length == 1 && args[0] == "--maintenance") return LauncherMaintenanceChecks.Run();
+        if (args.Length == 1 && args[0] == "--downloads-live") return LauncherDownloadChecks.VerifyPublicDownload();
+        if (args.Length == 1 && args[0] == "--downloads") return LauncherDownloadChecks.Run();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();
         if (args.Length == 2 && args[0] == "--helper")
             return Program.RunHelper("--apply", args[1], Int32.MaxValue, false);
