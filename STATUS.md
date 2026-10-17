@@ -4101,3 +4101,15 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 726,011,912 bytes (692.38 MiB / 6144 MiB). Texture workspace at audit: 3,341,796,029 logical/allocated bytes (3.11 GiB). Temporary exports/reviews: 248,756,093 bytes (237.23 MiB / 256 MiB). Free disk at audit: 127,328,124,928 bytes.
 - Reclaimed 7,835,754 bytes from 180 old opaque reference PNGs after payload, decoded-pixel, resolved-parent and SHA256 checks. Excluded alpha dependencies and recent batches 90-101; recovery recipes and review evidence retained. No duplicate game/pack/ZIP/staging; saves, settings, source artwork and original game data preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-102-*`, exact prompts, authored sources, recovery manifest and progress. Artwork remains local and ignored; this commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 103
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `15705eb`. Retried eight held drafts from verified originals; six accepted and two still held. Classification remains 1,305 keys.
+- Accepted dark riveted atlas, rusty sheet, four teal panels and three brushed-metal strip variants. Dark atlas brightness now +4.72%; rust-sheet top/bottom edge MAE improves to 7.45 (original 4.33, previous draft 25.99). Teal panel now has the original four corner marks/four hinges; its -18.63% mean brightness remains a scene-review item.
+- Two comparisons, two repeat sheets, eight enlarged details and original-fitting sheet reviewed. Three strip-fitting run endpoints differ by at most one original pixel, supported by manual detail review. Reflections/top edges are stronger; scene mapping, lighting, scale and adjacency remain unverified.
+- Four 1254-square and four 1774x887 built-in imagegen sources; six retained full-mip DXT1 outputs comprise two 1024-square, one 512-square and three 1024x512. No native 4K claim. Prior artwork and prompts retained.
+- Held pale arrow panel still loses tiny marking strokes and changes rails; blue sheet retains bright repeat perimeter (edge MAE 25.27 versus original 1.08). Their DDS/metadata files were retired after resolved-parent and SHA256 checks; art and review evidence retained.
+- All 688 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,081 need art and 43 drafts need correction; full overhaul unfinished. Zero game launches, runtime changes or shared-tool edits. Near-completion testing gate retained.
+- Pack: 728,636,800 bytes (694.88 MiB / 6144 MiB). Texture workspace at audit: 3,372,430,551 logical/allocated bytes (3.14 GiB). Temporary exports/reviews: 251,880,394 bytes (240.21 MiB / 256 MiB). Free disk at audit: 126,942,121,984 bytes. No duplicate game/pack/ZIP/staging; saves and settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-103-*`, exact prompts, authored corrections, fitting audit and retirement record. Artwork remains local and ignored; this commit records progress only.
