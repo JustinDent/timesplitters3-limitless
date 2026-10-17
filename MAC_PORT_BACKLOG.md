@@ -243,6 +243,7 @@ runtime readiness. No full campaign playthrough is required.
 | ID | Feature | Status |
 | --- | --- | --- |
 | MAC-025 | Reusable unlocked testing profile | Queued |
+| MAC-033 | Experimental network bots (issue #25) | Queued |
 | MAC-001 | Direct-camera mouse look | Awaiting validation |
 | MAC-002 | Keyboard/mouse prompts and device switching | Awaiting validation |
 | MAC-003 | Debug settings and on-screen performance information | Awaiting validation |
@@ -1154,3 +1155,98 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   wrapped descriptions, and keyboard/controller switching. Verify supported GPU
   sizes and allocation failure recovery. See issue #27/#31 in
   `STATUS.md` for Windows evidence; do not infer Mac runtime verification from it.
+
+### MAC-033 — Experimental network bot setup (issue #25)
+
+- **Status:** Queued
+- **PC behavior:** The host's multiplayer lobby Options flow exposes
+  Arcade BOT SET below WEAPON SET in match settings, reusing its original
+  selector, layout and editor. Opening host settings enables the session-only
+  roster adapter. Final broadcast/load hooks repair the original late bot-count
+  clear that prevented the initial prototype from spawning bots.
+  The adapter validates ten bot records, preserves human IDs, caps combined
+  slots at the selected map/network profile's capacity (bounded by the sixteen
+  physical character slots), and leaves guest/offline/disabled configurations alone.
+  The capacity follow-up gives humans priority, retains selected
+  bots that cannot currently fit, and shows players/admitted bots/limit in the
+  lobby, plus waiting bots on the host. Reliable lobby settings carry admitted
+  bots to guests; both launch boundaries recheck capacity. A mode change that
+  leaves too many human slots blocks launch without dropping players.
+  Initial two-peer validation loaded the same roster on both PCs but left guest
+  actors inactive. The follow-up adds living-body activation, bot-specific
+  combat references and host-owned numeric state snapshots through LAN/Online
+  transport. Follow-up restores radar eligibility and hit-collision flags,
+  transfers actual live vitals and clip/frame channels, and recreates missing
+  guest bodies on host respawn. The guest follow-up also transfers
+  spawn counters, hit bounds and both animation/blend tracks,
+  includes AI in score calculation and paused Scores rows, and replicates
+  successful host firing events through guest-local weapon models. Locally
+  replayed bot effects cannot apply duplicate damage; incoming damage to human
+  victims keeps the original path. An original bounds-refresh wrapper preserves host
+  hit geometry between snapshots, with body/spawn cache invalidation.
+  The authority fix makes the host finish NPC deaths even
+  when the shooter belongs to a guest. Guests send reliable hit requests and
+  consume host vitals instead of applying speculative or echoed NPC damage.
+  Snapshots carry explicit body absence and each bot's victim score column,
+  including human kills; confirmed score increases drive guest notices.
+  The presentation fix uses the actual localized kill HUD
+  callback with persistent victim slots and retries unavailable local views.
+  It evaluates guest poses without advancing them in the original animation
+  pass, positions weapons after that pass, removes duplicate root movement,
+  preserves local visibility/transform mode, and invalidates rotation correctly.
+  The post-match follow-up includes AI in the saved Results/Scores records
+  (names, character portraits, kills/deaths, ranks and scores), preserving
+  the reliable host result packet. Completed-match menus omit health/shield
+  gauges; gameplay, ordinary pause and Story objectives keep their behavior.
+  Current live acceptance and remaining gaps are in `STATUS.md`;
+  issue #25 is not complete from a build or roster check alone.
+- **PC source:** Issue #25 checkpoint on `25-add-bot-support-to-online-matches`,
+  checkpoint `0c8531c` plus the follow-ups included in the commit
+  `Fix network bot replication, scoring and guest presentation`:
+  `src/pc_network_bots.h`, `src/pc_network_bots_guest.inc`,
+  `src/pc_display_menu.c`/`.h`, `src/pc_network.c`/`.h`,
+  `src/pc_network_bots_state.h`, `src/pc_controls.c`, and the
+  `pc-network-bots-test` / `pc-network-bot-combat` / `pc-network-bot-scoreboard`
+  / `pc-network-bot-shots` / `pc-network-bot-bounds`
+  / `pc-network-bot-authority` / `pc-network-bot-presentation` patches.
+  Post-match follow-up in `Fix bot post-match portraits, scores and HUD`:
+  `src/pc_network_bots_guest.inc`,
+  `src/pc_display_ui.inc`, `src/pc_ui_layout.h`, and results/UI regression tests.
+  Capacity follow-up in `Enforce network roster capacity and display lobby bots`:
+  `src/pc_network_bots_lobby.inc`, the shared
+  roster model/guest adapter, `pc-network-bot-capacity` patch and model/ABI tests.
+- **CI fixture follow-up:** Windows FOV tests include fail-fast stubs for
+  the bot helpers linked through the menu translation unit; no production
+  change or Mac adaptation is needed for this test-only fix. The full Windows
+  native CI test selection passed locally (81 tests; see STATUS.md).
+- **Merge integration:** PR #108 preserves main's menu-mouse/quit adapters
+  alongside network bots. The input harness accepts either absolute cursor
+  coordinates or sequenced gameplay motion. Renumbered this entry from MAC-028
+  to MAC-033 to preserve main's separate frontend-FOV entry. No new Mac runtime
+  integration is claimed; shared/native-fallback checks remain the boundary.
+- **PC validation:** MSVC model and guest/native-fallback tests passed;
+  complete patch migration tests passed. See issue #25 in `STATUS.md` for
+  the build/menu scope and remaining host/guest checks.
+- **Existing Mac support:** The roster model is shared. Native wrappers retain
+  original calls; the host menu, configuration override and state transport are
+  Windows-only. Numeric snapshot definitions are shared without OS calls.
+  Native Mac still lacks the PC XNet transport (MAC-013).
+  The post-match HUD rule is shared by the native adapter; no separate Mac
+  implementation is needed for that rule, but Mac visual validation is pending.
+- **Mac adaptation needed:** Complete and validate PC AI replication first;
+  then adapt networking and expose the same editor through the native adapter.
+- **Mac acceptance checks:** Two native hosts, and mixed Windows/Mac peers,
+  must agree on roster, movement, shots, damage, deaths, respawns, teams,
+  scoring, rematches and disconnects. Verify disabled/offline behavior and
+  reject incompatible builds. Check guest visibility across turns/respawns,
+  weapon attachment alignment and localized confirmed-kill HUD notices,
+  including delayed body absence. Preserve personal settings/saves.
+  At match end, verify bot portraits and complete named score rows on both
+  peers; Results/Scores/Options must hide health/shield, while Story objectives
+  and ordinary pause retain them.
+  Check mode/map capacity selection, full lobbies, joining/leaving humans,
+  zero admitted bots, waiting-roster preservation, and matching host/guest
+  lobby counts. Capacity hooks retain original calls on native Mac until its
+  network adapter is implemented; Windows results do not verify Mac behavior.
+- **Mac implementation and evidence:** No Mac execution or other-device
+  synchronization verified for this prototype.

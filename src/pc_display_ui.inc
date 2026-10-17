@@ -36,6 +36,10 @@ void pc_display_health(void (*original)(void))
     int old=ui_placement,old_health=health_group;
     uint32_t old_tag=ui_tag;
     float scale,x,y,left,top,right,bottom,adjusted;
+    if(pc_ui_hide_results_health(WORD_AT(frame),WORD_AT(0x007de30cu),
+                                (WORD_AT(0x007de454u)>>8)&0xffu)) {
+        g_esp+=4u;return;
+    }
     if(guest_call(sub_001CDAE0,0)!=1 || !guest_writable(view,0x24)) {
         original();return;
     }

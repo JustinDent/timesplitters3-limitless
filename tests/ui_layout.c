@@ -13,6 +13,7 @@ static uint32_t font_xy[2],menu_data[0x240/4],item_data[0x90/4],descriptor=0x2d0
 static uint32_t projection[16],effect_data[32];
 static int projection_sets;
 static float drawn_projection[1024];
+static uint32_t phase,mode;
 static uint32_t view_address=0x100,view[9]={0,639,320,640,0,0,479,240,480};
 static uint32_t *word(uint32_t a) {
     if(a>=0x4000 && a<0x4080)return &effect_data[(a-0x4000)/4];
@@ -24,6 +25,8 @@ static uint32_t *word(uint32_t a) {
     if(a>=0x55fa40 && a<0x55fa80)return &projection[(a-0x55fa40)/4];
     if(a==0x79094c)return &scene;
     if(a==0x7e71c8)return &view_address;
+    if(a==0x7de30c)return &phase;
+    if(a==0x7de454)return &mode;
     if(a>=0x100 && a<0x124)return &view[(a-0x100)/4];
     return &stack[a/4];
 }
@@ -232,12 +235,29 @@ int main(void)
     pc_display_health(draw);
     CHECK(selection_count==count && stack[4]==0x3f99999a && g_esp==4);
     sub_00022FF0();
+    /* Completed Results/Scores/Options suppress the actual draw wrapper,
+       without disturbing its caller stack, scale or queued placement state. */
+    phase=8;mode=11u<<8;g_esp=0;stack[0]=0x2e58c9;
+    n=draw_count;count=selection_count;
+    pc_display_health(draw);sub_00022FF0();
+    CHECK(g_esp==4 && draw_count==n && selection_count==count && stack[4]==0x3f99999a);
+    mode=10u<<8;g_esp=0;pc_display_health(draw);sub_00022FF0();
+    CHECK(draw_count==n+1 && g_esp==4); /* Story objectives still draw. */
+    phase=4;mode=11u<<8;g_esp=0;pc_display_health(draw);sub_00022FF0();
+    CHECK(draw_count==n+2 && g_esp==4); /* Ordinary pause still draws. */
+    phase=8;stack[0]=0x14d46d;g_esp=0;pc_display_health(draw);sub_00022FF0();
+    CHECK(draw_count==n+3 && g_esp==4); /* Gameplay caller is unchanged. */
     /* Proportional pixels and original margins at every supported wide ratio. */
     const float sizes[][2]={{640,480},{1280,1024},{1920,1080},{1920,1200},{3440,1440},{5120,1440},{7680,4320}};
     for(unsigned i=0;i<7;i++){
         float w=sizes[i][0],h=sizes[i][1],scale=h/480.f,k=4*h/(3*w);
         CHECK(fabsf(pc_ui_scale_x(k)*w/640-pc_ui_scale_y(k)*h/480)<.0001f);
         float fit=pc_ui_health_scale(1.2f,0,0,640,480,320,240);
+        CHECK(pc_ui_hide_results_health(0x2e58c9u,8,11));
+        CHECK(pc_ui_hide_results_health(0x2e58c9u,8,9));
+        CHECK(!pc_ui_hide_results_health(0x2e58c9u,8,10));
+        CHECK(!pc_ui_hide_results_health(0x2e58c9u,4,11));
+        CHECK(!pc_ui_hide_results_health(0x14d46du,8,11));
         CHECK(fit<1 && pc_ui_health_scale(.5f,0,0,640,480,320,240)==.5f);
         /* Full outer mesh stays inside its authored inset after anchoring. */
         CHECK(320-307.2f*fit>=25.59f && 320+307.2f*fit<=614.41f);

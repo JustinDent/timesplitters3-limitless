@@ -40,6 +40,7 @@ static ULONGLONG replay_started;
 static const char *test_state_path;
 static ULONGLONG test_state_checked;
 static unsigned test_state_key;
+static unsigned test_state_motion;
 
 /* Caller holds lock. Raw input is the only wheel event source, avoiding a
  * duplicate step from Windows' corresponding WM_MOUSEWHEEL message. */
@@ -60,19 +61,33 @@ static void replay_tick(void)
     ULONGLONG now = GetTickCount64();
     if (!replaying) return;
     if(test_state_path && now-test_state_checked>=16) {
-        FILE *state; unsigned key=0; int down=0;
+        FILE *state; unsigned key=0,motion=0; int down=0,dx=0,dy=0,fields=0;
         test_state_checked=now;
         state=fopen(test_state_path,"r");
         if(state) {
-            int x=-1,y=-1;
-            int fields=fscanf(state,"%u %d %d %d",&key,&down,&x,&y);
-            if(fields<2 || key>=256) key=0;
-            if(fields==4) { test_cursor_x=x; test_cursor_y=y; }
+            char line[128];
+            if(fgets(line,sizeof line,state)) {
+                fields=sscanf(line,"%u %d %u %d %d",&key,&down,&motion,&dx,&dy);
+                /* Four fields describe an absolute menu cursor; five describe
+                   a sequenced gameplay motion. Do not interpret one as both. */
+                if(fields==4) {
+                    int x=-1,y=-1;
+                    if(sscanf(line,"%u %d %d %d",&key,&down,&x,&y)==4) {
+                        test_cursor_x=x;test_cursor_y=y;
+                    }
+                }
+            }
+            if(fields<2 || key>=256) {key=0;down=0;}
             fclose(state);
         }
         if(test_state_key!=key || !down) pc_input_key(&input,test_state_key,0);
         test_state_key=key;
         pc_input_key(&input,key,down!=0);
+        /* Optional sequence + raw counts allow a bounded test to aim after
+           loading. Apply a motion update once, regardless of polling rate. */
+        if(fields==5 && motion!=test_state_motion) {
+            test_state_motion=motion;pc_input_motion(&input,dx,dy,now);
+        }
     }
     if (!replay_started) replay_started = now;
     while (replay_next < replay_count && now - replay_started >= replay[replay_next].at) {

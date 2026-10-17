@@ -1,0 +1,11 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -119,4 +119,8 @@
+ extern RECOMP_MANUAL_TLS uint32_t g_ecx;
++extern RECOMP_MANUAL_TLS uint32_t g_ebx, g_edi;
+ #include "pc_network_bots_guest.inc"
++extern void sub_003533F0_gen(void);
++void sub_003533F0(void)
++{ pc_network_bots_guest_score_network(sub_003533F0_gen); }
+ extern void sub_000BB6C0_gen(void);
+ void sub_000BB6C0(void)

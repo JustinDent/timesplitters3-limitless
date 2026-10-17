@@ -80,6 +80,59 @@ int main(void)
         Sleep(20); CHECK(call(0x43184c)==UINT32_MAX);
         CHECK(pc_network_latency(&ms,&count)==1 && count==1 && ms>=0);
     }
+    /* AI snapshots are private control frames, accepted only from this
+       match's host/key. Their size must not trip the Xbox receive capacity. */
+    {
+        unsigned char packet[40+20+sizeof(PcNetworkBotState)]={0};
+        PcNetworkBotState bot={0},received;
+        const unsigned char version[32]=TSFP_NETWORK_COMPATIBILITY;
+        uint32_t match=0x12345678u,host=htonl(0x7f000003u);
+        memset(memory+800,0,36);memcpy(memory+800,&host,4);
+        a[0]=address(800);a[1]=address(150);a[2]=address(850);CHECK(!call(0x43172c));
+        pc_network_bots_context(2,host,match,2,6);
+        memcpy(packet,"TSFP\1\0\0\0",8);memcpy(packet+8,version,32);
+        memcpy(packet+40,"TSFBAI1",8);memcpy(packet+48,memory+150,8);memcpy(packet+56,&match,4);
+        bot.slot=2;bot.tick=10;bot.health=1.f;bot.position[0]=25.f;
+        memcpy(packet+60,&bot,sizeof bot);
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);a[0]=receiver;a[1]=address(500);a[2]=100;a[3]=0;
+        CHECK(call(0x43184c)==UINT32_MAX);
+        CHECK(pc_network_bots_receive(2,&received) && received.tick==10 && received.position[0]==25.f);
+        CHECK(!pc_network_bots_receive(2,&received));
+        bot.tick=9;memcpy(packet+60,&bot,sizeof bot);
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+        bot.tick=11;memcpy(packet+60,&bot,sizeof bot);packet[48]^=1;
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+        packet[48]^=1;pc_network_bots_context(1,0,match,2,6);
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+        pc_network_bots_context(2,host,match+1,2,6);
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+        pc_network_bots_context(0,0,0,0,0);
+        /* A connected guest need not be in the host's XNet conversion cache. */
+        {
+            SOCKET target=socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
+            struct sockaddr_in destination={0};DWORD timeout=1000;
+            unsigned char outbound[sizeof packet];uint32_t target_ip=htonl(0x7f000004u);
+            CHECK(target!=INVALID_SOCKET);
+            destination.sin_family=AF_INET;destination.sin_port=htons(31000);
+            destination.sin_addr.s_addr=target_ip;
+            CHECK(!bind(target,(struct sockaddr *)&destination,sizeof destination));
+            setsockopt(target,SOL_SOCKET,SO_RCVTIMEO,(const char *)&timeout,sizeof timeout);
+            pc_network_bots_context(1,0,match,2,6);
+            pc_network_bots_targets(&target_ip,1);bot.tick=12;
+            pc_network_bots_send(&bot);
+            CHECK(recv(target,(char *)outbound,sizeof outbound,0)==sizeof outbound);
+            CHECK(!memcmp(outbound,"TSFP\1\0\0\0",8));
+            CHECK(!memcmp(outbound+40,"TSFBAI1",8));
+            CHECK(!memcmp(outbound+48,memory+150,8));
+            memcpy(&received,outbound+60,sizeof received);CHECK(received.tick==12 && received.slot==2);
+            closesocket(target);pc_network_bots_context(0,0,0,0,0);
+        }
+    }
     closesocket(raw); pc_network_shutdown();
     /* Exercise the exact loopback bridge wire format used by online.py. */
     {

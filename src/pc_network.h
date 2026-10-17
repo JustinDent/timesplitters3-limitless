@@ -10,4 +10,10 @@ void pc_network_shutdown(void);
 int pc_network_set_online(const char *configuration);
 /* 0 offline, 1 LAN, 2 Online; RTT is negative when no fresh peer replied. */
 int pc_network_latency(double *milliseconds, unsigned *peers);
+#include "pc_network_bots_state.h"
+/* Extension packets share the existing compatible LAN/Online transport. */
+void pc_network_bots_context(unsigned role,uint32_t host_ip,uint32_t match,unsigned humans,unsigned bots);
+void pc_network_bots_send(const PcNetworkBotState *state);
+void pc_network_bots_targets(const uint32_t *addresses,unsigned count);
+int pc_network_bots_receive(unsigned slot,PcNetworkBotState *state);
 #endif
