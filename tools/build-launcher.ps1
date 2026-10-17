@@ -8,7 +8,7 @@ included in supported Windows 10/11 installations. -Test runs isolated updater
 regressions, without downloading a game or accessing personal saves/settings.
 #>
 [CmdletBinding()]
-param([string]$Output, [switch]$Test, [string]$BannerPath, [string]$LogoPath)
+param([string]$Output, [switch]$Test, [string]$BannerPath, [string]$LogoPath, [switch]$RequireArtwork)
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
 if (!$Output) { $Output = Join-Path $project 'build\launcher' }
@@ -26,6 +26,7 @@ if (Test-Path -LiteralPath $BannerPath -PathType Leaf) {
     if ((Get-Item -LiteralPath $BannerPath).Length -gt 8MB) { throw 'Launcher banner must be no larger than 8 MiB.' }
     $bannerArguments = @(('/resource:' + $BannerPath + ',launcher-banner.png'))
 } else {
+    if ($RequireArtwork) { throw 'Release launcher artwork is required: banner missing. Supply -BannerPath or restore private/launcher-art.' }
     Write-Host 'Private launcher banner not present; using the built-in vector theme.'
 }
 
@@ -42,6 +43,7 @@ if (Test-Path -LiteralPath $LogoPath -PathType Leaf) {
         $logoArguments = @(('/resource:' + $LogoPath + ',launcher-logo.png'))
     } finally { $logo.Dispose() }
 } else {
+    if ($RequireArtwork) { throw 'Release launcher artwork is required: logo missing. Supply -LogoPath or restore private/launcher-art.' }
     Write-Host 'Private title logo not present; using the sidebar text fallback.'
 }
 if (!('LauncherIconBuilder' -as [type])) {

@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -20,6 +21,24 @@ spec.loader.exec_module(package)
 
 
 class LauncherPackaging(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'nt', 'Windows launcher build prerequisite')
+    def test_release_build_refuses_missing_artwork(self):
+        powershell = Path(os.environ['SystemRoot']) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
+        with tempfile.TemporaryDirectory(prefix='launcher-artwork-') as directory:
+            root = Path(directory)
+            banner = root / 'banner.png'
+            banner.write_bytes(b'synthetic banner; compilation must not start')
+            for missing, banner_path in [('banner', root / 'absent.png'), ('logo', banner)]:
+                with self.subTest(missing=missing):
+                    output = root / missing
+                    result = subprocess.run([str(powershell), '-NoProfile', '-ExecutionPolicy', 'Bypass',
+                        '-File', str(ROOT / 'tools/build-launcher.ps1'), '-Output', str(output),
+                        '-RequireArtwork', '-BannerPath', str(banner_path), '-LogoPath', str(root / 'absent-logo.png')],
+                        capture_output=True, text=True, timeout=30)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn('Release launcher artwork is required: ' + missing + ' missing', result.stderr)
+                    self.assertFalse((output / 'TimeSplitters Launcher.exe').exists())
+
     def test_manifest_and_user_data_exclusion(self):
         with tempfile.TemporaryDirectory(prefix='launcher-package-') as directory:
             root = Path(directory)
@@ -58,6 +77,7 @@ class LauncherPackaging(unittest.TestCase):
                 package.main()
                 self.assertEqual(build.call_count, 2)
                 self.assertIn(str(root / 'tools/build-launcher.ps1'), build.call_args.args[0])
+                self.assertIn('-RequireArtwork', build.call_args.args[0])
             archive_path = next((root / 'build/releases').glob('*.zip'))
             prefix = archive_path.stem + '/'
             with zipfile.ZipFile(archive_path) as archive:
