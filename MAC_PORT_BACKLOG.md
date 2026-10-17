@@ -534,6 +534,17 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Preserve launcher artwork (2026-10-16, commit `f1011f8` on
+  `fix/launcher-art-preservation`):** `Core.cs` preserves verified independent
+  launcher binaries/manifest when a game package bundles the same launcher
+  version; damaged equal versions may repair, and newer versions still install.
+  `build-launcher.ps1 -RequireArtwork` and `package-release.py` reject missing
+  release artwork while allowing developer/CI fallbacks. Native Mac has no
+  corresponding game-package launcher updater; adapt version/manifest ownership
+  checks in its future release adapter, then test equal/newer/damaged versions,
+  rollback, required artwork and preserved user data with disposable fixtures.
+  Existing shared runtime is unchanged; Mac execution remains unverified. See
+  [Windows evidence](STATUS.md#launcher-artwork-lost-after-game-update-2026-10-16).
 - **Launcher v1.2.6 release compatibility (2026-10-16,
   [PR #73](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/73) on
   `release/launcher-v1.2.6`):** `GameSettings.cs` and `SettingsPage.cs` filter

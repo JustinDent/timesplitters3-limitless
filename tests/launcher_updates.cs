@@ -722,6 +722,28 @@ static class LauncherTests
             Core.Rollback(root); Assert(Core.InstalledVersion(root) == "v1.0.0");
             Assert(SelfUpdate.InstalledVersion(root) == "9.0.0" && SelfUpdate.Complete(root)); Personal(root);
         });
+        Test("equal-version game launcher preserves artwork and repairs damaged copies", () => {
+            foreach (bool damaged in new[] { false, true }) {
+                string root = NewRoot("game-equal-launcher-" + damaged); PutSelf(root, "1.2.6");
+                string original = File.ReadAllText(Path.Combine(root, Core.SelfManifest));
+                if (damaged) Put(root, Core.AppPath, "damaged app");
+                string pending = Path.Combine(root, ".launcher/pending"); Directory.CreateDirectory(pending);
+                Core.Unpack(Path.Combine(temp, "valid.zip"), Path.Combine(pending, "payload"), "v1.1.0");
+                string payload = Path.Combine(pending, "payload");
+                PutSelf(payload, "1.2.6");
+                Put(payload, Core.AppPath, "same-version fallback app");
+                Put(payload, Core.SelfManifest, SelfManifest("1.2.6", "bootstrap 1.2.6", "same-version fallback app"));
+                var files = Files().Keys.ToDictionary(n=>n,n=>Core.Hash(Core.PathIn(payload,n)));
+                files[Core.AppPath]=Core.Hash(Core.PathIn(payload,Core.AppPath));
+                files[Core.SelfManifest]=Core.Hash(Core.PathIn(payload,Core.SelfManifest));
+                Put(payload,"BUILD.json",Json.Encode(new { version="v1.1.0",launcher_version="1.2.6",files=files }));
+                Put(pending,"release.json","{\"version\":\"v1.1.0\"}");
+                Core.InstallPending(root); Assert(SelfUpdate.Complete(root));
+                Assert(File.ReadAllText(Core.PathIn(root,Core.AppPath)) == (damaged ? "same-version fallback app" : "app 1.2.6"));
+                if(!damaged) Assert(File.ReadAllText(Core.PathIn(root,Core.SelfManifest))==original);
+                Core.Rollback(root); Assert(SelfUpdate.Complete(root)); Personal(root);
+            }
+        });
         Test("produced launcher bundle verifies and installs in isolation", () => {
             string output = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             string metadataText = File.ReadAllText(Path.Combine(output, "launcher-update.json"));

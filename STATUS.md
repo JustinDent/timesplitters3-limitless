@@ -1,5 +1,34 @@
 # Measured progress
 
+## Launcher artwork lost after game update (2026-10-16)
+
+Fix on `fix/launcher-art-preservation`, commit `f1011f8`, based on main `5e5ca61`.
+The affected installation had game v0.2.0-alpha.5 from source `d430e8b` and
+launcher v1.2.6 binaries matching that game's BUILD.json, but differing from the
+published themed launcher. Its application was 278016 bytes; the themed release
+contains embedded artwork. Logs show launcher v1.2.6 installed before the alpha.5
+game update. `Core.InstallPending` replaced equal-version launchers, and the
+self-updater considered the resulting fallback launcher complete and current.
+
+Restored the user's launcher through `SelfUpdate.Unpack` and `Core.ApplyLauncher`
+using the verified public v1.2.6 archive (SHA-256
+`57381c968a3cf481cb0b1e728c3486935ab697e0b5ba9acce20309b82ece0867`).
+The loaded release assembly contains banner/logo resources; installed binary and
+manifest hashes match the public release. Game executable, BUILD.json and settings
+hashes were unchanged. The launcher reopened normally. An isolated preview of the
+same public binaries was visually inspected; no automated game session was run.
+
+The fix preserves a valid equal-version independent launcher during game updates;
+a damaged equal version can still be repaired by the game package. Newer versions
+continue to install, and game rollback preserves the independent launcher. Public
+game packaging now requires artwork; developer/CI fallback builds remain supported.
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: 99 updater/bootstrap/cleanup
+checks, 25 settings checks, and six startup/packaging Python checks passed. The
+new regression exercises equal-version preservation, damaged-copy repair and
+rollback with disposable fixtures. Missing-banner and missing-logo build subtests
+both reject before compilation. MAC-021 tracks queued Mac release-launcher
+adaptation; native Mac execution is unverified. This fix is not published yet.
+
 ## Launcher v1.2.6 release preparation (2026-10-16)
 
 Prepared in PR #73 on `release/launcher-v1.2.6`, based on main `293295b` and

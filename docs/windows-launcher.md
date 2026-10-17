@@ -92,7 +92,7 @@ Production code signing and Windows SmartScreen reputation are not included.
 ## Publishing launcher-only updates
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
-assembly/file version attributes, then build. The build produces these assets
+assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
 in `build/launcher`; for version 1.2.6, publish all three together:
 
 - `TimeSplitters-Launcher-v1.2.6-windows-x64.zip`
@@ -322,3 +322,18 @@ Launcher v1.2.6 filters resolution presets for the installed game release and
 validates custom sizes before saving. Game releases through v0.2.0-alpha.4
 support heights up to 2160 (maximum 7680×2160); newer games and unpackaged
 development builds support up to 7680×4320. Both retain landscape and 4:1 limits.
+
+### Preserve launcher artwork during game updates
+
+A game package replaces the independent launcher only when its bundled version
+is newer, or when an equal installed version fails its manifest checks. A valid
+equal/newer launcher keeps its binaries and manifest together, including embedded
+banner/logo artwork. Explicit launcher updates use their separate transaction.
+
+Public game packaging requires the private banner and title logo via
+`tools/build-launcher.ps1 -RequireArtwork`; missing artwork stops packaging.
+Developer/CI builds may still omit the switch to use the fallback interface.
+For an installation already affected by an older updater, close the launcher
+and extract the complete verified launcher release ZIP into that installation.
+An equal version with internally valid fallback files is not automatically
+reinstalled by the existing launcher self-updater.

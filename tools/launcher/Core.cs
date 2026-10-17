@@ -435,8 +435,12 @@ namespace TimeSplitters.Launcher
             var changes = new List<Change>();
             string currentLauncher = SelfUpdate.InstalledVersion(root);
             string packagedLauncher = Json.String(metadata, "launcher_version");
+            int launcherOrder = currentLauncher.Length > 0 && packagedLauncher.Length > 0
+                ? GameVersion.Parse(currentLauncher).CompareTo(GameVersion.Parse(packagedLauncher)) : 0;
+            // Equal versions can have different embedded artwork. Keep a verified
+            // independent launcher, while allowing a broken equal version to repair.
             bool keepLauncher = currentLauncher.Length > 0 && (packagedLauncher.Length == 0 ||
-                GameVersion.Parse(currentLauncher).CompareTo(GameVersion.Parse(packagedLauncher)) > 0);
+                launcherOrder > 0 || (launcherOrder == 0 && SelfUpdate.Complete(root)));
             foreach (var pair in hashes)
             {
                 Require(Allowed(pair.Key), "Protected staged file.");

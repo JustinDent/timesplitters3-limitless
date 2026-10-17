@@ -32,7 +32,7 @@ def main():
 
     powershell = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
     subprocess.run([str(powershell), '-NoProfile', '-ExecutionPolicy', 'Bypass',
-                    '-File', str(ROOT/'tools/build-launcher.ps1')], check=True)
+                    '-File', str(ROOT/'tools/build-launcher.ps1'), '-RequireArtwork'], check=True)
 
     def copy(source, dest):
         target = stage / dest
