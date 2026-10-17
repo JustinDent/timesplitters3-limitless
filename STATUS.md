@@ -3626,3 +3626,41 @@ queued under MAC-021; other-device synchronization is unverified.
   audit, acceptance and retirement records, highlight profile, source/prompt files.
   Zero gameplay launches or rebuilds; no runtime/tooling code changed. Consolidated
   playtesting remains deferred to 90% audited coverage and completed category review.
+
+
+### Hybrid texture batch 66 - characters and shared armor (issue #74)
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` at `73919dd`.
+  Added 15 character/equipment replacements after original/source/actual-DDS
+  comparison, opaque-channel checks and repeated-edge inspection. Supported XBE
+  SHA-256 and original catalog payload hashes verified on Windows x64.
+- Art covers white fur and gold accessories, cloth/skin trim, coat and trousers,
+  gray/orange uniform, primate fur, dark leather equipment, shared gray armor and
+  four small robot atlases. Character identity, model UV seams and all new scene
+  appearance remain runtime-unverified; no gameplay or game rebuild occurred.
+- Fifteen sources generated; fourteen selected. Held eye/accessory draft
+  `d5b07a49859a271d` because the iris became excessively saturated cyan-blue.
+  Source/prompt/evidence retained; rejected DDS and metadata removed after hash
+  recording and contained-path validation. Review sheet 1 includes that rejection.
+- One selected armor source serves both `47ec02a8b3aaebee` and `7b988340e93f849a`.
+  Original resolution-variant comparison: RGB MAE 2.625, p95 7, alpha error zero;
+  original layouts and both actual DDS versions visually reviewed. One source PNG
+  retained. This is offline-approved reuse, not proof of model rendering.
+- Generated sizes: nine 1774x887 and six 1254x1254. Accepted full-mip DXT1 outputs:
+  four 1024x512, six 1024x1024, one 2048x2048 and four 512x256, all resampled.
+  Not native 4K source artwork. Shared armor luminance increases 19.31%/19.68%;
+  two leather atlases increase 14.65%/14.18%. Final checks must cover highlights,
+  eyes, emblems and exact UV alignment in the character models.
+- All 301 retained DDS passed native format and worklist hash, mip-chain,
+  dimensions/aspect and fixed-budget checks. Catalog: 6,812 supported keys;
+  301 installed, 6,493 awaiting art, 18 held. Visual classification remains 627
+  provisional keys; 115 individual, 207 specialist and 6,171 visual-triage items.
+- Pack including metadata: 449,399,857 bytes (428.58 MiB),
+  up 8,746,708 bytes. Texture workspace at audit:
+  1,567,022,125 allocated bytes (1.46 GiB).
+  Original/review/preview files: 137.84 MiB, below 256 MiB. No duplicate
+  game extract, pack, ZIP or staging tree. Artwork remains private/local.
+- Private evidence: `review/hybrid-66-final-*`, native audit, acceptance/retirement
+  and variant-check records, original-selection metadata and source/prompt files.
+  Consolidated playtesting remains deferred to 90% audited scope and completed
+  category review. No runtime or tooling source changed this batch.
