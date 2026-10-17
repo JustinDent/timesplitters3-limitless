@@ -534,6 +534,15 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Launcher v1.2.6 release compatibility (2026-10-16,
+  [PR #73](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/73) on
+  `release/launcher-v1.2.6`):** `GameSettings.cs` and `SettingsPage.cs` filter
+  resolution presets and reject custom heights above 2160 for packaged games
+  through alpha.4 before writing settings. Newer/unpackaged games keep 8K modes.
+  Source copy cleanup is merged in PR #71. Mac has no release-launcher adapter;
+  reuse installed-version capability filtering in that future adapter and verify
+  legacy/new game bounds, atomic rejection and preserved settings with disposable
+  fixtures. Existing native Mac runtime is unchanged; Mac execution is unverified.
 - **Neutral interface copy (2026-10-16, commit `b9a05b9` on
   `cleanup/readme-launcher-copy`):** README and Windows launcher slogans/quips
   are removed. `Launcher.xaml`, `Launcher.cs`, `Bootstrap.cs` and `SettingsPage.cs`

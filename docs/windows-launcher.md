@@ -93,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build. The build produces these assets
-in `build/launcher`; for version 1.2.5, publish all three together:
+in `build/launcher`; for version 1.2.6, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.5-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.5-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.6-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.6-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.5`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.6`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -317,3 +317,8 @@ Launcher v1.2.3 keeps custom FOV disabled for installed game releases through
 v0.2.0-alpha.4, which only read V1 display settings. Resolution changes continue
 to save in that compatible format. FOV becomes available with a newer game
 release; unpackaged development builds retain access for testing.
+
+Launcher v1.2.6 filters resolution presets for the installed game release and
+validates custom sizes before saving. Game releases through v0.2.0-alpha.4
+support heights up to 2160 (maximum 7680×2160); newer games and unpackaged
+development builds support up to 7680×4320. Both retain landscape and 4:1 limits.

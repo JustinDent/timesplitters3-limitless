@@ -168,7 +168,7 @@ namespace TimeSplitters.Launcher
             startupHint.Foreground=Muted; graphics.Children.Add(startupHint);
             graphics.Children.Add(Text("Display & graphics",20));
             graphics.Children.Add(Text("Higher render scale and resolution increase GPU load. These options use the game runtime’s supported settings.",12));
-            var sizes=DisplayModes.Primary(model.Width,model.Height);
+            var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height)).ToList();
             aspect=new ComboBox { Name="AspectRatio", Margin=new Thickness(4,2,4,12), Padding=new Thickness(8), MinWidth=180, Foreground=Brushes.Black };
             foreach(var ratio in DisplayModes.Aspects)aspect.Items.Add(ratio);
             aspect.SelectedIndex=0;Field(graphics,"Aspect ratio",aspect);
