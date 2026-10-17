@@ -12,6 +12,11 @@ until those references exist. Keep paths relative to the repository.
 
 ## Audit scope and next work
 
+**Current integration:** The focused native branch stack is now based on main
+`d9c145f` (alpha.6). This release-only update preserves the runtime source
+reviewed below. The rebuilt native regression suite passes; historical gameplay
+evidence keeps its original revision. [Refresh evidence](STATUS.md#alpha6-branch-stack-refresh-2026-10-17).
+
 Reviewed on 2026-10-17 against fetched `main` / `origin/main`
 `0dc9fea49041bdca985d372a8e5513d6cac514ac`; no pull was necessary. Compared with
 previously reviewed main `d83ca5e`: 133 commits including merges, 134 changed

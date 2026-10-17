@@ -1,5 +1,31 @@
 # Measured progress
 
+## Alpha.6 branch-stack refresh (2026-10-17)
+
+During local validation, a separate pull advanced `main` from `0dc9fea` to
+`d9c145f`. Its only changes are VERSION `0.2.0-alpha.6` and the issue-form
+release choice; AGENTS.md and runtime source are unchanged. Rebased the eight
+local focused branches onto `d9c145f` with dependent branch refs updated.
+`git range-diff` confirms all eight implementation commits are identical.
+The original commit IDs in earlier evidence below describe the binaries tested
+before that rebase, rather than claiming they were built from alpha.6.
+
+Rebuilt and reran the full native suite from rebased `941d065`: all three
+CTest suites, GPU, SDL input, Cocoa settings and debug checks pass. Reviewed
+`private/captures/native-mac/build-watermark-alpha6.png`, which reads
+`TSFP PC v0.2.0-alpha.6  40b4e7d1`, matching the generated build manifest.
+Executable SHA-256:
+`b1d932fa3f1a7d7de8607f4dae481c63dd87ee5bcfe4bff48844d57628c96526`.
+Evidence: `logs/native-alpha6-build.out` / `.err`. Host and dependency versions
+are unchanged from the tests below. The earlier bounded gameplay evidence is
+retained with its original alpha.5 provenance; it was not relabeled alpha.6.
+
+Canonical Test Lab checksums/signature verified after gameplay tests. All known
+native disposable partition images and run locks were cleaned up. Personal
+saves/settings and unrelated untracked duplicate files were preserved. The branch
+stack is committed locally, not pushed or merged into main; other-device
+synchronization is unverified. The native launcher prerequisite check passes.
+
 ## Native build watermark (2026-10-17)
 
 `codex/mac-build-watermark` depends on unmerged native exit `83b50b4`. The
