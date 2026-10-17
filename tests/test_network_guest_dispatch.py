@@ -9,14 +9,16 @@ import pytest
 
 ROOT=Path(__file__).resolve().parents[1]
 
-@pytest.mark.parametrize('native_fallback',[False,True])
-def test_guest_dispatch_and_fallback(tmp_path,native_fallback):
+@pytest.mark.parametrize('source_name,native_fallback',[
+    ('network_guest_dispatch.c',False),('network_guest_dispatch.c',True),
+    ('network_bots.c',False)])
+def test_guest_dispatch_and_fallback(tmp_path,source_name,native_fallback):
     requested=os.environ.get('CC')
     compiler=shlex.split(requested) if requested else [shutil.which('cc') or shutil.which('cl') or '']
     if not compiler[0]:pytest.skip('A C compiler is required')
     msvc=Path(compiler[0]).name.lower() in ('cl','cl.exe')
     executable=tmp_path/('guest-dispatch.exe' if os.name=='nt' else 'guest-dispatch')
-    source=ROOT/'tests/network_guest_dispatch.c'
+    source=ROOT/'tests'/source_name
     if msvc:
         command=[*compiler,'/nologo','/W4','/Fe:'+str(executable),'/Fo:'+str(tmp_path/'guest.obj')]
         if native_fallback:command.append('/DTSFP_TEST_NATIVE_FALLBACK')

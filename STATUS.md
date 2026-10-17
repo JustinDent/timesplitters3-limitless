@@ -2856,3 +2856,275 @@ queued under MAC-021; other-device synchronization is unverified.
   The current launcher build passes 71 updater and 21 settings checks
   (`build/pr55-validation/launcher.log`). Objectives notes are appended here so
   new status entries at the top do not repeatedly conflict with this PR.
+## Issue #25 investigation (2026-10-17)
+
+Source base `33fc619`, Windows x64, branch
+`25-add-bot-support-to-online-matches`. At the initial investigation checkpoint,
+Online bots remained unimplemented.
+Read-only US XBE inspection and two bounded, isolated Test Lab localization
+probes identified the original bot editor, roster, configuration exclusion,
+and controller-oriented network sampler. Findings and acceptance gaps are in
+[the investigation record](docs/online-bots-investigation.md).
+That checkpoint made no runtime changes and performed no build or multiplayer
+bot validation. Subsequent prototype work is recorded below. No issue completion
+is claimed.
+
+## Issue #25 test prototype (2026-10-17)
+
+Uncommitted on `25-add-bot-support-to-online-matches` over `33fc619`. The host
+lobby Options flow now adds Setup Bots (experimental) to the shared match
+settings builder. It reuses the original Arcade editor, including bot sets,
+characters, teams, skill and Add/Remove. Opening the editor opts into a
+session-only match-configuration hook; there is no Debug-menu entry. The
+validated roster model preserves human IDs and limits combined character slots
+to sixteen. The original builder runs first, and guests, offline play, disabled
+sessions and invalid/empty/full rosters retain original configuration behavior.
+
+Windows 11 x64, Python 3.14.2, MSVC 19.42 (14.42.34433), SDK 10.0.22621.0,
+CMake 4.4.4, D3D11, pinned upstream/XBE and complete patch stack:
+
+- Three compiled model/guest ABI tests passed, including native fallback.
+  Checks cover host-only application, valid modes, no-op/error preservation,
+  sparse human IDs, two/four teams, count limits, invalid bot records, and
+  original register/stack behavior, and no prototype writes during an active
+  match. Final compiled checks: three passed in 0.38 seconds.
+- All fourteen patch migration tests passed after adding the new network patch
+  to the historical Mac-only fixture's exclusions.
+- Supported `tsfp.ps1 Build` regenerated game code for both new wrappers,
+  compiled/linked the Release executable and completed the native build checks.
+  The foreground-dependent virtual SDL-controller case is explicitly skipped
+  when Windows refuses foreground activation, after a bounded one-second retry.
+  Its controller-routing assertions remain required when focus is available;
+  all other prompt checks still execute. The prior two build attempts failed
+  this focus assertion. No physical-controller validation is claimed.
+- Final build log: `logs/issue25-menu-build.log`. Executable SHA-256:
+  `1d9b6d8f0f9e17eae26e490b31d4987b56ea01590316bb5285ae07af51537c9b`.
+  `tools/network-identity.py --verify --executable
+  build/windows/Release/futureperfect_recomp.exe` passed for the sealed
+  executable and local content.
+  Pre-build storage: Windows build physically allocated 0.33 GiB, apparent
+  0.33 GiB, disk free 431.5 GiB. Build test partition images were recycled by
+  the supported script after the checks.
+
+Bounded Test Lab sessions reused `private/test-saves/issue25`, isolated controls
+and both display configurations, and the runner's startup-video switch. The
+final 180-second session verified host System Link lobby entry, Options level
+and game-mode selection, the new keyboard-selectable bot row, and activation
+of the original bot editor. Its enabled roster, bot-set selector, stats and
+edit/remove prompts were visually reviewed. The first row prototype rendered
+as a nonselectable heading; the final version uses a normal button ID/flags and
+keyboard selection/activation passed. Selected evidence:
+`private/captures/issue25-lobby/bot-highlight.png` and
+`private/captures/issue25-lobby/verified-bot-editor.png`. Initial startup captures
+and two rotating periodic BMPs stayed below 24 MiB; redundant captures are
+disposable. The probes' piped error log was empty in quiet mode, so no log-based
+runtime fault assertion is made. They did not validate a spawned bot match or
+cross-peer synchronization. Known disposable partition images were recycled
+after exit; personal saves/settings and the canonical Test Lab fixture were
+unused as write targets.
+Disposable issue25 compiled/patch unit fixtures and redundant captures were
+removed after explicit path/reparse checks. Only the two reviewed menu PNGs
+listed above remain in that capture directory.
+
+The code does not add a new AI replication protocol. Working cross-peer bot
+movement, weapons, damage, deaths, respawns and scoring are not established;
+issue #25 remains incomplete. MAC-028 records deferred Mac integration. No Mac
+execution, other-device synchronization, commit, push or release was performed.
+
+
+### 2026-10-17 ? Issue #25: Arcade Bot Set and two-peer spawn investigation
+
+Local, uncommitted on `25-add-bot-support-to-online-matches`, base `33fc619`.
+Host: Windows `10.0.26300.0`, AMD64; MSVC 19.42 / SDK 10.0.22621.0,
+CMake 4.4.4, Python 3.14.2, D3D11. Supported US XBE SHA-256 was checked
+by each supported build and isolated runner; dependency pins were unchanged.
+Physical free space was 431.25 GiB during this pass. No duplicate game extract
+or build tree was created. Mac execution and other-device synchronization are
+unverified; deferred adaptation is [MAC-028](MAC_PORT_BACKLOG.md#mac-028--experimental-network-bot-setup-issue-25).
+
+- Removed the extra experimental menu button. Host match settings now run the
+  original Arcade Custom Bot Set construction below Weapon Set, original
+  selector/edit callbacks, saved-set rules and Bot Set editor. The original
+  footer draw path now shows Bots plus enabled icons. Network setup mode is
+  restored after each UI callback. The network transport flag is unchanged.
+- Found the original post-builder clear at `0x002D3947`. The host adapter now
+  runs before `sub_00356490` broadcasts the final configuration and before
+  `sub_000658D0` copies it into pending load state. Guests use the host roster.
+- The actor-activity predicate accepts AI slots at `0x000D8E5D` (actor update)
+  and the HUD character-list call sites, while controller initialization and
+  network serializers retain their original human-only activity checks.
+  The original host AI authority check remains intact.
+- MSVC shared model / Windows guest ABI / native fallback checks and complete
+  patch migration checks: **17 passed in 161.10s**. Tests cover the late-clear
+  reproduction, pre-serialization bytes, slot limits, roles, disabled/native
+  paths, actor/HUD slot bounds, controller exclusion and ABI preservation.
+  Full supported Windows builds and affected native checks passed; disposable
+  `build/path-tests` images were recycled. Final build log:
+  `logs/issue25-final-build.log`; multiplayer identity verification passed.
+
+Two bounded isolated Test Lab runs used `private/test-saves/issue25` and
+`private/test-saves/issue25-client`, explicit controls plus both display paths,
+loopback peers `127.0.0.2` / `.3`, capped runner logs and rotating captures.
+The canonical fixture and personal saves/settings were not edited. The second
+run used executable SHA-256
+`2d3726b191f5abd98ee3c26f63888051a82cb4adc7fab67ecd0ad18f149036c7`.
+It reached a shared ready lobby and loaded **2 humans / 6 bots** on both peers,
+including matching broadcast, pending and live configuration. After countdown,
+all six host bot positions changed; every guest bot position remained zero
+through the remaining approximately two minutes. See
+`logs/issue25-actor-pair.log`. Earlier configuration-only evidence is in
+`logs/issue25-pair-probe.log`. Allocation/counts alone do not establish spawning.
+
+**Failed acceptance:** guest AI state replication is missing. Synchronized
+LAN/Online bot gameplay remains unfinished. Guest-visible bots, attacks,
+bidirectional damage, deaths, respawns, scores, rematches, disconnects and the
+Online bridge have not passed acceptance. Do not report issue #25 as complete.
+The selected menu evidence is
+`private/captures/issue25-lobby/host/arcade-bot-set.png`; the gameplay capture
+contains the host view/radar, not a reviewed close-up of every bot.
+
+After correcting diagnostic comments to identify HUD calls accurately, the
+final supported rebuild passed with executable SHA-256
+`3250f642ca3ee448f8b0f7e67d96436c7c7b2c5372cd63c8727bf4e8219276be`.
+No gameplay logic changed after the second run; that final binary was build-
+and identity-checked, not run through another gameplay pass. Both test
+processes exited; known partition images and temporary compiler-test trees
+were recycled/removed. Redundant rotating BMP captures were removed, preserving
+selected screenshots and validation logs.
+
+## 2026-10-17 — Issue #25 invisible bots and combat follow-up
+
+Local uncommitted work remains on `25-add-bot-support-to-online-matches`, base
+`33fc619`; nothing was committed, pushed or synchronized to another device.
+Windows AMD64, D3D11, Python 3.14.2, CMake 4.4.4, MSVC 19.42 / SDK 10.0.22621.
+The supported US XBE hash was verified before generation and each isolated run.
+Physical free space was 430.98 GiB before building; pins were unchanged.
+
+Reproduced the report with the previous `3250f642...` executable: allocated bot
+models existed on both peers, but entity activation bit 0 was clear, guest
+positions remained zero, and bots had neither human controller state nor generic
+network object IDs. The adapter now activates living host bot bodies after
+spawn, refreshes spatial membership, adds a validated bot-slot actor reference
+for combat events, and sends numeric host state through the compatible transport.
+
+Two intermediate bounded runs identified and corrected routing assumptions:
+the peer record's connection handle is not an IP address, and the host's XNet
+conversion cache need not contain connected guests. The adapter uses the
+original sockaddr/active tables, while snapshot reception still checks the
+current host, session key, match signature, slot bounds and increasing ticks.
+Native UDP coverage now exercises a destination absent from the XNet cache.
+Intermediate logs: `logs/issue25-replicated-pair.log` and
+`logs/issue25-address-fixed-pair.log`. These failed guest synchronization and
+must not be presented as successful gameplay checks.
+
+The supported final routing build and all affected native checks passed:
+`logs/issue25-replication-targets-build.log`. Focused model/guest ABI/native
+fallback plus full patch migration checks passed (17 tests); after the routing
+fix, guest/model/native fallback and identity checks passed again (8 tests).
+The latter includes a regression for host sockaddr lookup. Native checks also
+cover stale, wrong-key, wrong-role and wrong-match snapshot rejection before
+the Xbox receive buffer capacity check. Mac execution remains unverified,
+tracked in [MAC-028](MAC_PORT_BACKLOG.md#mac-028--experimental-network-bot-setup-issue-25).
+
+The combat follow-up also wraps `sub_003593D0`, whose original eligibility
+check discarded bot victims before encoding. The initial interpretation of
+actor `+0xB08`/`+0xB0C` as live health was incorrect; see the correction below. The full supported
+combat rebuild passed, followed by a final incremental build/identity check:
+`logs/issue25-final-combat-build.log`. Final executable SHA-256:
+`13f8220d0e63f968f478bef15454c9fec7f1a47b8346a72a5f690ec34e2da013`.
+Compatibility identity:
+`e0906928fd57228006b0263479589fa099d82a06afa690733feeb07fc0296d9e`.
+Model/guest/native fallback, complete patch migration and identity checks:
+**22 passed in 75.95s**; final health-application assertions and identity checks
+passed again (**8 tests**). All supported native build tests passed.
+
+The routing-only two-peer run (`logs/issue25-targets-fixed-pair.log`) confirmed
+moving guest actors and visible bot models, retained in
+`private/captures/issue25-lobby/client/targets-turn-check.png` (intermediate
+binary, not the final combat build). The final combat binary then ran two
+bounded 240-second Test Lab sessions, matching 2 humans / 6 bots, with isolated
+controls, both display paths, loopback addresses, capped logs and rotating
+captures. Synthetic in-process input exercised movement, firing, reloads and
+grenade buttons; this was not a physical keyboard/controller test.
+
+Final evidence: `logs/issue25-final-combat-pair.log`,
+`logs/issue25-final-combat-health.jsonl` and its compact
+`logs/issue25-final-combat-summary.json`. Bot slot 6's current health fell from
+1.1 to approximately 0.550008 on both peers. The final sampled bot score/death
+fields matched; several sampled fields interpreted as bot deaths increased and active actors continued
+moving afterward. The guest capture
+`private/captures/issue25-lobby/client/final-combat-180.png` shows the red
+directional damage indicator, previously missing in the report. No peer crashed
+during this bounded run. Allocation or identical snapshots alone are not proof
+of complete combat behavior.
+
+**Remaining acceptance:** a deliberately aimed human hit/kill attributed to
+each PC, guest bot muzzle/shot effects, animation fidelity, complete death/
+respawn/scoring behavior, zero-bot/rematch/disconnect cases and actual Online
+bridge gameplay still need confirmation. The observed health reduction is not
+attributed to a particular human attacker. Do not describe issue #25 as fully
+verified online bot support. Both PCs need this same rebuilt runtime.
+
+Both final processes exited, and the runner recycled their known partition
+images. The canonical Test Lab fixture, personal saves/settings and dependency
+pins were preserved. Redundant BMP captures and disposable compiler-test trees
+were removed; selected screenshots, profiles and bounded logs remain local.
+
+## 2026-10-17 ? Issue #25 checkpoint: radar and direct-hit collision
+
+Checkpoint requested on `25-add-bot-support-to-online-matches`, based on
+`33fc619`; source/patches/tests/docs are committed together. No push or main
+merge is part of this checkpoint. Other-device synchronization and Mac execution
+remain unverified; adaptation is queued in MAC-028.
+
+**Correction to the earlier health evidence:** actor `0xB08`/`0xB0C` are health
+configuration values. The prior sampled change from 1.1 to approximately 0.55
+was not evidence of live damage. Original damage routine `sub_000BA310` changes
+entity `0x1CC` (health), `0x1D0` (armor), `0x1D4` (last damage tick) and clamps
+against `0x1D8` (maximum health). Current packets and diagnostics use those
+fields. The earlier claimed health proof is superseded.
+
+Changes in this checkpoint add the radar caller to the allocated-AI activity
+allowlist, restore living bots' `0x61` drawing/collision flags instead of drawing
+alone, replicate actor `0x24` flags and actual vitals, and transfer clip/frame
+channels into guest-local models. A guest whose bot body was deleted can recreate
+it through the original Arcade constructor when a living host snapshot arrives.
+No guest AI decisions or duplicate actor-list entries are introduced. The
+separate combat patch adds bounded, opt-in damage tracing. Synthetic isolated
+input-state files now support sequenced mouse counts for aimed-hit tests.
+
+Validation host: Windows AMD64, D3D11, Python 3.14.2, CMake 4.4.4,
+MSVC 19.42 / Windows SDK 10.0.22621; upstream/dependency pins unchanged.
+The supported US XBE SHA-256 was verified by the supported build. Latest build
+and native checks passed (`logs/issue25-collision-respawn-build.log`). Executable
+SHA-256: `e4884e2c1bccb40f2af61a63d697334c021ebff78a92576ffbc33075afb288fa`.
+The executable predates only the final whitespace/documentation cleanup.
+Compatibility identity tests passed (5 tests).
+Full patch-upgrade/tracking checks passed (28 tests). Three compiler tests first
+failed with an incomplete compiler environment, then all passed with MSVC's x64
+environment (`logs/issue25-compiler-tests.log`). This includes the native fallback,
+radar caller, collision bits, live vitals, and missing-body receive path.
+
+Reviewed intermediate captures `host/pose-radar-check.png` and
+`client/pose-radar-check.png` under `private/captures/issue25-lobby` show bot radar
+markers on both peers. The final 240-second paired LAN run used disposable Test
+Lab copies, isolated controls and both display configurations, loopback addresses,
+capped logs, rotating captures and synthetic input. In
+`private/test-saves/issue25-client/bot-damage.log`, guest human entity `8156F968`
+hits bot 7, reducing actual health from 1.26667 through 1.09567 to zero. The host
+trace independently records that human as `8156FC50`, applying the corresponding
+reductions. Bot-source damage also reduces live health. Later guest samples show
+new bodies for bot slots 5/7, while live health/armor agree across the peers.
+Full evidence: `logs/issue25-collision-live.log` and the two disposable diagnostic
+files. This establishes guest-human damage and body recreation, not every combat
+or lifecycle requirement. Earlier baseline traces are separately retained.
+
+**Still unfinished/unverified:** host-human aimed damage/kill attribution,
+guest gun/muzzle effects, full animation/weapon fidelity, comprehensive
+respawn/scoring and team rules, zero-bot/rematch/disconnect scenarios, and actual
+Online bridge gameplay. Clip/frame replication alone does not prove correct
+rendered animation. Issue #25 remains experimental and incomplete.
+
+Both final test processes exited. The runner recycles only the disposable
+partition images. Personal saves/settings and the canonical Test Lab fixture
+were preserved. Selected captures and bounded diagnostics remain ignored/local.

@@ -149,6 +149,15 @@ int main(int argc, char **argv)
     CHECK(recomp_bindings_sample(0, &pad));
     CHECK(pad.bAnalogButtons[XBOX_BUTTON_A] == 0);
     CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 255);
+    {
+        float yaw=*(float *)(guest+0x10100);
+        f=fopen(state_file,"w");CHECK(f);fputs("1 0 1 50 0",f);fclose(f);Sleep(50);
+        pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        CHECK(fabs(*(float *)(guest+0x10100)-yaw)>1);
+        yaw=*(float *)(guest+0x10100);Sleep(50);
+        pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        CHECK(fabs(*(float *)(guest+0x10100)-yaw)<.001); /* same sequence is not replayed */
+    }
     VirtualFree(guest, 0, MEM_RELEASE);
     puts("PASS: PC input focus/capture, released buttons, wheel queue, raw-count camera math, pitch limits, FOV scaling, poll independence, WASD/reload/fire bindings and guest camera integration");
     return 0;

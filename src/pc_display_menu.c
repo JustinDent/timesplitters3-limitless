@@ -263,7 +263,7 @@ static uint32_t text_at(int i,const char *format,...)
 static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 {
     GuestRegisters r;
-    uint32_t args[9],result; unsigned i;
+    uint32_t args[12],result; unsigned i;
     va_list ap;
     save_registers(&r);
     va_start(ap,count); for(i=0;i<count;i++) args[i]=va_arg(ap,uint32_t); va_end(ap);
@@ -271,6 +271,82 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     push(PC_DISPLAY_MENU_CALLBACK); fn(); result=g_eax;
     restore_registers(&r);
     return result;
+}
+/* Recreate only a missing guest body using the same constructor as the
+ * original Arcade initializer. Keep the existing actor-list entry and scores;
+ * never run guest AI decisions or add a duplicate entry to 0x7A3580. */
+uint32_t pc_network_bots_revive(unsigned slot)
+{
+#ifdef _WIN32
+    extern void sub_000DAC30(void),sub_000D7570(void);
+    const uint32_t pool=WORD_AT(0x007356d8u);
+    const unsigned humans=*(uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
+    const unsigned bots=*(uint8_t *)((uintptr_t)0x007de402u+g_xbox_mem_offset);
+    uint32_t actor,entity,character,variant;
+    if(!humans || !bots || bots>10u || humans+bots>16u || slot<humans || slot>=humans+bots ||
+       !pool || WORD_AT(0x0076b140u)!=2u || WORD_AT(0x0076b1a4u)!=15u) return 0;
+    actor=pool+slot*0xea0u;
+    if(!guest_writable(actor,0xea0u) || WORD_AT(actor)) return 0;
+    character=*(uint8_t *)((uintptr_t)(0x007de414u+slot)+g_xbox_mem_offset);
+    variant=(uint32_t)(int32_t)*(int8_t *)((uintptr_t)(0x007de444u+slot)+g_xbox_mem_offset);
+    entity=guest_call(sub_000DAC30,10,character,character,(uint32_t)slot,
+        0u,0u,0u,0u,UINT32_MAX,1u,variant);
+    if(!entity || !guest_writable(entity,0x25cu) || WORD_AT(actor)!=entity) return 0;
+    WORD_AT(0x007a2d00u+(slot-humans)*4u)=entity;
+    guest_call(sub_000D7570,1,actor);
+    return entity;
+#else
+    (void)slot;return 0;
+#endif
+}
+void pc_network_bots_entity_refresh(uint32_t entity)
+{
+#ifdef _WIN32
+    extern void sub_0009FBE0(void);
+    if(guest_writable(entity,0x238u)) {
+        *(uint8_t *)((uintptr_t)(entity+0x32u)+g_xbox_mem_offset)=1;
+        guest_call(sub_0009FBE0,1,entity);
+    }
+#else
+    (void)entity;
+#endif
+}
+void pc_network_bots_present(uint32_t entity,int32_t clip,const float *channels)
+{
+#ifdef _WIN32
+    extern void sub_000966E0(void);
+    uint32_t model,speed;
+    if(!guest_writable(entity,0x238u) || clip<0 || clip>4095) return;
+    model=WORD_AT(entity+4u);
+    if(!guest_writable(model,0x200u)) return;
+    if((int32_t)WORD_AT(model+0xd4u)!=clip) {
+        memcpy(&speed,channels+11,4);
+        guest_call(sub_000966E0,3,model,(uint32_t)clip,speed);
+    }
+    memcpy((void *)((uintptr_t)(model+0xdcu)+g_xbox_mem_offset),channels,48);
+#else
+    (void)entity;(void)clip;(void)channels;
+#endif
+}
+void pc_network_bots_menu(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t mode=WORD_AT(0x0078AD2Cu);
+    const int host=WORD_AT(0x0076B108u) && WORD_AT(0x0076B140u)==1u &&
+        mode>=11u && mode<=13u;
+    /* Only the synchronous menu construction sees Arcade's setup mode. This
+       runs the title's own Bot Set row, dropdown, edit callback, positioning
+       and footer layout; the transport and installed callbacks stay original.
+       Restore the real mode before returning to the lobby or processing input. */
+    if(host) {
+        WORD_AT(0x0078AD2Cu)=9u;
+        _putenv_s("TSFP_NETWORK_BOTS","1");
+    }
+    original();
+    if(host) WORD_AT(0x0078AD2Cu)=mode;
+#else
+    original();
+#endif
 }
 #include "pc_display_ui.inc"
 #include "pc_tutorial_ui.inc"
@@ -482,6 +558,16 @@ static void activate(void)
 }
 #ifdef _WIN32
 extern void sub_001A0A60(void);
+/* Indirect editor callbacks run after the constructor has returned. Give
+   those callbacks the same Arcade Custom rules (including custom bot sets),
+   with the network mode restored at every callback boundary. */
+extern void sub_002C2C20(void),sub_002C0490(void),sub_002C19F0(void);
+extern void sub_002C1570(void),sub_002C1490(void);
+static void network_bots_build(void) { pc_network_bots_menu(sub_002C2C20); }
+static void network_bots_tick(void) { pc_network_bots_menu(sub_002C0490); }
+static void network_bots_list(void) { pc_network_bots_menu(sub_002C19F0); }
+static void network_bots_list_tick(void) { pc_network_bots_menu(sub_002C1570); }
+static void network_bots_item_draw(void) { pc_network_bots_menu(sub_002C1490); }
 static void system_link_activate(void)
 {
     GuestRegisters r; save_registers(&r);
@@ -508,6 +594,11 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case FOV_DRAW_CB: return fov_draw;
 #ifdef _WIN32
     case 0x1200du: return online_activate;
+    case 0x002C2C20u: return network_bots_build;
+    case 0x002C0490u: return network_bots_tick;
+    case 0x002C19F0u: return network_bots_list;
+    case 0x002C1570u: return network_bots_list_tick;
+    case 0x002C1490u: return network_bots_item_draw;
     /* Any remaining indirect reference to the retired Live entry uses Online. */
     case 0x001CC050u: return online_activate;
     /* System Link is reached through the title's indirect menu table. Online

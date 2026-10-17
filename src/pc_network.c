@@ -29,6 +29,7 @@ static int bind_specific;
 static unsigned char local_address[36];
 static const unsigned char compatibility[32] = TSFP_NETWORK_COMPATIBILITY;
 static unsigned rejected;
+static void bot_reset(void);
 static unsigned sent_logs, received_logs;
 static int online;
 static uint32_t online_ip;
@@ -170,6 +171,7 @@ static int initialize(void)
 static void shutdown_locked(void)
 {
     unsigned i;
+    bot_reset();
     memset(latency_peers,0,sizeof latency_peers);
     online_latency=-1; online_latency_peers=0; online_latency_updated=0;
     if(!initialized) return;
@@ -226,6 +228,92 @@ static int send_packet(NetSocket *s,const char *payload,int length,int flags,con
     if(sent==SOCKET_ERROR) return (int)failure(WSAGetLastError());
     return length;
 }
+typedef struct { unsigned role,humans,bots;uint32_t host_ip,match; } BotContext;
+static BotContext bot_context;
+static PcNetworkBotState bot_pending[16];
+static unsigned char bot_fresh[16],bot_seen[16];
+static uint32_t bot_last_tick[16];
+static uint32_t bot_targets[16];
+static unsigned bot_target_count;
+static void bot_reset(void)
+{
+    memset(&bot_context,0,sizeof bot_context);
+    bot_target_count=0;
+    memset(bot_fresh,0,sizeof bot_fresh);memset(bot_seen,0,sizeof bot_seen);
+}
+void pc_network_bots_context(unsigned role,uint32_t host_ip,uint32_t match,unsigned humans,unsigned bots)
+{
+    BotContext next={role,humans,bots,host_ip,match};
+    AcquireSRWLockExclusive(&network_lock);
+    if(memcmp(&next,&bot_context,sizeof next)) {
+        memset(bot_fresh,0,sizeof bot_fresh);memset(bot_seen,0,sizeof bot_seen);
+        bot_context=next;
+        bot_target_count=0;
+    }
+    ReleaseSRWLockExclusive(&network_lock);
+}
+void pc_network_bots_targets(const uint32_t *addresses,unsigned count)
+{
+    AcquireSRWLockExclusive(&network_lock);
+    bot_target_count=0;
+    if(bot_context.role==1 && count<=16u) {
+        memcpy(bot_targets,addresses,count*sizeof *addresses);bot_target_count=count;
+    }
+    ReleaseSRWLockExclusive(&network_lock);
+}
+/* Called only after the outer compatibility/bridge checks, before the title's
+   receive-size check and decoder. Unknown extension frames never reach Xbox. */
+static int bot_control(const struct sockaddr_in *address,const unsigned char *data,int length)
+{
+    PcNetworkBotState state;uint32_t match;unsigned i;
+    if(length<8 || memcmp(data,"TSFBAI1",8)) return 0;
+    if(length!=20+sizeof state || bot_context.role!=2 ||
+       address->sin_addr.s_addr!=bot_context.host_ip) return 1;
+    memcpy(&match,data+16,4);
+    if(match!=bot_context.match) return 1;
+    for(i=0;i<peer_count;i++) if(peers[i].ip==bot_context.host_ip && !memcmp(peers[i].key,data+8,8)) break;
+    if(i==peer_count) return 1;
+    memcpy(&state,data+20,sizeof state);
+    if(!pc_network_bot_state_valid(&state,bot_context.humans,bot_context.bots)) return 1;
+    i=state.slot;
+    if(bot_seen[i] && (int32_t)(state.tick-bot_last_tick[i])<=0) return 1;
+    bot_pending[i]=state;bot_fresh[i]=bot_seen[i]=1;bot_last_tick[i]=state.tick;
+    return 1;
+}
+void pc_network_bots_send(const PcNetworkBotState *state)
+{
+    unsigned i,j;unsigned char data[20+sizeof *state];
+    AcquireSRWLockExclusive(&network_lock);
+    if(!initialized || bot_context.role!=1 ||
+       !pc_network_bot_state_valid(state,bot_context.humans,bot_context.bots)) goto done;
+    memcpy(data,"TSFBAI1",8);memcpy(data+16,&bot_context.match,4);memcpy(data+20,state,sizeof *state);
+    /* The host only resolves its own XNADDR. Connected guests are in the
+       title's sockaddr table, not necessarily in the XNet conversion cache. */
+    for(i=0;i<peer_count;i++) if(peers[i].ip==local_ip) break;
+    if(i==peer_count) goto done;
+    memcpy(data+8,peers[i].key,8);
+    for(i=0;i<bot_target_count;i++) {
+        struct sockaddr_in address={0};
+        if(bot_targets[i]==local_ip || !bot_targets[i]) continue;
+        address.sin_family=AF_INET;address.sin_addr.s_addr=bot_targets[i];
+        for(j=0;j<MAX_SOCKETS;j++) if(sockets[j].socket!=INVALID_SOCKET && sockets[j].port) {
+            address.sin_port=htons((u_short)sockets[j].port);
+            send_packet(&sockets[j],(const char *)data,sizeof data,0,&address);
+        }
+    }
+done:
+    ReleaseSRWLockExclusive(&network_lock);
+}
+int pc_network_bots_receive(unsigned slot,PcNetworkBotState *state)
+{
+    int fresh=0;
+    AcquireSRWLockExclusive(&network_lock);
+    if(slot<16 && bot_context.role==2 && bot_fresh[slot]) {
+        *state=bot_pending[slot];bot_fresh[slot]=0;fresh=1;
+    }
+    ReleaseSRWLockExclusive(&network_lock);
+    return fresh;
+}
 static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,struct sockaddr_in *from)
 {
     unsigned char packet[MAX_PACKET]; struct sockaddr_in address; int n,size,attempt;
@@ -255,6 +343,8 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
                 continue;
             }
             if(ntohs(destination)!=s->port) continue;
+            memcpy(&address.sin_addr.s_addr,packet+56,4); memcpy(&address.sin_port,packet+64,2);
+            if(bot_control(&address,packet+BRIDGE_HEADER,n-BRIDGE_HEADER)) continue;
             if(n-BRIDGE_HEADER>capacity) return (int)failure(WSAEMSGSIZE);
             memcpy(&address.sin_addr.s_addr,packet+56,4); memcpy(&address.sin_port,packet+64,2);
             memcpy(payload,packet+BRIDGE_HEADER,n-BRIDGE_HEADER); if(from) *from=address;
@@ -265,6 +355,7 @@ static int receive_packet(NetSocket *s,char *payload,int capacity,int flags,stru
             if(!rejected++) fprintf(stderr,"[PC-NET] Dropped incompatible/unframed peer traffic\n");
             continue;
         }
+        if(bot_control(&address,packet+HEADER,n-HEADER)) continue;
         if(n-HEADER>capacity) return (int)failure(WSAEMSGSIZE);
         latency_probe(s,&address);
         if(received_logs++<12) fprintf(stderr,"[PC-NET] Receive %u <- %08x:%u, %d bytes\n",

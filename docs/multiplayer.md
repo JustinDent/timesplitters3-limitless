@@ -217,6 +217,33 @@ Keep the entire extracted package together, and preserve `Data`, `Settings`, and
 
 ## Validation and storage
 
+### Experimental bot setup (issue #25 development branch)
+
+The host can open **Options** from its multiplayer lobby, continue through
+level/mode selection to match settings. **BOT SET** appears below **WEAPON SET**,
+using Arcade's original selector and edit action. Choose a set with left/right,
+or use the edit action to change characters, teams, skills and enabled bots.
+Return to match settings and confirm the choices before starting.
+Guests cannot change the host's roster. The prototype uses at most ten bots and
+never exceeds sixteen human/bot character slots, preserving existing human IDs.
+
+Opening host match settings enables experimental roster loading for that
+session. Select a zero-bot set to play without bots.
+Use matching builds and disposable test saves; `Test-SystemLink.ps1` provides
+two isolated local instances as described below. Start with one or two bots.
+Check that both PCs see the same roster, movement, attacks, damage, deaths,
+respawns and scores, including a rematch and disconnect. Test LAN first, then
+the Online bridge.
+
+This development build now sends host-owned bot state to guests and adds bot
+references to combat events. Both peers must use the same updated build; the
+compatibility identity rejects older versions. Two-instance LAN checks have
+confirmed guest-visible bot models and movement. Full combat, lifecycle and
+Online acceptance remain recorded separately in `STATUS.md`; this is still
+experimental support. Report missing bots, different behavior between peers or
+crashes with the host/client logs. Development
+details and outstanding work are in [the investigation](online-bots-investigation.md).
+
 Launch both local test instances from the repository folder:
 
 ```powershell

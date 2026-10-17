@@ -34,22 +34,29 @@ static ULONGLONG replay_started;
 static const char *test_state_path;
 static ULONGLONG test_state_checked;
 static unsigned test_state_key;
+static unsigned test_state_motion;
 
 static void replay_tick(void)
 {
     ULONGLONG now = GetTickCount64();
     if (!replaying) return;
     if(test_state_path && now-test_state_checked>=16) {
-        FILE *state; unsigned key=0; int down=0;
+        FILE *state; unsigned key=0,motion=0; int down=0,dx=0,dy=0,fields=0;
         test_state_checked=now;
         state=fopen(test_state_path,"r");
         if(state) {
-            if(fscanf(state,"%u %d",&key,&down)!=2 || key>=256) key=0;
+            fields=fscanf(state,"%u %d %u %d %d",&key,&down,&motion,&dx,&dy);
+            if(fields<2 || key>=256) {key=0;down=0;}
             fclose(state);
         }
         if(test_state_key!=key || !down) pc_input_key(&input,test_state_key,0);
         test_state_key=key;
         pc_input_key(&input,key,down!=0);
+        /* Optional sequence + raw counts allow a bounded test to aim after
+           loading. Apply a motion update once, regardless of polling rate. */
+        if(fields==5 && motion!=test_state_motion) {
+            test_state_motion=motion;pc_input_motion(&input,dx,dy,now);
+        }
     }
     if (!replay_started) replay_started = now;
     while (replay_next < replay_count && now - replay_started >= replay[replay_next].at) {

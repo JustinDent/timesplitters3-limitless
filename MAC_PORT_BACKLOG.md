@@ -58,6 +58,7 @@ runtime readiness. No full campaign playthrough is required.
 | ID | Feature | Status |
 | --- | --- | --- |
 | MAC-025 | Reusable unlocked testing profile | Queued |
+| MAC-028 | Experimental network bots (issue #25) | Queued |
 | MAC-001 | Direct-camera mouse look | Awaiting validation |
 | MAC-002 | Keyboard/mouse prompts and device switching | Awaiting validation |
 | MAC-003 | Debug settings and on-screen performance information | Awaiting validation |
@@ -879,3 +880,41 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   wrapped descriptions, and keyboard/controller switching. Verify supported GPU
   sizes and allocation failure recovery. See issue #27/#31 in
   `STATUS.md` for Windows evidence; do not infer Mac runtime verification from it.
+
+### MAC-028 — Experimental network bot setup (issue #25)
+
+- **Status:** Queued
+- **PC behavior:** The host's multiplayer lobby Options flow exposes
+  Arcade BOT SET below WEAPON SET in match settings, reusing its original
+  selector, layout and editor. Opening host settings enables the session-only
+  roster adapter. Final broadcast/load hooks repair the original late bot-count
+  clear that prevented the initial prototype from spawning bots.
+  The adapter validates ten bot records, preserves human IDs, caps combined
+  slots at sixteen, and leaves guest/offline/disabled configurations alone.
+  Initial two-peer validation loaded the same roster on both PCs but left guest
+  actors inactive. The follow-up adds living-body activation, bot-specific
+  combat references and host-owned numeric state snapshots through LAN/Online
+  transport. Follow-up restores radar eligibility and hit-collision flags,
+  transfers actual live vitals and clip/frame channels, and recreates missing
+  guest bodies on host respawn. Current live acceptance and remaining gaps are in `STATUS.md`;
+  issue #25 is not complete from a build or roster check alone.
+- **PC source:** Issue #25 checkpoint on `25-add-bot-support-to-online-matches`,
+  based on `33fc619`: `src/pc_network_bots.h`, `src/pc_network_bots_guest.inc`,
+  `src/pc_display_menu.c`/`.h`, `src/pc_network.c`/`.h`,
+  `src/pc_network_bots_state.h`, `src/pc_controls.c`, and the
+  `pc-network-bots-test` / `pc-network-bot-combat` patches.
+- **PC validation:** MSVC model and guest/native-fallback tests passed;
+  complete patch migration tests passed. See issue #25 in `STATUS.md` for
+  the build/menu scope and remaining host/guest checks.
+- **Existing Mac support:** The roster model is shared. Native wrappers retain
+  original calls; the host menu, configuration override and state transport are
+  Windows-only. Numeric snapshot definitions are shared without OS calls.
+  Native Mac still lacks the PC XNet transport (MAC-013).
+- **Mac adaptation needed:** Complete and validate PC AI replication first;
+  then adapt networking and expose the same editor through the native adapter.
+- **Mac acceptance checks:** Two native hosts, and mixed Windows/Mac peers,
+  must agree on roster, movement, shots, damage, deaths, respawns, teams,
+  scoring, rematches and disconnects. Verify disabled/offline behavior and
+  reject incompatible builds. Preserve personal settings/saves.
+- **Mac implementation and evidence:** No Mac execution or other-device
+  synchronization verified for this prototype.
