@@ -9,6 +9,8 @@ on:
       - tools/build-native-mac.py
       - tools/play-native-mac.py
       - tools/test-native-mac.py
+      - tools/testing_profile.py
+      - tests/test_testing_profile.py
       - tools/native_mac_common.py
       - tests/test_native_mac_tools.py
       - tests/test_native_mac_launcher.py
@@ -96,6 +98,8 @@ on:
       - tools/build-native-mac.py
       - tools/play-native-mac.py
       - tools/test-native-mac.py
+      - tools/testing_profile.py
+      - tests/test_testing_profile.py
       - tools/native_mac_common.py
       - tests/test_native_mac_tools.py
       - tests/test_native_mac_launcher.py
@@ -240,7 +244,7 @@ jobs:
         run: |
           tests=(
             tests/test_ci_runtime_scope.py
-            tests/test_native_mac_tools.py tests/test_native_mac_launcher.py
+            tests/test_native_mac_tools.py tests/test_native_mac_launcher.py tests/test_testing_profile.py
             tests/test_native_compiler.py tests/test_audio_timing.py
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_ghost_rendering.py
             tests/test_xmv_stop.py

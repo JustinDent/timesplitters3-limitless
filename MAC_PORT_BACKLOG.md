@@ -121,7 +121,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
 | MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
 | MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
-| MAC-025 | Reusable unlocked testing profile | Queued |
+| MAC-025 | Reusable unlocked testing profile | Awaiting validation |
 | MAC-026 | Character picker and weapon proportions (issue #22) | Awaiting validation |
 | MAC-027 | Arcade RANK widget left placement | Awaiting validation |
 | MAC-028 | Preserve frontend camera FOV (#82) | Awaiting validation |
@@ -982,7 +982,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-025 — Reusable unlocked testing profile
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** Local Test Lab fixture unlocks story/Arcade/characters and
   challenges without changing fresh collectible/pickup progress. Disposable
   copies use isolated configurations and the existing startup-video switch.
@@ -998,6 +998,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Arcade character selection and challenge availability, retain fresh pickup
   data, isolate both display configs/controls and recycle only test disks.
   Windows evidence is recorded in `STATUS.md`; other-device sync is unverified.
+
+- **Native implementation (2026-10-17):** `codex/mac-test-lab` adds
+  `--unlocked-profile` to `tools/test-native-mac.py`, using shared fixture
+  preparation with native XDG isolation, ownership locks and bounded cleanup.
+  The local native-created fresh seed produced a verified immutable fixture.
+  A 120-second isolated run loaded Test Lab and selected a late Story level
+  through its difficulty screen. Checksums, HMAC and fresh pickup flags are
+  preserved. Arcade character/challenge availability and actual later-level
+  gameplay remain pending; no completion or pickup-progression claim.
+  [Native evidence](STATUS.md#native-test-lab-runner-2026-10-17).
 
 ### MAC-026 — Character picker and weapon proportions (issue #22)
 

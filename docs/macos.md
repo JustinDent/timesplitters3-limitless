@@ -38,6 +38,9 @@ python3 tools/build-native-mac.py --setup --generate --test
 # Bounded native execution, with isolated saves and configuration.
 .venv/bin/python tools/test-native-mac.py --seconds 120 --capture
 
+# Reusable unlocked Test Lab copy, when its local fixture is available.
+.venv/bin/python tools/test-native-mac.py --unlocked-profile --seconds 120 --capture
+
 # Frame timing without screenshot readback (navigate using isolated test input).
 .venv/bin/python tools/test-native-mac.py --seconds 150 --test-keys --profile-frames
 # Select a known gameplay window, excluding menus/loading and the opening animation.
@@ -64,6 +67,9 @@ upstream and PC settings, bounds duration/log size, and records
 until its time limit. The default is 15 seconds; an explicit `--seconds` accepts
 up to 1800 seconds for sustained testing, with the same 8 MiB log limit.
 An intentional early stop is recorded as `process_exit`, not a passed timed probe.
+`--unlocked-profile` uses the shared [Test Lab fixture](testing-profile.md) in
+a disposable nested save directory and skips startup movies. The default probe
+retains its existing profile. Neither mode uses personal saves or configurations.
 It separately reports sampled host presents/GL errors;
 menu recognition still requires reviewing the captures. `--capture` retains two
 rotating BMPs under `private/captures/native-mac`; it does not capture the desktop.

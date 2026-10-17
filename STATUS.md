@@ -1,5 +1,45 @@
 # Measured progress
 
+## Native Test Lab runner (2026-10-17)
+
+`codex/mac-test-lab` is based on unmerged renderer integration `14a0717`, which
+in turn depends on native build restoration `bab79f0`. The bounded native runner
+now accepts `--unlocked-profile` and calls shared `testing_profile.prepare_run`
+inside `private/test-saves/native-mac/unlocked`. Saves, controls, both display
+configs and both XDG roots are isolated; startup movies are skipped. Its root
+lock prevents concurrent native sessions, and its nested lock prevents resetting
+an active fixture copy. Known partition cleanup runs after child shutdown and
+on exceptional exits. Symlink redirects, unowned directories and missing/corrupt
+fixtures fail before game launch. Ordinary native test saves remain unchanged.
+
+On macOS 27.0.1 arm64 / Python 3.13.16, 60 combined routing, native-tool,
+launcher and shared-profile tests passed. Added native-specific coverage for
+fixture immutability, fresh reset, saved test-setting preservation, inherited XDG
+overrides, concurrent preparation, missing fixtures, linked destinations/XDG
+roots and cleanup-before-unlock on startup failure. Windows execution is unrun;
+shared profile implementation is unchanged. Native fixture checks are now in CI.
+
+Created a fresh seed through native menus using synthetic SDL input in the
+ordinary isolated save directory. After that 90-second run exited, the shared
+creator validated the supported XBE and signed save and made the canonical
+local Test Lab fixture. The subsequent 120.20-second unlocked-profile run at
+60 host presents reached the native Test Lab picker, Story level list and a late
+level's difficulty screen (You Take the High Road). Logged at least
+6,900 guest frames and 6,900 host presents,
+no sampled GL errors and no native fault. This is menu/navigation evidence,
+not physical-input or later-level gameplay validation.
+
+After exit, fixture checksums and runtime HMAC still matched and collectible
+flags remained zero. Run locks were released. Cleanup recycled
+6 known images (5,243,406,848 logical bytes,
+135,168 allocated bytes), preserving profiles/configs.
+Evidence: `logs/native-test-lab-driver.log`, `logs/native-test-lab-summary.json`,
+`private/captures/native-mac/test-lab-late-story.png` and
+`test-lab-unlocked-difficulty.png`. Canonical data remains ignored in
+`private/test-fixtures/unlocked`; personal saves/settings were not used.
+MAC-025 is Awaiting validation: live Arcade character/challenge availability
+and scene-specific gameplay still need checks. No full playthrough is required.
+
 ## Native dependent-texture integration (2026-10-17)
 
 Focused branch `codex/mac-dependent-textures` depends on unmerged native build

@@ -28,7 +28,7 @@ def affected(paths, *, full=False):
         elif path.startswith(('src/', 'tests/')) or path in (
                 'tools/recomp-generation.py', 'tools/build-native-mac.py',
                 'tools/play-native-mac.py', 'tools/test-native-mac.py',
-                'tools/native_mac_common.py'):
+                'tools/native_mac_common.py', 'tools/testing_profile.py'):
             # Other paths admitted by the workflow are native/runtime inputs.
             selected.add('native')
         if path == 'src/pc_display_modes.inc':

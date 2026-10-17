@@ -20,6 +20,7 @@ spec.loader.exec_module(scope)
     (['src/pc_display.c'], {'native'}),
     (['tools/build-native-mac.py'], {'native'}),
     (['tools/test-native-mac.py'], {'native'}),
+    (['tools/testing_profile.py'], {'native'}),
     (['tools/play-native-mac.py'], {'native'}),
     (['tools/native_mac_common.py'], {'native'}),
     (['src/pc_display_modes.inc'], {'native', 'launcher'}),
