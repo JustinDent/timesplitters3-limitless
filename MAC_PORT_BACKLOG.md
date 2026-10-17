@@ -1,5 +1,24 @@
 # PC features awaiting Mac adaptation
 
+### MAC-025 — Reusable unlocked testing profile
+
+- **Status:** Queued
+- **PC behavior:** Local Test Lab fixture unlocks story/Arcade/characters and
+  challenges without changing fresh collectible/pickup progress. Disposable
+  copies use isolated configurations and the existing startup-video switch.
+- **Source:** Commit `0c69834`, [PR #80](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/80)
+  on `test-profile-fast-start`; `tools/testing_profile.py`,
+  `tests/test_testing_profile.py`, `docs/testing-profile.md` and `AGENTS.md`.
+- **Shared Mac support:** The US save layout and runtime HMAC key are shared;
+  fixture generation/preparation uses portable Python. Native execution unverified.
+- **Remaining:** Integrate fixture cloning and `RECOMP_XMV_PLAY=0` with the bounded
+  native runner. The new play/Recycle Bin wrapper is Windows only. No gameplay or
+  existing native launcher behavior changed; no Mac adapter was modified.
+- **Acceptance:** Load the profile in native menus, verify late story levels,
+  Arcade character selection and challenge availability, retain fresh pickup
+  data, isolate both display configs/controls and recycle only test disks.
+  Windows evidence is recorded in `STATUS.md`; other-device sync is unverified.
+
 This is the handoff list for Windows PC features to bring to native Mac later.
 Add or update an entry when implementing a new PC feature, before reporting the
 PC work complete. Also record behavioral fixes that need Mac adaptation. Mac
@@ -38,6 +57,7 @@ runtime readiness. No full campaign playthrough is required.
 
 | ID | Feature | Status |
 | --- | --- | --- |
+| MAC-025 | Reusable unlocked testing profile | Queued |
 | MAC-001 | Direct-camera mouse look | Awaiting validation |
 | MAC-002 | Keyboard/mouse prompts and device switching | Awaiting validation |
 | MAC-003 | Debug settings and on-screen performance information | Awaiting validation |
