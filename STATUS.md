@@ -4039,3 +4039,13 @@ queued under MAC-021; other-device synchronization is unverified.
 - Four comparisons, four repeat sheets and three enlarged detail sheets reviewed; original alpha stays opaque. All **602** retained DDS pass native/worklist checks. Accepted mean luminance changes **-14.30% to +7.54%**; scene lighting, tiling, material scale and mapped appearance remain pending. Existing bright borders on pale plaster retained and flagged for later scene-use review.
 - Pack **682,275,373 bytes (650.67 MiB / 6144 MiB)**. Texture workspace measured **2,990,408,418 bytes (2.79 GiB)** logical/allocated, including authored sources. Temporary exports/reviews **225.85 MiB / 256 MiB**. No duplicate game/pack/ZIP/staging. Only held DDS/metadata retired after exact parent/hash checks; art/provenance and saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-96-*`, prompts and progress. No game launches or runtime/tool changes; previous compiler tests retained. Work stays on #74; concurrent source work preserved. Mac/scene validation pending.
+
+
+## Texture overhaul issue #74: hybrid batch 97
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a327327`, using the isolated source checkout and one ignored private pack. Inspected 32 more opaque originals; 1,209 provisionally classified keys.
+- Generated and accepted sixteen material/panel replacements with built-in image generation. Nine 1254-square and seven 1774x887 authored sources downsampled to nine 1024-square and seven 1024x512 full-mip DXT1 files; no native 4K claim.
+- Reviewed four comparisons, four repeat sheets and enlarged vent detail. Preserved major UV divisions, grid/course patterns, trim and joints. Mean luminance changes -12.45% to +6.37%; local contrast/material scale and scene adjacency remain runtime checks.
+- All 618 installed/offline-approved replacements pass native DDS and worklist validation. Still 6,145 need art and 49 drafts need correction; the full overhaul remains unfinished. No new game launches, runtime edits or shared-tool changes. Playtesting stays deferred until the near-completion gate.
+- Pack including metadata: 691,022,687 bytes (659.01 MiB), below 6 GiB. Texture workspace: 3,066,077,378 logical and 3,066,077,378 allocated bytes. Temporary originals/reviews: 243,245,392 bytes (231.98 MiB), below 256 MiB. Free disk at audit: 127,800,561,664 bytes. No duplicate game, ZIP or staging copy created.
+- Private evidence: `review/hybrid-97-acceptance.json`, `hybrid-97-functional-audit.json`, `hybrid-97-native-audit.txt`, `hybrid-97-selection.json` and exact authored prompt records. Artwork remains local and ignored; this commit records progress only.
