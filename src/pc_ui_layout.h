@@ -2,6 +2,8 @@
 #ifndef TSFP_PC_UI_LAYOUT_H
 #define TSFP_PC_UI_LAYOUT_H
 #include <stddef.h>
+#include <stdint.h>
+#include <math.h>
 #include <string.h>
 /* US menu health draw: state 8 is the completed-match/results phase.
  * Keep Story objectives and the ordinary pause HUD unchanged. */
@@ -55,5 +57,37 @@ static float pc_ui_health_scale(float scale,float left,float top,float right,
     fit=(bottom-cy-my)/170.f;if(fit<limit)limit=fit;
     if(limit<0)limit=0;
     return scale<limit?scale:limit;
+}
+/* Keep a scope aperture proportional while its opaque outer rectangles reach
+ * the output edges. Render the result with STRETCH: interior coordinates use
+ * the same fit as the reticle; only each mask's designated outside edge stays
+ * on the complete output canvas. side: left=0, top=1, right=2, bottom=3. */
+static void pc_ui_scope_mask(int32_t rect[4],unsigned side,float ratio)
+{
+    float sx=pc_ui_scale_x(ratio),sy=pc_ui_scale_y(ratio);
+    for(unsigned i=0;i<4;i++) {
+        float centre=(i&1)?240.f:320.f,scale=(i&1)?sy:sx;
+        float value=centre+((float)rect[i]-centre)*scale;
+        /* Round outward to overlap the textured aperture by at least the
+           original one-pixel seam allowance. */
+        rect[i]=(int32_t)((i<2)?floorf(value):ceilf(value));
+    }
+    if(side==0){rect[0]=0;rect[1]=0;rect[3]=480;}
+    if(side==1){rect[0]=0;rect[1]=0;rect[2]=640;}
+    if(side==2){rect[2]=640;rect[1]=0;rect[3]=480;}
+    if(side==3){rect[0]=0;rect[3]=480;rect[2]=640;}
+}
+/* Apply the canvas fit around the aim point, not the screen centre. This
+ * also preserves rotated quads and keeps the original texture UVs intact. */
+static void pc_ui_aim_shape(float *xy,unsigned points,float ratio)
+{
+    float cx=0,cy=0,sx=pc_ui_scale_x(ratio),sy=pc_ui_scale_y(ratio);
+    if(!points || !(ratio>0.f))return;
+    for(unsigned i=0;i<points;i++){cx+=xy[i*2];cy+=xy[i*2+1];}
+    cx/=points;cy/=points;
+    for(unsigned i=0;i<points;i++){
+        xy[i*2]=cx+(xy[i*2]-cx)*sx;
+        xy[i*2+1]=cy+(xy[i*2+1]-cy)*sy;
+    }
 }
 #endif

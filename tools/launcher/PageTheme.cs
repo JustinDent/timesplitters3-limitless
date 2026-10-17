@@ -1,0 +1,219 @@
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Markup;
+
+namespace TimeSplitters.Launcher
+{
+    // Scoped to the embedded pages; native controls keep their keyboard behavior.
+    public static class PageTheme
+    {
+        public static Brush Brush(string value) { return (Brush)new BrushConverter().ConvertFromString(value); }
+        public static TextBlock Text(string text,int size,string color="#E4EDF5")
+        { return new TextBlock { Text=text,FontSize=size,Foreground=Brush(color),TextWrapping=TextWrapping.Wrap }; }
+        public static Border Card(UIElement child)
+        { return new Border { Background=Brush("#122233"),BorderBrush=Brush("#2D455C"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(7),Padding=new Thickness(20),Child=child }; }
+        public static StackPanel Section(Panel parent,string title,string description)
+        {
+            var body=new StackPanel();var heading=Text(title,17);heading.FontWeight=FontWeights.SemiBold;body.Children.Add(heading);
+            if(description.Length>0){var hint=Text(description,12,"#9EB4C8");hint.Margin=new Thickness(0,5,0,16);body.Children.Add(hint);}
+            var card=Card(body);card.Margin=new Thickness(0,0,0,14);parent.Children.Add(card);return body;
+        }
+        public static void Primary(Button button)
+        { button.Background=Brush("#A7D9FA");button.Foreground=Brush("#0B2337");button.BorderBrush=Brush("#D6EBFA"); }
+        public static ResourceDictionary Tabs()
+        {
+            // Native TabItem selection and keyboard navigation, with a compact accent underline.
+            return (ResourceDictionary)System.Windows.Markup.XamlReader.Parse(@"
+<ResourceDictionary xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
+  <Style TargetType='TabItem'>
+    <Setter Property='Foreground' Value='#9EB4C8'/><Setter Property='Padding' Value='18,12'/>
+    <Setter Property='MinHeight' Value='44'/><Setter Property='Cursor' Value='Hand'/>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TabItem'>
+      <Grid Background='Transparent' Margin='0,0,20,0'>
+        <ContentPresenter ContentSource='Header' RecognizesAccessKey='True' Margin='{TemplateBinding Padding}'
+                          TextElement.FontSize='13' TextElement.FontWeight='SemiBold' HorizontalAlignment='Center' VerticalAlignment='Center'/>
+        <Border x:Name='Line' Height='2' VerticalAlignment='Bottom' Background='#A7D9FA' Visibility='Collapsed'/>
+      </Grid>
+      <ControlTemplate.Triggers>
+        <Trigger Property='IsSelected' Value='True'><Setter Property='Foreground' Value='#E4EDF5'/><Setter TargetName='Line' Property='Visibility' Value='Visible'/></Trigger>
+        <Trigger Property='IsMouseOver' Value='True'><Setter Property='Foreground' Value='#A7D9FA'/></Trigger>
+        <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter TargetName='Line' Property='Visibility' Value='Visible'/><Setter TargetName='Line' Property='Background' Value='#FFFFFF'/></Trigger>
+        <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.4'/></Trigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType='TabControl'>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TabControl'>
+      <Grid KeyboardNavigation.TabNavigation='Local'>
+        <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
+        <Border BorderBrush='#2D455C' BorderThickness='0,0,0,1' Margin='0,0,0,18'>
+          <TabPanel IsItemsHost='True' KeyboardNavigation.TabIndex='1' Panel.ZIndex='1'/>
+        </Border>
+        <ContentPresenter Grid.Row='1' x:Name='PART_SelectedContentHost' ContentSource='SelectedContent'/>
+      </Grid>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+</ResourceDictionary>");
+        }
+        public static ResourceDictionary Resources()
+        {
+            return (ResourceDictionary)XamlReader.Parse(@"
+<ResourceDictionary xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
+                    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
+  <Style TargetType='Button'>
+    <Setter Property='Background' Value='#1C3349'/><Setter Property='Foreground' Value='#DFEAF4'/>
+    <Setter Property='BorderBrush' Value='#405D76'/><Setter Property='BorderThickness' Value='1'/>
+    <Setter Property='Padding' Value='14,9'/><Setter Property='MinHeight' Value='38'/>
+    <Setter Property='FontSize' Value='12'/><Setter Property='FontWeight' Value='SemiBold'/><Setter Property='Cursor' Value='Hand'/>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Button'>
+      <Border x:Name='Face' Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}'
+              BorderThickness='{TemplateBinding BorderThickness}' Padding='{TemplateBinding Padding}' CornerRadius='4'>
+        <ContentPresenter HorizontalAlignment='Center' VerticalAlignment='Center' RecognizesAccessKey='True'/>
+      </Border>
+      <ControlTemplate.Triggers>
+        <Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Face' Property='Opacity' Value='0.82'/></Trigger>
+        <Trigger Property='IsPressed' Value='True'><Setter TargetName='Face' Property='Opacity' Value='0.64'/></Trigger>
+        <Trigger Property='IsKeyboardFocused' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#F1F8FF'/></Trigger>
+        <Trigger Property='IsEnabled' Value='False'><Setter TargetName='Face' Property='Opacity' Value='0.38'/></Trigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType='TextBox'>
+    <Setter Property='Background' Value='#0B1826'/><Setter Property='Foreground' Value='#E4EDF5'/>
+    <Setter Property='CaretBrush' Value='#A7D9FA'/><Setter Property='SelectionBrush' Value='#365F80'/>
+    <Setter Property='BorderBrush' Value='#3D5971'/><Setter Property='BorderThickness' Value='1'/>
+    <Setter Property='Padding' Value='10,8'/><Setter Property='MinHeight' Value='36'/>
+    <Setter Property='VerticalContentAlignment' Value='Center'/>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TextBox'>
+      <Border x:Name='Face' Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}'
+              BorderThickness='{TemplateBinding BorderThickness}' CornerRadius='4'>
+        <ScrollViewer x:Name='PART_ContentHost'/>
+      </Border>
+      <ControlTemplate.Triggers>
+        <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#A7D9FA'/></Trigger>
+        <Trigger Property='IsEnabled' Value='False'><Setter TargetName='Face' Property='Opacity' Value='0.4'/></Trigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType='ComboBoxItem'>
+    <Setter Property='Foreground' Value='#E4EDF5'/><Setter Property='Padding' Value='10,9'/>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='ComboBoxItem'>
+      <Border x:Name='Face' Background='Transparent' Padding='{TemplateBinding Padding}'><ContentPresenter/></Border>
+      <ControlTemplate.Triggers>
+        <Trigger Property='IsSelected' Value='True'><Setter TargetName='Face' Property='Background' Value='#294C69'/></Trigger>
+        <Trigger Property='IsHighlighted' Value='True'><Setter TargetName='Face' Property='Background' Value='#365F80'/></Trigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType='ComboBox'>
+    <Setter Property='Background' Value='#0B1826'/><Setter Property='Foreground' Value='#E4EDF5'/>
+    <Setter Property='BorderBrush' Value='#3D5971'/><Setter Property='BorderThickness' Value='1'/>
+    <Setter Property='Padding' Value='10,8'/><Setter Property='MinHeight' Value='38'/>
+    <Setter Property='ScrollViewer.HorizontalScrollBarVisibility' Value='Disabled'/>
+    <Setter Property='ScrollViewer.VerticalScrollBarVisibility' Value='Auto'/>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='ComboBox'>
+      <Grid>
+        <ToggleButton Focusable='False' ClickMode='Press' IsChecked='{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}'>
+          <ToggleButton.Template><ControlTemplate TargetType='ToggleButton'>
+            <Border x:Name='Face' Background='{Binding Background, RelativeSource={RelativeSource AncestorType=ComboBox}}'
+                    BorderBrush='{Binding BorderBrush, RelativeSource={RelativeSource AncestorType=ComboBox}}' BorderThickness='1' CornerRadius='4'>
+              <Path Data='M0,0 L4,4 L8,0' Stroke='#A7D9FA' StrokeThickness='1.5' HorizontalAlignment='Right' VerticalAlignment='Center' Margin='0,0,12,0'/>
+            </Border>
+            <ControlTemplate.Triggers><Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#A7D9FA'/></Trigger></ControlTemplate.Triggers>
+          </ControlTemplate></ToggleButton.Template>
+        </ToggleButton>
+        <ContentPresenter Content='{TemplateBinding SelectionBoxItem}' ContentTemplate='{TemplateBinding SelectionBoxItemTemplate}'
+                          Margin='11,8,32,8' VerticalAlignment='Center' IsHitTestVisible='False'/>
+        <Popup x:Name='PART_Popup' Placement='Bottom' IsOpen='{TemplateBinding IsDropDownOpen}' AllowsTransparency='True' Focusable='False' PopupAnimation='Fade'>
+          <Border Background='#14283B' BorderBrush='#557993' BorderThickness='1' CornerRadius='4'
+                  MinWidth='{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}' MaxHeight='{TemplateBinding MaxDropDownHeight}' Margin='0,3,0,0'>
+            <ScrollViewer CanContentScroll='True'><ItemsPresenter KeyboardNavigation.DirectionalNavigation='Contained'/></ScrollViewer>
+          </Border>
+        </Popup>
+      </Grid>
+      <ControlTemplate.Triggers>
+        <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter Property='BorderBrush' Value='#A7D9FA'/></Trigger>
+        <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.4'/></Trigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType='CheckBox'>
+    <Setter Property='Foreground' Value='#DFEAF4'/><Setter Property='Cursor' Value='Hand'/>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='CheckBox'>
+      <Grid Background='Transparent'><Grid.ColumnDefinitions><ColumnDefinition Width='Auto'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions>
+        <Border x:Name='Face' Width='18' Height='18' Background='#0B1826' BorderBrush='#55738E' BorderThickness='1' CornerRadius='3' VerticalAlignment='Center'>
+          <Path x:Name='Tick' Data='M0,4 L3,7 L9,0' Stroke='#0B2337' StrokeThickness='2' HorizontalAlignment='Center' VerticalAlignment='Center' Visibility='Collapsed'/>
+        </Border>
+        <ContentPresenter Grid.Column='1' Margin='10,0,0,0' VerticalAlignment='Center' RecognizesAccessKey='True'/>
+      </Grid>
+      <ControlTemplate.Triggers>
+        <Trigger Property='IsChecked' Value='True'><Setter TargetName='Face' Property='Background' Value='#A7D9FA'/><Setter TargetName='Tick' Property='Visibility' Value='Visible'/></Trigger>
+        <Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#E4EDF5'/></Trigger>
+        <Trigger Property='IsKeyboardFocused' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#FFFFFF'/><Setter TargetName='Face' Property='BorderThickness' Value='2'/></Trigger>
+        <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.4'/></Trigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType='ScrollBar'>
+    <Setter Property='Width' Value='10'/><Setter Property='Background' Value='#0B1826'/>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='ScrollBar'>
+      <Grid Background='{TemplateBinding Background}'>
+        <Track x:Name='PART_Track' Orientation='{TemplateBinding Orientation}' IsDirectionReversed='True'>
+          <Track.DecreaseRepeatButton><RepeatButton Command='ScrollBar.PageUpCommand' Focusable='False'><RepeatButton.Template><ControlTemplate TargetType='RepeatButton'><Border Background='Transparent'/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+          <Track.Thumb><Thumb><Thumb.Template><ControlTemplate TargetType='Thumb'><Border Background='#45627B' CornerRadius='3' Margin='2'/></ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+          <Track.IncreaseRepeatButton><RepeatButton Command='ScrollBar.PageDownCommand' Focusable='False'><RepeatButton.Template><ControlTemplate TargetType='RepeatButton'><Border Background='Transparent'/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
+        </Track>
+      </Grid>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType='Expander'>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Expander'>
+      <StackPanel>
+        <ToggleButton x:Name='HeaderToggle' Focusable='True' HorizontalContentAlignment='Stretch' Foreground='{TemplateBinding Foreground}'
+                      IsChecked='{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}'>
+          <ToggleButton.Template><ControlTemplate TargetType='ToggleButton'>
+            <Border x:Name='Face' Background='Transparent' BorderBrush='Transparent' BorderThickness='1' Padding='0,3'>
+              <Grid><Grid.ColumnDefinitions><ColumnDefinition Width='22'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions>
+                <Path x:Name='Chevron' Data='M0,0 L4,4 L0,8' Stroke='#A7D9FA' StrokeThickness='1.5'
+                      HorizontalAlignment='Left' VerticalAlignment='Center' RenderTransformOrigin='0.5,0.5'/>
+                <ContentPresenter Grid.Column='1' Content='{Binding Header, RelativeSource={RelativeSource AncestorType=Expander}}' RecognizesAccessKey='True'/>
+              </Grid>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property='IsChecked' Value='True'><Setter TargetName='Chevron' Property='RenderTransform'><Setter.Value><RotateTransform Angle='90'/></Setter.Value></Setter></Trigger>
+              <Trigger Property='IsKeyboardFocused' Value='True'><Setter TargetName='Face' Property='BorderBrush' Value='#A7D9FA'/></Trigger>
+              <Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Face' Property='Background' Value='#1D354A'/></Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate></ToggleButton.Template>
+        </ToggleButton>
+        <ContentPresenter x:Name='Body' ContentSource='Content' Visibility='Collapsed'/>
+      </StackPanel>
+      <ControlTemplate.Triggers><Trigger Property='IsExpanded' Value='True'><Setter TargetName='Body' Property='Visibility' Value='Visible'/></Trigger></ControlTemplate.Triggers>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+  <Style TargetType='Slider'>
+    <Setter Property='MinHeight' Value='26'/>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Slider'>
+      <Grid Background='Transparent'>
+        <Track x:Name='PART_Track' Orientation='Horizontal' Minimum='{TemplateBinding Minimum}' Maximum='{TemplateBinding Maximum}'
+               Value='{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}'>
+          <Track.DecreaseRepeatButton><RepeatButton Command='Slider.DecreaseLarge' Focusable='False'><RepeatButton.Template><ControlTemplate TargetType='RepeatButton'><Border Height='3' Background='#86CDFF' VerticalAlignment='Center'/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.DecreaseRepeatButton>
+          <Track.Thumb><Thumb Width='14' Height='18'><Thumb.Template><ControlTemplate TargetType='Thumb'>
+            <Border x:Name='Grip' Background='#B6DFF9' BorderBrush='#DCEFFF' BorderThickness='1' CornerRadius='3'/>
+            <ControlTemplate.Triggers><Trigger Property='IsMouseOver' Value='True'><Setter TargetName='Grip' Property='Background' Value='#FFFFFF'/></Trigger></ControlTemplate.Triggers>
+          </ControlTemplate></Thumb.Template></Thumb></Track.Thumb>
+          <Track.IncreaseRepeatButton><RepeatButton Command='Slider.IncreaseLarge' Focusable='False'><RepeatButton.Template><ControlTemplate TargetType='RepeatButton'><Border Height='3' Background='#39546C' VerticalAlignment='Center'/></ControlTemplate></RepeatButton.Template></RepeatButton></Track.IncreaseRepeatButton>
+        </Track>
+      </Grid>
+      <ControlTemplate.Triggers>
+        <Trigger Property='IsKeyboardFocused' Value='True'><Setter Property='Opacity' Value='0.8'/></Trigger>
+        <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.4'/></Trigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate></Setter.Value></Setter>
+  </Style>
+</ResourceDictionary>");
+        }
+    }
+}

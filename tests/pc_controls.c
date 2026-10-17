@@ -22,6 +22,24 @@ int main(int argc, char **argv)
     CHECK(argc == 3);
     CHECK(pc_controls_message(NULL, WM_MOUSEACTIVATE, 0, 0, &message_result));
     CHECK(message_result == MA_ACTIVATEANDEAT);
+    pc_controls_menu_mode(1);
+    CHECK(pc_controls_message(NULL, WM_SETCURSOR, 0, HTCLIENT, &message_result));
+    CHECK(message_result == TRUE);
+    CHECK(!pc_controls_message(NULL, WM_MOUSEACTIVATE, 0, 0, &message_result));
+    pc_controls_menu_mode(0);
+    /* Exercise the window adapter directly: Escape then menu exit must
+       restore capture, while an unfocused window must stay uncaptured. */
+    pc_controls_message(NULL,WM_SETFOCUS,0,0,&message_result);
+    pc_controls_message(NULL,WM_KEYDOWN,VK_ESCAPE,0,&message_result);
+    pc_controls_menu_mode(1);
+    pc_controls_message(NULL,WM_APP+0x186,0,0,&message_result);
+    pc_controls_menu_mode(0);
+    pc_controls_message(NULL,WM_APP+0x186,1,0,&message_result);
+    CHECK(pc_controls_message(NULL,WM_SETCURSOR,0,HTCLIENT,&message_result));
+    pc_controls_message(NULL,WM_KILLFOCUS,0,0,&message_result);
+    pc_controls_menu_mode(1);pc_controls_menu_mode(0);
+    pc_controls_message(NULL,WM_APP+0x186,1,0,&message_result);
+    CHECK(!pc_controls_message(NULL,WM_SETCURSOR,0,HTCLIENT,&message_result));
     pc_input_normalize_movement(&mx, &my);
     CHECK(mx == my && hypot(mx, my) <= 32767 && mx > 23000);
     mx = 0; my = -32767; pc_input_normalize_movement(&mx, &my);
@@ -149,8 +167,25 @@ int main(int argc, char **argv)
     CHECK(recomp_bindings_sample(0, &pad));
     CHECK(pad.bAnalogButtons[XBOX_BUTTON_A] == 0);
     CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 255);
+    /* A menu click must neither fire nor leak across the gameplay transition. */
+    pc_controls_menu_mode(1);
+    CHECK(recomp_bindings_sample(0, &pad));
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 0);
+    pc_controls_menu_mode(0);
+    CHECK(recomp_bindings_sample(0, &pad));
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 0);
+    f = fopen(state_file, "w"); CHECK(f); fputs("1 0", f); fclose(f); Sleep(50);
+    CHECK(recomp_bindings_sample(0, &pad));
+    f = fopen(state_file, "w"); CHECK(f); fputs("1 1", f); fclose(f); Sleep(50);
+    CHECK(recomp_bindings_sample(0, &pad));
+    CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 255);
     {
         float yaw=*(float *)(guest+0x10100);
+        /* Absolute menu coordinates must not turn the camera or consume the
+           next gameplay motion sequence with the same third field. */
+        f=fopen(state_file,"w");CHECK(f);fputs("1 0 1 50",f);fclose(f);Sleep(50);
+        pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+        CHECK(fabs(*(float *)(guest+0x10100)-yaw)<.001);
         f=fopen(state_file,"w");CHECK(f);fputs("1 0 1 50 0",f);fclose(f);Sleep(50);
         pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
         CHECK(fabs(*(float *)(guest+0x10100)-yaw)>1);

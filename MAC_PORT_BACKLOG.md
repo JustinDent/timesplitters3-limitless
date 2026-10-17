@@ -1,5 +1,190 @@
 # PC features awaiting Mac adaptation
 
+### MAC-032 — Responsive menu backgrounds and scope masks
+
+- **Status:** Awaiting validation
+- **PC behavior:** The frontend footer's black background and decorative strips
+  fill widescreen/ultrawide output; the animated blue sheet also fills the
+  picture, with its original motion. Labels and mouse targets keep their existing
+  proportions. Background changes preserve original 4:3/narrow layouts and
+  partial viewports. Main-menu construction/measurement and row drawing share a 25%
+  smaller glyph scale, keeping the panel below the logo and scrolling description.
+  Objectives top/bottom bars and blue trim fill wide screens. The circular scope's
+  outer masks reach display edges while its aperture remains proportional.
+  Conventional and futuristic sniper groups explicitly cover the host area
+  outside the original canvas, even when the guest omits its own outer masks.
+  The Sci-Fi Sniper uses its destination-alpha tint instead of opaque black
+  margins. Shared aim shapes scale around their projected aim point, zoom
+  gauges use explicit edge anchors, and full-view crosshairs/borders stretch.
+  Lock-on box halves and orbiting pieces share their target anchor. Special
+  scope rings stay fitted while their gradients/composite cover the output.
+- **Source:** [Feature branch](https://github.com/TheDoffman/timesplitters-future-perfect-pc/tree/fix/responsive-menu-footer);
+  `src/pc_display_ui.inc`, `src/pc_display_menu.h`,
+  `menu-footer-background.patch`, `menu-backdrop.patch`,
+  `main-menu-font.patch`, `objectives-scope-coverage.patch`,
+  `sniper-scope-coverage.patch`, `weapon-aim-overlays.patch`,
+  `special-weapon-overlays.patch`, `tests/weapon_effects.c`, `src/pc_ui_layout.h`, and `tests/ui_layout.c`.
+- **Shared Mac support:** The same title hooks and scoped STRETCH placement are
+  compiled for `TSFP_NATIVE_DISPLAY`; the native renderer already supports this
+  placement. The blue sheet uses the shared guest projection setter and restores
+  it before subsequent layers. No new operating-system adapter is needed.
+- **Remaining:** Run shared regression tests and native visual validation.
+  Windows evidence is in the responsive frontend backgrounds and Objectives
+  bars/scope masks entries in `STATUS.md`, including the live 3440x1440
+  conventional and Sci-Fi Sniper checks. This does not establish Mac rendering
+  or pointer behavior.
+- **Acceptance:** At 4:3, 16:9, 16:10 and ultrawide, check the main and Story
+  footer backgrounds, both decorative halves, proportional prompt labels and
+  menu transitions; verify no background clipping. Check the smaller main-menu
+  rows fit below the header and retain matching mouse targets; other screens
+  keep their existing font sizes. Check Objectives bars and trim at both edges,
+  and circular scope masks/reticles at 4:3, 5:4, 16:9, 16:10 and ultrawide.
+  Verify displaced reticles remain over their aim point and zoom indicators
+  stay proportional. Check lock-on indicators on targets near the screen edges,
+  including lock acquisition/rotation, and special scope gradients during
+  activation/deactivation. Check the Sci-Fi tint has no hard black side margins.
+  Split-screen viewports must retain their original layout.
+  Watch a full blue-sheet animation cycle and check character previews, gameplay
+  and cutscenes retain their lens.
+
+
+### MAC-031 — Quit to Desktop menu entries
+
+- **Status:** Queued
+- **PC behavior:** Main Story/Arcade menu and Pause append Quit to Desktop.
+  The game's confirmation screen defaults to Cancel, supports normal menu
+  controls, and posts WM_CLOSE only after confirmation. Existing Quit retains
+  its return-to-menu behavior. Only player one's menus expose desktop exit.
+- **Source:** Commit `e18baa9` on the #86 menu controls branch;
+  `src/pc_quit_menu.inc`, `src/pc_display_menu.c/.h`, `quit-desktop.patch`,
+  and `tests/quit_menu.c` / `tests/test_quit_menu.py`.
+- **Shared Mac support:** Shared finalizer hooks preserve original Mac menus.
+  Confirmation code is currently gated to Windows (or the portable C test).
+- **Remaining:** Add a native window-thread shutdown adapter, enable the guest
+  confirmation code and verify native input; no Mac runtime validation yet.
+- **Acceptance:** Cancel and Back restore main/Pause without exiting; Pause
+  stays paused; confirmed exit closes normally from both screens with mouse
+  and keyboard/controller. Verify menu layout at supported aspect ratios.
+  Windows evidence belongs to the issue #86 entry in `STATUS.md`.
+
+### MAC-030 — Menu mouse selection (#86)
+
+- **Status:** Queued
+- **PC behavior:** Move the visible cursor over a main, pause or Tab/Objectives menu item to select
+  it, left-click to activate, and right-click to go back. The hit test follows
+  the proportional UI and presentation bars, using the full UI canvas rather
+  than the cropped world viewport during paused updates. Keyboard/controller selection
+  remains active until the pointer moves; mouse ownership suppresses old
+  directional repeats until a fresh direction takes over, including after a click
+  opens a submenu or goes back with the pointer stationary. Held clicks do not
+  cross screens or fire when gameplay resumes. Confirm callbacks receive a scoped
+  player-one pad edge, so mouse selection preserves valid controller mappings.
+  Wheel notches navigate menu rows (including level selection) without activation;
+  queued steps are bounded and discarded on clicks, menu changes, or focus loss.
+  Wheel ownership spans the gaps between packets and continuous pointer motion;
+  hover resumes on a new move after both inputs briefly settle. Clicks stay immediate.
+  Bottom prompts use measured rendered text bounds and original enabled/hidden
+  checks; clicks feed the existing actions before menu shortcut callbacks.
+  Enabled footer prompts turn light blue under the pointer, preserving menu
+  fade alpha. Profile-picker prompts are measured separately within their
+  centered text rows, including Select, Back and enabled Delete Profile.
+  Pause/Objectives Options and Status headings highlight and accept clicks;
+  tab replacement waits until the original input dispatch has returned.
+  Drawing reads pointer state without consuming wheel input.
+  Right-click closes root Pause/Objectives through the original pause handler.
+  Returning to gameplay restores mouse capture automatically while preserving
+  focus-loss protection and suppressing held menu clicks.
+- **Source:** Commit `e18baa9` on `86-enhancement-use-mouse-to-control-main-menu`,
+  based on main `e942ef0`; `src/pc_menu_mouse.h`,
+  `src/pc_menu_mouse_guest.inc`, `src/pc_controls.c/.h`, the final
+  `menu-mouse*.patch` stack, and `tests/menu_mouse.c`.
+- **Shared Mac support:** Pointer geometry and button-edge rules are shared.
+  The guest hook calls the original layout unchanged on Mac until an adapter
+  is supplied. Existing native keyboard/controller input is preserved.
+- **Remaining:** Supply an SDL client-position/button/wheel snapshot, release/hide
+  transitions, focus handling and gameplay button suppression; then enable
+  the shared guest adapter. Native build and physical input are unverified.
+- **Acceptance:** Hover/click main/profile/settings menus at 4:3, 16:9 and
+  ultrawide sizes; reject disabled/clipped items and presentation bars, retain
+  keyboard/controller navigation, select the profile using only the mouse and
+  verify controller mappings stay valid, wheel up/down through level selection
+  without activating a level or leaking steps across screens; move the pointer
+  up/down while scrolling and verify selection follows only the wheel until
+  the gesture settles, then verify hover and immediate clicks work; click enabled footer
+  prompts in main/pause/Objectives menus and verify hidden/disabled prompts are inert;
+  verify hover tint follows the same hit area, clears on focus loss, retains
+  fade transparency and does not drain queued scrolling; check profile Select/Back
+  independently and disabled/enabled Delete Profile; switch Options/Status in
+  both Pause and Objectives and reject stale labels during transitions;
+  close root Pause/Objectives with right-click and resume mouse look without an
+  extra click, including after Escape, while unfocused windows stay uncaptured;
+  keep selection stable after mouse-driven
+  transitions without further pointer motion, and prevent held selection clicks
+  from becoming gameplay shots. Run `tests/test_menu_mouse.py` and native input
+  tests. Windows evidence is recorded in the issue #86 entry in `STATUS.md`.
+
+### MAC-029 — Skippable idle demo video (#50)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The menu idle demo accepts the game's existing skip controls,
+  closes its host audio/video and returns to the menu. Repeated stops are safe;
+  subsequent movies and normal end-of-file playback remain functional.
+- **Source:** Branch `50-cannot-skip-menu-idle-video`, initially based on main
+  `abaf001`; final `xmv-stop.patch`, `tools/recomp-generation.py`, `tsfp.ps1`,
+  `tests/xmv_stop.c` and `tests/test_xmv_stop.py`.
+- **Shared Mac support:** Stop handling and the corrected US symbol map are
+  shared. Native generation already refreshes symbols; metadata edits now
+  invalidate generated wrappers. This does not add native host XMV playback.
+- **Remaining:** Run the portable stop regression and generation checks on Mac.
+  Native build/live validation and other-device synchronization are unverified.
+- **Acceptance:** A stop reports EOF even without a host decoder; destroy is
+  safe afterward. When native movie playback is available, verify idle-demo
+  skipping, overlay/audio cleanup and returning to a responsive menu. Preserve
+  original-body fallback and genuine Start behavior for other titles.
+  See the issue #50 validation entry in `STATUS.md`.
+
+### MAC-028 — Preserve frontend camera FOV (#82)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Gameplay FOV settings leave the main-menu/profile background
+  at its authored lens. In-game cameras retain the selected FOV, including
+  falling/landing; aspect correction and cinematic framing remain active.
+- **Source:** Branch `82-bug-fov-change-affects-the-main-menu`, based on
+  main `abaf001`; `src/pc_display_menu.c`, `tests/cutscene_letterbox.c` and
+  `tests/test_cutscene_letterbox.py`.
+- **Shared Mac support:** The camera function is already shared with native Mac.
+  The scene check uses guest state and requires no platform adapter.
+- **Remaining:** Run the camera regressions and compare frontend backgrounds at
+  55 and 90 degrees on macOS. Native execution and other-device synchronization
+  are unverified on this Windows host.
+- **Acceptance:** Menu backgrounds retain their lens at either setting; entering
+  gameplay and returning to the menu applies the appropriate FOV without
+  accumulating changes. Preserve falling, terminal and cinematic behavior.
+  See the issue #82 validation entry in `STATUS.md`.
+
+### MAC-026 — Spirit skull and eye rendering (#17)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The US spirit renderer uses clockwise culling for rigid
+  skull nodes while keeping skinned trails two sided. Its two eye-billboard
+  batches use unbiased clip-space positions and no fog, preserving their
+  red texture and depth testing. Overrides are restored after each node/batch.
+- **Source:** Spirit rendering commit `70d8e7f` on
+  `17-ghosts-in-mansion-of-madness-and-what-lies-below-are-nonvisible`;
+  `src/pc_ghost_render_guest.inc`, the `spirit-rendering.patch` at the end of
+  the shared patch stack, and `tests/ghost_rendering.c`.
+- **Shared Mac support:** Guest wrappers and HLE render-state forwarding are
+  shared with Windows. No shader hash/string rewriting, geometry fingerprint,
+  Windows-only API, or diagnostic switch is required.
+- **Remaining:** Build on macOS and verify GPU and interpreted-vertex paths.
+  No native execution was available on this Windows host. Confirm the native
+  unwritten-fog fallback observes the scoped fog-disable state.
+- **Acceptance:** Check Mansion entrance-hall spirits from several angles;
+  preserve solid faces, wispy trails, red eyes and wall occlusion. Check
+  ordinary particles/fog immediately afterward and other ghost encounters in
+  both affected levels. Run `tests/test_ghost_rendering.py` and patch-transition
+  suites. See `STATUS.md` for measured Windows evidence and remaining limits.
+
 ### MAC-025 — Reusable unlocked testing profile
 
 - **Status:** Queued
@@ -58,7 +243,7 @@ runtime readiness. No full campaign playthrough is required.
 | ID | Feature | Status |
 | --- | --- | --- |
 | MAC-025 | Reusable unlocked testing profile | Queued |
-| MAC-028 | Experimental network bots (issue #25) | Queued |
+| MAC-033 | Experimental network bots (issue #25) | Queued |
 | MAC-001 | Direct-camera mouse look | Awaiting validation |
 | MAC-002 | Keyboard/mouse prompts and device switching | Awaiting validation |
 | MAC-003 | Debug settings and on-screen performance information | Awaiting validation |
@@ -82,6 +267,8 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
 | MAC-026 | Character picker and weapon proportions (issue #22) | Awaiting validation |
 | MAC-027 | Arcade RANK widget left placement | Awaiting validation |
+| MAC-028 | Preserve frontend camera FOV (issue #82) | Awaiting validation |
+| MAC-029 | Skippable idle demo video (issue #50) | Awaiting validation |
 
 ### MAC-027 — Arcade RANK widget left placement
 
@@ -638,6 +825,94 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Repair / Verify and Diagnostics tabs (2026-10-17, commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98)):** Merged as `860dccd`, prepared for launcher v1.2.12. `MaintenancePage.cs`, `Launcher.cs`/XAML
+  and the shared `PageTheme.cs` tab styling group both pages behind one Repair /
+  Verify sidebar entry. Native tabs retain reports, verification results and
+  settings drafts; Diagnostics is collected on first selection or manual refresh.
+  View logs stays visible on each tab, including during operations. Busy navigation
+  is locked without disabling Cancel or logs. The separate Diagnostics sidebar
+  entry is removed. Windows repair/report/privacy behavior is unchanged. Mac has
+  no equivalent release maintenance UI; native adaptation is **queued** with the
+  existing maintenance work. Acceptance: default repair tab, keyboard selection,
+  preserved results/drafts, report/GitHub actions, visible logs in normal/recovery/
+  busy states, usable cancellation and small-window layout. Windows validation is
+  recorded in STATUS.md; native Mac launcher execution remains unverified.
+- **Embedded What's new page (2026-10-17, commit `cfbfe6c`, [PR #93](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/93)):** Merged as `7ed93cb`, prepared for launcher v1.2.11. `ReleaseNews.cs`, `WhatsNewPage.cs`,
+  `ReleaseClient.cs`, `Launcher.cs`/XAML and bootstrap preview routing add game/
+  launcher views, installed/latest version comparison, exact installed notes,
+  published known-issues extraction, native text rendering and retry with
+  session-only retention. The footer contains Refresh notes and View release on
+  GitHub; Home navigation uses the sidebar. Windows uses the existing compatible-release selection
+  and launcher metadata verification. The current Mac launcher has no equivalent
+  release browser. Native adaptation is **queued**: reuse release/channel/version
+  rules, exact-tag lookup and bounded display-only text, with native embedded
+  navigation and cancellable requests. Acceptance includes stable/preview filtering,
+  older/unpublished installs, offline refresh with stale-note labeling, long text,
+  code/HTML/image safety, channel changes during requests, preserved settings
+  drafts and small-window/keyboard usability. See STATUS.md for Windows evidence;
+  native Mac launcher execution remains unverified.
+- **Resumable downloads and recovery (2026-10-17, commit `c21df35` on
+  `feature/launcher-download-recovery`):** Merged through [PR #91](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/91) as `69204af`, prepared for launcher v1.2.10. `DownloadTransfer.cs`, `ReleaseClient.cs`,
+  `SelfUpdate.cs`, `InstallationMaintenance.cs`, `Bootstrap.cs`, `Launcher.cs`/XAML
+  and `MaintenancePage.cs` add separate bounded game/launcher caches, strict HTTP
+  resume handling and complete-file checksum verification, cancellable copy and
+  hashing, measured speed/ETA, pause/retry and embedded recovery actions. Cached
+  bytes survive staging cleanup, restarts and cancelled preparation. Unknown and
+  redirected paths are preserved/refused; successful staging cleans owned cache
+  data. No game runtime or config format changes. The existing Mac launcher has
+  no equivalent release-download UI. Native adaptation remains **queued**: reuse
+  release identity, Range/If-Range validation, complete hash and bounded cache
+  rules, with POSIX-safe atomic metadata and locking plus native progress/cancel
+  and recovery controls. Acceptance includes connection loss/restart, ignored or
+  malformed ranges, changed releases, cancelled verification/preparation,
+  storage failures, long estimates, retained user files and usable offline entry.
+  See the download-recovery entry in STATUS.md; Windows checks do not establish
+  native Mac launcher execution.
+- **Embedded page and sidebar polish (2026-10-17, commit `0f30cbe` on
+  `feature/launcher-page-polish`):** Merged through [PR #89](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/89)
+  as `1728f21`, prepared for launcher v1.2.9. `PageTheme.cs`, `MaintenancePage.cs`,
+  `SettingsPage.cs` and `Launcher.xaml` provide shared blue/silver control styling,
+  game/launcher health cards, expandable verification details, grouped settings,
+  a fixed Save/Cancel footer, and fixed sidebar icon/label columns with explicit
+  accessible navigation names. Settings draft/save/cancel, capture prompts,
+  verification and repair ownership rules remain unchanged. New status text
+  opens details for unhealthy verification results; smaller windows scroll the
+  content while retaining the sidebar and footer. Existing Mac has no matching
+  release-launcher UI; its Cocoa settings window remains separate. Native Mac
+  adaptation is **queued**: follow the grouping, readable native controls and
+  aligned navigation in that future UI, preserving keyboard/assistive access,
+  all settings and user data. Acceptance includes minimum-size layout, dropdown
+  and slider keyboard behavior, expand/collapse, repair busy/results states and
+  retained settings drafts. See the page-polish validation entry in STATUS.md;
+  Windows render tests do not establish native Mac launcher support.
+- **Repair/Verify and Diagnostics for v1.2.8 (2026-10-17, commit `920b789` on
+  `feature/launcher-repair-diagnostics`):** `InstallationMaintenance.cs`,
+  `MaintenancePage.cs`, `Launcher.cs`/XAML, `ReleaseClient.cs`, `SelfUpdate.cs`
+  and `Core.cs` add embedded repair/diagnostic pages with the sidebar retained.
+  Verification is read-only against installed manifests. Repairs pin exact
+  published versions, validate archives and files, protect personal directories,
+  preserve the independent launcher during game repair and retain the previous
+  game rollback using separate repair transactions/recovery/cleanup. Diagnostics
+  provide versions, GPU/driver/settings/health and allowlisted error summaries;
+  clipboard reports exclude personal paths, arbitrary log text, saves and ISOs.
+  Existing Mac has no corresponding release-launcher adapter. Reuse version,
+  manifest ownership and transaction rules in its future native implementation;
+  adapt WPF/WMI/clipboard and POSIX atomic recovery separately. Verify corruption,
+  cancellation, staged updates, recovery, retained backups, privacy and page
+  navigation with disposable fixtures. Shared game runtime is unchanged; native
+  Mac execution is unverified. See the v1.2.8 validation entry in STATUS.md.
+  Follow-up on the same branch (2026-10-17, commit `e640b2f`): `DiagnosticIssueDraft.cs`
+  and Diagnostics buttons open the bug/enhancement GitHub form with the filtered
+  report, bounded URL prefills and full-report clipboard fallback. Both issue
+  templates add an optional matching field. Future Mac adapters must preserve
+  the review-before-submit flow, use a native browser/clipboard adapter, retain
+  long/Unicode reports and avoid automatic issue submission. Acceptance checks
+  include both form IDs, URI round-trips, privacy, busy state and clipboard fallback.
+  Additional PR #88 UI follow-up moves Game files from the sidebar into
+  Repair / Verify, below the repair cards as Open game folder. Preserve this
+  placement, install-root target and busy state in the future Mac launcher; the
+  Windows preview avoids opening Finder/Explorer. See the folder-action entry in
+  STATUS.md for Windows build, regression and rendered-layout evidence.
 - **Preserve launcher artwork (2026-10-16, commit `f1011f8`,
   [PR #75](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/75),
   prepared for launcher v1.2.7):** `Core.cs` preserves verified independent
@@ -881,7 +1156,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   sizes and allocation failure recovery. See issue #27/#31 in
   `STATUS.md` for Windows evidence; do not infer Mac runtime verification from it.
 
-### MAC-028 — Experimental network bot setup (issue #25)
+### MAC-033 — Experimental network bot setup (issue #25)
 
 - **Status:** Queued
 - **PC behavior:** The host's multiplayer lobby Options flow exposes
@@ -940,6 +1215,11 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Capacity follow-up in `Enforce network roster capacity and display lobby bots`:
   `src/pc_network_bots_lobby.inc`, the shared
   roster model/guest adapter, `pc-network-bot-capacity` patch and model/ABI tests.
+- **Merge integration:** PR #108 preserves main's menu-mouse/quit adapters
+  alongside network bots. The input harness accepts either absolute cursor
+  coordinates or sequenced gameplay motion. Renumbered this entry from MAC-028
+  to MAC-033 to preserve main's separate frontend-FOV entry. No new Mac runtime
+  integration is claimed; shared/native-fallback checks remain the boundary.
 - **PC validation:** MSVC model and guest/native-fallback tests passed;
   complete patch migration tests passed. See issue #25 in `STATUS.md` for
   the build/menu scope and remaining host/guest checks.

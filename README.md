@@ -78,13 +78,41 @@ movement updates. [See measured progress →](STATUS.md)
 playing. Resolution selectors use your primary display's reported modes, include
 the console default, and provide left/right arrows. Saved custom modes are retained.
 
+Launcher v1.2.11 adds **What's new** for game/launcher release notes,
+installed and available versions, and published known issues inside the main window.
+
 | Controls | Display | Launcher |
 | --- | --- | --- |
-| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects aspect-ratio groups, resolution and vertical FOV (40–100°, default 55°). Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Saves**, **Game files**, **View logs** and **Support** open the related folders, logs and issue tracker. |
+| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects aspect-ratio groups, resolution and vertical FOV (40–100°, default 55°). Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Repair / Verify → Open game folder** opens the installation folder. Its **Diagnostics** tab provides system reports and GitHub reporting in launcher v1.2.12. **Saves**, **View logs** and **Support** open the save folder, logs and issue tracker. |
 
-Click the game to capture the mouse; **Escape** pauses and releases it. Use
+In the main, pause and Tab/Objectives menus, hover to highlight, **left-click** to select and
+**right-click** to go back. Use the **mouse wheel** to move up/down through
+menu rows, including the level-selection list; click to activate a level.
+Scrolling takes priority over hover until you briefly pause the gesture; clicks
+remain immediate.
+Visible, enabled prompts along the bottom (Select, Back, Player Progress and
+other shortcuts) turn light blue on hover and accept left-click. This also applies
+to the profile picker's Select, Back and Delete Profile prompts. Disabled prompts
+keep their normal appearance. The main-menu footer, decorative strips and animated
+blue backdrop fill widescreen and ultrawide displays while labels and buttons
+stay proportional. The in-game Objectives header/footer bars also fill wide
+screens. Older, conventional and futuristic weapon-scope masks extend to the output edges while the
+aperture and reticle keep their proportions. The Sci-Fi Sniper extends its translucent tint instead
+of adding opaque margins. Shared aim reticles keep their projected aim point while their shapes fit
+the display; zoom gauges follow the left/right edges and full-view aiming lines span the output.
+Lock-on indicator pieces scale around their target. Special scope gradients and screen effects
+reach the display edges while their ring artwork retains its proportions.
+The main Story/Arcade menu uses a smaller font so its list
+clears the logo and scrolling description. Click the Options/Status headings to switch pause or Objectives
+tabs; available headings highlight on hover. Keyboard and controller navigation
+still work.
+Closing Pause or Objectives restores gameplay mouse control automatically;
+no extra click is needed. **Escape** pauses and releases the pointer. Use
 **Alt+Enter** for fullscreen. Settings saved in-game remain in place for your
 next launcher session.
+**Quit to Desktop** is available below Extras in the main menu and at the bottom
+of Pause. It opens a confirmation with **Cancel** selected. The pause menu's
+existing Quit still returns to the game menus.
 
 <details>
 <summary><strong>Default keyboard and mouse controls</strong></summary>

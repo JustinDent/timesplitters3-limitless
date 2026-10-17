@@ -48,11 +48,24 @@ the installed game; optional textures also need their own space.
 Launcher updates are checked separately at startup. **Open installed launcher**
 lets you continue with the installed launcher while a startup check is underway.
 
+## What's new (launcher v1.2.11)
+
+The sidebar's **What's new** page shows game and launcher release notes inside
+the same window. It compares installed and available versions for your selected
+channel. Switch between **Game releases** and **Launcher releases**, then choose
+**Available release** or **Installed release** to read that exact version's notes.
+Published known issues appear in their own section when supplied by the release.
+**Refresh notes** checks GitHub again; a failed refresh keeps notes already loaded
+for this session and shows their last checked time. **View release on GitHub**
+opens the original release. Use **Home** in the sidebar to return to update controls.
+This page reads release information; installing an update remains a separate action.
+
 ## Saves, logs and recovery
 
 - **Saves** opens the local save folder.
-- **Game files** opens the installation directory.
-- **View logs** opens launcher diagnostics; game logs are also under `Logs`.
+- **Repair / Verify → Open game folder** opens the installation directory.
+- **Repair / Verify** contains file-check/repair and **Diagnostics** tabs in launcher v1.2.12; Diagnostics includes system reports and GitHub report buttons.
+- **View logs** opens the local launcher log folder from Home or either maintenance tab; game logs are also under `Logs`.
 - **Support** opens this project's GitHub issues.
 - **Restore previous** swaps back to the retained game release when available,
   preserving your data, saves and settings.

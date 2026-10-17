@@ -5,7 +5,7 @@ import subprocess
 import pytest
 from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[1]
-@pytest.mark.parametrize("fixture", ["ui_layout", "tutorial_layout"])
+@pytest.mark.parametrize("fixture", ["ui_layout", "tutorial_layout", "weapon_effects"])
 def test_ui_layout(tmp_path,fixture):
     compiler,environment=native_compiler(tmp_path)
     exe=tmp_path/('ui.exe' if os.name=='nt' else 'ui')
@@ -26,6 +26,21 @@ def test_guest_placement_hooks():
     assert 'if(FP_MEM32(g_esp)==0x001341B7u)pc_display_radar_begin();' in manual
     for address,name in ((0x1476f0,'tutorial'),(0x40f00,'tutorial_wrap'),(0x41dc0,'tutorial_text')):
         assert f'pc_display_{name}(sub_{address:08X}_gen);' in manual
+    for address in (0x1efb0,0x2d8100):
+        assert f'pc_display_footer_background(sub_{address:08X}_gen);' in manual
+    for address in (0x135f30,0x1364a0,0x136b40):
+        assert f'pc_display_scope(sub_{address:08X}_gen,0x{address:08X}u)' in manual
+    assert 'pc_display_effect_scope(sub_00137F00_gen);' in manual
+    for address, kind in ((0x1f090,0),(0x167b0,1),(0x1a6f0,2)):
+        assert f'pc_display_weapon_effect(sub_{address:08X}_gen,{kind});' in manual
+    for address, kind in ((0x1b7b0,0),(0x1c140,1),(0x1ba70,2)):
+        assert f'pc_display_aim_primitive(sub_{address:08X}_gen,{kind});' in manual
+    for address in (0x138f70,0x37a9d0):
+        assert f'pc_display_aim_panel(sub_{address:08X}_gen,0x{address:08X}u);' in manual
+    assert 'pc_display_scope_mask(sub_0001EFB0_gen)' in manual
+    assert 'pc_display_menu_backdrop(sub_002DB010_gen);' in manual
+    assert 'pc_display_main_menu_font(sub_002D0BE0_gen,1);' in manual
+    assert 'pc_display_main_menu_font(sub_00076150_gen,0);' in manual
     assert 'pc_display_health(sub_0013AB60_gen);' in manual
     assert 'if(FP_MEM32(g_esp)==0x0013BA9Cu)pc_display_health_side();' in manual
 

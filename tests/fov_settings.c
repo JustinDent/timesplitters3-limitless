@@ -31,6 +31,18 @@ int pc_prompts_keyboard_active(void) { CHECK(0); return 0; }
 TUTORIAL_STUB(sub_00147080) TUTORIAL_STUB(sub_00042D10)
 TUTORIAL_STUB(sub_0003FA10) TUTORIAL_STUB(sub_0003FCF0) TUTORIAL_STUB(sub_0003F8D0)
 #undef TUTORIAL_STUB
+/* Mouse-menu behavior is exercised by menu_mouse.c. Keep its dependencies
+ * linked here, but fail if this settings-only fixture enters those paths. */
+void pc_controls_menu_mode(int active) { (void)active; CHECK(0); }
+PcMenuPointer pc_controls_menu_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
+PcMenuPointer pc_controls_menu_hover_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
+void d3d8_display_output_shape(unsigned w,unsigned h,unsigned *ow,unsigned *oh)
+{ (void)w;(void)h;(void)ow;(void)oh; CHECK(0); }
+#define MOUSE_STUB(name) void name(void) { CHECK(0); }
+MOUSE_STUB(sub_00074760) MOUSE_STUB(sub_00076EF0) MOUSE_STUB(sub_00076510)
+MOUSE_STUB(sub_002E6D40) MOUSE_STUB(sub_00079860)
+MOUSE_STUB(sub_002E49F0) MOUSE_STUB(sub_002E4A30)
+#undef MOUSE_STUB
 STUB(sub_00075B70) STUB(sub_00071B10) STUB(sub_00071C50)
 STUB(sub_000771D0) STUB(sub_000770E0)
 void sub_00078980(void) {
@@ -39,7 +51,7 @@ void sub_00078980(void) {
 }
 STUB(sub_0007D480) STUB(sub_000717D0)
 void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+=4; }
-STUB(sub_00022FF0)
+STUB(sub_00022FF0) STUB(sub_0001C5D0) STUB(sub_0001EFB0) STUB(sub_00019650) STUB(sub_00019D70)
 void sub_001CDAE0(void) { g_eax=1;g_esp+=4; }
 void host_SetTwoDPlacement(int placement,uint32_t tag) { (void)placement;(void)tag; }
 STUB(sub_00079710) STUB(sub_00074910) STUB(sub_001A0A60)

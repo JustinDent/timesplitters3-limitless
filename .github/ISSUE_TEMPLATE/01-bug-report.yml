@@ -15,6 +15,7 @@ body:
       description: Shown as the installed game version in the launcher. Pick the one you have, not an available update.
       options:
         # BEGIN AUTO GAME VERSIONS
+        - "v0.2.0-alpha.6"
         - "v0.2.0-alpha.5"
         - "v0.2.0-alpha.4"
         - "v0.2.0-alpha.3"
@@ -33,6 +34,11 @@ body:
       description: Look for LAUNCHER v... at the top of the launcher window.
       options:
         # BEGIN AUTO LAUNCHER VERSIONS
+        - "v1.2.12"
+        - "v1.2.11"
+        - "v1.2.10"
+        - "v1.2.9"
+        - "v1.2.8"
         - "v1.2.7"
         - "v1.2.6"
         - "v1.2.5"
@@ -85,3 +91,10 @@ body:
     attributes:
       label: Anything else? (optional)
       description: Attach a screenshot, video, or log if you have one. View logs in the launcher opens its log folder. You can also mention your graphics card, settings, or how often it happens. Remove personal information and do not upload game files or saves.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Launcher diagnostics (optional)
+      description: Open Diagnostics in the launcher and choose Report a bug or Request enhancement. If the launcher copied a longer report, paste the complete report here. Review before submitting; do not include private paths, raw logs, game files or saves.
+      placeholder: Paste the filtered diagnostic report from the launcher here.
+      render: text

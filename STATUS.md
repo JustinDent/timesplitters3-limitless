@@ -1,5 +1,1044 @@
 # Measured progress
 
+## Lock-on and special scope effects (2026-10-17)
+
+Local, uncommitted follow-up on `fix/responsive-menu-footer`, base `0dc9fea`.
+The lock-on renderer (`00138590`) uses `lockonbox`, `custom_homing_lockon`,
+`lockoninner` and `lockontri`. Both integer box halves and all four pointer-based
+quad call sites now scale around the current target record's screen position.
+Scaling each half or orbiting piece independently would separate the pieces;
+scaling around the screen centre would move the indicator off its target.
+Only XY draw coordinates change temporarily. Target records, depth, UVs,
+colours and animation state remain untouched; guest memory is restored after
+submission and batches flush before placement changes.
+
+The separate `scopeedge` / `ring` renderer (`00137F00`) now keeps its artwork
+fitted. Its eight gradient rectangle call sites fit their inner coordinates
+but extend authored outer edges to the full output, preserving the original
+colour/alpha gradients. The framebuffer composite (`00138471`) spans the
+whole view. No opaque margin is added to this effect. Exact caller and scope
+context checks exclude other uses of the drawing primitives. Full single-player
+viewports are required; 4:3 and split-screen retain the original path.
+
+`tests/weapon_effects.c` executes the production hooks at six aspect ratios,
+checking shared target centres, both box halves, rotating quad pieces, gradient
+coverage, unchanged depth/colour, batch ordering, memory restoration and invalid
+pointer/target/caller/viewport fallbacks. All seven focused UI/FOV checks pass.
+Windows x64 / MSVC 19.44 / D3D11: the supported build and native build checks
+pass (`build/menu-footer/build-special-aim.log`). All 44 UI/FOV, cutscene,
+menu-mouse, Quit and patch tracking/transition regressions pass
+(`build/menu-footer/special-aim-regressions.log`). Executable SHA-256:
+`a1d0847644421f10c422bad792bd2379fbf86b27a70eb744d409cd0fefe2ac03`.
+Live visual verification of these two effects and Mac validation remain pending.
+Source: `src/pc_display_ui.inc`, `special-weapon-overlays.patch`; see MAC-032.
+
+## Weapon aim overlay follow-up (2026-10-17)
+
+Local, uncommitted on `fix/responsive-menu-footer`, based on main `0dc9fea`.
+The Sci-Fi Sniper now writes its original half-strength destination-alpha mask
+into the additional output area before drawing the scope. Its full-view tint
+composite (`00136856`) stretches, while the additive textured art stays fitted.
+This replaces the opaque side fills documented in the earlier capture below.
+
+Audited the verified US XBE's weapon HUD callback table and shared reticle
+callers. The three scope renderers cover the older/vintage, conventional and
+Sci-Fi scope families. Standard textured reticles (`0014CC10`), the alternate
+and turret paths (`001481E9`, `001482F7`, `00136FFC`), and the shared rotating
+zoom ring (`00135F1E`) now fit their local geometry around the actual aim point.
+Their screen position is preserved, including displaced aim. All six shared
+zoom-gauge draws have explicit left/right anchors, independent of batching or
+heuristic extent classification. The full-view aiming borders (`00138F70`)
+and red crosshair lines (`0037A9D0`) use the complete output. Unrelated primitives,
+world-space target markers, original 4:3, and split-screen are excluded.
+
+The UI regression exercises all 11 reticle/gauge callers at seven output sizes:
+640x480, 1280x1024, 1920x1080, 1920x1200, 3440x1440, 5120x1440 and 7680x4320.
+It checks projected aim-point preservation, rotated-quad geometry, edge anchors,
+deferred batch order, argument restoration, and negative caller/viewport cases.
+Sci-Fi tests verify alpha-only outer fills and the exact full-view composite
+routing; conventional coverage tests remain. Runtime changes are in the shared
+patch stack and source; Mac validation remains pending under MAC-032.
+
+Windows x64 / MSVC 19.44 / D3D11: the supported `tsfp.ps1 Build` and all native
+build checks pass. The UI/FOV, cutscene, menu mouse, Quit, patch tracking and
+transition suites pass 43 checks (`build/menu-footer/all-aim-regressions.log`).
+Build evidence: `build/menu-footer/build-all-aim.log`. Current executable SHA-256:
+`7d6258c3d6f0212b585c9a33c3b15d73214cedcc8061bf79469e1744304ce0a1`.
+The isolated game was reopened with normal input and Test Lab unlocks for a
+visual check. Sci-Fi tint and shared zoom visual confirmation are still pending;
+source audit and unit coverage do not establish a playtest of every weapon.
+
+## Objectives bars and scope masks (2026-10-17)
+
+Local, uncommitted on `fix/responsive-menu-footer`, in the isolated worktree
+below. A bounded live trace identified the two Objectives background rectangle
+call sites (`002F3AED`, `002F3B0F`) and four blue trim calls. These six draws now
+use STRETCH placement with batch flushes and restoration; the central panel,
+text, tabs and health/armor keep their current layout. Full single-player
+viewports are required; unrelated callers and split-screen bypass the fix.
+
+The circular scope routine (`00135F30`) draws four outer masks separately from
+its textured aperture. Those masks now use the aperture's proportional inner
+coordinates and the complete output's outer edges. The original rectangle
+renderer still clips to the guest viewport, so adjusting the inner coordinates
+before STRETCH avoids negative-coordinate clipping. Both axes are fitted for
+narrow ratios; original 4:3 and split-screen stay unchanged. The correction avoids indiscriminate stretching of weapon art.
+
+Follow-up identification from the XBE texture-name table found separate
+conventional (`00136B40`, `customContSniperQuarter`) and futuristic (`001364A0`,
+`customFutureSniperQuarter`) sniper renderers. Their conditional exterior fills
+can be omitted at the authored canvas edge, so changing existing rectangle
+calls alone is insufficient. All three scope groups retain CENTRE placement for their artwork. The first
+implementation explicitly blacked out the extra host canvas using STRETCH
+rectangles; the Sci-Fi variant is superseded by the translucent pass below. This also covers cases where the guest emits no outer mask. Tests
+exercise wide and narrow ratios, symmetric coverage, prior/later batch placement
+and guest stack restoration. The user's additional scope screenshot shows the
+uncovered side scenery this addresses. Captures of ordinary zoom aiming also
+confirm that path is distinct from the scoped-rifle artwork; it is not given
+opaque side masks.
+
+Windows x64 / MSVC 19.44.35224 / D3D11, pinned runtime and verified US XBE:
+`tsfp.ps1 Build` and native build checks pass. The affected UI/FOV/Quit,
+cutscene, mouse-menu and patch tracking/transition suites pass 43 distinct
+checks. Tests cover aperture alignment, mask edges, deferred batch ordering,
+stack/state restoration, caller rejection and split-screen guards. Evidence:
+`build/menu-footer/build-objectives-scope.log`, `bars-regressions.log`,
+`objectives-scope-regressions.log`. The expanded sniper hooks pass all 43
+checks (`sniper-regressions.log`); after explicit mask blend-state setup and
+restoration, all six affected UI/FOV checks and the final supported build/native
+checks also pass (`build-sniper-final.log`). Mac runtime validation is pending
+under MAC-032; the implementation uses the shared title/renderer placement ABI.
+
+A live isolated Arcade match with synthetic input equipped the conventional
+Sniper Rifle and showed its black surround covering both sides at 3440x1440.
+After reopening with normal controls, the user captured the Sci-Fi Sniper
+(2026-10-17 15:54 EDT). The reviewed frame and D3D11 replay confirm covered
+outer sides, centered scope artwork under tag `001364A0` / CENTRE, and the
+additional opaque masks in draw 81 under STRETCH. Replay reports zero failed
+host calls, malformed chunks or unmapped handles. Evidence in
+`build/menu-footer`: `scifi-sniper-after.d3dcap`, `.png`, `.log`, `.json`.
+This verifies these Windows ultrawide encounters; other ratios, the older
+rifle scope and split-screen still need live visual checks beyond unit coverage.
+
+A bounded isolated Test Lab replay reached first-mission gameplay and Tab /
+Objectives at 3440x1440. The reviewed after-capture shows both bars and blue
+trim across the full output; the panel/text and side health/armor remain in
+place. The same top/bottom sample rows previously had only about 1920 black
+pixels across a 3440-pixel window. This is synthetic input and visual evidence
+for Objectives, not scope gameplay validation. Evidence: `objectives-after-3440x1440.png`,
+`objectives-after-3440x1440.json`, `objectives-bar-pixels.json`. Disposable test
+disks were recycled after the bounded run.
+
+Release executable SHA-256:
+`c40adb4e7f4d59c0a9c4c33e6604b9da9a5d13ad72b214aafcd758c7aefe42dd`.
+
+## Responsive frontend backgrounds (2026-10-17)
+
+Local, uncommitted on `fix/responsive-menu-footer`, based on main `0dc9fea`.
+The frontend footer background and its two decorative strips now stretch to
+full display width. Exact US call sites scope placement and flush deferred
+batches before and after; labels and mouse targets stay proportional. Both
+full-canvas endpoint conventions (639/479 and 640/480) are accepted.
+
+The moving blue background is a separate 3D sheet. Its exact draw call now
+uses a temporary horizontal projection correction, applied through the guest
+projection setter and restored before subsequent draws. This fills wide output
+while preserving animation and the other menu layers' lens. Original 4:3/narrow
+output, gameplay, unrelated callers and partial viewports bypass both fixes.
+
+The main Story/Arcade list uses 25% smaller glyphs in both axes. Font scaling
+is scoped to main-menu construction/measurement and its row renderer, using
+the original font-metrics refresh routine. Deferred text batches flush before
+restoring the previous scale. Header/footer text, other menus and gameplay
+keep their existing size. Regression coverage verifies matching measurement
+and drawing scales, two-axis restoration and unrelated menu/row guards.
+
+Validation on Windows x64 with MSVC 19.44.35224 / Direct3D 11, pinned runtime
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845` and verified US XBE: the final
+`tsfp.ps1 Build` and all native build tests pass. UI, FOV and Quit regression
+checks pass 7 tests; patch tracking/transition, menu mouse and cutscene suites
+pass 36 tests, **43 total**. Coverage includes seven display sizes, both
+viewport conventions, deferred batches, state restoration and rejected callers.
+
+The background fixes were visually validated at 3440x1440, 1920x1080,
+1920x1200 and 1280x960. Final glyph scaling is checked at 3440x1440 and 1280x960
+with isolated Test Lab input replays: render the main menu, verify smaller
+Story-letter bounds against the original capture, use Select to open Story,
+and Back to return. This is synthetic menu input, not physical-device testing
+or gameplay validation. Personal saves/settings are untouched; logs are capped,
+only two BMPs rotate, and disposable test disks are recycled after each run.
+
+Source and build are isolated in `build/menu-footer-source` because concurrent
+work uses the primary checkout. Evidence in the primary checkout's
+`build/menu-footer`: `build-glyph.log`, `glyph-regressions.log`,
+`glyph-patch-regressions.log`, `validation-glyph.out`,
+`glyph-live-WIDTHxHEIGHT.json`, `glyph-pixels-WIDTHxHEIGHT.json` and
+`glyph-{main,story,back}-WIDTHxHEIGHT.png`. Earlier `blue-*` captures and
+`pixel-checks.json` document the full-width backgrounds.
+Final Release executable SHA-256:
+`865878302088f07d5f88fe1cc3ee3b44314bf60285b3eaf4e69351d681b1f756`.
+Shared native Mac hooks use existing STRETCH, font metrics and guest projection
+support; native visual/runtime validation remains pending under MAC-032.
+
+
+## Issue #86 frontend mouse menus (2026-10-17)
+
+PR #97 CI follow-up: run `39051850942` passed on macOS, while Windows
+failed linking the isolated FOV settings fixture with 11 missing mouse-menu
+symbols. Reproduced the same LNK2019/LNK1120 failures locally on Windows x64
+MSVC 19.44.35224 at `d25b684`. Added test-only dependency stubs that fail if
+called; production settings/menu code and its assertions remain enabled.
+The FOV test now passes, and the complete Windows CI native-regression command
+passes all 80 tests (`build/issue-86-menu-mouse/ci-runtime-after.log`). Before
+fix evidence: `ci-fov-before.log`. No runtime changes, rebuild or additional
+Mac adapter work is required; MAC-030/MAC-031 remain queued. Hosted rerun `39052515524` passed on both Windows and macOS for
+commit `28871e6`. Main `860dccd` was subsequently integrated; the only conflict
+was these independent status sections, both retained.
+
+PR integration: feature commit `e18baa9` is pushed to
+`86-enhancement-use-mouse-to-control-main-menu`. Integrated main `7e8cd8d`,
+retaining both sets of validation/backlog entries and the XMV/menu test list.
+All 62 targeted integration checks passed across the initial run and corrected
+runtime rerun. The initial two XMV failures were caused by the local runtime
+still having the pre-main symbol patch; applying the complete stack updated two
+runtime files, then all 12 affected runtime/menu/UI/generation checks passed.
+Evidence: `build/issue-86-menu-mouse/pr-integration-tests.log` and
+`pr-integration-runtime-tests.log`. The full build and human confirmation below
+precede this main integration; no new binary or Mac validation is claimed.
+
+Profile footer and pause-tab follow-up (2026-10-17): profile Select, Back and
+Delete Profile now use measured spans from their centered label rows for hover
+and clicks. Disabled prompts retain their original appearance; text alignment
+and fade alpha are preserved. Pause and Tab/Objectives Options/Status headings
+now use their actual rendered bounds. The tab renderer keeps its loop index in
+a local recompiled register, so the hook reads the saved stack index instead
+of the unrelated shared EBP. Tab replacement is deferred until menu dispatch
+finishes and uses the original menu construction/transition routine.
+
+Validation: Windows x64/MSVC 19.44.35224, OpenGL, base `e942ef0` plus local
+uncommitted changes; supported US XBE hash verified. The full `tsfp.ps1 Build`
+passed. All 23 unique focused menu/UI/quit and patch-update tests passed,
+including fresh, repeated and transition patch application. A bounded isolated
+3440x1440 internal-input replay verified profile Back/Select clicks, switching
+Options to Status and back, switching from Tab/Objectives to Options, and
+confirmed Quit exiting with code 0. Reviewed captures show separate Select,
+Back and enabled Delete Profile highlights, plus the inactive tab highlight.
+Read-only menu descriptors confirm the tab changes; periodic frame dumps can
+lag the click snapshots. The user confirmed both profile footer highlights and
+Pause Options/Status mouse switching work in the reopened production build.
+Physical controller confirmation remains pending.
+
+Evidence: `build/issue-86-menu-mouse/profile-tabs-final-build.log`,
+`profile-tabs-patches.log`, `profile-tabs-live.log`, `profile-tabs-live.json`,
+`profile-hover-*-fixed.png`, and `pause-*-hover.png`. Final executable SHA-256:
+`14f033fb6e0d3f782ead68f48341be80c8c006f68582e35f85a5f2978241ce59`.
+Temporary diagnostic hooks/logging were removed; generated C was not manually
+edited. Personal saves/settings were untouched and disposable test disks were
+recycled. MAC-030 records deferred native adaptation; hosted CI is pending.
+
+Footer hover feedback (2026-10-17): enabled bottom prompts now tint light blue
+under the mouse, sharing the click handler's measured rectangles and original
+enabled/hidden checks. A read-only pointer snapshot preserves wheel packets and
+does not advance replay input during drawing. Inactive menus and invalid/unfocused
+pointers do not highlight. The text wrapper preserves fade alpha and restores
+its original colour argument after the draw. Guest UI RGB is half intensity;
+the initial full-range colour saturated to white and was corrected after an
+isolated render check. Temporary diagnostic logging was removed.
+
+Final Windows x64/MSVC 19.44.35224 OpenGL build on base `e942ef0` plus local
+changes passed the full supported `tsfp.ps1 Build`, including the formerly
+intermittent controller-prompt focus check. Nine focused menu, quit and UI tests
+pass; these cover disabled/hidden/inactive footer rejection, non-consuming hover,
+fade-alpha preservation and colour restoration. US XBE hash was verified.
+A bounded isolated 3440x1440 replay reached Story gameplay/Pause and exited
+normally after clicking Quit confirmation. Reviewed captures show only the
+hovered Select, Player Progress or Back prompt tinted on the main/level list,
+Pause and confirmation screens. Evidence: `build/issue-86-menu-mouse/hover-*.png`,
+`hover-pause.json`, `hover-final-live.log`, and `hover-final-build.log`.
+Final executable SHA-256:
+`25073e803a83ec72b17709e31bc4cb85cc474f87276a9a4b6d6a4375e948306e`.
+Personal settings/saves were untouched; disposable test disks and frame BMPs
+were recycled. MAC-030 retains native adapter work; hosted CI and physical
+controller validation remain pending. Changes remain local and uncommitted.
+
+
+Quit to Desktop follow-up (2026-10-17): added a final row after Extras in the
+main Story/Arcade menu and after the existing Quit in Pause. New shared patch
+hooks the two original layout finalizers, after all row setters, so original
+menu construction and geometry remain in charge. Windows player-one menus
+open a guest confirmation with Cancel selected; Cancel/Back restore the source
+screen, and confirmation posts WM_CLOSE to the window thread's normal exit
+path. The existing return-to-menu Quit is unchanged. Four callback addresses
+were checked against unused INT3 bytes in the supported US XBE. No generated
+source was edited. This depends on the uncommitted #86 mouse-menu work; Mac
+adaptation is queued as MAC-031.
+
+Validation: Windows x64/MSVC 19.44.35224, OpenGL, base main `e942ef0` plus local changes;
+US XBE SHA-256 verified. Supported `tsfp.ps1 Build` regenerated and compiled the
+game. Its native network/clear/texture/display checks passed, but the existing
+controller-prompt focus test again failed at lines 55/178; the full Build is
+not green. Save-path, controls, settings and debug checks passed separately.
+The 31 menu-pointer/patch-tracking/transition tests passed, and the new portable
+quit-adapter test passed after correcting identical empty test stubs that the
+MSVC linker had folded together (no production change needed). The test covers
+insertion scope, secondary-player exclusion, Cancel default, Back, invalid
+choices, failed-post retry and one-shot confirmed exit. CI includes the test.
+
+Bounded isolated input replays at 3440x1440 reached the new row in both menus,
+verified default Cancel and restoration to the original screen (Pause remained
+active), and exited with process code 0 and the normal `window closed` kernel
+log. Main confirmation was completed by keyboard; Pause confirmation by mouse.
+Read-only menu snapshots and reviewed renders show all nine main rows and seven
+Pause rows inside their panels. Physical controller testing and native Mac
+remain unverified. Executable SHA-256:
+`75964889056ef66bea23e945d45cf9472e4be8551794ee958144f28251d1f783`.
+Evidence: `build/issue-86-menu-mouse/quit-{main,pause}.json`,
+`quit-{main,pause}-runtime.err`, `quit-build.log`, and retained main/Pause PNGs.
+Disposable test disks and redundant frame dumps were recycled. Changes are
+local and uncommitted.
+
+
+Combined wheel/hover follow-up: user testing found level-list bouncing when
+scrolling and moving the pointer simultaneously. A regression reproduces hover
+reclaiming selection on the frames between wheel packets. Wheel ownership now
+lasts through continuous pointer motion until the wheel is idle for 250 ms and
+the pointer is still for 100 ms; only a subsequent move resumes hover. Clicks
+remain immediate, while screen/focus changes reset the gesture. The regression
+fails on the earlier policy and passes with the fix; a targeted mutation also
+confirms it detects the conflict. All 37 patch-tracking/transition and menu/UI
+checks pass; after the pause-coordinate follow-up, all nine focused checks pass.
+The user also reported offset pause hover. Paused input was using the active
+world viewport (e.g. 639x430) while menus render on the full UI canvas (640x480).
+Both row and footer pointer mapping now use the title's full canvas dimensions;
+the new cropped-world-viewport case fails before the correction and passes after.
+The supported Build compiles successfully but twice stops at the existing
+foreground-sensitive `pc_controls_accept_pad` assertion in the prompt test.
+The prompt test also fails separately; remaining save, input, settings and debug
+checks pass separately. This is not a full Build pass.
+Bounded isolated live tests pass: continuous up/down pointer sweeps with spaced
+wheel packets produce only the intended level sequence 1->2->3->4->5->6->7->8->7->6->5->4;
+hover selects another visible row after settling. At 3440x1440, all six pause row
+centres select their matching rows, and Controls click, its Back footer, root
+right-click resume and Tab/Objectives close all pass. The harness was corrected
+to wait for the replay's first wheel packet and reject inverted clipped rectangles
+when choosing a hover target; these were harness failures, not additional fixes.
+Current executable SHA-256: `63b18e15cd5b58686828d17fb36dab849f66023b05d17e20559d09edccb61cef`.
+Evidence in `build/issue-86-menu-mouse`: `wheel-hover-tests.log`,
+`wheel-hover-focused-tests.log`, `build-wheel-hover*.log`, `wheel-hover-*.log`,
+`wheel-hover.json`, `pause-hover.json`, and `pause-hover-live.log`.
+The user confirmed both fixes in the reopened build: scrolling while moving the
+mouse stays stable, and pause-menu hover aligns with the row under the cursor.
+This physical test confirmation does not replace the foreground-sensitive prompt
+check noted above. Changes remain local and uncommitted. Disposable captures
+and test disks were recycled.
+
+Footer/pause follow-up: visible, enabled bottom prompts now accept left-click.
+The generic, frontend-themed and pause-themed footer painters supply their actual
+text rectangles after binding translation, font scaling and layout. Packed hidden
+slots retain their original action IDs. Clicks use the existing Confirm/Back/X/Y
+actions before menu tick callbacks, preserving scoped raw controller-source edges.
+Recent rectangles must match the current menu, descriptors and output dimensions;
+stale, hidden and disabled prompts are ignored. Player-1 Start and Tab/Back menu
+flags now release the cursor and enable the shared hover/click/wheel path during
+missions. Closing the menu restores gameplay capture with held clicks suppressed.
+Text-only menus also receive a single scroll tick per wheel notch.
+
+Windows x64 / D3D11, same tools and verified US XBE as below: final supported
+Build passed every native check, including the focus-sensitive prompts test,
+and sealed the executable. The initial build again encountered that foreground
+assertion. All 36 menu/terminal/UI and patch tracking/transition regressions pass;
+eight focused checks also pass after adding hidden-slot and text-scroll cases.
+An earlier patch-test run overlapped addition of the themed-footer patch and
+failed its idempotence assertion; the complete stable-stack rerun passes.
+Footer-validation executable SHA-256: `42da85fb935ba4ca0db65ca8cf4a2160b503aa7580926864ead3387422bcb3d3`.
+Bounded isolated internal replay verifies the actual main Select footer opens
+Story, the level-list Player Progress footer opens its page, and the Back footer
+returns to main. Screenshots were reviewed and guest state recorded; this is not
+a physical-device test. Evidence: `build/issue-86-menu-mouse/build-footer-final.log`,
+`footer-final-tests.log`, `footer-live.json`, and `footer-progress.png`.
+The first pause replay verified row selection and submenu Back, but found that
+Tab/Objectives has no Back callback. The adapter now defers its original pause
+close handler until the whole menu dispatch has returned. Guards preserve
+submenu Back callbacks and death/completion/modal states. A follow-up caught the
+root container/child distinction; the nested-dispatch regression covers it.
+Escape also left the host capture preference released. Exiting menu mode now
+restores capture on the window thread, with focus loss and settings still honored.
+The final supported Build passes, including host tests for automatic recapture
+and unfocused suppression; all eight focused menu/terminal/UI checks pass.
+Earlier pause/footer executable SHA-256: `eb808fd142bb2bd33985f35ba92f3f492bdb73fe6ea72256106c87b0e985f0e5`.
+Evidence: `build-pause-final.log` and `pause-focused-tests.log` in the same folder.
+The bounded isolated live replay now passes pause hover/click into Controls,
+left-click on its rendered Back prompt, right-click to resume from root Pause,
+and right-click to close Tab/Objectives (flags return to gameplay 0x10).
+Evidence: `pause-live.json`, `pause-live-test.log`, and selected PNGs in the same
+folder. Physical-device confirmation of footer clicks, pause/Objectives controls
+and automatic recapture remains pending; the test build is reopened for it.
+Changes remain local and uncommitted; native Mac adaptation is queued in MAC-030.
+
+Wheel follow-up: frontend menus now consume bounded raw mouse-wheel notches as
+original Up/Down actions, including the Story level list, without activating a
+level. Stationary hover cannot undo wheel selection. Clicks, screen changes and
+focus loss clear queued steps; fresh keyboard/controller navigation takes over.
+Gameplay wheel bindings are unchanged. Eight focused menu/terminal/UI regressions
+pass, covering direction reversal, multiple notches, focus, transitions and clicks.
+Two bounded internal-input replays in the actual 13-level Story list passed:
+selection IDs 0->1->3->2->2 and 0->1->9->7->7. The latter reaches rows below the
+initial visible portion; both retain the same menu and stop when scrolling ends.
+This verifies internal routing; physical-wheel confirmation remains pending.
+
+The wheel follow-up compiled successfully through the supported Windows Build,
+but both attempts stopped at the existing foreground-focus assertion in
+`tests/pc_prompts.c` (pc_controls_accept_pad). Earlier native checks passed, and
+remaining save-path, controls, settings and debug checks passed when run separately.
+This is not a full Build pass. Evidence: `build/issue-86-menu-mouse/build-wheel.log`,
+`wheel-*-test.log` and `wheel-level.json`. Current wheel executable SHA-256:
+`75e61f1a56312208c4689262c931c4982448867556b3216afcb348d6c1411fa1`.
+The full Build passes and hashes below describe earlier versions of this work.
+Mac wheel integration remains queued in MAC-030; hosted CI is pending.
+
+Uncommitted on `86-enhancement-use-mouse-to-control-main-menu`, based on main
+`e942ef0`. Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 /
+CMake 4.4.4. Supported US XBE SHA-256 verified before generation and live runs.
+
+The new `menu-mouse.patch` wraps US `sub_00073750` after final menu layout,
+before the original action dispatcher. Shared pointer policy in
+`src/pc_menu_mouse.h` converts window client coordinates through presentation
+bars and proportional UI scaling. `src/pc_menu_mouse_guest.inc` tests the
+active menu's final, clipped item rectangles, reuses original selection state
+and sends fresh confirm/back actions through the original callbacks. Disabled
+items and labels are excluded. A stationary pointer leaves keyboard/controller
+selection alone; held clicks cannot activate a new screen. Windows releases
+capture for frontend menus, shows the cursor even in fullscreen, and suppresses
+selection buttons from gameplay until released. Paused in-game menus and the
+existing camera-terminal controls retain their previous behavior.
+
+The final supported Windows Build applied the complete patch stack, regenerated
+hooks, compiled the Release game and test targets, and passed every native
+build check. The input test now verifies frontend cursor handling and held-click
+suppression when returning to gameplay. An earlier build attempt encountered the
+known foreground-focus prompt assertion; the final full Build passed that test
+without changing its focus rules. Executable SHA-256:
+`3aaf99d5950ec92f8637d9f4201ab3fa62e9184040485eda665b3f94dd4b9d3b`.
+
+59 targeted tests pass: pointer/guest selection, terminal input, UI layout,
+camera/cutscene behavior, CI scope, patch tracking and historical branch
+transitions. New pointer tests include 4:3, 16:9, ultrawide, square output,
+presentation bars, disabled items, focus/held-button transitions, active-modal
+filtering and gameplay exclusion. The historical fixture omits the new patch
+until its prerequisite display wrapper is installed. Placing the wrapper within
+the file, instead of appending it, preserves unrelated trailing edits during
+patch unwind. Local Test and Windows/macOS runtime CI include the new portable
+menu regression.
+
+Bounded live runs use the isolated unlocked Test Lab fixture, both display
+configs, controls, saves and XDG paths, capped logs and rotating frame captures.
+At 1280x720 rendering in a 640x480 client window, read-only guest state and
+reviewed screenshots verify hover selects Settings, left-click opens Settings,
+and right-click returns to the main menu. A subsequent Up key selects Player
+Progress while the cursor stays over Settings, confirming keyboard coexistence.
+Internal replay provides input;
+physical mouse delivery, fullscreen interaction and a human gameplay retest
+remain pending. The first replay used render pixels instead of client pixels,
+which correctly produced no selection; the corrected replay measures the actual
+window. Logs, snapshots and selected PNGs are retained locally under
+`build/issue-86-menu-mouse`; disposable Xbox disk images are recycled.
+
+Mac input integration is queued as MAC-030 in `MAC_PORT_BACKLOG.md`. Its original
+menu path remains active; no native macOS build or physical-input check was run.
+Hosted CI is pending. No commit or push has been made for this issue.
+
+Human testing subsequently reported rapid highlight cycling on profile selection
+and the Story/Arcade main menu. A bounded read-only follow-up captured no mouse
+movement over the menu. A separate continuous-motion replay reproduced alternating
+selection between the hovered row and its neighbor when a directional key was
+held. The original dispatcher applied its repeat after mouse hover. The adapter
+now retains mouse navigation ownership between pointer samples and suppresses
+old directional repeats; a fresh direction takes over once the pointer stops.
+The added regression failed before the fix and passes afterward. All eight
+main-menu rows remain stable under the conflicting held-input replay after the
+initial fresh direction and pointer takeover. A fresh direction is intentionally
+allowed to take over while the pointer is stationary. The supported Build and
+seven focused menu/terminal/UI tests passed after this change. Confirmation that
+this resolves the user's physical-input report is still pending; the synthetic
+reproduction does not establish that their input source was a held direction.
+
+
+A further human report narrowed the remaining cycling to a click followed by a
+stationary pointer. Menu identity changes were clearing mouse ownership, allowing
+an old held direction to resume repeating in the new menu. Ownership now survives
+menu transitions; right-click Back also claims it outside selectable rows. Fresh
+directional input still takes over, invalid pointers release ownership, and held
+mouse buttons remain blocked across screens. The new regression failed at the
+first submenu update before the fix; all seven focused menu/terminal/UI tests
+pass afterward, including stationary submenu repeats, Back, fresh direction and
+focus recovery. An isolated live replay held Down, hovered Settings, clicked it,
+and left the pointer stationary: the old executable cycled through five submenu
+selections over three seconds; the corrected executable retained one selection
+throughout the same interval. Evidence is in local `transition-before.json` and
+`transition.json`. The supported Windows Build passed all native checks on rerun;
+the initial attempt again hit the existing foreground-focus assertion. This
+reproduces and fixes a transition defect, but confirmation with the user's
+physical input remains pending. The final hover/click/Back and stationary-pointer
+keyboard-takeover live replay also passed with this executable. An isolated
+600-second physical-input test was reopened at 3440x1440 for the user.
+
+
+The next physical-input capture reproduced residual cycling after mouse selection
+and Alt+Tab. It showed neutral controller axes (128), but logical controller 0
+changed from physical port 0 to invalid `0x004c8f8c` immediately after Confirm.
+US callback `sub_002D2260` scans the raw Confirm pressed edge to identify the
+controller; injecting only menu action flags left no source, so its search fell
+to -1 and read `mapping[-1]`. This invalid mapping yielded phantom Down/Left
+(`held=0x6`), including while unfocused. Earlier held-direction tests reproduced
+a real arbitration problem but missed this source defect because they selected
+the profile with Enter.
+
+`menu-mouse-source.patch` now scopes the original `sub_0007A7B0` dispatcher.
+A mouse Confirm supplies physical port 0's raw pressed edge through the original
+callbacks and restores that bit on return, preserving existing real-pad bits.
+The context nests with menu dispatches and is inactive for native Mac pending
+MAC-030. No generated C was edited. All 22 focused pointer, terminal, UI and
+patch-transition tests pass, including a mutation removing the source edge that
+must fail and checks that the edge does not leak out of the dispatcher. The full
+supported Windows Build regenerated the wrapper and passed all native checks.
+An isolated mouse-only replay selected the initial single-player row and Test Lab
+profile, reached all eight Story/Arcade menu rows, retained mapping `[0,1,2,3]`,
+and measured zero held/pressed directions and one stable selection for four
+seconds. The profile picker uses a separate overlay, so the replay clicks its
+Test Lab row using measured image/client coordinates. This corrected the first
+harness attempt, which inspected the empty parent menu instead of that overlay.
+Local evidence: `mouse-profile.json`, `physical-source-before.json`. A bounded
+fullscreen physical-input retest was reopened for click and Alt+Tab verification.
+
+
+The user confirmed both click-then-stationary and Alt+Tab-out/back cases are now
+stable in the corrected fullscreen build. The concurrent read-only capture
+retained valid controller mappings and zero directional held bits across the
+observed focus changes (`physical-source-after.json`). Changes remain local and
+uncommitted on the issue #86 branch; native Mac and hosted CI remain unverified.
+
+## Launcher v1.2.12 release preparation (2026-10-17)
+
+PR #98 is merged as `860dccd`. Branch `release/launcher-v1.2.12` raises the
+shared launcher and assembly/file versions to 1.2.12 / 1.2.12.0 for Diagnostics
+inside Repair / Verify, native tabs and View logs available in both. README and
+launcher guides identify the release version. Game VERSION and runtime code are
+unchanged; MAC-021 retains queued native launcher adaptation. This records
+preparation; publication and final package evidence are confirmed by the GitHub
+release and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+185 isolated checks (99 updater/bootstrap/cleanup, 27 downloads/recovery, 15
+release news, 25 settings, 19 maintenance). Startup, packaging, issue-form and
+CI-scope Python suites passed 43 tests with seven subtests. Three disposable
+minimize/restore/startup-failure checks passed. The actual public v1.2.11 ZIP
+upgraded to v1.2.12; installed manifests, assembly version, embedded banner/logo/
+icon, retained What's new page, tabbed maintenance area and removed Diagnostics
+sidebar entry were verified. Personal-file preservation, corruption detection,
+same-version repair and confirmed cleanup passed. Normal 1152×772 and minimum
+1000×720 repair/diagnostics, attention and busy previews were reviewed; Cancel
+and View logs remain usable, and bootstrap repair/diagnostic previews select
+the correct tab. Tests used disposable synthetic fixtures; no real game was
+launched and no personal saves, settings, game data or ISO were modified.
+Native Mac launcher execution remains unverified.
+
+## Repair / Verify and Diagnostics tabs (2026-10-17)
+
+Implemented on `feature/launcher-maintenance-tabs`, based on main `bd3f0e2`;
+implementation commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98). The Repair / Verify sidebar entry now
+hosts native Repair / Verify and Diagnostics tabs, with one shared heading and
+the same blue/silver tab style as Game settings. Diagnostics has no separate
+sidebar button. The sidebar/recovery entry opens repair by default; diagnostic
+preview arguments still select Diagnostics directly. Switching pages retains
+verification results, report text and unsaved settings drafts. Diagnostics is
+collected on first selection and through its existing Refresh action. Report
+copying and reviewed GitHub bug/enhancement drafts retain their privacy behavior.
+
+View logs is always visible in each footer, including recovery and busy states.
+Operations lock tab navigation without disabling the selected page's Cancel or
+View logs controls. Verification/report text starts at the top of its text area.
+The existing repair transactions, file preservation, update/download logic and
+game runtime are unchanged. The launcher version remains 1.2.11; this UI change
+has not been merged or published. MAC-021 records queued native Mac adaptation.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build and
+185 isolated checks passed (99 updater/bootstrap/cleanup, 27 downloads/recovery,
+15 release news, 25 settings, 19 maintenance). The maintenance UI regression
+covers both native tabs, default/explicit selection, removed sidebar entry,
+preserved results/report/settings drafts, diagnostic reporting actions, live
+log actions, locked navigation and usable Cancel/logs during operations.
+Startup/packaging/issue-form/CI-scope Python suites passed 43 tests with seven
+subtests. Normal 1152×772 and minimum 1000×720 repair/diagnostics previews, plus
+attention/busy states, were rendered and visually inspected. Bootstrap repair
+and diagnostic preview routing passed. All fixtures were disposable and
+synthetic; no actual game was launched or personal saves, settings, data or ISO
+modified. Native Mac launcher execution remains unverified.
+
+## Launcher v1.2.11 release preparation (2026-10-17)
+
+PR #93 is merged as `7ed93cb`. Branch `release/launcher-v1.2.11` raises the
+shared launcher and assembly/file versions to 1.2.11 / 1.2.11.0 for the embedded
+What's new page, including the footer cleanup. README and launcher guides now
+identify its release version. Game VERSION and runtime code are unchanged;
+MAC-021 retains queued native launcher adaptation. This records preparation;
+publication and final package evidence are confirmed separately by the GitHub
+release and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+185 isolated checks (99 updater/bootstrap/cleanup, 27 download/recovery, 15
+release-news, 25 settings and 19 maintenance). Startup, packaging, issue-form
+and CI-scope Python suites passed 43 tests with seven subtests. Three disposable
+minimize/restore/startup-failure checks passed. The actual public v1.2.10 ZIP
+upgraded to v1.2.11; installed manifests, correct assembly version, embedded
+banner/logo/icon, news page/navigation and absent redundant Home footer action,
+personal-file preservation, corruption detection, same-version repair and
+confirmed cleanup passed. Live read-only GitHub notes for game v0.2.0-alpha.5
+and launcher v1.2.10, bootstrap preview routing, normal/minimum-size pages,
+known-issues scrolling and offline retention were reviewed. The initial
+transaction run was blocked by an active game; all final local checks completed
+after that game process exited. Tests used disposable synthetic fixtures. No
+real game was launched for this release task, and no personal saves, settings,
+data or ISO were modified. Native Mac launcher execution remains unverified.
+
+## Embedded launcher What's new page (2026-10-17)
+
+Footer follow-up on the same PR: removed the redundant **Open Home** button;
+Home remains available in the sidebar. The footer now contains only Refresh
+notes and View release on GitHub. Updated documentation and the existing inert-
+content control-count assertion. Required-artwork compilation, all 15 release-
+news checks and live normal/minimum-size preview rendering passed. A broader
+updater transaction rerun stopped at the existing active-game guard; the user's
+running game was preserved. The full 185-check pass below predates this footer
+follow-up. No game/runtime behavior changed.
+
+Implemented on `feature/launcher-whats-new`, based on main `3cac654`; implementation
+commit `cfbfe6c`, [PR #93](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/93). The aligned sidebar and Home's notes
+button open an embedded blue/silver release center. Game and launcher views
+compare installed/running and available versions for the selected channel, with
+separate installed/latest notes, published titles/dates and explicit newer,
+current, older-channel, absent and unversioned states. Compatible release
+selection and launcher metadata verification remain shared with the updater.
+Older installed notes use their exact GitHub tag; unavailable/draft records
+never substitute another version's notes. Published known-issue headings are
+separated from the remaining changes. Missing sections do not claim no issues.
+Native text supports headings/bullets/code, omits images and never executes
+HTML/XAML/scripts or opens content links automatically. Long descriptions show
+a shortened notice and a link to the complete release.
+
+Requests have a 25-second bound even if transport ignores cancellation; old
+request results cannot replace a changed version/channel context. A failed
+refresh retains same-context notes in memory with their checked time. A first
+offline load offers refresh guidance. No persistent notes cache is introduced.
+Settings drafts and main-window sidebar navigation are preserved. Updates remain
+separate actions through Home or startup. The launcher version is unchanged;
+this feature has not been merged or published. MAC-021 records queued Mac
+adaptation; native Mac launcher execution remains unverified.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required build and
+185 isolated checks passed (99 updater/bootstrap/cleanup, 27 downloads/recovery,
+15 release-news, 25 settings, 19 maintenance). The news suite includes strict
+stable/preview and exact installed selection, missing/mismatched/draft releases,
+invalid metadata, cancellation/rate limits and ignored-cancellation timeout,
+bounded text/known issues, inert HTML/images, session retention and navigation
+with unchanged settings drafts. Python startup/packaging/issue-form/CI-scope:
+43 tests with seven subtests passed. Live read-only GitHub selection found game
+v0.2.0-alpha.5 and launcher 1.2.10 and their exact installed notes. Preview,
+minimum 1000×720, known-issues scroll, actual game/launcher notes and offline
+retention screenshots were inspected. Preview routing works through bootstrap.
+Only disposable synthetic fixtures were used; no actual game was launched,
+and no personal saves, settings, game data or ISO were modified.
+
+## Launcher v1.2.10 release preparation (2026-10-17)
+
+PR #91 is merged as `69204af`. The release preparation branch
+`release/launcher-v1.2.10` raises the shared launcher version and assembly/file
+versions to 1.2.10 / 1.2.10.0 for resumable downloads, transfer speed and ETA,
+and the Home, repair and startup recovery actions. Game VERSION and runtime
+code are unchanged. MAC-021 retains queued native launcher adaptation. This
+records preparation; public publication is confirmed by the GitHub release
+and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+99 updater/bootstrap/cleanup, 27 download/recovery, 25 settings and 19 maintenance
+checks (170 total). Startup, packaging, issue-form and CI-scope Python suites
+passed 42 tests with seven subtests. Three disposable minimize/restore/startup-
+failure checks passed. The actual public v1.2.9 ZIP upgraded to the v1.2.10
+package; installed manifests, embedded banner/logo/icon, assembly version,
+personal-file preservation, corruption detection, same-version repair and
+confirmed cleanup passed. A public GitHub v1.2.9 download interrupted at 65,536
+bytes resumed in a new client with HTTP 206 and passed full SHA-256 verification.
+Transfer, pause and recovery previews were reviewed at normal/minimum window
+sizes, including the startup recovery window. All fixtures were synthetic and
+disposable; no real game was launched and no personal saves, settings, data or
+ISO were modified. Native Mac launcher execution remains unverified.
+
+## Resumable launcher downloads and recovery (2026-10-17)
+
+Implemented on `feature/launcher-download-recovery`, based on main `78104de`;
+implementation commit `c21df35`. Downloads use independent game/launcher cache
+slots pinned by release URL, size and expected SHA-256. They survive staging
+cleanup, cancellation and restart, including a completed verified cache when
+preparation is cancelled. Strict Range/Content-Range and optional strong If-Range
+handling prevents unsafe append; a complete SHA-256 and package validation still
+precede installation. Cache locking, metadata/path bounds, ownership checks and
+exact named-file cleanup retain unknown files and refuse redirects through links.
+Direct attribute checks also refuse dangling file/directory links before cache
+or destination creation; the junction fixture covers missing targets as well.
+Connection/read stalls are bounded to 30 seconds and ignored stream cancellation
+is handled by disposal. Full-file hashing and staging copies can be cancelled.
+
+Game updates, startup self-updates and repairs show measured speed, transferred
+bytes and ETA, with an explicit unknown estimate and separate verification/
+preparation phases. Home offers Pause/Resume and Retry/Repair/View logs recovery;
+maintenance has inline retry/log actions. Startup download failures retain Retry
+update/Open installed launcher/View logs choices, while initial offline release
+checks still enter the installed launcher automatically. The existing repaired
+file ownership/transaction behavior remains; its cancellation fixture now allows
+only the explicitly named cache entries while comparing every installed/personal
+file unchanged. MAC-021 records queued native launcher adaptation.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required build passed;
+27 isolated download/recovery checks, 25 settings and 13 read-only maintenance
+checks passed. Startup/packaging/CI-scope Python suites passed 27 tests with two
+subtests. Download fixtures cover fresh/resumed/cancelled/stalled streams, complete
+cache reuse and cancelled preparation, ignored/invalid/416 ranges, ETag changes,
+changed releases, corrupt prefixes, oversized data, unknown caches, locks/links,
+staging cleanup, ETA and recovery controls. A live GitHub launcher v1.2.9 download
+was interrupted at 65,536 bytes, resumed in a new client with HTTP 206, and passed
+its complete SHA-256; no downloaded executable was run. UI previews at 1152×772
+and minimum 1000×720, plus startup recovery, were reviewed. Full local transaction
+checks were blocked by an active game; the hosted Windows job runs the complete
+suites. Tests used disposable files and never modified personal saves, settings,
+ISOs or game data. Native Mac launcher execution remains unverified. Not published.
+
+## Launcher v1.2.9 release preparation (2026-10-17)
+
+PR #89 is merged as `1728f21`. The release preparation branch
+`release/launcher-v1.2.9` raises the shared launcher version and assembly/file
+versions to 1.2.9 / 1.2.9.0 for the cleaner settings, repair page and aligned
+sidebar. Game VERSION and runtime code are unchanged. MAC-021 retains queued
+native launcher UI adaptation. This records preparation; public publication is
+confirmed separately by the GitHub release and its build provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks. Startup,
+packaging, issue-form and CI-scope Python suites passed 41 tests with seven
+subtests. Three disposable minimize/restore/startup-failure checks passed.
+The actual public v1.2.8 ZIP upgraded to the v1.2.9 package; installed manifest
+verification, embedded banner/logo/icon, assembly version, personal-file
+preservation, corruption detection, same-version repair and confirmed cleanup
+passed. Versioned Home, Repair / Verify and both settings previews rendered.
+All fixtures were synthetic and disposable; no real game was launched and no
+personal saves, settings, data or ISO were modified.
+
+## Launcher page and sidebar polish (2026-10-17)
+
+Implemented on `feature/launcher-page-polish`, based on main `d6f0d56`; implementation commit `0f30cbe`. Repair / Verify now uses separate game/launcher cards
+with textual health badges, version/file counts, prominent verification actions
+and expandable file details. An unhealthy check expands its details; operation
+status/cancellation remain outside the scroll area. Open game folder stays below
+the cards alongside the preservation explanation.
+
+Settings retains native tab navigation with compact underlined headers, grouped
+input/mouse and key-binding cards, separate display/camera/performance/startup
+cards, and a fixed Save/Cancel footer. Custom width/height move into an expandable
+section. The shared page theme styles buttons, dropdowns/popups, entries,
+checkboxes, scrollbars, expanders and the FOV slider. Settings models, validation,
+capture/conflict prompts and save/cancel/draft semantics are retained. Sidebar
+buttons now have equal icon columns and a shared label offset instead of padded
+text; explicit accessible names preserve navigation labels. Home action alignment
+continues to use centered content through the shared button template.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required launcher build
+passed all 99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks.
+Startup and packaging tests passed six tests with two missing-artwork rejection
+subtests. Rendered/reviewed 1152×772 and minimum 1000×720 pages, including input,
+custom resolution, lower graphics/startup sections, repair attention/details and
+busy states. An offscreen WPF smoke check verified themed dropdown expansion and
+collapse at input width, the native FOV increase command, checkbox automation,
+and custom-resolution expansion; its dropdown image was reviewed. Tests used
+synthetic disposable settings/files and never launched the real game or modified
+personal data. No game runtime/build changes. MAC-021 records queued native UI
+adaptation; native Mac launcher execution remains unverified. Not published.
+
+## Game folder action moved into Repair / Verify (2026-10-17)
+
+Follow-up on `feature/launcher-repair-diagnostics`, PR #88. Removed Game files
+from the sidebar and added **Open game folder** below the two Repair / Verify
+cards. The existing installation-folder action is retained; preview mode reports
+the action without opening Explorer, and maintenance busy state disables it.
+Updated missing-data guidance and launcher usage documentation. MAC-021 records
+the corresponding placement for a future native release launcher.
+
+Windows x64 / .NET Framework 4.8: rebuilt with required themed artwork; all
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks passed.
+Existing UI checks cover sidebar removal, page-specific folder action and busy
+state. Rendered and reviewed Home, Repair / Verify and Diagnostics previews: the
+folder action fits below the cards and the shorter sidebar remains visible.
+No game launched and no personal game files, settings or saves changed.
+Mac launcher adaptation remains queued; launcher v1.2.8 is not published.
+
+## Diagnostics to GitHub issue drafts (2026-10-17)
+
+Follow-up on `feature/launcher-repair-diagnostics` / PR #88, based on its
+`b990140` implementation; follow-up commit `e640b2f`. Diagnostics adds Report a bug and Request
+enhancement actions. `DiagnosticIssueDraft.cs` selects the matching repository
+issue form and prefills its optional diagnostics text field, with the complete
+report also copied to the clipboard. Only the displayed privacy-filtered report
+is used; symptoms, steps and enhancement descriptions remain for the reporter.
+No token, issue POST, automatic submission or automatic upload is added.
+The user explicitly opens a browser draft, reviews the form and submits on GitHub.
+
+URLs are limited to 1800 characters for the Windows browser handoff. Long reports
+use an explicit summary/paste instruction and preserve the full text on the
+clipboard; Unicode/query syntax is escaped and never silently truncated. Clipboard
+or browser failures leave the report visible with recovery instructions. Reporting
+controls are disabled during maintenance; preview actions never open GitHub.
+The bug/enhancement YAML forms share the same optional plain-text diagnostics
+field. Existing version choices and enhancement simplicity are retained.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both themed EXEs compiled and
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks passed.
+Added checks cover both forms, Unicode/newline/query-character round-trips,
+large-report fallback, filtered payloads and report-control busy state. Issue-form
+schema/field contract and version-refresh checks passed (15 tests, including
+five subtests). The preceding startup/packaging/CI-scope run passed 26 checks;
+only the changed form test expectation needed an update for the optional field. No actual GitHub issue was created or submitted and no
+personal clipboard was changed by tests. Live prefilling of the new field requires
+the issue templates to merge into the default branch. MAC-021 records queued Mac
+browser/clipboard adaptation; native Mac execution remains unverified. Not published.
+
+## Launcher v1.2.8 Repair/Verify and Diagnostics (2026-10-17)
+
+Implemented on `feature/launcher-repair-diagnostics`, commit `920b789`, based on main `65b6903`. Launcher/assembly version is 1.2.8. New Repair / Verify and
+Diagnostics sidebar pages stay in the existing window and retain settings drafts.
+Verification is offline/read-only against installed manifest SHA-256 hashes;
+protected settings and independent launcher files are excluded from game scans.
+Reports distinguish missing, changed, unreadable and invalid manifest cases.
+
+Repairs fetch only the exact installed game or running launcher release and
+verify the published archive digest/size, package layout and every file before
+using the existing helper/recovery flow. Game repair replaces damaged/missing
+owned runtime files and official BUILD metadata, preserving personal files,
+untracked files and the independent launcher. It retains the previous game
+rollback through separate repair transactions/backups; repair backups follow
+confirmed-game cleanup. Existing staged updates are retained. Cancellation and
+failed preparation remove only owned safe staging, preserving ISOs/links/locked
+recovery data. Interrupted repair transactions recover on startup. No game code
+or native Mac adapter changed. A live v1.2.8 launcher self-repair needs that exact
+release to be published; developer builds report its absence without downgrading.
+
+Diagnostics report versions, Windows/process/CLR information, GPU/driver, free
+space, embedded artwork, saved graphics, last verification and structured recent
+exception types. Background GPU lookup has a bounded wait and one shared in-flight
+query. Clipboard reports omit personal paths, arbitrary log messages, raw files,
+saves and ISO information; they are never automatically uploaded.
+
+Windows x64 / .NET Framework 4.8 / pinned Python 3.12.14: required-artwork builds
+passed 99 updater/bootstrap/cleanup checks, 25 settings checks and 15 maintenance
+checks. Six startup/packaging plus 20 CI-scope Python checks passed (26 total,
+including two missing-artwork subtests). Coverage includes exact-version lookup,
+corrupt/cancelled downloads, damaged runtime repair, equal-version forced launcher
+repair, preserved previous-game rollback, interrupted recovery, confirmed cleanup,
+ISO retention inside staging, report privacy and embedded navigation/drafts.
+The first local full run respected an active game guard; that game was not stopped.
+Once it was no longer running, full disposable transaction suites passed. No
+automated real-game session or personal settings/saves were used. GPU discovery
+reported NVIDIA GeForce RTX 4070 SUPER / driver 32.0.16.1742 in 54 ms.
+Home, input/graphics, Repair/Verify, Diagnostics and bootstrap previews rendered;
+new pages were visually inspected with their sidebar and theme intact. Preview
+versions/system state are explicitly sample data. Native Mac execution is
+unverified; adaptation/acceptance checks are queued in MAC-021. Not published.
+
+## Issue #50 idle-demo skipping (2026-10-17)
+
+Initial implementation and live validation on `50-cannot-skip-menu-idle-video`,
+based on main `abaf001`.
+Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 / CMake 4.4.4.
+The supported US XBE SHA-256 was verified before decoding and live testing.
+Issue #82 was merged afterward; the branch was rebased onto main `e942ef0`
+before publication, preserving both fixes. All 55 targeted tests passed after
+rebasing, including the issue #82 camera/cutscene suite. The live build
+evidence below predates this rebase; no post-rebase full game rebuild is claimed.
+
+The US movie loop at `0x30594` calls `0x445252` only when skipping is enabled
+and controller input matches mask `0x280`. That routine sets object byte
+`+0x78`; the original Update checks it at `0x445843`/`0x445853` to terminate
+packet playback/looping. The symbol had been guessed as `XMVPlaybackStart`,
+so a skip press instead entered the host player's start handler. Correct the
+US symbol to the descriptive `XMVPlaybackStop` and add the corresponding HLE
+handler. It closes the movie voice and overlay, marks EOF, keeps the guest
+object valid until Destroy, and makes repeated Stop/Update/Destroy safe.
+Original-body fallback and genuine Start handling for other titles remain.
+
+The final `xmv-stop.patch` carries runtime and symbol changes. The generation
+fingerprint now includes extra-symbol metadata. Windows Build refreshes the
+symbol scan when regeneration is required; native --generate already does so.
+The generated US thunk was inspected: `sub_00445252` calls the Stop handler
+and pops eight bytes (return address plus its one argument).
+
+50 targeted tests passed across XMV lifetime/incorrect-binding detection,
+generation invalidation, CI scope, patch tracking and full historical patch
+transitions. The HLE test compiles production code with a deterministic host
+player and checks early skip, EOF stability, a later movie, repeated cleanup,
+unavailable playback, null status output and original-body fallback/ABI.
+The deliberately restored Start binding fails the regression. The test is in
+both Windows/macOS runtime CI and the local Test command.
+
+Full patch stack applied successfully; Windows Release game and build-test
+targets compiled. Network, channel clear, texture format, display, save paths,
+controls, settings and debug checks passed. The unchanged prompt test again
+failed `pc_controls_accept_pad` at line 55 when its window failed to gain
+foreground focus, so the full Build command is not reported as passing.
+Remaining checks and executable identity sealing were completed separately.
+
+The rebuilt executable SHA-256 is
+`4f2b2eba7624293677be776253bfdd2035b9b6a7114a1cae44f995a7bfb2239f`.
+A bounded 240-second exploratory run reached the signed-in main menu but did
+not trigger an attract movie there; returning to player selection late in the
+run did not leave enough idle time. A fresh untouched title-screen run started
+`attract.xmv` at 60.56 seconds. A synthetic Enter/A press at 64.59 seconds
+closed the movie at 64.69 seconds, after 108 pictures. A separate untouched
+run started the demo at 60.50 seconds; Escape/Start at 64.55 seconds closed it
+at 64.64 seconds. Subsequent navigation reached the responsive signed-in main
+menu, verified in `title-skip-escape.png`. Startup EA/Free Radical movies both
+played and closed normally. This is internal input-model replay, not a
+physical keyboard/controller test. Test saves, controls, both display
+configs and XDG paths are isolated copies of the unlocked fixture. Personal
+settings and the canonical fixture are preserved. Logs are bounded and local
+evidence is under `build/issue-50-video-skip`.
+
+Native build/live validation is pending (MAC-029). The stop path is shared;
+this change does not implement native host XMV decoding. No full campaign or
+hosted CI result is claimed.
+
+## Issue #82 frontend FOV isolation (2026-10-17)
+
+Changes on `82-bug-fov-change-affects-the-main-menu`, based on
+main `abaf001`. Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 /
+CMake 4.4.4. Supported US XBE SHA-256 verified before generation and live runs.
+
+The main-menu/profile background uses scene 101 with a state-2 actor owning
+its camera, so the previous gameplay FOV filter accepted it. Read-only samples
+of the existing `47ac8d2` executable at 1920x1080 measured projection P0/P5
+as 1.08055234/1.92098212 at 55 degrees and 0.56249994/1.0 at 90 degrees.
+These samples reproduce the incorrect menu lens change; they are not gameplay
+validation. The retained screenshot shows the profile-name frontend screen.
+
+`gameplay_fov_scale` now follows the original US `sub_001CE9A0` signed
+scene > 100 distinction to leave frontend lenses authored. It preserves the
+existing aspect correction, cutscene framing, gameplay zoom, and falling FOV
+logic. No new runtime patch or generated-code edit is needed for this change.
+
+Ten targeted tests pass: cutscene/camera coverage, decal projection and FOV
+settings. The new cases exercise both player-camera callers, 55/90 settings,
+grounded/falling states, scenes 100 through 107, and a return to gameplay
+without clearing the actor. They check both projection and CPU frustum axes
+and preserve authored zoom and actor state. The added regression failed before
+the fix; a mutation removing the frontend guard is also required to fail.
+Existing cinematic and falling/landing checks still pass.
+
+The complete patch stack verified with zero runtime files changed. The supported
+Windows Build regenerated hooks from main and compiled the Release game and
+all test targets. Display, channel clear, textures, network, save paths,
+controls, settings and debug checks pass. The prompt test fails its foreground
+window assertion (`pc_controls_accept_pad`, line 55), also on a separate retry;
+its `SetForegroundWindow` attempt does not give the window focus. This unchanged
+input test prevents claiming an entirely passing Build command. Remaining
+build checks were run separately; executable identity sealing was completed.
+
+Rebuilt executable SHA-256: `95012110f5e15649a3b3459ffc760df6f163d0a48ff417a111aec878020993cb`.
+Two bounded 40-second live runs at 1920x1080, using the isolated unlocked Test
+Lab fixture, reach the main menu through synthetic internal key replay.
+At both 55 and 90 degrees, every read-only sample after 25 seconds has scene
+101 and projection P0/P5 = 1.08055234/1.92098212, matching the default lens.
+Reviewed screenshots show the main menu with its original background framing.
+Evidence is retained locally under `build/issue-82-menu-fov`; logs are capped,
+redundant BMPs removed and disposable virtual disks recycled. Both display
+configs, controls, saves and XDG paths were isolated. No human gameplay retest
+or full-level validation is claimed; gameplay transitions are covered by the
+camera regression harness.
+
+Mac uses the same camera source; native build/live validation is pending.
+See `MAC_PORT_BACKLOG.md` MAC-028. Hosted CI validation is pending.
+
+## Issue #17 spirit rendering (2026-10-17)
+
+Production changes are on
+`17-ghosts-in-mansion-of-madness-and-what-lies-below-are-nonvisible`, based
+on main `5548b25`. Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 /
+CMake 4.4.4; supported US XBE SHA-256 verified. The complete local patch stack
+was applied before regenerating wrappers and building both Release game and
+replay targets. Executable SHA-256:
+`47ac8d2733d448aed126bd00453dfa83ea79ac7de24fe56c2ba1fd8e80397393`.
+
+`src/pc_ghost_render_guest.inc` and the final `spirit-rendering.patch` replace
+the temporary eye/head probes. The US spirit renderer scopes clockwise
+culling to rigid model nodes; skinned ribbon trails remain two sided. Its
+two eye-billboard call sites use zero clip-space depth bias and no fog only
+for their flushed batches. Alpha blending, depth testing, depth writes and
+animation remain authored. The shared HLE override saves/restores host state
+and invalidates the guest-state cache on entry AND exit, including renderer
+exit before the eye batch ends. No shader hashes, shader string rewriting,
+geometry fingerprints, diagnostic switches or forced visibility are shipped.
+
+These are title compatibility corrections, not general Xbox semantic changes.
+The original spirit path requests no culling; back-facing skull triangles
+then overdraw the front. Its eye bias 200 is multiplied by 256 and added to
+normalized clip Z, clipping the sprites; the unwritten fog fallback also
+replaces their textured red color. The original Xbox bias conversion remains
+unresolved, so the correction is confined to these two spirit call sites.
+
+Final production capture `build/issue-17-ghosts/production-live.d3dcap` has
+252 draws: all five skull draws use clockwise culling, all 30 trail draws
+retain no culling and fog, and all ten eye/eye-trail draws have c13.w = 0,
+fog disabled and depth testing enabled. All retain blending and disabled
+depth writes. Fog and culling restore between spirits. The reviewed live
+`production-frame013.bmp` shows skull faces, wispy trails and glowing red eyes.
+Routing contains no diagnostic flags. This bounded 1920x1080 session used
+an isolated unlocked Test Lab copy, controls and both display/XDG configs;
+personal saves/settings and the canonical fixture were preserved. The log
+records normal user window closure and ExitProcess(0), not an exception.
+
+Validation: 54 distinct targeted tests passed (40 native/state-cache,
+framebuffer, channel-clear, CI routing, generation and patch-tracking tests;
+14 patch-upgrade tests, with the two spirit tests repeated). The spirit harness
+compiles the actual guest wrappers and HLE cache, checks both billboard call
+sites, rigid/skinned selection, unrelated callers, ABI preservation, flush
+ordering and state restoration; a deliberately broken cache-restore variant
+must fail. It is included in the Windows/macOS runtime CI and local Test suite.
+Full-stack patch verification changes zero runtime files. No complete game
+regression suite or hosted CI run is claimed for this validation.
+
+Before publishing, main `33fc619` was merged into the issue branch; both
+validation records were preserved when resolving the STATUS conflict.
+Full-stack patch application succeeded, followed by 39 passing spirit,
+patch-upgrade/tracking, projection and UI-layout tests. The build and live
+capture above precede this integration; the merged game was not rebuilt or
+playtested again.
+
+PR #84 CI follow-up: the first macOS ARM64 run passed patch transitions but
+both spirit harness variants failed to link `GetTickCount`, called only by
+HLE diagnostic counters. The standalone harness now supplies a deterministic
+clock on both hosts, matching the framebuffer harness, instead of relying
+on the Windows system library or linking the complete Mac compatibility layer.
+Runtime/game behavior is unchanged. All four local Windows spirit/framebuffer
+variants passed; hosted rerun validation is pending.
+
+Earlier live comparisons with #9/#21 disabled did not identify either as the
+fix for #17. A forced visibility-query probe worsened effects and was removed.
+Eye/head probes restored eye glow and reduced back-face overdraw in identical
+replays, but the user's head-opacity feedback was inconclusive. Old probes,
+captures and comparisons remain ignored investigation records outside the
+active patch stack. The production live draw states above supersede those
+probes. A synthetic old-capture replay was not pixel-identical to its earlier
+reference; it is not used as a fidelity pass.
+
+Remaining validation: original-Xbox fidelity, later ghost-girl/What Lies Below
+encounters, and native macOS GPU/interpreted-vertex paths. This is evidence for
+the Mansion entrance-hall spirits, not a claim that every encounter in #17 is
+verified. See [MAC-026](MAC_PORT_BACKLOG.md#mac-026--spirit-skull-and-eye-rendering-17).
+
 ## Arcade RANK widget placement (2026-10-17)
 
 Follow-up to issue-22 commit `6485069` on
@@ -2928,7 +3967,7 @@ listed above remain in that capture directory.
 
 The code does not add a new AI replication protocol. Working cross-peer bot
 movement, weapons, damage, deaths, respawns and scoring are not established;
-issue #25 remains incomplete. MAC-028 records deferred Mac integration. No Mac
+issue #25 remains incomplete. MAC-033 records deferred Mac integration. No Mac
 execution, other-device synchronization, commit, push or release was performed.
 
 
@@ -2940,7 +3979,7 @@ CMake 4.4.4, Python 3.14.2, D3D11. Supported US XBE SHA-256 was checked
 by each supported build and isolated runner; dependency pins were unchanged.
 Physical free space was 431.25 GiB during this pass. No duplicate game extract
 or build tree was created. Mac execution and other-device synchronization are
-unverified; deferred adaptation is [MAC-028](MAC_PORT_BACKLOG.md#mac-028--experimental-network-bot-setup-issue-25).
+unverified; deferred adaptation is [MAC-033](MAC_PORT_BACKLOG.md#mac-033--experimental-network-bot-setup-issue-25).
 
 - Removed the extra experimental menu button. Host match settings now run the
   original Arcade Custom Bot Set construction below Weapon Set, original
@@ -3024,7 +4063,7 @@ fix, guest/model/native fallback and identity checks passed again (8 tests).
 The latter includes a regression for host sockaddr lookup. Native checks also
 cover stale, wrong-key, wrong-role and wrong-match snapshot rejection before
 the Xbox receive buffer capacity check. Mac execution remains unverified,
-tracked in [MAC-028](MAC_PORT_BACKLOG.md#mac-028--experimental-network-bot-setup-issue-25).
+tracked in [MAC-033](MAC_PORT_BACKLOG.md#mac-033--experimental-network-bot-setup-issue-25).
 
 The combat follow-up also wraps `sub_003593D0`, whose original eligibility
 check discarded bot victims before encoding. The initial interpretation of
@@ -3075,7 +4114,7 @@ were removed; selected screenshots, profiles and bounded logs remain local.
 Checkpoint requested on `25-add-bot-support-to-online-matches`, based on
 `33fc619`; source/patches/tests/docs are committed together. No push or main
 merge is part of this checkpoint. Other-device synchronization and Mac execution
-remain unverified; adaptation is queued in MAC-028.
+remain unverified; adaptation is queued in MAC-033.
 
 **Correction to the earlier health evidence:** actor `0xB08`/`0xB0C` are health
 configuration values. The prior sampled change from 1.1 to approximately 0.55
@@ -3133,7 +4172,7 @@ were preserved. Selected captures and bounded diagnostics remain ignored/local.
 
 Local, uncommitted follow-up to `0c8531c` on the user-requested
 `25-add-bot-support-to-online-matches` branch. No push or main merge. Mac
-adaptation remains queued in [MAC-028](MAC_PORT_BACKLOG.md#mac-028--experimental-network-bot-setup-issue-25);
+adaptation remains queued in [MAC-033](MAC_PORT_BACKLOG.md#mac-033--experimental-network-bot-setup-issue-25);
 no other-device synchronization or Mac execution was verified.
 
 Changes replicate the victim spawn counter, host hit bounds, heading and
@@ -3237,7 +4276,7 @@ MSVC 19.42 / Windows SDK 10.0.22621; upstream remains pinned to
 `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. The supported US XBE SHA-256
 was verified before generation and again by the isolated gameplay runner.
 Free space before building was 465,248,022,528 bytes. Mac execution and
-other-device synchronization remain unverified; adaptation remains MAC-028.
+other-device synchronization remain unverified; adaptation remains MAC-033.
 
 The previous HP-zero observations did not prove completed kills. Investigation
 found that the host's original NPC death sender could reject a remote human
@@ -3323,7 +4362,7 @@ follow-ups. Windows AMD64 / D3D11, Python 3.14.2, MSVC 19.42, Windows SDK
 was verified before building and again by the isolated gameplay runner.
 Free space before building was 465,070,133,248 bytes. No duplicate game extract
 or build tree was created. Native Mac and other-device synchronization remain
-unverified; adaptation and acceptance are recorded in MAC-028.
+unverified; adaptation and acceptance are recorded in MAC-033.
 
 The new separate `pc-network-bot-presentation` patch wraps the original pose
 pass. Guest NPCs evaluate received channels without advancing them again and
@@ -3389,7 +4428,7 @@ after checking resolved containment, names and absence of reparse points.
 
 User follow-up: "So far, so good," with a request to commit the accumulated
 fixes. This is a positive initial retest report, not full acceptance of every
-remaining scenario. Source, patches, tests and the MAC-028 handoff are included
+remaining scenario. Source, patches, tests and the MAC-033 handoff are included
 in `Fix network bot replication, scoring and guest presentation`; ignored
 builds, captures, logs, saves and personal settings remain local.
 
@@ -3405,7 +4444,7 @@ controller/peer records. This supplies bot names, portrait IDs, ranks and
 scores to Results/Scores, retaining the host's reliable final kill/death
 counters on guests. Completed-match menus omit health/shield; the shared
 adapter preserves ordinary pause, gameplay and Story objectives behavior.
-See `docs/online-bots-investigation.md` and MAC-028 for the boundary and Mac
+See `docs/online-bots-investigation.md` and MAC-033 for the boundary and Mac
 handoff. Mac execution and other-device synchronization remain unverified.
 
 - Verified the supported US XBE SHA-256 before building/testing; about
@@ -3447,7 +4486,7 @@ This uses synthetic input and local LAN peers, not physical input or the
 Internet bridge. Other modes, rematches and Mac runtime behavior remain
 outside this validation. The user accepted this follow-up and requested its
 commit as `Fix bot post-match portraits, scores and HUD`, including regression
-tests and the MAC-028 handoff. Generated builds/evidence remain ignored and
+tests and the MAC-033 handoff. Generated builds/evidence remain ignored and
 local. No push or other-device synchronization was performed.
 
 ## Issue #25: mode capacity and lobby bot population (2026-10-17)
@@ -3466,7 +4505,7 @@ The current lobby displays players, admitted bots and capacity; the host also
 sees waiting bots or an over-capacity warning. A human roster above the new
 capacity after changing mode cannot launch. See the investigation document
 for exact original boundaries and the distinction between capacity and
-minimum-player queries. MAC-028 records deferred native adaptation.
+minimum-player queries. MAC-033 records deferred native adaptation.
 
 - Supported US XBE hash verified before generation/game validation:
   `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
@@ -3520,3 +4559,46 @@ checks passed and path-test images were recycled. Final compatibility:
 `7c14d3fa3a2f7198675e6f767f8dd27697025c3a2cf617d312779d2f527254f4`.
 Final Release executable SHA-256:
 `8bbc87de444db785950449c947473c43365b093a6f1df6fbe3fefc636f6468da`.
+
+## Issue #25: merge current main into bot support (2026-10-17)
+
+Resolved the user's in-progress merge of main `fe8e25341990e304272d2229d6fc27a98012fef6`
+into `25-add-bot-support-to-online-matches` at `68dcf9f`. All five conflicted
+files retain both features: network bot helpers plus menu mouse/quit adapters,
+combined UI test globals and post-match checks, and both input replay formats.
+Four-field replay records set absolute cursor coordinates; five-field records
+apply sequenced raw movement once. The input integration test checks that
+cursor records neither turn the camera nor consume a gameplay motion sequence.
+Preserved existing tracked CRLF input files and main's alpha.6 version.
+
+The automatic documentation merge reused MAC-028 for two unrelated features.
+Bot support is now MAC-033, with its historical references/links updated;
+main's frontend-FOV MAC-028 entry stays intact. Native networking remains
+queued. This merge does not establish Mac runtime support or synchronize
+another device's local files.
+
+Validation host: Windows AMD64/D3D11; Python 3.14.2, MSVC 19.42, Windows SDK
+10.0.22621.0, CMake 4.4.4 and SDL 3.4.16. Upstream stays pinned at
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. Verified supported US XBE SHA-256
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`;
+432.2 GiB physical disk space available before the build.
+
+- The complete combined patch stack applied and regenerated the game wrappers.
+  Windows Release build and all built-in tests passed, including the combined
+  input regression; disposable path-test disks recycled. Log:
+  `logs/issue25-merge-build.log`.
+- Targeted checks initially passed 50/51; the UI hook assertion read the old
+  runtime while patch application was still pending. After patch installation,
+  all 14 runtime-dependent UI/objectives/generation checks passed. The original
+  run also passed bot guest/native-fallback, result-builder, menu mouse, quit,
+  patch migration and tracking checks. Logs: `logs/issue25-merge-tests.log` and
+  `logs/issue25-merge-runtime-tests.log`. No remaining failures.
+- Final executable/content seal verification passed. Compatibility:
+  `c10db24bac529b505d80d5caf2d500042637b6d04590a5ad3ad2023ced9a9281`.
+  Release executable SHA-256:
+  `9336818cacb24e21c884e3b10cf6f2bf94de4650056e6ddb697e271e960b092f`.
+
+No additional gameplay session was run for this merge; earlier two-peer
+results apply to the pre-merge build as recorded above. Personal saves and
+settings were not changed. Merge completion/publication updates PR #108;
+main itself is not merged or modified by this operation.

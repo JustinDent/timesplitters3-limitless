@@ -1,5 +1,6 @@
 """Offline checks for release choices and automatic report labels; no live mutations."""
 import importlib.util
+import re
 from pathlib import Path
 import shutil
 import tempfile
@@ -120,7 +121,8 @@ class VersionTests(unittest.TestCase):
             self.assertEqual(path.read_bytes(), before)
             for removed in ('game-version', 'launcher-version', 'id: platform', 'id: reason', 'AUTO GAME', 'AUTO LAUNCHER'):
                 self.assertNotIn(removed, path.read_text())
-            self.assertEqual(path.read_text().count('  - type: textarea'), 2)
+            self.assertEqual(path.read_text().count('  - type: textarea'), 3)
+            self.assertIn('    id: diagnostics\n', path.read_text())
 
 
 class LabelTests(unittest.TestCase):
@@ -181,6 +183,21 @@ class LabelTests(unittest.TestCase):
             forms.label_report(client, dict(number=7, body=report('macOS'),
                                             labels=[{'name': 'bug'}, {'name': 'platform: windows'}]))
         self.assertEqual(client.request.call_count, 1)
+
+
+class LauncherDiagnosticsForms(unittest.TestCase):
+    def test_launcher_query_field_matches_both_optional_issue_form_fields(self):
+        source = (ROOT / 'tools/launcher/DiagnosticIssueDraft.cs').read_text(encoding='utf-8')
+        field = re.search(r'const string DiagnosticsField\s*=\s*"([a-z-]+)"', source).group(1)
+        for filename in ['01-bug-report.yml', '02-enhancement.yml']:
+            with self.subTest(filename=filename):
+                text = (ROOT / '.github/ISSUE_TEMPLATE' / filename).read_text(encoding='utf-8')
+                ids = re.findall(r'^    id: (.+)$', text, re.M)
+                self.assertEqual(ids.count(field), 1)
+                section = text.split('    id: ' + field + '\n', 1)[1].split('\n  - type:', 1)[0]
+                self.assertIn('label: Launcher diagnostics (optional)', section)
+                self.assertIn('render: text', section)
+                self.assertNotIn('required: true', section)
 
 
 if __name__ == '__main__':

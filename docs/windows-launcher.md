@@ -93,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
-in `build/launcher`; for version 1.2.7, publish all three together:
+in `build/launcher`; for version 1.2.8, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.7-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.7-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.8-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.8-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.7`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.8`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -337,3 +337,181 @@ For an installation already affected by an older updater, close the launcher
 and extract the complete verified launcher release ZIP into that installation.
 An equal version with internally valid fallback files is not automatically
 reinstalled by the existing launcher self-updater.
+
+## Resumable downloads and recovery (current source)
+
+Game updates, launcher updates and repair downloads keep matching saved bytes
+across retries and launcher restarts. Home offers **Resume download** for a saved
+game transfer with a matching published digest. **Pause download** keeps the saved
+bytes; closing during a game download requests a pause and waits for the current
+file operation to stop safely. **Cancel preparation** also retains a completed
+cached download so the next attempt can verify it again without downloading it.
+
+Progress shows bytes received, total size, measured download speed and estimated
+time remaining. Speed measures this attempt's new bytes; previously saved bytes
+are excluded from the rate. The launcher says **Estimating time remaining** until
+it has a useful measurement, and shows verification/preparation separately.
+
+Home failures offer **Retry** (or **Resume download** after a pause),
+**Repair / Verify** and **View logs**. Failed repair operations offer retry and
+logs in the same page. Interrupted startup launcher updates offer **Retry update**,
+**View logs** and **Open installed launcher** when one is present. A failed initial
+release check still opens the installed launcher automatically for offline use.
+
+The cache is separate from installation staging, with one game slot and one
+launcher slot under `.launcher/downloads`. It is retained for interruptions and
+cancelled preparation, then cleaned when staging succeeds. A different release
+URL, size or SHA-256 replaces its previous recognized cache. Unknown cache files
+and linked paths are refused and kept; cleanup only removes the named owned
+cache files and never recursively removes user folders.
+
+Resume uses HTTP byte ranges and a strong If-Range validator when available.
+Range boundaries and lengths must agree with the published asset. A server that
+ignores Range restarts the file; an invalid range is rejected, and an unsatisfiable
+saved range gets one fresh attempt. The complete file always passes the published
+SHA-256 before it reaches staging, and package manifests are checked as before.
+Checksum failures discard the damaged cache. A connection or stream that stalls
+is bounded to 30 seconds; retry can resume the saved bytes.
+
+Developer checks: `launcher-tests.exe --downloads` runs synthetic HTTP and
+scratch-file recovery tests without requiring the game to close.
+`--downloads-live` interrupts a small public standalone launcher ZIP after 64 KiB,
+resumes it in a fresh client and verifies the checksum; it never installs or runs
+the downloaded program and cleans its disposable files. Protocol reference:
+[HTTP range semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-range).
+
+## What's new (launcher v1.2.11)
+
+**What's new** in the sidebar and on Home opens an embedded release-notes page;
+the sidebar stays visible. Choose **Game releases** or **Launcher releases**,
+then **Available release** or **Installed release**. The version overview compares
+the installed game or running launcher with the latest compatible release on the
+Home update channel. It distinguishes newer updates, up-to-date installations,
+versions newer than that channel and missing/unversioned installations. If Stable
+has no game release, notes for an installed preview remain available separately.
+
+The page reads published GitHub release descriptions; it never reads main or
+invents a change summary. Latest game/launcher selection follows the existing
+updater rules, including launcher metadata verification. Installed notes use the
+exact version, looking up an older release directly when it is outside the latest
+100 records. Unavailable or unpublished versions are not replaced with another
+version's notes. Release dates and titles appear when published.
+
+Headings, bullets and code blocks are displayed as native text. Images are omitted;
+HTML, scripts, embedded XAML and automatic link navigation are not executed.
+Descriptions are limited to 64,000 characters / 512 lines, with an explicit link
+to read the complete release if shortened. **View release on GitHub** opens the
+selected release only when clicked. **Known issues** displays a published heading
+such as `## Known issues` or `## Known limitations`; if none exists, the page says
+so rather than claiming there are no issues. Other sections remain in the change
+notes. Open GitHub for the original Markdown formatting and linked information.
+
+**Refresh notes** has a 25-second cancellation deadline. A failed refresh retains
+previously loaded notes for the same version/channel for this session and marks
+them with their last checked time; a first offline load shows retry guidance.
+These notes are held in memory, not saved for the next launcher session. Switching
+channel or installation version resets that view, and cancelled older requests
+cannot replace its newer result. Updates are still installed from Home or the
+startup updater; reading notes does not install anything or change settings.
+
+Developer preview: `--render-news-preview output.png` works through the bootstrap
+or app, with labeled sample releases and no network/filesystem maintenance.
+`launcher-tests.exe --news` exercises synthetic release selection, exact-version
+lookup, failures, safe text handling and embedded navigation without real game
+files. The standard `build-launcher.ps1 -Test` includes these checks.
+
+## Repair / Verify tabs (launcher v1.2.12)
+
+The sidebar has one **Repair / Verify** entry with two tabs in the main window:
+**Repair / Verify** for file checks and repairs, and **Diagnostics** for system
+information, report copying, bug reports and enhancement requests. There is no
+separate Diagnostics sidebar button. Opening the sidebar entry or a recovery
+shortcut selects Repair / Verify by default; diagnostic developer previews still
+open Diagnostics directly.
+
+Both tabs keep **View logs** visible in the footer, including during an operation.
+Switching tabs preserves verification results and the diagnostic report. The
+report is collected on the first Diagnostics selection; use **Refresh diagnostics**
+to update it after a file check or system change. File operations lock tab switching
+while keeping **Cancel operation** and **View logs** usable. The sidebar remains
+visible, and navigating away preserves unsaved Game settings drafts.
+
+## Repair / Verify (launcher v1.2.8)
+
+The **Repair / Verify** sidebar page stays inside the main window. Its **Open game
+folder** button sits below the verification and repair cards and opens the
+installation folder for inspection. Choose
+**Verify files** separately for the game runtime or launcher. Verification works
+offline, compares SHA-256 hashes with the installed manifest, reports missing,
+changed or unreadable release-owned files, and creates or changes no files.
+Game checks exclude personal settings and independent launcher files. A matching
+installed manifest is an integrity check; it is not a fresh publisher signature.
+Imported game data, ISOs, saves and texture packs are not scanned or repaired.
+
+The current source layout uses separate game and launcher status cards. Each shows
+**Not checked**, **Verified** or **Needs attention**, with version and checked-file
+counts after a scan. **Verification details** stays collapsed until needed; a check
+that finds a problem opens it automatically. Expand it at any time to inspect the
+file-level results. The page scrolls at smaller window sizes and keeps operation
+status and cancellation available below the content.
+
+After verification, **Repair files** downloads the exact installed game release,
+or the exact running launcher release, from GitHub. Draft, unavailable or
+unpublished releases cannot be substituted with a newer/older version. The
+archive size and published SHA-256, package layout and every staged file hash
+must verify before installation. An unpublished development version cannot repair itself
+from GitHub until its exact version is published. Repair is explicit, including for
+internally consistent fallback artwork builds.
+
+Close the game before repair. Downloads, verification and extraction can be
+cancelled; installed files stay unchanged until the existing updater helper
+applies the verified transaction and reopens the launcher. Game repair replaces
+only changed/missing owned runtime files and the official BUILD manifest; it
+preserves all settings, saves, extracted data, ISOs, textures, independent
+launcher files and untracked files. Modified release-owned runtime files may be
+replaced. The previous game rollback is retained. Repair has separate
+`.launcher/repair-transaction` and `repair-rollback` folders; interrupted repairs
+recover on startup, and repair backups use the existing confirmed-game cleanup
+rules. Existing unknown/pending updates are retained, rather than overwritten.
+
+## Diagnostics (launcher v1.2.8)
+
+**Repair / Verify → Diagnostics** shows running/installed versions, Windows and process architecture,
+CLR version, GPU/driver information when available, free space, embedded artwork,
+saved graphics settings, last verification results and recent structured launcher
+exception types. Graphics discovery runs in the background with a bounded wait;
+missing system information does not block the launcher. Use **Refresh diagnostics**
+after verifying files, then **Copy diagnostic report** to put the displayed text
+on the clipboard. It is never uploaded automatically.
+
+Choose **Report a bug** or **Request enhancement** to open the matching GitHub
+issue form. The launcher converts the displayed filtered report into the optional
+**Launcher diagnostics** field and also copies the complete text to the clipboard.
+You fill in your description, select the requested version/platform choices,
+review the diagnostics and submit on GitHub using your account. The launcher
+needs no GitHub token and never creates or submits an issue automatically.
+Clicking a report button opens a browser draft and sends the prefilled diagnostic
+text to GitHub; review the displayed report before choosing it.
+
+Long reports use a short browser link with a clearly marked summary. Paste the
+complete copied text into **Launcher diagnostics (optional)** before submitting;
+the full report is never silently truncated. If clipboard access is unavailable,
+the report stays visible for manual copying. Refresh diagnostics after collecting
+new verification results. Bug/enhancement description fields remain blank so the
+launcher does not invent symptoms, reproduction steps or feature requests.
+Both issue templates include the same optional plain-text diagnostics field;
+they must be on the repository's default branch before publishing the launcher.
+The prefill uses GitHub's documented [issue-form URL query fields](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-an-issue#creating-an-issue-from-a-url-query).
+
+The report excludes raw logs, personal/installation paths, arbitrary error
+messages, file contents, save data and ISO information. Recent errors contain
+only recognized UTC timestamps and exception types. **View logs** remains
+available on Home and in both Repair / Verify tabs for local investigation.
+
+Developer previews: `--render-repair-preview output.png` and
+`--render-diagnostics-preview output.png` work through the bootstrap or app EXE.
+They show sample UI state without network requests, repairs or hardware queries.
+`launcher-tests.exe --maintenance` runs disposable maintenance fixtures;
+`--maintenance-readonly` runs only the read-only/model/UI subset while an
+interactive game must remain running. The normal `build-launcher.ps1 -Test`
+includes the full maintenance suite and retains the production game-running guard.

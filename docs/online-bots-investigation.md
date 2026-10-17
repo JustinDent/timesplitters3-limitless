@@ -113,7 +113,7 @@ returning, including when editing custom saved sets.
    sufficient acceptance evidence.
 
 Native Mac networking remains a separate deferred adaptation, tracked by
-MAC-013 and MAC-028. Native wrappers keep their original behavior.
+MAC-013 and MAC-033. Native wrappers keep their original behavior.
 
 ## Initial investigation scope
 

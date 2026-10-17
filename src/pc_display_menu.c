@@ -100,7 +100,10 @@ static float gameplay_fov_scale(uint32_t caller)
     /* Only the two player-camera projections in sub_000CCAB0. Story camera
        sub_000C95E0, terminal views and scripted letterbox transitions retain
        their authored lens. Do not rewrite gameplay/weapon zoom state. */
-    if((caller!=0x000CCBEDu && caller!=0x000CDD35u) ||
+    /* Frontend scenes reuse a player camera and state 2. Match the signed
+       scene > 100 test in US sub_001CE9A0 to retain their authored lens. */
+    if((int32_t)WORD_AT(0x0079094Cu)>100 ||
+       (caller!=0x000CCBEDu && caller!=0x000CDD35u) ||
        (WORD_AT(0x007DE458u)&0x20000000u) ||
        (!WORD_AT(0x007490E8u) && phase>0.f) ||
        !guest_writable(actor,0x118) ||
@@ -465,6 +468,8 @@ void pc_network_bots_menu(void (*original)(void))
     original();
 #endif
 }
+#include "pc_quit_menu.inc"
+#include "pc_menu_mouse_guest.inc"
 #include "pc_display_ui.inc"
 #include "pc_tutorial_ui.inc"
 
@@ -710,6 +715,10 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case BACK_CB: return back_callback;
     case FOV_DRAW_CB: return fov_draw;
 #ifdef _WIN32
+    case QUIT_OPEN_CB: return quit_open;
+    case QUIT_BUILD_CB: return quit_build;
+    case QUIT_SELECT_CB: return quit_select;
+    case QUIT_BACK_CB: return quit_back;
     case 0x1200du: return online_activate;
     case 0x002C2C20u: return network_bots_build;
     case 0x002C0490u: return network_bots_tick;
