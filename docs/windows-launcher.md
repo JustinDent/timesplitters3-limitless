@@ -93,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
-in `build/launcher`; for version 1.2.6, publish all three together:
+in `build/launcher`; for version 1.2.7, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.6-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.6-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.7-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.7-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.6`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.7`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot

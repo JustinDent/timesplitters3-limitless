@@ -534,8 +534,9 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Preserve launcher artwork (2026-10-16, commit `f1011f8` on
-  `fix/launcher-art-preservation`):** `Core.cs` preserves verified independent
+- **Preserve launcher artwork (2026-10-16, commit `f1011f8`,
+  [PR #75](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/75),
+  prepared for launcher v1.2.7):** `Core.cs` preserves verified independent
   launcher binaries/manifest when a game package bundles the same launcher
   version; damaged equal versions may repair, and newer versions still install.
   `build-launcher.ps1 -RequireArtwork` and `package-release.py` reject missing
