@@ -33,6 +33,7 @@ body:
       description: Look for LAUNCHER v... at the top of the launcher window.
       options:
         # BEGIN AUTO LAUNCHER VERSIONS
+        - "v1.2.7"
         - "v1.2.6"
         - "v1.2.5"
         - "v1.2.4"
