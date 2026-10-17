@@ -701,7 +701,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Embedded page and sidebar polish (2026-10-17, uncommitted on
+- **Embedded page and sidebar polish (2026-10-17, commit `0f30cbe` on
   `feature/launcher-page-polish`):** `PageTheme.cs`, `MaintenancePage.cs`,
   `SettingsPage.cs` and `Launcher.xaml` provide shared blue/silver control styling,
   game/launcher health cards, expandable verification details, grouped settings,

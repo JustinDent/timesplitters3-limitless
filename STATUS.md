@@ -2,8 +2,7 @@
 
 ## Launcher page and sidebar polish (2026-10-17)
 
-Implemented on `feature/launcher-page-polish`, based on main `d6f0d56`; source
-uncommitted at this entry. Repair / Verify now uses separate game/launcher cards
+Implemented on `feature/launcher-page-polish`, based on main `d6f0d56`; implementation commit `0f30cbe`. Repair / Verify now uses separate game/launcher cards
 with textual health badges, version/file counts, prominent verification actions
 and expandable file details. An unhealthy check expands its details; operation
 status/cancellation remain outside the scroll area. Open game folder stays below
