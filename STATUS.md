@@ -1,5 +1,37 @@
 # Measured progress
 
+## Repair / Verify and Diagnostics tabs (2026-10-17)
+
+Implemented on `feature/launcher-maintenance-tabs`, based on main `bd3f0e2`;
+implementation commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98). The Repair / Verify sidebar entry now
+hosts native Repair / Verify and Diagnostics tabs, with one shared heading and
+the same blue/silver tab style as Game settings. Diagnostics has no separate
+sidebar button. The sidebar/recovery entry opens repair by default; diagnostic
+preview arguments still select Diagnostics directly. Switching pages retains
+verification results, report text and unsaved settings drafts. Diagnostics is
+collected on first selection and through its existing Refresh action. Report
+copying and reviewed GitHub bug/enhancement drafts retain their privacy behavior.
+
+View logs is always visible in each footer, including recovery and busy states.
+Operations lock tab navigation without disabling the selected page's Cancel or
+View logs controls. Verification/report text starts at the top of its text area.
+The existing repair transactions, file preservation, update/download logic and
+game runtime are unchanged. The launcher version remains 1.2.11; this UI change
+has not been merged or published. MAC-021 records queued native Mac adaptation.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build and
+185 isolated checks passed (99 updater/bootstrap/cleanup, 27 downloads/recovery,
+15 release news, 25 settings, 19 maintenance). The maintenance UI regression
+covers both native tabs, default/explicit selection, removed sidebar entry,
+preserved results/report/settings drafts, diagnostic reporting actions, live
+log actions, locked navigation and usable Cancel/logs during operations.
+Startup/packaging/issue-form/CI-scope Python suites passed 43 tests with seven
+subtests. Normal 1152×772 and minimum 1000×720 repair/diagnostics previews, plus
+attention/busy states, were rendered and visually inspected. Bootstrap repair
+and diagnostic preview routing passed. All fixtures were disposable and
+synthetic; no actual game was launched or personal saves, settings, data or ISO
+modified. Native Mac launcher execution remains unverified.
+
 ## Launcher v1.2.11 release preparation (2026-10-17)
 
 PR #93 is merged as `7ed93cb`. Branch `release/launcher-v1.2.11` raises the

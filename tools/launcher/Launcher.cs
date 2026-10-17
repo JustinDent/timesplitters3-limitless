@@ -128,6 +128,7 @@ namespace TimeSplitters.Launcher
         Release available;
         SettingsPage settings;
         MaintenancePage repairPage, diagnosticsPage;
+        MaintenanceArea maintenanceArea;
         WhatsNewPage newsPage;
         CancellationTokenSource newsStop;
         string newsContext="";
@@ -189,7 +190,6 @@ namespace TimeSplitters.Launcher
             Button("SettingsNav").Click += (s,e)=>ShowSettings();
             Button("HomeNav").Click += (s,e)=>ShowHome();
             Button("RepairNav").Click += (s,e)=>ShowMaintenance(false);
-            Button("DiagnosticsNav").Click += (s,e)=>ShowMaintenance(true);
             Button("NewsNav").Click += (s,e)=>ShowNews();
             Button("ReleaseNotesButton").Content="What's new";
             Button("ReleaseNotesButton").Click += (s,e)=>ShowNews();
@@ -284,7 +284,7 @@ namespace TimeSplitters.Launcher
         }
         void SelectNavigation(string active)
         {
-            foreach(string name in new[]{"HomeNav","NewsNav","SettingsNav","RepairNav","DiagnosticsNav"}) {
+            foreach(string name in new[]{"HomeNav","NewsNav","SettingsNav","RepairNav"}) {
                 bool selected=name==active;
                 Button(name).Background=selected?new SolidColorBrush(Color.FromRgb(29,58,85)):Brushes.Transparent;
                 Button(name).Foreground=new SolidColorBrush(selected?Color.FromRgb(134,205,255):Color.FromRgb(223,233,242));
@@ -332,43 +332,55 @@ namespace TimeSplitters.Launcher
                 }finally {if(Object.ReferenceEquals(newsStop,timeout))newsStop=null;}
             }
         }
+        MaintenancePage CreateMaintenancePage(bool diagnostics)
+        {
+            var page=new MaintenancePage(diagnostics,true);
+            page.Retry.Click+=async(s,e)=> {if(!busy && page.RetryOperation!=null)await page.RetryOperation();};
+            page.ViewLogs.Click+=(s,e)=> {if(previewMode)page.Status("Preview: opens the local launcher log folder.");else OpenFolder(".launcher");};
+            page.Cancel.Click+=(s,e)=> {if(maintenanceStop!=null)maintenanceStop.Cancel();page.Status("Cancellation requested; finishing the current file…");};
+            if(diagnostics) {
+                diagnosticsPage=page;
+                page.Refresh.Click+=async(s,e)=>await RefreshDiagnostics();
+                page.ReportBug.Click+=(s,e)=>OpenDiagnosticIssue(false);
+                page.RequestEnhancement.Click+=(s,e)=>OpenDiagnosticIssue(true);
+                page.Copy.Click+=(s,e)=> {try{Clipboard.SetText(page.Report.Text);page.Status("Diagnostic report copied. Nothing was uploaded.");}catch(Exception ex){page.Status("Clipboard unavailable ("+ex.GetType().Name+"). Select and copy the report text instead.");}};
+            } else {
+                repairPage=page;
+                page.OpenFiles.Click+=(s,e)=> {if(previewMode)page.Status("Preview: opens the game installation folder.");else Open(root);};
+                page.VerifyGame.Click+=async(s,e)=>await VerifyFiles(false);
+                page.VerifyLauncher.Click+=async(s,e)=>await VerifyFiles(true);
+                page.RepairGame.Click+=async(s,e)=>await RepairFiles(false);
+                page.RepairLauncher.Click+=async(s,e)=>await RepairFiles(true);
+                page.SetVerification(gameVerification,launcherVerification);
+            }
+            return page;
+        }
+        async Task EnsureDiagnostics()
+        {
+            if(diagnosticsReady)return;
+            if(previewMode) {diagnosticsPage.Report.Text="TimeSplitters launcher diagnostics — interface preview\n\nRunning launcher: "+LauncherVersion.Value+"\nInstalled game: v0.2.0-alpha.5 (sample)\nWindows: 64-bit\nGraphics: available in the installed launcher\nEmbedded artwork: banner present, logo present\n\nLast verification: not checked this session.\n\nRecent launcher errors: none in this preview.\n\nReport excludes raw logs, personal paths, saves and ISO information. Nothing is uploaded automatically.";diagnosticsReady=true;}
+            else if(!diagnosticsReady && !busy)await RefreshDiagnostics();
+        }
         public async void ShowMaintenance(bool diagnostics)
         {
             if(busy)return;
             try {
                 if(settings!=null)settings.DismissPrompt();
-                var page=diagnostics?diagnosticsPage:repairPage;
-                if(page==null) {
-                    page=new MaintenancePage(diagnostics);
-                    page.Retry.Click+=async(s,e)=> {if(!busy && page.RetryOperation!=null)await page.RetryOperation();};
-                    page.ViewLogs.Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
-                    page.Cancel.Click+=(s,e)=> { if(maintenanceStop!=null)maintenanceStop.Cancel();page.Status("Cancellation requested; finishing the current file…"); };
-                    if(diagnostics) {
-                        diagnosticsPage=page;
-                        page.Refresh.Click+=async(s,e)=>await RefreshDiagnostics();
-                        page.ReportBug.Click+=(s,e)=>OpenDiagnosticIssue(false);
-                        page.RequestEnhancement.Click+=(s,e)=>OpenDiagnosticIssue(true);
-                        page.Copy.Click+=(s,e)=> { try { Clipboard.SetText(page.Report.Text);page.Status("Diagnostic report copied. Nothing was uploaded."); }catch(Exception ex){page.Status("Clipboard unavailable ("+ex.GetType().Name+"). Select and copy the report text instead.");} };
-                    } else {
-                        repairPage=page;
-                        page.OpenFiles.Click+=(s,e)=> { if(previewMode)page.Status("Preview: opens the game installation folder.");else Open(root); };
-                        page.VerifyGame.Click+=async(s,e)=>await VerifyFiles(false);
-                        page.VerifyLauncher.Click+=async(s,e)=>await VerifyFiles(true);
-                        page.RepairGame.Click+=async(s,e)=>await RepairFiles(false);
-                        page.RepairLauncher.Click+=async(s,e)=>await RepairFiles(true);
-                        page.SetVerification(gameVerification,launcherVerification);
-                    }
+                if(maintenanceArea==null) {
+                    maintenanceArea=new MaintenanceArea(CreateMaintenancePage(false),CreateMaintenancePage(true));
+                    maintenanceArea.Selected+=async selected=> {try{if(selected)await EnsureDiagnostics();}catch(Exception ex){Fail(ex);}};
+                    Find<ContentControl>("MaintenanceHost").Content=maintenanceArea.View;
                 }
                 Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
-                var host=Find<ContentControl>("MaintenanceHost");host.Content=page.View;host.Visibility=Visibility.Visible;
-                SelectNavigation(diagnostics?"DiagnosticsNav":"RepairNav");
-                page.SetBusy(busy || checking,Core.GameRunning());
-                if(diagnostics) {
-                    if(previewMode)page.Report.Text="TimeSplitters launcher diagnostics — interface preview\n\nRunning launcher: "+LauncherVersion.Value+"\nInstalled game: v0.2.0-alpha.5 (sample)\nWindows: 64-bit\nGraphics: available in the installed launcher\nEmbedded artwork: banner present, logo present\n\nLast verification: not checked this session.\n\nRecent launcher errors: none in this preview.\n\nReport excludes raw logs, personal paths, saves and ISO information. Nothing is uploaded automatically.";
-                    else await RefreshDiagnostics();
-                }
+                Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Visible;
+                SelectNavigation("RepairNav");
+                repairPage.SetBusy(busy || checking,Core.GameRunning());diagnosticsPage.SetBusy(busy || checking,Core.GameRunning());
+                maintenanceArea.SetBusy(busy);
+                bool changed=maintenanceArea.Tabs.SelectedIndex!=(diagnostics?1:0);
+                maintenanceArea.Tabs.SelectedIndex=diagnostics?1:0;
+                if(diagnostics && !changed)await EnsureDiagnostics();
             }catch(Exception ex){Fail(ex);}
         }
         async Task MaintenanceOperation(MaintenancePage page,Func<CancellationToken,Task> operation,bool download=false)
@@ -511,7 +523,8 @@ namespace TimeSplitters.Launcher
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
-            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("RepairNav").IsEnabled = Button("DiagnosticsNav").IsEnabled = !busy;
+            Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("RepairNav").IsEnabled = !busy;
+            if(maintenanceArea!=null)maintenanceArea.SetBusy(busy);
             if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
             if(diagnosticsPage!=null)diagnosticsPage.SetBusy(busy || checking,Core.GameRunning());
             Button("RetryButton").IsEnabled=!busy && !checking;
