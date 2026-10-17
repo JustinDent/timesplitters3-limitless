@@ -96,7 +96,11 @@ to the profile picker's Select, Back and Delete Profile prompts. Disabled prompt
 keep their normal appearance. The main-menu footer, decorative strips and animated
 blue backdrop fill widescreen and ultrawide displays while labels and buttons
 stay proportional. The in-game Objectives header/footer bars also fill wide
-screens. Older, conventional and futuristic weapon-scope masks extend to the output edges while the
+screens. Full-screen transition fades, menu background tints and story blackouts
+also cover the output without changing their original opacity or timing. Loading-picture
+fades and their top/bottom borders span the same full width. The loading label
+uses proportional UI scaling and follows the left screen edge on wide displays.
+Older, conventional and futuristic weapon-scope masks extend to the output edges while the
 aperture and reticle keep their proportions. The Sci-Fi Sniper extends its translucent tint instead
 of adding opaque margins. Shared aim reticles keep their projected aim point while their shapes fit
 the display; zoom gauges follow the left/right edges and full-view aiming lines span the output.

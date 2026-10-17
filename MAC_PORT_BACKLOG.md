@@ -1,5 +1,32 @@
 # PC features awaiting Mac adaptation
 
+### MAC-033 — Full-display transition fades
+
+- **Status:** Awaiting validation
+- **PC behavior:** Frontend and game transition fades, menu canvas tints, story
+  fades/tints and blackouts cover the whole output at non-4:3 ratios. Loading-picture
+  fades and their separate top/bottom borders also span the output. The loading
+  label uses proportional UI scale and a left-edge inset, with its native font
+  and animated dots preserved. Each draw
+  keeps its original colour, opacity and timing. Scoped placement flushes sprite batches before
+  and after the fade; ordinary UI, cinematic mattes and partial viewports retain
+  their existing placement.
+- **Source:** `fix/responsive-transition-overlay`, integrated on main base
+  `4ad4c17`; `src/pc_display_ui.inc`, `src/pc_display_menu.h`,
+  `src/pc_tutorial_ui.inc`, `transition-overlay.patch`,
+  `tests/transition_overlay.c` and `tests/tutorial_layout.c`.
+- **Shared Mac support:** The same rectangle hook and renderer placement ABI
+  compile through `TSFP_NATIVE_DISPLAY`; no OS-specific adapter is introduced.
+- **Remaining:** Native build/regression and visual validation. Windows evidence
+  and the verified Story navigation, mission-loading and replay checks are recorded
+  in `STATUS.md`.
+- **Acceptance:** Check fade-out and fade-in between frontend screens, entering
+  and leaving missions, and story transitions at 4:3, 5:4, 16:9, 16:10,
+  and ultrawide sizes. No bright uncovered edges may remain at full
+  blackout. Check intermediate opacity, subsequent menu proportions, cinematic
+  mattes and split-screen player viewports. Verify loading text remains readable,
+  proportional and aligned to the left edge when resizing.
+
 ### MAC-032 — Responsive menu backgrounds and scope masks
 
 - **Status:** Awaiting validation

@@ -48,8 +48,9 @@ static int menu_mouse_profile_text(void (*original)(void)) { (void)original;retu
 static int menu_mouse_footer_text(void) { return footer_hover; }
 #include "pc_tutorial_ui.inc"
 static float seen;
-static uint32_t seen_color;
-static void text_original(void){seen=tutorial_float(g_esp+4);seen_color=WORD_AT(g_esp+16);g_esp+=4;}
+static uint32_t seen_color,seen_tag;
+static int seen_placement;
+static void text_original(void){seen_placement=ui_placement;seen_tag=ui_tag;seen=tutorial_float(g_esp+4);seen_color=WORD_AT(g_esp+16);g_esp+=4;}
 static void wrap_original(void){seen=tutorial_float(g_esp+8);g_esp+=4;}
 static void original(void)
 {
@@ -125,6 +126,36 @@ int main(void)
         g_esp=0x2000;footer_hover=0;pc_display_tutorial_text(text_original);
         CHECK(seen_color==(0x64646400u|alpha));
     }
+    /* Loading text scales with the proportional UI and anchors to the left.
+       Keep the original font/arguments and restore placement after every draw. */
+    const unsigned sizes[][2]={{640,480},{1280,1024},{1920,1080},{1920,1200},
+        {3440,1440},{5120,1440},{7680,4320},{1080,1920}};
+    WORD_AT(0x118)=479;
+    for(unsigned i=0;i<8;i++)for(unsigned alpha=0;alpha<128;alpha+=31) {
+        g_esp=0x2000;WORD_AT(g_esp)=0x1560e5;
+        tutorial_set_float(g_esp+4,45.f);tutorial_set_float(g_esp+8,60.f);
+        WORD_AT(g_esp+12)=0x3000;WORD_AT(g_esp+16)=0x64646400u|alpha;
+        hud_scale=4.f*sizes[i][1]/(3.f*sizes[i][0]);wide=hud_scale!=1.f;
+        uint32_t args[5];memcpy(args,&WORD_AT(g_esp),sizeof args);
+        int changes=placement_changes;
+        pc_display_tutorial_text(text_original);
+        CHECK(seen_placement==(wide?3:4) && seen_tag==(wide?0x1560e5:123));
+        CHECK(seen==45.f && seen_color==(0x64646400u|alpha));
+        CHECK(ui_placement==4 && ui_tag==123 && g_esp==0x2004);
+        CHECK(!memcmp(args,&WORD_AT(0x2000),sizeof args));
+        CHECK(placement_changes-changes==(wide?2:0));
+        CHECK(tutorial_float(0x7e7270)==1.f && tutorial_float(0x7e7280)==1.f);
+    }
+    wide=1;
+    const unsigned offsets[]={0,4,0x14,0x18};
+    for(unsigned i=0;i<4;i++) {
+        uint32_t save=WORD_AT(0x100+offsets[i]);WORD_AT(0x100+offsets[i])=100;
+        g_esp=0x2000;pc_display_tutorial_text(text_original);CHECK(seen_placement==4);
+        WORD_AT(0x100+offsets[i])=save;
+    }
+    WORD_AT(0x7e71c8)=0;g_esp=0x2000;pc_display_tutorial_text(text_original);CHECK(seen_placement==4);
+    WORD_AT(0x7e71c8)=0x100;WORD_AT(0x2000)=0x12345;g_esp=0x2000;
+    pc_display_tutorial_text(text_original);CHECK(seen_placement==4);
     puts("PASS: tutorial left-edge scope/restoration, measured columns, rebound labels, edge wrapping, controller/split preservation, stack/font/geometry restoration");
     return 0;
 }

@@ -38,6 +38,9 @@ void sub_0001EFB0_gen(void)
     g_esp += 4;
 }
 
+int pc_display_transition_overlay(void (*original)(void))
+{ (void)original; return 0; }
+
 int pc_display_scope_mask(void (*original)(void))
 { (void)original; return 0; }
 

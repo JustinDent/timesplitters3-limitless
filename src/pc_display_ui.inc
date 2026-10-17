@@ -83,6 +83,53 @@ void pc_display_ui(void (*original)(void),uint32_t tag)
     radar_group=old_radar;
 }
 
+/* Verified US full-screen fade call sites. Scope the solid rectangle itself:
+ * a fade can follow proportional UI in the same deferred sprite batch. Keep
+ * opacity, blend state and guest geometry intact, and flush at both boundaries. */
+int pc_display_transition_overlay(void (*original)(void))
+{
+    uint32_t frame=g_esp,caller=WORD_AT(frame),view=WORD_AT(0x007E71C8u);
+    int loading_band=0;
+    switch(caller) {
+    case 0x0006F227u: case 0x0006F264u: case 0x0006F2F0u:
+    case 0x0006F381u: case 0x0006F3ABu: /* Story fades/tints and blackout. */
+    case 0x00070755u: /* Loading/startup blackout. */
+    case 0x001CF429u: case 0x001CF5E5u: /* Game transition fade out/in. */
+    case 0x002BF803u: /* Frontend transition. */
+    case 0x002BDA88u: /* Frontend transition backdrop blackout. */
+    case 0x002DA4D0u: case 0x002DA715u: /* Menu canvas clear/tint. */
+        break;
+    case 0x00155F8Eu: case 0x00156102u: /* Loading picture top/bottom borders. */
+    case 0x0015682Du: /* Loading picture fade starts below its top border. */
+        loading_band=1;break;
+    default:return 0;
+    }
+    /* Only a complete authored canvas. Some frontend paths add one to the
+       viewport's inclusive right/bottom, producing 641x481. A solid rectangle
+       can also inherit a non-solid texture binding: AUTO then squeezes its
+       six-vertex triangle list despite its full-screen bounds. Tag the known
+       canvas passes explicitly. Loading bands span the same canvas width but
+       retain their authored vertical bounds, alpha and timing. Their borders
+       and fade together cover the display; panels/player views stay fitted. */
+    if(!pc_display_wide_now() || !guest_writable(view,0x24) ||
+       WORD_AT(view)!=0 || (WORD_AT(view+4u)!=639 && WORD_AT(view+4u)!=640) ||
+       WORD_AT(view+0x14u)!=0 || (WORD_AT(view+0x18u)!=479 && WORD_AT(view+0x18u)!=480) ||
+       WORD_AT(frame+4u)!=0 ||
+       (WORD_AT(frame+12u)!=640 &&
+          !(WORD_AT(view+4u)==640 && WORD_AT(frame+12u)==641)))return 0;
+    uint32_t top=WORD_AT(frame+8u),bottom=WORD_AT(frame+16u);
+    if(loading_band) {
+        if(top>=bottom || bottom>480 ||
+           (caller==0x00155F8Eu ? top!=0 : bottom!=480))return 0;
+    } else if(top!=0 || (bottom!=480 &&
+              !(WORD_AT(view+0x18u)==480 && bottom==481)))return 0;
+    int old=ui_placement;uint32_t old_tag=ui_tag;
+    ui_place(1,caller);
+    original();
+    ui_place(old,old_tag);
+    return 1;
+}
+
 /* Frontend and Objectives bars mix a black rectangle, two half-width decorative
  * strips and proportional labels. Only its background primitives stretch.
  * Exact US call sites exclude other uses of these common drawing helpers. */

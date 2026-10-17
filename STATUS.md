@@ -1,5 +1,106 @@
 # Measured progress
 
+## Transition fixes integrated with main (2026-10-17)
+
+Rebased `fix/responsive-transition-overlay` onto main `4ad4c17`, preserving
+its newer network-bot, release and documentation changes. Resolved only the
+validation-history insertion conflict by retaining both entries. Windows x64
+supported build and native build tests passed (`transition-main-build.log`).
+The combined UI, FOV, menu, cutscene, patch-upgrade and bot-results selection
+passed 33 tests in 190.64s; three guest-dispatch tests skipped because their
+standalone cc/gcc compiler prerequisite is unavailable on this Windows host
+(`transition-main-regressions.log`, both logs in ignored `build/menu-footer`).
+Earlier live loading/fade captures below are from the pre-integration build;
+this integration reran build/regression checks. Native Mac remains unverified.
+
+## Responsive loading label (2026-10-17)
+
+Local, uncommitted follow-up on `fix/responsive-transition-overlay` (`fe8e253`).
+The loading-picture text at US return PC `001560E5` now uses the shared LEFT UI
+placement instead of staying in the central 4:3 area. Font sizing remains
+proportional to the output, with the original inset measured from its left edge.
+The existing shared font wrapper scopes the complete text draw and flushes before
+restoring placement; font selection, measurements, animated dots, colours and
+fade timing are unchanged. Nonmatching text, partial viewports and 4:3 retain
+their original behavior. Source: `src/pc_tutorial_ui.inc`.
+
+Windows x64 / MSVC 19.44 / D3D11: supported build/native checks passed
+(`build/menu-footer/loading-label-build.log`); seven UI tests passed in 6.25s
+and eight menu/cutscene regressions in 8.51s. The production text fixture covers
+eight output shapes, opacity, arguments/font/placement restoration, and partial,
+invalid and unrelated text fallbacks. Patch reapplication updated zero files.
+A bounded isolated Test Lab mission launch at 3440x1440 confirmed the label
+moves from x=898 to x=138 pixels, preserving its y position and glyph size.
+The measured right edge varies with the original animated dot count. Fullscreen
+fading remains intact. Selected live image, capture and metadata are retained in
+ignored `build/transition-blackout`; redundant captures and disposable test disks
+were removed. Personal saves/settings and the fixture remain unchanged.
+Executable SHA-256: `a245927c80eb0aa18569bef8dccd6027d0316b41450ce86fc6603793823146c1`.
+Native Mac validation remains pending under MAC-033.
+
+## Full-display transition fades (2026-10-17)
+
+Local, uncommitted on `fix/responsive-transition-overlay`, based on main
+`fe8e253` (which includes PR #106). Capturing repeated Main Menu / Story level
+selection transitions isolated the visible 4:3 box to the full-canvas black tint
+at US return PC `002DA715`. Its solid, six-vertex triangle list inherits a
+640x480 texture binding, so AUTO placement does not identify it as a screen
+pass and fits it into the proportional UI canvas. This is separate from the
+ordinary game fade paths.
+
+The rectangle wrapper explicitly stretches twelve full-canvas passes:
+`002DA715` / `002DA4D0` (menu tint/clear), `002BDA88` (frontend blackout),
+`002BF803` (frontend fade), `001CF429` / `001CF5E5` (game transitions),
+`00070755` (loading/startup blackout), and `0006F227`, `0006F264`, `0006F2F0`,
+`0006F381`, `0006F3AB` (story fades/tints). It accepts 640x480 and the frontend's
+inclusive viewport-plus-one 641x481 bounds.
+
+Follow-up mission-loading capture exposed a separate partial-height fade:
+`0015682D` draws from (0,71) to (640,480), beneath the loading heading. The
+original full-canvas geometry guard missed it. Its top/bottom borders at
+`00155F8E` / `00156102` and the fade now explicitly span the output width while
+keeping their authored vertical bounds. This fixes the bright side margins
+seen while the centre darkened. The loading heading retains its original
+visibility/timing; the fix does not force an earlier blackout.
+
+All fifteen known passes flush before and after submission, restoring placement
+and tag. Arguments, colour/alpha, blend state and timing remain unchanged.
+Partial/player viewports, unrelated callers, cinematic bars and original 4:3
+use the existing path. Loading bands require full canvas width and an appropriate
+top/bottom screen edge; arbitrary rectangles are not expanded.
+
+Windows x64 / MSVC 19.44 / D3D11: supported build and native build tests passed
+(`build/menu-footer/blackout-final-build.log`); supported US XBE SHA-256 verified.
+All 31 selected UI/FOV, cutscene, menu-mouse, Quit and patch upgrade regressions
+passed in 91.38 seconds (`build/menu-footer/blackout-regressions.log`). The
+production-hook fixture checks eight synthetic output sizes, all fifteen callers,
+six colour/alpha values, both full-canvas endpoint conventions, actual loading
+band geometry, deferred batches, preserved state/arguments, and invalid/partial
+viewport and unrelated-draw fallbacks. Executable SHA-256:
+`85ff9c3f3e731779ae844d655d33a62c73319c48c297e46981624685bee4ac89`.
+No temporary caller traces or diagnostic switches remain in production source.
+
+Initial bounded isolated Test Lab validation at 3440x1440 navigated into and out
+of Story four times using the application's test-input hook. Menu-state snapshots
+and reviewed live frames confirm the level list was reached and vertical tint
+seams disappeared. A same-frame GPU replay with only `002DA715` returned to AUTO
+reproduces the box; corrected placement changes both margins while leaving the
+central 4:3 menu pixels identical. Replay comparisons also passed at 640x480,
+1280x1024, 1920x1080, 1920x1200 and 2560x720; 4:3 was pixel-identical.
+
+The corrected loading path was exercised by an isolated automated mission launch
+at 1720x720 and 3440x1440. A denser 3440x1440 sequence sampled every three
+frames shows the fade reaching both margins, followed by two consecutive frames
+whose RGB extrema are all zero across all 4,953,600 pixels, then the normal
+opening cutscene. Live frames show even fading across the full width; the recorded
+three loading draws explicitly carry STRETCH placement and retain their original
+bounds and opacity. Evidence is retained in ignored `build/transition-blackout`;
+initial menu evidence is in `build/transition-overlay`. Redundant dumps and
+disposable save disks are recycled. Personal saves/settings and the canonical
+fixture were not used as writable test data. Other gameplay fades have
+disassembly/hook coverage, not exhaustive visual checks. Native Mac build and
+visual checks remain pending under MAC-033.
+
 ## Game-only release PR notes
 
 2026-10-17, branch `fix/game-only-release-prs`, base `7b65782`.
@@ -19,6 +120,7 @@ PRs #79, #83, #84, #85, #87 and #97, excluding launcher packaging PR #75 and
 CI PR #81 alongside launcher-only releases. No published notes were modified.
 macOS execution and other-device synchronization are
 unverified; see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-distribution).
+
 
 ## Lock-on and special scope effects (2026-10-17)
 

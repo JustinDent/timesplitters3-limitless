@@ -95,6 +95,19 @@ void pc_display_tutorial_text(void (*original)(void))
 {
     if(menu_mouse_profile_text(original)) return;
     uint32_t frame=g_esp,saved=WORD_AT(frame+4),color=WORD_AT(frame+16);
+    /* The loading-picture label uses this shared font entry, independently of
+       tutorial cards. Fit its glyphs with the normal UI scale, but anchor its
+       authored inset to the output's left edge rather than the central 4:3 box.
+       Its animated dots, font, colour, measurements and fade timing stay native. */
+    uint32_t view=WORD_AT(0x007E71C8u);
+    if(WORD_AT(frame)==0x001560E5u && pc_display_wide_now() &&
+       pc_display_hud_scale()>0.f && guest_writable(view,0x24) &&
+       WORD_AT(view)==0 && (WORD_AT(view+4)==639 || WORD_AT(view+4)==640) &&
+       WORD_AT(view+0x14)==0 && (WORD_AT(view+0x18)==479 || WORD_AT(view+0x18)==480)) {
+        int old=ui_placement;uint32_t old_tag=ui_tag;
+        ui_place(3,0x001560E5u);original();ui_place(old,old_tag);
+        return;
+    }
     /* Guest UI RGB uses half intensity (0x7f is white); its text pass doubles
        it. The text ABI packs RGBA with alpha in the low byte. Keep menu fades,
        and restore the argument so other text/shadow passes are unaffected. */

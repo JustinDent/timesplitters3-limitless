@@ -26,6 +26,7 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind);
 void pc_display_aim_panel(void (*original)(void),uint32_t tag);
 void pc_display_effect_scope(void (*original)(void));
 void pc_display_weapon_effect(void (*original)(void),unsigned kind);
+int pc_display_transition_overlay(void (*original)(void));
 void pc_display_footer_background(void (*original)(void));
 void pc_display_menu_backdrop(void (*original)(void));
 void pc_display_main_menu_font(void (*original)(void),int building);
