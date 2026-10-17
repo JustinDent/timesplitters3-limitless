@@ -235,6 +235,15 @@ runtime readiness. No full campaign playthrough is required.
 
 ### MAC-012 — Standalone Mac runtime distribution
 
+- **Release metadata follow-up (2026-10-16, branch `fix/game-release-history-titles`):**
+  `tools/publish-release.py` compares changes with the latest published game
+  tag, excluding launcher releases, and creates short `TSFP v…` titles.
+  `docs/releasing.md` specifies matching `Launcher v…` titles. No Mac adapter
+  is needed for simplifying notes to PR/contributor changes and installation
+  instructions, without redundant headings, source lists or build sections,
+  or for GitHub metadata selection; the shared Python regression suite
+  covers the behavior. macOS execution remains unverified.
+
 - **Windows CI harness follow-up (PR #65, 2026-10-16):**
   `tests/launcher_settings.cs` gives cold WPF UI initialization a bounded
   60-second worker budget and preserves named assertion/timeout diagnostics.

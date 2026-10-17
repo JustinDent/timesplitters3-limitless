@@ -1,5 +1,23 @@
 # Measured progress
 
+## Game release comparisons and readable titles (2026-10-16)
+
+Branch `fix/game-release-history-titles`, based on main `e18a381`.
+The publisher selects the most recently published valid game `v…` tag, including
+prereleases, while retaining all release records for duplicate-tag protection.
+New game titles use `TSFP v…`; manual launcher titles use `Launcher v…`.
+Release notes retain generated PR/contributor content beneath "Changes since"
+and omit the redundant "What's Changed" heading, source commit list and
+"Build and validation" section. Packaging validation and verification assets
+remain unchanged. The same cleanup was applied to published TSFP release notes.
+Download instructions use separate launcher and portable ZIP subsections with
+numbered steps, explicit update channel and a short requirements paragraph.
+Windows x64 / Python 3.14.2: publisher regressions passed 31 tests with four
+symlink-prerequisite skips. Coverage includes newer launcher releases, invalid
+tags, generated-note baseline selection and preserving the launcher Latest flag.
+No game build or runtime test was needed for this metadata change. macOS
+execution is unverified; see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-distribution).
+
 ## Launcher v1.2.7 release preparation (2026-10-16)
 
 Prepared on `release/launcher-v1.2.7` from main `1140c34`, including the banner
