@@ -1,5 +1,98 @@
 # Measured progress
 
+## Arcade RANK widget placement (2026-10-17)
+
+Follow-up to issue-22 commit `6485069` on
+`22-character-selection-screen-is-stretched-when-using-higher-resolutions`, as
+requested. The existing status icons were left-anchored, but the separate US
+RANK call (`0012EC8B`, from ordinal/label renderer `sub_0012EC20`) to the shared
+panel renderer `sub_0012E3F0` still inherited
+the centred 4:3 canvas. Its caption,
+ordinal and frame therefore drifted inward relative to the icons in widescreen.
+The additional runtime wrapper routes the whole widget through the shared
+`pc_display_ui` LEFT placement scope. Guest sprite batches are flushed on both
+boundaries; original scaling and vertical coordinates remain owned by the game.
+The existing guard preserves original/narrow aspects and split-screen placement.
+
+Windows x64 / Python 3.14.2 / MSVC 19.42 / D3D11: the supported
+`tsfp.ps1 -Action Build` workflow applied the complete patch stack, regenerated
+the guest hook and compiled the game. Native network/GPU-clear/texture/display
+checks passed. The first build completed all native checks, but final reruns
+stopped at the unrelated virtual-pad prompt test's foreground-window assertion
+(`pc_controls_accept_pad()`), as recorded for issue #22. Input code is unchanged.
+Final source-level UI scope/viewport checks passed 5 tests; model-projection
+checks passed 4 tests; patch application/upgrade/tracking checks passed 28 tests.
+The widget regression exercises separate caption/ordinal/frame batches, preserves
+adjacent HUD groups, excludes the timer's shared-renderer call, and checks 4:3
+and split-screen bypasses. Executable SHA-256:
+`455166dd4c885123e880e77934df9b58b1ff599973b0e3d40455db113ad9898c`.
+
+Three bounded, 55-second D3D11 Arcade Vietnam sessions used disposable Test Lab
+copies, synthetic keyboard input and isolated input/both display configurations.
+Reviewed 1920x1080, 1280x960 and 3440x1440 captures show the complete RANK widget
+above the status icons at its original left inset. At 1920x1080, its label moved
+from X=125–146 to X=45–66 in the retained 640-pixel-wide window capture: exactly
+the missing 80-pixel side-anchor offset, with the same 22-pixel text width.
+The 4:3 layout is unchanged; 4th/5th rank labels were captured. The bounded
+runtime trace confirms the actual panel caller is `0012EC8B`. Captures and logs
+remain local in `private/test-saves/issue22`; each pass recycled its known
+partition images, and the canonical fixture still verifies. Build seal/content
+verification and `git diff --check` pass. Native Mac execution and full
+split-screen/all-match-mode playtesting remain unverified.
+
+See [MAC-027](MAC_PORT_BACKLOG.md#mac-027--arcade-rank-widget-left-placement)
+for shared native support and pending Mac visual checks. Personal saves and
+settings remain separate from the isolated Test Lab validation copies.
+
+## Issue 22 model projections (2026-10-16)
+
+Branch
+`22-character-selection-screen-is-stretched-when-using-higher-resolutions`, based
+on current main `5548b25`. The existing perspective wrapper now corrects the
+fresh matrices built by US character picker `sub_002C44D0` (return `002C46EF`)
+and first-person weapon lens `sub_001B73F0` (return `001B7482`). Those builders
+bypass the world-camera hook. Horizontal scale follows the selected output
+aspect while each builder retains its own vertical lens, depth and zoom.
+Correction happens after each rebuild, including alternating frame buffers
+during character changes. Decals still copy the world camera aperture; other
+perspective builders and offscreen effects are unchanged.
+
+Windows x64 / Python 3.14.2 / MSVC 19.42 / D3D11:
+
+- Complete patch stack applied and generated sources refreshed by the supported
+  `tsfp.ps1 -Action Build` workflow. The first build completed all native checks
+  (network, real-GPU clears, textures, display, prompts, paths, controls, settings
+  and debug). The outer PowerShell redirection reported a native-stderr warning
+  about unavailable optional ABI analysis, despite the inner build/checks
+  finishing. A later incremental build produced the identical executable but
+  stopped at the prompt test's `pc_controls_accept_pad()` assertion because its
+  window was not foreground. The isolated prompt retry also lacked foreground
+  access; no input code was changed to bypass this host prerequisite.
+- Combined patch-transition/tracking, projection, cinematic and display suites:
+  **37 passed**. After strengthening non-default-aspect exclusions, all four
+  projection cases passed again. Tests compile the actual wrapper for both
+  `TSFP_PC_CONTROLS` and `TSFP_NATIVE_DISPLAY`, with/without a camera. They check
+  repeated alternating-buffer builds at original/4:3, 5:4, 16:9, 21:9 and 32:9,
+  preserve non-horizontal coefficients and guest ABI, and exclude unrelated
+  callers. Patch-test temporary staging was routed inside the workspace after
+  intermittent system-temp/file-access failures; final checks passed.
+- Bounded isolated Test Lab sessions at 1920x1080 and 1280x960 loaded Arcade
+  Vietnam, displayed character selection and first-person dual pistols. Twelve
+  rapid character changes retained the corrected lens. At 1920x1080 the sampled
+  picker X coefficient changed from `1.12042034` to `0.84031522`, exactly the
+  required 3/4 factor; Y remained `1.73205078`. Reviewed captures show proportional
+  models and weapons. At 4:3 no aspect correction is applied. World camera and
+  CPU frustum remain unchanged. Captures/timing samples are local under
+  `private/test-saves/issue22`; all six disposable disk images were recycled.
+- Built executable SHA-256:
+  `bd3532a8cf764f3062438847c67e5c382bf88ebf142e75c9f9b0bd3816ec56f6`.
+  Build seal and multiplayer content verification pass; the supported US XBE
+  hash was verified before game tests. Personal saves/settings were not used.
+
+Ultrawide coverage is a wrapper test, not a reviewed game capture. Full
+split-screen/aiming/zoom playtesting and native Mac execution remain unverified.
+See [MAC-026](MAC_PORT_BACKLOG.md#mac-026--character-picker-and-weapon-proportions-issue-22).
+
 ## Runtime CI efficiency
 
 Branch `ci/faster-runtime-checks`, based on main `9f65dcc`.
