@@ -60,7 +60,17 @@ namespace TimeSplitters.Launcher
     public static class DownloadTransfer
     {
         const string Owner="tsfp-download-v1";
-        static string Safe(string prefix,string extension) { return Core.PathIn(Path.GetDirectoryName(Path.GetFullPath(prefix)),Path.GetFileName(prefix)+extension); }
+        static string Safe(string prefix,string extension)
+        {
+            string path=Core.PathIn(Path.GetDirectoryName(Path.GetFullPath(prefix)),Path.GetFileName(prefix)+extension);
+            // Exists follows links and returns false for a dangling target. Inspect
+            // attributes as well before creating a cache file or its atomic sidecar.
+            for(string cursor=path;cursor!=null;cursor=Path.GetDirectoryName(cursor)){
+                try{Core.Require((File.GetAttributes(cursor)&FileAttributes.ReparsePoint)==0,"Linked download paths are not supported; saved files were kept.");}
+                catch(FileNotFoundException){}catch(DirectoryNotFoundException){}
+            }
+            return path;
+        }
         static string HashText(string text) { using(var sha=SHA256.Create())return BitConverter.ToString(sha.ComputeHash(Encoding.UTF8.GetBytes(text))).Replace("-","").ToLowerInvariant(); }
         static string Identity(Release release,string hash) { return HashText(release.AssetUrl+"\n"+release.Size.ToString(CultureInfo.InvariantCulture)+"\n"+hash.ToLowerInvariant()); }
         static bool Owned(System.Collections.Generic.Dictionary<string,object> meta)
@@ -131,7 +141,7 @@ namespace TimeSplitters.Launcher
         public static async Task Run(HttpClient http,Release release,string destination,string expected,string prefix,IProgress<double> progress,CancellationToken token)
         {
             Core.Require(release.Size>0 && release.Size<=2147483648L && Regex.IsMatch(expected,"^[a-fA-F0-9]{64}$"),"The published download size or checksum is invalid.");
-            destination=Core.PathIn(Path.GetDirectoryName(Path.GetFullPath(destination)),Path.GetFileName(destination));
+            destination=Safe(destination,"");
             Core.Require(!File.Exists(destination),"A download destination already exists. Its files were kept.");
             string part=Safe(prefix,".part"),metaPath=Safe(prefix,".json"),lockPath=Safe(prefix,".lock");
             Directory.CreateDirectory(Path.GetDirectoryName(part));

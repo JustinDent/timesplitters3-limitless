@@ -10,6 +10,8 @@ preparation is cancelled. Strict Range/Content-Range and optional strong If-Rang
 handling prevents unsafe append; a complete SHA-256 and package validation still
 precede installation. Cache locking, metadata/path bounds, ownership checks and
 exact named-file cleanup retain unknown files and refuse redirects through links.
+Direct attribute checks also refuse dangling file/directory links before cache
+or destination creation; the junction fixture covers missing targets as well.
 Connection/read stalls are bounded to 30 seconds and ignored stream cancellation
 is handled by disposal. Full-file hashing and staging copies can be cancelled.
 

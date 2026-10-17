@@ -101,7 +101,13 @@ static class LauncherDownloadChecks
             string target=Path.Combine(temp,"link-target-"+Guid.NewGuid().ToString("N")),link=Path.Combine(f.Root,"redirect");Directory.CreateDirectory(target);File.WriteAllText(Path.Combine(target,"original.iso"),"keep");
             var info=new System.Diagnostics.ProcessStartInfo("cmd.exe","/c mklink /J "+SelfUpdate.Quote(link)+" "+SelfUpdate.Quote(target)){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
             using(var process=System.Diagnostics.Process.Start(info)){process.StandardOutput.ReadToEnd();process.StandardError.ReadToEnd();Need(process.WaitForExit(10000)&&process.ExitCode==0);}
-            try{using(var client=new ReleaseClient(new Handler{Reply=r=>{throw new Exception("No network call expected");}}))Reject(()=>client.Download(f.Item,f.Dest,null,CancellationToken.None,Path.Combine(link,"cache")).GetAwaiter().GetResult());Need(File.ReadAllText(Path.Combine(target,"original.iso"))=="keep"&&Directory.GetFiles(target).Length==1);}
+            try{using(var client=new ReleaseClient(new Handler{Reply=r=>{throw new Exception("No network call expected");}}))Reject(()=>client.Download(f.Item,f.Dest,null,CancellationToken.None,Path.Combine(link,"cache")).GetAwaiter().GetResult());Need(File.ReadAllText(Path.Combine(target,"original.iso"))=="keep"&&Directory.GetFiles(target).Length==1);
+                string missing=target+"-missing",dangling=Path.Combine(f.Root,"dangling");
+                var danglingInfo=new System.Diagnostics.ProcessStartInfo("cmd.exe","/c mklink /J "+SelfUpdate.Quote(dangling)+" "+SelfUpdate.Quote(missing)){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true};
+                using(var process=System.Diagnostics.Process.Start(danglingInfo)){process.StandardOutput.ReadToEnd();process.StandardError.ReadToEnd();Need(process.WaitForExit(10000)&&process.ExitCode==0);}
+                try{using(var client=new ReleaseClient(new Handler{Reply=r=>{throw new Exception("No request for a dangling link");}}))Reject(()=>client.Download(f.Item,f.Dest,null,CancellationToken.None,Path.Combine(dangling,"cache")).GetAwaiter().GetResult());Need(!Directory.Exists(missing));}
+                finally{Need(Path.GetDirectoryName(dangling)==f.Root&&(File.GetAttributes(dangling)&FileAttributes.ReparsePoint)!=0);Directory.Delete(dangling);}
+}
             finally{Need(Path.GetDirectoryName(link)==f.Root&&(File.GetAttributes(link)&FileAttributes.ReparsePoint)!=0);Directory.Delete(link);}
         }});
         Test("pending cleanup and cancelled preparation retain the independent download cache",()=>{using(var f=new Fixture()){
