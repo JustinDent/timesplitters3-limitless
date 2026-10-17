@@ -220,6 +220,15 @@ runtime readiness. No full campaign playthrough is required.
 ### MAC-011 — Real texture-pack gameplay coverage
 
 - **Status:** Awaiting validation
+- **Original-alpha compilation (issue #74):** `tools/texture-pack.py` accepts
+  `--alpha-source` with its required SHA-256 to retain a verified original
+  channel while compiling new RGB artwork. Metadata records source size/hash,
+  bilinear resampling and lossy DDS caveats. Shared Python/Pillow code requires
+  no OS adapter or loader change. Source is on the issue #74 branch; commit
+  pending. Windows checks are recorded in the batch 85 STATUS entry; Mac
+  execution and real-art appearance remain unverified. Acceptance: run
+  `tests/texture_pack_tools.py`, verify original-alpha provenance and decoded
+  mask errors, then inspect cutout/material behavior in consolidated scene tests.
 - **Hybrid production tooling (issue #74, 2026-10-16):**
   `tools/texture-hybrid-plan.py` groups the remaining artwork into material
   batches, individual review, specialist review, corrections and visual triage.

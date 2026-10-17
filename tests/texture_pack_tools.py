@@ -183,3 +183,56 @@ def test_lossless_dds_preserves_gradient_and_alpha():
     assert Image.open(io.BytesIO(data)).convert('RGBA').tobytes()==source.tobytes()
     assert len(data)==128+128+32+8+4 and mips==4
     assert struct.unpack_from('<I',data,20)[0]==32
+
+
+@pytest.mark.parametrize('pixel_format', ['RGBA8', 'DXT5'])
+def test_original_alpha_compile_preserves_color_and_channel(tmp_path, pixel_format):
+    import hashlib
+    import json
+    authored=tmp_path/'art.png'
+    Image.new('RGBA',(8,4),(120,80,40,0)).save(authored)
+    original=tmp_path/'original.png'
+    mask=Image.new('RGBA',(4,2),(0,0,0,0))
+    mask.putalpha(Image.frombytes('L',(4,2),bytes([0,64,128,255,255,128,64,0])))
+    mask.save(original)
+    digest=hashlib.sha256(original.read_bytes()).hexdigest()
+    output=tmp_path/'pack'
+    result=subprocess.run([sys.executable,str(ROOT/'tools/texture-pack.py'),str(authored),
+        '--key','1'*16,'--width','16','--height','8','--format',pixel_format,
+        '--output',str(output),'--alpha-source',str(original),
+        '--alpha-source-sha256',digest],capture_output=True,text=True)
+    assert result.returncode==0,result.stderr
+    dds=output/('1'*16+'.dds')
+    decoded=Image.open(dds).convert('RGBA')
+    expected=mask.getchannel('A').resize((16,8),Image.Resampling.BILINEAR)
+    alpha_error=max(abs(a-b)for a,b in zip(decoded.getchannel('A').tobytes(),expected.tobytes()))
+    # BC3 is lossy (this gradient has up to 23/255 error with the pinned
+    # encoder). Confirm the channel also matches an independently assembled
+    # reference rather than treating the bound as proof of correct routing.
+    assert alpha_error <= (0 if pixel_format=='RGBA8' else 32)
+    reference=Image.new('RGBA',(16,8),(120,80,40,255));reference.putalpha(expected)
+    reference_bytes,_=pack.encode(reference,pixel_format)
+    assert decoded.getchannel('A').tobytes()==Image.open(io.BytesIO(reference_bytes)).getchannel('A').tobytes()
+    assert all(abs(a-b)<=8 for a,b in zip(decoded.convert('RGB').getpixel((8,4)),(120,80,40)))
+    meta=json.loads(dds.with_suffix('.json').read_text())
+    assert meta['original_alpha']['sha256']==digest
+    assert meta['original_alpha']['source_size']==[4,2]
+    assert meta['original_alpha']['resampled']
+    assert worklist.check_asset(dds,meta,dict(width=4,height=2,xbox_format=15))==dds.stat().st_size
+
+
+@pytest.mark.parametrize('case', ['missing_hash','bad_hash','wrong_digest','wrong_aspect','no_alpha','dxt1','alpha_channels'])
+def test_invalid_original_alpha_never_writes_pack(tmp_path, case):
+    import hashlib
+    source=tmp_path/'source.png';Image.new('RGBA',(8,4),(50,60,70,255)).save(source)
+    original=tmp_path/'original.png'
+    Image.new('RGB' if case=='no_alpha' else 'RGBA',(4,4) if case=='wrong_aspect' else (4,2)).save(original)
+    digest=hashlib.sha256(original.read_bytes()).hexdigest()
+    args=[sys.executable,str(ROOT/'tools/texture-pack.py'),str(source),'--key','2'*16,
+          '--width','8','--height','4','--output',str(tmp_path/'pack'),'--alpha-source',str(original)]
+    if case!='missing_hash':args+=['--alpha-source-sha256','bad' if case=='bad_hash' else '0'*64 if case=='wrong_digest' else digest]
+    if case=='dxt1':args+=['--format','DXT1']
+    if case=='alpha_channels':args+=['--channels','alpha']
+    result=subprocess.run(args,capture_output=True,text=True)
+    assert result.returncode!=0
+    assert not (tmp_path/'pack').exists()

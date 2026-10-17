@@ -55,6 +55,29 @@ def channel_layout(image, channels):
     return image
 
 
+def original_alpha(path, expected_sha256, size):
+    """Resample a verified source channel; never invent or threshold opacity."""
+    data = path.read_bytes()
+    digest = hashlib.sha256(data).hexdigest()
+    if digest != expected_sha256:
+        raise ValueError('Alpha source SHA-256 mismatch')
+    with Image.open(io.BytesIO(data)) as source:
+        if 'A' not in source.getbands():
+            raise ValueError('Alpha source must have an explicit alpha channel')
+        if source.width * size[1] != source.height * size[0]:
+            raise ValueError('Alpha source aspect ratio differs from output')
+        alpha = source.getchannel('A')
+        native = source.size
+        bounds = alpha.getextrema()
+        if native != size:
+            # Bilinear avoids ringing beyond the original opacity range.
+            alpha = alpha.resize(size, Image.Resampling.BILINEAR)
+    return alpha, dict(source=str(path.resolve()), sha256=digest,
+                       source_size=native, alpha_range=bounds,
+                       resampled=native != size, resampling='bilinear',
+                       policy='Original alpha retained; DDS compression may be lossy')
+
+
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('image',type=Path)
@@ -65,11 +88,22 @@ def main():
     ap.add_argument('--format',choices=['DXT1','DXT5','RGBA8'],default='DXT5')
     ap.add_argument('--channels',choices=['color','luminance','alpha'],default='color',
                     help='Original texture channel semantics; recorded in metadata')
+    ap.add_argument('--alpha-source', type=Path,
+                    help='Verified original PNG whose alpha replaces authored alpha during encoding')
+    ap.add_argument('--alpha-source-sha256',
+                    help='Required SHA-256 of alpha-source; both options must be supplied together')
     ap.add_argument('--budget-mib',type=int,default=6144,help='Maximum total active pack size (default 6 GiB)')
     a=ap.parse_args()
     if not re.fullmatch('[0-9a-f]{16}',a.key):ap.error('key must be 16 lowercase hexadecimal characters')
     if a.budget_mib<=0:ap.error('budget must be positive')
     if a.channels=='alpha' and a.format=='DXT1':ap.error('Alpha-only sources require DXT5 or RGBA8')
+    if bool(a.alpha_source) != bool(a.alpha_source_sha256):
+        ap.error('Supply both --alpha-source and --alpha-source-sha256')
+    if a.alpha_source:
+        if not re.fullmatch('[0-9a-f]{64}', a.alpha_source_sha256):
+            ap.error('Alpha source SHA-256 must be 64 lowercase hexadecimal characters')
+        if a.channels != 'color' or a.format == 'DXT1':
+            ap.error('Original alpha requires color channels and DXT5 or RGBA8')
     if (a.output/f'{a.key}.dds').exists():ap.error('This key already exists; preserve or explicitly retire the prior version first')
     w,h=a.width,a.height
     if not(w>0 and h>0 and w<=4096 and h<=4096 and not w&(w-1) and not h&(h-1)):
@@ -86,11 +120,23 @@ def main():
     image=Image.open(a.image).convert('RGBA');native=image.size
     image=channel_layout(image,a.channels)
     if native[0]*a.height!=native[1]*a.width:ap.error('Resizing would change the aspect ratio')
+    if a.alpha_source:
+        # Generated opacity must not premultiply/darken the replacement RGB.
+        image = image.convert('RGB').convert('RGBA')
     if native!=(a.width,a.height):image=image.resize((a.width,a.height),Image.Resampling.LANCZOS)
+    alpha_meta = None
+    if a.alpha_source:
+        try:
+            alpha, alpha_meta = original_alpha(a.alpha_source, a.alpha_source_sha256, image.size)
+        except (ValueError, OSError) as exc:
+            ap.error(str(exc))
+        image.putalpha(alpha)
     data,mips=encode(image,a.format)
     meta=dict(key=a.key,source=str(a.image.resolve()),source_size=native,
         output_size=[a.width,a.height],resampled=native!=(a.width,a.height),
         format=a.format,channels=a.channels,mips=mips,bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
+    if alpha_meta is not None:
+        meta['original_alpha'] = alpha_meta
     metadata=(json.dumps(meta,indent=2)+'\n').encode('utf-8')
     # The user's cap includes provenance files, not only GPU payloads.
     if used+len(data)+len(metadata)>a.budget_mib*1024*1024:

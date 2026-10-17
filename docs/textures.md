@@ -88,3 +88,28 @@ Keep one active pack under 6 GiB, including metadata, and temporary review/expor
 outputs under 256 MiB. Consolidated playtesting remains deferred until at least
 90% of audited in-scope textures are installed and all categories are reviewed.
 Neither batch routing nor successful DDS encoding proves visual completion.
+
+## Preserve original alpha while reworking surface color
+
+Some textures store cutouts or material data in alpha. When that channel should
+remain unchanged, the compiler can take it from a verified original PNG:
+
+```powershell
+$alpha = 'private/texture-remaster/originals/TEXTURE_KEY.png'
+$hash = (Get-FileHash -LiteralPath $alpha -Algorithm SHA256).Hash.ToLowerInvariant()
+.\.venv\Scripts\python.exe tools/texture-pack.py private/texture-remaster/authored/ART.png --key TEXTURE_KEY --width 1024 --height 512 --format DXT5 --alpha-source $alpha --alpha-source-sha256 $hash
+```
+
+Use the actual catalog key, matching aspect ratio and reviewed output dimensions.
+Verify the original export against its catalog payload before using it; the PNG
+hash detects later changes but does not prove its game identity. This option
+replaces authored alpha during format conversion, independently of color
+resampling. It uses bilinear alpha resampling, records the original PNG hash,
+dimensions and range, and requires color channels with DXT5 or RGBA8. Defaults
+are unchanged. Do not apply it to an intentional new cutout shape or alpha-only
+artwork. Review both channels and their alignment after compilation.
+
+DXT5 alpha is lossy. Compare decoded alpha with the resampled original; use
+RGBA8 at a suitable size when compression damages an important mask. Preserving
+original alpha does not prove new color details align with it or establish how
+the channel is used in a scene. Runtime validation remains part of the final gate.
