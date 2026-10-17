@@ -884,10 +884,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Shared Mac support:** the existing shared camera/menu hooks and config model
   use the same behavior. Config accepts legacy V1 (55°) and V2 with explicit FOV;
   existing Cocoa resolution saves retain the loaded FOV through the shared writer.
-  No native Mac execution has been performed for this change.
-- **Remaining:** validate native compilation, menu slider drawing/input, gameplay
-  and zoom on Mac. Adding a slider to the separate Cocoa settings window is
-  deferred; Windows launcher UI does not constitute a Mac launcher implementation.
+  Native compilation and Cocoa FOV controls now pass the isolated checks below.
+- **Native adaptation (2026-10-17, `codex/mac-display-parity`):** Added the
+  40–100° Cocoa slider, numeric value and shared default. Real Cocoa/GPU checks
+  cover draft cancellation, Save/reopen, and failed-save rollback of both FOV
+  and resolution. See [native settings evidence](STATUS.md#native-display-settings-parity-2026-10-17).
+- **Remaining:** guest menu slider, gameplay/zoom and ledge/landing checks on Mac;
+  visual review of the live Cocoa panel. Windows launcher UI does not constitute
+  a Mac launcher implementation.
 - **Acceptance:** default framing unchanged; 40/55/75/100° at 4:3, 16:9 and
   ultrawide; zoom retains relative magnification; cinematics/terminals unchanged;
   configuration round trips and resolution timeout reverts both choices. See
@@ -963,10 +967,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Shared Mac support:** The catalog, config bounds, guest picker and title HUD
   hooks are shared. Native OpenGL uses the shared side-anchor rule and fits narrow
   widgets vertically, including their scissor rectangles. Cocoa consumes the same
-  capacity and catalog without duplicating Original. Native execution is unverified.
-- **Remaining:** Build and validate on Apple Silicon; add the new aspect filter
-  to the separate Cocoa settings window when adapting its UI. The Windows launcher
-  is not a Mac launcher implementation. Existing split-screen layout is preserved.
+  capacity and catalog without duplicating Original. The Cocoa aspect filter now
+  shares nearest-mode selection with the guest menu, preserving custom modes and
+  distinguishing Original from explicit 640×480. Real Cocoa/GPU tests exercise
+  all six groups, custom mode, Save/Cancel/Defaults and failed-save recovery.
+  See [native settings evidence](STATUS.md#native-display-settings-parity-2026-10-17).
+- **Remaining:** Visual layout checks across the requested ratios and scenes;
+  live Cocoa panel visual review. The Windows launcher is not a Mac launcher
+  implementation. Existing split-screen layout is preserved.
 - **Acceptance:** 4:3, 5:4, 16:9, 16:10, 21:9 and 32:9 menu captures with readable,
   unclipped, proportional text; full backgrounds; ammo/radar corners; centred
   crosshairs and scope aim; zoom controls aligned; pause/return; no leaked placement

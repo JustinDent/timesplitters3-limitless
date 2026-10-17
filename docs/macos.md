@@ -158,8 +158,11 @@ Unsupported saved keys are preserved and labeled unavailable on Mac.
 
 **Save this tab** applies the edits and backs up the controls file; Cancel discards
 unsaved edits. Capture and conflict changes remain drafts until Save.
-The Graphics tab selects the render resolution and fullscreen. **F11** toggles
-fullscreen directly. Resolutions persist in `config/pc-display.ini`; fullscreen
+The Graphics tab filters resolutions by aspect ratio and sets vertical field of
+view (40–100°, default 55°), render resolution and fullscreen. Defaults and
+changes remain drafts until Save; Cancel leaves settings unchanged. A failed
+display save restores both resolution and FOV. **F11** toggles fullscreen
+directly. Resolution and FOV persist in `config/pc-display.ini`; fullscreen
 is a session setting. The original in-game Settings/Options menu also includes
 **Display settings**, with a 15-second resolution preview and automatic rollback.
 

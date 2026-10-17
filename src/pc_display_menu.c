@@ -306,18 +306,8 @@ static void fov_draw(void)
 static void refresh(int next,int selected);
 static void filter_modes(void)
 {
-    unsigned long long best=~0ull;
-    mode_count=0;selected_mode=0;
-    for(int i=0;i<all_mode_count;i++) {
-        PcDisplayMode m=all_modes[i];
-        if(selected_aspect && pc_display_aspect(m)!=selected_aspect)continue;
-        unsigned mw=m.width?m.width:640,mh=m.height?m.height:480;
-        unsigned sw=staged.width?staged.width:640,sh=staged.height?staged.height:480;
-        unsigned long long score=(unsigned long long)abs((int)mh-(int)sh)*10000+abs((int)mw-(int)sw);
-        if(m.width==staged.width && m.height==staged.height)score=0;
-        if(score<best){best=score;selected_mode=mode_count;}
-        modes[mode_count++]=m;
-    }
+    mode_count=pc_display_filter_modes(all_modes,all_mode_count,selected_aspect,
+        staged,modes,PC_DISPLAY_MODE_CAPACITY,&selected_mode);
     if(mode_count)staged=modes[selected_mode];
 }
 static void labels(void)

@@ -1,5 +1,32 @@
 # Measured progress
 
+## Native display settings parity (2026-10-17)
+
+`codex/mac-display-parity` depends on unmerged Test Lab runner `16a6a10` and
+its native build/renderer prerequisites. Cocoa Graphics now exposes the shared
+aspect groups and 40–100° vertical FOV control. The guest and Cocoa menus use one
+nearest-mode helper, including an exact-match tie fix for Original versus explicit
+640×480. Custom resolutions survive opening the panel. Defaults and Cancel are
+drafts; failed persistence restores both resolution and FOV.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+`tools/build-native-mac.py --test` passed all three CTests and native GPU,
+SDL input, Cocoa settings and debug checks. The new actual Cocoa-modal test
+checks all aspect groups, custom 1000×600, FOV bounds/default, Cancel, Save
+1280×720 at 90°, reopen and a read-only destination failure. It restores the
+disposable file and graphics state. The same Original/640×480 regression was
+added to the Windows FOV fixture; Windows execution is unavailable on this host.
+83 shared native-compiler/runtime/UI/CI checks passed. Evidence:
+`logs/native-display-build.out`, `.err` and `logs/native-display-shared.log`.
+Build provenance records `16a6a10` plus the uncommitted source changes.
+
+These are functional Cocoa/GPU checks, not physical input or complete visual
+acceptance. The computer-control tool could not select the unbundled native
+executable, and a cached AppKit-view capture did not capture the rendered panel;
+that capture is not used as visual evidence. Live panel layout, the full ratio
+matrix, zoom, ledge/landing and authored cinematic/terminal lenses remain pending.
+MAC-022 and MAC-024 remain Awaiting validation.
+
 ## Native Test Lab runner (2026-10-17)
 
 `codex/mac-test-lab` is based on unmerged renderer integration `14a0717`, which

@@ -210,6 +210,7 @@ int tsfp_native_renderer_test(void) {
     }
     ok &= pc_display_apply((PcDisplayMode){0,0});
     ok &= native_scene_w==64 && native_scene_h==64;
+    ok &= tsfp_native_graphics_settings_test(g.window);
     fprintf(stderr,"[native-feature-test] resolution apply/reject/restore and high-resolution offscreen/interpolation: %s\n",ok?"PASS":"FAIL");
     SDL_GL_DestroyContext(g.glctx);g.glctx=NULL;
     SDL_DestroyWindow(g.window);g.window=NULL;
