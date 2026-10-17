@@ -100,7 +100,10 @@ static float gameplay_fov_scale(uint32_t caller)
     /* Only the two player-camera projections in sub_000CCAB0. Story camera
        sub_000C95E0, terminal views and scripted letterbox transitions retain
        their authored lens. Do not rewrite gameplay/weapon zoom state. */
-    if((caller!=0x000CCBEDu && caller!=0x000CDD35u) ||
+    /* Frontend scenes reuse a player camera and state 2. Match the signed
+       scene > 100 test in US sub_001CE9A0 to retain their authored lens. */
+    if((int32_t)WORD_AT(0x0079094Cu)>100 ||
+       (caller!=0x000CCBEDu && caller!=0x000CDD35u) ||
        (WORD_AT(0x007DE458u)&0x20000000u) ||
        (!WORD_AT(0x007490E8u) && phase>0.f) ||
        !guest_writable(actor,0x118) ||

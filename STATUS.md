@@ -1,5 +1,55 @@
 # Measured progress
 
+## Issue #82 frontend FOV isolation (2026-10-17)
+
+Changes on `82-bug-fov-change-affects-the-main-menu`, based on
+main `abaf001`. Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 /
+CMake 4.4.4. Supported US XBE SHA-256 verified before generation and live runs.
+
+The main-menu/profile background uses scene 101 with a state-2 actor owning
+its camera, so the previous gameplay FOV filter accepted it. Read-only samples
+of the existing `47ac8d2` executable at 1920x1080 measured projection P0/P5
+as 1.08055234/1.92098212 at 55 degrees and 0.56249994/1.0 at 90 degrees.
+These samples reproduce the incorrect menu lens change; they are not gameplay
+validation. The retained screenshot shows the profile-name frontend screen.
+
+`gameplay_fov_scale` now follows the original US `sub_001CE9A0` signed
+scene > 100 distinction to leave frontend lenses authored. It preserves the
+existing aspect correction, cutscene framing, gameplay zoom, and falling FOV
+logic. No new runtime patch or generated-code edit is needed for this change.
+
+Ten targeted tests pass: cutscene/camera coverage, decal projection and FOV
+settings. The new cases exercise both player-camera callers, 55/90 settings,
+grounded/falling states, scenes 100 through 107, and a return to gameplay
+without clearing the actor. They check both projection and CPU frustum axes
+and preserve authored zoom and actor state. The added regression failed before
+the fix; a mutation removing the frontend guard is also required to fail.
+Existing cinematic and falling/landing checks still pass.
+
+The complete patch stack verified with zero runtime files changed. The supported
+Windows Build regenerated hooks from main and compiled the Release game and
+all test targets. Display, channel clear, textures, network, save paths,
+controls, settings and debug checks pass. The prompt test fails its foreground
+window assertion (`pc_controls_accept_pad`, line 55), also on a separate retry;
+its `SetForegroundWindow` attempt does not give the window focus. This unchanged
+input test prevents claiming an entirely passing Build command. Remaining
+build checks were run separately; executable identity sealing was completed.
+
+Rebuilt executable SHA-256: `95012110f5e15649a3b3459ffc760df6f163d0a48ff417a111aec878020993cb`.
+Two bounded 40-second live runs at 1920x1080, using the isolated unlocked Test
+Lab fixture, reach the main menu through synthetic internal key replay.
+At both 55 and 90 degrees, every read-only sample after 25 seconds has scene
+101 and projection P0/P5 = 1.08055234/1.92098212, matching the default lens.
+Reviewed screenshots show the main menu with its original background framing.
+Evidence is retained locally under `build/issue-82-menu-fov`; logs are capped,
+redundant BMPs removed and disposable virtual disks recycled. Both display
+configs, controls, saves and XDG paths were isolated. No human gameplay retest
+or full-level validation is claimed; gameplay transitions are covered by the
+camera regression harness.
+
+Mac uses the same camera source; native build/live validation is pending.
+See `MAC_PORT_BACKLOG.md` MAC-028. Hosted CI validation is pending.
+
 ## Issue #17 spirit rendering (2026-10-17)
 
 Production changes are on
