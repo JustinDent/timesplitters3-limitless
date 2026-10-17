@@ -420,7 +420,7 @@ or app, with labeled sample releases and no network/filesystem maintenance.
 lookup, failures, safe text handling and embedded navigation without real game
 files. The standard `build-launcher.ps1 -Test` includes these checks.
 
-## Repair / Verify tabs (current source)
+## Repair / Verify tabs (launcher v1.2.12)
 
 The sidebar has one **Repair / Verify** entry with two tabs in the main window:
 **Repair / Verify** for file checks and repairs, and **Diagnostics** for system
