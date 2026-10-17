@@ -1,5 +1,24 @@
 # PC features awaiting Mac adaptation
 
+### MAC-028 — Preserve frontend camera FOV (#82)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Gameplay FOV settings leave the main-menu/profile background
+  at its authored lens. In-game cameras retain the selected FOV, including
+  falling/landing; aspect correction and cinematic framing remain active.
+- **Source:** Branch `82-bug-fov-change-affects-the-main-menu`, based on
+  main `abaf001`; `src/pc_display_menu.c`, `tests/cutscene_letterbox.c` and
+  `tests/test_cutscene_letterbox.py`.
+- **Shared Mac support:** The camera function is already shared with native Mac.
+  The scene check uses guest state and requires no platform adapter.
+- **Remaining:** Run the camera regressions and compare frontend backgrounds at
+  55 and 90 degrees on macOS. Native execution and other-device synchronization
+  are unverified on this Windows host.
+- **Acceptance:** Menu backgrounds retain their lens at either setting; entering
+  gameplay and returning to the menu applies the appropriate FOV without
+  accumulating changes. Preserve falling, terminal and cinematic behavior.
+  See the issue #82 validation entry in `STATUS.md`.
+
 ### MAC-026 — Spirit skull and eye rendering (#17)
 
 - **Status:** Awaiting validation
@@ -104,6 +123,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
 | MAC-026 | Character picker and weapon proportions (issue #22) | Awaiting validation |
 | MAC-027 | Arcade RANK widget left placement | Awaiting validation |
+| MAC-028 | Preserve frontend camera FOV (issue #82) | Awaiting validation |
 
 ### MAC-027 — Arcade RANK widget left placement
 

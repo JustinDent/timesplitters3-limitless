@@ -78,6 +78,19 @@ static void camera_tests(void)
     fov_scale=2.f;
     const unsigned states[]={2,4,4,2}; /* Grounded, falling, falling, landed. */
     const unsigned callers[]={0xCCBED,0xCDD35};
+    /* The frontend also owns a state-2 player and uses these camera callers.
+       Change scenes without clearing that actor, as on return to the menu. */
+    const unsigned scenes[]={1,100,101,102,103,104,105,106,107,1};
+    const float settings[]={1.f,tanf(90.f*.00872664626f)/tanf(55.f*.00872664626f)};
+    for(unsigned c=0;c<2;c++)for(unsigned s=0;s<2;s++)
+    for(unsigned a=0;a<2;a++)for(unsigned i=0;i<sizeof scenes/sizeof *scenes;i++) {
+        MEM32(0x10000)=callers[c]; MEM32(0x6114)=a ? 4 : 2;
+        MEM32(0x79094C)=scenes[i]; fov_scale=settings[s];
+        MEMF(0x4384)=55.f;
+        camera_check(scenes[i]>100 ? 1.f : 1.f/fov_scale);
+        CHECK(MEM32(0x6114)==(a ? 4u : 2u) && MEMF(0x4384)==55.f);
+    }
+    MEM32(0x79094C)=1; fov_scale=2.f;
     for(unsigned c=0;c<2;c++)for(unsigned i=0;i<4;i++) {
         MEM32(0x6114)=states[i];
         MEMF(0x4384)=55.f; /* Original gameplay/weapon lens must not be rewritten. */

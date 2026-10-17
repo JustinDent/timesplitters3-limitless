@@ -45,7 +45,7 @@ def fixture_source():
     return fixture.replace('/* PRODUCTION_WRAPPER */', wrapper.group()).replace('/* PRODUCTION_CAMERA */', camera)
 
 
-@pytest.mark.parametrize('mutation', ['none', 'bars', 'camera'])
+@pytest.mark.parametrize('mutation', ['none', 'bars', 'camera', 'menu-fov'])
 def test_cutscene_rectangle_filter(tmp_path, mutation):
     source = fixture_source()
     if mutation == 'bars':
@@ -53,6 +53,10 @@ def test_cutscene_rectangle_filter(tmp_path, mutation):
                                 'uint32_t frame = g_esp, caller = 0;')
     elif mutation == 'camera':
         source = source.replace('zoom=cutscene_camera_zoom();', 'zoom=1.f;')
+    elif mutation == 'menu-fov':
+        guard = '(int32_t)WORD_AT(0x0079094Cu)>100 ||'
+        assert guard in source
+        source = source.replace(guard, '')
     compile_and_run(tmp_path, source, fails=mutation != 'none')
 
 
