@@ -15,6 +15,7 @@ body:
       description: Shown as the installed game version in the launcher. Pick the one you have, not an available update.
       options:
         # BEGIN AUTO GAME VERSIONS
+        - "v0.3.0-alpha.1"
         - "v0.2.0-alpha.6"
         - "v0.2.0-alpha.5"
         - "v0.2.0-alpha.4"
