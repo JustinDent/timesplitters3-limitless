@@ -534,7 +534,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Preserve launcher artwork (2026-10-16, uncommitted on
+- **Preserve launcher artwork (2026-10-16, commit `f1011f8` on
   `fix/launcher-art-preservation`):** `Core.cs` preserves verified independent
   launcher binaries/manifest when a game package bundles the same launcher
   version; damaged equal versions may repair, and newer versions still install.

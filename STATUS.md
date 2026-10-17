@@ -2,7 +2,7 @@
 
 ## Launcher artwork lost after game update (2026-10-16)
 
-Fix on `fix/launcher-art-preservation`, based on main `5e5ca61` (uncommitted).
+Fix on `fix/launcher-art-preservation`, commit `f1011f8`, based on main `5e5ca61`.
 The affected installation had game v0.2.0-alpha.5 from source `d430e8b` and
 launcher v1.2.6 binaries matching that game's BUILD.json, but differing from the
 published themed launcher. Its application was 278016 bytes; the themed release
