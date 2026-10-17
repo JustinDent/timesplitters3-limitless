@@ -2,6 +2,7 @@ name: Runtime patch transitions
 
 on:
   push:
+    branches: [main]
     paths:
       - .github/workflows/runtime-patches.yml
       - tools/recomp-generation.py
@@ -15,6 +16,8 @@ on:
       - tools/publish-release.py
       - tools/launcher/**
       - tools/build-launcher.ps1
+      - tools/release/ImportGame.cs
+      - config/pc-controls.default.json
       - tools/playable-launch.ps1
       - tests/launcher_updates.cs
       - tests/launcher_settings.cs
@@ -62,7 +65,84 @@ on:
       - patches/**
       - tsfp.ps1
       - requirements.txt
+      - tools/ci-runtime-scope.py
+      - tests/test_ci_runtime_scope.py
+      - tools/recycle-release-work.ps1
+      - tools/package-release.py
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/runtime-patches.yml
+      - tools/recomp-generation.py
+      - tests/test_recomp_generation.py
+      - tools/apply-patches.py
+      - tests/test_patch_updates.py
+      - tests/test_patch_tracking.py
+      - tests/test_audio_timing.py
+      - tests/native_compiler.py
+      - tests/test_pc_display_modes.py
+      - tools/publish-release.py
+      - tools/launcher/**
+      - tools/build-launcher.ps1
+      - tools/release/ImportGame.cs
+      - config/pc-controls.default.json
+      - tools/playable-launch.ps1
+      - tests/launcher_updates.cs
+      - tests/launcher_settings.cs
+      - tests/test_launcher_startup.py
+      - tests/package_launcher.py
+      - tests/test_publish_release.py
+      - tests/pc_display_modes.c
+      - tests/test_fov_settings.py
+      - tests/fov_settings.c
+      - src/pc_tutorial_ui.inc
+      - tests/tutorial_layout.c
+      - src/pc_display_ui.inc
+      - src/pc_ui_layout.h
+      - tests/test_ui_layout.py
+      - tests/ui_layout.c
+      - tests/ui_viewport.c
+      - tests/ui_screen_effects.c
+      - src/pc_display_modes.inc
+      - src/pc_display.h
+      - src/pc_display.c
+      - tests/test_native_compiler.py
+      - tests/test_framebuffer_sampling.py
+      - tests/test_cutscene_letterbox.py
+      - tests/test_decal_projection.py
+      - tests/test_channel_clears.py
+      - tests/pc_clear.c
+      - src/pc_clear_rhi.inc
+      - src/native/renderer_gl.c
+      - tests/cutscene_letterbox.c
+      - tests/test_objectives_health.py
+      - tests/objectives_health.c
+      - tests/objectives_layout.c
+      - src/pc_objectives.h
+      - src/pc_cutscene.h
+      - src/pc_terminal.h
+      - src/pc_input.c
+      - src/pc_controls.c
+      - src/native/input_sdl.c
+      - tests/test_terminal_mouse.py
+      - tests/terminal_mouse.c
+      - src/pc_display_menu.c
+      - tests/framebuffer_sampling.c
+      - tests/audio_stream_timing.c
+      - tests/audio_buffer_timing.c
+      - patches/**
+      - tsfp.ps1
+      - requirements.txt
+      - tools/ci-runtime-scope.py
+      - tests/test_ci_runtime_scope.py
+      - tools/recycle-release-work.ps1
+      - tools/package-release.py
   workflow_dispatch:
+
+# Superseded commits on the same PR/ref do not need to finish testing.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -86,6 +166,9 @@ jobs:
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: '3.12'
+      - name: Select affected test suites
+        id: scope
+        run: python tools/ci-runtime-scope.py
       - name: Read shared runtime and test dependency pins
         id: pins
         run: |
@@ -103,6 +186,7 @@ jobs:
           subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
           PY
       - name: Check out pinned upstream source only
+        if: steps.scope.outputs.transitions == 'true' || steps.scope.outputs.native == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: nemonicicon/ts3FPrecomp
@@ -110,32 +194,33 @@ jobs:
           path: external/ts3FPrecomp
           persist-credentials: false
       - name: Test patch tracking, branch switches and historical upgrades
+        if: steps.scope.outputs.transitions == 'true'
         run: python -m pytest tests/test_patch_tracking.py tests/test_patch_updates.py -q --tb=short
       - name: Apply shared runtime patches
+        if: steps.scope.outputs.native == 'true'
         run: python tools/apply-patches.py external/ts3FPrecomp patches
-      - name: Test audio clocks, ADPCM resume and queue backpressure
-        run: python -m pytest tests/test_native_compiler.py tests/test_audio_timing.py tests/test_recomp_generation.py -q --tb=short
-      - name: Test framebuffer sampling across rendering passes
-        run: python -m pytest tests/test_framebuffer_sampling.py -q --tb=short
-      - name: Test cinematic and decal projections
-        run: python -m pytest tests/test_cutscene_letterbox.py tests/test_decal_projection.py -q --tb=short
-      - name: Test channel clear mapping and capture compatibility
-        run: python -m pytest tests/test_channel_clears.py -q --tb=short
-      - name: Test Story Objectives health and shield visibility
-        run: python -m pytest tests/test_objectives_health.py -q --tb=short
-      - name: Test terminal mouse routing
-        run: python -m pytest tests/test_terminal_mouse.py -q --tb=short
-      - name: Test shared UI placement
-        run: python -m pytest tests/test_ui_layout.py -q --tb=short
-      - name: Test primary display resolution discovery
-        if: runner.os == 'Windows'
-        run: python -m pytest tests/test_pc_display_modes.py tests/test_fov_settings.py -q --tb=short
+      - name: Test native runtime, rendering and input regressions
+        if: steps.scope.outputs.native == 'true'
+        run: |
+          tests=(
+            tests/test_ci_runtime_scope.py
+            tests/test_native_compiler.py tests/test_audio_timing.py
+            tests/test_recomp_generation.py tests/test_framebuffer_sampling.py
+            tests/test_cutscene_letterbox.py tests/test_decal_projection.py
+            tests/test_channel_clears.py tests/test_objectives_health.py
+            tests/test_terminal_mouse.py tests/test_ui_layout.py
+          )
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            tests+=(tests/test_pc_display_modes.py tests/test_fov_settings.py)
+          fi
+          python -m pytest "${tests[@]}" -q --tb=short
       - name: Test release validation and disposable fixture cleanup
+        if: steps.scope.outputs.release == 'true'
         run: python -m pytest tests/test_publish_release.py -q --tb=short
       - name: Build and test Windows release launcher
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && steps.scope.outputs.launcher == 'true'
         shell: powershell
         run: ./tools/build-launcher.ps1 -Test
       - name: Test portable startup preference and launcher packaging
-        if: runner.os == 'Windows'
+        if: runner.os == 'Windows' && steps.scope.outputs.launcher == 'true'
         run: python -m pytest tests/test_launcher_startup.py tests/package_launcher.py -q --tb=short

@@ -416,6 +416,19 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-014 — Patch upgrades across Windows watermark and native overlay guards
 
+- **CI efficiency follow-up (branch `ci/faster-runtime-checks`):**
+  `.github/workflows/runtime-patches.yml` and `tools/ci-runtime-scope.py` select
+  affected suites for PRs and main pushes; manual, patch/pin and workflow changes
+  retain full Windows/macOS coverage. `tests/test_patch_updates.py` shares only
+  immutable pristine upstream bytes, with independent writable checkouts for
+  every transition scenario. No native Mac adapter is needed for CI scheduling
+  or fixture construction. `tools/apply-patches.py` eliminates a redundant dry-run
+  process per staged patch, preserving full-stack validation before runtime
+  writes; shared multi-file conflict/rollback tests cover this change.
+  macOS execution of this revision remains unverified.
+  Acceptance: full transition suite and affected scope tests pass on both hosted
+  platforms. See [CI validation](STATUS.md#runtime-ci-efficiency).
+
 - **Status:** Awaiting validation
 - **PC behavior:** Release preparation accepts the complete shared patch stack
   over fresh sources or an existing Windows watermark build, without losing

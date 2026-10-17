@@ -1,9 +1,11 @@
 """Exercise real runtime patches on small source-only checkout fixtures."""
 from pathlib import Path
 import importlib.util
+import io
 import shutil
 import subprocess
 import sys
+import tarfile
 
 import pytest
 
@@ -15,17 +17,27 @@ installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)
 
 
-@pytest.fixture
-def checkout(tmp_path):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+@pytest.fixture(scope='session')
+def upstream_files():
+    # Read pristine bytes once, rather than starting git show for each file in
+    # every test. Never reuse a mutable checkout between transition scenarios.
     names = {line[6:] for patch in PATCHES.rglob('*.patch')
              for line in patch.read_text(encoding='utf-8').splitlines()
              if line.startswith('+++ b/')}
-    for name in names:
+    archive = subprocess.check_output(['git', '-C', str(RUNTIME), 'archive', 'HEAD', '--', *sorted(names)])
+    with tarfile.open(fileobj=io.BytesIO(archive)) as contents:
+        files = {item.name: contents.extractfile(item).read() for item in contents if item.isfile()}
+    assert files.keys() == names, 'Upstream archive must include every patched source file'
+    return files
+
+
+@pytest.fixture
+def checkout(tmp_path, upstream_files):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    for name, content in upstream_files.items():
         destination = tmp_path / name
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(subprocess.check_output(
-            ['git', '-C', str(RUNTIME), 'show', 'HEAD:' + name]))
+        destination.write_bytes(content)
     return tmp_path
 
 

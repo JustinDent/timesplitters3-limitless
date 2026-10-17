@@ -57,8 +57,32 @@ conflicting edits stop the update. Write failures restore changed sources and
 leave the old record intact. The record contains patch text only, stays outside
 tracked source, and requires no duplicate game data or build directory.
 
-The Runtime patch transitions workflow runs source-only transition and upgrade
-tests on Windows, Linux and macOS for patch-loader changes and pull requests.
+The **Runtime patch transitions** workflow runs on relevant pull requests to
+`main` (opening, updating or reopening), relevant pushes to `main`, and manual
+dispatch. Feature-branch pushes without a PR and documentation-only changes do
+not need this check. There is no scheduled run: the same pinned sources and
+patches do not need retesting throughout the day. Run it manually when preparing
+a release or investigating a runner/toolchain change.
+
+Windows and macOS keep the same source-only checks, scoped to the affected
+components. Patch stacks, patch-loader tests, shared dependency/build pins and
+workflow changes select the full suite. Runtime changes select native checks;
+launcher and publisher changes select their own checks without replaying patch
+upgrades. Shared display modes also select launcher checks because that file is
+embedded in the launcher. Manual runs exercise all suites. Superseded runs on
+the same PR/ref are canceled. Transition fixtures read pristine upstream bytes
+once per test session while retaining a separate writable checkout for each
+scenario; runtime regressions share one pytest invocation.
+The loader applies each patch once inside its disposable validation tree,
+relying on [Git's whole-patch failure behavior](https://git-scm.com/docs/git-apply#Documentation/git-apply.txt---reject)
+instead of a separate dry-run command. The complete stack is still validated
+before runtime writes; conflict checks, concurrent-edit checks and rollback
+remain enabled. Legacy bootstrap keeps its applicability probes so write
+failures cannot be mistaken for a legacy patch that is absent.
+
+These checks need no ISO or personal saves and do not replace release packaging
+checks or gameplay validation. Trigger/concurrency behavior follows GitHub's
+[workflow syntax](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax).
 
 ## Everyday workflow
 
