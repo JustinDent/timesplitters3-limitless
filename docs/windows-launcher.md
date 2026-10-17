@@ -420,6 +420,22 @@ or app, with labeled sample releases and no network/filesystem maintenance.
 lookup, failures, safe text handling and embedded navigation without real game
 files. The standard `build-launcher.ps1 -Test` includes these checks.
 
+## Repair / Verify tabs (current source)
+
+The sidebar has one **Repair / Verify** entry with two tabs in the main window:
+**Repair / Verify** for file checks and repairs, and **Diagnostics** for system
+information, report copying, bug reports and enhancement requests. There is no
+separate Diagnostics sidebar button. Opening the sidebar entry or a recovery
+shortcut selects Repair / Verify by default; diagnostic developer previews still
+open Diagnostics directly.
+
+Both tabs keep **View logs** visible in the footer, including during an operation.
+Switching tabs preserves verification results and the diagnostic report. The
+report is collected on the first Diagnostics selection; use **Refresh diagnostics**
+to update it after a file check or system change. File operations lock tab switching
+while keeping **Cancel operation** and **View logs** usable. The sidebar remains
+visible, and navigating away preserves unsaved Game settings drafts.
+
 ## Repair / Verify (launcher v1.2.8)
 
 The **Repair / Verify** sidebar page stays inside the main window. Its **Open game
@@ -460,7 +476,7 @@ rules. Existing unknown/pending updates are retained, rather than overwritten.
 
 ## Diagnostics (launcher v1.2.8)
 
-**Diagnostics** shows running/installed versions, Windows and process architecture,
+**Repair / Verify → Diagnostics** shows running/installed versions, Windows and process architecture,
 CLR version, GPU/driver information when available, free space, embedded artwork,
 saved graphics settings, last verification results and recent structured launcher
 exception types. Graphics discovery runs in the background with a bounded wait;
@@ -490,7 +506,7 @@ The prefill uses GitHub's documented [issue-form URL query fields](https://docs.
 The report excludes raw logs, personal/installation paths, arbitrary error
 messages, file contents, save data and ISO information. Recent errors contain
 only recognized UTC timestamps and exception types. **View logs** remains
-available on Home for local investigation.
+available on Home and in both Repair / Verify tabs for local investigation.
 
 Developer previews: `--render-repair-preview output.png` and
 `--render-diagnostics-preview output.png` work through the bootstrap or app EXE.

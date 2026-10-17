@@ -53,42 +53,6 @@ namespace TimeSplitters.Launcher
         static StackPanel Column(Grid grid,int index)
         { var panel=new StackPanel { Margin=index==0?new Thickness(0,0,10,0):new Thickness(10,0,0,0) };Grid.SetColumn(panel,index);grid.Children.Add(panel);return panel; }
         static ScrollViewer Scroll(UIElement content) { return new ScrollViewer { VerticalScrollBarVisibility=ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled, Content=content, Padding=new Thickness(0,0,12,0) }; }
-        static ResourceDictionary TabsTheme()
-        {
-            // Native TabItem selection and keyboard navigation, with a compact accent underline.
-            return (ResourceDictionary)System.Windows.Markup.XamlReader.Parse(@"
-<ResourceDictionary xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-                    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
-  <Style TargetType='TabItem'>
-    <Setter Property='Foreground' Value='#9EB4C8'/><Setter Property='Padding' Value='18,12'/>
-    <Setter Property='MinHeight' Value='44'/><Setter Property='Cursor' Value='Hand'/>
-    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TabItem'>
-      <Grid Background='Transparent' Margin='0,0,20,0'>
-        <ContentPresenter ContentSource='Header' RecognizesAccessKey='True' Margin='{TemplateBinding Padding}'
-                          TextElement.FontSize='13' TextElement.FontWeight='SemiBold' HorizontalAlignment='Center' VerticalAlignment='Center'/>
-        <Border x:Name='Line' Height='2' VerticalAlignment='Bottom' Background='#A7D9FA' Visibility='Collapsed'/>
-      </Grid>
-      <ControlTemplate.Triggers>
-        <Trigger Property='IsSelected' Value='True'><Setter Property='Foreground' Value='#E4EDF5'/><Setter TargetName='Line' Property='Visibility' Value='Visible'/></Trigger>
-        <Trigger Property='IsMouseOver' Value='True'><Setter Property='Foreground' Value='#A7D9FA'/></Trigger>
-        <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter TargetName='Line' Property='Visibility' Value='Visible'/><Setter TargetName='Line' Property='Background' Value='#FFFFFF'/></Trigger>
-        <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.4'/></Trigger>
-      </ControlTemplate.Triggers>
-    </ControlTemplate></Setter.Value></Setter>
-  </Style>
-  <Style TargetType='TabControl'>
-    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TabControl'>
-      <Grid KeyboardNavigation.TabNavigation='Local'>
-        <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
-        <Border BorderBrush='#2D455C' BorderThickness='0,0,0,1' Margin='0,0,0,18'>
-          <TabPanel IsItemsHost='True' KeyboardNavigation.TabIndex='1' Panel.ZIndex='1'/>
-        </Border>
-        <ContentPresenter Grid.Row='1' x:Name='PART_SelectedContentHost' ContentSource='SelectedContent'/>
-      </Grid>
-    </ControlTemplate></Setter.Value></Setter>
-  </Style>
-</ResourceDictionary>");
-        }
         public SettingsPage(ResourceDictionary resources, string root, bool preview)
         {
             string inherited = preview ? null : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "xboxrecomp", "titles", "45410066.conf");
@@ -96,7 +60,7 @@ namespace TimeSplitters.Launcher
             View=new Grid { Background=PageTheme.Brush("#0B1420"), Margin=new Thickness(30,24,30,18) };
             View.Resources.MergedDictionaries.Add(resources);
             View.Resources.MergedDictionaries.Add(PageTheme.Resources());
-            View.Resources.MergedDictionaries.Add(TabsTheme());
+            View.Resources.MergedDictionaries.Add(PageTheme.Tabs());
             layout=new DockPanel(); View.Children.Add(layout);
             overlay=new Border { Visibility=Visibility.Collapsed, Background=new SolidColorBrush(Color.FromArgb(248,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(7), Padding=new Thickness(28) };
             View.Children.Add(overlay);

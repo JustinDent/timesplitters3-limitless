@@ -10,8 +10,9 @@ called; production settings/menu code and its assertions remain enabled.
 The FOV test now passes, and the complete Windows CI native-regression command
 passes all 80 tests (`build/issue-86-menu-mouse/ci-runtime-after.log`). Before
 fix evidence: `ci-fov-before.log`. No runtime changes, rebuild or additional
-Mac adapter work is required; MAC-030/MAC-031 remain queued. Hosted rerun is
-pending for this follow-up commit.
+Mac adapter work is required; MAC-030/MAC-031 remain queued. Hosted rerun `39052515524` passed on both Windows and macOS for
+commit `28871e6`. Main `860dccd` was subsequently integrated; the only conflict
+was these independent status sections, both retained.
 
 PR integration: feature commit `e18baa9` is pushed to
 `86-enhancement-use-mouse-to-control-main-menu`. Integrated main `7e8cd8d`,
@@ -334,6 +335,38 @@ stable in the corrected fullscreen build. The concurrent read-only capture
 retained valid controller mappings and zero directional held bits across the
 observed focus changes (`physical-source-after.json`). Changes remain local and
 uncommitted on the issue #86 branch; native Mac and hosted CI remain unverified.
+
+## Repair / Verify and Diagnostics tabs (2026-10-17)
+
+Implemented on `feature/launcher-maintenance-tabs`, based on main `bd3f0e2`;
+implementation commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98). The Repair / Verify sidebar entry now
+hosts native Repair / Verify and Diagnostics tabs, with one shared heading and
+the same blue/silver tab style as Game settings. Diagnostics has no separate
+sidebar button. The sidebar/recovery entry opens repair by default; diagnostic
+preview arguments still select Diagnostics directly. Switching pages retains
+verification results, report text and unsaved settings drafts. Diagnostics is
+collected on first selection and through its existing Refresh action. Report
+copying and reviewed GitHub bug/enhancement drafts retain their privacy behavior.
+
+View logs is always visible in each footer, including recovery and busy states.
+Operations lock tab navigation without disabling the selected page's Cancel or
+View logs controls. Verification/report text starts at the top of its text area.
+The existing repair transactions, file preservation, update/download logic and
+game runtime are unchanged. The launcher version remains 1.2.11; this UI change
+has not been merged or published. MAC-021 records queued native Mac adaptation.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build and
+185 isolated checks passed (99 updater/bootstrap/cleanup, 27 downloads/recovery,
+15 release news, 25 settings, 19 maintenance). The maintenance UI regression
+covers both native tabs, default/explicit selection, removed sidebar entry,
+preserved results/report/settings drafts, diagnostic reporting actions, live
+log actions, locked navigation and usable Cancel/logs during operations.
+Startup/packaging/issue-form/CI-scope Python suites passed 43 tests with seven
+subtests. Normal 1152×772 and minimum 1000×720 repair/diagnostics previews, plus
+attention/busy states, were rendered and visually inspected. Bootstrap repair
+and diagnostic preview routing passed. All fixtures were disposable and
+synthetic; no actual game was launched or personal saves, settings, data or ISO
+modified. Native Mac launcher execution remains unverified.
 
 ## Launcher v1.2.11 release preparation (2026-10-17)
 

@@ -84,18 +84,11 @@
               <TextBlock Grid.Column="1" Text="Game settings" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
-          <Button x:Name="RepairNav" Style="{StaticResource Nav}" ToolTip="Check and repair installed release files" AutomationProperties.Name="Repair / Verify">
+          <Button x:Name="RepairNav" Style="{StaticResource Nav}" ToolTip="Verify and repair files, review diagnostics and open logs" AutomationProperties.Name="Repair / Verify">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
               <TextBlock Text="◇" FontSize="14" TextAlignment="Center" VerticalAlignment="Center"/>
               <TextBlock Grid.Column="1" Text="Repair / Verify" Margin="10,0,0,0" VerticalAlignment="Center"/>
-            </Grid>
-          </Button>
-          <Button x:Name="DiagnosticsNav" Style="{StaticResource Nav}" ToolTip="System details, installation health and support report" AutomationProperties.Name="Diagnostics">
-            <Grid>
-              <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-              <TextBlock Text="▤" FontSize="14" TextAlignment="Center" VerticalAlignment="Center"/>
-              <TextBlock Grid.Column="1" Text="Diagnostics" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
           <Button x:Name="SavesNav" Style="{StaticResource Nav}" ToolTip="Open your local saves folder" AutomationProperties.Name="Saves">
