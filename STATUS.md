@@ -2,6 +2,17 @@
 
 ## Issue #86 frontend mouse menus (2026-10-17)
 
+PR #97 CI follow-up: run `39051850942` passed on macOS, while Windows
+failed linking the isolated FOV settings fixture with 11 missing mouse-menu
+symbols. Reproduced the same LNK2019/LNK1120 failures locally on Windows x64
+MSVC 19.44.35224 at `d25b684`. Added test-only dependency stubs that fail if
+called; production settings/menu code and its assertions remain enabled.
+The FOV test now passes, and the complete Windows CI native-regression command
+passes all 80 tests (`build/issue-86-menu-mouse/ci-runtime-after.log`). Before
+fix evidence: `ci-fov-before.log`. No runtime changes, rebuild or additional
+Mac adapter work is required; MAC-030/MAC-031 remain queued. Hosted rerun is
+pending for this follow-up commit.
+
 PR integration: feature commit `e18baa9` is pushed to
 `86-enhancement-use-mouse-to-control-main-menu`. Integrated main `7e8cd8d`,
 retaining both sets of validation/backlog entries and the XMV/menu test list.
