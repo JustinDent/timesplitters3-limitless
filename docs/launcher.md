@@ -48,7 +48,7 @@ the installed game; optional textures also need their own space.
 Launcher updates are checked separately at startup. **Open installed launcher**
 lets you continue with the installed launcher while a startup check is underway.
 
-## What's new (current source)
+## What's new (launcher v1.2.11)
 
 The sidebar's **What's new** page shows game and launcher release notes inside
 the same window. It compares installed and available versions for your selected

@@ -1,5 +1,29 @@
 # Measured progress
 
+## Launcher v1.2.11 release preparation (2026-10-17)
+
+PR #93 is merged as `7ed93cb`. Branch `release/launcher-v1.2.11` raises the
+shared launcher and assembly/file versions to 1.2.11 / 1.2.11.0 for the embedded
+What's new page, including the footer cleanup. README and launcher guides now
+identify its release version. Game VERSION and runtime code are unchanged;
+MAC-021 retains queued native launcher adaptation. This records preparation;
+publication and final package evidence are confirmed separately by the GitHub
+release and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required compilation,
+15 release-news checks, 27 download/recovery checks, 25 settings checks and 13
+read-only maintenance checks passed. Startup, packaging, issue-form and CI-scope
+Python suites passed 43 tests with seven subtests. Live read-only GitHub notes
+for game v0.2.0-alpha.5 and launcher v1.2.10, bootstrap preview routing, normal/
+minimum-size pages, known-issues scrolling and offline retention were reviewed.
+The actual public v1.2.10 ZIP was downloaded and its published SHA-256 verified
+as the upgrade baseline. The initial full transaction run correctly stopped
+because the game was active; final local updater, lifecycle and actual-package
+checks remain pending until the game closes. Publication is gated on those
+checks and CI. No real game was launched for this release task, and no personal
+saves, settings, data or ISO were modified. Native Mac launcher execution remains
+unverified.
+
 ## Embedded launcher What's new page (2026-10-17)
 
 Footer follow-up on the same PR: removed the redundant **Open Home** button;

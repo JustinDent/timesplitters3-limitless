@@ -380,7 +380,7 @@ resumes it in a fresh client and verifies the checksum; it never installs or run
 the downloaded program and cleans its disposable files. Protocol reference:
 [HTTP range semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-range).
 
-## What's new (current source)
+## What's new (launcher v1.2.11)
 
 **What's new** in the sidebar and on Home opens an embedded release-notes page;
 the sidebar stays visible. Choose **Game releases** or **Launcher releases**,
