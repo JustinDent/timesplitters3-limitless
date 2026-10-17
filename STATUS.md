@@ -3,7 +3,7 @@
 ## Resumable launcher downloads and recovery (2026-10-17)
 
 Implemented on `feature/launcher-download-recovery`, based on main `78104de`;
-source uncommitted at this entry. Downloads use independent game/launcher cache
+implementation commit `c21df35`. Downloads use independent game/launcher cache
 slots pinned by release URL, size and expected SHA-256. They survive staging
 cleanup, cancellation and restart, including a completed verified cache when
 preparation is cancelled. Strict Range/Content-Range and optional strong If-Range

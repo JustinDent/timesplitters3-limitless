@@ -701,7 +701,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Resumable downloads and recovery (2026-10-17, uncommitted on
+- **Resumable downloads and recovery (2026-10-17, commit `c21df35` on
   `feature/launcher-download-recovery`):** `DownloadTransfer.cs`, `ReleaseClient.cs`,
   `SelfUpdate.cs`, `InstallationMaintenance.cs`, `Bootstrap.cs`, `Launcher.cs`/XAML
   and `MaintenancePage.cs` add separate bounded game/launcher caches, strict HTTP
