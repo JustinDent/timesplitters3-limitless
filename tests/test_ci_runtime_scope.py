@@ -13,6 +13,7 @@ spec.loader.exec_module(scope)
 @pytest.mark.parametrize('paths, expected', [
     (['tools/launcher/MainWindow.cs'], {'launcher'}),
     (['tests/launcher_maintenance.cs'], {'launcher'}),
+    (['tests/launcher_downloads.cs'], {'launcher'}),
     (['tools/publish-release.py'], {'release'}),
     (['tools/publish-release.py', 'docs/releasing.md', 'STATUS.md'], {'release'}),
     (['src/pc_display.c'], {'native'}),

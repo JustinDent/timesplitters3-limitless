@@ -97,12 +97,12 @@ namespace TimeSplitters.Launcher
             Directory.CreateDirectory(pending);
             try {
                 string archive=Path.Combine(pending,"release.zip");
-                await client.Download(release,archive,progress,token).ConfigureAwait(false);
+                await client.Download(release,archive,progress,token,Core.PathIn(root,".launcher/downloads/game")).ConfigureAwait(false);
                 await Task.Run(()=>Core.Unpack(archive,Path.Combine(pending,"payload"),version,token),token).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
                 Core.Require(Version(root,false)==version,"The installed game version changed during download. Verify again.");
                 Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new { version=version,repair=true }));
-                File.Delete(archive);
+                File.Delete(archive);DownloadTransfer.Forget(Core.PathIn(root,".launcher/downloads/game"));
             } catch {
                 try { Core.DiscardGameStaging(root); } catch { /* Retain unsafe/locked staging for recovery. */ }
                 throw;

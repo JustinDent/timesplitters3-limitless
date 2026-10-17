@@ -227,7 +227,7 @@ namespace TimeSplitters.Launcher
             if (candidate == null) return null;
             return VerifyLauncherMetadata(candidate, await Text(candidate.ManifestUrl, 16384, token).ConfigureAwait(false));
         }
-        public async Task Download(Release release, string destination, IProgress<double> progress, CancellationToken token)
+        public async Task Download(Release release, string destination, IProgress<double> progress, CancellationToken token, string cachePrefix = null)
         {
             ValidateDownloadUrl(release.AssetUrl);
             string expected = release.Digest.StartsWith("sha256:", StringComparison.Ordinal) ? release.Digest.Substring(7) : "";
@@ -239,26 +239,7 @@ namespace TimeSplitters.Launcher
                 if (!match.Success) throw new InvalidDataException("The release checksum is missing or invalid.");
                 expected = match.Groups[1].Value;
             }
-            using (var response = await http.GetAsync(release.AssetUrl, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false))
-            {
-                response.EnsureSuccessStatusCode();
-                if (response.RequestMessage.RequestUri.Scheme != "https") throw new InvalidDataException("Insecure asset redirect.");
-                using (var input = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                using (var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536, true))
-                {
-                    byte[] buffer = new byte[65536]; long count = 0; int got;
-                    while ((got = await input.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false)) > 0)
-                    {
-                        count += got;
-                        if (count > release.Size) throw new InvalidDataException("The download exceeds its published size.");
-                        await output.WriteAsync(buffer, 0, got, token).ConfigureAwait(false);
-                        progress.Report(100.0 * count / release.Size);
-                    }
-                    if (count != release.Size) throw new InvalidDataException("The release download is incomplete. Retry the update.");
-                }
-            }
-            if (!Core.Hash(destination).Equals(expected, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException("Checksum mismatch. The update has not been installed; download it again.");
+            await DownloadTransfer.Run(http,release,destination,expected,cachePrefix??destination+".download",progress,token).ConfigureAwait(false);
         }
     }
 }
