@@ -1,5 +1,25 @@
 # Measured progress
 
+## Launcher v1.2.9 release preparation (2026-10-17)
+
+PR #89 is merged as `1728f21`. The release preparation branch
+`release/launcher-v1.2.9` raises the shared launcher version and assembly/file
+versions to 1.2.9 / 1.2.9.0 for the cleaner settings, repair page and aligned
+sidebar. Game VERSION and runtime code are unchanged. MAC-021 retains queued
+native launcher UI adaptation. This records preparation; public publication is
+confirmed separately by the GitHub release and its build provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks. Startup,
+packaging, issue-form and CI-scope Python suites passed 41 tests with seven
+subtests. Three disposable minimize/restore/startup-failure checks passed.
+The actual public v1.2.8 ZIP upgraded to the v1.2.9 package; installed manifest
+verification, embedded banner/logo/icon, assembly version, personal-file
+preservation, corruption detection, same-version repair and confirmed cleanup
+passed. Versioned Home, Repair / Verify and both settings previews rendered.
+All fixtures were synthetic and disposable; no real game was launched and no
+personal saves, settings, data or ISO were modified.
+
 ## Launcher page and sidebar polish (2026-10-17)
 
 Implemented on `feature/launcher-page-polish`, based on main `d6f0d56`; implementation commit `0f30cbe`. Repair / Verify now uses separate game/launcher cards
