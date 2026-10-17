@@ -504,6 +504,14 @@ runtime readiness. No full campaign playthrough is required.
 
 ### MAC-012 — Standalone Mac runtime distribution
 
+- **Game-only PR notes (2026-10-17, branch `fix/game-only-release-prs`):**
+  `tools/publish-release.py` filters generated candidates by merged commit range
+  and paginated changed-file metadata, excluding launcher-only/housekeeping PRs
+  while retaining mixed PRs with game changes. No Mac adapter is needed for this
+  shared GitHub metadata logic. Windows publisher regressions cover the filter;
+  macOS execution remains unverified. Acceptance: run the same publisher tests
+  on Mac. [Validation](STATUS.md#game-only-release-pr-notes).
+
 - **Release metadata follow-up (2026-10-16, branch `fix/game-release-history-titles`):**
   `tools/publish-release.py` compares changes with the latest published game
   tag, excluding launcher releases, and creates short `TSFP v…` titles.

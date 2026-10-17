@@ -1,5 +1,25 @@
 # Measured progress
 
+## Game-only release PR notes
+
+2026-10-17, branch `fix/game-only-release-prs`, base `7b65782`.
+Release note candidates are checked against exact Git ancestry and merged PR
+metadata, then filtered by all changed/renamed paths. Launcher-only and
+housekeeping PRs are excluded; mixed PRs changing shared game inputs remain.
+Incomplete/truncated file metadata fails explicitly. Download instructions,
+release baseline selection, publishing safeguards and repository-wide changelog
+links are preserved. Published release notes were not edited by this task.
+
+Windows x64 / Python 3.14.2 / pytest 9.1.1: publisher tests passed 43 tests with
+four symlink-prerequisite skips. Regression coverage includes pagination,
+renames, duplicate PRs, empty results, unmerged/out-of-range PRs and misleading
+launcher titles on mixed changes. No game rebuild or gameplay test is required
+for metadata formatting. A read-only alpha.5-to-alpha.6 preview retained game
+PRs #79, #83, #84, #85, #87 and #97, excluding launcher packaging PR #75 and
+CI PR #81 alongside launcher-only releases. No published notes were modified.
+macOS execution and other-device synchronization are
+unverified; see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-distribution).
+
 ## Lock-on and special scope effects (2026-10-17)
 
 Local, uncommitted follow-up on `fix/responsive-menu-footer`, base `0dc9fea`.
