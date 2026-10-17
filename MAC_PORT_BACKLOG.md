@@ -1,5 +1,25 @@
 # PC features awaiting Mac adaptation
 
+### MAC-029 — Skippable idle demo video (#50)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The menu idle demo accepts the game's existing skip controls,
+  closes its host audio/video and returns to the menu. Repeated stops are safe;
+  subsequent movies and normal end-of-file playback remain functional.
+- **Source:** Branch `50-cannot-skip-menu-idle-video`, initially based on main
+  `abaf001`; final `xmv-stop.patch`, `tools/recomp-generation.py`, `tsfp.ps1`,
+  `tests/xmv_stop.c` and `tests/test_xmv_stop.py`.
+- **Shared Mac support:** Stop handling and the corrected US symbol map are
+  shared. Native generation already refreshes symbols; metadata edits now
+  invalidate generated wrappers. This does not add native host XMV playback.
+- **Remaining:** Run the portable stop regression and generation checks on Mac.
+  Native build/live validation and other-device synchronization are unverified.
+- **Acceptance:** A stop reports EOF even without a host decoder; destroy is
+  safe afterward. When native movie playback is available, verify idle-demo
+  skipping, overlay/audio cleanup and returning to a responsive menu. Preserve
+  original-body fallback and genuine Start behavior for other titles.
+  See the issue #50 validation entry in `STATUS.md`.
+
 ### MAC-028 — Preserve frontend camera FOV (#82)
 
 - **Status:** Awaiting validation
@@ -124,6 +144,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-026 | Character picker and weapon proportions (issue #22) | Awaiting validation |
 | MAC-027 | Arcade RANK widget left placement | Awaiting validation |
 | MAC-028 | Preserve frontend camera FOV (issue #82) | Awaiting validation |
+| MAC-029 | Skippable idle demo video (issue #50) | Awaiting validation |
 
 ### MAC-027 — Arcade RANK widget left placement
 

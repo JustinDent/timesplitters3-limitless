@@ -1,5 +1,67 @@
 # Measured progress
 
+## Issue #50 idle-demo skipping (2026-10-17)
+
+Initial implementation and live validation on `50-cannot-skip-menu-idle-video`,
+based on main `abaf001`.
+Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 / CMake 4.4.4.
+The supported US XBE SHA-256 was verified before decoding and live testing.
+Issue #82 was merged afterward; the branch was rebased onto main `e942ef0`
+before publication, preserving both fixes. All 55 targeted tests passed after
+rebasing, including the issue #82 camera/cutscene suite. The live build
+evidence below predates this rebase; no post-rebase full game rebuild is claimed.
+
+The US movie loop at `0x30594` calls `0x445252` only when skipping is enabled
+and controller input matches mask `0x280`. That routine sets object byte
+`+0x78`; the original Update checks it at `0x445843`/`0x445853` to terminate
+packet playback/looping. The symbol had been guessed as `XMVPlaybackStart`,
+so a skip press instead entered the host player's start handler. Correct the
+US symbol to the descriptive `XMVPlaybackStop` and add the corresponding HLE
+handler. It closes the movie voice and overlay, marks EOF, keeps the guest
+object valid until Destroy, and makes repeated Stop/Update/Destroy safe.
+Original-body fallback and genuine Start handling for other titles remain.
+
+The final `xmv-stop.patch` carries runtime and symbol changes. The generation
+fingerprint now includes extra-symbol metadata. Windows Build refreshes the
+symbol scan when regeneration is required; native --generate already does so.
+The generated US thunk was inspected: `sub_00445252` calls the Stop handler
+and pops eight bytes (return address plus its one argument).
+
+50 targeted tests passed across XMV lifetime/incorrect-binding detection,
+generation invalidation, CI scope, patch tracking and full historical patch
+transitions. The HLE test compiles production code with a deterministic host
+player and checks early skip, EOF stability, a later movie, repeated cleanup,
+unavailable playback, null status output and original-body fallback/ABI.
+The deliberately restored Start binding fails the regression. The test is in
+both Windows/macOS runtime CI and the local Test command.
+
+Full patch stack applied successfully; Windows Release game and build-test
+targets compiled. Network, channel clear, texture format, display, save paths,
+controls, settings and debug checks passed. The unchanged prompt test again
+failed `pc_controls_accept_pad` at line 55 when its window failed to gain
+foreground focus, so the full Build command is not reported as passing.
+Remaining checks and executable identity sealing were completed separately.
+
+The rebuilt executable SHA-256 is
+`4f2b2eba7624293677be776253bfdd2035b9b6a7114a1cae44f995a7bfb2239f`.
+A bounded 240-second exploratory run reached the signed-in main menu but did
+not trigger an attract movie there; returning to player selection late in the
+run did not leave enough idle time. A fresh untouched title-screen run started
+`attract.xmv` at 60.56 seconds. A synthetic Enter/A press at 64.59 seconds
+closed the movie at 64.69 seconds, after 108 pictures. A separate untouched
+run started the demo at 60.50 seconds; Escape/Start at 64.55 seconds closed it
+at 64.64 seconds. Subsequent navigation reached the responsive signed-in main
+menu, verified in `title-skip-escape.png`. Startup EA/Free Radical movies both
+played and closed normally. This is internal input-model replay, not a
+physical keyboard/controller test. Test saves, controls, both display
+configs and XDG paths are isolated copies of the unlocked fixture. Personal
+settings and the canonical fixture are preserved. Logs are bounded and local
+evidence is under `build/issue-50-video-skip`.
+
+Native build/live validation is pending (MAC-029). The stop path is shared;
+this change does not implement native host XMV decoding. No full campaign or
+hosted CI result is claimed.
+
 ## Issue #82 frontend FOV isolation (2026-10-17)
 
 Changes on `82-bug-fov-change-affects-the-main-menu`, based on
