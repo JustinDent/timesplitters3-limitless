@@ -235,6 +235,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   checks after integration. Do not merge the entire older branch just to obtain
   this feature: its packaging/settings-test changes need separate review.
 
+- **Current integration (2026-10-17):** `codex/mac-dependent-textures`
+  reapplies only the four renderer/test files from `5cba184` on build fix
+  `bab79f0`, retaining main's viewport/scissor/channel-clear work. All 36
+  dependent-mode GPU cases (12 each through FVF, GPU programs and CPU fallback)
+  and the complete native self-test suite pass on this Mac. Other texture modes
+  and scene fidelity remain pending.
+  [Evidence](STATUS.md#native-dependent-texture-integration-2026-10-17).
+
 ### MAC-006 — Cube and volume texture resources
 
 - **Status:** Queued

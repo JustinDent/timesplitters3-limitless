@@ -1,5 +1,31 @@
 # Measured progress
 
+## Native dependent-texture integration (2026-10-17)
+
+Focused branch `codex/mac-dependent-textures` depends on unmerged native build
+fix `bab79f0`. Reapplied only the renderer and GPU-test changes from `5cba184`:
+`gl_fragment.inc`, `renderer_gl.c`, `multitexture_selftest.inc` and
+`dependent_texture_selftest.inc` under `src/native`. Retained all current-main
+channel clears, proportional layout and viewport/scissor changes. No older
+packaging scripts, unrelated settings tests or wholesale branch merge included.
+
+On the same macOS arm64 / Clang 21 / SDL 3.4.16 / OpenGL 4.1 Metal 91.7 host,
+`tools/build-native-mac.py --test` passed: three CTests, real-GPU renderer tests,
+SDL input, Cocoa settings and debug tests. The restored 36 dependent-texture
+cases cover AR/GB chaining, input selection, signed dot mappings, linear DOT_ST
+and invalid-stage behavior through fixed FVF, GPU programs and interpreted
+vertices. Build executable SHA-256: `15f4eca72fb0f75598f0ed1781763eaf05b29e8b0f3040b481f898694a13a374`.
+This binary records `bab79f0` plus uncommitted renderer changes in BUILD.json.
+Evidence: `logs/native-dependent-build.out` and `.err`; generated identity and
+BUILD.json stay local. Native game render fidelity and remaining Xbox texture
+modes are not established by these fixtures; MAC-005 remains In progress.
+
+The preceding bounded baseline boot completed 90.14 seconds at the 120-present
+target, logging at least 5,100 guest frames and 10,104 host presents, no sampled
+GL errors and no native fault. Those are counters, not a sustained-FPS claim.
+Six disposable disk images were recycled (5.24 GB logical, 132 KiB allocated);
+menu captures and isolated metadata were retained.
+
 ## Native build restoration (2026-10-17)
 
 Implemented locally on `codex/mac-native-build`, based on audit commit
