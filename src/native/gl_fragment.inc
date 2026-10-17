@@ -1,6 +1,6 @@
 /* NV2A register-combiner evaluation for the native menu path. */
 "#version 330 core\n"
-"in vec4 v_color;\n"
+"in vec4 v_color;in float v_fog;\n"
 "in vec4 v_uv[4];\n"
 "uniform sampler2D u_tex0;\n"
 "uniform sampler2D u_tex1,u_tex2,u_tex3;\n"
@@ -53,6 +53,10 @@
 "  vec4 c=v_color*(u_used[0]!=0?t:vec4(1));\n"
 "  if(u_combiner!=0){\n"
 "    for(int i=1;i<4;i++)r[8+i]=sample_stage(i);r[4]=clamp(v_color,0.0,1.0);r[12].a=t.a;\n"
+/* The programmed factor is used even when FOGENABLE is off. Only a program
+ * which never writes fog uses the enable-dependent sky/particle fallback. */
+"    r[3]=vec4(color(u_rs[34]).rgb," D3D8_VSH_FOG_IS_UNWRITTEN("v_fog")
+" ? (u_rs[28]!=0u?1.0:0.0) : clamp(v_fog,0.0,1.0));\n"
 "    uint control=u_rs[234];int n=min(int(control&15u),8);\n"
 "    for(int i=0;i<n;i++){\n"
 "      r[1]=color(u_rs[235+((control&0x1000u)!=0u?i:0)]);r[2]=color(u_rs[243+((control&0x10000u)!=0u?i:0)]);\n"

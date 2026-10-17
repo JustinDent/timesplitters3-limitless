@@ -21,6 +21,7 @@ static int native_test_pixel(IDirect3DDevice8 *dev, UINT x, UINT y,
 #include "screen_copy_selftest.inc"
 #include "channel_clear_selftest.inc"
 #include "multitexture_selftest.inc"
+#include "fog_selftest.inc"
 static void *native_test_worker(void *arg) {
     IDirect3DDevice8 *dev=arg;
     dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF00FF00,1,0);
@@ -48,6 +49,7 @@ int tsfp_native_renderer_test(void) {
     ok &= native_test_vertex_programs();
     ok &= native_test_pack(dev);
     ok &= native_test_multitexture(dev);
+    ok &= native_test_fog(dev);
     /* High-resolution rendering must retain guest readback coordinates and
        later offscreen/interpolation tests must operate on the new target. */
     ok &= pc_display_apply((PcDisplayMode){1280,720});

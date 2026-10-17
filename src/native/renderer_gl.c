@@ -214,10 +214,11 @@ static const char *VS_SRC =
     "layout(location=3) in vec4 a_uv1;\n"
     "layout(location=4) in vec4 a_uv2;\n"
     "layout(location=5) in vec4 a_uv3;\n"
+    "layout(location=6) in float a_fog;\n"
     "uniform mat4 u_mvp;\n"
     "uniform int  u_use_xform;\n"
     "uniform vec2 u_size;\n"
-    "out vec4 v_color;\n"
+    "out vec4 v_color;out float v_fog;\n"
     "out vec4 v_uv[4];\n"
     "void main() {\n"
     "  if (u_use_xform == 1) {\n"
@@ -228,7 +229,7 @@ static const char *VS_SRC =
     "    gl_Position = a_pos;\n"
     "    if (u_use_xform == 0) { float w = a_pos.w != 0.0 ? 1.0/a_pos.w : 1.0; gl_Position = vec4((a_pos.x+0.5)*2.0/u_size.x-1.0, 1.0-(a_pos.y+0.5)*2.0/u_size.y, a_pos.z*2.0-1.0, 1.0)*w; }\n"
     "  }\n"
-    "  v_color = a_color;\n"
+    "  v_color = a_color;v_fog=a_fog;\n"
     "  v_uv[0]=a_uv0;v_uv[1]=a_uv1;v_uv[2]=a_uv2;v_uv[3]=a_uv3;\n"
     "}\n";
 
@@ -874,6 +875,9 @@ static void setup_fvf_attribs(DWORD fvf, UINT stride)
         glDisableVertexAttribArray(1);
         glVertexAttrib4f(1, 1.f, 1.f, 1.f, 1.f);
     }
+    /* Fixed-function vertices default to the PC shader's no-fog factor.
+     * Programmable fog travels through this attribute only in CPU fallback. */
+    glDisableVertexAttribArray(6);glVertexAttrib1f(6,1.0f);
     /* Specular */
     if (fvf & D3DFVF_SPECULAR) off += 4;
     unsigned count=(fvf&D3DFVF_TEXCOUNT_MASK)>>D3DFVF_TEXCOUNT_SHIFT;
@@ -958,7 +962,7 @@ static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *s, D3DPRIMITIVETY
     GLuint gpu=native_gpu_prepare(stride);
     if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
         converted=native_shader_vertices(verts,vcount,stride);if(!converted)return E_FAIL;
-        verts=converted;stride=96;
+        verts=converted;stride=100;
     }
     GLsizeiptr size = (GLsizeiptr)vcount * stride;
     native_select_program(gpu?gpu:native_fixed_program);
@@ -1001,7 +1005,7 @@ static HRESULT __stdcall dev_DrawIndexedPrimitiveUP(IDirect3DDevice8 *s, D3DPRIM
     GLuint gpu=native_gpu_prepare(stride);
     if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
         converted=native_shader_vertices(verts,nv,stride);if(!converted)return E_FAIL;
-        verts=converted;stride=96;
+        verts=converted;stride=100;
     }
     GLsizeiptr vbytes = (GLsizeiptr)nv * stride;
     native_select_program(gpu?gpu:native_fixed_program);

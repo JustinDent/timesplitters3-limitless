@@ -250,6 +250,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   and scene fidelity remain pending.
   [Evidence](STATUS.md#native-dependent-texture-integration-2026-10-17).
 
+- **Fog input adaptation (2026-10-17):** `codex/mac-fog-rendering` now passes
+  programmed fog through GPU and CPU vertex paths into the final combiner,
+  using the shared PC unwritten marker for the sky/particle fallback. All 49
+  GPU fog cases and the full native suite pass. Bounded Khallos/first-mission
+  checks retain visible world and weapons; Khallos exterior sky remains dark
+  and stretched. Remaining shader inputs/modes and matched scene fidelity are
+  still open; this is not a sky fix. [Evidence and limits](STATUS.md#native-fog-combiner-input-2026-10-17).
+
 ### MAC-006 — Cube and volume texture resources
 
 - **Status:** Queued
@@ -1222,7 +1230,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Windows-only API, or diagnostic switch is required.
 - **Remaining:** Build on macOS and verify GPU and interpreted-vertex paths.
   No native execution was available on this Windows host. Confirm the native
-  unwritten-fog fallback observes the scoped fog-disable state.
+  unwritten-fog fallback observes the scoped fog-disable state. The native
+  fog adapter now passes enabled/disabled and GPU/CPU fixture checks; actual
+  Mansion spirit appearance/occlusion remains pending.
+  [Fog adapter evidence](STATUS.md#native-fog-combiner-input-2026-10-17).
 - **Acceptance:** Check Mansion entrance-hall spirits from several angles;
   preserve solid faces, wispy trails, red eyes and wall occlusion. Check
   ordinary particles/fog immediately afterward and other ghost encounters in

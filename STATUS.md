@@ -1,5 +1,53 @@
 # Measured progress
 
+## Native fog combiner input (2026-10-17)
+
+`codex/mac-fog-rendering` depends on effects evidence `3231c8c` and the repaired
+native stack. The Mac vertex/fragment interface previously omitted the NV2A fog
+register entirely. GPU vertex programs and CPU fallback now pass the written
+fog factor through to the combiner. Unwritten fog uses the existing shared PC
+marker/threshold: fog enabled selects the sky fallback, disabled selects the
+particle fallback. A written factor still applies with fog disabled, as required
+by the title's custom blend. Fog RGB comes from the render state, independently
+of its packed alpha. Fixed vertices retain the PC shader's default factor one;
+this does not implement the full fixed-function fog-distance pipeline.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+49 actual-GPU cases pass: MAC/ILU writes, scalar fog masks, unwritten and
+post-END writes, clamping, enabled/disabled fog, indexed/unindexed draws,
+GPU/CPU paths and fixed default. All three CTests, existing GPU checks, SDL
+input and Cocoa settings/debug tests pass. Six portable spirit-wrapper,
+channel/capture and framebuffer-cache checks pass. The first combined test run
+exposed that the new fixture left TEX1 disabled for a later A8 fixture; restoring
+its prior vertex format fixed the test-state leak. No Windows code was changed;
+Windows host execution is unavailable.
+
+The verified-US-XBE isolated Test Lab runner completed 110 seconds in Khallos
+Express at target 60 and 120 seconds in the first mission at target 120. Synthetic
+SDL input moved, turned and fired; reviewed captures retain terrain/train panels,
+weapons, HUD and window glass. First-mission smoke/fire remains visible and its
+opening canyon is consistent with the earlier baseline capture. Khallos's dark,
+stretched exterior sky persists: the missing fog input was a concrete parity gap,
+but fixing it did not resolve that separate fidelity issue. Full effects parity,
+Mansion spirits and campaign completion remain unverified.
+
+The Khallos 85–105 second sample measured 59.70 host/guest presents/sec,
+p95 17.476 ms, worst 98.022 ms (two intervals over 50 ms). First mission at
+85–105 seconds measured 117.25 host presents/sec (59.65 guest + 57.60
+interpolated), p95 15.583 ms, worst 28.400 ms, none over 33.33 ms. Captures
+were enabled; these are host presents, not a stable-120 or display-scanout claim.
+
+Build evidence: `logs/native-fog-build.out` / `.err`; source `3231c8c` plus
+this branch's six renderer/test source changes, pinned upstream and verified XBE.
+Tested executable SHA-256: `a8776bf117fe7f59a497c7e2d1cdf4899802b0409b35ec3e26518946d50d3e0b`.
+Runtime evidence: `logs/native-fog-khallos-60-*`,
+`logs/native-fog-first-mission-120-*` and corresponding `.err` files.
+Selected images: `private/captures/native-mac/khallos-fog-60-after.png`,
+`fog-first-mission-before.png` and `fog-first-mission-after.png` in that directory.
+Canonical Test Lab signatures/checksums still match; disposable test disks were
+recycled. Personal settings/saves and unrelated duplicate files were preserved.
+The interactive launcher's read-only prerequisite check passes.
+
 ## Native Khallos Express effects check (2026-10-17)
 
 `codex/mac-framebuffer-effects` depends on channel-clear validation `63b3177`.
