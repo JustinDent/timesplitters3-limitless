@@ -6,7 +6,8 @@
 - **PC behavior:** Local Test Lab fixture unlocks story/Arcade/characters and
   challenges without changing fresh collectible/pickup progress. Disposable
   copies use isolated configurations and the existing startup-video switch.
-- **Source:** Branch `test-profile-fast-start`; `tools/testing_profile.py`,
+- **Source:** Commit `0c69834`, [PR #80](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/80)
+  on `test-profile-fast-start`; `tools/testing_profile.py`,
   `tests/test_testing_profile.py`, `docs/testing-profile.md` and `AGENTS.md`.
 - **Shared Mac support:** The US save layout and runtime HMAC key are shared;
   fixture generation/preparation uses portable Python. Native execution unverified.
