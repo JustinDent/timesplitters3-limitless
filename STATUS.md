@@ -2,8 +2,7 @@
 
 ## Launcher v1.2.8 Repair/Verify and Diagnostics (2026-10-17)
 
-Implemented on `feature/launcher-repair-diagnostics`, based on main `65b6903`
-(uncommitted). Launcher/assembly version is 1.2.8. New Repair / Verify and
+Implemented on `feature/launcher-repair-diagnostics`, commit `920b789`, based on main `65b6903`. Launcher/assembly version is 1.2.8. New Repair / Verify and
 Diagnostics sidebar pages stay in the existing window and retain settings drafts.
 Verification is offline/read-only against installed manifest SHA-256 hashes;
 protected settings and independent launcher files are excluded from game scans.

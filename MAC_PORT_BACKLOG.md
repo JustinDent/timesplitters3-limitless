@@ -701,7 +701,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
-- **Repair/Verify and Diagnostics for v1.2.8 (2026-10-17, uncommitted on
+- **Repair/Verify and Diagnostics for v1.2.8 (2026-10-17, commit `920b789` on
   `feature/launcher-repair-diagnostics`):** `InstallationMaintenance.cs`,
   `MaintenancePage.cs`, `Launcher.cs`/XAML, `ReleaseClient.cs`, `SelfUpdate.cs`
   and `Core.cs` add embedded repair/diagnostic pages with the sidebar retained.
