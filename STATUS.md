@@ -3,7 +3,7 @@
 ## Repair / Verify and Diagnostics tabs (2026-10-17)
 
 Implemented on `feature/launcher-maintenance-tabs`, based on main `bd3f0e2`;
-source commit/PR recorded after commit. The Repair / Verify sidebar entry now
+implementation commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98). The Repair / Verify sidebar entry now
 hosts native Repair / Verify and Diagnostics tabs, with one shared heading and
 the same blue/silver tab style as Game settings. Diagnostics has no separate
 sidebar button. The sidebar/recovery entry opens repair by default; diagnostic
