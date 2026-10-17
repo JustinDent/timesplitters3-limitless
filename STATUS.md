@@ -1,5 +1,29 @@
 # Measured progress
 
+## Launcher v1.2.10 release preparation (2026-10-17)
+
+PR #91 is merged as `69204af`. The release preparation branch
+`release/launcher-v1.2.10` raises the shared launcher version and assembly/file
+versions to 1.2.10 / 1.2.10.0 for resumable downloads, transfer speed and ETA,
+and the Home, repair and startup recovery actions. Game VERSION and runtime
+code are unchanged. MAC-021 retains queued native launcher adaptation. This
+records preparation; public publication is confirmed by the GitHub release
+and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+99 updater/bootstrap/cleanup, 27 download/recovery, 25 settings and 19 maintenance
+checks (170 total). Startup, packaging, issue-form and CI-scope Python suites
+passed 42 tests with seven subtests. Three disposable minimize/restore/startup-
+failure checks passed. The actual public v1.2.9 ZIP upgraded to the v1.2.10
+package; installed manifests, embedded banner/logo/icon, assembly version,
+personal-file preservation, corruption detection, same-version repair and
+confirmed cleanup passed. A public GitHub v1.2.9 download interrupted at 65,536
+bytes resumed in a new client with HTTP 206 and passed full SHA-256 verification.
+Transfer, pause and recovery previews were reviewed at normal/minimum window
+sizes, including the startup recovery window. All fixtures were synthetic and
+disposable; no real game was launched and no personal saves, settings, data or
+ISO were modified. Native Mac launcher execution remains unverified.
+
 ## Resumable launcher downloads and recovery (2026-10-17)
 
 Implemented on `feature/launcher-download-recovery`, based on main `78104de`;
