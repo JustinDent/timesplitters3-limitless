@@ -80,6 +80,30 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
 | MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
 | MAC-026 | Character picker and weapon proportions (issue #22) | Awaiting validation |
+| MAC-027 | Arcade RANK widget left placement | Awaiting validation |
+
+### MAC-027 — Arcade RANK widget left placement
+
+- **Status:** Awaiting validation
+- **PC behavior:** In widescreen single-player Arcade, anchor the complete RANK
+  widget (caption, ordinal and frame) to the left inset, matching the status icons
+  below it. Flush preceding/following sprite batches at the placement boundary.
+  Preserve 4:3, narrower outputs and the existing split-screen layout.
+- **Source:** RANK placement follow-up to `6485069` on
+  `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
+  `src/pc_display_ui.inc`,
+  `patches/zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch`,
+  `tests/ui_layout.c` and `tests/test_ui_layout.py`.
+- **Shared Mac support:** The existing native LEFT placement adapter and shared
+  widget scope handle this hook under `TSFP_NATIVE_DISPLAY`; no new adapter is
+  required. Native build/gameplay validation remains pending.
+- **Remaining:** Validate Arcade RANK alignment in the native renderer and keep
+  the label, number and frame together during rank changes. Other-device
+  synchronization is unverified.
+- **Acceptance:** Compare 4:3, 16:9 and ultrawide with the original left inset,
+  status icon alignment and proportional size; check changing ranks and confirm
+  split-screen and unrelated HUD groups keep their existing placement. See
+  [Windows validation](STATUS.md#arcade-rank-widget-placement-2026-10-17).
 
 ### MAC-026 — Character picker and weapon proportions (issue #22)
 
@@ -88,7 +112,8 @@ runtime readiness. No full campaign playthrough is required.
   picker and first-person weapon projections for the selected output aspect.
   Keep each lens, zoom, depth and the original 4:3 behavior; do not reuse or
   repeatedly scale the preceding character's projection during model changes.
-- **Source:** Branch `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
+- **Source:** Commit `6485069` on
+  `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
   `src/pc_display_menu.c`, `src/pc_display_menu.h`,
   `patches/zzzzzzzzzzz-model-projection.patch`, `tests/test_decal_projection.py`.
 - **Shared Mac support:** The perspective hook is already enabled by

@@ -1,5 +1,49 @@
 # Measured progress
 
+## Arcade RANK widget placement (2026-10-17)
+
+Follow-up to issue-22 commit `6485069` on
+`22-character-selection-screen-is-stretched-when-using-higher-resolutions`, as
+requested. The existing status icons were left-anchored, but the separate US
+RANK call (`0012EC8B`, from ordinal/label renderer `sub_0012EC20`) to the shared
+panel renderer `sub_0012E3F0` still inherited
+the centred 4:3 canvas. Its caption,
+ordinal and frame therefore drifted inward relative to the icons in widescreen.
+The additional runtime wrapper routes the whole widget through the shared
+`pc_display_ui` LEFT placement scope. Guest sprite batches are flushed on both
+boundaries; original scaling and vertical coordinates remain owned by the game.
+The existing guard preserves original/narrow aspects and split-screen placement.
+
+Windows x64 / Python 3.14.2 / MSVC 19.42 / D3D11: the supported
+`tsfp.ps1 -Action Build` workflow applied the complete patch stack, regenerated
+the guest hook and compiled the game. Native network/GPU-clear/texture/display
+checks passed. The first build completed all native checks, but final reruns
+stopped at the unrelated virtual-pad prompt test's foreground-window assertion
+(`pc_controls_accept_pad()`), as recorded for issue #22. Input code is unchanged.
+Final source-level UI scope/viewport checks passed 5 tests; model-projection
+checks passed 4 tests; patch application/upgrade/tracking checks passed 28 tests.
+The widget regression exercises separate caption/ordinal/frame batches, preserves
+adjacent HUD groups, excludes the timer's shared-renderer call, and checks 4:3
+and split-screen bypasses. Executable SHA-256:
+`455166dd4c885123e880e77934df9b58b1ff599973b0e3d40455db113ad9898c`.
+
+Three bounded, 55-second D3D11 Arcade Vietnam sessions used disposable Test Lab
+copies, synthetic keyboard input and isolated input/both display configurations.
+Reviewed 1920x1080, 1280x960 and 3440x1440 captures show the complete RANK widget
+above the status icons at its original left inset. At 1920x1080, its label moved
+from X=125–146 to X=45–66 in the retained 640-pixel-wide window capture: exactly
+the missing 80-pixel side-anchor offset, with the same 22-pixel text width.
+The 4:3 layout is unchanged; 4th/5th rank labels were captured. The bounded
+runtime trace confirms the actual panel caller is `0012EC8B`. Captures and logs
+remain local in `private/test-saves/issue22`; each pass recycled its known
+partition images, and the canonical fixture still verifies. Build seal/content
+verification and `git diff --check` pass. Native Mac execution and full
+split-screen/all-match-mode playtesting remain unverified.
+
+See [MAC-027](MAC_PORT_BACKLOG.md#mac-027--arcade-rank-widget-left-placement)
+for shared native support and pending Mac visual checks. Personal saves and
+settings remain separate from the isolated Test Lab validation copies.
+
 ## Issue 22 model projections (2026-10-16)
 
 Branch
