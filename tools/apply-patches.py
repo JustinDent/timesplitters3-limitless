@@ -129,17 +129,21 @@ def apply_patches(runtime, patch_dir):
                 payload = Path(directory) / f'{phase}-{index}.patch'
                 payload.write_bytes(patch['content'].encode('utf-8'))
                 options = patch['options'] + (['--reverse'] if phase == 'unwind' else [])
-                result = git(stage, 'apply', *options, '--check', payload)
-                if result.returncode:
-                    if phase == 'unwind' and previous is None:
+                if phase == 'unwind' and previous is None:
+                    # Bootstrap probes skip non-matching legacy patches. Keep
+                    # their dry run so an actual apply/write failure is fatal.
+                    result = git(stage, 'apply', *options, '--check', payload)
+                    if result.returncode:
                         continue
+                # Default git apply rejects the whole patch on a bad hunk.
+                # This disposable tree is itself the validation pass; avoid a
+                # duplicate --check process for tracked unwind/active patches.
+                result = git(stage, 'apply', *options, payload)
+                if result.returncode:
                     raise RuntimeError(
                         f'{patch["name"]} conflicts with the runtime checkout during {phase}. '
                         f'No runtime files were changed.\n{result.stderr}'
                     )
-                result = git(stage, 'apply', *options, payload)
-                if result.returncode:
-                    raise RuntimeError(f'{patch["name"]}: {result.stderr}')
         changed = [name for name in sorted(names)
                    if (stage / name).read_bytes() != originals[name]]
         # Do not overwrite an edit made while the stack was being validated.

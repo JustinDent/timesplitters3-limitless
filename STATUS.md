@@ -1,5 +1,37 @@
 # Measured progress
 
+## Runtime CI efficiency
+
+Branch `ci/faster-runtime-checks`, based on main `9f65dcc`.
+Inspected successful hosted run `38997584157`: Windows took 4m38s, including
+2m42s for patch tracking/upgrades; macOS took 1m11s. The old workflow ran all
+suites on matching pushes to every branch, including launcher-only changes.
+
+CI now runs affected suites on PRs targeting main and relevant main pushes,
+plus a complete manual run. Superseded runs on the same PR/ref are canceled.
+Launcher/publisher-only edits omit upstream checkout, patch upgrades and native
+regressions. Patch/loader/pin/workflow edits select full coverage; shared inputs
+embedded by the launcher also select its tests. Native regressions use one
+pytest session. Transition scenarios retain independent writable fixtures,
+sharing only pristine upstream bytes. The loader removes redundant dry runs
+for tracked unwinds and active applications inside the disposable validation
+tree; legacy bootstrap probes, conflict checks and rollback are retained.
+
+Windows x64 / Python 3.14.2 / pytest 9.1.1 / Git 2.47.0.windows.2:
+baseline transition suite: 27 passed in 107.81s. Final transition/routing suite:
+47 passed in 67.54s (about 37% less elapsed time, with added coverage).
+An earlier final-version pass had one disposable-fixture file-access error in
+the CRLF test; that test passed alone and the complete clean rerun above passed.
+The fixture-only optimization had no material timing gain (107.73s); reducing
+duplicate Git applications supplied the measured transition improvement.
+Combined native invocation:
+68 passed in 30.61s, including 19 CI routing tests. Actionlint 1.7.12 accepted
+the workflow, and the complete pinned upstream patch stack verified with zero
+runtime files changed. All tests used disposable source/native fixtures;
+no personal settings or saves were used, and no game was launched or rebuilt.
+Hosted execution/timing for this revision, macOS execution and other-device
+synchronization remain unverified. See [MAC-014](MAC_PORT_BACKLOG.md#mac-014--patch-upgrades-across-windows-watermark-and-native-overlay-guards).
+
 ## Reusable testing profile (2026-10-16)
 
 Branch `test-profile-fast-start`, based on main `041340a`.

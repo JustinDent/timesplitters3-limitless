@@ -110,6 +110,25 @@ def test_renamed_patch_and_empty_stack(fixture):
     assert installer.apply_patches(runtime, patches) == []
 
 
+def test_failed_legacy_unwind_leaves_all_staged_files_unchanged(fixture):
+    _, runtime, patches = fixture
+    (patches / 'base.patch').unlink()
+    legacy = patches / 'legacy'
+    legacy.mkdir()
+    first = BASE.replace('alpha=0', 'alpha=1')
+    patch(legacy, 'old.patch', BASE, first)
+    other = ''.join(difflib.unified_diff(BASE.splitlines(True), first.splitlines(True),
+                                       fromfile='a/src/other.c', tofile='b/src/other.c'))
+    target = legacy / 'old.patch'
+    target.write_text(target.read_text() + other)
+    # The first file can unwind, but the second cannot. Skipping this legacy
+    # patch must not leave the successful hunk applied in the validation tree.
+    (runtime / 'src/sample.c').write_text(first)
+    before = {name: (runtime / 'src' / name).read_bytes() for name in ('sample.c', 'other.c')}
+    assert installer.apply_patches(runtime, patches) == []
+    assert {name: (runtime / 'src' / name).read_bytes() for name in before} == before
+
+
 def test_modified_old_patch_preserves_sources_and_record(fixture):
     _, runtime, patches = fixture
     installer.apply_patches(runtime, patches)
