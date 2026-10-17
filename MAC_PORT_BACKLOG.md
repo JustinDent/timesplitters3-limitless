@@ -625,6 +625,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   scene at 60 and interpolated 120 FPS. Check solid walls/weapon, windows and
   glow, plus a first-mission effects smoke test. Native rendering and other-device
   synchronization are unverified; Windows results do not establish Mac support.
+- **Native progress (2026-10-17):** Shared cache and GPU screen-copy checks pass.
+  Bounded Khallos Express runs at targets 60/120 show solid train panels/weapon
+  after movement, turning and firing, plus window transparency. Dark/stretched
+  exterior sky remains; the native fog register is missing and needs adaptation.
+  Overall glow/exterior fidelity remains pending. [Measured scope and captures](STATUS.md#native-khallos-express-effects-check-2026-10-17).
 
 ### MAC-020 — Adaptive cutscene letterboxing (issue #33)
 

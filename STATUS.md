@@ -1,5 +1,36 @@
 # Measured progress
 
+## Native Khallos Express effects check (2026-10-17)
+
+`codex/mac-framebuffer-effects` depends on channel-clear validation `63b3177`.
+Built that exact source revision with the shared upstream/XBE pins on macOS
+27.0.1 arm64, Clang 21, SDL 3.4.16, OpenGL 4.1 Metal 91.7. The isolated Test Lab
+runner completed 180 seconds at target 60 and 120 seconds at target 120.
+Synthetic SDL events selected Khallos Express, skipped opening scenes, moved
+into the engine cab, turned and fired (ammo 8 to 7). Reviewed captures show
+solid train sides/interior panels and weapon, with separately transparent window
+glass. Exterior sky has dark/stretched areas; this is an unresolved renderer
+fidelity gap, not evidence that all effects or the whole level are correct.
+Native shader review found that the PC fog register is not populated on Mac;
+its sky/particle path needs adaptation and a separate GPU/scene check.
+
+At 60, the 95–115 second gameplay sample had 1,200 guest/host presents,
+60.00 presents/sec, p95 17.572 ms and worst 30.571 ms. At 120, the 85–105 second
+sample had 2,171 host presents, 108.55/sec (58.75 guest + 49.80 interpolated),
+p95 17.060 ms and worst 24.625 ms. Neither sample had intervals over 33.33 ms.
+These are host-present intervals with rotating captures enabled, not scanout
+measurements or proof of stable 120 FPS. One bounded draw trace was collected
+outside the 120 timing sample. Logs report no GL error or guest fault.
+
+Evidence: `logs/native-khallos-{60,120}-summary.json`, corresponding `.err`,
+`-frames.csv` and `-run.log`; selected captures
+`private/captures/native-mac/khallos-{60,120}-{before,after}.png`.
+Four shared channel/capture/framebuffer-cache checks and the native screen-copy
+GPU suite pass. Earlier first-mission effects evidence remains separately scoped.
+MAC-019 stays Awaiting validation until the remaining glow/exterior fidelity is
+reviewed; neither Windows results nor these cab views establish full parity.
+Personal saves/settings were not used; disposable partition images were recycled.
+
 ## Native channel-clear GPU validation (2026-10-17)
 
 Branch `codex/mac-channel-clears` depends on the published native branch stack
