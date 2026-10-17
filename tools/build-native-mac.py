@@ -32,13 +32,12 @@ def main():
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('The native bring-up target currently supports Apple Silicon macOS only.')
-    branch = subprocess.check_output(['git', 'branch', '--show-current'], cwd=ROOT, text=True).strip()
-    if branch != 'mac-port':
-        raise SystemExit('Native work belongs on mac-port; switch explicitly before building.')
     pins = (ROOT / 'tsfp.ps1').read_text()
     revision = re.search(r"\$revision = '([a-f0-9]{40})'", pins)[1]
     expected = re.search(r"\$expectedHash = '([A-F0-9]{64})'", pins)[1].lower()
     xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        raise SystemExit('Missing private/game/default.xbe; import the supported US game before building.')
     if hashlib.sha256(xbe.read_bytes()).hexdigest() != expected:
         raise SystemExit('Unsupported XBE; preserve the supported US build.')
     if shutil.disk_usage(ROOT).free < 2 * 1024**3:
@@ -81,6 +80,9 @@ def main():
                if name not in generated.read_text()]
     if missing:
         raise SystemExit('Generated wrappers are stale; regenerate with --generate.')
+    # Shared debug code uses the same content/source identity on both hosts.
+    # This supplies build provenance, not a native multiplayer implementation.
+    run(PYTHON, ROOT / 'tools/network-identity.py', '--output', BUILD / 'generated')
     command = [CMAKE, '-S', UPSTREAM / 'titles/futureperfect', '-B', BUILD, '-G', 'Ninja',
                f'-DCMAKE_MAKE_PROGRAM={NINJA}', '-DCMAKE_BUILD_TYPE=Debug',
                '-DCMAKE_OSX_ARCHITECTURES=arm64', f'-DTSFP_NATIVE_DIR={ROOT / "src/native"}']
@@ -93,7 +95,9 @@ def main():
     # Include shared PC source hashes as well as the native adapters.
     sources = sorted((ROOT / 'patches').glob('*.patch')) + sorted((ROOT / 'src').rglob('*'))
     manifest = dict(source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+                    working_tree_changes=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,
+                    compatibility_identity=json.loads((BUILD / 'generated/network-identity.json').read_text())['compatibility'],
                     build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
                     compiler=subprocess.check_output(['clang', '--version'], text=True).splitlines()[0],
                     executable_sha256=hashlib.sha256((BUILD / 'futureperfect_recomp').read_bytes()).hexdigest(),

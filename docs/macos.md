@@ -24,6 +24,9 @@ From the project root, use Python 3.12 or newer, Xcode command-line tools, and
 an installed OpenSSL development library. The tested Mac has Apple Clang 21,
 OpenSSL 3.6.3, and pinned SDL 3.4.16 built from its upstream submodule. No system
 SDL installation is used. The script does not upgrade system dependencies.
+Use a focused branch based on current main (or an explicitly documented
+unmerged dependency); the native builder does not require a branch named
+`mac-port`. Host, game hash and upstream revision checks still apply.
 
 ```sh
 # First native setup and generation; reuses the existing private/game.
@@ -43,7 +46,9 @@ python3 tools/build-native-mac.py --setup --generate --test
 
 Output stays in `build/macos`. `BUILD.json` records the source and runtime
 revision, source/patch hashes, executable hash, compiler, Python packages and
-linked libraries. Native changes to the upstream runtime are reproduced by
+linked libraries, plus working-tree changes and the shared source/content
+identity. Native identity files stay in `build/macos/generated`; they do not
+enable native multiplayer. Native changes to the upstream runtime are reproduced by
 `patches/zz-mac-native-boot.patch`, `patches/zzz-mac-renderer.patch`,
 `patches/zzzz-mac-input.patch`, `patches/zzzzz-mac-high-refresh.patch`,
 `patches/zzzzzz-interpolation-layouts.patch` and

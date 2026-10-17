@@ -57,9 +57,16 @@ int tsfp_native_renderer_test(void) {
     ok &= native_test_pixel(dev,16,16,255,0,0);
     ok &= native_test_pixel(dev,48,48,255,0,0);
     ok &= native_test_pixel(dev,4,4,0,0,255);
+    /* The shared menu policy now squeezes AUTO widgets even without a camera
+     * frame. The 8..56 quad occupies 14..50 at 16:9 after guest readback. */
+    ok &= native_test_pixel(dev,10,32,0,0,255);
+    ok &= native_test_pixel(dev,52,32,0,0,255);
     /* Queue many different uploads before any readback synchronizes the GPU.
      * Earlier draws must retain their geometry/color as the stream is reused,
      * including changing sizes and both 16/32-bit index uploads. */
+    uint32_t upload_tag;int upload_placement=xbox_D3D8GetTwoDPlacement(&upload_tag);
+    /* These are adjacent upload tiles, not separate proportional HUD widgets. */
+    xbox_D3D8SetTwoDPlacement(XBOX_D3D8_2D_STRETCH,0);
     dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF000000,1,0);
     for(int pass=0;pass<16;pass++)for(int tile=0;tile<8;tile++) {
         DWORD color=tile&1?0xFF00FF00:0xFFFF0000;
@@ -79,6 +86,7 @@ int tsfp_native_renderer_test(void) {
         }
     }
     for(int tile=0;tile<8;tile++)ok &= native_test_pixel(dev,tile*8+4,32,tile&1?0:255,tile&1?255:0,0);
+    xbox_D3D8SetTwoDPlacement(upload_placement,upload_tag);
     IDirect3DTexture8 *texture=NULL;
     ok &= SUCCEEDED(dev->lpVtbl->CreateTexture(dev,8,8,1,0,D3DFMT_A8,D3DPOOL_MANAGED,&texture));
     if(texture) {

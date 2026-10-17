@@ -12,6 +12,34 @@ spec = importlib.util.spec_from_file_location('native_probe', ROOT / 'tools/test
 probe = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(probe)
 
+build_spec = importlib.util.spec_from_file_location('native_build', ROOT / 'tools/build-native-mac.py')
+builder = importlib.util.module_from_spec(build_spec)
+build_spec.loader.exec_module(builder)
+
+
+@pytest.mark.parametrize('game', [None, b'unsupported revision'])
+def test_native_build_accepts_focused_branches_but_validates_game(tmp_path, monkeypatch, game):
+    (tmp_path / 'tsfp.ps1').write_bytes((ROOT / 'tsfp.ps1').read_bytes())
+    if game is not None:
+        path = tmp_path / 'private/game/default.xbe'
+        path.parent.mkdir(parents=True)
+        path.write_bytes(game)
+    monkeypatch.setattr(builder, 'ROOT', tmp_path)
+    monkeypatch.setattr(builder.platform, 'system', lambda: 'Darwin')
+    monkeypatch.setattr(builder.platform, 'machine', lambda: 'arm64')
+    monkeypatch.setattr(sys, 'argv', ['build-native-mac.py'])
+    # A focused branch is allowed; missing/wrong data must stop before setup,
+    # generation or configuration, without inspecting or switching branches.
+    def unexpected(*args, **kwargs):
+        pytest.fail('Build touched tools or Git before verifying its game input')
+    monkeypatch.setattr(builder.subprocess, 'check_output', unexpected)
+    monkeypatch.setattr(builder, 'run', unexpected)
+    message = 'Missing private/game/default.xbe' if game is None else 'Unsupported XBE'
+    with pytest.raises(SystemExit, match=message):
+        builder.main()
+    assert not (tmp_path / '.venv').exists()
+    assert not (tmp_path / 'build').exists()
+
 
 def test_all_runtime_settings_are_isolated(tmp_path, monkeypatch):
     monkeypatch.setenv('RECOMP_LOG_FILE', '/personal/log')

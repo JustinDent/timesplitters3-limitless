@@ -1,5 +1,60 @@
 # Measured progress
 
+## Native build restoration (2026-10-17)
+
+Implemented locally on `codex/mac-native-build`, based on audit commit
+`b884c68` (unmerged documentation dependency) and main `0dc9fea`. Removed the
+obsolete platform-branch restriction while retaining Apple Silicon, XBE and
+upstream pin checks. Missing game data now has an explicit error. The build
+generates the shared content/source identity under `build/macos/generated`;
+a new final runtime patch supplies native include/version wiring. `BUILD.json`
+records that identity and uncommitted source state. This does not add multiplayer.
+Cocoa debug Save now preserves options outside its four exposed controls,
+including `show_latency`. Native tool checks are included in affected CI routing.
+
+Located the user's existing archive in Downloads, extracted one `private/game`
+with the pinned XISO tool and verified the supported US SHA-256. Kept the archive,
+recorded ignored import provenance, and removed only the temporary extracted ISO.
+Disk had about 203 GiB free before setup; the game allocates about 3.8 GiB.
+Restored Python 3.13.16, the unchanged requirements pins, upstream `d90c929` and
+its pinned SDL/XbSymbolDatabase submodules. The first Homebrew Python install
+stopped on an already-linked certificate dependency; installing Python against
+existing dependencies succeeded without replacing the existing OpenSSL.
+
+Validation: macOS 27.0.1 arm64, Apple Clang 21.0.0, SDL 3.4.16,
+OpenGL 4.1 Metal 91.7 / GLSL 4.10. Fresh setup/generation and native compilation
+succeeded. The first GPU suite exposed a stale upload-test assumption: shared
+main now applies proportional menu scaling without a camera frame. The upload
+fixture explicitly requests STRETCH; additional pixel assertions verify AUTO
+still applies the intended 16:9 proportions. No production rendering rule was
+disabled to pass the test.
+
+The corrected `tools/build-native-mac.py --test` passed all three CTests and
+renderer, input, settings and debug self-tests, including real GPU readback,
+screen copies/scissors, vertex GPU/CPU agreement, four texture stages,
+resolution/offscreen/interpolation, Cocoa save/cancel, true-latency preservation
+and atomic-write failure behavior. Test metadata/profiles were retained and
+only known test partition images recycled (10.49 GB logical capacity, 8 KiB
+allocated in that pass). The read-only launcher check passed.
+
+Source regressions: initial patch/launcher/tool suite 43 passed, two skipped;
+build-input/identity/generation suite 12 passed, one skipped; all 78 shared
+runtime/graphics/input CI regressions passed on this Mac. After CI routing
+changes, 45 routing/native-tool/launcher checks passed. Skips remain scoped to
+their existing host-specific conditions, not ignored failures. Windows build
+and hosted CI execution remain unrun here.
+
+Build evidence: `logs/native-build.out`, `.err`, `native-shared-tests.log` and
+`build/macos/BUILD.json`. Executable SHA-256 at this validation point:
+`cf3e1461975578a0a444e562d960f039f37f0fac50e647ad7c15db6988588938`.
+It contains local source changes over `b884c68`; it is not an unchanged main
+binary. An isolated 120-present-target boot visibly reached the player-count,
+profile and name-entry/storage menus using synthetic SDL keys; selected capture
+`private/captures/native-mac/build-baseline-menu.png`. These observations do not
+verify physical input, sustained 120 FPS or current-revision gameplay fidelity.
+MAC-033 remains Awaiting validation for its remaining gameplay/60–120 scope;
+MAC-003 retains its remaining physical shortcut/fullscreen checks.
+
 ## Mac current-main backlog audit (2026-10-17)
 
 Source: fetched `main` and `origin/main` both resolved to

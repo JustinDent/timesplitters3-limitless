@@ -1,0 +1,10 @@
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -63,4 +63,7 @@
+     target_include_directories(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/..")
+     target_include_directories(xbox_input PRIVATE "${TSFP_NATIVE_DIR}")
+     target_compile_definitions(xbox_input PRIVATE TSFP_NATIVE_INPUT)
++    target_include_directories(xbox_input PRIVATE "${CMAKE_BINARY_DIR}/generated")
++    file(STRINGS "${TSFP_NATIVE_DIR}/../../VERSION" TSFP_PC_VERSION LIMIT_COUNT 1)
++    target_compile_definitions(xbox_input PRIVATE TSFP_PC_VERSION="${TSFP_PC_VERSION}")
+ endif()

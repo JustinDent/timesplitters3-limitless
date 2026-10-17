@@ -129,7 +129,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-030 | Menu mouse selection (#86) | Queued |
 | MAC-031 | Quit to Desktop menu entries | Queued |
 | MAC-032 | Spirit skull and eye rendering (#17) | Awaiting validation |
-| MAC-033 | Restore a reproducible native build from current main | Queued |
+| MAC-033 | Restore a reproducible native build from current main | Awaiting validation |
 | MAC-034 | Version and build-identity watermark | Queued |
 
 ### MAC-001 — Direct-camera mouse look
@@ -199,7 +199,9 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   true. Preserve this setting before further native validation; exercise true
   and false values, Save/Cancel and unrelated JSON on a disposable file.
   A native latency control and live measurements depend on MAC-013; setting
-  preservation does not. See MAC-033 for the generated-header build dependency
+  preservation does not. The native Save path now reads current options before
+  changing its four exposed fields; real Cocoa Save/Cancel and true-latency
+  preservation checks pass in the native build-restoration run. See MAC-033 for the generated-header build dependency
   and MAC-034 for the separate build-identity overlay.
 
 ### MAC-004 — Capture-to-bind and conflict reassignment
@@ -1182,7 +1184,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-033 — Restore a reproducible native build from current main
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** The supported build regenerates from the complete pinned
   patch stack and supplies generated build identity to the shared debug code.
   Current project rules permit focused branches on either platform.
@@ -1190,7 +1192,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   `tools/network-identity.py`, `src/pc_debug.c`,
   `patches/zzzz-pc-debug-latency-watermark.patch`,
   `patches/zzzzzzzzzzzzzz-native-debug.patch`, and `AGENTS.md`.
-  These integration gaps were found during source review; no fix is implemented.
+  The original integration gaps were found during source review; repair evidence
+  is recorded below.
 - **Existing Mac support:** The native builder uses the shared pins, generator
   cache validation, patch stack and isolated regression paths. However, its
   hard-coded `branch != 'mac-port'` rejection prevents the current focused-branch
@@ -1212,9 +1215,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Preserve both display configurations and personal data. Run affected shared
   checks and report Windows checks unavailable on this host.
 - **Evidence/dependencies:** [Current-main audit](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
-  The local game data, upstream checkout, virtual environment and native build
-  were absent on the audit host. Restore only required local prerequisites;
+  These prerequisites were absent during the initial audit and have now been
+  restored from the local archive and pinned sources. Restore only required inputs;
   do not transfer an entire Windows build tree or duplicate game extracts.
+
+- **Build repair (2026-10-17):** Implemented on `codex/mac-native-build`,
+  based on audit `b884c68`. Focused branches now build; native identity/header/
+  version wiring and dirty-source provenance are present. Fresh generation,
+  compilation, platform/MMIO/path, real-GPU, SDL input, Cocoa settings/debug
+  checks pass. Native upload fixtures explicitly select full-width placement;
+  new pixel assertions check the updated proportional-menu contract. Current
+  menu boot is visible; remaining scene/60–120 checks are tracked below.
+  [Measured scope](STATUS.md#native-build-restoration-2026-10-17).
 
 ### MAC-034 — Version and build-identity watermark
 
