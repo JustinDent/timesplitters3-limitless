@@ -64,6 +64,11 @@ on:
       - src/pc_input.c
       - src/pc_controls.c
       - src/native/input_sdl.c
+      - src/pc_menu_mouse.h
+      - src/pc_menu_mouse_guest.inc
+      - src/pc_controls.h
+      - tests/test_menu_mouse.py
+      - tests/menu_mouse.c
       - tests/test_terminal_mouse.py
       - tests/terminal_mouse.c
       - src/pc_display_menu.c
@@ -138,6 +143,11 @@ on:
       - src/pc_input.c
       - src/pc_controls.c
       - src/native/input_sdl.c
+      - src/pc_menu_mouse.h
+      - src/pc_menu_mouse_guest.inc
+      - src/pc_controls.h
+      - tests/test_menu_mouse.py
+      - tests/menu_mouse.c
       - tests/test_terminal_mouse.py
       - tests/terminal_mouse.c
       - src/pc_display_menu.c
@@ -223,7 +233,7 @@ jobs:
             tests/test_xmv_stop.py
             tests/test_cutscene_letterbox.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py
-            tests/test_terminal_mouse.py tests/test_ui_layout.py
+            tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_quit_menu.py tests/test_ui_layout.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             tests+=(tests/test_pc_display_modes.py tests/test_fov_settings.py)

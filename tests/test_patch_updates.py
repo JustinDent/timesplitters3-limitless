@@ -72,7 +72,12 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           'zzzzzzzzzzzzzzzzzzzz-fullscreen-effects.patch',
                           'zzzzzzzzzzzzzzzzzzzzz-story-caption.patch',
                           'zzzzzzzzzzzzzzzzzzzzzz-objectives-ui-integration.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-spirit-rendering.patch'):
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-spirit-rendering.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-source.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-footer.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-themed-footer.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-quit-desktop.patch'):
             continue  # Requires the display wrapper, absent in this historical state.
         if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
             apply(checkout, patch.name)

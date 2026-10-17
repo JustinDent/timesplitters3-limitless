@@ -275,6 +275,8 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     restore_registers(&r);
     return result;
 }
+#include "pc_quit_menu.inc"
+#include "pc_menu_mouse_guest.inc"
 #include "pc_display_ui.inc"
 #include "pc_tutorial_ui.inc"
 
@@ -510,6 +512,10 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case BACK_CB: return back_callback;
     case FOV_DRAW_CB: return fov_draw;
 #ifdef _WIN32
+    case QUIT_OPEN_CB: return quit_open;
+    case QUIT_BUILD_CB: return quit_build;
+    case QUIT_SELECT_CB: return quit_select;
+    case QUIT_BACK_CB: return quit_back;
     case 0x1200du: return online_activate;
     /* Any remaining indirect reference to the retired Live entry uses Online. */
     case 0x001CC050u: return online_activate;

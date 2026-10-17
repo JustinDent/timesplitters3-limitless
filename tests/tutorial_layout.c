@@ -43,9 +43,13 @@ static float hud_scale=.56f;
 int pc_display_wide_now(void){return wide;}
 float pc_display_hud_scale(void){return hud_scale;}
 static void ui_place(int value,uint32_t tag){ui_placement=value;ui_tag=tag;placement_changes++;}
+static int footer_hover;
+static int menu_mouse_profile_text(void (*original)(void)) { (void)original;return 0; }
+static int menu_mouse_footer_text(void) { return footer_hover; }
 #include "pc_tutorial_ui.inc"
 static float seen;
-static void text_original(void){seen=tutorial_float(g_esp+4);g_esp+=4;}
+static uint32_t seen_color;
+static void text_original(void){seen=tutorial_float(g_esp+4);seen_color=WORD_AT(g_esp+16);g_esp+=4;}
 static void wrap_original(void){seen=tutorial_float(g_esp+8);g_esp+=4;}
 static void original(void)
 {
@@ -113,6 +117,14 @@ int main(void)
     for(unsigned i=0;i<4;i++)WORD_AT(0x7a5940+i*28+24)=0;
     run(0,0);
     wide=0;run(0,0);wide=1;hud_scale=1.25f;run(0,0);hud_scale=.56f;
+    /* Hover changes only RGB for this draw; fades and later text are intact. */
+    for(unsigned alpha=0;alpha<256;alpha+=17) {
+        g_esp=0x2000;WORD_AT(g_esp)=0x2d91b9;WORD_AT(g_esp+16)=0x64646400u|alpha;
+        footer_hover=1;pc_display_tutorial_text(text_original);
+        CHECK(seen_color==(0x405a7f00u|alpha) && WORD_AT(0x2010)==(0x64646400u|alpha));
+        g_esp=0x2000;footer_hover=0;pc_display_tutorial_text(text_original);
+        CHECK(seen_color==(0x64646400u|alpha));
+    }
     puts("PASS: tutorial left-edge scope/restoration, measured columns, rebound labels, edge wrapping, controller/split preservation, stack/font/geometry restoration");
     return 0;
 }

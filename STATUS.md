@@ -1,5 +1,341 @@
 # Measured progress
 
+## Issue #86 frontend mouse menus (2026-10-17)
+
+PR #97 CI follow-up: run `39051850942` passed on macOS, while Windows
+failed linking the isolated FOV settings fixture with 11 missing mouse-menu
+symbols. Reproduced the same LNK2019/LNK1120 failures locally on Windows x64
+MSVC 19.44.35224 at `d25b684`. Added test-only dependency stubs that fail if
+called; production settings/menu code and its assertions remain enabled.
+The FOV test now passes, and the complete Windows CI native-regression command
+passes all 80 tests (`build/issue-86-menu-mouse/ci-runtime-after.log`). Before
+fix evidence: `ci-fov-before.log`. No runtime changes, rebuild or additional
+Mac adapter work is required; MAC-030/MAC-031 remain queued. Hosted rerun `39052515524` passed on both Windows and macOS for
+commit `28871e6`. Main `860dccd` was subsequently integrated; the only conflict
+was these independent status sections, both retained.
+
+PR integration: feature commit `e18baa9` is pushed to
+`86-enhancement-use-mouse-to-control-main-menu`. Integrated main `7e8cd8d`,
+retaining both sets of validation/backlog entries and the XMV/menu test list.
+All 62 targeted integration checks passed across the initial run and corrected
+runtime rerun. The initial two XMV failures were caused by the local runtime
+still having the pre-main symbol patch; applying the complete stack updated two
+runtime files, then all 12 affected runtime/menu/UI/generation checks passed.
+Evidence: `build/issue-86-menu-mouse/pr-integration-tests.log` and
+`pr-integration-runtime-tests.log`. The full build and human confirmation below
+precede this main integration; no new binary or Mac validation is claimed.
+
+Profile footer and pause-tab follow-up (2026-10-17): profile Select, Back and
+Delete Profile now use measured spans from their centered label rows for hover
+and clicks. Disabled prompts retain their original appearance; text alignment
+and fade alpha are preserved. Pause and Tab/Objectives Options/Status headings
+now use their actual rendered bounds. The tab renderer keeps its loop index in
+a local recompiled register, so the hook reads the saved stack index instead
+of the unrelated shared EBP. Tab replacement is deferred until menu dispatch
+finishes and uses the original menu construction/transition routine.
+
+Validation: Windows x64/MSVC 19.44.35224, OpenGL, base `e942ef0` plus local
+uncommitted changes; supported US XBE hash verified. The full `tsfp.ps1 Build`
+passed. All 23 unique focused menu/UI/quit and patch-update tests passed,
+including fresh, repeated and transition patch application. A bounded isolated
+3440x1440 internal-input replay verified profile Back/Select clicks, switching
+Options to Status and back, switching from Tab/Objectives to Options, and
+confirmed Quit exiting with code 0. Reviewed captures show separate Select,
+Back and enabled Delete Profile highlights, plus the inactive tab highlight.
+Read-only menu descriptors confirm the tab changes; periodic frame dumps can
+lag the click snapshots. The user confirmed both profile footer highlights and
+Pause Options/Status mouse switching work in the reopened production build.
+Physical controller confirmation remains pending.
+
+Evidence: `build/issue-86-menu-mouse/profile-tabs-final-build.log`,
+`profile-tabs-patches.log`, `profile-tabs-live.log`, `profile-tabs-live.json`,
+`profile-hover-*-fixed.png`, and `pause-*-hover.png`. Final executable SHA-256:
+`14f033fb6e0d3f782ead68f48341be80c8c006f68582e35f85a5f2978241ce59`.
+Temporary diagnostic hooks/logging were removed; generated C was not manually
+edited. Personal saves/settings were untouched and disposable test disks were
+recycled. MAC-030 records deferred native adaptation; hosted CI is pending.
+
+Footer hover feedback (2026-10-17): enabled bottom prompts now tint light blue
+under the mouse, sharing the click handler's measured rectangles and original
+enabled/hidden checks. A read-only pointer snapshot preserves wheel packets and
+does not advance replay input during drawing. Inactive menus and invalid/unfocused
+pointers do not highlight. The text wrapper preserves fade alpha and restores
+its original colour argument after the draw. Guest UI RGB is half intensity;
+the initial full-range colour saturated to white and was corrected after an
+isolated render check. Temporary diagnostic logging was removed.
+
+Final Windows x64/MSVC 19.44.35224 OpenGL build on base `e942ef0` plus local
+changes passed the full supported `tsfp.ps1 Build`, including the formerly
+intermittent controller-prompt focus check. Nine focused menu, quit and UI tests
+pass; these cover disabled/hidden/inactive footer rejection, non-consuming hover,
+fade-alpha preservation and colour restoration. US XBE hash was verified.
+A bounded isolated 3440x1440 replay reached Story gameplay/Pause and exited
+normally after clicking Quit confirmation. Reviewed captures show only the
+hovered Select, Player Progress or Back prompt tinted on the main/level list,
+Pause and confirmation screens. Evidence: `build/issue-86-menu-mouse/hover-*.png`,
+`hover-pause.json`, `hover-final-live.log`, and `hover-final-build.log`.
+Final executable SHA-256:
+`25073e803a83ec72b17709e31bc4cb85cc474f87276a9a4b6d6a4375e948306e`.
+Personal settings/saves were untouched; disposable test disks and frame BMPs
+were recycled. MAC-030 retains native adapter work; hosted CI and physical
+controller validation remain pending. Changes remain local and uncommitted.
+
+
+Quit to Desktop follow-up (2026-10-17): added a final row after Extras in the
+main Story/Arcade menu and after the existing Quit in Pause. New shared patch
+hooks the two original layout finalizers, after all row setters, so original
+menu construction and geometry remain in charge. Windows player-one menus
+open a guest confirmation with Cancel selected; Cancel/Back restore the source
+screen, and confirmation posts WM_CLOSE to the window thread's normal exit
+path. The existing return-to-menu Quit is unchanged. Four callback addresses
+were checked against unused INT3 bytes in the supported US XBE. No generated
+source was edited. This depends on the uncommitted #86 mouse-menu work; Mac
+adaptation is queued as MAC-031.
+
+Validation: Windows x64/MSVC 19.44.35224, OpenGL, base main `e942ef0` plus local changes;
+US XBE SHA-256 verified. Supported `tsfp.ps1 Build` regenerated and compiled the
+game. Its native network/clear/texture/display checks passed, but the existing
+controller-prompt focus test again failed at lines 55/178; the full Build is
+not green. Save-path, controls, settings and debug checks passed separately.
+The 31 menu-pointer/patch-tracking/transition tests passed, and the new portable
+quit-adapter test passed after correcting identical empty test stubs that the
+MSVC linker had folded together (no production change needed). The test covers
+insertion scope, secondary-player exclusion, Cancel default, Back, invalid
+choices, failed-post retry and one-shot confirmed exit. CI includes the test.
+
+Bounded isolated input replays at 3440x1440 reached the new row in both menus,
+verified default Cancel and restoration to the original screen (Pause remained
+active), and exited with process code 0 and the normal `window closed` kernel
+log. Main confirmation was completed by keyboard; Pause confirmation by mouse.
+Read-only menu snapshots and reviewed renders show all nine main rows and seven
+Pause rows inside their panels. Physical controller testing and native Mac
+remain unverified. Executable SHA-256:
+`75964889056ef66bea23e945d45cf9472e4be8551794ee958144f28251d1f783`.
+Evidence: `build/issue-86-menu-mouse/quit-{main,pause}.json`,
+`quit-{main,pause}-runtime.err`, `quit-build.log`, and retained main/Pause PNGs.
+Disposable test disks and redundant frame dumps were recycled. Changes are
+local and uncommitted.
+
+
+Combined wheel/hover follow-up: user testing found level-list bouncing when
+scrolling and moving the pointer simultaneously. A regression reproduces hover
+reclaiming selection on the frames between wheel packets. Wheel ownership now
+lasts through continuous pointer motion until the wheel is idle for 250 ms and
+the pointer is still for 100 ms; only a subsequent move resumes hover. Clicks
+remain immediate, while screen/focus changes reset the gesture. The regression
+fails on the earlier policy and passes with the fix; a targeted mutation also
+confirms it detects the conflict. All 37 patch-tracking/transition and menu/UI
+checks pass; after the pause-coordinate follow-up, all nine focused checks pass.
+The user also reported offset pause hover. Paused input was using the active
+world viewport (e.g. 639x430) while menus render on the full UI canvas (640x480).
+Both row and footer pointer mapping now use the title's full canvas dimensions;
+the new cropped-world-viewport case fails before the correction and passes after.
+The supported Build compiles successfully but twice stops at the existing
+foreground-sensitive `pc_controls_accept_pad` assertion in the prompt test.
+The prompt test also fails separately; remaining save, input, settings and debug
+checks pass separately. This is not a full Build pass.
+Bounded isolated live tests pass: continuous up/down pointer sweeps with spaced
+wheel packets produce only the intended level sequence 1->2->3->4->5->6->7->8->7->6->5->4;
+hover selects another visible row after settling. At 3440x1440, all six pause row
+centres select their matching rows, and Controls click, its Back footer, root
+right-click resume and Tab/Objectives close all pass. The harness was corrected
+to wait for the replay's first wheel packet and reject inverted clipped rectangles
+when choosing a hover target; these were harness failures, not additional fixes.
+Current executable SHA-256: `63b18e15cd5b58686828d17fb36dab849f66023b05d17e20559d09edccb61cef`.
+Evidence in `build/issue-86-menu-mouse`: `wheel-hover-tests.log`,
+`wheel-hover-focused-tests.log`, `build-wheel-hover*.log`, `wheel-hover-*.log`,
+`wheel-hover.json`, `pause-hover.json`, and `pause-hover-live.log`.
+The user confirmed both fixes in the reopened build: scrolling while moving the
+mouse stays stable, and pause-menu hover aligns with the row under the cursor.
+This physical test confirmation does not replace the foreground-sensitive prompt
+check noted above. Changes remain local and uncommitted. Disposable captures
+and test disks were recycled.
+
+Footer/pause follow-up: visible, enabled bottom prompts now accept left-click.
+The generic, frontend-themed and pause-themed footer painters supply their actual
+text rectangles after binding translation, font scaling and layout. Packed hidden
+slots retain their original action IDs. Clicks use the existing Confirm/Back/X/Y
+actions before menu tick callbacks, preserving scoped raw controller-source edges.
+Recent rectangles must match the current menu, descriptors and output dimensions;
+stale, hidden and disabled prompts are ignored. Player-1 Start and Tab/Back menu
+flags now release the cursor and enable the shared hover/click/wheel path during
+missions. Closing the menu restores gameplay capture with held clicks suppressed.
+Text-only menus also receive a single scroll tick per wheel notch.
+
+Windows x64 / D3D11, same tools and verified US XBE as below: final supported
+Build passed every native check, including the focus-sensitive prompts test,
+and sealed the executable. The initial build again encountered that foreground
+assertion. All 36 menu/terminal/UI and patch tracking/transition regressions pass;
+eight focused checks also pass after adding hidden-slot and text-scroll cases.
+An earlier patch-test run overlapped addition of the themed-footer patch and
+failed its idempotence assertion; the complete stable-stack rerun passes.
+Footer-validation executable SHA-256: `42da85fb935ba4ca0db65ca8cf4a2160b503aa7580926864ead3387422bcb3d3`.
+Bounded isolated internal replay verifies the actual main Select footer opens
+Story, the level-list Player Progress footer opens its page, and the Back footer
+returns to main. Screenshots were reviewed and guest state recorded; this is not
+a physical-device test. Evidence: `build/issue-86-menu-mouse/build-footer-final.log`,
+`footer-final-tests.log`, `footer-live.json`, and `footer-progress.png`.
+The first pause replay verified row selection and submenu Back, but found that
+Tab/Objectives has no Back callback. The adapter now defers its original pause
+close handler until the whole menu dispatch has returned. Guards preserve
+submenu Back callbacks and death/completion/modal states. A follow-up caught the
+root container/child distinction; the nested-dispatch regression covers it.
+Escape also left the host capture preference released. Exiting menu mode now
+restores capture on the window thread, with focus loss and settings still honored.
+The final supported Build passes, including host tests for automatic recapture
+and unfocused suppression; all eight focused menu/terminal/UI checks pass.
+Earlier pause/footer executable SHA-256: `eb808fd142bb2bd33985f35ba92f3f492bdb73fe6ea72256106c87b0e985f0e5`.
+Evidence: `build-pause-final.log` and `pause-focused-tests.log` in the same folder.
+The bounded isolated live replay now passes pause hover/click into Controls,
+left-click on its rendered Back prompt, right-click to resume from root Pause,
+and right-click to close Tab/Objectives (flags return to gameplay 0x10).
+Evidence: `pause-live.json`, `pause-live-test.log`, and selected PNGs in the same
+folder. Physical-device confirmation of footer clicks, pause/Objectives controls
+and automatic recapture remains pending; the test build is reopened for it.
+Changes remain local and uncommitted; native Mac adaptation is queued in MAC-030.
+
+Wheel follow-up: frontend menus now consume bounded raw mouse-wheel notches as
+original Up/Down actions, including the Story level list, without activating a
+level. Stationary hover cannot undo wheel selection. Clicks, screen changes and
+focus loss clear queued steps; fresh keyboard/controller navigation takes over.
+Gameplay wheel bindings are unchanged. Eight focused menu/terminal/UI regressions
+pass, covering direction reversal, multiple notches, focus, transitions and clicks.
+Two bounded internal-input replays in the actual 13-level Story list passed:
+selection IDs 0->1->3->2->2 and 0->1->9->7->7. The latter reaches rows below the
+initial visible portion; both retain the same menu and stop when scrolling ends.
+This verifies internal routing; physical-wheel confirmation remains pending.
+
+The wheel follow-up compiled successfully through the supported Windows Build,
+but both attempts stopped at the existing foreground-focus assertion in
+`tests/pc_prompts.c` (pc_controls_accept_pad). Earlier native checks passed, and
+remaining save-path, controls, settings and debug checks passed when run separately.
+This is not a full Build pass. Evidence: `build/issue-86-menu-mouse/build-wheel.log`,
+`wheel-*-test.log` and `wheel-level.json`. Current wheel executable SHA-256:
+`75e61f1a56312208c4689262c931c4982448867556b3216afcb348d6c1411fa1`.
+The full Build passes and hashes below describe earlier versions of this work.
+Mac wheel integration remains queued in MAC-030; hosted CI is pending.
+
+Uncommitted on `86-enhancement-use-mouse-to-control-main-menu`, based on main
+`e942ef0`. Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 /
+CMake 4.4.4. Supported US XBE SHA-256 verified before generation and live runs.
+
+The new `menu-mouse.patch` wraps US `sub_00073750` after final menu layout,
+before the original action dispatcher. Shared pointer policy in
+`src/pc_menu_mouse.h` converts window client coordinates through presentation
+bars and proportional UI scaling. `src/pc_menu_mouse_guest.inc` tests the
+active menu's final, clipped item rectangles, reuses original selection state
+and sends fresh confirm/back actions through the original callbacks. Disabled
+items and labels are excluded. A stationary pointer leaves keyboard/controller
+selection alone; held clicks cannot activate a new screen. Windows releases
+capture for frontend menus, shows the cursor even in fullscreen, and suppresses
+selection buttons from gameplay until released. Paused in-game menus and the
+existing camera-terminal controls retain their previous behavior.
+
+The final supported Windows Build applied the complete patch stack, regenerated
+hooks, compiled the Release game and test targets, and passed every native
+build check. The input test now verifies frontend cursor handling and held-click
+suppression when returning to gameplay. An earlier build attempt encountered the
+known foreground-focus prompt assertion; the final full Build passed that test
+without changing its focus rules. Executable SHA-256:
+`3aaf99d5950ec92f8637d9f4201ab3fa62e9184040485eda665b3f94dd4b9d3b`.
+
+59 targeted tests pass: pointer/guest selection, terminal input, UI layout,
+camera/cutscene behavior, CI scope, patch tracking and historical branch
+transitions. New pointer tests include 4:3, 16:9, ultrawide, square output,
+presentation bars, disabled items, focus/held-button transitions, active-modal
+filtering and gameplay exclusion. The historical fixture omits the new patch
+until its prerequisite display wrapper is installed. Placing the wrapper within
+the file, instead of appending it, preserves unrelated trailing edits during
+patch unwind. Local Test and Windows/macOS runtime CI include the new portable
+menu regression.
+
+Bounded live runs use the isolated unlocked Test Lab fixture, both display
+configs, controls, saves and XDG paths, capped logs and rotating frame captures.
+At 1280x720 rendering in a 640x480 client window, read-only guest state and
+reviewed screenshots verify hover selects Settings, left-click opens Settings,
+and right-click returns to the main menu. A subsequent Up key selects Player
+Progress while the cursor stays over Settings, confirming keyboard coexistence.
+Internal replay provides input;
+physical mouse delivery, fullscreen interaction and a human gameplay retest
+remain pending. The first replay used render pixels instead of client pixels,
+which correctly produced no selection; the corrected replay measures the actual
+window. Logs, snapshots and selected PNGs are retained locally under
+`build/issue-86-menu-mouse`; disposable Xbox disk images are recycled.
+
+Mac input integration is queued as MAC-030 in `MAC_PORT_BACKLOG.md`. Its original
+menu path remains active; no native macOS build or physical-input check was run.
+Hosted CI is pending. No commit or push has been made for this issue.
+
+Human testing subsequently reported rapid highlight cycling on profile selection
+and the Story/Arcade main menu. A bounded read-only follow-up captured no mouse
+movement over the menu. A separate continuous-motion replay reproduced alternating
+selection between the hovered row and its neighbor when a directional key was
+held. The original dispatcher applied its repeat after mouse hover. The adapter
+now retains mouse navigation ownership between pointer samples and suppresses
+old directional repeats; a fresh direction takes over once the pointer stops.
+The added regression failed before the fix and passes afterward. All eight
+main-menu rows remain stable under the conflicting held-input replay after the
+initial fresh direction and pointer takeover. A fresh direction is intentionally
+allowed to take over while the pointer is stationary. The supported Build and
+seven focused menu/terminal/UI tests passed after this change. Confirmation that
+this resolves the user's physical-input report is still pending; the synthetic
+reproduction does not establish that their input source was a held direction.
+
+
+A further human report narrowed the remaining cycling to a click followed by a
+stationary pointer. Menu identity changes were clearing mouse ownership, allowing
+an old held direction to resume repeating in the new menu. Ownership now survives
+menu transitions; right-click Back also claims it outside selectable rows. Fresh
+directional input still takes over, invalid pointers release ownership, and held
+mouse buttons remain blocked across screens. The new regression failed at the
+first submenu update before the fix; all seven focused menu/terminal/UI tests
+pass afterward, including stationary submenu repeats, Back, fresh direction and
+focus recovery. An isolated live replay held Down, hovered Settings, clicked it,
+and left the pointer stationary: the old executable cycled through five submenu
+selections over three seconds; the corrected executable retained one selection
+throughout the same interval. Evidence is in local `transition-before.json` and
+`transition.json`. The supported Windows Build passed all native checks on rerun;
+the initial attempt again hit the existing foreground-focus assertion. This
+reproduces and fixes a transition defect, but confirmation with the user's
+physical input remains pending. The final hover/click/Back and stationary-pointer
+keyboard-takeover live replay also passed with this executable. An isolated
+600-second physical-input test was reopened at 3440x1440 for the user.
+
+
+The next physical-input capture reproduced residual cycling after mouse selection
+and Alt+Tab. It showed neutral controller axes (128), but logical controller 0
+changed from physical port 0 to invalid `0x004c8f8c` immediately after Confirm.
+US callback `sub_002D2260` scans the raw Confirm pressed edge to identify the
+controller; injecting only menu action flags left no source, so its search fell
+to -1 and read `mapping[-1]`. This invalid mapping yielded phantom Down/Left
+(`held=0x6`), including while unfocused. Earlier held-direction tests reproduced
+a real arbitration problem but missed this source defect because they selected
+the profile with Enter.
+
+`menu-mouse-source.patch` now scopes the original `sub_0007A7B0` dispatcher.
+A mouse Confirm supplies physical port 0's raw pressed edge through the original
+callbacks and restores that bit on return, preserving existing real-pad bits.
+The context nests with menu dispatches and is inactive for native Mac pending
+MAC-030. No generated C was edited. All 22 focused pointer, terminal, UI and
+patch-transition tests pass, including a mutation removing the source edge that
+must fail and checks that the edge does not leak out of the dispatcher. The full
+supported Windows Build regenerated the wrapper and passed all native checks.
+An isolated mouse-only replay selected the initial single-player row and Test Lab
+profile, reached all eight Story/Arcade menu rows, retained mapping `[0,1,2,3]`,
+and measured zero held/pressed directions and one stable selection for four
+seconds. The profile picker uses a separate overlay, so the replay clicks its
+Test Lab row using measured image/client coordinates. This corrected the first
+harness attempt, which inspected the empty parent menu instead of that overlay.
+Local evidence: `mouse-profile.json`, `physical-source-before.json`. A bounded
+fullscreen physical-input retest was reopened for click and Alt+Tab verification.
+
+
+The user confirmed both click-then-stationary and Alt+Tab-out/back cases are now
+stable in the corrected fullscreen build. The concurrent read-only capture
+retained valid controller mappings and zero directional held bits across the
+observed focus changes (`physical-source-after.json`). Changes remain local and
+uncommitted on the issue #86 branch; native Mac and hosted CI remain unverified.
+
 ## Launcher v1.2.12 release preparation (2026-10-17)
 
 PR #98 is merged as `860dccd`. Branch `release/launcher-v1.2.12` raises the
