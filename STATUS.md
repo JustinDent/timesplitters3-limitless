@@ -3558,3 +3558,35 @@ queued under MAC-021; other-device synchronization is unverified.
   `review/hybrid-63-native-audit.txt`, source/prompt/generated records and
   `review/inventory-63-*` RGB/alpha sheets. Consolidated scene validation remains
   deferred to 90% audited coverage and completed category review.
+
+
+### Hybrid texture batch 64 - terrain and industrial materials (issue #74)
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` at `2bb5564`.
+  Added 16 replacements after original/source/actual compressed-DDS comparisons,
+  opaque-channel checks and 2x2 repeat review. No game launches or runtime rebuild.
+- Materials cover concrete, scratched metal, dirt, rock, sandstone, brickwork,
+  gray stone wall, two tile grids and a five-stone atlas. Broad original layout
+  retained; fine detail and local contrast enhanced. Rusted brown panel mean
+  luminance changed -12.65%; other changes range -8.32% to +0.77%. Final scene
+  brightness, adjacency and material appearance remain unverified.
+- Sixteen 1254x1254 sources were resampled to ten 1024x1024 and six 2048x2048
+  full-mip DXT1 files. These are generated enhancements, not native 4K sources.
+- All 272 retained DDS passed native format validation and worklist hashes,
+  mip chains, dimensions/aspect and fixed 6 GiB budget checks on Windows x64.
+  A missing source field in new private provenance records was corrected before
+  the successful worklist audit. No tooling/runtime source changed.
+- Catalog: 6,812 supported keys; 272 installed, 6,525 awaiting art, 15 held drafts.
+  Reviewed 80 additional originals and 14 nonopaque alpha channels. There are now
+  627 provisional visual classifications; category-wide review remains unfinished.
+  Queue: seven material candidates, 140 individual and 207 specialist reviews,
+  15 corrections and 6,171 keys requiring visual triage.
+- Pack including metadata: 432,256,545 bytes (412.23 MiB),
+  increased by 23,776,854 bytes. Texture workspace at audit:
+  1,442,399,162 allocated bytes (1.34 GiB).
+  Originals/reviews/previews: 131.57 MiB, below 256 MiB. Private art
+  remains local; no duplicate game, pack, ZIP or release staging was created.
+- Private evidence: `review/hybrid-64-final-*`, `review/hybrid-64-native-audit.txt`,
+  `review/hybrid-64-acceptance.json`, batch source/prompt records, and inventory-64
+  RGB/alpha sheets under `private/texture-remaster`. Consolidated scene testing
+  remains deferred until 90% audited coverage and completed category review.
