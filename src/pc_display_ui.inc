@@ -66,6 +66,9 @@ void pc_display_ui(void (*original)(void),uint32_t tag)
         placement=WORD_AT(g_esp+20)==1?4:3;break;
     case 0x00133AB0u: radar_group=1;break;
     case 0x001358A0u: placement=5;break; /* Zoom controls; centre graphic stays centred. */
+    case 0x0012E3F0u: /* Shared panel renderer; only the Arcade RANK call. */
+        if(WORD_AT(g_esp)!=0x0012EC8Bu){original();return;}
+        placement=3;break;
     case 0x0013FC50u: /* Story date/title, including all outline/shadow passes. */
     case 0x0012F670u: case 0x0014B930u: case 0x001409C0u: placement=3;break;
     default:original();return;

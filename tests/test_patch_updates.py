@@ -63,6 +63,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
         if patch.name in ('zzzzzzzzzz-decal-projection.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch',
+                          'zzzzzzzzzzz-model-projection.patch',
                           'zzzzzzzzzzzzzzzzz-channel-clears.patch',
                           'zzzzzzzzzzzzzzzzzz-ui-layout.patch',
                           'zzzzzzzzzzzzzzzzzz-ui-narrow.patch',

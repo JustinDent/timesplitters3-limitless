@@ -7,7 +7,7 @@
   skull nodes while keeping skinned trails two sided. Its two eye-billboard
   batches use unbiased clip-space positions and no fog, preserving their
   red texture and depth testing. Overrides are restored after each node/batch.
-- **Source:** Spirit rendering change on
+- **Source:** Spirit rendering commit `70d8e7f` on
   `17-ghosts-in-mansion-of-madness-and-what-lies-below-are-nonvisible`;
   `src/pc_ghost_render_guest.inc`, the `spirit-rendering.patch` at the end of
   the shared patch stack, and `tests/ghost_rendering.c`.
@@ -102,6 +102,53 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
 | MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
 | MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
+| MAC-026 | Character picker and weapon proportions (issue #22) | Awaiting validation |
+| MAC-027 | Arcade RANK widget left placement | Awaiting validation |
+
+### MAC-027 — Arcade RANK widget left placement
+
+- **Status:** Awaiting validation
+- **PC behavior:** In widescreen single-player Arcade, anchor the complete RANK
+  widget (caption, ordinal and frame) to the left inset, matching the status icons
+  below it. Flush preceding/following sprite batches at the placement boundary.
+  Preserve 4:3, narrower outputs and the existing split-screen layout.
+- **Source:** Commit `3e747a5`, [PR #83](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/83), on
+  `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
+  `src/pc_display_ui.inc`,
+  `patches/zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch`,
+  `tests/ui_layout.c` and `tests/test_ui_layout.py`.
+- **Shared Mac support:** The existing native LEFT placement adapter and shared
+  widget scope handle this hook under `TSFP_NATIVE_DISPLAY`; no new adapter is
+  required. Native build/gameplay validation remains pending.
+- **Remaining:** Validate Arcade RANK alignment in the native renderer and keep
+  the label, number and frame together during rank changes. Other-device
+  synchronization is unverified.
+- **Acceptance:** Compare 4:3, 16:9 and ultrawide with the original left inset,
+  status icon alignment and proportional size; check changing ranks and confirm
+  split-screen and unrelated HUD groups keep their existing placement. See
+  [Windows validation](STATUS.md#arcade-rank-widget-placement-2026-10-17).
+
+### MAC-026 — Character picker and weapon proportions (issue #22)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Correct the horizontal aperture of newly built character
+  picker and first-person weapon projections for the selected output aspect.
+  Keep each lens, zoom, depth and the original 4:3 behavior; do not reuse or
+  repeatedly scale the preceding character's projection during model changes.
+- **Source:** Commit `6485069`, [PR #83](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/83), on
+  `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
+  `src/pc_display_menu.c`, `src/pc_display_menu.h`,
+  `patches/zzzzzzzzzzz-model-projection.patch`, `tests/test_decal_projection.py`.
+- **Shared Mac support:** The perspective hook is already enabled by
+  `TSFP_NATIVE_DISPLAY`; this correction uses the shared aspect model. Both
+  platform defines pass the source wrapper tests. No new OS/graphics adapter is
+  required; native execution and visual fidelity are unverified.
+- **Remaining:** Build and visually validate on Apple Silicon. Other-device
+  synchronization is unverified; Windows captures do not establish Mac support.
+- **Acceptance:** Cycle character models at 4:3, 16:9 and ultrawide without
+  changing their proportions during loading; verify first-person weapons,
+  aiming/zoom, split-screen, and unchanged world/decal/cinematic projections.
+  See [Windows evidence](STATUS.md#issue-22-model-projections-2026-10-16).
 
 ### MAC-001 — Direct-camera mouse look
 
