@@ -308,3 +308,29 @@ These are targeted corrections, not visual proof that all intermittent model
 disappearances are resolved. Record actual two-peer/capture evidence in
 `STATUS.md`; software shadow-renderer dumps do not prove the D3D11 window's
 contents. Genuine cloak/death rules and normal renderer culling remain intact.
+
+## Completed-match Results and Scores
+
+The post-match UI reads a separate table at `6F0B08`, with `0x68` bytes per
+slot, populated by `sub_00063EB0`. Its network loop previously rejected bots
+at the controller/peer checks, leaving names, rank, score and character IDs
+zero despite the live scoreboard including their actors. At return PC
+`63F05` only, ESI is the actor slot: configured AI iterations now take the
+original actor-copy path. Human membership filters remain intact. Later in
+the same builder ESI is an actor pointer; preserve the network path there,
+including the `+A50` score offset copy.
+
+The existing reliable results sender `357B00` includes all 16 slots' kill
+matrices/deaths and sorted indices. Receiver `64C60` fills the saved table
+and marks `6F118C` before calling the same builder. That flag preserves final
+host counters rather than overwriting them with a guest's last live snapshot.
+The original-US regression executes this builder for host and guest records,
+checks portraits/names/ranks/scores, and verifies packet counters survive.
+Disabling the new caller exception reproduces the missing bot records.
+
+The health renderer is also used by the menu renderer at return PC `2E58C9`.
+Suppress that draw in completed-match phase `7DE30C == 8` outside Story mode
+10. Preserve the emulated return stack, ordinary pause, gameplay HUD calls,
+and Story objectives. This rule lives in the shared UI adapter; it requires
+no generated-code edits or additional patch. Mac visual validation remains
+pending; Windows runtime evidence is recorded in `STATUS.md`.

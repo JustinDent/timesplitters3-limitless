@@ -3,6 +3,12 @@
 #define TSFP_PC_UI_LAYOUT_H
 #include <stddef.h>
 #include <string.h>
+/* US menu health draw: state 8 is the completed-match/results phase.
+ * Keep Story objectives and the ordinary pause HUD unchanged. */
+static int pc_ui_hide_results_health(unsigned caller,unsigned phase,unsigned mode)
+{
+    return caller==0x002e58c9u && phase==8u && mode!=10u;
+}
 /* A textured full-canvas quad is a screen effect too (e.g. animated noise),
  * even when it does not sample a framebuffer copy. Inspect one complete quad,
  * not a batch's bounds: separate HUD pieces can span all four screen edges.

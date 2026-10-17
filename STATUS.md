@@ -3392,3 +3392,60 @@ fixes. This is a positive initial retest report, not full acceptance of every
 remaining scenario. Source, patches, tests and the MAC-028 handoff are included
 in `Fix network bot replication, scoring and guest presentation`; ignored
 builds, captures, logs, saves and personal settings remain local.
+
+## Issue #25: post-match bot records and HUD (2026-10-17)
+
+Build source: then-uncommitted follow-up to `5226c054884f7187a034428d93cdc0e94e2b621d`
+on `25-add-bot-support-to-online-matches`. Windows AMD64/D3D11, Python 3.14.2,
+MSVC 19.42, Windows SDK 10.0.22621.0, CMake 4.4.4, SDL 3.4.16; upstream
+remains pinned at `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`.
+
+The saved-results builder now includes configured AI actors without requiring
+controller/peer records. This supplies bot names, portrait IDs, ranks and
+scores to Results/Scores, retaining the host's reliable final kill/death
+counters on guests. Completed-match menus omit health/shield; the shared
+adapter preserves ordinary pause, gameplay and Story objectives behavior.
+See `docs/online-bots-investigation.md` and MAC-028 for the boundary and Mac
+handoff. Mac execution and other-device synchronization remain unverified.
+
+- Verified the supported US XBE SHA-256 before building/testing; about
+  432.8 GiB free disk space. No duplicate game extract or build tree created.
+- Complete patch stack verified unchanged. `tsfp.ps1 -Action Build` exited 0;
+  all built-in checks passed and path-test disk images were recycled.
+  Log: `logs/issue25-postmatch-build.log`.
+- Native bot model/guest dispatch/fallback: 3 passed. UI/Story objectives:
+  12 passed; after strengthening direct production HUD/stack checks, the
+  affected UI suite passed again (5 tests).
+- Original-US results-builder regression: 2 passed, including a deliberate
+  pre-fix mutation that reproduces missing bot entries. Host/guest names,
+  portrait IDs, ranks, scores and preservation of final received counters
+  are checked with disposable actors.
+- Multiplayer content/executable verification passed. Compatibility:
+  `f366267b47a719c0f86fe1436ae22eeb522386e1f86e2140429aecb36ba6c26f`.
+  Release executable SHA-256:
+  `e2e8ccba5d3b1d406feaa4c09e0237baf9274da67703ba31b99e93d93c37ad63`.
+
+Live validation completed using two bounded, isolated Test Lab instances
+with separate saves, controls and both display configuration paths. Both
+loaded two humans and six bots, played combat, and ended normally at the
+five-minute limit (driver timestamps 415.23s host / 416.21s guest).
+All eight saved result records match exactly between host and guest, across
+Results and Scores: names, portrait IDs, kill matrices, deaths, ranks and
+scores. The humans finished with 10 and 9 points; all six bot rows have names
+and nonzero scores (7, 10, 19, 6, 19, 6 in slot order).
+
+Reviewed direct D3D11 window captures from both peers show all eight portraits
+in Results and complete named score rows, including ties and suicide score
+deductions. Health/shield arcs are absent on Results, Scores and Options.
+Retained six PNGs under `private/captures/issue25-lobby/{host,client}/`, named
+`postmatch-results.png`, `postmatch-scores.png` and `postmatch-options.png`.
+Log: `logs/issue25-postmatch-pair.log`. Recycled the six source BMPs
+(7,373,124 bytes) after explicit path/reparse-point checks. The bounded driver
+exited 0; the Test Lab runner recycled both sessions' partition images.
+
+This uses synthetic input and local LAN peers, not physical input or the
+Internet bridge. Other modes, rematches and Mac runtime behavior remain
+outside this validation. The user accepted this follow-up and requested its
+commit as `Fix bot post-match portraits, scores and HUD`, including regression
+tests and the MAC-028 handoff. Generated builds/evidence remain ignored and
+local. No push or other-device synchronization was performed.

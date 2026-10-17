@@ -913,6 +913,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   It evaluates guest poses without advancing them in the original animation
   pass, positions weapons after that pass, removes duplicate root movement,
   preserves local visibility/transform mode, and invalidates rotation correctly.
+  The post-match follow-up includes AI in the saved Results/Scores records
+  (names, character portraits, kills/deaths, ranks and scores), preserving
+  the reliable host result packet. Completed-match menus omit health/shield
+  gauges; gameplay, ordinary pause and Story objectives keep their behavior.
   Current live acceptance and remaining gaps are in `STATUS.md`;
   issue #25 is not complete from a build or roster check alone.
 - **PC source:** Issue #25 checkpoint on `25-add-bot-support-to-online-matches`,
@@ -924,6 +928,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   `pc-network-bots-test` / `pc-network-bot-combat` / `pc-network-bot-scoreboard`
   / `pc-network-bot-shots` / `pc-network-bot-bounds`
   / `pc-network-bot-authority` / `pc-network-bot-presentation` patches.
+  Post-match follow-up in `Fix bot post-match portraits, scores and HUD`:
+  `src/pc_network_bots_guest.inc`,
+  `src/pc_display_ui.inc`, `src/pc_ui_layout.h`, and results/UI regression tests.
 - **PC validation:** MSVC model and guest/native-fallback tests passed;
   complete patch migration tests passed. See issue #25 in `STATUS.md` for
   the build/menu scope and remaining host/guest checks.
@@ -931,6 +938,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   original calls; the host menu, configuration override and state transport are
   Windows-only. Numeric snapshot definitions are shared without OS calls.
   Native Mac still lacks the PC XNet transport (MAC-013).
+  The post-match HUD rule is shared by the native adapter; no separate Mac
+  implementation is needed for that rule, but Mac visual validation is pending.
 - **Mac adaptation needed:** Complete and validate PC AI replication first;
   then adapt networking and expose the same editor through the native adapter.
 - **Mac acceptance checks:** Two native hosts, and mixed Windows/Mac peers,
@@ -939,5 +948,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   reject incompatible builds. Check guest visibility across turns/respawns,
   weapon attachment alignment and localized confirmed-kill HUD notices,
   including delayed body absence. Preserve personal settings/saves.
+  At match end, verify bot portraits and complete named score rows on both
+  peers; Results/Scores/Options must hide health/shield, while Story objectives
+  and ordinary pause retain them.
 - **Mac implementation and evidence:** No Mac execution or other-device
   synchronization verified for this prototype.

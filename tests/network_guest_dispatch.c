@@ -179,6 +179,16 @@ int main(void)
             /* Score eligibility survives a dead/missing body. */
             CHECK(g_eax==0 && g_esp==20);
         }
+        /* Results skip controller membership only for configured AI slots.
+           Preserve human/disconnected slots and the later offset-copy call. */
+        for(unsigned slot=0;slot<17;slot++) {
+            g_esp=16;memory[4]=0x63f05;g_esi=slot;
+            pc_network_bots_guest_score_network(original);
+            CHECK(g_eax==(slot>=2 && slot<8?0u:0x11223344u) && g_esp==20);
+        }
+        g_esp=16;memory[4]=0x63f93;g_esi=2;
+        pc_network_bots_guest_score_network(original);
+        CHECK(g_eax==0x11223344u && g_esp==20);
         /* In particular, do not turn AI into local controller records. */
         g_esp=16;memory[4]=0x15c5a3;memory[5]=2;
         pc_network_bots_guest_active(original);CHECK(g_eax==0x11223344u && g_esp==20);

@@ -231,6 +231,11 @@ static void pc_network_bots_guest_score_network(void (*original)(void))
     unsigned slot=UINT32_MAX;
     if(caller==0x0006486eu) slot=g_ebx;
     else if(caller==0x00064b18u || caller==0x00064ba5u) slot=g_edi;
+    /* Completed-match records feed Results portraits and the Scores table.
+       This iteration has a slot in ESI; later calls use ESI as an actor
+       pointer and must retain the network path (including score offsets).
+       The stock reliable results packet already carries all 16 slots. */
+    else if(caller==0x00063f05u) slot=g_esi;
     /* A dead bot keeps its score row even while its body is missing. */
     if(pc_network_bots_guest_actor(slot)) {g_eax=0;g_esp+=4u;return;}
 #endif
