@@ -1,5 +1,186 @@
 # Measured progress
 
+## Lock-on and special scope effects (2026-10-17)
+
+Local, uncommitted follow-up on `fix/responsive-menu-footer`, base `0dc9fea`.
+The lock-on renderer (`00138590`) uses `lockonbox`, `custom_homing_lockon`,
+`lockoninner` and `lockontri`. Both integer box halves and all four pointer-based
+quad call sites now scale around the current target record's screen position.
+Scaling each half or orbiting piece independently would separate the pieces;
+scaling around the screen centre would move the indicator off its target.
+Only XY draw coordinates change temporarily. Target records, depth, UVs,
+colours and animation state remain untouched; guest memory is restored after
+submission and batches flush before placement changes.
+
+The separate `scopeedge` / `ring` renderer (`00137F00`) now keeps its artwork
+fitted. Its eight gradient rectangle call sites fit their inner coordinates
+but extend authored outer edges to the full output, preserving the original
+colour/alpha gradients. The framebuffer composite (`00138471`) spans the
+whole view. No opaque margin is added to this effect. Exact caller and scope
+context checks exclude other uses of the drawing primitives. Full single-player
+viewports are required; 4:3 and split-screen retain the original path.
+
+`tests/weapon_effects.c` executes the production hooks at six aspect ratios,
+checking shared target centres, both box halves, rotating quad pieces, gradient
+coverage, unchanged depth/colour, batch ordering, memory restoration and invalid
+pointer/target/caller/viewport fallbacks. All seven focused UI/FOV checks pass.
+Windows x64 / MSVC 19.44 / D3D11: the supported build and native build checks
+pass (`build/menu-footer/build-special-aim.log`). All 44 UI/FOV, cutscene,
+menu-mouse, Quit and patch tracking/transition regressions pass
+(`build/menu-footer/special-aim-regressions.log`). Executable SHA-256:
+`a1d0847644421f10c422bad792bd2379fbf86b27a70eb744d409cd0fefe2ac03`.
+Live visual verification of these two effects and Mac validation remain pending.
+Source: `src/pc_display_ui.inc`, `special-weapon-overlays.patch`; see MAC-032.
+
+## Weapon aim overlay follow-up (2026-10-17)
+
+Local, uncommitted on `fix/responsive-menu-footer`, based on main `0dc9fea`.
+The Sci-Fi Sniper now writes its original half-strength destination-alpha mask
+into the additional output area before drawing the scope. Its full-view tint
+composite (`00136856`) stretches, while the additive textured art stays fitted.
+This replaces the opaque side fills documented in the earlier capture below.
+
+Audited the verified US XBE's weapon HUD callback table and shared reticle
+callers. The three scope renderers cover the older/vintage, conventional and
+Sci-Fi scope families. Standard textured reticles (`0014CC10`), the alternate
+and turret paths (`001481E9`, `001482F7`, `00136FFC`), and the shared rotating
+zoom ring (`00135F1E`) now fit their local geometry around the actual aim point.
+Their screen position is preserved, including displaced aim. All six shared
+zoom-gauge draws have explicit left/right anchors, independent of batching or
+heuristic extent classification. The full-view aiming borders (`00138F70`)
+and red crosshair lines (`0037A9D0`) use the complete output. Unrelated primitives,
+world-space target markers, original 4:3, and split-screen are excluded.
+
+The UI regression exercises all 11 reticle/gauge callers at seven output sizes:
+640x480, 1280x1024, 1920x1080, 1920x1200, 3440x1440, 5120x1440 and 7680x4320.
+It checks projected aim-point preservation, rotated-quad geometry, edge anchors,
+deferred batch order, argument restoration, and negative caller/viewport cases.
+Sci-Fi tests verify alpha-only outer fills and the exact full-view composite
+routing; conventional coverage tests remain. Runtime changes are in the shared
+patch stack and source; Mac validation remains pending under MAC-032.
+
+Windows x64 / MSVC 19.44 / D3D11: the supported `tsfp.ps1 Build` and all native
+build checks pass. The UI/FOV, cutscene, menu mouse, Quit, patch tracking and
+transition suites pass 43 checks (`build/menu-footer/all-aim-regressions.log`).
+Build evidence: `build/menu-footer/build-all-aim.log`. Current executable SHA-256:
+`7d6258c3d6f0212b585c9a33c3b15d73214cedcc8061bf79469e1744304ce0a1`.
+The isolated game was reopened with normal input and Test Lab unlocks for a
+visual check. Sci-Fi tint and shared zoom visual confirmation are still pending;
+source audit and unit coverage do not establish a playtest of every weapon.
+
+## Objectives bars and scope masks (2026-10-17)
+
+Local, uncommitted on `fix/responsive-menu-footer`, in the isolated worktree
+below. A bounded live trace identified the two Objectives background rectangle
+call sites (`002F3AED`, `002F3B0F`) and four blue trim calls. These six draws now
+use STRETCH placement with batch flushes and restoration; the central panel,
+text, tabs and health/armor keep their current layout. Full single-player
+viewports are required; unrelated callers and split-screen bypass the fix.
+
+The circular scope routine (`00135F30`) draws four outer masks separately from
+its textured aperture. Those masks now use the aperture's proportional inner
+coordinates and the complete output's outer edges. The original rectangle
+renderer still clips to the guest viewport, so adjusting the inner coordinates
+before STRETCH avoids negative-coordinate clipping. Both axes are fitted for
+narrow ratios; original 4:3 and split-screen stay unchanged. The correction avoids indiscriminate stretching of weapon art.
+
+Follow-up identification from the XBE texture-name table found separate
+conventional (`00136B40`, `customContSniperQuarter`) and futuristic (`001364A0`,
+`customFutureSniperQuarter`) sniper renderers. Their conditional exterior fills
+can be omitted at the authored canvas edge, so changing existing rectangle
+calls alone is insufficient. All three scope groups retain CENTRE placement for their artwork. The first
+implementation explicitly blacked out the extra host canvas using STRETCH
+rectangles; the Sci-Fi variant is superseded by the translucent pass below. This also covers cases where the guest emits no outer mask. Tests
+exercise wide and narrow ratios, symmetric coverage, prior/later batch placement
+and guest stack restoration. The user's additional scope screenshot shows the
+uncovered side scenery this addresses. Captures of ordinary zoom aiming also
+confirm that path is distinct from the scoped-rifle artwork; it is not given
+opaque side masks.
+
+Windows x64 / MSVC 19.44.35224 / D3D11, pinned runtime and verified US XBE:
+`tsfp.ps1 Build` and native build checks pass. The affected UI/FOV/Quit,
+cutscene, mouse-menu and patch tracking/transition suites pass 43 distinct
+checks. Tests cover aperture alignment, mask edges, deferred batch ordering,
+stack/state restoration, caller rejection and split-screen guards. Evidence:
+`build/menu-footer/build-objectives-scope.log`, `bars-regressions.log`,
+`objectives-scope-regressions.log`. The expanded sniper hooks pass all 43
+checks (`sniper-regressions.log`); after explicit mask blend-state setup and
+restoration, all six affected UI/FOV checks and the final supported build/native
+checks also pass (`build-sniper-final.log`). Mac runtime validation is pending
+under MAC-032; the implementation uses the shared title/renderer placement ABI.
+
+A live isolated Arcade match with synthetic input equipped the conventional
+Sniper Rifle and showed its black surround covering both sides at 3440x1440.
+After reopening with normal controls, the user captured the Sci-Fi Sniper
+(2026-10-17 15:54 EDT). The reviewed frame and D3D11 replay confirm covered
+outer sides, centered scope artwork under tag `001364A0` / CENTRE, and the
+additional opaque masks in draw 81 under STRETCH. Replay reports zero failed
+host calls, malformed chunks or unmapped handles. Evidence in
+`build/menu-footer`: `scifi-sniper-after.d3dcap`, `.png`, `.log`, `.json`.
+This verifies these Windows ultrawide encounters; other ratios, the older
+rifle scope and split-screen still need live visual checks beyond unit coverage.
+
+A bounded isolated Test Lab replay reached first-mission gameplay and Tab /
+Objectives at 3440x1440. The reviewed after-capture shows both bars and blue
+trim across the full output; the panel/text and side health/armor remain in
+place. The same top/bottom sample rows previously had only about 1920 black
+pixels across a 3440-pixel window. This is synthetic input and visual evidence
+for Objectives, not scope gameplay validation. Evidence: `objectives-after-3440x1440.png`,
+`objectives-after-3440x1440.json`, `objectives-bar-pixels.json`. Disposable test
+disks were recycled after the bounded run.
+
+Release executable SHA-256:
+`c40adb4e7f4d59c0a9c4c33e6604b9da9a5d13ad72b214aafcd758c7aefe42dd`.
+
+## Responsive frontend backgrounds (2026-10-17)
+
+Local, uncommitted on `fix/responsive-menu-footer`, based on main `0dc9fea`.
+The frontend footer background and its two decorative strips now stretch to
+full display width. Exact US call sites scope placement and flush deferred
+batches before and after; labels and mouse targets stay proportional. Both
+full-canvas endpoint conventions (639/479 and 640/480) are accepted.
+
+The moving blue background is a separate 3D sheet. Its exact draw call now
+uses a temporary horizontal projection correction, applied through the guest
+projection setter and restored before subsequent draws. This fills wide output
+while preserving animation and the other menu layers' lens. Original 4:3/narrow
+output, gameplay, unrelated callers and partial viewports bypass both fixes.
+
+The main Story/Arcade list uses 25% smaller glyphs in both axes. Font scaling
+is scoped to main-menu construction/measurement and its row renderer, using
+the original font-metrics refresh routine. Deferred text batches flush before
+restoring the previous scale. Header/footer text, other menus and gameplay
+keep their existing size. Regression coverage verifies matching measurement
+and drawing scales, two-axis restoration and unrelated menu/row guards.
+
+Validation on Windows x64 with MSVC 19.44.35224 / Direct3D 11, pinned runtime
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845` and verified US XBE: the final
+`tsfp.ps1 Build` and all native build tests pass. UI, FOV and Quit regression
+checks pass 7 tests; patch tracking/transition, menu mouse and cutscene suites
+pass 36 tests, **43 total**. Coverage includes seven display sizes, both
+viewport conventions, deferred batches, state restoration and rejected callers.
+
+The background fixes were visually validated at 3440x1440, 1920x1080,
+1920x1200 and 1280x960. Final glyph scaling is checked at 3440x1440 and 1280x960
+with isolated Test Lab input replays: render the main menu, verify smaller
+Story-letter bounds against the original capture, use Select to open Story,
+and Back to return. This is synthetic menu input, not physical-device testing
+or gameplay validation. Personal saves/settings are untouched; logs are capped,
+only two BMPs rotate, and disposable test disks are recycled after each run.
+
+Source and build are isolated in `build/menu-footer-source` because concurrent
+work uses the primary checkout. Evidence in the primary checkout's
+`build/menu-footer`: `build-glyph.log`, `glyph-regressions.log`,
+`glyph-patch-regressions.log`, `validation-glyph.out`,
+`glyph-live-WIDTHxHEIGHT.json`, `glyph-pixels-WIDTHxHEIGHT.json` and
+`glyph-{main,story,back}-WIDTHxHEIGHT.png`. Earlier `blue-*` captures and
+`pixel-checks.json` document the full-width backgrounds.
+Final Release executable SHA-256:
+`865878302088f07d5f88fe1cc3ee3b44314bf60285b3eaf4e69351d681b1f756`.
+Shared native Mac hooks use existing STRETCH, font metrics and guest projection
+support; native visual/runtime validation remains pending under MAC-032.
+
+
 ## Issue #86 frontend mouse menus (2026-10-17)
 
 PR #97 CI follow-up: run `39051850942` passed on macOS, while Windows
