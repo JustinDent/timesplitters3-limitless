@@ -275,7 +275,10 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   and capture tests are in `tests/test_channel_clears.py`. The shared mapping
   also feeds Mac, so `src/native/renderer_gl.c` now applies the corresponding
   GL colour mask and restores the existing render state. No additional native
-  adapter is needed; native build/GPU validation is pending. Acceptance:
+  adapter is needed. Native GPU coverage now passes all 192 combinations of
+  channel masks and independent depth/stencil clears at Original, 1080p and
+  offscreen sizes, including alpha readback, viewport/rectangle clipping and
+  restoration of write masks. [Native evidence](STATUS.md#native-channel-clear-gpu-validation-2026-10-17). Remaining scene acceptance:
   repeatedly cycle lobby information pages at default and enlarged resolutions;
   verify readable text without white fill or stale page masks, unchanged
   backgrounds, and preserved clipping, depth/stencil and offscreen targets.

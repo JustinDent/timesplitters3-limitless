@@ -1,5 +1,30 @@
 # Measured progress
 
+## Native channel-clear GPU validation (2026-10-17)
+
+Branch `codex/mac-channel-clears` depends on the published native branch stack
+ending at `22169d9`. Added `src/native/channel_clear_selftest.inc` to the
+bounded renderer self-test. All 192 combinations of 16 channel masks (including
+no color clear) and four depth/stencil flag combinations pass on Original,
+1920x1080 and 16x16 offscreen targets. Direct GPU readback checks RGBA, depth
+and stencil, inherited empty drawing scissors, write-mask restoration, clipped
+clear rectangles, invalid rectangle pointers and preservation of the main scene
+while clearing an offscreen target. No production clear-path change was needed.
+
+Host: macOS 27.0.1 arm64, Clang 21, SDL 3.4.16, OpenGL 4.1 Metal 91.7.
+Built from `22169d9` plus the two self-test source changes, using the pinned
+upstream and verified US XBE. The complete native suite passed (three CTests,
+GPU, SDL input, Cocoa settings/debug); four portable channel-mapping/capture
+and framebuffer-cache tests also passed. Evidence: `logs/native-channel-clears-build.out`
+and `.err`, with source hashes/provenance in the local `build/macos/BUILD.json`.
+Test partition images were recycled; personal settings/saves were not used.
+Windows execution is unavailable. Lobby page cycling and title-effect fidelity
+remain pending; MAC-007 stays In progress.
+
+All eight preceding focused branches were published and their exact remote
+commit hashes verified on 2026-10-17. No merge into main was performed. The
+other computer has not been inspected, so its synchronization remains unverified.
+
 ## Alpha.6 branch-stack refresh (2026-10-17)
 
 During local validation, a separate pull advanced `main` from `0dc9fea` to

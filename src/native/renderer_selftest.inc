@@ -19,6 +19,7 @@ static int native_test_pixel(IDirect3DDevice8 *dev, UINT x, UINT y,
 #include "debug_overlay_selftest.inc"
 #include "feature_selftest.inc"
 #include "screen_copy_selftest.inc"
+#include "channel_clear_selftest.inc"
 #include "multitexture_selftest.inc"
 static void *native_test_worker(void *arg) {
     IDirect3DDevice8 *dev=arg;
@@ -43,6 +44,7 @@ int tsfp_native_renderer_test(void) {
     dev->lpVtbl->SetVertexShader(dev,D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1);
     int ok=native_test_debug_overlay(dev);
     ok &= native_test_screen_copy(dev);
+    ok &= native_test_channel_clears(dev);
     ok &= native_test_vertex_programs();
     ok &= native_test_pack(dev);
     ok &= native_test_multitexture(dev);
