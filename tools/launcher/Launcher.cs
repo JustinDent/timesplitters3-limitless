@@ -176,12 +176,12 @@ namespace TimeSplitters.Launcher
             if (previewMode)
             {
                 Text("InstalledLabel", "v0.1.0-alpha.1");
-                Text("ReadyTitle", "It's time to split.");
+                Text("ReadyTitle", "Ready to play");
                 Text("ReadyDescription", "Your game is installed and ready to launch.");
                 Text("DataLabel", "●  Verified US Xbox data");
                 Text("ReleaseTitle", "You're on the latest release.");
-                Text("ReleaseDescription", "Your timeline is up to date. New releases appear here when published.");
-                SetStatus("Ready when you are.");
+                Text("ReleaseDescription", "The installed game is up to date. New releases appear here when published.");
+                SetStatus("Ready.");
                 Button("PlayButton").IsEnabled = true;
                 return;
             }
@@ -234,7 +234,7 @@ namespace TimeSplitters.Launcher
             try {
                 if(settings==null) {
                     settings=new SettingsPage(Window.Resources,root,previewMode);
-                    settings.Saved+=()=> { SetStatus("Settings saved. Ready for your next launch."); Refresh(); };
+                    settings.Saved+=()=> { SetStatus("Settings saved."); Refresh(); };
                     settings.Cancelled+=()=> { ShowHome(); Find<ContentControl>("SettingsHost").Content=null; settings=null; SetStatus("Unsaved settings discarded."); };
                     Find<ContentControl>("SettingsHost").Content=settings.View;
                 }
@@ -283,7 +283,7 @@ namespace TimeSplitters.Launcher
             string xbe = Core.PathIn(root, "Data/default.xbe");
             validData = File.Exists(xbe) && Directory.Exists(Core.PathIn(root, "Data/pak")) && Directory.Exists(Core.PathIn(root, "Data/xmv")) && Core.Hash(xbe) == TsfpImport.ExpectedHash;
             Text("InstalledLabel", installed.Length > 0 ? installed : gameInstalled ? "UNVERSIONED" : "NOT INSTALLED");
-            Text("ReadyTitle", gameInstalled && validData ? "It's time to split." : gameInstalled ? "One last jump: your ISO." : "Prepare your next jump");
+            Text("ReadyTitle", gameInstalled && validData ? "Ready to play" : gameInstalled ? "Import game data" : "Install game");
             Text("ReadyDescription", gameInstalled && validData ? "Your game is installed and ready to launch." : gameInstalled ? "Import your US Xbox game once to start playing." : "Install a release, then import your US Xbox ISO.");
             bool dataExists = Directory.Exists(Core.PathIn(root, "Data"));
             if (dataExists && !validData)
@@ -314,7 +314,7 @@ namespace TimeSplitters.Launcher
             if (busy || checking) return;
             checking = true; available = null;
             Refresh();
-            Text("ReleaseTitle", "Checking the timeline…");
+            Text("ReleaseTitle", "Checking for updates…");
             Text("ReleaseDescription", "Looking for published " + (PreviewChannel ? "preview or stable" : "stable") + " releases on GitHub.");
             SetStatus("Checking GitHub Releases…");
             using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token))
@@ -333,12 +333,12 @@ namespace TimeSplitters.Launcher
                     {
                         bool newer = CanUpdate();
                         Text("ReleaseTitle", newer ? available.Tag + " is ready." : "You're on the latest release.");
-                        Text("ReleaseDescription", newer ? "Published on GitHub · " + (available.Size / 1048576.0).ToString("0.0") + " MB\n" + (gameInstalled ? "Ready to update when you are." : "Install the game files, then bring your ISO.") : "Your timeline is up to date. Check release notes for details.");
-                        SetStatus(newer ? "Release available. Select " + (gameInstalled ? "Update" : "Install") + " to download and verify." : "Ready when you are.");
+                        Text("ReleaseDescription", newer ? "Published on GitHub · " + (available.Size / 1048576.0).ToString("0.0") + " MB\n" + (gameInstalled ? "Update available." : "Install the game runtime, then import your game data.") : "The installed game is up to date. Check release notes for details.");
+                        SetStatus(newer ? "Release available. Select " + (gameInstalled ? "Update" : "Install") + " to download and verify." : "Ready.");
                     }
                 }
                 catch (OperationCanceledException) { if (!lifetime.IsCancellationRequested) { Text("ReleaseTitle", "Release check timed out."); Text("ReleaseDescription", "Your installed game is available offline. Check again when connected."); SetStatus("GitHub did not respond in time. You can retry the release check."); } }
-                catch (Exception ex) { Text("ReleaseTitle", "Release uplink unavailable."); Text("ReleaseDescription", "Your installed game is available offline. Try checking again later."); Fail(ex); }
+                catch (Exception ex) { Text("ReleaseTitle", "Update check failed."); Text("ReleaseDescription", "Your installed game is available offline. Try checking again later."); Fail(ex); }
             }
             checking = false; Refresh();
         }
@@ -448,7 +448,7 @@ namespace TimeSplitters.Launcher
                     {
                         Window.WindowState = WindowState.Minimized;
                         minimizedForGame = true;
-                        SetStatus("Game running. Have a good jump.");
+                        SetStatus("Game running.");
                     }
                     await Task.Delay(200);
                 }
@@ -486,7 +486,7 @@ namespace TimeSplitters.Launcher
                             var stderr = process.StandardError.BaseStream.CopyToAsync(errors);
                             await MonitorGame(process); await Task.WhenAll(stdout, stderr);
                         }
-                        SetStatus(process.ExitCode == 0 ? "Welcome back. Ready for another jump?" : "Game launch failed. View logs for details.");
+                        SetStatus(process.ExitCode == 0 ? "Game closed." : "Game launch failed. View logs for details.");
                         return;
                     }
                     process.StartInfo = new ProcessStartInfo(shell, "-NoProfile -STA -ExecutionPolicy Bypass -File " + Quote(Core.PathIn(root, "Launch.ps1"))) {
@@ -500,7 +500,7 @@ namespace TimeSplitters.Launcher
                     process.ErrorDataReceived += (s, e) => { if (e.Data != null) Program.Log(root, e.Data); };
                     process.Start(); process.BeginOutputReadLine(); process.BeginErrorReadLine();
                     await MonitorGame(process);
-                    SetStatus(process.ExitCode == 0 ? "Welcome back. Ready for another jump?" : "Game launch failed. View logs for details.");
+                    SetStatus(process.ExitCode == 0 ? "Game closed." : "Game launch failed. View logs for details.");
                 }
             }
             catch (Exception ex) { Fail(ex); }
