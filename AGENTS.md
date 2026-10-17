@@ -216,6 +216,18 @@ this preference on all further work, including texture remastering and testing.
 
 ## Active texture issue branch
 
+- The user approved hybrid production: individually redesign prominent assets;
+  enhance simpler materials in bounded batches grouped by material family.
+  Inspect originals and alpha before assigning a batch. Keep text, UI, effects,
+  reflections and identity-sensitive atlases in specialist review. Unknown
+  assets remain in visual triage; routing is not completion or approval.
+- Prefer 8-16 independent assets per ready batch, grouped offline comparisons,
+  and shared technical audits. Defer failed drafts to focused correction batches
+  instead of repeatedly interrupting production. Preserve the existing 6 GiB
+  cap, temporary-storage limit and near-completion playtesting threshold.
+- Refresh `tools/texture-worklist.py`, then `tools/texture-hybrid-plan.py` for
+  the reproducible queue. This planner does not generate or install images.
+
 - Continue texture overhaul work for issue #74 on
   `74-enhancement-gfx-overhaul-to-modernize-textures`. Keep its source, patches,
   tests and progress together. Private artwork and the single active pack remain

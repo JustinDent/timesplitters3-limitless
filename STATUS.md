@@ -3488,3 +3488,43 @@ queued under MAC-021; other-device synchronization is unverified.
   `review/machinery-60-final-metrics.json`, `review/machinery-60-native-audit.txt`,
   and `review/inventory-60-alpha.jpg` under `private/texture-remaster`.
   Artwork and pack remain ignored/local. Consolidated playtesting stays deferred.
+
+
+### Hybrid texture production adopted - issue #74 (2026-10-16)
+
+- User approved individual redesigns for prominent assets plus faithful batch
+  enhancement for simpler materials. Added `tools/texture-hybrid-plan.py` and
+  documented the policy in AGENTS and the texture guide. Eight-asset queues group
+  classified environments by material/occurrence; unclassified assets, sensitive
+  categories and held drafts remain separate. Routing never approves artwork.
+- Five planner tests pass on Windows x64: sensitive/unknown routing, installed
+  and held precedence, bounded deterministic batches, fixed-budget overflow and
+  duplicate-key rejection, and batch-size bounds. No runtime code changed or
+  game rebuild was required. MAC-011 records portable tooling and unverified Mac
+  execution/scene coverage.
+- Two built-in image-generation batches produced 14 sources; nine passed offline
+  source and actual compressed-DDS review. Five failed drafts remain excluded:
+  a riveted panel's bright repeat frame, changed tread arrangement and shifted
+  bottom fittings in three similar metal-panel variants. Three compiled rejected
+  files and metadata were retired after recording hashes and keeping evidence.
+  Do not treat hybrid-62-final-2.jpg as installed coverage: it records rejections.
+- Added four square 1024x1024 and five landscape 1024x512 DXT1 replacements.
+  Source art is 1254x1254 or 1774x887, resampled for encoding; not native 4K art.
+  Stronger highlights and the dark circuit material's -16.56% mean luminance
+  remain explicit final-scene appearance checks. No new asset is runtime-verified.
+- All 248 retained DDS files passed the native format validator and worklist
+  hashes, dimensions/aspect ratios, full mip chains and pack-budget checks.
+  Catalog: 6,812 supported keys, 248 installed, 6,549 awaiting art, 15 held.
+  Reviewed 32 additional originals/alpha channels: 483 visual classifications.
+  Category-wide review is incomplete; 6,315 keys remain in visual triage.
+- Active pack: 403,669,138 bytes (384.97 MiB), up only 4,548,979 bytes this turn.
+  Texture workspace at audit: 1,306,285,021 allocated bytes (1.22 GiB), including
+  source art; originals/review/preview files total 115.38 MiB. One active pack,
+  no extra game extraction, release staging tree or gameplay capture was created.
+- Private evidence: `review/hybrid-61-final-*`, `review/hybrid-62-final-*`,
+  `review/hybrid-61-62-native-audit.txt`, both batch prompt/generated records,
+  `review/hybrid-62-retired.json`, and `review/inventory-61-*` under
+  `private/texture-remaster`. Private artwork remains local and ignored.
+- Branch: `74-enhancement-gfx-overhaul-to-modernize-textures`, based on `fdfac3f`.
+  Supported Xbox executable SHA-256 reverified. Zero game launches; consolidated
+  playtesting remains deferred until 90% audited scope and category review.

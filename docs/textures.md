@@ -56,3 +56,35 @@ pack remains pending. See [measured progress](../STATUS.md) for recorded checks.
 Retain one active pack and one game extraction. Keep temporary texture outputs
 below 256 MiB, and preserve selected source art, review evidence, saves and
 settings. See [project storage rules](../AGENTS.md#project-storage-and-texture-work).
+
+## Hybrid artwork production
+
+Issue #74 uses individual redesigns for prominent assets and faithful enhancement
+for simpler materials. Text, UI, effects, reflections and character identity need
+specialist review. This changes production priorities, not the audited scope.
+
+Refresh the local audit and production queue from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe tools/texture-worklist.py
+.\.venv\Scripts\python.exe tools/texture-hybrid-plan.py --batch-size 8
+```
+
+The planner writes ignored `private/texture-remaster/hybrid-plan.json`. It groups
+visually classified environmental candidates by material and occurrence count,
+with separate queues for individual work, specialist review, held corrections and
+unclassified originals. Occurrence count is a prioritization hint, not proof of
+visual prominence. The planner does not generate, approve or install artwork.
+
+Inspect original pixels and alpha before authoring a ready batch. Use built-in
+image generation with one request per asset and shared family constraints. Keep
+secondary materials modest in size; reserve up to 4K for prominent surfaces.
+Compile accepted candidates, review actual DDS contact sheets and repetition,
+and run the pack audit. Defer failed drafts to focused correction batches instead
+of repeatedly blocking the production queue. Retain exact prompts, source sizes,
+resampling and review decisions locally.
+
+Keep one active pack under 6 GiB, including metadata, and temporary review/export
+outputs under 256 MiB. Consolidated playtesting remains deferred until at least
+90% of audited in-scope textures are installed and all categories are reviewed.
+Neither batch routing nor successful DDS encoding proves visual completion.

@@ -220,6 +220,13 @@ runtime readiness. No full campaign playthrough is required.
 ### MAC-011 — Real texture-pack gameplay coverage
 
 - **Status:** Awaiting validation
+- **Hybrid production tooling (issue #74, 2026-10-16):**
+  `tools/texture-hybrid-plan.py` groups the remaining artwork into material
+  batches, individual review, specialist review, corrections and visual triage.
+  It uses standard-library Python and existing private JSON reports; no Mac
+  runtime adapter is needed. Five planner tests pass on Windows; execution on
+  Mac and actual artwork scene coverage remain unverified. The planner never
+  installs art or counts unreviewed candidates as completed textures.
 - **PC behavior:** Windows loads compiled DDS replacements with matching keys/mips and bounded residency.
 - **Windows build fix (2026-10-15):** Uncommitted on `mac-port`,
   `src/texture_pack.c` restores the local `FILE *f` declaration used by
