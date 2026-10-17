@@ -3590,3 +3590,39 @@ queued under MAC-021; other-device synchronization is unverified.
   `review/hybrid-64-acceptance.json`, batch source/prompt records, and inventory-64
   RGB/alpha sheets under `private/texture-remaster`. Consolidated scene testing
   remains deferred until 90% audited coverage and completed category review.
+
+
+### Hybrid texture batch 65 - materials and equipment (issue #74)
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` at `d3f1f01`.
+  Generated 16 sources; accepted seven material and seven individually prompted
+  equipment/weapon textures after actual compressed-DDS and 2x2 repeat review.
+  Original payload hashes and supported US XBE SHA-256 reverified on Windows x64.
+- New art includes a framed grille, riveted panels, peeling wall, railway ballast,
+  star carpet, polished metal, leather/metal equipment, weapon atlas, cylindrical
+  highlights, machinery panels and a circular vent. Preserve model/scene checks
+  for the final phase; finer grille detail and highlights remain runtime-unverified.
+- Two drafts held and excluded: purple reflection band peak shifted from row 38
+  to row 32 at original 64-pixel scale; rusted armor panel brightness increased
+  54.02%. Kept source art, prompts and evidence; removed four rejected pack files
+  (DDS and metadata) after recording hashes and validating contained paths.
+  Review sheets 2 and 4 include rejected drafts, not exclusively installed art.
+- Accepted carpet mean luminance changed -21.47%; brighter metal changes reach
+  +14.41%. Final scene validation must check dark carpet visibility and highlights.
+  Twelve 1254-square and four 1774x887 sources were generated. Accepted outputs:
+  eight 1024-square, two 512-square, three 1024x512 and one 2048x1024 full-mip DXT1.
+  All were resampled; none is a native 4K generated source.
+- All 286 retained DDS passed native format and worklist hashes, complete mips,
+  dimensions/aspect and fixed-budget checks. Catalog: 6,812 supported keys,
+  286 installed, 6,509 awaiting art and 17 held drafts. Classification remains
+  627 provisional keys; 131 individual, 207 specialist and 6,171 visual-triage
+  items remain, with no currently classified material batch candidates.
+- Pack: 440,653,149 bytes (420.24 MiB), including metadata,
+  up 8,396,604 bytes. Texture workspace at audit:
+  1,509,938,424 allocated bytes (1.41 GiB).
+  Original/review/preview files: 134.98 MiB, below 256 MiB. No duplicated
+  game extract, pack, ZIP or staging directory. Private art stays local.
+- Evidence under `private/texture-remaster`: `review/hybrid-65-final-*`, native
+  audit, acceptance and retirement records, highlight profile, source/prompt files.
+  Zero gameplay launches or rebuilds; no runtime/tooling code changed. Consolidated
+  playtesting remains deferred to 90% audited coverage and completed category review.
