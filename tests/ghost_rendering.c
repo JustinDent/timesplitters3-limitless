@@ -2,7 +2,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include "platform/xbox_winnt.h"
+/* Only diagnostic throttling uses time here. Keep the standalone harness
+ * independent of the OS clock and the macOS compatibility library. */
+static DWORD test_tick_count(void) { return 0; }
+#define GetTickCount test_tick_count
 #include "hle/hle_d3d8_state.c"
+#undef GetTickCount
 
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x); exit(1); } } while (0)
 static uint32_t memory[8192];

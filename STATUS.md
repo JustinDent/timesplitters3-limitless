@@ -55,6 +55,14 @@ patch-upgrade/tracking, projection and UI-layout tests. The build and live
 capture above precede this integration; the merged game was not rebuilt or
 playtested again.
 
+PR #84 CI follow-up: the first macOS ARM64 run passed patch transitions but
+both spirit harness variants failed to link `GetTickCount`, called only by
+HLE diagnostic counters. The standalone harness now supplies a deterministic
+clock on both hosts, matching the framebuffer harness, instead of relying
+on the Windows system library or linking the complete Mac compatibility layer.
+Runtime/game behavior is unchanged. All four local Windows spirit/framebuffer
+variants passed; hosted rerun validation is pending.
+
 Earlier live comparisons with #9/#21 disabled did not identify either as the
 fix for #17. A forced visibility-query probe worsened effects and was removed.
 Eye/head probes restored eye glow and reduced back-face overdraw in identical
