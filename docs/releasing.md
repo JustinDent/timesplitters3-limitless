@@ -54,6 +54,11 @@ versions, use `--latest=false` during draft creation and final publication.
 
 ### Keep the launcher download current
 
+Use short release titles with the product and version first: **TSFP v0.2.0-alpha.5**
+and **Launcher v1.2.7**. The game publisher sets this title automatically. For a
+manual launcher release, use `--title "Launcher vX.Y.Z"`. Keep the existing
+`vX.Y.Z` and `launcher-vX.Y.Z` tag formats; titles do not change download URLs.
+
 The README download button uses GitHub's permanent `/releases/latest` URL.
 Reserve the repository's **Latest** designation for the newest stable Windows
 launcher. When publishing a new stable `launcher-vX.Y.Z` release, attach the
@@ -103,10 +108,14 @@ Manual refresh: `python tools/issue-forms.py versions --repository owner/name`
 
 ### Release notes and preparation
 
-The description includes GitHub-generated release notes, source commit descriptions
-since the most recently **published** release (including prereleases), installation
-instructions, validation performed and experimental limitations. It does not use
+The description includes GitHub-generated PR/contributor notes since the most
+recently **published game** release (including prereleases) and installation
+instructions, with numbered launcher steps followed by a portable ZIP alternative.
+The generated "What's Changed" heading is removed beneath
+"Changes since"; source commit lists and build/validation sections are omitted.
+Build provenance remains in the verification assets. The comparison does not use
 the last Git tag or skip prereleases by asking for GitHub's latest stable release.
+Launcher releases, drafts and unrelated tags are excluded from the comparison.
 GitHub's [release notes API](https://docs.github.com/en/rest/releases/releases#generate-release-notes-content-for-a-release)
 provides the PR/contributor notes.
 

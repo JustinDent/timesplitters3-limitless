@@ -164,7 +164,10 @@ def test_prepare_then_publish_reuses_exact_package(publisher):
     assert not publication_calls(publisher)
     assert not publisher.stage.exists()
     notes = publisher.notes.read_text(encoding='utf-8')
-    assert 'v0.2.0-alpha.2' in notes and 'What\u2019s Changed' in notes and 'Add Online hosting and &lt;diagnostics&gt;' in notes
+    assert 'Changes since v0.2.0-alpha.2' in notes and '* Online multiplayer #12' in notes
+    assert 'What\u2019s Changed' not in notes and "What's Changed" not in notes
+    assert 'Source changes' not in notes and 'Build and validation' not in notes
+    assert not any(call[0] == 'git' and call[1][0] == 'log' for call in publisher.calls)
     publisher.prepare()
     assert publisher.builds == 1
     publisher.publish()
@@ -218,6 +221,8 @@ def test_game_releases_preserve_latest_launcher(publisher, version, draft):
     # Both draft creation and final publication must keep the launcher Latest.
     assert all('--latest=false' in call[1] for call in calls)
     assert ('--prerelease' in calls[0][1]) == ('-' in version)
+    creation = calls[0][1]
+    assert creation[creation.index('--title') + 1] == 'TSFP v' + version
 
 
 def test_package_manifest_rejects_changed_stage(publisher):
@@ -232,6 +237,25 @@ def test_published_baseline_includes_prereleases_and_ignores_drafts():
     preview = dict(tag_name='v0.2.0-alpha.2', draft=False, published_at='2026-10-01T00:00:00Z')
     draft = dict(tag_name='v9.0.0', draft=True, published_at=None)
     assert module.last_published([[stable], [preview, draft]])[1] == preview
+
+
+@pytest.mark.parametrize('tag', ['launcher-v1.2.7', 'other-release', 'vbad', 'v0.2.0-alpha.01', 'vv1.0.0'])
+def test_game_baseline_ignores_unrelated_or_invalid_tags(tag):
+    game = dict(tag_name='v0.2.0-alpha.2', draft=False, published_at='2026-10-01T00:00:00Z')
+    other = dict(tag_name=tag, draft=False, published_at='2026-10-16T00:00:00Z')
+    releases, previous = module.last_published([[game], [other]])
+    assert releases == [game, other]  # Keep every tag for collision checks.
+    assert previous == game
+    assert module.last_published([[other]])[1] is None
+
+
+def test_newer_launcher_does_not_change_game_notes_baseline(publisher):
+    publisher.releases.append(dict(tag_name='launcher-v1.2.7', draft=False,
+                                   published_at='2026-10-16T00:00:00Z'))
+    publisher.preflight(); publisher.prepare()
+    assert publisher.previous['tag_name'] == 'v0.2.0-alpha.2'
+    assert 'Changes since v0.2.0-alpha.2' in publisher.notes.read_text(encoding='utf-8')
+    # FakePublisher also asserts generate-notes receives the previous game tag.
 
 
 def test_semver_order_and_origin_validation():
