@@ -1,5 +1,74 @@
 # Measured progress
 
+## Mac current-main backlog audit (2026-10-17)
+
+Source: fetched `main` and `origin/main` both resolved to
+`0dc9fea49041bdca985d372a8e5513d6cac514ac`; no pull was needed. Compared
+`d83ca5e..0dc9fea`: 133 commits (82 non-merge), 134 changed tracked files.
+Game VERSION is `0.2.0-alpha.5`; launcher source is v1.2.12. Reviewed the
+commit/change inventory, full Mac backlog, shared feature/native adapter
+boundaries and build/test wiring. This is a parity and readiness review, not
+an exhaustive correctness review of every Windows launcher line.
+
+Documentation changes are local and uncommitted on `codex/mac-backlog-audit`,
+created from that main revision under the updated focused-branch rules. Main,
+mac-port and remote branches were not modified. Eleven pre-existing untracked
+files with ` 2` in their names were preserved. Other-device checkout/build/data
+synchronization is unverified; fetching Git does not transfer ignored assets.
+
+The backlog now has 33 unique feature entries, a complete queue, explicit
+MAC-022 status and an implementation sequence. The duplicate spirit-rendering
+MAC-026 became MAC-032; the character/weapon MAC-026 and its history remain.
+Existing PC feature handoffs were retained, including all launcher follow-ups.
+New MAC-033 records native build readiness, and MAC-034 records the missing
+build-identity watermark. MAC-003 now records Cocoa debug-setting preservation.
+Documentation checks passed: unique IDs, one status per entry, exact queue
+coverage/status agreement, unchanged unrelated feature descriptions, corrected
+spirit reference and `git diff --check` with CRLF handling. Counts are 20
+Awaiting validation, 10 Queued, two In progress and one historically Verified.
+See [audit coverage and priorities](MAC_PORT_BACKLOG.md#audit-scope-and-next-work).
+
+Current integration findings:
+
+- `python3 tools/build-native-mac.py` exits with the obsolete requirement to
+  switch to `mac-port`, before setup/build writes. This conflicts with the
+  current focused-branch policy (MAC-033).
+- Shared `src/pc_debug.c` includes generated `pc_network_build.h`, but generation,
+  include-directory and version wiring are Windows-only. Clean native compilation
+  is expected to fail without this input; a full compiler reproduction was not
+  possible with the local prerequisites absent (MAC-033).
+- Cocoa debug Save initializes four of the five `PcDebugOptions` fields. The
+  shared saver writes the fifth, `show_latency`, so Save clears an existing true
+  preference. This is source-confirmed behavior, not a live UI test (MAC-003).
+- Menu mouse and desktop-exit guest implementations remain gated to Windows
+  or portable fixtures; passing the fixtures does not enable SDL/Cocoa adapters
+  (MAC-030/031). Native build-identity overlay drawing is absent (MAC-034).
+- `git log main..mac-port` retains `5cba184`, merge `b8857ba` and `1a8f4dd`.
+  The first commit's diff contains dependent-texture rendering/fixtures absent
+  from main, despite its debug-oriented title. Review that work separately from
+  the older branch's packaging/settings-test changes; no integration was made
+  during this audit (MAC-005).
+
+Local validation host: Apple Silicon arm64, macOS 27.0.1, Apple Clang 21.0.0
+(`clang-2100.3.34.2`), system Python 3.9.6. Compiled and executed five existing
+portable C fixtures directly using the POSIX commands from their Python test
+wrappers: `menu_mouse`, `quit_menu`, `terminal_mouse` (with `src/pc_input.c`),
+`ui_layout` and `tutorial_layout`. All five passed. Commands used `cc -std=c11
+-O2 -I<checkout>/src`, `-lm`, and `-Wall -Wextra -Werror` for the first three.
+Temporary executables were removed automatically. These cover pointer policy,
+guest confirmation with a mocked close callback, terminal bounds/ownership,
+placement rules and tutorial layout. They do not cover pytest mutation variants,
+generated-wrapper integration, native window-event delivery or real GPU draws.
+
+The read-only launcher prerequisite check reports missing `private/game`.
+Also absent: `.venv`, `external/ts3FPrecomp`, `build/macos`, and the unlocked
+test-profile fixture. Python 3.12+ and pinned build dependencies must be restored
+before building; no dependencies or game files were downloaded during review.
+No supported XBE was available to hash, no game executable was launched, and no
+graphics backend was exercised. Full patch/generation, native build/GPU/audio,
+physical-input, texture-pack and gameplay checks remain pending, as do current
+Windows checks. No backlog feature was newly marked Verified.
+
 ## Issue #86 frontend mouse menus (2026-10-17)
 
 PR #97 CI follow-up: run `39051850942` passed on macOS, while Windows
@@ -856,7 +925,7 @@ reference; it is not used as a fidelity pass.
 Remaining validation: original-Xbox fidelity, later ghost-girl/What Lies Below
 encounters, and native macOS GPU/interpreted-vertex paths. This is evidence for
 the Mansion entrance-hall spirits, not a claim that every encounter in #17 is
-verified. See [MAC-026](MAC_PORT_BACKLOG.md#mac-026--spirit-skull-and-eye-rendering-17).
+verified. See [MAC-032](MAC_PORT_BACKLOG.md#mac-032--spirit-skull-and-eye-rendering-17).
 
 ## Arcade RANK widget placement (2026-10-17)
 
