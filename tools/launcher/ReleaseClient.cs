@@ -156,6 +156,22 @@ namespace TimeSplitters.Launcher
             string json = await Text(url, 4 * 1024 * 1024, token).ConfigureAwait(false);
             return json.Length == 0 ? null : Select(json, preview);
         }
+        public async Task<Release> FindGame(string version, CancellationToken token)
+        {
+            GameVersion.Parse(version);
+            string json = await Text("https://api.github.com/repos/" + Repository + "/releases/tags/" + Uri.EscapeDataString(version), 4 * 1024 * 1024, token).ConfigureAwait(false);
+            var release = json.Length == 0 ? null : Select(json,true);
+            Core.Require(release != null && release.Tag == version, "This installed game release is not available for repair on GitHub. No installed files were changed.");
+            return release;
+        }
+        public async Task<Release> FindLauncher(string version, CancellationToken token)
+        {
+            GameVersion.Parse(version);
+            string json = await Text("https://api.github.com/repos/" + Repository + "/releases/tags/launcher-v" + Uri.EscapeDataString(version), 4 * 1024 * 1024, token).ConfigureAwait(false);
+            var candidate = json.Length == 0 ? null : SelectLauncher("[" + json + "]",true);
+            Core.Require(candidate != null && candidate.Package.Tag == version, "This launcher version has not been published or is unavailable for repair. No installed files were changed.");
+            return VerifyLauncherMetadata(candidate,await Text(candidate.ManifestUrl,16384,token).ConfigureAwait(false));
+        }
         public static LauncherRelease SelectLauncher(string json, bool preview)
         {
             LauncherRelease best = null;

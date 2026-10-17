@@ -24,9 +24,11 @@ namespace TimeSplitters.Launcher
             {
                 if (args.Length == 3 && (args[0] == "--apply" || args[0] == "--rollback"))
                     return Helper(args[0], Path.GetFullPath(args[1]), Int32.Parse(args[2]));
+                bool repairPreview = args.Length == 2 && args[0] == "--render-repair-preview";
+                bool diagnosticsPreview = args.Length == 2 && args[0] == "--render-diagnostics-preview";
                 bool graphicsPreview = args.Length == 2 && args[0] == "--render-settings-graphics";
                 bool settingsPreview = graphicsPreview || (args.Length == 2 && args[0] == "--render-settings-preview");
-                bool preview = settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
+                bool preview = repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
                 bool fromBootstrap = args.Length == 2 && args[0] == "--from-bootstrap";
                 if (args.Length == 0)
                 {
@@ -48,6 +50,7 @@ namespace TimeSplitters.Launcher
                         if (preview)
                         {
                             if (settingsPreview) ui.ShowSettings(graphicsPreview?1:0);
+                            if (repairPreview || diagnosticsPreview) ui.ShowMaintenance(diagnosticsPreview);
                             var window = ui.Window;
                             var visual = (Panel)window.Content;
                             visual.Background = window.Background;
@@ -96,7 +99,7 @@ namespace TimeSplitters.Launcher
                 {
                     Core.Recover(root);
                     if (action == "--rollback") Core.Rollback(root); else Core.InstallPending(root);
-                    Core.Write(Core.PathIn(root, ".launcher/last-result.txt"), action == "--rollback" ? "Previous release restored." : "Release installed successfully.");
+                    Core.Write(Core.PathIn(root, ".launcher/last-result.txt"), action == "--rollback" ? "Previous release restored." : "Release files installed and verified successfully.");
                     success = true;
                 }
                 catch (Exception ex)
@@ -122,6 +125,9 @@ namespace TimeSplitters.Launcher
         readonly CancellationTokenSource lifetime = new CancellationTokenSource();
         Release available;
         SettingsPage settings;
+        MaintenancePage repairPage, diagnosticsPage;
+        VerificationResult gameVerification, launcherVerification;
+        CancellationTokenSource maintenanceStop;
         bool busy, checking, handingOff;
         bool validData, gameInstalled;
         string installed = "";
@@ -172,6 +178,8 @@ namespace TimeSplitters.Launcher
             Refresh();
             Button("SettingsNav").Click += (s,e)=>ShowSettings();
             Button("HomeNav").Click += (s,e)=>ShowHome();
+            Button("RepairNav").Click += (s,e)=>ShowMaintenance(false);
+            Button("DiagnosticsNav").Click += (s,e)=>ShowMaintenance(true);
             Window.Closed += (s,e)=> { lifetime.Cancel(); client.Dispose(); };
             if (previewMode)
             {
@@ -241,7 +249,8 @@ namespace TimeSplitters.Launcher
                 if(tab>=0)settings.SelectTab(tab);
                 Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("SettingsHost").Visibility=Visibility.Visible;
-                SelectNavigation(true);
+                Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
+                SelectNavigation("SettingsNav");
             } catch(Exception ex) { Fail(ex); }
         }
         void ShowHome()
@@ -249,15 +258,115 @@ namespace TimeSplitters.Launcher
             if(settings!=null)settings.DismissPrompt();
             Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
             Find<Grid>("CommandCenter").Visibility=Visibility.Visible;
-            SelectNavigation(false);
+            Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
+            SelectNavigation("HomeNav");
         }
-        void SelectNavigation(bool editing)
+        void SelectNavigation(string active)
         {
-            foreach(string name in new[]{"HomeNav","SettingsNav"}) {
-                bool selected=(name=="SettingsNav")==editing;
+            foreach(string name in new[]{"HomeNav","SettingsNav","RepairNav","DiagnosticsNav"}) {
+                bool selected=name==active;
                 Button(name).Background=selected?new SolidColorBrush(Color.FromRgb(29,58,85)):Brushes.Transparent;
                 Button(name).Foreground=new SolidColorBrush(selected?Color.FromRgb(134,205,255):Color.FromRgb(223,233,242));
             }
+        }
+        public async void ShowMaintenance(bool diagnostics)
+        {
+            if(busy)return;
+            try {
+                if(settings!=null)settings.DismissPrompt();
+                var page=diagnostics?diagnosticsPage:repairPage;
+                if(page==null) {
+                    page=new MaintenancePage(diagnostics);
+                    page.Cancel.Click+=(s,e)=> { if(maintenanceStop!=null)maintenanceStop.Cancel();page.Status("Cancellation requested; finishing the current file…"); };
+                    if(diagnostics) {
+                        diagnosticsPage=page;
+                        page.Refresh.Click+=async(s,e)=>await RefreshDiagnostics();
+                        page.Copy.Click+=(s,e)=> { try { Clipboard.SetText(page.Report.Text);page.Status("Diagnostic report copied. Nothing was uploaded."); }catch(Exception ex){page.Status("Clipboard unavailable ("+ex.GetType().Name+"). Select and copy the report text instead.");} };
+                    } else {
+                        repairPage=page;
+                        page.VerifyGame.Click+=async(s,e)=>await VerifyFiles(false);
+                        page.VerifyLauncher.Click+=async(s,e)=>await VerifyFiles(true);
+                        page.RepairGame.Click+=async(s,e)=>await RepairFiles(false);
+                        page.RepairLauncher.Click+=async(s,e)=>await RepairFiles(true);
+                        page.SetVerification(gameVerification,launcherVerification);
+                    }
+                }
+                Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
+                Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
+                var host=Find<ContentControl>("MaintenanceHost");host.Content=page.View;host.Visibility=Visibility.Visible;
+                SelectNavigation(diagnostics?"DiagnosticsNav":"RepairNav");
+                page.SetBusy(busy || checking,Core.GameRunning());
+                if(diagnostics) {
+                    if(previewMode)page.Report.Text="TimeSplitters launcher diagnostics — interface preview\n\nRunning launcher: "+LauncherVersion.Value+"\nInstalled game: v0.2.0-alpha.5 (sample)\nWindows: 64-bit\nGraphics: available in the installed launcher\nEmbedded artwork: banner present, logo present\n\nLast verification: not checked this session.\n\nRecent launcher errors: none in this preview.\n\nReport excludes raw logs, personal paths, saves and ISO information. Nothing is uploaded automatically.";
+                    else await RefreshDiagnostics();
+                }
+            }catch(Exception ex){Fail(ex);}
+        }
+        async Task MaintenanceOperation(MaintenancePage page,Func<CancellationToken,Task> operation)
+        {
+            if(busy)return;
+            if(previewMode){page.Status("Preview only. Verification and repairs use the installed launcher.");return;}
+            busy=true;
+            using(var cancel=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)) {
+                maintenanceStop=cancel;Refresh();
+                try { await operation(cancel.Token); }
+                catch(OperationCanceledException){page.Status("Operation cancelled. Installed files were not changed.");}
+                catch(Exception ex){page.Status(ex.Message);Fail(ex);}
+                finally { maintenanceStop=null;busy=false;if(!handingOff)Refresh(); }
+            }
+        }
+        async Task VerifyFiles(bool launcher)
+        {
+            await MaintenanceOperation(repairPage,async token=> {
+                repairPage.Status("Verifying "+(launcher?"launcher":"game")+" files…");
+                var progress=new Progress<double>(value=>repairPage.Progress(value));
+                var result=await Task.Run(()=>InstallationMaintenance.Verify(root,launcher,progress,token),token);
+                if(launcher)launcherVerification=result;else gameVerification=result;
+                repairPage.SetVerification(gameVerification,launcherVerification);
+                repairPage.Status(result.Summary+". Repairs use the exact published version; personal files are excluded.");
+            });
+        }
+        async Task RefreshDiagnostics()
+        {
+            await MaintenanceOperation(diagnosticsPage,async token=> {
+                diagnosticsPage.Status("Collecting system details…");
+                string graphics=await InstallationMaintenance.GraphicsWithTimeout(token);
+                string report=await Task.Run(()=>InstallationMaintenance.Report(root,gameVerification,launcherVerification,graphics),token);
+                token.ThrowIfCancellationRequested();diagnosticsPage.Report.Text=report;
+                diagnosticsPage.Status("Report excludes raw logs, personal paths, saves and ISO information. Nothing is uploaded automatically.");
+            });
+        }
+        async Task RepairFiles(bool launcher)
+        {
+            await MaintenanceOperation(repairPage,async token=> {
+                Core.Require(!Core.GameRunning(),"Close the game before repairing files.");
+                repairPage.Status("Finding the exact published release, then downloading and verifying its files…");
+                var progress=new Progress<double>(value=> {repairPage.Progress(value);repairPage.Status("Downloading repair package · "+value.ToString("0")+"%. Installed files are unchanged until verification completes.");});
+                bool prepared=false;
+                try {
+                    if(launcher) {
+                        var release=await client.FindLauncher(LauncherVersion.Value,token);
+                        prepared=await SelfUpdate.Prepare(root,release,client,progress,token,true);
+                        Core.Require(prepared,"A newer launcher is installed. Restart it before repairing.");
+                        token.ThrowIfCancellationRequested();
+                        string helper=Core.PathIn(root,".launcher/self-helper.exe");
+                        Core.Require(!Core.GameRunning(),"Close the game before repairing files.");
+                        File.Copy(Core.PathIn(root,".launcher/self-pending/payload/"+Core.LauncherName),helper,true);
+                        Process.Start(new ProcessStartInfo(helper,"--apply-launcher "+Quote(root)+" "+Process.GetCurrentProcess().Id){UseShellExecute=true,WorkingDirectory=root});
+                        handingOff=true;Window.Close();
+                    } else {
+                        Core.Require(gameVerification!=null && gameVerification.Version.Length>0,"Verify the game before repairing it.");
+                        await InstallationMaintenance.PrepareGameRepair(root,gameVerification.Version,client,progress,token);
+                        prepared=true;token.ThrowIfCancellationRequested();HandOff(false);
+                    }
+                } catch {
+                    // Only this operation's newly prepared staging can be discarded.
+                    if(prepared && !handingOff)try {
+                        Core.DiscardRepairStaging(root,launcher);
+                    }catch { /* Retain locked or unsafe staging for recovery. */ }
+                    throw;
+                }
+            });
         }
         void Open(string path)
         {
@@ -295,6 +404,9 @@ namespace TimeSplitters.Launcher
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
+            Button("HomeNav").IsEnabled = Button("RepairNav").IsEnabled = Button("DiagnosticsNav").IsEnabled = !busy;
+            if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
+            if(diagnosticsPage!=null)diagnosticsPage.SetBusy(busy || checking,Core.GameRunning());
             Button("CheckButton").IsEnabled = !busy && !checking;
             Channel.IsEnabled = !busy && !checking;
             Button("UpdateButton").IsEnabled = !busy && !checking && CanUpdate();

@@ -1,5 +1,48 @@
 # Measured progress
 
+## Launcher v1.2.8 Repair/Verify and Diagnostics (2026-10-17)
+
+Implemented on `feature/launcher-repair-diagnostics`, based on main `65b6903`
+(uncommitted). Launcher/assembly version is 1.2.8. New Repair / Verify and
+Diagnostics sidebar pages stay in the existing window and retain settings drafts.
+Verification is offline/read-only against installed manifest SHA-256 hashes;
+protected settings and independent launcher files are excluded from game scans.
+Reports distinguish missing, changed, unreadable and invalid manifest cases.
+
+Repairs fetch only the exact installed game or running launcher release and
+verify the published archive digest/size, package layout and every file before
+using the existing helper/recovery flow. Game repair replaces damaged/missing
+owned runtime files and official BUILD metadata, preserving personal files,
+untracked files and the independent launcher. It retains the previous game
+rollback through separate repair transactions/backups; repair backups follow
+confirmed-game cleanup. Existing staged updates are retained. Cancellation and
+failed preparation remove only owned safe staging, preserving ISOs/links/locked
+recovery data. Interrupted repair transactions recover on startup. No game code
+or native Mac adapter changed. A live v1.2.8 launcher self-repair needs that exact
+release to be published; developer builds report its absence without downgrading.
+
+Diagnostics report versions, Windows/process/CLR information, GPU/driver, free
+space, embedded artwork, saved graphics, last verification and structured recent
+exception types. Background GPU lookup has a bounded wait and one shared in-flight
+query. Clipboard reports omit personal paths, arbitrary log messages, raw files,
+saves and ISO information; they are never automatically uploaded.
+
+Windows x64 / .NET Framework 4.8 / pinned Python 3.12.14: required-artwork builds
+passed 99 updater/bootstrap/cleanup checks, 25 settings checks and 15 maintenance
+checks. Six startup/packaging plus 20 CI-scope Python checks passed (26 total,
+including two missing-artwork subtests). Coverage includes exact-version lookup,
+corrupt/cancelled downloads, damaged runtime repair, equal-version forced launcher
+repair, preserved previous-game rollback, interrupted recovery, confirmed cleanup,
+ISO retention inside staging, report privacy and embedded navigation/drafts.
+The first local full run respected an active game guard; that game was not stopped.
+Once it was no longer running, full disposable transaction suites passed. No
+automated real-game session or personal settings/saves were used. GPU discovery
+reported NVIDIA GeForce RTX 4070 SUPER / driver 32.0.16.1742 in 54 ms.
+Home, input/graphics, Repair/Verify, Diagnostics and bootstrap previews rendered;
+new pages were visually inspected with their sidebar and theme intact. Preview
+versions/system state are explicitly sample data. Native Mac execution is
+unverified; adaptation/acceptance checks are queued in MAC-021. Not published.
+
 ## Issue #50 idle-demo skipping (2026-10-17)
 
 Initial implementation and live validation on `50-cannot-skip-menu-idle-video`,
