@@ -1,5 +1,82 @@
 # Measured progress
 
+## Issue #17 spirit rendering (2026-10-17)
+
+Production changes are on
+`17-ghosts-in-mansion-of-madness-and-what-lies-below-are-nonvisible`, based
+on main `5548b25`. Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 /
+CMake 4.4.4; supported US XBE SHA-256 verified. The complete local patch stack
+was applied before regenerating wrappers and building both Release game and
+replay targets. Executable SHA-256:
+`47ac8d2733d448aed126bd00453dfa83ea79ac7de24fe56c2ba1fd8e80397393`.
+
+`src/pc_ghost_render_guest.inc` and the final `spirit-rendering.patch` replace
+the temporary eye/head probes. The US spirit renderer scopes clockwise
+culling to rigid model nodes; skinned ribbon trails remain two sided. Its
+two eye-billboard call sites use zero clip-space depth bias and no fog only
+for their flushed batches. Alpha blending, depth testing, depth writes and
+animation remain authored. The shared HLE override saves/restores host state
+and invalidates the guest-state cache on entry AND exit, including renderer
+exit before the eye batch ends. No shader hashes, shader string rewriting,
+geometry fingerprints, diagnostic switches or forced visibility are shipped.
+
+These are title compatibility corrections, not general Xbox semantic changes.
+The original spirit path requests no culling; back-facing skull triangles
+then overdraw the front. Its eye bias 200 is multiplied by 256 and added to
+normalized clip Z, clipping the sprites; the unwritten fog fallback also
+replaces their textured red color. The original Xbox bias conversion remains
+unresolved, so the correction is confined to these two spirit call sites.
+
+Final production capture `build/issue-17-ghosts/production-live.d3dcap` has
+252 draws: all five skull draws use clockwise culling, all 30 trail draws
+retain no culling and fog, and all ten eye/eye-trail draws have c13.w = 0,
+fog disabled and depth testing enabled. All retain blending and disabled
+depth writes. Fog and culling restore between spirits. The reviewed live
+`production-frame013.bmp` shows skull faces, wispy trails and glowing red eyes.
+Routing contains no diagnostic flags. This bounded 1920x1080 session used
+an isolated unlocked Test Lab copy, controls and both display/XDG configs;
+personal saves/settings and the canonical fixture were preserved. The log
+records normal user window closure and ExitProcess(0), not an exception.
+
+Validation: 54 distinct targeted tests passed (40 native/state-cache,
+framebuffer, channel-clear, CI routing, generation and patch-tracking tests;
+14 patch-upgrade tests, with the two spirit tests repeated). The spirit harness
+compiles the actual guest wrappers and HLE cache, checks both billboard call
+sites, rigid/skinned selection, unrelated callers, ABI preservation, flush
+ordering and state restoration; a deliberately broken cache-restore variant
+must fail. It is included in the Windows/macOS runtime CI and local Test suite.
+Full-stack patch verification changes zero runtime files. No complete game
+regression suite or hosted CI run is claimed for this validation.
+
+Before publishing, main `33fc619` was merged into the issue branch; both
+validation records were preserved when resolving the STATUS conflict.
+Full-stack patch application succeeded, followed by 39 passing spirit,
+patch-upgrade/tracking, projection and UI-layout tests. The build and live
+capture above precede this integration; the merged game was not rebuilt or
+playtested again.
+
+PR #84 CI follow-up: the first macOS ARM64 run passed patch transitions but
+both spirit harness variants failed to link `GetTickCount`, called only by
+HLE diagnostic counters. The standalone harness now supplies a deterministic
+clock on both hosts, matching the framebuffer harness, instead of relying
+on the Windows system library or linking the complete Mac compatibility layer.
+Runtime/game behavior is unchanged. All four local Windows spirit/framebuffer
+variants passed; hosted rerun validation is pending.
+
+Earlier live comparisons with #9/#21 disabled did not identify either as the
+fix for #17. A forced visibility-query probe worsened effects and was removed.
+Eye/head probes restored eye glow and reduced back-face overdraw in identical
+replays, but the user's head-opacity feedback was inconclusive. Old probes,
+captures and comparisons remain ignored investigation records outside the
+active patch stack. The production live draw states above supersede those
+probes. A synthetic old-capture replay was not pixel-identical to its earlier
+reference; it is not used as a fidelity pass.
+
+Remaining validation: original-Xbox fidelity, later ghost-girl/What Lies Below
+encounters, and native macOS GPU/interpreted-vertex paths. This is evidence for
+the Mansion entrance-hall spirits, not a claim that every encounter in #17 is
+verified. See [MAC-026](MAC_PORT_BACKLOG.md#mac-026--spirit-skull-and-eye-rendering-17).
+
 ## Arcade RANK widget placement (2026-10-17)
 
 Follow-up to issue-22 commit `6485069` on
