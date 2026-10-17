@@ -10,19 +10,21 @@ MAC-021 retains queued native launcher adaptation. This records preparation;
 publication and final package evidence are confirmed separately by the GitHub
 release and its source provenance asset.
 
-Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required compilation,
-15 release-news checks, 27 download/recovery checks, 25 settings checks and 13
-read-only maintenance checks passed. Startup, packaging, issue-form and CI-scope
-Python suites passed 43 tests with seven subtests. Live read-only GitHub notes
-for game v0.2.0-alpha.5 and launcher v1.2.10, bootstrap preview routing, normal/
-minimum-size pages, known-issues scrolling and offline retention were reviewed.
-The actual public v1.2.10 ZIP was downloaded and its published SHA-256 verified
-as the upgrade baseline. The initial full transaction run correctly stopped
-because the game was active; final local updater, lifecycle and actual-package
-checks remain pending until the game closes. Publication is gated on those
-checks and CI. No real game was launched for this release task, and no personal
-saves, settings, data or ISO were modified. Native Mac launcher execution remains
-unverified.
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+185 isolated checks (99 updater/bootstrap/cleanup, 27 download/recovery, 15
+release-news, 25 settings and 19 maintenance). Startup, packaging, issue-form
+and CI-scope Python suites passed 43 tests with seven subtests. Three disposable
+minimize/restore/startup-failure checks passed. The actual public v1.2.10 ZIP
+upgraded to v1.2.11; installed manifests, correct assembly version, embedded
+banner/logo/icon, news page/navigation and absent redundant Home footer action,
+personal-file preservation, corruption detection, same-version repair and
+confirmed cleanup passed. Live read-only GitHub notes for game v0.2.0-alpha.5
+and launcher v1.2.10, bootstrap preview routing, normal/minimum-size pages,
+known-issues scrolling and offline retention were reviewed. The initial
+transaction run was blocked by an active game; all final local checks completed
+after that game process exited. Tests used disposable synthetic fixtures. No
+real game was launched for this release task, and no personal saves, settings,
+data or ISO were modified. Native Mac launcher execution remains unverified.
 
 ## Embedded launcher What's new page (2026-10-17)
 
