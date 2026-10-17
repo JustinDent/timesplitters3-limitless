@@ -1,5 +1,25 @@
 # Measured progress
 
+## Launcher v1.2.7 release preparation (2026-10-16)
+
+Prepared on `release/launcher-v1.2.7` from main `1140c34`, including the banner
+preservation fix merged in PR #75 (`f1011f8`). Version and assembly metadata are
+1.2.7. The release preserves valid equal-version independent launchers during
+game updates, repairs damaged equal versions, and requires artwork for future
+public game packaging. Its ZIP contains the themed launcher; a newer launcher
+version also replaces any valid fallback v1.2.6 installations affected by alpha.5.
+The published game remains v0.2.0-alpha.5; no game package is being rebuilt.
+
+Windows x64 / .NET Framework 4.8 / pinned Python 3.12.14: the required-artwork
+build compiled both EXEs and passed 99 updater/bootstrap/cleanup checks and 25
+settings checks. Six Python startup/packaging checks passed, including two
+missing-artwork rejection subtests. Home, input, graphics and bootstrap splash
+previews rendered; Home was visually inspected with banner/logo visible.
+Tests used disposable fixtures and launched no actual game or personal settings.
+MAC-021 remains queued; native Mac launcher execution is unverified. Publication
+is pending hosted checks, a clean exact-main build and public-download plus
+previous-client upgrade verification.
+
 ## Launcher artwork lost after game update (2026-10-16)
 
 Fix on `fix/launcher-art-preservation`, commit `f1011f8`, based on main `5e5ca61`.
