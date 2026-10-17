@@ -2,6 +2,16 @@
 
 [Back to the README](../README.md)
 
+## Launcher settings
+
+The current source launcher groups **Game settings** into two tabs with a fixed
+Save/Cancel footer. **Keyboard & mouse** contains Input & mouse and the key-binding
+table, with four labeled slots per action. **Graphics & resolution** groups Display,
+Camera & window, Quality & performance, and Startup into separate cards. Expand
+**Custom resolution** to edit width and height; the preset picker and aspect filter
+remain above it. Save applies the draft on the next launch; Home retains it and
+Cancel discards unsaved edits. The sidebar stays visible while editing.
+
 ## In-game display settings
 
 These instructions describe the current Windows source build. Downloaded releases may predate individual features.

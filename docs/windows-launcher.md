@@ -350,12 +350,19 @@ Game checks exclude personal settings and independent launcher files. A matching
 installed manifest is an integrity check; it is not a fresh publisher signature.
 Imported game data, ISOs, saves and texture packs are not scanned or repaired.
 
+The current source layout uses separate game and launcher status cards. Each shows
+**Not checked**, **Verified** or **Needs attention**, with version and checked-file
+counts after a scan. **Verification details** stays collapsed until needed; a check
+that finds a problem opens it automatically. Expand it at any time to inspect the
+file-level results. The page scrolls at smaller window sizes and keeps operation
+status and cancellation available below the content.
+
 After verification, **Repair files** downloads the exact installed game release,
 or the exact running launcher release, from GitHub. Draft, unavailable or
 unpublished releases cannot be substituted with a newer/older version. The
 archive size and published SHA-256, package layout and every staged file hash
-must verify before installation. Development launcher v1.2.8 cannot repair itself
-from GitHub until that version is published. Repair is explicit, including for
+must verify before installation. An unpublished development version cannot repair itself
+from GitHub until its exact version is published. Repair is explicit, including for
 internally consistent fallback artwork builds.
 
 Close the game before repair. Downloads, verification and extraction can be

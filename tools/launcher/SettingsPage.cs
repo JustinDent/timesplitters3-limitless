@@ -29,92 +29,63 @@ namespace TimeSplitters.Launcher
         static readonly Brush Muted = ColorBrush(158,175,191);
         static readonly Brush Accent = ColorBrush(134,205,255);
         static readonly Brush Panel = ColorBrush(21,36,53);
-        static TextBlock Text(string text, int size) { return new TextBlock { Text=text, FontSize=size, Foreground=Ink, TextWrapping=TextWrapping.Wrap, Margin=new Thickness(0,4,0,8) }; }
-        static Button Button(string text) { return new Button { Content=text, Margin=new Thickness(4), MinHeight=32, Padding=new Thickness(12,6,12,6) }; }
-        static CheckBox Check(string text, bool value) { return new CheckBox { Content=text, IsChecked=value, Foreground=Ink, Margin=new Thickness(0,9,20,9) }; }
-        static TextBox Entry(string text) { return new TextBox { Text=text, Background=new SolidColorBrush(Color.FromRgb(11,20,32)), Foreground=Ink, BorderBrush=Muted, Padding=new Thickness(8), Margin=new Thickness(0,2,12,8), MinWidth=100 }; }
+        static TextBlock Text(string text, int size) { var block=PageTheme.Text(text,size);block.Margin=new Thickness(0,0,0,8);return block; }
+        static Button Button(string text) { return new Button { Content=text, Margin=new Thickness(0,0,8,0) }; }
+        static CheckBox Check(string text, bool value) { return new CheckBox { Content=text, IsChecked=value, Foreground=Ink, Margin=new Thickness(0,7,20,7) }; }
+        static TextBox Entry(string text) { return new TextBox { Text=text, MinWidth=90 }; }
         static ComboBox Choices(string[] choices, string selected)
         {
-            var combo = new ComboBox { Margin=new Thickness(0,2,12,12), Padding=new Thickness(8), MinWidth=180, Foreground=Brushes.Black };
+            var combo = new ComboBox();
             foreach (string choice in choices) combo.Items.Add(choice);
             if (!combo.Items.Contains(selected)) combo.Items.Add(selected);
             combo.SelectedItem=selected; return combo;
         }
         static void Field(Panel parent, string label, UIElement input)
-        { var stack=new StackPanel { Margin=new Thickness(0,0,18,8) }; stack.Children.Add(Text(label,12)); stack.Children.Add(input); parent.Children.Add(stack); }
-        static ScrollViewer Scroll(UIElement content) { return new ScrollViewer { VerticalScrollBarVisibility=ScrollBarVisibility.Auto, Content=content, Margin=new Thickness(18) }; }
+        {
+            var stack=new StackPanel { Margin=new Thickness(0,0,0,14) };var caption=Text(label,12);caption.Foreground=Muted;
+            stack.Children.Add(caption);stack.Children.Add(input);parent.Children.Add(stack);
+            System.Windows.Automation.AutomationProperties.SetLabeledBy(input,caption);
+        }
+        static Grid Columns(Panel parent)
+        {
+            var grid=new Grid();grid.ColumnDefinitions.Add(new ColumnDefinition());grid.ColumnDefinitions.Add(new ColumnDefinition());parent.Children.Add(grid);return grid;
+        }
+        static StackPanel Column(Grid grid,int index)
+        { var panel=new StackPanel { Margin=index==0?new Thickness(0,0,10,0):new Thickness(10,0,0,0) };Grid.SetColumn(panel,index);grid.Children.Add(panel);return panel; }
+        static ScrollViewer Scroll(UIElement content) { return new ScrollViewer { VerticalScrollBarVisibility=ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled, Content=content, Padding=new Thickness(0,0,12,0) }; }
         static ResourceDictionary TabsTheme()
         {
-            // Keep native TabControl navigation/accessibility with launcher-styled headers.
+            // Native TabItem selection and keyboard navigation, with a compact accent underline.
             return (ResourceDictionary)System.Windows.Markup.XamlReader.Parse(@"
 <ResourceDictionary xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                     xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
   <Style TargetType='TabItem'>
-    <Setter Property='Foreground' Value='#B4C7D8'/>
-    <Setter Property='Background' Value='#152A3E'/>
-    <Setter Property='BorderBrush' Value='#36536F'/>
-    <Setter Property='BorderThickness' Value='1'/>
-    <Setter Property='Padding' Value='22,12'/>
-    <Setter Property='Margin' Value='0'/>
-    <Setter Property='MinWidth' Value='196'/>
-    <Setter Property='MinHeight' Value='48'/>
-    <Setter Property='Cursor' Value='Hand'/>
-    <Setter Property='Template'>
-      <Setter.Value>
-        <ControlTemplate TargetType='TabItem'>
-          <Border x:Name='Face' Background='{TemplateBinding Background}'
-                  BorderBrush='{TemplateBinding BorderBrush}' BorderThickness='{TemplateBinding BorderThickness}' CornerRadius='4' Margin='0,0,10,0'>
-            <Grid>
-              <ContentPresenter ContentSource='Header' RecognizesAccessKey='True'
-                                TextElement.FontSize='13' TextElement.FontWeight='SemiBold'
-                                HorizontalAlignment='Center' VerticalAlignment='Center' Margin='{TemplateBinding Padding}'/>
-              <Border x:Name='SelectionLine' Height='2' Margin='18,0,18,4'
-                      VerticalAlignment='Bottom' Background='#86CDFF' Visibility='Collapsed'/>
-            </Grid>
-          </Border>
-          <ControlTemplate.Triggers>
-            <Trigger Property='IsMouseOver' Value='True'>
-              <Setter TargetName='Face' Property='Background' Value='#21415D'/>
-              <Setter TargetName='Face' Property='BorderBrush' Value='#729CBE'/>
-              <Setter Property='Foreground' Value='#F0F7FF'/>
-            </Trigger>
-            <Trigger Property='IsSelected' Value='True'>
-              <Setter TargetName='Face' Property='Background'>
-                <Setter.Value><LinearGradientBrush StartPoint='0,0' EndPoint='0,1'>
-                  <GradientStop Color='#2B5679'/><GradientStop Color='#193C59' Offset='1'/>
-                </LinearGradientBrush></Setter.Value>
-              </Setter>
-              <Setter TargetName='Face' Property='BorderBrush' Value='#86CDFF'/>
-              <Setter Property='Foreground' Value='#DDEFFF'/>
-              <Setter TargetName='SelectionLine' Property='Visibility' Value='Visible'/>
-            </Trigger>
-            <Trigger Property='IsKeyboardFocusWithin' Value='True'>
-              <Setter TargetName='Face' Property='BorderBrush' Value='#F0F8FF'/>
-              <Setter TargetName='Face' Property='BorderThickness' Value='2'/>
-            </Trigger>
-            <Trigger Property='IsEnabled' Value='False'>
-              <Setter TargetName='Face' Property='Opacity' Value='0.4'/>
-            </Trigger>
-          </ControlTemplate.Triggers>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
+    <Setter Property='Foreground' Value='#9EB4C8'/><Setter Property='Padding' Value='18,12'/>
+    <Setter Property='MinHeight' Value='44'/><Setter Property='Cursor' Value='Hand'/>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TabItem'>
+      <Grid Background='Transparent' Margin='0,0,20,0'>
+        <ContentPresenter ContentSource='Header' RecognizesAccessKey='True' Margin='{TemplateBinding Padding}'
+                          TextElement.FontSize='13' TextElement.FontWeight='SemiBold' HorizontalAlignment='Center' VerticalAlignment='Center'/>
+        <Border x:Name='Line' Height='2' VerticalAlignment='Bottom' Background='#A7D9FA' Visibility='Collapsed'/>
+      </Grid>
+      <ControlTemplate.Triggers>
+        <Trigger Property='IsSelected' Value='True'><Setter Property='Foreground' Value='#E4EDF5'/><Setter TargetName='Line' Property='Visibility' Value='Visible'/></Trigger>
+        <Trigger Property='IsMouseOver' Value='True'><Setter Property='Foreground' Value='#A7D9FA'/></Trigger>
+        <Trigger Property='IsKeyboardFocusWithin' Value='True'><Setter TargetName='Line' Property='Visibility' Value='Visible'/><Setter TargetName='Line' Property='Background' Value='#FFFFFF'/></Trigger>
+        <Trigger Property='IsEnabled' Value='False'><Setter Property='Opacity' Value='0.4'/></Trigger>
+      </ControlTemplate.Triggers>
+    </ControlTemplate></Setter.Value></Setter>
   </Style>
   <Style TargetType='TabControl'>
-    <Setter Property='Template'>
-      <Setter.Value>
-        <ControlTemplate TargetType='TabControl'>
-          <Grid KeyboardNavigation.TabNavigation='Local'>
-            <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
-            <TabPanel IsItemsHost='True' KeyboardNavigation.TabIndex='1' Panel.ZIndex='1' Margin='0,0,0,12'/>
-            <Border Grid.Row='1' Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}'
-                    BorderThickness='1' CornerRadius='4' KeyboardNavigation.TabNavigation='Local'>
-              <ContentPresenter x:Name='PART_SelectedContentHost' ContentSource='SelectedContent'/>
-            </Border>
-          </Grid>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
+    <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TabControl'>
+      <Grid KeyboardNavigation.TabNavigation='Local'>
+        <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
+        <Border BorderBrush='#2D455C' BorderThickness='0,0,0,1' Margin='0,0,0,18'>
+          <TabPanel IsItemsHost='True' KeyboardNavigation.TabIndex='1' Panel.ZIndex='1'/>
+        </Border>
+        <ContentPresenter Grid.Row='1' x:Name='PART_SelectedContentHost' ContentSource='SelectedContent'/>
+      </Grid>
+    </ControlTemplate></Setter.Value></Setter>
   </Style>
 </ResourceDictionary>");
         }
@@ -122,73 +93,79 @@ namespace TimeSplitters.Launcher
         {
             string inherited = preview ? null : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "xboxrecomp", "titles", "45410066.conf");
             model=GameSettings.Load(root, inherited);
-            View=new Grid { Background=new SolidColorBrush(Color.FromRgb(11,20,32)), Margin=new Thickness(30,24,30,18) };
+            View=new Grid { Background=PageTheme.Brush("#0B1420"), Margin=new Thickness(30,24,30,18) };
             View.Resources.MergedDictionaries.Add(resources);
+            View.Resources.MergedDictionaries.Add(PageTheme.Resources());
             View.Resources.MergedDictionaries.Add(TabsTheme());
             layout=new DockPanel(); View.Children.Add(layout);
-            overlay=new Border { Visibility=Visibility.Collapsed, Background=new SolidColorBrush(Color.FromArgb(245,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(4), Padding=new Thickness(24) };
+            overlay=new Border { Visibility=Visibility.Collapsed, Background=new SolidColorBrush(Color.FromArgb(248,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(7), Padding=new Thickness(28) };
             View.Children.Add(overlay);
             var heading=new StackPanel(); DockPanel.SetDock(heading,Dock.Top); layout.Children.Add(heading);
-            heading.Children.Add(Text("Game settings",25));
-            var subtitle=Text("Set controls and graphics before starting the game. Changes apply on your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
-            var footer=new StackPanel(); DockPanel.SetDock(footer,Dock.Bottom); layout.Children.Add(footer);
-            status=Text("Save to apply on your next launch. Home keeps your draft; Cancel discards unsaved edits.",12); status.Foreground=Muted; footer.Children.Add(status);
-            var actions=new StackPanel { Orientation=Orientation.Horizontal, HorizontalAlignment=HorizontalAlignment.Right };
+            var eyebrow=PageTheme.Text("GAME PREFERENCES",10,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;heading.Children.Add(eyebrow);
+            var title=Text("Game settings",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
+            var subtitle=Text("Adjust controls, display and performance before your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
+            var footer=new DockPanel { LastChildFill=true };
+            var footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,16,0,0),Child=footer };
+            DockPanel.SetDock(footerBorder,Dock.Bottom);layout.Children.Add(footerBorder);
+            var actions=new StackPanel { Orientation=Orientation.Horizontal, VerticalAlignment=VerticalAlignment.Center };
+            DockPanel.SetDock(actions,Dock.Right);footer.Children.Add(actions);
             var cancel=Button("Cancel"); cancel.Name="SettingsCancelButton"; cancel.Click+=(s,e)=> { if(Cancelled!=null)Cancelled(); }; actions.Children.Add(cancel);
-            var save=Button("Save settings"); save.Name="SettingsSaveButton"; save.Background=Accent; save.Foreground=new SolidColorBrush(Color.FromRgb(9,28,44)); save.Click+=(s,e)=>Save(); actions.Children.Add(save); footer.Children.Add(actions);
-            tabs=new TabControl { Background=Panel, BorderBrush=new SolidColorBrush(Color.FromRgb(48,72,95)), Margin=new Thickness(0,14,0,14) }; layout.Children.Add(tabs);
+            var save=Button("Save settings"); save.Name="SettingsSaveButton";save.Margin=new Thickness(0);PageTheme.Primary(save);save.Click+=(s,e)=>Save();actions.Children.Add(save);
+            status=Text("Home keeps your draft. Save when you’re ready.",12);status.Foreground=Muted;status.Margin=new Thickness(0,0,16,0);status.VerticalAlignment=VerticalAlignment.Center;footer.Children.Add(status);
+            tabs=new TabControl { Background=Brushes.Transparent,BorderThickness=new Thickness(0), Margin=new Thickness(0,10,0,18) };layout.Children.Add(tabs);
             var controls=new StackPanel();
-            var mouse=new WrapPanel(); controls.Children.Add(mouse);
-            sensitivity=Entry(model.Sensitivity.ToString("G",CultureInfo.InvariantCulture)); sensitivity.Name="MouseSensitivity"; Field(mouse,"Mouse sensitivity (0.001–10)",sensitivity);
-            enabled=Check("Mouse look",model.MouseEnabled); invert=Check("Invert vertical look",model.InvertY); mouse.Children.Add(enabled); mouse.Children.Add(invert);
+            var input=PageTheme.Section(controls,"Input & mouse","Choose your input device and adjust how the camera responds.");
+            var inputColumns=Columns(input);var inputLeft=Column(inputColumns,0);var inputRight=Column(inputColumns,1);
             var deviceLabels=new[]{"Keyboard & mouse","Controller 1","Controller 2","Controller 3","Controller 4","Disabled"};
-            device=Choices(deviceLabels,deviceLabels[Array.IndexOf(Devices,model.Device.Replace("xinput:","gamepad:"))]); Field(controls,"Player 1 input device",device);
-            var hint=Text("Select a binding to capture a key or mouse button. Four slots per action. Mouse wheel is supported; game-reserved keys are unavailable.",12); hint.Foreground=Muted; controls.Children.Add(hint);
+            device=Choices(deviceLabels,deviceLabels[Array.IndexOf(Devices,model.Device.Replace("xinput:","gamepad:"))]);Field(inputLeft,"Player 1 input device",device);
+            sensitivity=Entry(model.Sensitivity.ToString("G",CultureInfo.InvariantCulture));sensitivity.Name="MouseSensitivity";Field(inputRight,"Mouse sensitivity · 0.001–10",sensitivity);
+            var mouse=new WrapPanel();enabled=Check("Mouse look",model.MouseEnabled);invert=Check("Invert vertical look",model.InvertY);mouse.Children.Add(enabled);mouse.Children.Add(invert);input.Children.Add(mouse);
+            var bindings=PageTheme.Section(controls,"Key bindings","Select a slot, then press a key or mouse button. Mouse wheel is supported.");
+            var bindingHead=new Grid { Margin=new Thickness(0,0,0,6) };bindingHead.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(200)});
+            var actionHeading=PageTheme.Text("ACTION",10,"#8FA8BD");actionHeading.Margin=new Thickness(4,6,0,6);bindingHead.Children.Add(actionHeading);
+            for(int slot=0;slot<4;slot++){bindingHead.ColumnDefinitions.Add(new ColumnDefinition());var label=PageTheme.Text("SLOT "+(slot+1),10,"#8FA8BD");label.HorizontalAlignment=HorizontalAlignment.Center;Grid.SetColumn(label,slot+1);bindingHead.Children.Add(label);}bindings.Children.Add(bindingHead);
             for (int i=0;i<24;i++)
             {
-                var row=new Grid { Margin=new Thickness(0,2,8,2), Background=i%2==0?Panel:Brushes.Transparent };
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width=new GridLength(235) });
-                var label=Text(GameSettings.Labels[i],12); label.VerticalAlignment=VerticalAlignment.Center; label.Margin=new Thickness(8,4,8,4); row.Children.Add(label);
+                var row=new Grid { Margin=new Thickness(0,0,0,3), Background=i%2==0?PageTheme.Brush("#172B3F"):Brushes.Transparent };
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width=new GridLength(200) });
+                var label=Text(GameSettings.Labels[i],12);label.VerticalAlignment=VerticalAlignment.Center;label.Margin=new Thickness(8,7,8,7);row.Children.Add(label);
                 for (int j=0;j<4;j++)
                 {
                     row.ColumnDefinitions.Add(new ColumnDefinition());
-                    int action=i,slot=j; var button=Button(""); button.FontSize=11; button.ToolTip=GameSettings.Labels[i]+", binding "+(j+1);
-                    button.Click+=(s,e)=>Capture(action,slot); Grid.SetColumn(button,j+1); row.Children.Add(button); bindingButtons[i,j]=button;
+                    int action=i,slot=j;var button=Button("");button.FontSize=11;button.MinHeight=32;button.Padding=new Thickness(5,7,5,7);button.Margin=new Thickness(3);button.Background=PageTheme.Brush("#122233");button.BorderBrush=PageTheme.Brush("#365069");button.ToolTip=GameSettings.Labels[i]+", binding "+(j+1);
+                    button.Click+=(s,e)=>Capture(action,slot);Grid.SetColumn(button,j+1);row.Children.Add(button);bindingButtons[i,j]=button;
                 }
-                controls.Children.Add(row);
+                bindings.Children.Add(row);
             }
-            var reset=Button("Restore default keyboard & mouse controls"); reset.HorizontalAlignment=HorizontalAlignment.Left;
+            var reset=Button("Restore default controls");reset.Margin=new Thickness(0,16,0,0);reset.HorizontalAlignment=HorizontalAlignment.Left;
             reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
-            controls.Children.Add(reset); tabs.Items.Add(new TabItem { Header="Keyboard & mouse", Content=Scroll(controls) });
+            bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Keyboard & mouse",Content=Scroll(controls) });
             var graphics=new StackPanel();
-            graphics.Children.Add(Text("Startup",20));
-            skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);
-            graphics.Children.Add(skipSplashes);
-            var startupHint=Text("Skip the opening logo videos on your next launch. Also disables the idle attract video. Story cutscenes still play.",12);
-            startupHint.Foreground=Muted; graphics.Children.Add(startupHint);
-            graphics.Children.Add(Text("Display & graphics",20));
-            graphics.Children.Add(Text("Higher render scale and resolution increase GPU load. These options use the game runtime’s supported settings.",12));
+            var display=PageTheme.Section(graphics,"Display","Choose the game’s output size. Your desktop resolution stays unchanged.");
+            var displayColumns=Columns(display);var displayLeft=Column(displayColumns,0);var displayRight=Column(displayColumns,1);
             var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height)).ToList();
-            aspect=new ComboBox { Name="AspectRatio", Margin=new Thickness(4,2,4,12), Padding=new Thickness(8), MinWidth=180, Foreground=Brushes.Black };
+            aspect=new ComboBox { Name="AspectRatio" };
             foreach(var ratio in DisplayModes.Aspects)aspect.Items.Add(ratio);
-            aspect.SelectedIndex=0;Field(graphics,"Aspect ratio",aspect);
-            resolution=new ComboBox { Margin=new Thickness(4,2,4,12), Padding=new Thickness(8), MinWidth=240, Foreground=Brushes.Black };
+            aspect.SelectedIndex=0;Field(displayLeft,"Aspect ratio",aspect);
+            resolution=new ComboBox { Name="OutputResolution" };
             foreach(var mode in sizes) resolution.Items.Add(mode);
             resolution.SelectedItem=sizes.FirstOrDefault(m=>m.Width==model.Width && m.Height==model.Height);
-            var selector=new DockPanel { HorizontalAlignment=HorizontalAlignment.Left };
-            var previous=Button("◀"); previous.ToolTip="Previous resolution";
+            var selector=new DockPanel();
+            var previous=Button("‹");previous.Width=32;previous.Padding=new Thickness(0);previous.Margin=new Thickness(0,0,6,0);previous.ToolTip="Previous resolution";
             System.Windows.Automation.AutomationProperties.SetName(previous,"Previous resolution");
-            var next=Button("▶"); next.ToolTip="Next resolution";
+            var next=Button("›");next.Width=32;next.Padding=new Thickness(0);next.Margin=new Thickness(6,0,0,0);next.ToolTip="Next resolution";
             System.Windows.Automation.AutomationProperties.SetName(next,"Next resolution");
             previous.Click+=(s,e)=>resolution.SelectedIndex=(resolution.SelectedIndex+resolution.Items.Count-1)%resolution.Items.Count;
             next.Click+=(s,e)=>resolution.SelectedIndex=(resolution.SelectedIndex+1)%resolution.Items.Count;
             DockPanel.SetDock(previous,Dock.Left); selector.Children.Add(previous);
             DockPanel.SetDock(next,Dock.Right); selector.Children.Add(next); selector.Children.Add(resolution);
-            Field(graphics,"Output resolution",selector);
-            graphics.Children.Add(Text("Common render resolutions plus modes reported by your display. Aspect ratio narrows the list; custom sizes are preserved. Desktop resolution is unchanged.",12));
-            var dimensions=new WrapPanel(); width=Entry(model.Width.ToString()); height=Entry(model.Height.ToString()); Field(dimensions,"Width",width); Field(dimensions,"Height",height); graphics.Children.Add(dimensions);
+            Field(displayRight,"Output resolution",selector);
+            var custom=new StackPanel { Margin=new Thickness(0,12,0,0) };var dimensions=Columns(custom);
+            width=Entry(model.Width.ToString());height=Entry(model.Height.ToString());Field(Column(dimensions,0),"Width",width);Field(Column(dimensions,1),"Height",height);
+            var customHint=Text("Use a supported custom size, or 0 × 0 for the original console resolution.",12);customHint.Foreground=Muted;custom.Children.Add(customHint);
+            var customSize=new Expander { Header="Custom resolution",Foreground=Ink,FontSize=12,Content=custom,Margin=new Thickness(0,2,0,12) };display.Children.Add(customSize);
             resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); } };
-            var ratioValue=Text("Current ratio: "+DisplayModes.RatioLabel(model.Width,model.Height),12);ratioValue.Name="CurrentAspectRatio";graphics.Children.Add(ratioValue);
+            var ratioValue=Text("Current ratio: "+DisplayModes.RatioLabel(model.Width,model.Height),12);ratioValue.Name="CurrentAspectRatio";ratioValue.Foreground=Accent;display.Children.Add(ratioValue);
             TextChangedEventHandler updateRatio=(s,e)=> {
                 int w,h;ratioValue.Text=Int32.TryParse(width.Text,out w)&&Int32.TryParse(height.Text,out h)?"Current ratio: "+DisplayModes.RatioLabel(w,h):"Enter a valid size";
             };
@@ -207,25 +184,32 @@ namespace TimeSplitters.Launcher
             DockPanel.SetDock(fovValue,Dock.Right); fieldOfView.Children.Add(fovValue);
             fov=new Slider { Name="VerticalFovSlider", Minimum=GameSettings.FovMin, Maximum=GameSettings.FovMax,
                 Value=model.VerticalFov, TickFrequency=1, IsSnapToTickEnabled=true, SmallChange=1, LargeChange=5,
-                Width=290, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
+                MinWidth=180, MaxWidth=360, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
             System.Windows.Automation.AutomationProperties.SetName(fov,"Vertical field of view in degrees");
             fov.ValueChanged+=(s,e)=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°";
             fov.IsEnabled=model.CanAdjustFov;
-            fieldOfView.Children.Add(fov); Field(graphics,"Vertical FOV (40–100°)",fieldOfView);
+            fieldOfView.Children.Add(fov);
+            var camera=PageTheme.Section(graphics,"Camera & window","Adjust your view and choose how the game fills your display.");
+            Field(camera,"Vertical FOV · 40–100°",fieldOfView);
             var resetFov=Button("Reset FOV to 55°"); resetFov.Name="ResetFovButton";
             resetFov.IsEnabled=model.CanAdjustFov;
             resetFov.HorizontalAlignment=HorizontalAlignment.Left; resetFov.Click+=(s,e)=>fov.Value=GameSettings.FovDefault;
-            graphics.Children.Add(resetFov);
-            if(!model.CanAdjustFov) graphics.Children.Add(Text("Custom FOV requires a game release newer than v0.2.0-alpha.4. Resolution settings remain available.",12));
-            graphics.Children.Add(Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative. Cinematic and terminal framing is unchanged.",12));
-            fullscreen=Check("Borderless fullscreen",model.Fullscreen); graphics.Children.Add(fullscreen);
-            var quality=new WrapPanel(); graphics.Children.Add(quality);
-            scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString()); Field(quality,"Render scale / supersampling",scale);
-            filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString()); Field(quality,"Anisotropic filtering",filtering);
-            pacing=Choices(new[]{"adaptive","60","30","0"},model.FrameCap); Field(quality,"Frame pacing (0 = uncapped)",pacing);
-            interpolation=Choices(new[]{"1","2","3","4"},model.Interpolation.ToString()); Field(quality,"Frame interpolation (1 = off)",interpolation);
-            vrr=Check("Variable refresh rate (requires display/driver support)",model.Vrr); fps=Check("Show FPS overlay",model.FpsOverlay); graphics.Children.Add(vrr); graphics.Children.Add(fps);
-            graphics.Children.Add(Text("Interpolation adds displayed frames while the game keeps its normal clock. It can produce visual artifacts. Your desktop refresh rate is unchanged.",12));
+            camera.Children.Add(resetFov);
+            if(!model.CanAdjustFov) camera.Children.Add(Text("Custom FOV requires a game release newer than v0.2.0-alpha.4. Resolution settings remain available.",12));
+            var fovHint=Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative.",12);fovHint.Foreground=Muted;fovHint.Margin=new Thickness(0,10,0,4);camera.Children.Add(fovHint);
+            fullscreen=Check("Borderless fullscreen",model.Fullscreen);camera.Children.Add(fullscreen);
+            var quality=PageTheme.Section(graphics,"Quality & performance","Higher render scale and resolution increase GPU load.");
+            var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
+            scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());Field(qualityLeft,"Render scale / supersampling",scale);
+            filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());Field(qualityRight,"Anisotropic filtering",filtering);
+            pacing=Choices(new[]{"adaptive","60","30","0"},model.FrameCap);Field(qualityLeft,"Frame pacing · 0 = uncapped",pacing);
+            interpolation=Choices(new[]{"1","2","3","4"},model.Interpolation.ToString());Field(qualityRight,"Frame interpolation · 1 = off",interpolation);
+            vrr=Check("Variable refresh rate",model.Vrr);vrr.ToolTip="Requires display and driver support.";fps=Check("Show FPS overlay",model.FpsOverlay);
+            var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
+            var interpolationHint=Text("Interpolation adds displayed frames while keeping the game clock unchanged. It can produce visual artifacts.",12);interpolationHint.Foreground=Muted;interpolationHint.Margin=new Thickness(0,8,0,0);quality.Children.Add(interpolationHint);
+            var startup=PageTheme.Section(graphics,"Startup","Choose how the game opens.");
+            skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);startup.Children.Add(skipSplashes);
+            var startupHint=Text("Skips opening logo videos and the idle attract video. Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
             tabs.Items.Add(new TabItem { Header="Graphics & resolution", Content=Scroll(graphics) }); RefreshBindings();
         }
         static string KeyName(string token)
@@ -236,7 +220,7 @@ namespace TimeSplitters.Launcher
             switch(key) { case 1:return "Mouse 1";case 2:return "Mouse 2";case 4:return "Mouse 3";case 5:return "Mouse 4";case 6:return "Mouse 5";case 8:return "Backspace";case 13:return "Enter";case 16:return "Shift";case 17:return "Ctrl";case 18:return "Alt";case 134:return "Wheel up";case 135:return "Wheel down"; }
             return key==0?token:((System.Windows.Forms.Keys)key).ToString();
         }
-        void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) bindingButtons[i,j].Content=KeyName(keys[j]); } }
+        void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
         public void DismissPrompt()
         {
