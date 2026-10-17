@@ -125,11 +125,73 @@ int main(void)
         g_esp=16;pc_network_bots_guest_config(original);
         CHECK(originals==before+1 && g_eax==0x11223344u && g_esp==20);
     }
+#ifdef TSFP_TEST_NATIVE_FALLBACK
+    {
+        void (*hooks[])(void (*)(void))={pc_network_bots_guest_lobby_send,
+            pc_network_bots_guest_capacity,pc_network_bots_guest_start,
+            pc_network_bots_guest_lobby_draw,pc_network_bots_guest_lobby_text};
+        unsigned i;
+        for(i=0;i<sizeof hooks/sizeof hooks[0];i++) {
+            int before=originals;
+            g_esp=16;hooks[i](original);
+            CHECK(originals==before+1 && g_eax==0x11223344u && g_esp==20);
+        }
+    }
+#endif
 #ifdef _WIN32
     {
         uint8_t *config=(uint8_t *)memory+0x78ad58;
         PcNetworkBot *bot=(PcNetworkBot *)((uint8_t *)memory+0x75fd90);
         PcNetworkBot chosen={42,0,2,1,-1,0,-1};
+        unsigned i;
+        for(i=0;i<10;i++) bot[i]=chosen;
+        config[1]=1;
+        memory[0x77728c/4]=memory[(0x77728c+0x124)/4]=1;
+        memory[0x76b108/4]=1;memory[0x76b140/4]=1;memory[0x76b1a4/4]=11;
+        memory[0x78ad2c/4]=13;memory[0x78ad4c/4]=2;bot_test_enabled=1;
+        memory[(0x4d239c+(2*15+3)*4)/4]=8;
+        memory[(0x4d239c+(2*15+2)*4)/4]=12;
+        memory[(0x4d239c+2*15*4)/4]=14;
+        CHECK(pc_network_bots_lobby_limit()==8);
+        memory[0x78ad2c/4]=11;CHECK(pc_network_bots_lobby_limit()==12);
+        memory[0x78ad2c/4]=12;CHECK(pc_network_bots_lobby_limit()==14);
+        memory[0x78ad2c/4]=13;
+        g_esp=16;pc_network_bots_guest_lobby_send(original);
+        CHECK(config[0]==2 && config[2]==6 && g_esp==20);
+        CHECK(pc_network_bots_lobby_prepare(0).waiting==4);
+        g_esp=16;pc_network_bots_guest_capacity(original);
+        CHECK(g_eax==8 && g_esp==20);
+        /* Before measuring the stock label, include the authoritative bots. */
+        memory[4]=0x197707;memory[5]=0x2000;pc_network_bots_lobby_drawing=1;
+        g_esp=16;pc_network_bots_guest_lobby_text(original);
+        CHECK(!strcmp((char *)memory+0x2000,"2 players + 6 bots / 8 (4 waiting)"));
+        memory[0x76b140/4]=2;
+        g_esp=16;pc_network_bots_guest_lobby_text(original);
+        CHECK(!strcmp((char *)memory+0x2000,"2 players + 6 bots / 8"));
+        memory[4]=0x123456;strcpy((char *)memory+0x2000,"Unrelated");
+        g_esp=16;pc_network_bots_guest_lobby_text(original);
+        CHECK(!strcmp((char *)memory+0x2000,"Unrelated"));
+        memory[0x76b140/4]=1;
+        for(i=2;i<8;i++) memory[(0x77728c+i*0x124)/4]=1;
+        g_esp=16;pc_network_bots_guest_lobby_send(original);
+        CHECK(config[0]==8 && config[2]==0);
+        memory[(0x77728c+8*0x124)/4]=1;
+        i=originals;g_esp=16;pc_network_bots_guest_start(original);
+        CHECK(originals==i && g_esp==20); /* Mode shrank below human roster. */
+        memory[(0x77728c+8*0x124)/4]=0;
+        g_esp=16;pc_network_bots_guest_start(original);
+        CHECK(originals==i+1 && g_esp==20);
+        memory[(0x77728c+7*0x124)/4]=0;
+        g_esp=16;pc_network_bots_guest_lobby_send(original);
+        CHECK(config[2]==1 && bot[9].enabled==1);
+        memory[0x78ad4c/4]=17;CHECK(pc_network_bots_lobby_limit()==0);
+        memset(memory,0,sizeof memory);pc_network_bots_lobby_drawing=0;
+    }
+    {
+        uint8_t *config=(uint8_t *)memory+0x78ad58;
+        PcNetworkBot *bot=(PcNetworkBot *)((uint8_t *)memory+0x75fd90);
+        PcNetworkBot chosen={42,0,2,1,-1,0,-1};
+        memory[(0x4d239c+3*4)/4]=16;
         bot[0]=chosen;config[0]=16;config[1]=1;config[2]=0;
         memory[0x77728c/4]=1;memory[0x76b108/4]=1;
         memory[0x76b140/4]=1;memory[0x78ad2c/4]=13;bot_test_enabled=1;

@@ -119,6 +119,11 @@ Host a match, share an invitation, or browse compatible public lobbies. No Steam
 account, paid service or centrally operated server is required. Choose
 **System Link** for LAN play.
 
+Experimental bots are configured through the host's **Options → Bot Set**.
+The lobby shows players, admitted bots and the selected map/mode capacity.
+Humans take priority; excess selected bots wait for space without changing
+the saved bot set. The host sees how many are waiting.
+
 > [!NOTE]
 > Online hosts must forward **TCP 30820** and **UDP 30821** and allow them through
 > the firewall. All players need matching builds and game data. Router setup is

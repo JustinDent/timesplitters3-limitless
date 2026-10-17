@@ -890,7 +890,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   roster adapter. Final broadcast/load hooks repair the original late bot-count
   clear that prevented the initial prototype from spawning bots.
   The adapter validates ten bot records, preserves human IDs, caps combined
-  slots at sixteen, and leaves guest/offline/disabled configurations alone.
+  slots at the selected map/network profile's capacity (bounded by the sixteen
+  physical character slots), and leaves guest/offline/disabled configurations alone.
+  The capacity follow-up gives humans priority, retains selected
+  bots that cannot currently fit, and shows players/admitted bots/limit in the
+  lobby, plus waiting bots on the host. Reliable lobby settings carry admitted
+  bots to guests; both launch boundaries recheck capacity. A mode change that
+  leaves too many human slots blocks launch without dropping players.
   Initial two-peer validation loaded the same roster on both PCs but left guest
   actors inactive. The follow-up adds living-body activation, bot-specific
   combat references and host-owned numeric state snapshots through LAN/Online
@@ -931,6 +937,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Post-match follow-up in `Fix bot post-match portraits, scores and HUD`:
   `src/pc_network_bots_guest.inc`,
   `src/pc_display_ui.inc`, `src/pc_ui_layout.h`, and results/UI regression tests.
+  Capacity follow-up in `Enforce network roster capacity and display lobby bots`:
+  `src/pc_network_bots_lobby.inc`, the shared
+  roster model/guest adapter, `pc-network-bot-capacity` patch and model/ABI tests.
 - **PC validation:** MSVC model and guest/native-fallback tests passed;
   complete patch migration tests passed. See issue #25 in `STATUS.md` for
   the build/menu scope and remaining host/guest checks.
@@ -951,5 +960,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   At match end, verify bot portraits and complete named score rows on both
   peers; Results/Scores/Options must hide health/shield, while Story objectives
   and ordinary pause retain them.
+  Check mode/map capacity selection, full lobbies, joining/leaving humans,
+  zero admitted bots, waiting-roster preservation, and matching host/guest
+  lobby counts. Capacity hooks retain original calls on native Mac until its
+  network adapter is implemented; Windows results do not verify Mac behavior.
 - **Mac implementation and evidence:** No Mac execution or other-device
   synchronization verified for this prototype.

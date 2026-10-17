@@ -12,32 +12,14 @@ static unsigned pc_network_bots_option(const char *name,unsigned fallback,unsign
     return *end || value>maximum ? fallback : (unsigned)value;
 }
 #endif
+#include "pc_network_bots_lobby.inc"
 static void pc_network_bots_guest_config(void (*original)(void))
 {
 #ifdef _WIN32
-    /* Both launch boundaries receive the final configuration by pointer. The
-       network caller clears byte 2 AFTER sub_002D2C70, so patching that builder
-       cannot survive until either the broadcast or the local load copy. */
+    /* Recheck after the stock builder clears byte 2, immediately before both
+       final serialization and the host's pending-load copy. */
     uint32_t address=*(uint32_t *)((uintptr_t)(g_esp+4u)+g_xbox_mem_offset);
-    if (address==0x0078AD58u) {
-
-    uint32_t active[16];unsigned i,count;
-
-    static unsigned last_count,last_humans;
-    uint8_t *config=(uint8_t *)((uintptr_t)0x0078AD58u+g_xbox_mem_offset);
-    for (i=0;i<16u;i++)
-        active[i]=*(uint32_t *)((uintptr_t)(0x0077728Cu+i*0x124u)+g_xbox_mem_offset);
-    count=pc_network_bots_configure(config,PC_NETWORK_MATCH_BYTES,active,
-        (const PcNetworkBot *)((uintptr_t)0x0075FD90u+g_xbox_mem_offset),
-        pc_network_bots_option("TSFP_NETWORK_BOTS",0u,1u)==1u,
-        pc_network_enabled() && *(uint32_t *)((uintptr_t)0x0076B108u+g_xbox_mem_offset)!=0,
-        *(uint32_t *)((uintptr_t)0x0076B140u+g_xbox_mem_offset)==1u,
-        *(uint32_t *)((uintptr_t)0x0078AD2Cu+g_xbox_mem_offset));
-    if (count && (count!=last_count || config[0]!=last_humans))
-        fprintf(stderr,"[NETWORK-BOT-TEST] host config: %u human slots, %u bots from Setup Bots; AI replication is experimental\n",
-            (unsigned)config[0],count);
-    last_count=count;last_humans=config[0];
-    }
+    if(address==0x0078AD58u) pc_network_bots_lobby_prepare(1);
 #endif
     original();
 }

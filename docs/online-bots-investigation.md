@@ -334,3 +334,37 @@ Suppress that draw in completed-match phase `7DE30C == 8` outside Story mode
 and Story objectives. This rule lives in the shared UI adapter; it requires
 no generated-code edits or additional patch. Mac visual validation remains
 pending; Windows runtime evidence is recorded in `STATUS.md`.
+
+## Combined lobby capacity
+
+The capacity adapter follows US `2BEA00`: map index `78AD4C`, map rows at
+`4D2390` (17 rows, stride `3C`), capacity columns starting at `+C`. Frontend
+network modes 11 and 13 select columns 2 and 3; mode 12 retains column 0.
+The supported stock rows contain 16 for those two network profiles and 14
+for the default profile. Read the selected row rather than assuming every
+mode supports 16; the physical 16-slot arrays remain a separate upper bound.
+`64EA0` is a minimum-player query, not a maximum. Do not infer a game-type
+capacity from the unrelated category fields in the game-type table.
+
+Humans have priority. The adapter admits only selected bots that fit and
+preserves the original roster so waiting bots return when space opens. It
+also writes a zero bot count when full or when the host deselects every bot,
+clearing stale counts. Human IDs remain stable: holes below the highest human
+slot conservatively reserve space and can leave fewer bot slots than the
+visible human population alone suggests.
+
+The existing reliable settings sender `354240` refreshes the admitted roster
+in lobby state 11. Packet `2C` already carries the match configuration to
+guests, so no additional transport or incompatible use of spare bytes is
+needed. Final `356490`/`658D0` hooks recheck after the original builder clears
+the count. The stock human-capacity query `35E630` is bounded by the selected
+profile, and `2D38C0` refuses a launch whose human slot span exceeds it.
+An unknown map capacity fails closed instead of guessing.
+
+Only inside current-lobby draw `197890`, formatter return PC `197707` changes
+the population text before its original measurement/alignment. It shows
+players, admitted bots and limit; the host additionally sees waiting bots or
+an over-capacity message. Guests use the host's transmitted admitted count.
+Server-browser strings and offline menus retain their original paths. The
+new reproducible `pc-network-bot-capacity` patch installs these wrappers;
+native Mac wrappers preserve original behavior pending network adaptation.

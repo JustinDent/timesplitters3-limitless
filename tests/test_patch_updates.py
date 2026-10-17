@@ -105,7 +105,8 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
                                   'zzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-shots.patch',
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-bounds.patch',
                                   'zzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-authority.patch',
-                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-presentation.patch'):
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-presentation.patch',
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch'):
             shutil.copyfile(patch, old_patches / patch.name)
     assert installer.apply_patches(checkout, old_patches)
     assert installer.apply_patches(checkout, PATCHES)
