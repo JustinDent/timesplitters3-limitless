@@ -303,29 +303,146 @@ void pc_network_bots_entity_refresh(uint32_t entity)
 {
 #ifdef _WIN32
     extern void sub_0009FBE0(void);
-    if(guest_writable(entity,0x238u)) {
-        *(uint8_t *)((uintptr_t)(entity+0x32u)+g_xbox_mem_offset)=1;
+    if(guest_writable(entity,0x2e8u)) {
+        /* +32 is the transform MODE, not a dirty flag. +28 bit 0x1000
+           invalidates the cached rotation consumed by sub_000A14B0. */
+        WORD_AT(entity+0x28u)|=0x1000u;
         guest_call(sub_0009FBE0,1,entity);
     }
 #else
     (void)entity;
 #endif
 }
-void pc_network_bots_present(uint32_t entity,int32_t clip,const float *channels)
+void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
 {
 #ifdef _WIN32
     extern void sub_000966E0(void);
-    uint32_t model,speed;
-    if(!guest_writable(entity,0x238u) || clip<0 || clip>4095) return;
+    uint32_t model,speed,actor;unsigned hand;
+    const int32_t clip=state->clip;
+    int16_t next_index;
+    if(!guest_writable(entity,0x238u) || clip<0 || clip>4095 || state->next_clip<0 || state->next_clip>4095) return;
+    actor=WORD_AT(entity+0x7cu);
+    if(guest_writable(actor,0xea0u)) for(hand=0;hand<2u;hand++) {
+        uint32_t weapon=WORD_AT(actor+0x18cu+hand*0x130u);
+        if(guest_writable(weapon,0x2cu)) {
+            if(state->body_present && state->health>0.f && (state->entity_flags&1u)) WORD_AT(weapon+0x28u)|=1u;
+            else WORD_AT(weapon+0x28u)&=~1u;
+        }
+    }
+    if(!state->body_present) return;
     model=WORD_AT(entity+4u);
     if(!guest_writable(model,0x200u)) return;
     if((int32_t)WORD_AT(model+0xd4u)!=clip) {
-        memcpy(&speed,channels+11,4);
+        memcpy(&speed,state->clip_channels+11,4);
         guest_call(sub_000966E0,3,model,(uint32_t)clip,speed);
     }
-    memcpy((void *)((uintptr_t)(model+0xdcu)+g_xbox_mem_offset),channels,48);
+    memcpy((void *)((uintptr_t)(model+0xdcu)+g_xbox_mem_offset),state->clip_channels,72);
+    WORD_AT(model+0x124u)=state->clip_cycle;WORD_AT(model+0x128u)=state->clip_flags&~0xc00u;
+    /* The original character animator crossfades a second numeric clip block
+       into the first. Resolve its asset index locally; never copy host handles. */
+    next_index=*(int16_t *)((uintptr_t)(0x007e03c0u+(uint32_t)state->next_clip*2u)+g_xbox_mem_offset);
+    WORD_AT(model+0x12cu)=(uint32_t)state->next_clip;WORD_AT(model+0x130u)=(uint32_t)(int32_t)next_index;
+    memcpy((void *)((uintptr_t)(model+0x134u)+g_xbox_mem_offset),state->next_channels,72);
+    WORD_AT(model+0x17cu)=state->next_cycle;WORD_AT(model+0x180u)=state->next_flags&~0xc00u;
+    WORD_AT(model+0xa8u)=state->overlay_phase;
+    memcpy((void *)((uintptr_t)(model+0xacu)+g_xbox_mem_offset),state->overlay_channels,32);
+    memcpy((void *)((uintptr_t)(model+0x198u)+g_xbox_mem_offset),state->blend_channels,12);
+    /* 0xc00 carries pending root translation/rotation, already included in
+       the host's body transform. Do not apply it twice. Bone buffers belong
+       to the frame arena: evaluate in the normal animation pass, not here.
+       sub_00096C20 is lighting preparation, not skeleton evaluation. */
 #else
-    (void)entity;(void)clip;(void)channels;
+    (void)entity;(void)state;
+#endif
+}
+void pc_network_bots_pose_weapons(uint32_t entity)
+{
+#ifdef _WIN32
+    extern void sub_001BE870(void);
+    float health;
+    if(!guest_writable(entity,0x2e8u)) return;
+    memcpy(&health,(void *)((uintptr_t)(entity+0x1ccu)+g_xbox_mem_offset),4);
+    if(health>0.f && (WORD_AT(entity+0x28u)&1u)) {
+        /* Only after the engine has allocated/evaluated this frame's bones. */
+        guest_call(sub_001BE870,2,entity,0u);
+        guest_call(sub_001BE870,2,entity,1u);
+    }
+#else
+    (void)entity;
+#endif
+}
+/* Send the original reliable hit request without predicting NPC health/death.
+   The normal serializer still checks local ownership of the damage source. */
+void pc_network_bots_request_hit(uint32_t context)
+{
+#ifdef _WIN32
+    extern void sub_0035C870(void);
+    if(guest_writable(context,0x58u)) guest_call(sub_0035C870,1,context);
+#else
+    (void)context;
+#endif
+}
+/* Announce only a confirmed increase in the host's victim score column.
+   Do not replay the damage/death routine: it mutates health, scores and models. */
+int pc_network_bots_kill_notice(unsigned victim,unsigned killer)
+{
+#ifdef _WIN32
+    extern void sub_000CF440(void);
+    uint32_t pool=WORD_AT(0x007356d8u),players=WORD_AT(0x007b0c48u),player,source;
+    unsigned humans=*(uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
+    if(killer>=humans || victim>=16u || killer==victim) return 1;
+    if(!guest_writable(pool,16u*0xea0u) || !guest_writable(players,humans*0x1584u)) return 0;
+    player=players+killer*0x1584u;
+    if((int32_t)WORD_AT(player+4u)<0) return 1; /* remote player's kill */
+    source=WORD_AT(player+0x14u);
+    if(!WORD_AT(player+8u) || !guest_writable(source,0x25cu) ||
+       WORD_AT(source+0x7cu)!=pool+killer*0xea0u) return 0;
+    /* The normal localized "You killed" HUD path uses the victim actor;
+       unlike the announcer it needs neither a corpse nor a damage context. */
+    guest_call(sub_000CF440,2,player,pool+victim*0xea0u);
+    return 1;
+#else
+    (void)victim;(void)killer;
+    return 1;
+#endif
+}
+void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
+{
+#ifdef _WIN32
+    extern void sub_001BB5C0(void);
+    uint32_t actor,target,pool,previous_target,weapon,result;
+    if(!guest_writable(entity,0x25cu) || shot->hand>1u || shot->mode>1u || shot->flags>1u ||
+       shot->weapon<0 || shot->weapon>=66 || shot->target_slot>=16u ||
+       WORD_AT(0x0076b140u)!=2u || WORD_AT(0x0076b1a4u)!=15u) return;
+    actor=WORD_AT(entity+0x7cu);pool=WORD_AT(0x007356d8u);
+    if(!guest_writable(actor,0xea0u) || !guest_writable(pool,16u*0xea0u)) return;
+    target=WORD_AT(pool+shot->target_slot*0xea0u);
+    if(!guest_writable(target,0x25cu)) return;
+    weapon=actor+0xa4u+shot->hand*0x130u;
+    /* A late shot from the previous weapon must not use the new model. */
+    if(WORD_AT(weapon+0x30u)!=(uint32_t)shot->weapon ||
+       !guest_writable(WORD_AT(weapon+0xe8u),0x24u)) return;
+    previous_target=WORD_AT(actor+4u);WORD_AT(actor+4u)=target;
+    /* Preserve local model/owner handles at weapon + E8/EC. */
+    memcpy((void *)((uintptr_t)weapon+g_xbox_mem_offset),shot->transform,48);
+    memcpy((void *)((uintptr_t)(actor+0xb88u)+g_xbox_mem_offset),shot->aim,12);
+    memcpy((void *)((uintptr_t)(actor+0xbb4u)+g_xbox_mem_offset),shot->muzzle,12);
+    result=guest_call(sub_001BB5C0,4,entity,shot->hand,shot->mode,shot->flags);
+    WORD_AT(actor+4u)=previous_target;
+    {
+        static unsigned traces;
+        const char *path=getenv("TSFP_BOT_TRACE");
+        if(path && *path && traces<128u) {
+            char name[1024];FILE *log;
+            if(snprintf(name,sizeof name,"%s.shots",path)<(int)sizeof name) {
+                log=fopen(name,traces++?"a":"w");
+                if(log) {fprintf(log,"slot=%u serial=%u weapon=%d hand=%u mode=%u result=%u\n",
+                    WORD_AT(actor+8u),shot->serial,shot->weapon,shot->hand,shot->mode,result);fclose(log);}
+            }
+        }
+    }
+#else
+    (void)entity;(void)shot;
 #endif
 }
 void pc_network_bots_menu(void (*original)(void))

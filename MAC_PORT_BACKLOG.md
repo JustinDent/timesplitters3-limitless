@@ -896,13 +896,34 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   combat references and host-owned numeric state snapshots through LAN/Online
   transport. Follow-up restores radar eligibility and hit-collision flags,
   transfers actual live vitals and clip/frame channels, and recreates missing
-  guest bodies on host respawn. Current live acceptance and remaining gaps are in `STATUS.md`;
+  guest bodies on host respawn. The guest follow-up also transfers
+  spawn counters, hit bounds and both animation/blend tracks,
+  includes AI in score calculation and paused Scores rows, and replicates
+  successful host firing events through guest-local weapon models. Locally
+  replayed bot effects cannot apply duplicate damage; incoming damage to human
+  victims keeps the original path. An original bounds-refresh wrapper preserves host
+  hit geometry between snapshots, with body/spawn cache invalidation.
+  The authority fix makes the host finish NPC deaths even
+  when the shooter belongs to a guest. Guests send reliable hit requests and
+  consume host vitals instead of applying speculative or echoed NPC damage.
+  Snapshots carry explicit body absence and each bot's victim score column,
+  including human kills; confirmed score increases drive guest notices.
+  The presentation fix uses the actual localized kill HUD
+  callback with persistent victim slots and retries unavailable local views.
+  It evaluates guest poses without advancing them in the original animation
+  pass, positions weapons after that pass, removes duplicate root movement,
+  preserves local visibility/transform mode, and invalidates rotation correctly.
+  Current live acceptance and remaining gaps are in `STATUS.md`;
   issue #25 is not complete from a build or roster check alone.
 - **PC source:** Issue #25 checkpoint on `25-add-bot-support-to-online-matches`,
-  based on `33fc619`: `src/pc_network_bots.h`, `src/pc_network_bots_guest.inc`,
+  checkpoint `0c8531c` plus the follow-ups included in the commit
+  `Fix network bot replication, scoring and guest presentation`:
+  `src/pc_network_bots.h`, `src/pc_network_bots_guest.inc`,
   `src/pc_display_menu.c`/`.h`, `src/pc_network.c`/`.h`,
   `src/pc_network_bots_state.h`, `src/pc_controls.c`, and the
-  `pc-network-bots-test` / `pc-network-bot-combat` patches.
+  `pc-network-bots-test` / `pc-network-bot-combat` / `pc-network-bot-scoreboard`
+  / `pc-network-bot-shots` / `pc-network-bot-bounds`
+  / `pc-network-bot-authority` / `pc-network-bot-presentation` patches.
 - **PC validation:** MSVC model and guest/native-fallback tests passed;
   complete patch migration tests passed. See issue #25 in `STATUS.md` for
   the build/menu scope and remaining host/guest checks.
@@ -915,6 +936,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Mac acceptance checks:** Two native hosts, and mixed Windows/Mac peers,
   must agree on roster, movement, shots, damage, deaths, respawns, teams,
   scoring, rematches and disconnects. Verify disabled/offline behavior and
-  reject incompatible builds. Preserve personal settings/saves.
+  reject incompatible builds. Check guest visibility across turns/respawns,
+  weapon attachment alignment and localized confirmed-kill HUD notices,
+  including delayed body absence. Preserve personal settings/saves.
 - **Mac implementation and evidence:** No Mac execution or other-device
   synchronization verified for this prototype.

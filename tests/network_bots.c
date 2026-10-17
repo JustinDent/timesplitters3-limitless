@@ -61,10 +61,31 @@ int main(void)
     {
         PcNetworkBotState state={0};state.slot=2;state.health=1;
         CHECK(pc_network_bot_state_valid(&state,2,6));
+        state.body_present=2;CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.body_present=1;
         state.position[0]=NAN;CHECK(!pc_network_bot_state_valid(&state,2,6));
         state.position[0]=0;state.armor=INFINITY;
         CHECK(!pc_network_bot_state_valid(&state,2,6));
-        state.armor=0;state.slot=1;CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.armor=0;state.bounds_radius[1]=-1.f;
+        CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.bounds_radius[1]=0;state.bounds_center[0]=NAN;
+        CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.bounds_center[0]=0;state.clip_channels[0]=NAN;
+        CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.clip_channels[0]=0;state.clip=-1;
+        CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.clip=0;state.next_channels[17]=INFINITY;
+        CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.next_channels[17]=0;state.overlay_phase=3;
+        CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.overlay_phase=0;state.shot.serial=1;state.shot.weapon=7;state.shot.target_slot=1;
+        CHECK(pc_network_bot_state_valid(&state,2,6));
+        state.shot.hand=2;CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.shot.hand=0;state.shot.weapon=66;CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.shot.weapon=7;state.shot.target_slot=8;CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.shot.target_slot=1;state.shot.transform[11]=NAN;CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.shot.transform[11]=0;state.shot.aim[2]=INFINITY;CHECK(!pc_network_bot_state_valid(&state,2,6));
+        state.shot.aim[2]=0;state.slot=1;CHECK(!pc_network_bot_state_valid(&state,2,6));
         state.slot=16;CHECK(!pc_network_bot_state_valid(&state,2,6));
     }
     puts("PASS: opt-in host config, preserved human IDs/settings, capacity and invalid-state rejection");

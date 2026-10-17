@@ -1,0 +1,9 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -130,3 +130,6 @@
+ { pc_network_bots_guest_bounds(sub_0009EAB0_gen); }
++extern void sub_0035CC10_gen(void);
++void sub_0035CC10(void)
++{ pc_network_bots_guest_death_gate(sub_0035CC10_gen); }
+ extern void sub_000BB6C0_gen(void);
+ void sub_000BB6C0(void)

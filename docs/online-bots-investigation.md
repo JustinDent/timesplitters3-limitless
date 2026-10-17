@@ -203,3 +203,108 @@ Host-human direct-hit attribution, full animation fidelity and guest weapon
 visuals remain unverified or unfinished, as do rematches, disconnects and the
 actual Online bridge. See the latest checkpoint in `STATUS.md`; this commit is
 work in progress, not completion of issue #25.
+
+## Guest animation, firing and score follow-up
+
+The guest now receives both original animation tracks (`model + 0xD4` and
+`0x12C`), their numeric playback channels and blend state. It resolves clip
+indices locally. The later presentation follow-up below corrects the original
+cache/evaluation approach. Actor `0x94` is the equipped weapon enum, not an animation clip. The
+body heading at `0x70` and numeric aim/muzzle vectors are replicated too. The
+original third-person weapon updater positions/creates guest-local weapon
+models after the character pose is evaluated.
+
+Combat events include the victim's spawn counter at entity `0x258`. Replicating
+that counter and the host's hit bounds prevents shots from using a stale life
+or the guest constructor's default collision shape. Restore these bounds after
+pose, weapon and spatial refreshes, which can overwrite them. The original
+`sub_0009EAB0` boundary also restores cached host bounds between snapshots,
+only for the same guest body and spawn counter. Incoming host damage keeps
+the original event path. Guest-origin human shots remain original too.
+
+Score calculation and sorting have controller/peer filters in addition to the
+HUD activity checks. Only their AI iterations use the original offline actor
+branch; human membership checks remain unchanged. Paused Scores has its own
+two activity call sites. Score eligibility uses the persistent actor record,
+so a deleted body during respawn does not remove a bot's score row.
+
+The original NPC firing function (`sub_001BB5C0`) has no working network-event
+sender. A separate wrapper records successful host calls as a serial number,
+spawn/tick, hand/fire mode, weapon definition, target slot, numeric weapon
+transform and aim/muzzle coordinates. Snapshots carry the latest event. The
+guest resolves its own target and model, consumes each serial once, and drops
+events older than 30 guest ticks or belonging to another spawn/weapon. It then
+uses the original firing presentation without running AI decisions. Local
+bot-sourced damage is rejected on guests; original incoming host damage is
+allowed, including when presentation produces delayed effects. No host pointer
+or model handle travels over the wire. Cosmetic events can be lost with UDP;
+they do not establish damage authority.
+
+With `TSFP_BOT_TRACE` enabled, successful guest replay attempts also write a
+bounded companion `.shots` diagnostic (at most 128 entries). A successful call
+is not visual acceptance: verify the actual model, flash/tracer, sound and
+projectile behavior, and record measured results in `STATUS.md`.
+
+## Host-owned bot deaths and victim scores
+
+The previous health snapshots did not establish a single death authority.
+Guest-local `BB6C0` applied a hit after sending it, and an incoming damage
+event could subtract HP again after a newer snapshot had already incorporated
+that hit. A local kill could therefore be undone by the next host snapshot.
+There was a second, independent failure: `BABA0` gates completed death on
+`35CC10`, whose sender checks ownership of the shooter through `35BE90`.
+The host could reach zero NPC HP from a remote human hit but fail that gate,
+never awarding the kill or finishing the corpse transition.
+
+The new `pc-network-bot-authority` patch wraps this gate only for configured
+NPC victims. The host completes the original death/score logic; guests cannot
+complete a speculative NPC death. NPC death uses authoritative snapshots,
+without also emitting the stock human death packet. Guest human hits still
+use the original reliable `35C870` serializer and its source-ownership checks,
+but no longer run local NPC damage. Echoed NPC damage is ignored because its
+result is already carried in host vitals. Human victims retain stock handling.
+
+Every bot snapshot includes the host's victim column from the actor kill
+matrix, so human kills of bots synchronize as well as the bot's own score row.
+The column is applied even when a body is absent. Its confirmed increases can
+invoke the original kill-announcement presentation without replaying death or
+incrementing scores locally. Duplicate snapshots cannot repeat that notice.
+An explicit missing-body snapshot hides the old replica and attached weapons;
+a subsequent live snapshot restores its draw/collision/damage-acceptance bits
+or recreates a missing body. The replicated body mask now includes bit `0x10`,
+which the damage entry checks independently of the hit-collision bits.
+
+This supersedes the earlier guest-damage behavior described above. Validation
+must cover actual completed deaths, respawns, and human victim-matrix entries;
+HP reaching zero or a kill notification alone is insufficient evidence.
+
+## Guest presentation and confirmed kill HUD follow-up
+
+`sub_000CF440(human_state, victim_actor)` is the original localized **You
+killed** HUD path; `sub_00165010` is a separate announcer callback and does not
+replace it. Confirmed victim-column increases now use `CF440` for a local human.
+Use the persistent actor slot, including when its corpse is already absent.
+Keep undelivered confirmations pending while the local view is unavailable,
+consume all positive counter increments, and suppress duplicate snapshots.
+Health and scoring remain host-owned.
+
+The model follow-up corrects three identified presentation mistakes:
+
+- `sub_00096C20` prepares lighting, not skeleton animation. Remove its call
+  from the network pump. The engine allocates fresh bone buffers each frame in
+  `A0130`/`A00B0`; third-person weapon positioning now runs after the normal
+  `5FDC0` pose pass. Its existing zero-advance mode evaluates guest NPC channels
+  without advancing the host's animation a second time. Other actors and native
+  fallback keep their original path.
+- Clip flags `0x400` and `0x800` apply pending root translation/rotation in
+  `5CEF0`. Those movements are already included in the received body transform;
+  clear them on both received tracks. Preserve guest visibility bit `0x10` in
+  actor `+2C`, which `A0130` sets from that machine's camera.
+- Body byte `+32` selects transform mode; it is not a dirty flag. Preserve it
+  and invalidate the rotation matrix with body `+28` bit `0x1000`, as consumed
+  by `A14B0`, before refreshing spatial sectors.
+
+These are targeted corrections, not visual proof that all intermittent model
+disappearances are resolved. Record actual two-peer/capture evidence in
+`STATUS.md`; software shadow-renderer dumps do not prove the D3D11 window's
+contents. Genuine cloak/death rules and normal renderer culling remain intact.
