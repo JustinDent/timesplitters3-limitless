@@ -4060,3 +4060,13 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 700,119,509 bytes (667.69 MiB / 6144 MiB). Texture workspace: 3,131,448,476 logical/allocated bytes (2.92 GiB). Temporary exports/reviews: 236,384,605 bytes (225.43 MiB / 256 MiB). Free disk at audit: 127,412,867,072 bytes.
 - Reclaimed 13,965,689 bytes from 140 old decoded opaque reference PNGs after catalog payload, exact pixel, resolved-parent and SHA256 verification. Excluded alpha-source dependencies and recent batches 90-98. Kept recovery recipes, authored art, prompts, reviews, game files, saves and settings. No duplicate game/pack/ZIP/staging.
 - Private evidence under `private/texture-remaster/review/hybrid-98-*`, including selection, acceptance, functional/native audits, reference recovery manifest and exact authored prompt records. This commit records progress; artwork stays local and ignored.
+
+
+## Texture overhaul issue #74: hybrid batch 99
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `66328a8`. Inspected 32 catalog-verified opaque originals; 1,273 provisionally classified keys. Faces, labels, previews, effects and ambiguous materials remain queued.
+- Accepted sixteen material/prop replacements including masonry, plaster, rubble, ground, alternating paving, braced crate, double metal panel and marble trim. Eleven 1254-square and five 1774x887 built-in imagegen sources downsampled to eight 1024-square, three 512-square and five 1024x512 full-mip DXT1 files. No native 4K claim.
+- Four comparisons, four repeat sheets and three enlarged crate/panel/marble detail sheets reviewed. Original-relative divisions, courses, openings, brace, corner fittings, latch and molding retained. Mean luminance changes -9.65% to +6.73%; local relief, lighting, material scale and scene adjacency remain runtime checks.
+- All 650 installed/offline-approved DDS pass native and worklist validation. Still 6,113 need art and 49 drafts need correction; full overhaul unfinished. No game launches, runtime changes or shared-tool edits. Near-completion testing gate retained.
+- Pack: 707,992,997 bytes (675.19 MiB / 6144 MiB). Texture workspace: 3,206,699,870 logical/allocated bytes (2.99 GiB). Temporary exports/reviews: 243,571,476 bytes (232.29 MiB / 256 MiB). Free disk at audit: 128,358,879,232 bytes. No duplicate game/pack/ZIP/staging. Saves and settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-99-*`, exact prompts, authored sources and progress. Artwork remains ignored/local; this commit records progress only.
