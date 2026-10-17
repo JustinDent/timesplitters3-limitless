@@ -702,7 +702,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 - **Status:** Queued
 - **Resumable downloads and recovery (2026-10-17, commit `c21df35` on
-  `feature/launcher-download-recovery`):** `DownloadTransfer.cs`, `ReleaseClient.cs`,
+  `feature/launcher-download-recovery`):** Merged through [PR #91](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/91) as `69204af`, prepared for launcher v1.2.10. `DownloadTransfer.cs`, `ReleaseClient.cs`,
   `SelfUpdate.cs`, `InstallationMaintenance.cs`, `Bootstrap.cs`, `Launcher.cs`/XAML
   and `MaintenancePage.cs` add separate bounded game/launcher caches, strict HTTP
   resume handling and complete-file checksum verification, cancellable copy and
