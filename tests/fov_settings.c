@@ -43,6 +43,15 @@ MOUSE_STUB(sub_00074760) MOUSE_STUB(sub_00076EF0) MOUSE_STUB(sub_00076510)
 MOUSE_STUB(sub_002E6D40) MOUSE_STUB(sub_00079860)
 MOUSE_STUB(sub_002E49F0) MOUSE_STUB(sub_002E4A30)
 #undef MOUSE_STUB
+/* Bot helpers share the menu translation unit, but must never execute in
+ * this isolated FOV fixture. Bot behavior has its own network regressions. */
+#define BOT_STUB(name) void name(void) { CHECK(0); }
+BOT_STUB(sub_000DAC30) BOT_STUB(sub_000D7570) BOT_STUB(sub_0009FBE0)
+BOT_STUB(sub_000966E0) BOT_STUB(sub_001BE870) BOT_STUB(sub_0035C870)
+BOT_STUB(sub_000CF440) BOT_STUB(sub_001BB5C0)
+BOT_STUB(sub_002C2C20) BOT_STUB(sub_002C0490) BOT_STUB(sub_002C19F0)
+BOT_STUB(sub_002C1570) BOT_STUB(sub_002C1490)
+#undef BOT_STUB
 STUB(sub_00075B70) STUB(sub_00071B10) STUB(sub_00071C50)
 STUB(sub_000771D0) STUB(sub_000770E0)
 void sub_00078980(void) {

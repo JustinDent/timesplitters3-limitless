@@ -4602,3 +4602,23 @@ No additional gameplay session was run for this merge; earlier two-peer
 results apply to the pre-merge build as recorded above. Personal saves and
 settings were not changed. Merge completion/publication updates PR #108;
 main itself is not merged or modified by this operation.
+
+## Issue #25: Windows CI FOV fixture linkage (2026-10-17)
+
+PR #108 run 39075442502 passed patch transitions but failed its Windows native
+regression step: `tests/test_fov_settings.py` could not link 13 original game
+functions referenced by the newly integrated bot helpers in pc_display_menu.c.
+The production Release build was unaffected; its generated game provides those
+functions. The isolated FOV test needed corresponding fixture dependencies.
+
+Reproduced the linker failure locally, then added fail-fast bot-function stubs
+to `tests/fov_settings.c`, following its existing tutorial/menu-mouse fixtures.
+They satisfy linkage but fail the test if the settings-only scenario enters
+bot code. No production source, patch, game data or settings were changed.
+
+On Windows AMD64, Python 3.14.2/MSVC 19.42, all 81 tests in the same 17 modules
+selected by the Windows CI native step passed (9.30 seconds). Logs:
+`logs/issue25-ci-repro.log`, `logs/issue25-ci-native.log`. Hosted Windows uses
+Python 3.12/MSVC 14.51; its rerun is needed to confirm that environment.
+No game rebuild/play session was required for this test-only fix. Native Mac
+behavior is unchanged; MAC-033's queued network adaptation remains unchanged.

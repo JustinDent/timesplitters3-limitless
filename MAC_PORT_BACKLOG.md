@@ -1215,6 +1215,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Capacity follow-up in `Enforce network roster capacity and display lobby bots`:
   `src/pc_network_bots_lobby.inc`, the shared
   roster model/guest adapter, `pc-network-bot-capacity` patch and model/ABI tests.
+- **CI fixture follow-up:** Windows FOV tests include fail-fast stubs for
+  the bot helpers linked through the menu translation unit; no production
+  change or Mac adaptation is needed for this test-only fix. The full Windows
+  native CI test selection passed locally (81 tests; see STATUS.md).
 - **Merge integration:** PR #108 preserves main's menu-mouse/quit adapters
   alongside network bots. The input harness accepts either absolute cursor
   coordinates or sequenced gameplay motion. Renumbered this entry from MAC-028
