@@ -174,6 +174,10 @@ directly. Resolution and FOV persist in `config/pc-display.ini`; fullscreen
 is a session setting. The original in-game Settings/Options menu also includes
 **Display settings**, with a 15-second resolution preview and automatic rollback.
 
+The lower-right host overlay shows the shared game version and generated build
+identity independently of the performance display. It stays out of guest
+screen-copy textures and capture files.
+
 **Mac debug tools:** **F9** toggles the FPS overlay for the current session.
 **F12** or **Game Settings → Debug & Performance…** opens options for FPS,
 average guest frame interval, error/warning counters and optional performance

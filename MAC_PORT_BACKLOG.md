@@ -128,11 +128,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-027 | Arcade RANK widget left placement | Awaiting validation |
 | MAC-028 | Preserve frontend camera FOV (#82) | Awaiting validation |
 | MAC-029 | Skippable idle demo video (#50) | Awaiting validation |
-| MAC-030 | Menu mouse selection (#86) | Queued |
-| MAC-031 | Quit to Desktop menu entries | Queued |
+| MAC-030 | Menu mouse selection (#86) | Awaiting validation |
+| MAC-031 | Quit to Desktop menu entries | Awaiting validation |
 | MAC-032 | Spirit skull and eye rendering (#17) | Awaiting validation |
-| MAC-033 | Restore a reproducible native build from current main | Awaiting validation |
-| MAC-034 | Version and build-identity watermark | Queued |
+| MAC-033 | Restore a reproducible native build from current main | Verified |
+| MAC-034 | Version and build-identity watermark | Awaiting validation |
 
 ### MAC-001 — Direct-camera mouse look
 
@@ -1221,7 +1221,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-033 — Restore a reproducible native build from current main
 
-- **Status:** Verified on Mac
+- **Status:** Verified
 - **PC behavior:** The supported build regenerates from the complete pinned
   patch stack and supplies generated build identity to the shared debug code.
   Current project rules permit focused branches on either platform.
@@ -1274,26 +1274,26 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-034 — Version and build-identity watermark
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** Windows presents a separate lower-right version/compatibility
   identity line on normal and interpolated frames, independently of the optional
   performance line, allowing screenshots to identify the running build.
 - **Source:** `e2f655a`, integrated in main; `src/pc_debug.c`,
   `tools/network-identity.py`, `patches/zzzz-pc-debug-latency-watermark.patch`.
-- **Existing Mac support:** Shared text formatting exists, but
-  `src/native/gl_debug.inc` only draws the optional performance overlay; it does
-  not call `pc_debug_watermark()`. MAC-014 tracks patch transitions, not this
-  missing visible feature. Build prerequisites are tracked separately by MAC-033.
-- **Mac adaptation needed:** Supply accurate version/identity metadata and a
-  native host-overlay draw, preserving independent FPS visibility, GL state and
-  resource lifetime. Do not present an offline placeholder as a network-compatible
-  build identity. Networking itself remains MAC-013.
-- **Acceptance:** Check text against the built manifest; verify visible placement
-  with FPS enabled/disabled, resizing/fullscreen, 60/120 host presentation and
-  long version strings. Keep overlays out of guest screen-copy textures and
-  interpolation history, and verify GPU state restoration.
-- **Evidence:** Source comparison only; no native implementation or GPU execution
-  for this feature. [Current-main audit](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
+- **Native adaptation (2026-10-17, `codex/mac-build-watermark`):**
+  `src/native/gl_debug.inc` now draws `pc_debug_watermark()` independently at the
+  lower right, through the existing normal/interpolated host-presentation path.
+  CoreText measures/truncates long labels; narrow windows fit the full cached
+  line. Separate bounded texture/FBO caches preserve the optional FPS line;
+  normal SDL shutdown releases them. Shared build metadata comes from MAC-033.
+- **Validation:** Real GPU tests check visible text with FPS on/off, lower-right
+  placement, narrow/long labels, cache destruction/recreation, pixel-unpack/PBO,
+  texture/FBO/scissor restoration and guest-scene isolation. Reviewed generated
+  bitmap matches VERSION and the build manifest identity prefix.
+  [Measured evidence](STATUS.md#native-build-watermark-2026-10-17).
+- **Remaining acceptance:** Live window/fullscreen visual checks and host capture
+  review at 60/120 presents. Guest captures intentionally omit the host overlay.
+  A compatibility identifier does not establish native network support; see MAC-013.
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 

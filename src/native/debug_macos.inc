@@ -3,7 +3,7 @@
 #include <unistd.h>
 /* Text rasterization uses thread-safe CoreText/CG objects, never AppKit views
  * on the rendering thread. Pixels are opaque RGBA for a separate host overlay. */
-int tsfp_native_debug_bitmap(const char *text,unsigned char *pixels,int width,int height) {
+int tsfp_native_debug_bitmap(const char *text,unsigned char *pixels,int width,int height,int *used_width) {
     CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
     CGContextRef c=CGBitmapContextCreate(pixels,width,height,8,width*4,space,kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(space);if(!c)return 0;
@@ -15,6 +15,16 @@ int tsfp_native_debug_bitmap(const char *text,unsigned char *pixels,int width,in
     CFDictionaryRef attrs=CFDictionaryCreate(NULL,keys,values,2,&kCFTypeDictionaryKeyCallBacks,&kCFTypeDictionaryValueCallBacks);
     CFAttributedStringRef attributed=CFAttributedStringCreate(NULL,string,attrs);
     CTLineRef line=CTLineCreateWithAttributedString(attributed);
+    double measured=CTLineGetTypographicBounds(line,NULL,NULL,NULL);
+    if(measured>width-16) {
+        CFAttributedStringRef dots=CFAttributedStringCreate(NULL,CFSTR("…"),attrs);
+        CTLineRef token=CTLineCreateWithAttributedString(dots);
+        CTLineRef truncated=CTLineCreateTruncatedLine(line,width-16,kCTLineTruncationEnd,token);
+        if(truncated){CFRelease(line);line=truncated;}
+        CFRelease(token);CFRelease(dots);
+        measured=CTLineGetTypographicBounds(line,NULL,NULL,NULL);
+    }
+    if(used_width)*used_width=(int)fmin(width,ceil(measured)+16);
     CGContextSetTextPosition(c,8,12);CTLineDraw(line,c);
     CFRelease(line);CFRelease(attributed);CFRelease(attrs);CFRelease(string);CGColorRelease(white);CFRelease(font);CGContextRelease(c);
     return 1;

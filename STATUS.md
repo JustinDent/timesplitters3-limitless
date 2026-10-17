@@ -1,5 +1,36 @@
 # Measured progress
 
+## Native build watermark (2026-10-17)
+
+`codex/mac-build-watermark` depends on unmerged native exit `83b50b4`. The
+host OpenGL overlay draws the shared version/build identity at the lower right,
+independently of the optional upper-left FPS line. CoreText measures its width
+and ellipsizes labels exceeding the 1024-pixel cache; narrow drawables fit the
+complete cached line. Separate fixed-size caches are released on normal SDL
+shutdown. The same existing scene-presentation function is used for ordinary
+and interpolated presents; guest scene/readback/history remains separate.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+the full native suite passed: three CTests plus GPU, SDL input and Cocoa
+settings/debug. New GPU coverage checks independent visibility with FPS off,
+text pixels and placement, narrow/long labels, resource destruction/recreation,
+and FBO/texture/scissor/pixel-unpack/PBO restoration. Existing screen-copy and
+interpolation regressions also passed. The initial test sampled the text cache
+instead of the destination FBO after a direct helper call; correcting the test's
+read target made that new assertion pass. The production draw restores both
+read/draw targets. No Windows-specific implementation changed; Windows host
+execution is unavailable here.
+
+Reviewed `private/captures/native-mac/build-watermark.png`: text reads
+`TSFP PC v0.2.0-alpha.5  6296ca9d`, matching VERSION and
+`build/macos/BUILD.json`. That manifest records source `83b50b4` plus the
+uncommitted overlay changes; executable SHA-256:
+`f7e6028db973b1a8a2879c6a9745f91881eef29a8822155a21d2ae3dfe2dcb23`.
+Evidence: `logs/native-watermark-build.out` / `.err` and the small GPU bitmap.
+Live fullscreen/window interaction and actual host-present capture review at
+60/120 remain pending; MAC-034 stays Awaiting validation. This does not verify
+native networking.
+
 ## Native Quit to Desktop (2026-10-17)
 
 `codex/mac-quit-desktop` depends on unmerged native menu input `db11ff7`.

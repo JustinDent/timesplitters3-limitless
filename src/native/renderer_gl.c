@@ -721,6 +721,7 @@ static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const
         tsfp_native_input_event(&ev,g.window);
         if (ev.type == SDL_EVENT_QUIT || ev.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
             fprintf(stderr, "[native-input] window close requested\n");
+            native_debug_release();
             exit(0);
         }
     }
