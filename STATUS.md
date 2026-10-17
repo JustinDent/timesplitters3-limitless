@@ -3430,3 +3430,34 @@ queued under MAC-021; other-device synchronization is unverified.
   passed after updating branch-switch fixtures to model main without the toggle.
   This covers fresh/upgrade/idempotent stacks, LF/CRLF round trips and preservation
   of unrelated edits. The complete main patch stack remains compatible.
+
+## Texture props batch 59 - October 16, 2026
+
+- Continued on issue #74 branch from `21926c8`. Four new offline-reviewed
+  replacements: brass cylinder/caps atlas, slotted bronze lid, two-pin steel
+  equipment strip and recessed industrial wall panel. Ring retains eight holes;
+  panel retains four outer fasteners per side and corner brackets. All four
+  original and compiled alpha channels are fully opaque.
+- Three square sources are 1254x1254 and the rectangular source is 1774x887.
+  Compiled DXT1 outputs are two 1024x1024, one 1024x512 and one 2048x2048 with
+  full mip chains. All are resampled; these are not native 4K generated sources.
+- Two additional built-in generation calls attempted held stone/rust repeat
+  corrections. Both failed offline review and remain uninstalled. Retained
+  original V1 sources, prompts, generator references and comparison evidence;
+  recycled 7.04 MiB of unsuccessful local V2 copies.
+- All 236 installed DDS files pass native format validation and worklist
+  hash/dimension/mip/aspect/budget checks. Inventory refreshed: 7,147 payloads,
+  6,812 supported keys, 6,567 needing art and nine held drafts. Existing gaps,
+  unclassified categories and discovery scope remain open.
+- Pack: 392,826,981 bytes (374.63 MiB),
+  adding 4.34 MiB this batch. Texture workspace
+  allocation is approximately 1.141 GiB;
+  original exports and review outputs total 107.34 MiB,
+  below the 256 MiB temporary limit. One active pack, no duplicate game or build.
+- Private evidence: `review/props-59-final-1.jpg`, repeat sheet and metrics,
+  `review/props-59-native-audit.txt`, `review/props-59-acceptance.json`,
+  `review/props-59-cleanup.json` and `review/surfaces-59-source-metrics.json`
+  under `private/texture-remaster`. Exact prompts accompany each source.
+- No runtime rebuild or game launch. Model UV/lighting, scene adjacency,
+  1080p/4K/ultrawide rendering, residency and full-pack stability remain pending
+  the existing near-completion gate. This is a partial preview, not a full remaster.
