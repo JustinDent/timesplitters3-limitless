@@ -21,6 +21,7 @@ on:
       - tools/playable-launch.ps1
       - tests/launcher_updates.cs
       - tests/launcher_settings.cs
+      - tests/launcher_maintenance.cs
       - tests/test_launcher_startup.py
       - tests/package_launcher.py
       - tests/test_publish_release.py
@@ -94,6 +95,7 @@ on:
       - tools/playable-launch.ps1
       - tests/launcher_updates.cs
       - tests/launcher_settings.cs
+      - tests/launcher_maintenance.cs
       - tests/test_launcher_startup.py
       - tests/package_launcher.py
       - tests/test_publish_release.py

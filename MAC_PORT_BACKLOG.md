@@ -701,6 +701,34 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Repair/Verify and Diagnostics for v1.2.8 (2026-10-17, commit `920b789` on
+  `feature/launcher-repair-diagnostics`):** `InstallationMaintenance.cs`,
+  `MaintenancePage.cs`, `Launcher.cs`/XAML, `ReleaseClient.cs`, `SelfUpdate.cs`
+  and `Core.cs` add embedded repair/diagnostic pages with the sidebar retained.
+  Verification is read-only against installed manifests. Repairs pin exact
+  published versions, validate archives and files, protect personal directories,
+  preserve the independent launcher during game repair and retain the previous
+  game rollback using separate repair transactions/recovery/cleanup. Diagnostics
+  provide versions, GPU/driver/settings/health and allowlisted error summaries;
+  clipboard reports exclude personal paths, arbitrary log text, saves and ISOs.
+  Existing Mac has no corresponding release-launcher adapter. Reuse version,
+  manifest ownership and transaction rules in its future native implementation;
+  adapt WPF/WMI/clipboard and POSIX atomic recovery separately. Verify corruption,
+  cancellation, staged updates, recovery, retained backups, privacy and page
+  navigation with disposable fixtures. Shared game runtime is unchanged; native
+  Mac execution is unverified. See the v1.2.8 validation entry in STATUS.md.
+  Follow-up on the same branch (2026-10-17, commit `e640b2f`): `DiagnosticIssueDraft.cs`
+  and Diagnostics buttons open the bug/enhancement GitHub form with the filtered
+  report, bounded URL prefills and full-report clipboard fallback. Both issue
+  templates add an optional matching field. Future Mac adapters must preserve
+  the review-before-submit flow, use a native browser/clipboard adapter, retain
+  long/Unicode reports and avoid automatic issue submission. Acceptance checks
+  include both form IDs, URI round-trips, privacy, busy state and clipboard fallback.
+  Additional PR #88 UI follow-up moves Game files from the sidebar into
+  Repair / Verify, below the repair cards as Open game folder. Preserve this
+  placement, install-root target and busy state in the future Mac launcher; the
+  Windows preview avoids opening Finder/Explorer. See the folder-action entry in
+  STATUS.md for Windows build, regression and rendered-layout evidence.
 - **Preserve launcher artwork (2026-10-16, commit `f1011f8`,
   [PR #75](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/75),
   prepared for launcher v1.2.7):** `Core.cs` preserves verified independent

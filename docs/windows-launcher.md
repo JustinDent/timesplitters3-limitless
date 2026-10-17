@@ -93,13 +93,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
-in `build/launcher`; for version 1.2.7, publish all three together:
+in `build/launcher`; for version 1.2.8, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.7-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.7-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.8-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.8-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.7`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.8`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -337,3 +337,76 @@ For an installation already affected by an older updater, close the launcher
 and extract the complete verified launcher release ZIP into that installation.
 An equal version with internally valid fallback files is not automatically
 reinstalled by the existing launcher self-updater.
+
+## Repair / Verify (launcher v1.2.8)
+
+The **Repair / Verify** sidebar page stays inside the main window. Its **Open game
+folder** button sits below the verification and repair cards and opens the
+installation folder for inspection. Choose
+**Verify files** separately for the game runtime or launcher. Verification works
+offline, compares SHA-256 hashes with the installed manifest, reports missing,
+changed or unreadable release-owned files, and creates or changes no files.
+Game checks exclude personal settings and independent launcher files. A matching
+installed manifest is an integrity check; it is not a fresh publisher signature.
+Imported game data, ISOs, saves and texture packs are not scanned or repaired.
+
+After verification, **Repair files** downloads the exact installed game release,
+or the exact running launcher release, from GitHub. Draft, unavailable or
+unpublished releases cannot be substituted with a newer/older version. The
+archive size and published SHA-256, package layout and every staged file hash
+must verify before installation. Development launcher v1.2.8 cannot repair itself
+from GitHub until that version is published. Repair is explicit, including for
+internally consistent fallback artwork builds.
+
+Close the game before repair. Downloads, verification and extraction can be
+cancelled; installed files stay unchanged until the existing updater helper
+applies the verified transaction and reopens the launcher. Game repair replaces
+only changed/missing owned runtime files and the official BUILD manifest; it
+preserves all settings, saves, extracted data, ISOs, textures, independent
+launcher files and untracked files. Modified release-owned runtime files may be
+replaced. The previous game rollback is retained. Repair has separate
+`.launcher/repair-transaction` and `repair-rollback` folders; interrupted repairs
+recover on startup, and repair backups use the existing confirmed-game cleanup
+rules. Existing unknown/pending updates are retained, rather than overwritten.
+
+## Diagnostics (launcher v1.2.8)
+
+**Diagnostics** shows running/installed versions, Windows and process architecture,
+CLR version, GPU/driver information when available, free space, embedded artwork,
+saved graphics settings, last verification results and recent structured launcher
+exception types. Graphics discovery runs in the background with a bounded wait;
+missing system information does not block the launcher. Use **Refresh diagnostics**
+after verifying files, then **Copy diagnostic report** to put the displayed text
+on the clipboard. It is never uploaded automatically.
+
+Choose **Report a bug** or **Request enhancement** to open the matching GitHub
+issue form. The launcher converts the displayed filtered report into the optional
+**Launcher diagnostics** field and also copies the complete text to the clipboard.
+You fill in your description, select the requested version/platform choices,
+review the diagnostics and submit on GitHub using your account. The launcher
+needs no GitHub token and never creates or submits an issue automatically.
+Clicking a report button opens a browser draft and sends the prefilled diagnostic
+text to GitHub; review the displayed report before choosing it.
+
+Long reports use a short browser link with a clearly marked summary. Paste the
+complete copied text into **Launcher diagnostics (optional)** before submitting;
+the full report is never silently truncated. If clipboard access is unavailable,
+the report stays visible for manual copying. Refresh diagnostics after collecting
+new verification results. Bug/enhancement description fields remain blank so the
+launcher does not invent symptoms, reproduction steps or feature requests.
+Both issue templates include the same optional plain-text diagnostics field;
+they must be on the repository's default branch before publishing the launcher.
+The prefill uses GitHub's documented [issue-form URL query fields](https://docs.github.com/en/issues/tracking-your-work-with-issues/using-issues/creating-an-issue#creating-an-issue-from-a-url-query).
+
+The report excludes raw logs, personal/installation paths, arbitrary error
+messages, file contents, save data and ISO information. Recent errors contain
+only recognized UTC timestamps and exception types. **View logs** remains
+available on Home for local investigation.
+
+Developer previews: `--render-repair-preview output.png` and
+`--render-diagnostics-preview output.png` work through the bootstrap or app EXE.
+They show sample UI state without network requests, repairs or hardware queries.
+`launcher-tests.exe --maintenance` runs disposable maintenance fixtures;
+`--maintenance-readonly` runs only the read-only/model/UI subset while an
+interactive game must remain running. The normal `build-launcher.ps1 -Test`
+includes the full maintenance suite and retains the production game-running guard.

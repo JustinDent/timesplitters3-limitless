@@ -66,7 +66,7 @@ namespace TimeSplitters.Launcher
             }
             catch (Exception ex) { LauncherLog.Write(root, "Launcher manifest: " + ex.Message); return ""; }
         }
-        static Dictionary<string, string> Manifest(string text, string expected)
+        internal static Dictionary<string, string> Manifest(string text, string expected)
         {
             var metadata = Json.Object(text);
             Core.Require(Json.String(metadata, "schema") == "1" && Json.String(metadata, "version") == expected, "Launcher package version or schema mismatch.");
@@ -141,8 +141,9 @@ namespace TimeSplitters.Launcher
             }
             catch (Exception ex) { LauncherLog.Write(root, "Launcher cleanup deferred for " + relative + ": " + ex.Message); }
         }
-        public static List<Change> Unpack(string archive, string destination, string expected)
+        public static List<Change> Unpack(string archive, string destination, string expected, CancellationToken token = default(CancellationToken))
         {
+            token.ThrowIfCancellationRequested();
             Core.Require(!Directory.Exists(destination), "Launcher staging already exists.");
             using (var zip = ZipFile.OpenRead(archive))
             {
@@ -168,9 +169,13 @@ namespace TimeSplitters.Launcher
                 Directory.CreateDirectory(destination);
                 foreach (var entry in zip.Entries.Where(e => !e.FullName.EndsWith("/", StringComparison.Ordinal)))
                 {
+                    token.ThrowIfCancellationRequested();
                     string target = Core.PathIn(destination, entry.FullName);
                     Directory.CreateDirectory(Path.GetDirectoryName(target));
-                    using (var input = entry.Open()) using (var output = new FileStream(target, FileMode.CreateNew)) input.CopyTo(output);
+                    using (var input = entry.Open()) using (var output = new FileStream(target, FileMode.CreateNew)) {
+                        var buffer = new byte[65536]; int read;
+                        while ((read = input.Read(buffer,0,buffer.Length)) > 0) { token.ThrowIfCancellationRequested(); output.Write(buffer,0,read); }
+                    }
                     if (entry.FullName != Core.SelfManifest) Core.Require(Core.Hash(target).Equals(hashes[entry.FullName], StringComparison.OrdinalIgnoreCase), "Launcher file checksum mismatch.");
                 }
                 return ValidatePayload(destination, expected);
@@ -189,14 +194,16 @@ namespace TimeSplitters.Launcher
             changes.Add(new Change { Name = Core.SelfManifest, Source = Core.PathIn(payload, Core.SelfManifest) });
             return changes;
         }
-        public static async Task<bool> Prepare(string root, Release release, ReleaseClient client, IProgress<double> progress, CancellationToken token)
+        public static async Task<bool> Prepare(string root, Release release, ReleaseClient client, IProgress<double> progress, CancellationToken token, bool repair = false)
         {
             if (release == null) return false;
             string installed = InstalledVersion(root);
-            if (installed.Length > 0 && Complete(root) && GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(installed)) <= 0) return false;
+            Core.Require(!repair || release.Tag == LauncherVersion.Value, "Repair requires the currently running launcher release.");
+            if (!repair && installed.Length > 0 && Complete(root) && GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(installed)) <= 0) return false;
             if (installed.Length > 0 && GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(installed)) < 0) return false;
             Core.Require(!Core.GameRunning(), "Close the game before installing a launcher update.");
             Core.CheckSpace(root, release.Size * 4 + 32 * 1024 * 1024);
+            Core.Require(!repair || !Directory.Exists(Core.PathIn(root, ".launcher/self-pending")), "A launcher update is already staged. Restart the launcher before repairing.");
             Core.RemoveOwned(root, ".launcher/self-pending");
             string pending = Core.PathIn(root, ".launcher/self-pending"); Directory.CreateDirectory(pending);
             try
@@ -204,7 +211,7 @@ namespace TimeSplitters.Launcher
                 string archive = Path.Combine(pending, "launcher.zip");
                 await client.Download(release, archive, progress, token).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
-                await Task.Run(() => Unpack(archive, Path.Combine(pending, "payload"), release.Tag), token).ConfigureAwait(false);
+                await Task.Run(() => Unpack(archive, Path.Combine(pending, "payload"), release.Tag, token), token).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
                 Core.Write(Path.Combine(pending, "release.json"), Json.Encode(new { version = release.Tag }));
                 File.Delete(archive);
@@ -212,7 +219,8 @@ namespace TimeSplitters.Launcher
             }
             catch
             {
-                TryCleanup(root, ".launcher/self-pending", true);
+                if(repair) { try { Core.DiscardRepairStaging(root,true); } catch { /* Retain protected or locked staging. */ } }
+                else TryCleanup(root, ".launcher/self-pending", true);
                 throw;
             }
         }

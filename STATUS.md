@@ -1,5 +1,94 @@
 # Measured progress
 
+## Game folder action moved into Repair / Verify (2026-10-17)
+
+Follow-up on `feature/launcher-repair-diagnostics`, PR #88. Removed Game files
+from the sidebar and added **Open game folder** below the two Repair / Verify
+cards. The existing installation-folder action is retained; preview mode reports
+the action without opening Explorer, and maintenance busy state disables it.
+Updated missing-data guidance and launcher usage documentation. MAC-021 records
+the corresponding placement for a future native release launcher.
+
+Windows x64 / .NET Framework 4.8: rebuilt with required themed artwork; all
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks passed.
+Existing UI checks cover sidebar removal, page-specific folder action and busy
+state. Rendered and reviewed Home, Repair / Verify and Diagnostics previews: the
+folder action fits below the cards and the shorter sidebar remains visible.
+No game launched and no personal game files, settings or saves changed.
+Mac launcher adaptation remains queued; launcher v1.2.8 is not published.
+
+## Diagnostics to GitHub issue drafts (2026-10-17)
+
+Follow-up on `feature/launcher-repair-diagnostics` / PR #88, based on its
+`b990140` implementation; follow-up commit `e640b2f`. Diagnostics adds Report a bug and Request
+enhancement actions. `DiagnosticIssueDraft.cs` selects the matching repository
+issue form and prefills its optional diagnostics text field, with the complete
+report also copied to the clipboard. Only the displayed privacy-filtered report
+is used; symptoms, steps and enhancement descriptions remain for the reporter.
+No token, issue POST, automatic submission or automatic upload is added.
+The user explicitly opens a browser draft, reviews the form and submits on GitHub.
+
+URLs are limited to 1800 characters for the Windows browser handoff. Long reports
+use an explicit summary/paste instruction and preserve the full text on the
+clipboard; Unicode/query syntax is escaped and never silently truncated. Clipboard
+or browser failures leave the report visible with recovery instructions. Reporting
+controls are disabled during maintenance; preview actions never open GitHub.
+The bug/enhancement YAML forms share the same optional plain-text diagnostics
+field. Existing version choices and enhancement simplicity are retained.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both themed EXEs compiled and
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks passed.
+Added checks cover both forms, Unicode/newline/query-character round-trips,
+large-report fallback, filtered payloads and report-control busy state. Issue-form
+schema/field contract and version-refresh checks passed (15 tests, including
+five subtests). The preceding startup/packaging/CI-scope run passed 26 checks;
+only the changed form test expectation needed an update for the optional field. No actual GitHub issue was created or submitted and no
+personal clipboard was changed by tests. Live prefilling of the new field requires
+the issue templates to merge into the default branch. MAC-021 records queued Mac
+browser/clipboard adaptation; native Mac execution remains unverified. Not published.
+
+## Launcher v1.2.8 Repair/Verify and Diagnostics (2026-10-17)
+
+Implemented on `feature/launcher-repair-diagnostics`, commit `920b789`, based on main `65b6903`. Launcher/assembly version is 1.2.8. New Repair / Verify and
+Diagnostics sidebar pages stay in the existing window and retain settings drafts.
+Verification is offline/read-only against installed manifest SHA-256 hashes;
+protected settings and independent launcher files are excluded from game scans.
+Reports distinguish missing, changed, unreadable and invalid manifest cases.
+
+Repairs fetch only the exact installed game or running launcher release and
+verify the published archive digest/size, package layout and every file before
+using the existing helper/recovery flow. Game repair replaces damaged/missing
+owned runtime files and official BUILD metadata, preserving personal files,
+untracked files and the independent launcher. It retains the previous game
+rollback through separate repair transactions/backups; repair backups follow
+confirmed-game cleanup. Existing staged updates are retained. Cancellation and
+failed preparation remove only owned safe staging, preserving ISOs/links/locked
+recovery data. Interrupted repair transactions recover on startup. No game code
+or native Mac adapter changed. A live v1.2.8 launcher self-repair needs that exact
+release to be published; developer builds report its absence without downgrading.
+
+Diagnostics report versions, Windows/process/CLR information, GPU/driver, free
+space, embedded artwork, saved graphics, last verification and structured recent
+exception types. Background GPU lookup has a bounded wait and one shared in-flight
+query. Clipboard reports omit personal paths, arbitrary log messages, raw files,
+saves and ISO information; they are never automatically uploaded.
+
+Windows x64 / .NET Framework 4.8 / pinned Python 3.12.14: required-artwork builds
+passed 99 updater/bootstrap/cleanup checks, 25 settings checks and 15 maintenance
+checks. Six startup/packaging plus 20 CI-scope Python checks passed (26 total,
+including two missing-artwork subtests). Coverage includes exact-version lookup,
+corrupt/cancelled downloads, damaged runtime repair, equal-version forced launcher
+repair, preserved previous-game rollback, interrupted recovery, confirmed cleanup,
+ISO retention inside staging, report privacy and embedded navigation/drafts.
+The first local full run respected an active game guard; that game was not stopped.
+Once it was no longer running, full disposable transaction suites passed. No
+automated real-game session or personal settings/saves were used. GPU discovery
+reported NVIDIA GeForce RTX 4070 SUPER / driver 32.0.16.1742 in 54 ms.
+Home, input/graphics, Repair/Verify, Diagnostics and bootstrap previews rendered;
+new pages were visually inspected with their sidebar and theme intact. Preview
+versions/system state are explicitly sample data. Native Mac execution is
+unverified; adaptation/acceptance checks are queued in MAC-021. Not published.
+
 ## Issue #50 idle-demo skipping (2026-10-17)
 
 Initial implementation and live validation on `50-cannot-skip-menu-idle-video`,

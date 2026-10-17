@@ -64,7 +64,8 @@
           <TextBlock Text="NAVIGATION" Style="{StaticResource Label}" Margin="12,0,0,10"/>
           <Button x:Name="HomeNav" Style="{StaticResource Nav}" Background="#1D3A55" Foreground="#86CDFF" Content="◈    Home" ToolTip="Game, release updates and setup"/>
           <Button x:Name="SettingsNav" Style="{StaticResource Nav}" Content="⚙    Game settings" ToolTip="Keybinds, mouse, graphics and resolution"/>
-          <Button x:Name="FilesNav" Style="{StaticResource Nav}" Content="▤    Game files" ToolTip="Open the installation folder"/>
+          <Button x:Name="RepairNav" Style="{StaticResource Nav}" Content="◇    Repair / Verify" ToolTip="Check and repair installed release files"/>
+          <Button x:Name="DiagnosticsNav" Style="{StaticResource Nav}" Content="▤    Diagnostics" ToolTip="System details, installation health and support report"/>
           <Button x:Name="SavesNav" Style="{StaticResource Nav}" Content="◇    Saves" ToolTip="Open your local saves folder"/>
           <Button x:Name="SupportNav" Style="{StaticResource Nav}" Content="↗    Support" ToolTip="Open the project's GitHub issues"/>
         </StackPanel>
@@ -168,6 +169,7 @@
         <ProgressBar x:Name="OperationProgress" Grid.Row="1" Minimum="0" Maximum="100" Value="0" Background="#253D54" Foreground="#86CDFF" BorderThickness="0" Height="3"/>
       </Grid>
     </Grid>
+    <ContentControl x:Name="MaintenanceHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="SettingsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>
     <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="#2C435A" BorderThickness="0,1,0,0" Background="#0D1926" Padding="20,0">
