@@ -69,6 +69,20 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 
+def game_release_path(path):
+    """Game source/runtime inputs, excluding launcher and release housekeeping."""
+    return (path.startswith(('src/', 'patches/', 'config/'))
+            or path in ('tsfp.ps1', 'setup.ps1', 'requirements.txt', 'CMakeLists.txt')
+            or path.startswith('tools/release/')
+            or path in {'tools/' + name for name in (
+                'recomp-generation.py', 'build-native-mac.py',
+                'native_mac_common.py', 'play-native-mac.py', 'playable-launch.ps1',
+                'start-game.ps1', 'play.py', 'fetch-video.ps1', 'network-identity.py',
+                'bundle_online.py', 'online.py', 'online_host.py', 'online_client.py',
+                'online_transport.py', 'online_paths.py', 'lobby_server.py',
+                'texture-pack.py')})
+
+
 def check_directory(root, path, *, descendants=True):
     """Validate all ancestors before tools recursively create/clean work files."""
     root, path = Path(root).absolute(), Path(path).absolute()
@@ -215,13 +229,40 @@ class Publisher:
         if tagged and tagged != self.commit:
             raise ValueError('The release tag already points at a different commit; it will not be moved')
 
+    def game_pr_notes(self, generated):
+        commits = set(self.git('rev-list', f'{self.baseline}..{self.commit}'
+                               if self.baseline else self.commit).splitlines())
+        numbers = dict.fromkeys(re.findall(
+            rf'https://github\.com/{re.escape(self.repo)}/pull/(\d+)\b', generated))
+        rows = []
+        for number in numbers:
+            endpoint = f'repos/{self.repo}/pulls/{number}'
+            pr = json.loads(self.gh('api', endpoint))
+            if not pr.get('merged_at') or pr.get('merge_commit_sha') not in commits:
+                continue
+            pages = json.loads(self.gh('api', '--paginate', '--slurp', endpoint+'/files?per_page=100'))
+            files = [item for page in pages for item in page]
+            if len(files) != pr['changed_files']:
+                raise ValueError(f'Incomplete changed-file list for PR #{number}; cannot classify release notes safely.')
+            if not any(game_release_path(item[key]) for item in files
+                       for key in ('filename', 'previous_filename') if key in item):
+                continue
+            title = pr['title'].replace('\n', ' ').replace('\r', ' ')
+            title = title.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            title = re.sub(r'([\\`*_[\]])', r'\\\1', title)
+            rows.append(f'- {title} ([#{number}](https://github.com/{self.repo}/pull/{number}))')
+        changes = '\n'.join(rows) or 'No merged game-related pull requests in this release.'
+        if self.previous:
+            changes += f'\n\n**Full Changelog**: https://github.com/{self.repo}/compare/{self.previous["tag_name"]}...{self.tag}'
+        return changes
+
     def write_notes(self):
         payload = dict(tag_name=self.tag, target_commitish=self.commit)
         if self.previous:
             payload['previous_tag_name'] = self.previous['tag_name']
         generated = json.loads(self.gh('api', '--method', 'POST', f'repos/{self.repo}/releases/generate-notes',
                                        '--input', '-', payload=payload)).get('body', '').strip()
-        generated = re.sub(r"(?m)^#{1,6} What['\u2019]s Changed[ \t]*\r?\n?", '', generated).strip()
+        generated = self.game_pr_notes(generated)
         baseline = self.previous['tag_name'] if self.previous else 'the beginning of the project'
         body = f'''TimeSplitters: Future Perfect PC **{self.tag}** for Windows 10/11 x64.
 

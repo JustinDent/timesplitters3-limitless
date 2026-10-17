@@ -108,7 +108,7 @@ Manual refresh: `python tools/issue-forms.py versions --repository owner/name`
 
 ### Release notes and preparation
 
-The description includes GitHub-generated PR/contributor notes since the most
+The description includes merged game-related PRs since the most
 recently **published game** release (including prereleases) and installation
 instructions, with numbered launcher steps followed by a portable ZIP alternative.
 The generated "What's Changed" heading is removed beneath
@@ -117,7 +117,16 @@ Build provenance remains in the verification assets. The comparison does not use
 the last Git tag or skip prereleases by asking for GitHub's latest stable release.
 Launcher releases, drafts and unrelated tags are excluded from the comparison.
 GitHub's [release notes API](https://docs.github.com/en/rest/releases/releases#generate-release-notes-content-for-a-release)
-provides the PR/contributor notes.
+provides candidate PRs. The publisher verifies each PR is merged and its merge
+commit is within the exact game-release commit range, then reads all changed
+files (including renamed paths). Game source, shared patches/configuration,
+game build inputs and runtime/import tools qualify; launcher-only,
+documentation-only, version-only and CI/release-note housekeeping PRs do not.
+Mixed game/launcher PRs remain because they change the game. Classification uses
+files rather than title keywords or labels. Incomplete file metadata stops note
+generation instead of guessing. PRs are deduplicated; an empty range gets an
+explicit message. The full changelog link still opens GitHub's repository-wide
+comparison, which can contain launcher commits.
 
 To prepare and inspect the ZIP/notes locally without creating a tag or release:
 

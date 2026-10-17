@@ -103,18 +103,25 @@ class FakePublisher(module.Publisher):
             return tag if len(args) == 3 else self.remote+'\trefs/heads/main'+ ('\n'+tag if tag else '')
         if args[0] == 'log':
             return HEAD+'\tAdd Online hosting and <diagnostics>'
+        if args[0] == 'rev-list':
+            return HEAD
         raise AssertionError(args)
 
     def gh(self, *args, payload=None):
         self.calls.append(('gh', args, payload))
         if args[:2] == ('auth', 'status'):
             return ''
+        if args[:2] == ('api', '--paginate') and '/pulls/' in args[-1]:
+            return json.dumps([[dict(filename='src/pc_network.c')]])
         if args[:2] == ('api', '--paginate'):
             return json.dumps([self.releases])
         if 'generate-notes' in str(args):
             assert payload['previous_tag_name'] == 'v0.2.0-alpha.2'
             assert payload['target_commitish'] == HEAD
-            return json.dumps(dict(body='## What\u2019s Changed\n\n* Online multiplayer #12'))
+            return json.dumps(dict(body='## What\u2019s Changed\n\n* Online multiplayer https://github.com/owner/repo/pull/12'))
+        if args[:2] == ('api', 'repos/owner/repo/pulls/12'):
+            return json.dumps(dict(merged_at='2026-10-17T00:00:00Z', merge_commit_sha=HEAD,
+                                   title='Online multiplayer', changed_files=1))
         if 'git/refs' in str(args):
             assert payload == dict(ref='refs/tags/'+self.tag, sha=HEAD)
             self.tag_created = True
@@ -164,7 +171,7 @@ def test_prepare_then_publish_reuses_exact_package(publisher):
     assert not publication_calls(publisher)
     assert not publisher.stage.exists()
     notes = publisher.notes.read_text(encoding='utf-8')
-    assert 'Changes since v0.2.0-alpha.2' in notes and '* Online multiplayer #12' in notes
+    assert 'Changes since v0.2.0-alpha.2' in notes and '- Online multiplayer ([#12]' in notes
     assert 'What\u2019s Changed' not in notes and "What's Changed" not in notes
     assert 'Source changes' not in notes and 'Build and validation' not in notes
     assert not any(call[0] == 'git' and call[1][0] == 'log' for call in publisher.calls)
@@ -256,6 +263,54 @@ def test_newer_launcher_does_not_change_game_notes_baseline(publisher):
     assert publisher.previous['tag_name'] == 'v0.2.0-alpha.2'
     assert 'Changes since v0.2.0-alpha.2' in publisher.notes.read_text(encoding='utf-8')
     # FakePublisher also asserts generate-notes receives the previous game tag.
+
+
+@pytest.mark.parametrize('files, merged, sha, included', [
+    (['src/pc_network.c'], True, HEAD, True),
+    (['tools/launcher/Core.cs', 'STATUS.md', 'VERSION'], True, HEAD, False),
+    (['tools/build-launcher.ps1', 'docs/windows-launcher.md'], True, HEAD, False),
+    (['tools/launcher/Core.cs', 'tools/package-release.py'], True, HEAD, False),
+    (['tools/apply-patches.py', '.github/workflows/runtime-patches.yml'], True, HEAD, False),
+    (['tools/launcher/GameSettings.cs', 'src/pc_display.c'], True, HEAD, True),
+    (['config/pc-controls.default.json'], True, HEAD, True),
+    (['tools/publish-release.py', '.github/workflows/runtime-patches.yml'], True, HEAD, False),
+    (['src/pc_network.c'], False, HEAD, False),
+    (['src/pc_network.c'], True, PREVIOUS, False),
+])
+def test_notes_select_merged_game_prs_by_files_and_commit_range(publisher, monkeypatch, files, merged, sha, included):
+    publisher.preflight()
+    def gh(*args, **kwargs):
+        if '--paginate' in args:
+            return json.dumps([[dict(filename=name)] for name in files])
+        return json.dumps(dict(merged_at='2026-10-17' if merged else None,
+                               merge_commit_sha=sha, title='Launcher and game <update>', changed_files=len(files)))
+    monkeypatch.setattr(publisher, 'gh', gh)
+    notes = publisher.game_pr_notes('https://github.com/owner/repo/pull/12\nhttps://github.com/owner/repo/pull/12')
+    assert ('[#12]' in notes) == included
+    assert notes.count('[#12]') == int(included)
+    assert 'compare/v0.2.0-alpha.2...v0.2.0-alpha.3' in notes
+    assert ('git', ('rev-list', PREVIOUS+'..'+HEAD)) in publisher.calls
+
+
+def test_notes_classify_renames_and_refuse_truncated_file_lists(publisher, monkeypatch):
+    publisher.preflight()
+    count = 1
+    def gh(*args, **kwargs):
+        if '--paginate' in args:
+            return json.dumps([[dict(filename='archive/old.c', previous_filename='src/old.c')]])
+        return json.dumps(dict(merged_at='2026-10-17', merge_commit_sha=HEAD,
+                               title='Move old code', changed_files=count))
+    monkeypatch.setattr(publisher, 'gh', gh)
+    assert '[#12]' in publisher.game_pr_notes('https://github.com/owner/repo/pull/12')
+    count = 2
+    with pytest.raises(ValueError, match='Incomplete changed-file list'):
+        publisher.game_pr_notes('https://github.com/owner/repo/pull/12')
+
+
+def test_no_merged_prs_has_explicit_empty_message(publisher):
+    publisher.preflight()
+    notes = publisher.game_pr_notes('## New Contributors\nNo PR links here.')
+    assert 'No merged game-related pull requests' in notes
 
 
 def test_semver_order_and_origin_validation():
