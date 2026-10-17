@@ -3664,3 +3664,13 @@ queued under MAC-021; other-device synchronization is unverified.
   and variant-check records, original-selection metadata and source/prompt files.
   Consolidated playtesting remains deferred to 90% audited scope and completed
   category review. No runtime or tooling source changed this batch.
+
+
+## Texture overhaul hybrid batch 67 — offline equipment review
+
+- Continued issue #74 on `74-enhancement-gfx-overhaul-to-modernize-textures`, starting from `cfffe0a`. Verified supported US XBE and original payload hashes; no runtime/source changes or gameplay launches.
+- Generated eight equipment drafts; accepted five after original/compiled-DDS and 2x2 repeat review: worn equipment, olive machinery and yellow/red/blue circuit panels. Held three for grip-pattern pitch, added panel fittings/bevels and maker-plate markings. Original game textures remain active for held keys; rejected DDS/metadata removed with recorded hashes, source art/provenance retained privately.
+- Four generated sources are 1254 square and four are 1774x887. Accepted full-mip DXT1 outputs: one 2048 square, one 1024 square and three 1024x512. All are resampled; no native 4K claim. Accepted luminance changes range from -8.68% to +15.82%; final model/scene lighting and seams remain unverified.
+- All 306 retained DDS pass native format validation and worklist hash, dimensions/aspect, mip and cap checks. Coverage: 306 installed / 6,812 supported keys, 6,485 needing art and 21 held drafts. The 627 provisional classifications and unresolved embedded/procedural scope remain open. Offline installation is not full-game visual validation.
+- Active pack: 453,946,549 bytes (432.92 MiB) / 6 GiB, including metadata; batch adds 4,546,692 bytes. Texture workspace at audit: 1,600,297,394 allocated bytes (1.49 GiB); original exports/review/preview: 146,229,407 bytes / 256 MiB. Free disk: 137,601,146,880 bytes. No duplicate game, staging or archive created; saves/settings unchanged.
+- Private evidence: `review/hybrid-67-final-*.jpg`, metrics, native audit, retirement hashes and acceptance record under `private/texture-remaster`. Artwork remains local/ignored. Existing shared DDS path is unchanged; Mac artwork/scene validation remains pending. Consolidated playtesting stays deferred to the established near-completion gate.
