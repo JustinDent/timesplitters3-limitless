@@ -43,6 +43,9 @@ static int native_test_menu_input(SDL_Window *window) {
     e=(SDL_Event){0};e.type=SDL_EVENT_WINDOW_MOUSE_LEAVE;tsfp_native_input_event(&e,window);
     ok &= !pc_controls_menu_pointer().valid;
     pc_controls_menu_mode(0);tsfp_native_input_frame(window);set_capture(window,0);release_all();
+    ok &= tsfp_native_request_quit();
+    SDL_Event close_event={0};
+    ok &= SDL_PeepEvents(&close_event,1,SDL_GETEVENT,SDL_EVENT_QUIT,SDL_EVENT_QUIT)==1 && close_event.type==SDL_EVENT_QUIT;
     fprintf(stderr,"[native-menu-input-test] pointer, wheel accumulation/expiry, capture transitions, held-click suppression and focus: %s\n",ok?"PASS":"FAIL");
     return ok;
 }

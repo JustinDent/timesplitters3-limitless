@@ -147,6 +147,10 @@ Native controls use the same JSON bindings as Windows. Focus the game window:
   assigned to other players are reserved. Physical controller play is unverified;
   SDL virtual-controller mapping/hotplug has regression coverage.
 
+**Quit to Desktop** is available from the main and Pause menus. Its confirmation
+starts on Cancel; Back returns to the current menu. The original Quit still
+returns to the frontend.
+
 Formatted menu/HUD hints use the current keyboard/mouse bindings and switch to
 controller icons on deliberate controller activity. Text baked into artwork or
 plain tutorial text is unchanged.

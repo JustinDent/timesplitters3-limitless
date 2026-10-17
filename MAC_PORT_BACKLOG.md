@@ -20,7 +20,9 @@ v1.2.12. Reviewed commit history, changed-file inventory, feature implementation
 native adapter changes, test/build wiring and the full handoff list. This is a
 source/parity audit, not complete line-by-line correctness certification.
 
-The baseline Mac evidence dates from October 15–16, not this main revision.
+At the initial audit, baseline Mac evidence dated from October 15–16 rather
+than this main revision. The focused native work below now adds current-source
+build, GPU/settings/input checks and bounded menu/first-mission evidence.
 Most recent PC runtime features already have entries; shared code is not proof
 of native rendering/input. This audit adds the missing build-readiness and
 watermark handoffs, distinguishes the Cocoa latency-setting regression, restores
@@ -70,12 +72,12 @@ rectangle contract; rerun affected GPU checks after renderer changes.
 | --- | --- |
 | Terminal pointer/click `a60deb5` | MAC-001: SDL adapter already updated; physical terminal test pending |
 | Decal alignment `a28a8b6`; model proportions `6485069` | MAC-010/026: shared hooks; native scene validation pending |
-| FOV `bf31b24`, falling `df3bc2e`, frontend exclusion `ad2f09f` | MAC-022/028: shared camera/menu; Cocoa slider and native checks pending |
-| Objectives `5da8cf6`; aspect/HUD/tutorial layout `2d69459`; rank `3e747a5` | MAC-023/024/027: shared rules plus native viewport/scissor changes; aspect filter and visual checks pending |
+| FOV `bf31b24`, falling `df3bc2e`, frontend exclusion `ad2f09f` | MAC-022/028: shared camera/menu; Cocoa slider implemented/tested; gameplay matrix pending |
+| Objectives `5da8cf6`; aspect/HUD/tutorial layout `2d69459`; rank `3e747a5` | MAC-023/024/027: shared rules plus native viewport/scissor changes; Cocoa aspect filter tested; full visual matrix pending |
 | Channel clears `f17026b`; spirits `70d8e7f` | MAC-007/032: shared/native clear wiring and shared spirit wrappers; GPU checks pending |
 | Idle movie stop `c797b65` | MAC-029: shared stop/symbol corrections; movie player still MAC-009 |
-| Frontend/pause mouse and desktop exit `e18baa9` | MAC-030/031: guest adapters still gated off on Mac |
-| Test Lab `0c69834` | MAC-025: portable save preparation; native runner integration pending |
+| Frontend/pause mouse and desktop exit `e18baa9` | MAC-030/031: native pointer and quit adapters implemented; acceptance evidence in their entries |
+| Test Lab `0c69834` | MAC-025: portable save preparation; native runner integrated; late Story selection checked, Arcade/challenge checks pending |
 | Patch/CI efficiency `4c5848d`; test linkage/portability fixes | MAC-014 and affected entries: shared tooling; source tests do not boot the game |
 | Launcher v1.2.1–v1.2.12: startup skip, embedded settings, capability gates, cleanup/artwork, repair/diagnostics/reporting, resumable downloads, release news and tabs | MAC-021: detailed commit references and acceptance below; native launcher queued |
 | Release comparison `3ed4223`, packaging/version/provenance and runtime-settings preservation tests | MAC-012/021: common release rules; Windows package/UI checks do not verify Mac distribution |
@@ -1166,7 +1168,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-031 — Quit to Desktop menu entries
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** Main Story/Arcade menu and Pause append Quit to Desktop.
   The game's confirmation screen defaults to Cancel, supports normal menu
   controls, and posts WM_CLOSE only after confirmation. Existing Quit retains
@@ -1174,10 +1176,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Source:** Commit `e18baa9` on the #86 menu controls branch;
   `src/pc_quit_menu.inc`, `src/pc_display_menu.c/.h`, `quit-desktop.patch`,
   and `tests/quit_menu.c` / `tests/test_quit_menu.py`.
-- **Shared Mac support:** Shared finalizer hooks preserve original Mac menus.
-  Confirmation code is currently gated to Windows (or the portable C test).
-- **Remaining:** Add a native window-thread shutdown adapter, enable the guest
-  confirmation code and verify native input; no Mac runtime validation yet.
+- **Native adaptation (2026-10-17, `codex/mac-quit-desktop`):** Enabled shared
+  menu insertion and confirmation callbacks on Mac. Confirm queues SDL_QUIT;
+  the main-thread event pump owns normal process exit. Cancel, Back, player-one
+  checks, failed-post retry and duplicate-confirm protection remain shared.
+  Both guest dispatch variants and real SDL queue tests pass.
+  [Native evidence](STATUS.md#native-quit-to-desktop-2026-10-17).
+- **Remaining:** Pause Cancel/Back/Confirm and mouse-confirm checks. Main-menu
+  keyboard Cancel/Back/Confirm now passes; exit code is 0 after SDL shutdown.
+  A wide gameplay run also shows the Pause entry, but does not establish its exit.
 - **Acceptance:** Cancel and Back restore main/Pause without exiting; Pause
   stays paused; confirmed exit closes normally from both screens with mouse
   and keyboard/controller. Verify menu layout at supported aspect ratios.
@@ -1214,7 +1221,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-033 — Restore a reproducible native build from current main
 
-- **Status:** Awaiting validation
+- **Status:** Verified on Mac
 - **PC behavior:** The supported build regenerates from the complete pinned
   patch stack and supplies generated build identity to the shared debug code.
   Current project rules permit focused branches on either platform.
@@ -1224,19 +1231,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   `patches/zzzzzzzzzzzzzz-native-debug.patch`, and `AGENTS.md`.
   The original integration gaps were found during source review; repair evidence
   is recorded below.
-- **Existing Mac support:** The native builder uses the shared pins, generator
-  cache validation, patch stack and isolated regression paths. However, its
+- **Initial audit findings (repaired below):** The native builder used the shared
+  pins, generator cache validation, patch stack and isolated regression paths, but its
   hard-coded `branch != 'mac-port'` rejection prevents the current focused-branch
   workflow. Shared `pc_debug.c` unconditionally includes `pc_network_build.h`;
   only the Windows script generates it and only Windows CMake wiring adds the
   generated include directory/version definition. A clean native compile is
-  expected to fail here; a complete compiler reproduction is still pending.
-- **Mac adaptation needed:** Remove the obsolete platform-branch restriction
-  while retaining host/XBE/pin checks. Provide reproducible native build identity
-  and include/version wiring (or explicitly decouple offline debug from network
-  identity without fabricating compatibility). Add a new reproducible patch for
-  CMake changes; never hand-edit generated game code. Resolve MAC-003's settings
-  preservation regression and review MAC-005's unmerged work independently.
+  found to fail during restoration and is now repaired below.
+- **Implemented adaptation:** Removed the obsolete platform-branch restriction
+  while retaining host/XBE/pin checks. Provided reproducible native build identity
+  and include/version wiring through a separate reproducible CMake patch.
+  Repaired MAC-003's settings preservation and independently reapplied
+  MAC-005's dependent-texture work, preserving current-main renderer changes.
 - **Acceptance:** From a focused branch, build with the supported US XBE,
   Python 3.12+, pinned dependencies and full patch stack; regenerate wrappers,
   run native platform/MMIO/path/GPU/input/settings/debug tests, check manifest
@@ -1257,6 +1263,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   new pixel assertions check the updated proportional-menu contract. Current
   menu boot is visible; remaining scene/60–120 checks are tracked below.
   [Measured scope](STATUS.md#native-build-restoration-2026-10-17).
+
+
+- **Bounded baseline verified:** Focused-branch generation/build and all native
+  suites pass. Current-source first-mission smoke tests at 60 and the 120 target
+  show visible gameplay; the wide run checks movement, firing, mouse look and
+  keyboard pause/resume. [Scope and measured timing](STATUS.md#native-quit-to-desktop-2026-10-17).
+  This status covers build restoration and bounded smoke only. Feature-specific
+  acceptance remains in its own entry; Windows execution is unavailable here.
 
 ### MAC-034 — Version and build-identity watermark
 

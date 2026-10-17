@@ -1,5 +1,56 @@
 # Measured progress
 
+## Native Quit to Desktop (2026-10-17)
+
+`codex/mac-quit-desktop` depends on unmerged native menu input `db11ff7`.
+The shared guest finalizer and confirmation callbacks now run on Mac. Confirm
+queues SDL_QUIT for the existing main-thread exit path; Cancel and Back use the
+guest's existing return callback. Other players, original Quit behavior and
+Windows WM_CLOSE behavior are preserved.
+
+The full native build/test suite passed on macOS 27.0.1 arm64 / Clang 21 /
+SDL 3.4.16 / OpenGL 4.1 Metal 91.7: three CTests plus GPU, input and Cocoa
+settings/debug checks. The SDL test verifies an actual queued quit event.
+Five portable menu/quit tests passed, including both host dispatch variants,
+safe default, Cancel/Back, failed-post retry and repeated-confirm protection.
+Evidence: `logs/native-quit-build.out`, `.err`, `logs/native-quit-shared.log`.
+
+A bounded main-menu test using synthetic SDL keys verified the visible Cancel
+default, Cancel, reopening and Back, then reopening and confirming desktop exit.
+The process exited normally after 61.21 seconds with code 0; the log contains
+three confirmation opens, two cancellations and one confirmed desktop exit,
+followed by the native window-close path. The runner reports `process_exit`
+(and its startup-smoke command returns 1 because this was deliberately early),
+not a timeout or fault. Its summary has no native fault or sampled GL errors.
+Evidence: `logs/native-quit-main-summary.json`, `logs/native-quit-main.err`,
+`logs/native-quit-main.log`, and
+`private/captures/native-mac/native-quit-cancel-default.png`.
+Saves, input, both display configs and XDG roots were runner-isolated; known test
+images were recycled after exit. Source/build provenance is `db11ff7` plus the
+uncommitted quit changes. Pause and mouse-confirm tests remain pending, so
+MAC-031 remains Awaiting validation.
+
+A subsequent 180.17-second isolated run at 1280×720, 75° FOV and the
+120-present target reached first-mission gameplay. Reviewed before/after captures
+show movement, changed camera direction and ammo dropping from 16 to 14 after
+firing. Escape pause/resume restored capture, with the world still visible.
+Pause includes Quit to Desktop. The attempted right-click/quit route supplied
+a synthetic button before its queued pointer motion had been dispatched; it
+did not establish right-click return or Pause exit and is not counted as such.
+The saved test display file was restored after the run.
+
+During seconds 110–130, 2,310 presents averaged 115.52/sec: 59.36 guest plus
+56.16 interpolated. Median host interval was 11.093 ms, p95 16.408 ms and
+p99 17.692 ms, with one 107.238 ms hitch. Across the entire run including
+loading/opening/menus, average was 93.00 host / 54.03 guest presents per second;
+it is not locked 120 FPS. At least 9,600 guest frames / 16,489 host presents
+were logged, with no sampled GL errors or native fault. These are CPU present
+intervals, not display scanout. Evidence: `logs/native-first-mission-120-*`,
+`private/captures/native-mac/native-wide-before-input.png`,
+`native-wide-after-input.png`, and `native-wide-pause.png`. Raw guest captures
+retain 640×480 storage while the actual scene is 1280×720; the presentation fits
+that wide aspect to the window. No full-level or complete visual-fidelity claim.
+
 ## Native menu pointer adapter (2026-10-17)
 
 `codex/mac-menu-mouse` depends on unmerged display adaptation `e9545de` and

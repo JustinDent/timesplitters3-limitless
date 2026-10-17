@@ -501,11 +501,13 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
     case FOV_DRAW_CB: return fov_draw;
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
     case QUIT_OPEN_CB: return quit_open;
     case QUIT_BUILD_CB: return quit_build;
     case QUIT_SELECT_CB: return quit_select;
     case QUIT_BACK_CB: return quit_back;
+#endif
+#ifdef _WIN32
     case 0x1200du: return online_activate;
     /* Any remaining indirect reference to the retired Live entry uses Online. */
     case 0x001CC050u: return online_activate;

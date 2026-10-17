@@ -15,6 +15,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+/* SDL queues the request safely from a guest worker; Present owns exit. */
+int tsfp_native_request_quit(void) {
+    SDL_Event event={0};event.type=SDL_EVENT_QUIT;
+    return SDL_PushEvent(&event);
+}
 static atomic_uchar keys[256];
 static atomic_int focused;
 static PcInput camera_input;
