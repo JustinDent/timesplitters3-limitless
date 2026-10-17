@@ -1,5 +1,36 @@
 # Measured progress
 
+## Launcher page and sidebar polish (2026-10-17)
+
+Implemented on `feature/launcher-page-polish`, based on main `d6f0d56`; source
+uncommitted at this entry. Repair / Verify now uses separate game/launcher cards
+with textual health badges, version/file counts, prominent verification actions
+and expandable file details. An unhealthy check expands its details; operation
+status/cancellation remain outside the scroll area. Open game folder stays below
+the cards alongside the preservation explanation.
+
+Settings retains native tab navigation with compact underlined headers, grouped
+input/mouse and key-binding cards, separate display/camera/performance/startup
+cards, and a fixed Save/Cancel footer. Custom width/height move into an expandable
+section. The shared page theme styles buttons, dropdowns/popups, entries,
+checkboxes, scrollbars, expanders and the FOV slider. Settings models, validation,
+capture/conflict prompts and save/cancel/draft semantics are retained. Sidebar
+buttons now have equal icon columns and a shared label offset instead of padded
+text; explicit accessible names preserve navigation labels. Home action alignment
+continues to use centered content through the shared button template.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required launcher build
+passed all 99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks.
+Startup and packaging tests passed six tests with two missing-artwork rejection
+subtests. Rendered/reviewed 1152×772 and minimum 1000×720 pages, including input,
+custom resolution, lower graphics/startup sections, repair attention/details and
+busy states. An offscreen WPF smoke check verified themed dropdown expansion and
+collapse at input width, the native FOV increase command, checkbox automation,
+and custom-resolution expansion; its dropdown image was reviewed. Tests used
+synthetic disposable settings/files and never launched the real game or modified
+personal data. No game runtime/build changes. MAC-021 records queued native UI
+adaptation; native Mac launcher execution remains unverified. Not published.
+
 ## Game folder action moved into Repair / Verify (2026-10-17)
 
 Follow-up on `feature/launcher-repair-diagnostics`, PR #88. Removed Game files

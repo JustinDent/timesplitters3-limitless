@@ -701,6 +701,22 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Queued
+- **Embedded page and sidebar polish (2026-10-17, uncommitted on
+  `feature/launcher-page-polish`):** `PageTheme.cs`, `MaintenancePage.cs`,
+  `SettingsPage.cs` and `Launcher.xaml` provide shared blue/silver control styling,
+  game/launcher health cards, expandable verification details, grouped settings,
+  a fixed Save/Cancel footer, and fixed sidebar icon/label columns with explicit
+  accessible navigation names. Settings draft/save/cancel, capture prompts,
+  verification and repair ownership rules remain unchanged. New status text
+  opens details for unhealthy verification results; smaller windows scroll the
+  content while retaining the sidebar and footer. Existing Mac has no matching
+  release-launcher UI; its Cocoa settings window remains separate. Native Mac
+  adaptation is **queued**: follow the grouping, readable native controls and
+  aligned navigation in that future UI, preserving keyboard/assistive access,
+  all settings and user data. Acceptance includes minimum-size layout, dropdown
+  and slider keyboard behavior, expand/collapse, repair busy/results states and
+  retained settings drafts. See the page-polish validation entry in STATUS.md;
+  Windows render tests do not establish native Mac launcher support.
 - **Repair/Verify and Diagnostics for v1.2.8 (2026-10-17, commit `920b789` on
   `feature/launcher-repair-diagnostics`):** `InstallationMaintenance.cs`,
   `MaintenancePage.cs`, `Launcher.cs`/XAML, `ReleaseClient.cs`, `SelfUpdate.cs`
