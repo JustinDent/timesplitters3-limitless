@@ -11,6 +11,6 @@ void pc_display_health_side(void);
 void pc_display_tutorial(void (*original)(void));
 void pc_display_tutorial_wrap(void (*original)(void));
 void pc_display_tutorial_text(void (*original)(void));
-void pc_display_decal_projection(void (*original)(void));
+void pc_display_perspective_projection(void (*original)(void));
 void (*pc_display_menu_lookup(uint32_t address))(void);
 #endif

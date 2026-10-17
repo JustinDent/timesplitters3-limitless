@@ -1,5 +1,54 @@
 # Measured progress
 
+## Issue 22 model projections (2026-10-16)
+
+Branch
+`22-character-selection-screen-is-stretched-when-using-higher-resolutions`, based
+on current main `5548b25`. The existing perspective wrapper now corrects the
+fresh matrices built by US character picker `sub_002C44D0` (return `002C46EF`)
+and first-person weapon lens `sub_001B73F0` (return `001B7482`). Those builders
+bypass the world-camera hook. Horizontal scale follows the selected output
+aspect while each builder retains its own vertical lens, depth and zoom.
+Correction happens after each rebuild, including alternating frame buffers
+during character changes. Decals still copy the world camera aperture; other
+perspective builders and offscreen effects are unchanged.
+
+Windows x64 / Python 3.14.2 / MSVC 19.42 / D3D11:
+
+- Complete patch stack applied and generated sources refreshed by the supported
+  `tsfp.ps1 -Action Build` workflow. The first build completed all native checks
+  (network, real-GPU clears, textures, display, prompts, paths, controls, settings
+  and debug). The outer PowerShell redirection reported a native-stderr warning
+  about unavailable optional ABI analysis, despite the inner build/checks
+  finishing. A later incremental build produced the identical executable but
+  stopped at the prompt test's `pc_controls_accept_pad()` assertion because its
+  window was not foreground. The isolated prompt retry also lacked foreground
+  access; no input code was changed to bypass this host prerequisite.
+- Combined patch-transition/tracking, projection, cinematic and display suites:
+  **37 passed**. After strengthening non-default-aspect exclusions, all four
+  projection cases passed again. Tests compile the actual wrapper for both
+  `TSFP_PC_CONTROLS` and `TSFP_NATIVE_DISPLAY`, with/without a camera. They check
+  repeated alternating-buffer builds at original/4:3, 5:4, 16:9, 21:9 and 32:9,
+  preserve non-horizontal coefficients and guest ABI, and exclude unrelated
+  callers. Patch-test temporary staging was routed inside the workspace after
+  intermittent system-temp/file-access failures; final checks passed.
+- Bounded isolated Test Lab sessions at 1920x1080 and 1280x960 loaded Arcade
+  Vietnam, displayed character selection and first-person dual pistols. Twelve
+  rapid character changes retained the corrected lens. At 1920x1080 the sampled
+  picker X coefficient changed from `1.12042034` to `0.84031522`, exactly the
+  required 3/4 factor; Y remained `1.73205078`. Reviewed captures show proportional
+  models and weapons. At 4:3 no aspect correction is applied. World camera and
+  CPU frustum remain unchanged. Captures/timing samples are local under
+  `private/test-saves/issue22`; all six disposable disk images were recycled.
+- Built executable SHA-256:
+  `bd3532a8cf764f3062438847c67e5c382bf88ebf142e75c9f9b0bd3816ec56f6`.
+  Build seal and multiplayer content verification pass; the supported US XBE
+  hash was verified before game tests. Personal saves/settings were not used.
+
+Ultrawide coverage is a wrapper test, not a reviewed game capture. Full
+split-screen/aiming/zoom playtesting and native Mac execution remain unverified.
+See [MAC-026](MAC_PORT_BACKLOG.md#mac-026--character-picker-and-weapon-proportions-issue-22).
+
 ## Runtime CI efficiency
 
 Branch `ci/faster-runtime-checks`, based on main `9f65dcc`.

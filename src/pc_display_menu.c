@@ -146,11 +146,23 @@ void pc_display_camera(void (*original)(void))
     }
 }
 
-void pc_display_decal_projection(void (*original)(void))
+void pc_display_perspective_projection(void (*original)(void))
 {
     const uint32_t caller=WORD_AT(g_esp), destination=WORD_AT(g_esp+4);
     uint32_t camera, matrix;
     original();
+    /* US sub_001B73F0 builds the first-person weapon lens; sub_002C44D0
+       rebuilds the character picker lens, including when models change.
+       Neither goes through pc_display_camera. Correct each freshly built
+       matrix, rather than copying the world camera's different FOV/zoom or
+       adjusting a retained matrix repeatedly while a new character loads. */
+    if(caller==0x001B7482u || caller==0x002C46EFu) {
+        if(guest_writable(destination,64)) {
+            float *projection=(float *)((uintptr_t)destination+g_xbox_mem_offset);
+            projection[0]/=pc_display_camera_factor();
+        }
+        return;
+    }
     /* These two US decal passes rebuild a perspective matrix with biased
        near/far planes instead of using the camera projection. Match the
        active camera's aperture, including widescreen and cinematic zoom,

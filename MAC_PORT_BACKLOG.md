@@ -79,6 +79,28 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
 | MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
 | MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
+| MAC-026 | Character picker and weapon proportions (issue #22) | Awaiting validation |
+
+### MAC-026 — Character picker and weapon proportions (issue #22)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Correct the horizontal aperture of newly built character
+  picker and first-person weapon projections for the selected output aspect.
+  Keep each lens, zoom, depth and the original 4:3 behavior; do not reuse or
+  repeatedly scale the preceding character's projection during model changes.
+- **Source:** Branch `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
+  `src/pc_display_menu.c`, `src/pc_display_menu.h`,
+  `patches/zzzzzzzzzzz-model-projection.patch`, `tests/test_decal_projection.py`.
+- **Shared Mac support:** The perspective hook is already enabled by
+  `TSFP_NATIVE_DISPLAY`; this correction uses the shared aspect model. Both
+  platform defines pass the source wrapper tests. No new OS/graphics adapter is
+  required; native execution and visual fidelity are unverified.
+- **Remaining:** Build and visually validate on Apple Silicon. Other-device
+  synchronization is unverified; Windows captures do not establish Mac support.
+- **Acceptance:** Cycle character models at 4:3, 16:9 and ultrawide without
+  changing their proportions during loading; verify first-person weapons,
+  aiming/zoom, split-screen, and unchanged world/decal/cinematic projections.
+  See [Windows evidence](STATUS.md#issue-22-model-projections-2026-10-16).
 
 ### MAC-001 — Direct-camera mouse look
 
