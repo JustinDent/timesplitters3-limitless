@@ -74,6 +74,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           'zzzzzzzzzzzzzzzzzzzzzz-objectives-ui-integration.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-spirit-rendering.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-ghost-target-feedback.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-source.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-footer.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-themed-footer.patch',

@@ -1,5 +1,28 @@
 # PC features awaiting Mac adaptation
 
+### MAC-036 — Ghost Gun full-body visibility (issue #111)
+
+- **Status:** Queued
+- **PC behavior:** Full-body ghosts retain their native red translucent effect
+  when revealed with the Ghost Gun. Offscreen colour targets share scene depth
+  and stencil; self-sampling colour passes read a snapshot taken before each
+  draw instead of an input rejected by the graphics API.
+- **Source:** Commit `Fix Ghost Gun humanoid rendering and target feedback` on
+  `111-bug-ghosts-are-still-not-visible-with-ghost-gun`; runtime patch
+  `zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-ghost-target-feedback.patch`,
+  `tests/ghost_targets.py`, `tsfp.ps1`. Separate from the floating-skull fix #17.
+- **Shared Mac support:** HLE retains the automatic depth surface for same-size
+  full-frame targets when the native adapter can bind it. Mismatched native
+  dimensions retain the previous fallback. The Windows D3D11/Vulkan RHI adapter
+  promotes colour images to match scene depth; native OpenGL does not use it.
+- **Remaining:** Implement native GL feedback snapshots and matching physical
+  colour/depth sizes; preserve logical UVs, viewport/scissor scaling and stencil.
+  Windows visual results do not establish Mac support. See `STATUS.md`.
+- **Acceptance:** Verify What Lies Below humanoid ghosts with the Ghost Gun and
+  Mansion's TV-room Deadwina. Preserve occlusion by walls, depth writes across
+  target switches, red tint/blur, multiple ghosts, resolution changes and
+  supersampling. Reproduce the synthetic occlusion/feedback checks in native GL.
+
 ### MAC-035 â€” Cinematic width fill (issue #30 investigation)
 
 - **Status:** Awaiting validation

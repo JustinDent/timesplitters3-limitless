@@ -70,7 +70,8 @@ Python, Git and Visual Studio are not required to play.
 
 Recent fixes improve pickup-range checks, controller sensitivity adjustment,
 story audio transitions, Khallos Express scenery rendering and multiplayer
-movement updates. [See measured progress →](STATUS.md)
+movement updates. The current Windows source also restores full-body ghosts
+revealed by the Ghost Gun; this is separate from the floating-skull fix. [See measured progress →](STATUS.md)
 
 ### Controls and settings
 
