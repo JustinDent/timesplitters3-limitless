@@ -139,8 +139,8 @@ void pc_display_camera(void (*original)(void))
         float *projection=(float *)((uintptr_t)matrix+g_xbox_mem_offset);
         float *horizontal=(float *)((uintptr_t)(player+0x380u)+g_xbox_mem_offset);
         float *vertical=(float *)((uintptr_t)(player+0x37cu)+g_xbox_mem_offset);
-        /* Fit the original cinematic aperture with the adaptive matte. Only
-         * widening the camera reveals beyond authored cutscene backdrops.
+        /* Fit the cinematic aperture; ultrawide crops vertically to fill.
+         * Widening past that aperture exposes authored backdrop edges.
          * Keep GPU projection and CPU culling in agreement on both axes. */
         projection[0]*=zoom/(factor*fov_scale);
         projection[5]*=zoom/fov_scale;

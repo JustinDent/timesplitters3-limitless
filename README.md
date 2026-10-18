@@ -56,7 +56,7 @@ Python, Git and Visual Studio are not required to play.
 <table>
 <tr>
 <td width="50%" valign="top"><strong>Mouse aiming</strong><br>Direct camera control, zoom-aware sensitivity and normalized WASD movement. Rebind actions and adjust sensitivity with <strong>F2</strong>.</td>
-<td width="50%" valign="top"><strong>Resolution and aspect ratio</strong><br>Native <strong>1080p, 1440p and 4K</strong> rendering, monitor-reported ultrawide modes and adaptive in-engine cutscene framing.</td>
+<td width="50%" valign="top"><strong>Resolution and aspect ratio</strong><br>Native <strong>1080p, 1440p and 4K</strong> rendering, monitor-reported ultrawide modes and proportional cutscene and startup-video framing that fills ultrawide displays without side bars.</td>
 </tr>
 <tr>
 <td valign="top"><strong>Input prompts</strong><br>Formatted menu and HUD prompts follow your bindings and switch back to controller icons when you use a controller.</td>

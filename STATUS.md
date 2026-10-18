@@ -1,5 +1,75 @@
 # Measured progress
 
+## Cutscene width fill and FPS investigation (issue #30, 2026-10-17)
+
+Implemented on `30-cutscenes-playing-at-lower-fps`, based on `cef0778`.
+Runtime pin and supported US XBE hash remain unchanged. The final Windows
+executable SHA-256 is
+`7a60881c5a71bd057d8531a7a6fad11208fa6dd2ebe9f3dc112c94de0fb896e1`.
+Host: Windows x64, MSVC 19.44, D3D11, Intel i7-13700K and NVIDIA RTX 4070 SUPER
+(driver 32.0.16.1742).
+
+`src/pc_cutscene.h` removes the vertical matte previously introduced on displays
+wider than the cinematic aperture. Both story and scripted bar paths now fill
+the width with proportional vertical cropping. Camera projection and CPU
+frustum remain matched, retaining the original horizontal aperture so the
+opening's finite starfield backdrop still covers the view. Gameplay FOV and
+the cinematic timeline are unchanged. The movie patches apply proportional
+width fill to the attract reel and all five startup logo variants. On wide
+displays, the supported 720x480 attract reel's 38 left / 42 right padded source
+columns are excluded by extending and offsetting the movie quad; 4:3 playback
+retains its original complete picture. Unknown movies retain default fit.
+Width fill necessarily crops some of the original top/bottom on wide displays;
+it does not stretch the image or change playback speed.
+
+The supported Windows Build and native build checks passed. All 49 selected
+cutscene, UI, FOV, decal, XMV stop and patch tracking/transition tests passed in
+116.57s. A repeated full-stack application changed zero runtime files. The
+cutscene fixture executes the checksum-verified original US story and scripted
+matte routines, checks camera/CPU-frustum agreement and restored guest
+arguments, and exercises 4:3, 16:9, 16:10, ultrawide, portrait and invalid
+dimensions. Mutations restoring the old movie fit or ignoring encoded padding
+fail the new regressions. Logs are in ignored `build/menu-footer`.
+
+All 20 Extras/Movies cinematics played to their natural ends at 3440x1440 in
+an isolated 1,700-second run, with frame captures and read-only camera/timeline
+sampling. This run used the identical real-time camera changes in binary
+`260f007caeaff2bf1e09fd33c9a4c04a52414414fff2e009b74184e313e7a54b`, before the
+final movie-only padding/logo follow-up. Per-movie median rates were 59.6-60.2
+FPS. The lowest one-second sample was 49.4 FPS; no movie had two consecutive
+samples below 50 FPS. Loading intervals were excluded and periodic GPU readback
+adds capture overhead. Sampled timelines advanced in real time, and moving
+camera pans reached about 60 updates/sec; stationary shots are not evidence of
+a frame-rate cap. Evidence is in ignored `build/cutscene-30-playlist` (timing
+summary, 20 completion records, timeline data and selected PNGs).
+
+The sustained low-FPS report was not reproduced on this host. These measurements
+do not establish a fix for #30's performance report or cover every in-level
+scripted event, other hardware, or a full campaign playthrough. No guest clock,
+decode cadence or audio-timing adjustment was made to mask that uncertainty.
+
+An offline audit using the production XMV demuxer/decoder decoded all six
+packaged videos (3,464 frames) without an error. The attract reel's 3,055 frames
+decoded in 2.818 CPU seconds; its source cadence is about 30 FPS. All movies
+retain their source timestamps. Encoded frame rates are distinct from the
+real-time cinematics' 60 Hz guest clock; this change does not invent frames.
+
+The final build's live 3440x1440 captures show proportional EA/Free Radical
+startup logos and the attract reel filling the width without the old side
+strips (`build/cutscene-30-recorded-final`). The bounded 245-second pass also
+completed the logos and attract reel naturally, then skipped the next reel
+with Enter and verified the title menu returned. Capture readback reduces
+the number of presented movie pictures; this run verifies framing/lifecycle,
+not smooth-playback performance. Redundant frames and disposable disk images
+were recycled. The remaining regional logo files
+were decoded offline and their selection/geometry is covered by the fixture.
+All game runs use disposable saves and explicit settings paths; the final
+movie pass also isolates APPDATA for the runtime shader cache. Personal saves,
+settings and the canonical unlocked fixture are preserved.
+
+Native Mac validation remains pending under MAC-035; native XMV playback has
+not been enabled by this work.
+
 ## Required bug report answers (2026-10-17)
 
 The blank dropdowns in PR #113 were visually empty but still counted as selected

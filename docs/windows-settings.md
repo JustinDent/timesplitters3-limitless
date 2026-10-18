@@ -58,12 +58,17 @@ In single-player widescreen, ammo counters, corner radar, status indicators and
 scope zoom controls move toward their screen edges with consistent proportions.
 World target markers and the central aiming graphics retain their own placement.
 Split-screen retains its existing layout. Gameplay uses the selected aspect ratio
-and an adjusted horizontal camera view. Cutscene bars adapt to
-the selected aspect ratio while preserving the original cinematic framing:
-wide screens use thinner bars, and screens wider than the cinematic picture
-use side bars to fit its full height. The cutscene camera and scripted bar
-animations adapt together, preserving the original composition. This affects
-in-engine cutscenes; startup video framing is unchanged.
+and an adjusted horizontal camera view. Cutscene bars adapt to the selected
+aspect ratio: wide screens use thinner horizontal bars. Screens wider than
+the cinematic picture fill the width by cropping vertically, preserving
+proportions instead of adding side bars. The camera stays within the authored
+horizontal aperture so cutscene backdrops still cover the view. The camera
+and scripted bar animations adapt together. The recorded attract reel follows
+the same proportional width-fill rule, excluding its encoded side padding
+on wide screens. Startup logos also fill the width proportionally. Wider
+displays crop the top and bottom of the original movie or logo picture.
+Presentation changes do not alter animation speed, audio timing, or the
+recorded videos' original frame rate.
 
 Settings live in `config/pc-display.ini` beside the keyboard/mouse configuration
 (`Settings/pc-display.ini` in packaged builds). `TSFP_DISPLAY_CONFIG` can override
