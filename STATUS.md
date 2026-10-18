@@ -1,5 +1,57 @@
 # Measured progress
 
+## Windows game icon for PR 126 (2026-10-18)
+
+Added in `c2db36b` on `feature/launcher-game-versions`, [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+Integration commit `272f930` merges main `78ac6a0` into this feature branch,
+retaining launcher 1.2.13, direct game launch and the startup security recovery
+from PR #141. The version-picker/banner backlog entry was renumbered MAC-041
+to preserve main's existing MAC-036 Ghost Gun entry. This does not merge PR #126
+into main or publish any game/launcher release.
+
+Host: Windows x64, .NET Framework/System.Drawing, Windows PowerShell 5.1,
+Python 3.12.14, MSVC 19.44, Windows SDK RC 10.0.26100.0, CMake 4.4.4 and
+Ninja 1.13.2. The new game icon uses the unmodified 500 x 187 wordmark at
+128/256 pixels and a compact TSFP monogram at 16/24/32/48/64. Source-only
+builds use the compact mark at all sizes. All entries retain transparent edges.
+The source PNG remains SHA-256
+`6f50234a380cd794fc9e82b2f1a204663c0bb741ea38fe57c2cc8f0a12aefed0`;
+the generated official-logo ICO is
+`7c1b53bd0e0ac954a359d93f46437afb7989cbdf4724260aed90a22e99310bcc`.
+The launcher ICO stays byte-for-byte unchanged at
+`191f124e7d72e9c22d476cdf023ad38b8036680c38f298f496cfe6fcc6f2d519`.
+The seven-size preview was visually inspected. Original art and generated
+icons/previews remain ignored and local; no source artwork was committed.
+
+`tsfp.ps1 -Action Build` generates the RC/ICO before CMake linking and executable
+identity sealing. A Windows-only CMake patch embeds the first icon resource
+group, which the pinned SDL Windows backend selects for its default window
+class. A tiny CMake/MSVC/RC executable built in a Unicode path verified all seven
+embedded payloads byte-for-byte and loaded every size using Windows LoadImageW.
+The executable was loaded as resource data only, never executed. The complete
+game executable was not rebuilt or launched; taskbar/Explorer appearance with
+a real game and other-device behavior remain unverified.
+
+Post-integration launcher build with required private artwork passed all 212
+checks: 100 updater/cleanup, 27 downloads/recovery, 11 game versions, ten startup
+recovery, 15 news, 29 settings and 20 maintenance. The combined Python run passed
+111 tests and two packaging subtests, including full patch-stack migration,
+release validation/notes, CI routing, four game-icon tests, portable startup and
+launcher packaging. The four icon tests were rerun after adding the Windows
+resource-loader assertions and passed. Tests preserve the original logo, reject
+a required missing logo without overwriting an existing icon, verify fallback
+sizes/transparency/provenance, and compare large-logo vs. small-monogram frames.
+Source-only patch fixtures share local Git objects without copying game data
+or changing the primary runtime checkout. Logs and selected evidence are in
+ignored `build/game-icon` and `build/launcher-validation`.
+
+Personal saves/settings/ISO/game data were not used or changed. Existing synthetic
+launcher process fixtures were used; no real game was terminated. Runtime pin
+and dependency pins are unchanged. Mac source/build paths remain unchanged;
+[MAC-040](MAC_PORT_BACKLOG.md#mac-040--dedicated-game-icon) queues native app icon
+packaging. A launcher-only update cannot retrofit this icon into older game
+executables; users need a matching new game build/release.
+
 ## Complete original launcher banner artwork (2026-10-18)
 
 Follow-up on `feature/launcher-game-versions` in [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).

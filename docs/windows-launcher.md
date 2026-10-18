@@ -68,6 +68,37 @@ the small sizes use heavier portal strokes for clarity. The build also writes
 `build/launcher/icon-preview.png` to show all sizes. No image generator or
 external asset is required to reproduce the icon.
 
+### Windows game icon
+
+New Windows game builds embed a separate game icon in `futureperfect_recomp.exe`.
+It uses the same blue/silver temporal frame, with the complete original TSFP
+wordmark at 128 and 256 pixels. At 16, 24, 32, 48 and 64 pixels, a compact
+two-row TSFP monogram replaces the wide wordmark for readability. Source builds
+without private artwork use the TSFP monogram at every size. The launcher keeps
+its existing TS icon.
+
+`tsfp.ps1 -Action Build` runs `tools/build-game-icon.ps1` before CMake and passes
+its generated `game-icon.rc` through `TSFP_GAME_ICON_RESOURCE`. The Windows-only
+CMake patch embeds resource group 1 before executable identity sealing. SDL's
+Windows backend uses the first executable group icon for its default window
+class, so no separate runtime image or SDL gameplay change is needed. Packaging
+continues copying the sealed executable unchanged, including its embedded icon.
+The icon builder and shared icon renderer are game inputs in release notes.
+
+Run `tools/build-game-icon.ps1 -RequireLogo` to require the local official
+wordmark, `-LogoPath <image.png>` to supply it explicitly, or `-Fallback` to
+preview the compact mark at every size. Outputs stay ignored in `build/game-icon`:
+the seven-size `game.ico`, resource source, size preview, and provenance JSON
+containing source/icon hashes and Git revision/changes. The existing PNG remains
+unchanged; no generated redraw or font substitution is used for its lettering.
+Public source includes only the renderer and build integration, with private
+original art supplied locally as with the launcher banner/logo.
+
+This requires a new game build/release. A launcher-only update does not replace
+an older game's executable or change the icon in existing published packages.
+Actual Windows taskbar/Explorer appearance should be checked with that game
+release; resource-link tests use a tiny executable without running the game.
+
 ## Publishing game updates
 
 Publish a GitHub Release with a semantic version tag (`v1.2.3`, or

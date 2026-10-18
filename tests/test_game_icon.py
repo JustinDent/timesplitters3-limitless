@@ -97,7 +97,7 @@ def test_real_cmake_rc_build_embeds_every_icon_frame_in_a_unicode_path(tmp_path)
         ninja = str(Path(package.BIN_DIR)/'ninja.exe')
     assert ninja, 'Ninja is required to preserve Unicode resource paths'
     output = source/'icon output'
-    build(output, '-Fallback')
+    build(output)  # Use the real private wordmark locally; CI exercises the fallback.
     patch = (ROOT/'patches/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-game-icon.patch').read_text()
     snippet = '\n'.join(line[1:] for line in patch.splitlines() if line.startswith('+') and not line.startswith('+++'))
     (source/'main.c').write_text('int main(void) { return 0; }\n')
@@ -120,3 +120,24 @@ def test_real_cmake_rc_build_embeds_every_icon_frame_in_a_unicode_path(tmp_path)
         assert len(groups.directory.entries) == 1 and groups.directory.entries[0].id == 1
         item = groups.directory.entries[0].directory.entries[0].data.struct
         assert struct.unpack_from('<HHH', pe.get_data(item.OffsetToData, item.Size)) == (0, 1, len(SIZES))
+    # Ask Windows to load each icon size. DATAFILE mode never executes the stub.
+    import ctypes
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL('kernel32', use_last_error=True)
+    user = ctypes.WinDLL('user32', use_last_error=True)
+    kernel.LoadLibraryExW.argtypes = [wintypes.LPCWSTR, wintypes.HANDLE, wintypes.DWORD]
+    kernel.LoadLibraryExW.restype = wintypes.HMODULE
+    kernel.FreeLibrary.argtypes = [wintypes.HMODULE]
+    user.LoadImageW.argtypes = [wintypes.HINSTANCE, ctypes.c_void_p, wintypes.UINT,
+                               ctypes.c_int, ctypes.c_int, wintypes.UINT]
+    user.LoadImageW.restype = wintypes.HANDLE
+    user.DestroyIcon.argtypes = [wintypes.HANDLE]
+    module = kernel.LoadLibraryExW(str(binary/'game_icon_probe.exe'), None, 0x22)
+    assert module, ctypes.get_last_error()
+    try:
+        for size in SIZES:
+            icon = user.LoadImageW(module, ctypes.c_void_p(1), 1, size, size, 0)
+            assert icon, (size, ctypes.get_last_error())
+            assert user.DestroyIcon(icon)
+    finally:
+        assert kernel.FreeLibrary(module)

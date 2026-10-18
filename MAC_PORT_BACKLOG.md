@@ -1,5 +1,30 @@
 # PC features awaiting Mac adaptation
 
+### MAC-040 — Dedicated game icon
+
+- **Status:** Queued
+- **PC behavior:** New Windows game executables embed a seven-size transparent
+  ICO. Large sizes use the unmodified official TSFP wordmark in a blue/silver
+  temporal frame. Small sizes use compact TSFP initials, with the same monogram
+  available at every size without private art. The launcher retains its TS
+  icon. SDL's Windows backend uses the executable's first icon for its window
+  class; game packages carry it inside the sealed runtime executable.
+- **Source:** Icon feature commit `c2db36b` and current-main integration
+  `272f930` in [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126);
+  `tools/launcher/IconBuilder.cs`, `tools/build-game-icon.ps1`, `tsfp.ps1`,
+  `patches/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-game-icon.patch`,
+  `tools/publish-release.py` and `tests/test_game_icon.py`.
+- **Mac support:** Existing native build and runtime paths are unchanged. ICO
+  resources and RC compilation are Windows-only. No Mac app bundle/Dock icon
+  has been implemented or verified by this change.
+- **Remaining:** Adapt the mark to native macOS app-bundle icon assets and
+  distribution once native packaging exists. Preserve original wordmark art
+  and its provenance; use the compact initials where the wide title is unreadable.
+- **Acceptance:** Verify native app/Dock/Finder and window icons at Retina and
+  small sizes, transparent edges, bundle/update packaging and source-only fallback.
+  Windows resource tests do not prove native icon integration. See the
+  [Windows evidence](STATUS.md#windows-game-icon-for-pr-126-2026-10-18).
+
 ### MAC-041 — Published game version picker and banner replacement
 
 - **Status:** Queued
