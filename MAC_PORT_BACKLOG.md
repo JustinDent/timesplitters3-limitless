@@ -1,6 +1,6 @@
 # PC features awaiting Mac adaptation
 
-### MAC-036 — Ghost Gun full-body visibility (issue #111)
+### MAC-036 â€” Ghost Gun full-body visibility (issue #111)
 
 - **Status:** Queued
 - **PC behavior:** Full-body ghosts retain their native red translucent effect
