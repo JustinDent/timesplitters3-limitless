@@ -74,7 +74,8 @@ New Windows game builds embed a separate game icon in `futureperfect_recomp.exe`
 It uses the same blue/silver temporal frame, with the original TSFP title at
 128 and 256 pixels and the original Future Perfect lettering on its own larger
 centered line. The subtitle is about twice its previous size. At 16, 24, 32,
-48 and 64 pixels, a compact serif TSFP monogram replaces the wide title. Source builds
+48 and 64 pixels, a compact serif TSFP monogram replaces the wide title, centered
+with space inside the rings. Source builds
 without private artwork use the TSFP monogram at every size. The launcher keeps
 its existing TS icon.
 

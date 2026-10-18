@@ -7,7 +7,9 @@
   ICO. Large sizes use the official TSFP title in a blue/silver temporal frame,
   with the original Future Perfect lettering enlarged on a separate line.
   Small sizes use compact series-inspired serif TSFP initials, with the same monogram
-  available at every size without private art. The launcher retains its TS
+  available at every size without private art. The initials are centered and
+  scaled radially to stay inside the rings with clear space around their outline.
+  The launcher retains its TS
   icon. SDL's Windows backend uses the executable's first icon for its window
   class; game packages carry it inside the sealed runtime executable.
 - **Source:** Icon feature commit `c2db36b` and current-main integration

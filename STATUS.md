@@ -1,5 +1,22 @@
 # Measured progress
 
+## TSFP initials inside the icon rings (2026-10-18)
+
+Follow-up to `d66a1f2` in PR #126. The monogram's previous rectangular fit
+let the tall serif initials overlap the circular blue ring. The renderer now
+centers the complete glyph geometry and scales its farthest path point to an
+80-pixel radius in the 256-pixel design space. This also leaves room for the
+dark outline inside the ring's glow. All compact and source-only fallback
+sizes use this fit; the original title/subtitle artwork is unchanged.
+
+On Windows x64 with PowerShell 5.1/System.Drawing and Python 3.12.14, all five
+icon checks passed, including seven resource sizes and Windows LoadImageW.
+The required-art launcher build passed and its existing icon hash is unchanged.
+The seven-size private preview was visually inspected. The updated official-logo
+ICO SHA-256 is `ff3037c9b40de2410ac3dffe3cfe594e48e4a386b9927aaebe7244c7cdf66fdc`.
+No game was launched or release published. Native Mac icon packaging remains
+queued under MAC-040; this change adds no native Mac adapter.
+
 ## Game icon serif lettering and larger subtitle (2026-10-18)
 
 Follow-up on `feature/launcher-game-versions` in PR #126, based on `c919122`.

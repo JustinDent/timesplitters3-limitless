@@ -101,9 +101,18 @@ public static class LauncherIconBuilder
         using(var letters=GameMonogram.Create())
         {
             var bounds=letters.GetBounds();
-            float scale=Math.Min(186/bounds.Width,156/bounds.Height);
+            float centerX=bounds.Left+bounds.Width/2, centerY=bounds.Top+bounds.Height/2;
+            float radius=0;
+            // Fit the entire glyph outline inside the aperture, with room for
+            // its dark stroke and clear space before the inner blue ring.
+            foreach(var point in letters.PathPoints)
+            {
+                float x=point.X-centerX, y=point.Y-centerY;
+                radius=Math.Max(radius,(float)Math.Sqrt(x*x+y*y));
+            }
+            float scale=80/radius;
             using(var transform=new Matrix(scale,0,0,scale,
-                128-(bounds.Left+bounds.Width/2)*scale,128-(bounds.Top+bounds.Height/2)*scale))
+                128-centerX*scale,128-centerY*scale))
                 letters.Transform(transform);
             using(var chrome=new LinearGradientBrush(new Point(0,48),new Point(0,208),Color.FromArgb(244,251,255),Color.FromArgb(133,167,191)))
             using(var dark=new Pen(Color.FromArgb(7,19,33),5))
