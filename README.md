@@ -34,6 +34,10 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
 **Next time:** open **TimeSplitters Launcher.exe → Play Game**. Installed play
 remains available offline.
 
+New Windows game builds include a dedicated TSFP game icon. Existing game
+downloads receive it with a new game release; a launcher-only update keeps
+the installed game executable. See the [game icon build notes](docs/windows-launcher.md#windows-game-icon).
+
 The next launcher update adds recovery when Windows interrupts startup, with **Retry**,
 **Open launcher folder** and **View logs**. See the
 [Windows security prompt guidance](docs/launcher.md#windows-security-prompts-at-startup).
@@ -67,7 +71,7 @@ Python, Git and Visual Studio are not required to play.
 <td valign="top"><strong>Online and LAN multiplayer</strong><br>Experimental player-hosted Online matches, invitations, private join codes and compatible-build browsing, plus LAN System Link.</td>
 </tr>
 <tr>
-<td valign="top"><strong>Launcher</strong><br>Install releases, import game data, check updates and press <strong>Play Game</strong>. Roll back an update when a previous release is available.</td>
+<td valign="top"><strong>Launcher</strong><br>Install releases, import game data, check updates and press <strong>Play Game</strong>. Roll back an update when a previous release is available. Current source adds a <a href="docs/launcher.md#compare-specific-game-versions-upcoming-launcher-update">game version picker</a> for testing published older builds.</td>
 <td valign="top"><strong>Performance diagnostics</strong><br>Optional FPS, frame-time and network-latency displays. Use <strong>F9</strong> for the FPS overlay and <strong>F12</strong> for debug settings.</td>
 </tr>
 </table>

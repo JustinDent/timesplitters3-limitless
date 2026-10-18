@@ -20,7 +20,9 @@ public static class LauncherIconBuilder
         return path;
     }
 
-    static Bitmap Render(int size)
+    static Bitmap Render(int size) { return Render(size, false, null); }
+
+    static Bitmap Render(int size, bool game, Image logo)
     {
         var bitmap = new Bitmap(size, size, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(bitmap))
@@ -53,7 +55,26 @@ public static class LauncherIconBuilder
                 }
             }
 
-            using (var t = Polygon(56, 86, 130, 86, 126, 107, 105, 107,
+            if (game && logo != null && size >= 128)
+            {
+                g.InterpolationMode=InterpolationMode.HighQualityBicubic;
+                if (logo.Width==500 && logo.Height==187)
+                {
+                    // Keep the title's tall T/S descenders, then give the genuine
+                    // subtitle its own centered line at 212px instead of 102px.
+                    const float scale=224f/500;
+                    g.DrawImage(logo,new RectangleF(16,54,224,150*scale),new RectangleF(0,0,500,150),GraphicsUnit.Pixel);
+                    g.DrawImage(logo,new RectangleF(16,54+150*scale,263*scale,37*scale),new RectangleF(0,150,263,37),GraphicsUnit.Pixel);
+                    g.DrawImage(logo,new RectangleF(22,160,212,212f*22/228),new RectangleF(263,150,228,22),GraphicsUnit.Pixel);
+                }
+                else
+                {
+                    float height=224f*logo.Height/logo.Width;
+                    g.DrawImage(logo,new RectangleF(16,(256-height)/2,224,height));
+                }
+            }
+            else if (game) DrawGameMonogram(g,size);
+            else using (var t = Polygon(56, 86, 130, 86, 126, 107, 105, 107,
                 105, 171, 80, 178, 80, 107, 53, 107))
             using (var s = Polygon(151, 86, 198, 86, 194, 107, 155, 107,
                 155, 119, 190, 119, 201, 131, 196, 160, 182, 173,
@@ -75,12 +96,50 @@ public static class LauncherIconBuilder
         return bitmap;
     }
 
+    static void DrawGameMonogram(Graphics graphics,int size)
+    {
+        using(var letters=GameMonogram.Create())
+        {
+            var bounds=letters.GetBounds();
+            float centerX=bounds.Left+bounds.Width/2, centerY=bounds.Top+bounds.Height/2;
+            float radius=0;
+            // Fit the entire glyph outline inside the aperture, with room for
+            // its dark stroke and clear space before the inner blue ring.
+            foreach(var point in letters.PathPoints)
+            {
+                float x=point.X-centerX, y=point.Y-centerY;
+                radius=Math.Max(radius,(float)Math.Sqrt(x*x+y*y));
+            }
+            float scale=80/radius;
+            using(var transform=new Matrix(scale,0,0,scale,
+                128-centerX*scale,128-centerY*scale))
+                letters.Transform(transform);
+            using(var chrome=new LinearGradientBrush(new Point(0,48),new Point(0,208),Color.FromArgb(244,251,255),Color.FromArgb(133,167,191)))
+            using(var dark=new Pen(Color.FromArgb(7,19,33),5))
+            using(var weight=new Pen(chrome,size<=32?2.5f:1f))
+            {
+                graphics.DrawPath(dark,letters);
+                graphics.FillPath(chrome,letters);
+                graphics.DrawPath(weight,letters);
+            }
+        }
+    }
+
     public static void Write(string output)
+    { Write(output, Render); }
+
+    public static void WriteGame(string output, string logoPath)
+    {
+        using (var logo=String.IsNullOrEmpty(logoPath)?null:Image.FromFile(logoPath))
+            Write(output, size=>Render(size,true,logo));
+    }
+
+    static void Write(string output, Func<int,Bitmap> render)
     {
         var images = new byte[Sizes.Length][];
         for (int i = 0; i < Sizes.Length; i++)
         {
-            using (var bitmap = Render(Sizes[i]))
+            using (var bitmap = render(Sizes[i]))
             using (var stream = new MemoryStream())
             {
                 bitmap.Save(stream, ImageFormat.Png);
@@ -105,6 +164,15 @@ public static class LauncherIconBuilder
     }
 
     public static void Preview(string output)
+    { Preview(output, Render); }
+
+    public static void PreviewGame(string output, string logoPath)
+    {
+        using (var logo=String.IsNullOrEmpty(logoPath)?null:Image.FromFile(logoPath))
+            Preview(output, size=>Render(size,true,logo));
+    }
+
+    static void Preview(string output, Func<int,Bitmap> render)
     {
         using (var sheet = new Bitmap(850, 320))
         using (var g = Graphics.FromImage(sheet))
@@ -115,7 +183,7 @@ public static class LauncherIconBuilder
             int x = 20;
             foreach (int size in Sizes)
             {
-                using (var icon = Render(size)) g.DrawImageUnscaled(icon, x, (280 - size) / 2);
+                using (var icon = render(size)) g.DrawImageUnscaled(icon, x, (280 - size) / 2);
                 g.DrawString(size + " px", font, label, x, 286);
                 x += Math.Max(size + 18, 52);
             }

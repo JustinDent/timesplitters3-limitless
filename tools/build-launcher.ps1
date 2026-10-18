@@ -47,7 +47,7 @@ if (Test-Path -LiteralPath $LogoPath -PathType Leaf) {
     Write-Host 'Private title logo not present; using the sidebar text fallback.'
 }
 if (!('LauncherIconBuilder' -as [type])) {
-    Add-Type -TypeDefinition ([IO.File]::ReadAllText((Join-Path $source 'IconBuilder.cs'))) -ReferencedAssemblies System.Drawing
+    Add-Type -Path @((Join-Path $source 'IconBuilder.cs'), (Join-Path $source 'GameMonogram.cs')) -ReferencedAssemblies System.Drawing
 }
 [LauncherIconBuilder]::Write((Join-Path $Output 'launcher.ico'))
 [LauncherIconBuilder]::Preview((Join-Path $Output 'icon-preview.png'))
@@ -74,7 +74,7 @@ $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Program',
     ('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml')) + $commonSources + @(
     (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'))
 $arguments += $bannerArguments
-$settingsSources = @((Join-Path $source 'PageTheme.cs'), (Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'SettingsPage.cs'), (Join-Path $source 'InstallationMaintenance.cs'), (Join-Path $source 'MaintenancePage.cs'), (Join-Path $source 'WhatsNewPage.cs'), (Join-Path $source 'DiagnosticIssueDraft.cs'))
+$settingsSources = @((Join-Path $source 'PageTheme.cs'), (Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'SettingsPage.cs'), (Join-Path $source 'InstallationMaintenance.cs'), (Join-Path $source 'MaintenancePage.cs'), (Join-Path $source 'WhatsNewPage.cs'), (Join-Path $source 'GameVersionsPage.cs'), (Join-Path $source 'DiagnosticIssueDraft.cs'))
 $defaultControls = @(('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'),
     ('/resource:' + (Join-Path $project 'src\pc_display_modes.inc') + ',display-modes.inc'))
 $arguments += $settingsSources + @($defaultControls)
@@ -117,7 +117,7 @@ if ($Test) {
     $testArgs += $commonSources + @((Join-Path $source 'Bootstrap.cs'),
         (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'),
         (Join-Path $project 'tests\launcher_updates.cs'))
-    $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher_settings.cs'), (Join-Path $project 'tests\launcher_maintenance.cs'), (Join-Path $project 'tests\launcher_downloads.cs'), (Join-Path $project 'tests\launcher_news.cs'), (Join-Path $project 'tests\launcher_startup.cs'))
+    $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher_settings.cs'), (Join-Path $project 'tests\launcher_maintenance.cs'), (Join-Path $project 'tests\launcher_downloads.cs'), (Join-Path $project 'tests\launcher_news.cs'), (Join-Path $project 'tests\launcher_versions.cs'), (Join-Path $project 'tests\launcher_startup.cs'))
     $testArgs += @(('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml'),
         ('/resource:' + (Join-Path $Output 'launcher.ico') + ',launcher.ico')) + $bannerArguments + $logoArguments
     & $compiler @testArgs
@@ -126,6 +126,8 @@ if ($Test) {
     if ($LASTEXITCODE -ne 0) { throw 'Launcher regression tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --downloads
     if ($LASTEXITCODE -ne 0) { throw 'Launcher download tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --versions
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher game version tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --startup
     if ($LASTEXITCODE -ne 0) { throw 'Launcher startup recovery tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --news

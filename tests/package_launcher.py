@@ -54,6 +54,7 @@ class LauncherPackaging(unittest.TestCase):
                          root / 'build/launcher/Bin/TimeSplitters.App.exe',
                          root / 'config/pc-controls.default.json', root / 'tools/playable-launch.ps1',
                          root / 'tools/start-game.ps1', root / 'tools/release/ImportGame.cs',
+                         root / 'tools/launcher/GameMonogram.NOTICE.txt',
                          root / 'tools/release/Import-game.ps1', root / 'tools/release/Play.cmd',
                          root / 'Data/default.xbe', root / 'Saves/profile',
                          root / 'Settings/pc-controls.json']:
@@ -84,6 +85,7 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertIn(prefix + 'TimeSplitters Launcher.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/TimeSplitters.App.exe', archive.namelist())
                 self.assertIn(prefix + 'Support/Launcher/manifest.json', archive.namelist())
+                self.assertIn(prefix + 'Licenses/Game-icon-lettering.txt', archive.namelist())
                 self.assertFalse(any('/Data/' in name or '/Saves/' in name for name in archive.namelist()))
                 manifest = json.loads(archive.read(prefix + 'BUILD.json'))
                 self.assertEqual(manifest['version'], 'v1.2.3')

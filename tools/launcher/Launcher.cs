@@ -27,9 +27,10 @@ namespace TimeSplitters.Launcher
                 bool repairPreview = args.Length == 2 && args[0] == "--render-repair-preview";
                 bool diagnosticsPreview = args.Length == 2 && args[0] == "--render-diagnostics-preview";
                 bool newsPreview = args.Length == 2 && args[0] == "--render-news-preview";
+                bool versionsPreview = args.Length == 2 && args[0] == "--render-versions-preview";
                 bool graphicsPreview = args.Length == 2 && args[0] == "--render-settings-graphics";
                 bool settingsPreview = graphicsPreview || (args.Length == 2 && args[0] == "--render-settings-preview");
-                bool preview = newsPreview || repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
+                bool preview = versionsPreview || newsPreview || repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
                 bool fromBootstrap = args.Length == 2 && args[0] == "--from-bootstrap";
                 if (args.Length == 0)
                 {
@@ -53,6 +54,7 @@ namespace TimeSplitters.Launcher
                             if (settingsPreview) ui.ShowSettings(graphicsPreview?1:0);
                             if (repairPreview || diagnosticsPreview) ui.ShowMaintenance(diagnosticsPreview);
                             if (newsPreview) ui.ShowNews();
+                            if (versionsPreview) ui.ShowGameVersions();
                             var window = ui.Window;
                             var visual = (Panel)window.Content;
                             visual.Background = window.Background;
@@ -123,13 +125,16 @@ namespace TimeSplitters.Launcher
         public readonly Window Window;
         readonly string root;
         readonly bool previewMode;
-        readonly ReleaseClient client = new ReleaseClient();
+        readonly ReleaseClient client;
         readonly CancellationTokenSource lifetime = new CancellationTokenSource();
         Release available;
         SettingsPage settings;
         MaintenancePage repairPage, diagnosticsPage;
         MaintenanceArea maintenanceArea;
         WhatsNewPage newsPage;
+        GameVersionsPage versionsPage;
+        CancellationTokenSource versionsStop;
+        int nextVersionsPage = 1;
         CancellationTokenSource newsStop;
         string newsContext="";
         bool newsReady;
@@ -150,8 +155,10 @@ namespace TimeSplitters.Launcher
         string NewsGameVersion { get { return installed.Length>0?installed:gameInstalled?"Unversioned":""; } }
         public void SetStatus(string value) { Text("StatusText", value); }
         public LauncherWindow(string path, bool preview)
+            : this(path,preview,new ReleaseClient()) { }
+        internal LauncherWindow(string path,bool preview,ReleaseClient releases)
         {
-            root = path; previewMode = preview;
+            root = path; previewMode = preview; client = releases;
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Launcher.xaml"))
                 Window = (Window)XamlReader.Load(stream);
             using (var icon = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher.ico"))
@@ -164,6 +171,9 @@ namespace TimeSplitters.Launcher
                     var bitmap = BitmapFrame.Create(logo, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
                     bitmap.Freeze();
                     Find<Image>("SidebarLogo").Source = bitmap;
+                    Find<Image>("HeroTitle").Source = bitmap;
+                    Find<Image>("HeroTitle").Visibility = Visibility.Visible;
+                    Find<StackPanel>("HeroTitleFallback").Visibility = Visibility.Collapsed;
                     // Display the original subtitle lettering at a readable sidebar size.
                     // Coordinates refer to the unchanged 500x187 source lockup.
                     var subtitle = new CroppedBitmap(bitmap, new Int32Rect(263, 150, 228, 22));
@@ -180,8 +190,9 @@ namespace TimeSplitters.Launcher
                     var bitmap = BitmapFrame.Create(banner, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
                     bitmap.Freeze();
                     var hero = Find<Border>("HeroBanner");
-                    hero.Background = new ImageBrush(bitmap) { Stretch = Stretch.UniformToFill,
-                        AlignmentX = AlignmentX.Center, AlignmentY = AlignmentY.Top };
+                    // Keep the complete supplied photograph. The surrounding WPF
+                    // composition fills the wide header without cropping or redrawing it.
+                    Find<Image>("HeroPhoto").Source = bitmap;
                     hero.Visibility = Visibility.Visible;
                     Find<Grid>("HeroFallback").Visibility = Visibility.Collapsed;
                 }
@@ -193,6 +204,7 @@ namespace TimeSplitters.Launcher
             Button("NewsNav").Click += (s,e)=>ShowNews();
             Button("ReleaseNotesButton").Content="What's new";
             Button("ReleaseNotesButton").Click += (s,e)=>ShowNews();
+            Button("GameVersionsButton").Click += (s,e)=>ShowGameVersions();
             Button("PauseDownloadButton").Click+=(s,e)=> {if(updateStop!=null)updateStop.Cancel();};
             Button("RetryButton").Click+=async(s,e)=> {if(!busy && !checking && retryOperation!=null)await retryOperation();};
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
@@ -270,6 +282,7 @@ namespace TimeSplitters.Launcher
                 Find<ContentControl>("SettingsHost").Visibility=Visibility.Visible;
                 Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
+                Find<ContentControl>("VersionsHost").Visibility=Visibility.Collapsed;
                 SelectNavigation("SettingsNav");
             } catch(Exception ex) { Fail(ex); }
         }
@@ -280,7 +293,57 @@ namespace TimeSplitters.Launcher
             Find<Grid>("CommandCenter").Visibility=Visibility.Visible;
             Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
             Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
+            Find<ContentControl>("VersionsHost").Visibility=Visibility.Collapsed;
             SelectNavigation("HomeNav");
+        }
+        public async void ShowGameVersions()
+        {
+            if(busy)return;
+            try {
+                if(settings!=null)settings.DismissPrompt();
+                if(versionsPage==null) {
+                    versionsPage=new GameVersionsPage();Find<ContentControl>("VersionsHost").Content=versionsPage.View;
+                    versionsPage.Refresh.Click+=async(s,e)=>await RefreshGameVersions(true);
+                    versionsPage.Older.Click+=async(s,e)=>await RefreshGameVersions(false);
+                    versionsPage.Install.Click+=async(s,e)=>await InstallSelectedVersion();
+                    versionsPage.OnGitHub.Click+=(s,e)=> {if(!previewMode && versionsPage.Selected!=null)Open(versionsPage.Selected.Url);};
+                }
+                Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
+                foreach(string host in new[]{"SettingsHost","MaintenanceHost","NewsHost"})Find<ContentControl>(host).Visibility=Visibility.Collapsed;
+                Find<ContentControl>("VersionsHost").Visibility=Visibility.Visible;SelectNavigation("HomeNav");
+                versionsPage.SetInstalled(previewMode?"v0.2.0-alpha.5":NewsGameVersion);
+                versionsPage.SetBusy(busy || checking,Core.GameRunning());
+                if(previewMode) {
+                    versionsPage.SetReleases(new GameReleaseList {Releases=new[]{
+                        new Release {Tag="v0.2.0-alpha.6",IsPreview=true,Published="2026-10-17T12:00:00Z",Size=45000000,Notes="Interface sample.\n\nCompare a published game release with the version reported by a player."},
+                        new Release {Tag="v0.2.0-alpha.5",IsPreview=true,Published="2026-10-16T12:00:00Z",Size=44000000,Notes="Interface sample.\n\nEarlier game release for bug reproduction.\nSaves, settings, imported data and launcher files are preserved."}},HasMore=true},true);
+                } else if(nextVersionsPage==1 && versionsStop==null)await RefreshGameVersions(true);
+            }catch(Exception ex){Fail(ex);}
+        }
+        async Task RefreshGameVersions(bool reset)
+        {
+            if(busy || versionsStop!=null)return;
+            if(previewMode){versionsPage.Status("Preview only. No network request was made.");return;}
+            using(var timeout=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)) {
+                versionsStop=timeout;timeout.CancelAfter(TimeSpan.FromSeconds(25));versionsPage.SetLoading(true);
+                int page=reset?1:nextVersionsPage;
+                try {
+                    var result=await client.ReadGameVersions(page,timeout.Token);
+                    if(!lifetime.IsCancellationRequested){versionsPage.SetReleases(result,reset);nextVersionsPage=page+1;}
+                }catch(Exception ex) {
+                    if(!lifetime.IsCancellationRequested){versionsPage.Failed();Program.Log(root,"Game versions: "+ex.GetType().Name);}
+                }finally {versionsStop=null;}
+            }
+        }
+        async Task InstallSelectedVersion()
+        {
+            if(busy || checking || versionsPage==null || versionsPage.Selected==null)return;
+            if(previewMode){versionsPage.Status("Preview only. No installed files were changed.");return;}
+            if(Core.GameRunning()){versionsPage.Status("Close the game before switching versions.");Refresh();return;}
+            var release=versionsPage.Selected;
+            string current=gameInstalled?(installed.Length>0?installed:"an unversioned development build"):"no installed game";
+            if(MessageBox.Show(Window,"Install "+release.Tag+"?\n\nCurrently: "+current+".\nThis replaces the installed game runtime. Your launcher, saves, settings, ISO and imported game data will be kept.\n\nOlder versions may read saves or settings differently. Back up saves before comparing builds.","Change game version",MessageBoxButton.YesNo,MessageBoxImage.Question,MessageBoxResult.No)!=MessageBoxResult.Yes)return;
+            ShowHome();await DownloadGame(release,true);
         }
         void SelectNavigation(string active)
         {
@@ -302,7 +365,8 @@ namespace TimeSplitters.Launcher
             Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
             Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
             Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Collapsed;
-            Find<ContentControl>("NewsHost").Visibility=Visibility.Visible;SelectNavigation("NewsNav");
+            Find<ContentControl>("NewsHost").Visibility=Visibility.Visible;
+            Find<ContentControl>("VersionsHost").Visibility=Visibility.Collapsed;SelectNavigation("NewsNav");
             string context=NewsGameVersion+"/"+LauncherVersion.Value+"/"+PreviewChannel;
             if(newsContext!=context) {if(newsStop!=null){newsStop.Cancel();newsStop=null;}newsReady=false;newsContext=context;newsPage.Reset();}
             newsPage.SetVersions(NewsGameVersion,LauncherVersion.Value,PreviewChannel);
@@ -374,6 +438,7 @@ namespace TimeSplitters.Launcher
                 Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("NewsHost").Visibility=Visibility.Collapsed;
+                Find<ContentControl>("VersionsHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Visible;
                 SelectNavigation("RepairNav");
                 repairPage.SetBusy(busy || checking,Core.GameRunning());diagnosticsPage.SetBusy(busy || checking,Core.GameRunning());
@@ -531,6 +596,8 @@ namespace TimeSplitters.Launcher
             if(maintenanceArea!=null)maintenanceArea.SetBusy(busy);
             if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
             if(diagnosticsPage!=null)diagnosticsPage.SetBusy(busy || checking,Core.GameRunning());
+            Button("GameVersionsButton").IsEnabled=!busy && !checking;
+            if(versionsPage!=null)versionsPage.SetBusy(busy || checking,Core.GameRunning());
             Button("RetryButton").IsEnabled=!busy && !checking;
             Button("RecoveryRepairButton").IsEnabled=!busy && !checking;
             Button("RecoveryLogsButton").IsEnabled=!busy;
@@ -616,7 +683,11 @@ namespace TimeSplitters.Launcher
         }
         async Task Update()
         {
-            if (busy || !CanUpdate()) return;
+            await DownloadGame(available,false);
+        }
+        async Task DownloadGame(Release release,bool specific)
+        {
+            if (busy || checking || release==null || (!specific && !CanUpdate())) return;
             if(previewMode){SetStatus("Preview only. No download was started.");return;}
             if(Core.GameRunning()){SetStatus("Close the game before installing a release.");return;}
             ClearRecovery();busy=true;
@@ -625,9 +696,8 @@ namespace TimeSplitters.Launcher
                 Button("PauseDownloadButton").Visibility=Visibility.Visible;
                 Find<StackPanel>("UpdateChannelSection").Visibility=Visibility.Collapsed;
                 Find<TextBlock>("TransferDetails").Visibility=Visibility.Visible;
-                Text("ReleaseTitle","Downloading "+available.Tag);Text("ReleaseDescription","Matching saved downloads resume automatically. Installed files stay unchanged until verification completes.");
+                Text("ReleaseTitle","Downloading "+release.Tag);Text("ReleaseDescription","Matching saved downloads resume automatically. Installed files stay unchanged until verification completes.");
                 try {
-                    var release=available;
                     Core.CheckSpace(root,release.Size*4+256L*1024*1024);
                     Core.DiscardGameStaging(root);
                     string pending=Core.PathIn(root,".launcher/pending");Directory.CreateDirectory(pending);
@@ -643,11 +713,11 @@ namespace TimeSplitters.Launcher
                     SetStatus("Verifying and preparing the release…");
                     await Task.Run(()=>Core.Unpack(archive,Path.Combine(pending,"payload"),release.Tag,cancel.Token),cancel.Token);
                     cancel.Token.ThrowIfCancellationRequested();
-                    Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new {version=release.Tag}));File.Delete(archive);DownloadTransfer.Forget(Core.PathIn(root,".launcher/downloads/game"));
+                    Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new {version=release.Tag,game_only=specific}));File.Delete(archive);DownloadTransfer.Forget(Core.PathIn(root,".launcher/downloads/game"));
                     Program.Log(root,"Prepared "+release.Tag+"; handing off to updater.");HandOff(false);
                 }catch(Exception ex){
                     if(!(ex is OperationCanceledException))Fail(ex);
-                    ShowRecovery(ex,Update,true);
+                    ShowRecovery(ex,()=>DownloadGame(release,specific),true);
                     try{Core.DiscardGameStaging(root);}catch(Exception cleanup){Program.Log(root,"Update staging retained: "+cleanup.GetType().Name);}
                 }finally{
                     updateStop=null;
