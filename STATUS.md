@@ -1,5 +1,25 @@
 # Measured progress
 
+## Launcher v1.2.15 release preparation (2026-10-18)
+
+Prepared from main `836aec7` after merging PR #147 with passing Windows and
+macOS source CI. The shared launcher version and assembly/file versions are
+1.2.15 so existing installations can discover the formatted release notes and
+clickable links. Game versions and What's new use the same selectable native
+Markdown view, including the known-issues section. No game version, runtime,
+installer, dependency pin or personal configuration is changed by this release.
+
+On Windows x64 / PowerShell 5.1 / .NET Framework 4.8 compiler / Python 3.12.14,
+the required-art v1.2.15 build and all 216 isolated launcher checks passed
+(100 updater, 27 downloads, 11 versions, 10 startup, 19 news, 29 settings,
+20 maintenance). All 27 Python CI-scope/packaging checks and two packaging
+subtests passed. The final clean-main ZIP upgrade/rollback, public downloads
+and discovery checks are separate publication steps, with ignored evidence in
+`build/launcher-v1.2.15-publication`. No actual game was launched or terminated;
+no personal saves/settings/ISO were used. MAC-042 remains queued for the future
+native UI; this Windows version bump needs no additional Mac adapter and does
+not establish native Mac UI or browser activation on another PC.
+
 ## Formatted launcher release notes (2026-10-18)
 
 Implemented in `fef30c9` on `fix/launcher-markdown-notes`, based on main `a5d61ea`.
