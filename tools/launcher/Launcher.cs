@@ -302,7 +302,7 @@ namespace TimeSplitters.Launcher
             try {
                 if(settings!=null)settings.DismissPrompt();
                 if(versionsPage==null) {
-                    versionsPage=new GameVersionsPage();Find<ContentControl>("VersionsHost").Content=versionsPage.View;
+                    versionsPage=new GameVersionsPage(url=>{if(!previewMode)Open(url);});Find<ContentControl>("VersionsHost").Content=versionsPage.View;
                     versionsPage.Refresh.Click+=async(s,e)=>await RefreshGameVersions(true);
                     versionsPage.Older.Click+=async(s,e)=>await RefreshGameVersions(false);
                     versionsPage.Install.Click+=async(s,e)=>await InstallSelectedVersion();
@@ -358,7 +358,7 @@ namespace TimeSplitters.Launcher
             if(busy)return;
             if(settings!=null)settings.DismissPrompt();
             if(newsPage==null) {
-                newsPage=new WhatsNewPage();Find<ContentControl>("NewsHost").Content=newsPage.View;
+                newsPage=new WhatsNewPage(url=>{if(!previewMode)Open(url);});Find<ContentControl>("NewsHost").Content=newsPage.View;
                 newsPage.Refresh.Click+=async(s,e)=>await RefreshNews();
                 newsPage.OnGitHub.Click+=(s,e)=> {if(!previewMode && newsPage.SelectedUrl!=null)Open(newsPage.SelectedUrl);};
             }

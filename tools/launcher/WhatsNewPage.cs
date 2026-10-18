@@ -1,6 +1,5 @@
 using System;
 using System.Globalization;
-using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
@@ -15,6 +14,7 @@ namespace TimeSplitters.Launcher
         readonly TextBlock status,installedLabel,availableLabel,availability,channel,title,published;
         readonly StackPanel changes=new StackPanel(),issues=new StackPanel();
         readonly ScrollViewer scroll;
+        readonly Action<string> openLink;
         ReleaseNews news;
         string installedGame="",installedLauncher=LauncherVersion.Value;
         bool launcher;
@@ -22,8 +22,9 @@ namespace TimeSplitters.Launcher
         public string StatusText { get { return status.Text; } }
         public string AvailabilityText { get { return availability.Text; } }
         static Button Button(string text,string name) { return new Button { Content=text,Name=name,Margin=new Thickness(0,0,10,10) }; }
-        public WhatsNewPage()
+        public WhatsNewPage(Action<string> openLink=null)
         {
+            this.openLink=openLink;
             View.Margin=new Thickness(30,24,30,20);View.Resources.MergedDictionaries.Add(PageTheme.Resources());
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});
             View.RowDefinitions.Add(new RowDefinition {Height=new GridLength(1,GridUnitType.Star)});
@@ -100,22 +101,15 @@ namespace TimeSplitters.Launcher
                 "No separate known-issues section was published for this release. This does not mean the release has no issues.");
             if(text.Shortened)changes.Children.Add(PageTheme.Text("Notes shortened for display. View the complete release on GitHub.",12,"#A7D9FA"));
         }
-        static void Paint(Panel panel,string text,string empty)
+        void Paint(Panel panel,string text,string empty)
         {
             panel.Children.Clear();if(String.IsNullOrWhiteSpace(text)){panel.Children.Add(PageTheme.Text(empty,12,"#9EB4C8"));return;}
-            bool code=false;
-            foreach(string line in text.Replace("\r","").Split('\n')) {
-                if(Regex.IsMatch(line,@"^\s*(```|~~~)")){code=!code;continue;}
-                if(String.IsNullOrWhiteSpace(line))continue;
-                var heading=code?Match.Empty:Regex.Match(line,@"^\s{0,3}#{1,6}\s+(.+?)\s*#*\s*$");
-                string value=code?line:ReleaseNotesText.Plain(heading.Success?heading.Groups[1].Value:line);
-                if(!code)value=Regex.Replace(value,@"^\s*[-*+]\s+","•  ");
-                var block=PageTheme.Text(value,heading.Success?16:12,heading.Success?"#CDE8FC":"#CCDCE8");
-                block.Margin=new Thickness(0,heading.Success?12:0,0,9);block.LineHeight=heading.Success?23:20;
-                if(heading.Success)block.FontWeight=FontWeights.SemiBold;
-                if(code){block.FontFamily=new System.Windows.Media.FontFamily("Consolas");block.Background=PageTheme.Brush("#0B1826");block.Padding=new Thickness(8,3,8,3);}
-                panel.Children.Add(block);
-            }
+            var notes=new ReleaseNotesMarkdown(openLink) {VerticalScrollBarVisibility=ScrollBarVisibility.Disabled};
+            notes.PreviewMouseWheel+=(s,e)=>{
+                double step=SystemParameters.WheelScrollLines<0?scroll.ViewportHeight:SystemParameters.WheelScrollLines*20;
+                scroll.ScrollToVerticalOffset(scroll.VerticalOffset-e.Delta/120.0*step);e.Handled=true;
+            };
+            notes.SetMarkdown(text);panel.Children.Add(notes);
         }
     }
 }
