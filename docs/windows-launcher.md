@@ -121,6 +121,24 @@ missing-manifest, rate-limit and verification failures fall back to the installe
 application. An incomplete installation still requires the complete ZIP if no
 usable release is available. Launcher updates never downgrade across channels.
 
+If Windows refuses the final handoff to `Bin/TimeSplitters.App.exe`, the startup
+window now remains open instead of showing a raw exception and closing. Native
+Win32 error 1223 gets conditional SmartScreen/security-prompt guidance; access
+denied and missing application errors get distinct instructions. Classification
+uses `Win32Exception.NativeErrorCode`, not its generic HRESULT or localized text.
+The log records the native code and exception. **Retry** repeats only the
+application launch; **Open launcher folder** opens this installation root, and
+**View logs** opens its `.launcher` folder. Failed folder actions keep the original
+startup guidance. Successful launch or closing the window ends the bootstrap
+normally and releases its installation mutex.
+
+`tests/launcher_startup.cs` injects synthetic launch/folder actions to verify
+failure, retry success, repeated cancellation, folder/log actions, close behavior,
+layout and personal-file preservation without executing applications or displaying
+an actual security prompt. Run it through `tools/build-launcher.ps1 -Test` or
+`launcher-tests.exe --startup`. The build remains unsigned; this handles recovery
+and does not bypass SmartScreen or configure Authenticode signing.
+
 Updates are automatic for the selected Stable/Preview channel. No game update
 is implied. The bootstrap waits for neither a game build nor a large runtime ZIP.
 When ready, `.launcher/self-helper.exe` waits for the bootstrap process to exit,

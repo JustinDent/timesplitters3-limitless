@@ -1,5 +1,28 @@
 # PC features awaiting Mac adaptation
 
+### MAC-039 — Recoverable launcher startup security interruptions
+
+- **Status:** Not applicable — Windows bootstrap only.
+- **PC behavior:** A failed application handoff keeps startup open with Retry,
+  Open launcher folder and View logs. Win32 cancellation 1223 explains a possible
+  SmartScreen/security prompt without claiming the user clicked Cancel. Access
+  denied, missing files and other failures have distinct guidance. Retry opens
+  the installed application without downloading again; success or user close
+  exits normally. Native error codes are logged. Security settings and file
+  blocking are not changed automatically; binaries remain unsigned.
+- **Source:** `fix/launcher-startup-recovery`, based on main `e6c68bd`;
+  initially uncommitted. `tools/launcher/Bootstrap.cs`, `DownloadTransfer.cs`,
+  `tools/build-launcher.ps1` and `tests/launcher_startup.cs`.
+- **Existing Mac support / remaining adaptation:** Native Mac startup does not
+  use this WPF bootstrap or Windows shell/SmartScreen. Existing native scripts
+  and adapters are unchanged. A future native GUI should explain its own OS
+  launch errors; no Windows dialog or registry behavior should be copied.
+- **Acceptance:** Windows synthetic cancellation, access denial, missing files,
+  retry, close and folder/log failure tests pass with isolated fixtures. Verify
+  guidance/action layout and no personal-file changes. Actual SmartScreen prompt
+  visibility and other-device behavior require manual validation; Mac execution
+  is not claimed. See [startup recovery evidence](STATUS.md#launcher-startup-security-recovery-2026-10-18).
+
 ### MAC-037 — Fresh-install launch without PowerShell (issue #128)
 
 - **Status:** Not applicable — Windows launcher only.

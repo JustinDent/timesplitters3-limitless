@@ -8,6 +8,29 @@ completely into a writable folder and open **TimeSplitters Launcher.exe**.
 Keep the companion files in `Bin` and `Support` with it. Windows 10/11 x64 and
 .NET Framework 4.8 are required; no developer tools or GitHub login are needed.
 
+## Windows security prompts at startup
+
+The recovery controls below are in current source for the next launcher update.
+
+If Windows cancels opening the launcher application, the startup window stays
+open with **Retry**, **Open launcher folder** and **View logs**. A cancellation
+message does not prove that you clicked Cancel: SmartScreen or another security
+prompt may need attention. The launcher cannot determine the exact prompt from
+Windows' cancellation code alone.
+
+Choose **Open launcher folder**, then open `Bin\TimeSplitters.App.exe` directly
+to check whether Windows shows a prompt. Review that prompt and confirm the
+download came from this project's official release before deciding whether to
+allow it. Return to the startup window and choose **Retry**. Retry opens the
+installed launcher again without repeating the update download. You can also
+close the startup window and open the launcher normally afterward.
+
+Access-denied errors and missing application files have separate guidance.
+**View logs** opens the selected installation's `.launcher` folder, containing
+`launcher.log`. Restoring missing launcher files requires the complete launcher
+package, with its `Bin` and `Support` folders together. This recovery UI does not
+change Windows security settings or unblock files automatically.
+
 ## First-time setup
 
 1. Choose **Preview** under **Update channel**. Current game releases are

@@ -34,6 +34,10 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
 **Next time:** open **TimeSplitters Launcher.exe → Play Game**. Installed play
 remains available offline.
 
+The next launcher update adds recovery when Windows interrupts startup, with **Retry**,
+**Open launcher folder** and **View logs**. See the
+[Windows security prompt guidance](docs/launcher.md#windows-security-prompts-at-startup).
+
 <details>
 <summary><strong>System requirements, channels and keeping your saves</strong></summary>
 

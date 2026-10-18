@@ -1,5 +1,42 @@
 # Measured progress
 
+## Launcher startup security recovery (2026-10-18)
+
+Implemented on `fix/launcher-startup-recovery`, based on main `e6c68bd` (launcher
+1.2.13), independently of pending installer/version-picker branches. Initial
+checks used uncommitted source. Host: Windows x64, .NET Framework 4.8/WPF system
+C# compiler, Windows PowerShell 5.1 and Python 3.12.14. No game source, runtime
+dependency pin, importer or Mac adapter changed; no release was published.
+
+The reported Win32 cancellation occurred in the bootstrap's final application
+launch. Startup previously logged the exception, showed a generic modal message
+and closed. It now explains a possible security prompt for native error 1223,
+offers distinct access-denied/missing-file guidance, and keeps Retry, Open
+launcher folder and View logs available. Retry repeats only application startup.
+Repeated failures remain recoverable; successful launch or closing exits normally.
+Folder-opening failures preserve the original recovery instructions. Native codes
+and exception details are retained in the log; Windows security is not bypassed.
+
+`tools/build-launcher.ps1 -Output build/startup-recovery-validation -RequireArtwork -Test`
+passed all 200 checks: 99 updater/cleanup, 27 downloads/recovery, ten new startup
+recovery checks, 15 release news, 29 settings and 20 maintenance. Synthetic launch
+and folder delegates exercised repeated cancellation followed by success, native
+vs. generic error classification, actions, close behavior, retained guidance and
+unchanged application/ISO/data/save/settings/download fixture hashes. No actual
+game or application was executed by the new tests. The full suite uses its
+existing isolated synthetic process fixtures; personal files were not used.
+All 29 Python CI-scope, portable startup preference and launcher packaging
+checks passed, plus two packaging subtests.
+
+Recovery layout was measured for text/progress/action overlap and bounds. A WPF
+render at 544 x 350 was visually inspected; all instructions and three actions
+fit. Log and selected render stay ignored in `build/startup-recovery-validation`.
+Actual SmartScreen prompts, manual first-run approval on another PC and signed
+binary behavior remain unverified. Code signing is not configured. The relevant
+Windows and Mac CI scope routes include the new regression source. Native Mac
+paths are unchanged; [MAC-039](MAC_PORT_BACKLOG.md#mac-039--recoverable-launcher-startup-security-interruptions)
+records why this Windows shell recovery needs no native adapter.
+
 ## Launcher 1.2.13 version follow-up (2026-10-18)
 
 Bump the shared launcher version, assembly version and file version to 1.2.13

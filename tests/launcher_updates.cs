@@ -145,6 +145,7 @@ static class LauncherTests
         if (args.Length == 1 && args[0] == "--maintenance") return LauncherMaintenanceChecks.Run();
         if (args.Length == 1 && args[0] == "--downloads-live") return LauncherDownloadChecks.VerifyPublicDownload();
         if (args.Length == 1 && args[0] == "--downloads") return LauncherDownloadChecks.Run();
+        if (args.Length == 1 && args[0] == "--startup") return LauncherStartupChecks.Run();
         if (args.Length == 1 && args[0] == "--news") return LauncherNewsChecks.Run();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();
         if (args.Length == 2 && args[0] == "--helper")
