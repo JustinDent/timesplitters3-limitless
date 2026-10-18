@@ -80,6 +80,20 @@ Xbox data are installed and that another game instance is not already running.
 An unsupported or incomplete existing `Data` folder is retained for inspection,
 not overwritten. Check the status message and logs before changing files.
 
+## Startup error after a successful ISO import
+
+Launcher 1.2.12 can report `CannotCreateTypeConstrainedLanguage` from `Launch.ps1`
+on a fresh installation. If the log already says **Game data imported successfully**,
+the failure is in the launch script, after import. Open **Settings**, save your
+current settings once, and try **Play Game** again; this selects that version's
+direct launch path. Reimporting the same ISO does not address this error.
+
+The current source fixes [#128](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/128)
+by using direct game startup for fresh installations too. This change needs a
+published launcher update before installed copies receive it; it does not require
+changing Windows security policy. The legacy standalone `Launch.ps1` still uses
+PowerShell; use **Play Game** in the launcher.
+
 ## Report a problem or request an improvement
 
 Use the [bug report](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)

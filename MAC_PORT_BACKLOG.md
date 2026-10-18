@@ -1,5 +1,22 @@
 # PC features awaiting Mac adaptation
 
+### MAC-037 — Fresh-install launch without PowerShell (issue #128)
+
+- **Status:** Not applicable — Windows launcher only.
+- **PC behavior:** Play Game starts the runtime directly even before graphics
+  settings have been saved, avoiding the reported ConstrainedLanguage script
+  failure after a successful ISO import. Settings, saves and logs retain their
+  portable paths; data verification remains required.
+- **Source:** `Fix fresh-install launch and explain merged fixes on issues`
+  on `128-fix-constrained-language-launch`;
+  `tools/launcher/Launcher.cs`, `GameSettings.cs`, and launcher settings tests.
+- **Existing Mac support / remaining adaptation:** Native Mac launchers do not
+  execute the Windows WPF launch path or `Launch.ps1`; no adapter is needed.
+  No native Mac code was changed or executed for this fix.
+- **Acceptance checks:** Windows fresh/configured startup, exit status, redirected
+  logs and settings preservation pass with synthetic executables, including a
+  constrained PowerShell test host. See issue #128 in `STATUS.md` for scope.
+
 ### MAC-036 — Ghost Gun full-body visibility (issue #111)
 
 - **Status:** Queued

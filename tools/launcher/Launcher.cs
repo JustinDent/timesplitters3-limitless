@@ -713,6 +713,28 @@ namespace TimeSplitters.Launcher
             }
             await Task.Run(() => Core.FinishGameSession(root, observedBuild, minimizedForGame, process.ExitCode));
         }
+        internal async Task LaunchGame()
+        {
+            using (var process = new Process())
+            {
+                // Fresh installs use the same native launch path as configured
+                // ones. A PowerShell fallback fails under ConstrainedLanguage.
+                process.StartInfo = GameSettings.StartInfo(root);
+                string logs = Core.PathIn(root, "Logs"); Directory.CreateDirectory(logs);
+                string tag = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture);
+                string errorPath = Path.Combine(logs, tag + ".err");
+                process.StartInfo.EnvironmentVariables["RECOMP_LOG_FILE"] = errorPath;
+                using (var output = File.Create(Path.Combine(logs, tag + ".out")))
+                using (var errors = new FileStream(errorPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
+                {
+                    process.Start();
+                    var stdout = process.StandardOutput.BaseStream.CopyToAsync(output);
+                    var stderr = process.StandardError.BaseStream.CopyToAsync(errors);
+                    await MonitorGame(process); await Task.WhenAll(stdout, stderr);
+                }
+                SetStatus(process.ExitCode == 0 ? "Game closed." : "Game launch failed. View logs for details.");
+            }
+        }
         async Task Play()
         {
             if (busy) return;
@@ -721,40 +743,7 @@ namespace TimeSplitters.Launcher
             {
                 Core.Require(validData && gameInstalled, "Install the release and import the supported US Xbox data first.");
                 Core.Require(!Core.GameRunning(), "The game is already running.");
-                string shell = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "WindowsPowerShell", "v1.0", "powershell.exe");
-                using (var process = new Process())
-                {
-                    if (GameSettings.HasGraphics(root))
-                    {
-                        process.StartInfo = GameSettings.StartInfo(root);
-                        string logs = Core.PathIn(root, "Logs"); Directory.CreateDirectory(logs);
-                        string tag = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture);
-                        string errorPath = Path.Combine(logs, tag + ".err");
-                        process.StartInfo.EnvironmentVariables["RECOMP_LOG_FILE"] = errorPath;
-                        using (var output = File.Create(Path.Combine(logs, tag + ".out")))
-                        using (var errors = new FileStream(errorPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
-                        {
-                            process.Start();
-                            var stdout = process.StandardOutput.BaseStream.CopyToAsync(output);
-                            var stderr = process.StandardError.BaseStream.CopyToAsync(errors);
-                            await MonitorGame(process); await Task.WhenAll(stdout, stderr);
-                        }
-                        SetStatus(process.ExitCode == 0 ? "Game closed." : "Game launch failed. View logs for details.");
-                        return;
-                    }
-                    process.StartInfo = new ProcessStartInfo(shell, "-NoProfile -STA -ExecutionPolicy Bypass -File " + Quote(Core.PathIn(root, "Launch.ps1"))) {
-                        WorkingDirectory = root, UseShellExecute = false, CreateNoWindow = true, RedirectStandardError = true, RedirectStandardOutput = true };
-                    // Isolate inherited developer/test environment overrides.
-                    var keys = new System.Collections.Generic.List<string>();
-                    foreach (string key in process.StartInfo.EnvironmentVariables.Keys)
-                        if (key.StartsWith("RECOMP_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("TSFP_", StringComparison.OrdinalIgnoreCase)) keys.Add(key);
-                    foreach (string key in keys) process.StartInfo.EnvironmentVariables.Remove(key);
-                    process.OutputDataReceived += (s, e) => { if (e.Data != null) Program.Log(root, e.Data); };
-                    process.ErrorDataReceived += (s, e) => { if (e.Data != null) Program.Log(root, e.Data); };
-                    process.Start(); process.BeginOutputReadLine(); process.BeginErrorReadLine();
-                    await MonitorGame(process);
-                    SetStatus(process.ExitCode == 0 ? "Game closed." : "Game launch failed. View logs for details.");
-                }
+                await LaunchGame();
             }
             catch (Exception ex) { Fail(ex); }
             finally { busy = false; Refresh(); }

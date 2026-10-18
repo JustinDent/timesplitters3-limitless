@@ -242,7 +242,6 @@ namespace TimeSplitters.Launcher
             foreach (string file in Files) originals[file] = Read(Core.PathIn(root, file));
             runtime = payload[2];
         }
-        public static bool HasGraphics(string root) { return File.Exists(Core.PathIn(root, Files[2])); }
         public static ProcessStartInfo StartInfo(string root)
         {
             var model = Load(root, null); model.Validate();

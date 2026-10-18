@@ -53,6 +53,71 @@ public static class LauncherSettingsChecks
         Console.WriteLine("XMV_PLAY="+Environment.GetEnvironmentVariable("RECOMP_XMV_PLAY"));
         return 0;
     }
+    // Invoked only by the synthetic copy of this test binary in a disposable Bin.
+    public static int LaunchProbe()
+    {
+        Console.WriteLine("DIRECT_GAME_STARTED");
+        Console.WriteLine("CWD=" + Environment.CurrentDirectory);
+        foreach (string key in new[] { "RECOMP_GAME_DIR", "RECOMP_SAVE_DIR", "RECOMP_INPUT_CONFIG",
+            "RECOMP_FFMPEG_DIR", "RECOMP_DISPLAY_CONFIG", "TSFP_DISPLAY_CONFIG", "TSFP_ONLINE_SETTINGS",
+            "RECOMP_LOG_FILE", "RECOMP_MOUSE_SENSITIVITY", "RECOMP_MOUSE_INVERT_Y", "RECOMP_PC_MOUSE",
+            "RECOMP_XMV_PLAY", "RECOMP_UNWANTED", "TSFP_UNWANTED" })
+            Console.WriteLine(key + "=" + Environment.GetEnvironmentVariable(key));
+        Console.Error.WriteLine("synthetic game diagnostic");
+        return Int32.Parse(File.ReadAllText(Path.Combine(Environment.CurrentDirectory, "probe-exit.txt")));
+    }
+    static void PlayProbe(string root, int exitCode)
+    {
+        Directory.CreateDirectory(Path.Combine(root,"Bin"));
+        File.Copy(typeof(LauncherSettingsChecks).Assembly.Location,Path.Combine(root,"Bin/futureperfect_recomp.exe"));
+        Put(root,"Bin/probe-exit.txt",exitCode.ToString());
+        // Reproduce the reported restricted script operation if Play regresses
+        // to using PowerShell. No machine policy or personal settings are changed.
+        Put(root,"Launch.ps1","$ErrorActionPreference = 'Stop'\n" +
+            "$ExecutionContext.SessionState.LanguageMode = 'ConstrainedLanguage'\n" +
+            "$info = New-Object System.Diagnostics.ProcessStartInfo\nexit 23\n");
+        var settings = Directory.GetFiles(Path.Combine(root,"Settings"))
+            .ToDictionary(p=>p,p=>Convert.ToBase64String(File.ReadAllBytes(p)));
+        string oldRecomp=Environment.GetEnvironmentVariable("RECOMP_UNWANTED"),oldTsfp=Environment.GetEnvironmentVariable("TSFP_UNWANTED");
+        Environment.SetEnvironmentVariable("RECOMP_UNWANTED","must not inherit");
+        Environment.SetEnvironmentVariable("TSFP_UNWANTED","must not inherit");
+        try {
+            STA(()=>{
+                var ui=new LauncherWindow(root,true);
+                var dispatcher=System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                var previous=System.Threading.SynchronizationContext.Current;
+                var timer=new System.Windows.Threading.DispatcherTimer { Interval=TimeSpan.FromSeconds(15) };
+                var frame=new System.Windows.Threading.DispatcherFrame();bool timedOut=false;
+                try {
+                    System.Threading.SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(dispatcher));
+                    var task=ui.LaunchGame();
+                    timer.Tick+=(sender,args)=>{timedOut=true;frame.Continue=false;};timer.Start();
+                    task.ContinueWith(done=>dispatcher.BeginInvoke(new Action(()=>frame.Continue=false)));
+                    System.Windows.Threading.Dispatcher.PushFrame(frame);
+                    Require(!timedOut,"Play did not finish within 15 seconds.");task.GetAwaiter().GetResult();
+                    string expected=exitCode==0?"Game closed.":"Game launch failed. View logs for details.";
+                    Require(((System.Windows.Controls.TextBlock)ui.Window.FindName("StatusText")).Text==expected,"Unexpected game exit status.");
+                } finally {timer.Stop();System.Threading.SynchronizationContext.SetSynchronizationContext(previous);ui.Window.Close();}
+            });
+        } finally {
+            Environment.SetEnvironmentVariable("RECOMP_UNWANTED",oldRecomp);
+            Environment.SetEnvironmentVariable("TSFP_UNWANTED",oldTsfp);
+        }
+        string output=File.ReadAllText(Directory.GetFiles(Path.Combine(root,"Logs"),"*.out").Single());
+        string errors=Directory.GetFiles(Path.Combine(root,"Logs"),"*.err").Single();
+        Require(output.Contains("DIRECT_GAME_STARTED") && output.Contains("CWD="+Path.Combine(root,"Bin")));
+        foreach(var pair in new[]{new[]{"RECOMP_GAME_DIR","Data"},new[]{"RECOMP_SAVE_DIR","Saves"},
+            new[]{"RECOMP_INPUT_CONFIG","Settings/pc-controls.json"},new[]{"RECOMP_FFMPEG_DIR","Bin"},
+            new[]{"RECOMP_DISPLAY_CONFIG","Settings/runtime.conf"},new[]{"TSFP_DISPLAY_CONFIG","Settings/pc-display.ini"},
+            new[]{"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"}})
+            Require(output.Contains(pair[0]+"="+Core.PathIn(root,pair[1])));
+        Require(output.Contains("RECOMP_LOG_FILE="+errors) && File.ReadAllText(errors).Contains("synthetic game diagnostic"));
+        Require(output.Contains("RECOMP_MOUSE_SENSITIVITY=0.37") && output.Contains("RECOMP_MOUSE_INVERT_Y=1") &&
+            output.Contains("RECOMP_PC_MOUSE=0") && output.Contains("RECOMP_XMV_PLAY=0"));
+        Require(output.Contains("RECOMP_UNWANTED=\r\n") && output.Contains("TSFP_UNWANTED=\r\n"));
+        Require(settings.Count==Directory.GetFiles(Path.Combine(root,"Settings")).Length);
+        foreach(var pair in settings)Require(Convert.ToBase64String(File.ReadAllBytes(pair.Key))==pair.Value);
+    }
     public static int Run()
     {
         temp=Path.Combine(Path.GetDirectoryName(typeof(LauncherSettingsChecks).Assembly.Location),"settings-tests-"+Guid.NewGuid().ToString("N"));
@@ -321,6 +386,16 @@ public static class LauncherSettingsChecks
                 string root=Root("inherit");Put(root,"old.conf","frame_interp = 2\nfuture = untouched\n");
                 var model=GameSettings.Load(root,Path.Combine(root,"old.conf"));Require(model.Interpolation==2);model.Save();Require(Read(root,"old.conf")=="frame_interp = 2\nfuture = untouched\n");Require(Read(root,"Settings/runtime.conf").Contains("future = untouched"));
             });
+            foreach(bool configured in new[]{false,true}) foreach(int exitCode in new[]{0,7})
+            {
+                bool saved=configured;int expectedExit=exitCode;
+                Test("Play directly launches " + (saved?"configured":"fresh") + " installation, exit " + expectedExit,()=>{
+                    string root=Root("Play in folder with spaces "+saved+expectedExit);
+                    var model=GameSettings.Load(root,null);model.Sensitivity=.37;model.InvertY=true;model.MouseEnabled=false;model.SkipStartupSplashes=true;model.Save();
+                    if(!saved) {File.Delete(Path.Combine(root,"Settings/runtime.conf"));File.Delete(Path.Combine(root,"Settings/pc-display.ini"));}
+                    PlayProbe(root,expectedExit);
+                });
+            }
             Test("configured launch passes portable settings directly to runtime",()=>{
                 string root=Root("launch");var model=GameSettings.Load(root,null);model.Sensitivity=.25;model.Save();
                 string old=Environment.GetEnvironmentVariable("RECOMP_SETTINGS_TEST");Environment.SetEnvironmentVariable("RECOMP_SETTINGS_TEST","bad");
