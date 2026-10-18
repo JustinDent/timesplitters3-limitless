@@ -38,7 +38,7 @@ New Windows game builds include a dedicated TSFP game icon. Existing game
 downloads receive it with a new game release; a launcher-only update keeps
 the installed game executable. See the [game icon build notes](docs/windows-launcher.md#windows-game-icon).
 
-The next launcher update adds recovery when Windows interrupts startup, with **Retry**,
+Launcher v1.2.14 adds recovery when Windows interrupts startup, with **Retry**,
 **Open launcher folder** and **View logs**. See the
 [Windows security prompt guidance](docs/launcher.md#windows-security-prompts-at-startup).
 

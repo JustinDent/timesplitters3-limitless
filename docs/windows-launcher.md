@@ -137,13 +137,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
-in `build/launcher`; for version 1.2.8, publish all three together:
+in `build/launcher`; for version 1.2.14, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.8-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.8-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.14-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.14-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.8`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.14`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -442,7 +442,7 @@ resumes it in a fresh client and verifies the checksum; it never installs or run
 the downloaded program and cleans its disposable files. Protocol reference:
 [HTTP range semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-range).
 
-## Game versions (current source, not yet released)
+## Game versions (launcher v1.2.14)
 
 Select **Home → Updates → Game versions** to install a specific published
 Windows runtime for comparison or bug reproduction. This main-window page
