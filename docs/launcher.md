@@ -88,7 +88,7 @@ the failure is in the launch script, after import. Open **Settings**, save your
 current settings once, and try **Play Game** again; this selects that version's
 direct launch path. Reimporting the same ISO does not address this error.
 
-The current source fixes [#128](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/128)
+Launcher 1.2.13 fixes [#128](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/128)
 by using direct game startup for fresh installations too. This change needs a
 published launcher update before installed copies receive it; it does not require
 changing Windows security policy. The legacy standalone `Launch.ps1` still uses

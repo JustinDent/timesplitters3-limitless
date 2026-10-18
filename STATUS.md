@@ -1,5 +1,16 @@
 # Measured progress
 
+## Launcher 1.2.13 version follow-up (2026-10-18)
+
+Bump the shared launcher version, assembly version and file version to 1.2.13
+for the issue #128 startup fix merged in PR #129. This keeps bootstrap, application,
+update metadata and versioned ZIP names consistent and allows a future published
+launcher update to compare newer than 1.2.12. Existing 1.2.12 references below
+record the earlier development build; the ISO importer and game version are
+unchanged. The local build includes the existing banner/logo artwork. This
+source change does not itself publish a GitHub release. MAC-037 still applies;
+version metadata requires no Mac adapter.
+
 ## Issue resolution comments after PR merges (2026-10-18)
 
 Implemented on `128-fix-constrained-language-launch` in
