@@ -63,6 +63,13 @@ reproducibility, and validation requirements.
   change fixes it, in plain language. Include the resulting behavior, relevant
   validation and known limits. Keep this explanation current when updating
   a PR; do not substitute a list of changed files for how the fix works.
+- Link resolved issues with GitHub closing references (for example, `Closes #128`)
+  and fill in `## Cause and fix` plus relevant validation/remaining limits. After
+  merging into main, the Issue resolution notes workflow copies those sections
+  to each linked issue in this repository. Do not post a duplicate manual
+  resolution comment. If the workflow fails because the explanation is missing,
+  correct the PR description and rerun the failed workflow; reruns update the
+  existing bot comment. Merging source is not evidence of a published release.
 - Use `.github/pull_request_template.md` to record PC results and link the Mac
   backlog entries. These instructions and the review checklist require agents
   to maintain the list; they are not an automated feature detector or CI gate.

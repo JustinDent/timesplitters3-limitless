@@ -1,5 +1,68 @@
 # Measured progress
 
+## Issue resolution comments after PR merges (2026-10-18)
+
+Implemented on `128-fix-constrained-language-launch` in
+`Fix fresh-install launch and explain merged fixes on issues`.
+The Issue resolution notes workflow responds to PR merges into main and reads
+GitHub's closing-issue links, including links made in the Development sidebar.
+It posts the reviewed Cause and fix and Validation sections to same-repository
+issues, with a link to the merged PR. An unmerged closure, a non-default base,
+or an incidental issue mention does not generate a resolution comment. A missing
+or unchanged placeholder explanation fails clearly before writing comments.
+Reruns update only this workflow's marked GitHub Actions bot comment; human
+comments are preserved. All linked issues and comment lists are paginated.
+
+The write-enabled job checks out only trusted default-branch code. PR prose is
+read as API data, never interpolated into shell commands. Permissions are scoped
+to reading source/PR links and writing issue comments. The workflow has offline
+unit checks for publishing, skipping, pagination, duplication, updating, missing
+explanations and API errors. A read-only live check of already-merged PR #127
+correctly found issue #111 and generated the expected ghost-fix explanation;
+no GitHub comment was posted during development. This automation will become
+active after it reaches main and is not a retroactive backfill. It changes no
+PC or Mac game behavior and needs no Mac adapter. No hosted run is claimed yet.
+
+## Fresh-install launcher failure (issue #128, 2026-10-18)
+
+Implemented on `128-fix-constrained-language-launch`, based on `afb562c`,
+in `Fix fresh-install launch and explain merged fixes on issues`.
+Host: Windows x64, Windows PowerShell 5.1 and the system .NET Framework x64 C#
+compiler. The game runtime, pinned dependencies and ISO importer are unchanged.
+
+The report's log confirms a successful ISO import. Startup fails afterward in
+`Launch.ps1`: ConstrainedLanguage rejects `New-Object System.Diagnostics.ProcessStartInfo`.
+The launcher previously used this script only while `Settings/runtime.conf` was
+absent; saving graphics settings selected its native C# process path instead.
+`Play` now uses that direct path for both fresh and configured installations,
+with the same game-data verification, environment isolation, log redirection,
+window monitoring and exit status. Missing portable settings use runtime defaults;
+launch preparation does not save or overwrite settings. No security policy changes
+are requested or performed. Direct manual use of the legacy `Launch.ps1` still
+requires its existing PowerShell capabilities; Play Game no longer invokes it.
+
+Validation: the original New-Object operation reproduces the exact reported
+error in a child PowerShell session explicitly set to ConstrainedLanguage.
+The supported `tools/build-launcher.ps1 -Test` run passes 190 isolated checks
+(99 updater, 27 download, 15 release-news, 29 settings and 20 maintenance).
+The 29 settings checks also pass when the compiled test host is started from
+that constrained session. Four new cases exercise the production process/logging
+method with synthetic child executables: fresh versus configured settings and
+exit codes 0 versus 7. They verify paths with spaces, portable data/save/config
+paths, mouse and startup-video preferences, inherited override removal, stdout/
+stderr capture, status reporting, and byte-for-byte preservation of settings.
+They do not bypass the production Play action's ISO/data verification.
+Portable startup, packaging and CI-scope pytest checks pass: 28 tests and two
+subtests. Game assets, personal settings and saves were not used. These tests
+simulate the reported language restriction; they do not certify all AppLocker/
+WDAC configurations or reproduce the reporter's complete Windows installation.
+
+Local development launcher application SHA-256:
+`29b000d7f43b7dfe5ec2a353c5db4c5321534a45d4a9794d86ac2914b6b0357c`.
+The build retains version 1.2.12 and has not been published as a launcher update.
+Logs are ignored under `build/issue-128-*.log`. MAC-037 records why this Windows
+launcher fix needs no Mac adapter. No Mac execution is claimed.
+
 ## Ghost Gun full-body rendering (issue #111, 2026-10-18)
 
 Implemented on `111-bug-ghosts-are-still-not-visible-with-ghost-gun`, based on
