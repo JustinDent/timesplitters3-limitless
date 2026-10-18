@@ -4,14 +4,16 @@
 
 - **Status:** Queued
 - **PC behavior:** New Windows game executables embed a seven-size transparent
-  ICO. Large sizes use the unmodified official TSFP wordmark in a blue/silver
-  temporal frame. Small sizes use compact TSFP initials, with the same monogram
+  ICO. Large sizes use the official TSFP title in a blue/silver temporal frame,
+  with the original Future Perfect lettering enlarged on a separate line.
+  Small sizes use compact series-inspired serif TSFP initials, with the same monogram
   available at every size without private art. The launcher retains its TS
   icon. SDL's Windows backend uses the executable's first icon for its window
   class; game packages carry it inside the sealed runtime executable.
 - **Source:** Icon feature commit `c2db36b` and current-main integration
   `272f930` in [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126);
-  `tools/launcher/IconBuilder.cs`, `tools/build-game-icon.ps1`, `tsfp.ps1`,
+  `tools/launcher/IconBuilder.cs`, `GameMonogram.cs`, `GameMonogram.NOTICE.txt`,
+  `tools/build-game-icon.ps1`, `tsfp.ps1`,
   `patches/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-game-icon.patch`,
   `tools/publish-release.py` and `tests/test_game_icon.py`.
 - **Mac support:** Existing native build and runtime paths are unchanged. ICO

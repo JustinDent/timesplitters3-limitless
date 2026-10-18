@@ -269,6 +269,7 @@ def test_newer_launcher_does_not_change_game_notes_baseline(publisher):
     (['src/pc_network.c'], True, HEAD, True),
     (['tools/build-game-icon.ps1'], True, HEAD, True),
     (['tools/launcher/IconBuilder.cs'], True, HEAD, True),
+    (['tools/launcher/GameMonogram.cs'], True, HEAD, True),
     (['tools/launcher/Core.cs', 'STATUS.md', 'VERSION'], True, HEAD, False),
     (['tools/build-launcher.ps1', 'docs/windows-launcher.md'], True, HEAD, False),
     (['tools/launcher/Core.cs', 'tools/package-release.py'], True, HEAD, False),

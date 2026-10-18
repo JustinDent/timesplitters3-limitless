@@ -57,11 +57,23 @@ public static class LauncherIconBuilder
 
             if (game && logo != null && size >= 128)
             {
-                // Keep the complete original lockup, including its subtitle.
-                float width=224, height=width*logo.Height/logo.Width;
                 g.InterpolationMode=InterpolationMode.HighQualityBicubic;
-                g.DrawImage(logo, new RectangleF(16, (256-height)/2, width, height));
+                if (logo.Width==500 && logo.Height==187)
+                {
+                    // Keep the title's tall T/S descenders, then give the genuine
+                    // subtitle its own centered line at 212px instead of 102px.
+                    const float scale=224f/500;
+                    g.DrawImage(logo,new RectangleF(16,54,224,150*scale),new RectangleF(0,0,500,150),GraphicsUnit.Pixel);
+                    g.DrawImage(logo,new RectangleF(16,54+150*scale,263*scale,37*scale),new RectangleF(0,150,263,37),GraphicsUnit.Pixel);
+                    g.DrawImage(logo,new RectangleF(22,160,212,212f*22/228),new RectangleF(263,150,228,22),GraphicsUnit.Pixel);
+                }
+                else
+                {
+                    float height=224f*logo.Height/logo.Width;
+                    g.DrawImage(logo,new RectangleF(16,(256-height)/2,224,height));
+                }
             }
+            else if (game) DrawGameMonogram(g,size);
             else using (var t = Polygon(56, 86, 130, 86, 126, 107, 105, 107,
                 105, 171, 80, 178, 80, 107, 53, 107))
             using (var s = Polygon(151, 86, 198, 86, 194, 107, 155, 107,
@@ -77,29 +89,31 @@ public static class LauncherIconBuilder
                         Color.FromArgb(114, 151, 181), Color.FromArgb(230, 244, 254) },
                     Positions = new[] { 0f, 0.46f, 0.51f, 1f }
                 };
-                if (game)
-                {
-                    using (var matrix = new Matrix(1, 0, 0, 0.65f, 0, 12))
-                    { t.Transform(matrix); s.Transform(matrix); }
-                }
                 g.DrawPath(outline, t); g.DrawPath(outline, s);
                 g.FillPath(chrome, t); g.FillPath(chrome, s);
-                if (game)
-                {
-                    using (var f = Polygon(64,142,122,142,120,158,83,158,83,167,
-                        113,167,111,183,83,183,83,204,64,208))
-                    using (var p = Polygon(138,142,184,142,201,155,199,175,
-                        184,187,158,187,158,205,138,209))
-                    {
-                        p.AddPolygon(new[] {new PointF(158,158),new PointF(179,158),
-                            new PointF(181,162),new PointF(179,170),new PointF(158,170)});
-                        g.DrawPath(outline,f);g.DrawPath(outline,p);
-                        g.FillPath(chrome,f);g.FillPath(chrome,p);
-                    }
-                }
             }
         }
         return bitmap;
+    }
+
+    static void DrawGameMonogram(Graphics graphics,int size)
+    {
+        using(var letters=GameMonogram.Create())
+        {
+            var bounds=letters.GetBounds();
+            float scale=Math.Min(186/bounds.Width,156/bounds.Height);
+            using(var transform=new Matrix(scale,0,0,scale,
+                128-(bounds.Left+bounds.Width/2)*scale,128-(bounds.Top+bounds.Height/2)*scale))
+                letters.Transform(transform);
+            using(var chrome=new LinearGradientBrush(new Point(0,48),new Point(0,208),Color.FromArgb(244,251,255),Color.FromArgb(133,167,191)))
+            using(var dark=new Pen(Color.FromArgb(7,19,33),5))
+            using(var weight=new Pen(chrome,size<=32?2.5f:1f))
+            {
+                graphics.DrawPath(dark,letters);
+                graphics.FillPath(chrome,letters);
+                graphics.DrawPath(weight,letters);
+            }
+        }
     }
 
     public static void Write(string output)

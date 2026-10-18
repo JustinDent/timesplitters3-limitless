@@ -19,7 +19,7 @@ else {
 }
 New-Item -ItemType Directory -Path $Output -Force | Out-Null
 if (!('LauncherIconBuilder' -as [type])) {
-    Add-Type -TypeDefinition ([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'launcher\IconBuilder.cs'))) -ReferencedAssemblies System.Drawing
+    Add-Type -Path @((Join-Path $PSScriptRoot 'launcher\IconBuilder.cs'), (Join-Path $PSScriptRoot 'launcher\GameMonogram.cs')) -ReferencedAssemblies System.Drawing
 }
 $icon = Join-Path $Output 'game.ico'
 [LauncherIconBuilder]::WriteGame($icon, $LogoPath)
@@ -30,7 +30,7 @@ $iconReference = $icon.Replace('\','/')
 if ($iconReference.Contains('"') -or $iconReference.Contains("`n") -or $iconReference.Contains("`r")) { throw 'Invalid resource output path.' }
 $resource = Join-Path $Output 'game-icon.rc'
 [IO.File]::WriteAllText($resource, ("#pragma code_page(65001)`r`n1 ICON " + '"' + $iconReference + '"' + "`r`n"), $encoding)
-$record = [ordered]@{ schema=1; icon_sha256=(Get-FileHash -LiteralPath $icon -Algorithm SHA256).Hash.ToLowerInvariant(); sizes=@(16,24,32,48,64,128,256); mode='tsfp-monogram'; source_commit=(& git -C $project rev-parse HEAD); source_changes=@(& git -C $project status --porcelain) }
+$record = [ordered]@{ schema=1; icon_sha256=(Get-FileHash -LiteralPath $icon -Algorithm SHA256).Hash.ToLowerInvariant(); sizes=@(16,24,32,48,64,128,256); mode='tsfp-monogram'; monogram='Future TimeSplitters serif outlines'; source_commit=(& git -C $project rev-parse HEAD); source_changes=@(& git -C $project status --porcelain) }
 if ($LogoPath) {
     $record.mode = 'official-logo-and-small-monogram'
     $record.logo_sha256 = (Get-FileHash -LiteralPath $LogoPath -Algorithm SHA256).Hash.ToLowerInvariant()

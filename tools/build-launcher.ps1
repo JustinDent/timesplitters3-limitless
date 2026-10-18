@@ -47,7 +47,7 @@ if (Test-Path -LiteralPath $LogoPath -PathType Leaf) {
     Write-Host 'Private title logo not present; using the sidebar text fallback.'
 }
 if (!('LauncherIconBuilder' -as [type])) {
-    Add-Type -TypeDefinition ([IO.File]::ReadAllText((Join-Path $source 'IconBuilder.cs'))) -ReferencedAssemblies System.Drawing
+    Add-Type -Path @((Join-Path $source 'IconBuilder.cs'), (Join-Path $source 'GameMonogram.cs')) -ReferencedAssemblies System.Drawing
 }
 [LauncherIconBuilder]::Write((Join-Path $Output 'launcher.ico'))
 [LauncherIconBuilder]::Preview((Join-Path $Output 'icon-preview.png'))

@@ -71,11 +71,19 @@ external asset is required to reproduce the icon.
 ### Windows game icon
 
 New Windows game builds embed a separate game icon in `futureperfect_recomp.exe`.
-It uses the same blue/silver temporal frame, with the complete original TSFP
-wordmark at 128 and 256 pixels. At 16, 24, 32, 48 and 64 pixels, a compact
-two-row TSFP monogram replaces the wide wordmark for readability. Source builds
+It uses the same blue/silver temporal frame, with the original TSFP title at
+128 and 256 pixels and the original Future Perfect lettering on its own larger
+centered line. The subtitle is about twice its previous size. At 16, 24, 32,
+48 and 64 pixels, a compact serif TSFP monogram replaces the wide title. Source builds
 without private artwork use the TSFP monogram at every size. The launcher keeps
 its existing TS icon.
+
+The monogram uses outlined letter shapes typeset with Future TimeSplitters by
+Chequered Ink, a series-inspired typeface whose author permits all use. It is
+not claimed to be the official logo font. Geometry and attribution are in
+`GameMonogram.cs` / `GameMonogram.NOTICE.txt`; no installed or bundled font is
+needed. Both build helpers compile this geometry alongside `IconBuilder.cs`.
+Game packages include the lettering attribution in `Licenses/Game-icon-lettering.txt`.
 
 `tsfp.ps1 -Action Build` runs `tools/build-game-icon.ps1` before CMake and passes
 its generated `game-icon.rc` through `TSFP_GAME_ICON_RESOURCE`. The Windows-only

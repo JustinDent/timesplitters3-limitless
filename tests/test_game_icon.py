@@ -79,6 +79,24 @@ def test_required_missing_logo_does_not_replace_an_existing_icon(tmp_path):
     assert icon.read_bytes() == b'keep existing icon'
 
 
+def test_subtitle_has_its_own_larger_readable_line(tmp_path):
+    from PIL import Image, ImageDraw
+    import io
+    logo = tmp_path/'subtitle marker.png'
+    image = Image.new('RGBA', (500, 187))
+    ImageDraw.Draw(image).rectangle((263, 150, 490, 171), fill=(255, 0, 0, 255))
+    image.save(logo)
+    build(tmp_path/'output', '-LogoPath', str(logo), '-RequireLogo')
+    variants = frames(tmp_path/'output/game.ico')
+    for size in (128, 256):
+        pixels = Image.open(io.BytesIO(variants[size])).load()
+        red = [(x, y) for y in range(int(size*.55), size) for x in range(size)
+               if pixels[x, y][0] > 200 and pixels[x, y][1] < 80 and pixels[x, y][2] < 80]
+        assert red
+        assert max(x for x, y in red)-min(x for x, y in red) >= size*.75
+        assert max(y for x, y in red)-min(y for x, y in red) >= size*.055
+
+
 def test_real_cmake_rc_build_embeds_every_icon_frame_in_a_unicode_path(tmp_path):
     import pefile
     from native_compiler import native_compiler

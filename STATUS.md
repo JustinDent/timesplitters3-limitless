@@ -1,5 +1,43 @@
 # Measured progress
 
+## Game icon serif lettering and larger subtitle (2026-10-18)
+
+Follow-up on `feature/launcher-game-versions` in PR #126, based on `c919122`.
+The compact TSFP mark now uses tall serif outlines typeset with Chequered Ink's
+Future TimeSplitters, a fan-made series-inspired typeface. It is not claimed to
+be the official logo font. The four-letter typeset shape is exported as native
+GraphicsPath geometry in `GameMonogram.cs`, with source/author attribution and
+published permission in `GameMonogram.NOTICE.txt`. No font install, download or
+font file is required to build or run the game. The original OTF and acquisition
+provenance remain ignored and local; its SHA-256 is
+`8f09bd612fec0a1aca85b3e2dcd0031d0f726240f37735330de1944bcfce1eb7`.
+
+At 128/256 sizes, the genuine title and subtitle lettering are composed from
+the unchanged 500 x 187 logo. The title retains its tall T/S descenders, while
+Future Perfect gets a separate centered line, proportionally enlarged from
+102.144 to 212 logical pixels at the 256-pixel size (about 2.1x). Arbitrary
+custom logo dimensions keep the proportional full-image fallback. The updated
+official-logo ICO SHA-256 is
+`f94398ddbaf28d33fe51d3e62090af1566d020a2d3d4ac22d4d5ed6eb21545e0`.
+The official PNG still hashes to `6f50234a380cd794fc9e82b2f1a204663c0bb741ea38fe57c2cc8f0a12aefed0`.
+The seven-size preview was visually inspected; the previous block initials
+are gone, and the subtitle is larger and readable. Game packagers carry the
+lettering attribution in `Licenses/Game-icon-lettering.txt`.
+
+Windows x64 / .NET Framework System.Drawing / PowerShell 5.1 / Python 3.12.14:
+the required-art launcher build passed; its TS icon remains byte-identical at
+`191f124e7d72e9c22d476cdf023ad38b8036680c38f298f496cfe6fcc6f2d519`.
+All 58 targeted Python checks and two packaging subtests passed, including five
+icon tests and release notes/packaging validation. A synthetic subtitle marker
+checks enlarged width and height at both large sizes. Resource linking and
+Windows LoadImageW still load every icon size without executing the stub.
+This visual refinement does not change game/runtime behavior, the banner,
+dependency pins or native Mac adapters. No actual game was launched, published
+or patched in place. The earlier 212-check launcher run is recorded below;
+this follow-up uses a fresh launcher build and targeted icon/package checks.
+Logs, source font/provenance and the current preview remain ignored under the
+existing validation/art folders. MAC-040 still queues native icon packaging.
+
 ## Windows game icon for PR 126 (2026-10-18)
 
 Added in `c2db36b` on `feature/launcher-game-versions`, [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).

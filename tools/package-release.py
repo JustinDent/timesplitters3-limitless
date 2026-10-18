@@ -65,6 +65,7 @@ def main():
         ('third_party/SDL/LICENSE.txt', 'SDL.txt'), ('third_party/ffmpeg/LICENSE.txt', 'FFmpeg-LGPL-3.0.txt'),
     ]:
         copy(upstream / source, 'Licenses/' + dest)
+    copy(ROOT / 'tools/launcher/GameMonogram.NOTICE.txt', 'Licenses/Game-icon-lettering.txt')
     online = bundle(ROOT, stage, copy)
     # Include the exact local source edits used for this test package, since
     # those may not yet exist at the source_commit recorded below.
