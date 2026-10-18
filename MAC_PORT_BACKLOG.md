@@ -11,7 +11,8 @@
   game data, the ISO and the independent launcher are preserved. Normal channel
   updates remain newer-only. The local private banner uses supplied 1600 x 1200
   key art unchanged, top-aligned inside the header; original assets remain ignored.
-- **Source:** `feature/launcher-game-versions` (PR pending);
+- **Source:** [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126),
+  feature commit `04eaf1c` on `feature/launcher-game-versions`;
   `tools/launcher/GameVersionsPage.cs`, `ReleaseClient.cs`, `Launcher.cs`,
   `Core.cs`, `Bootstrap.cs`, `Launcher.xaml`; `tools/build-launcher.ps1`;
   `tests/launcher_versions.cs` and `tests/launcher_updates.cs`.

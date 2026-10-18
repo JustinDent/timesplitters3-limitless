@@ -2,7 +2,8 @@
 
 ## Launcher game version picker and supplied banner (2026-10-17)
 
-Implemented on `feature/launcher-game-versions`, based on main `a44784b`.
+Implemented in feature commit `04eaf1c` on `feature/launcher-game-versions`,
+based on main `a44784b`; [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
 Host: Windows x64, .NET Framework 4.x compiler/WPF, Python 3.12.14. No game
 runtime/source, dependency pins or Mac adapters changed. Launcher version remains
 1.2.12 for development; this feature has not been merged or published.
