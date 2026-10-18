@@ -91,6 +91,9 @@ In the main, pause and Tab/Objectives menus, hover to highlight, **left-click** 
 menu rows, including the level-selection list; click to activate a level.
 Scrolling takes priority over hover until you briefly pause the gesture; clicks
 remain immediate.
+In Windows **Audio/Video Options**, click either Music Volume or Sound Volume bar
+to set its level, or hold left-click and drag. This works from Settings and Pause.
+**Accept** saves the changes; **Cancel** restores the previous levels.
 Visible, enabled prompts along the bottom (Select, Back, Player Progress and
 other shortcuts) turn light blue on hover and accept left-click. This also applies
 to the profile picker's Select, Back and Delete Profile prompts. Disabled prompts

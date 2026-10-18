@@ -18,6 +18,7 @@ void pc_display_menu_mouse_mode(void);
 void pc_display_menu_mouse_input(void (*original)(void));
 void pc_display_menu_mouse_footer(void (*original)(void));
 void pc_display_menu_mouse_dispatch(void (*original)(void));
+void pc_display_menu_audio_draw(void (*original)(void),int compact);
 void pc_display_camera(void (*original)(void));
 void pc_display_ui(void (*original)(void),uint32_t tag);
 void pc_display_scope(void (*original)(void),uint32_t tag);

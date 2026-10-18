@@ -62,7 +62,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
-        if patch.name in ('zzzzzzzzzz-decal-projection.patch',
+        if patch.name in ('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-audio-menu-mouse.patch',
+                          'zzzzzzzzzz-decal-projection.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch',
                           'zzzzzzzzzzz-model-projection.patch',
                           'zzzzzzzzzzzzzzzzz-channel-clears.patch',

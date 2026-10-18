@@ -9,11 +9,18 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.parametrize('mutation', ['fixed', 'missing-source', 'hover-conflict'])
+@pytest.mark.parametrize('mutation', ['fixed', 'missing-source', 'hover-conflict', 'missing-slider-drag'])
 def test_menu_mouse(tmp_path, mutation):
     compiler, env = native_compiler(tmp_path)
     source = ROOT / 'tests/menu_mouse.c'
     exe = tmp_path / ('menu.exe' if os.name == 'nt' else 'menu')
+    if mutation == 'missing-slider-drag':
+        adapter = (ROOT / 'src/pc_menu_mouse_guest.inc').read_text(encoding='utf-8')
+        audio = (ROOT / 'src/pc_menu_audio.inc').read_text(encoding='utf-8')
+        hook = 'if(WORD_AT(volume)!=value)'
+        assert hook in audio
+        (tmp_path / 'pc_menu_mouse_guest.inc').write_text(adapter, encoding='utf-8')
+        (tmp_path / 'pc_menu_audio.inc').write_text(audio.replace(hook, 'if(0 && WORD_AT(volume)!=value)'), encoding='utf-8')
     if mutation == 'missing-source':
         adapter = (ROOT / 'src/pc_menu_mouse_guest.inc').read_text(encoding='utf-8')
         injection = 'WORD_AT(0x006B93E0u)|=0x80u;'
@@ -43,6 +50,10 @@ def test_menu_mouse(tmp_path, mutation):
     if mutation == 'hover-conflict':
         assert result.returncode != 0
         assert 'selections==selected_before' in result.stderr
+        return
+    if mutation == 'missing-slider-drag':
+        assert result.returncode != 0
+        assert 'WORD_AT(0x5236bc)==4' in result.stderr
         return
     assert result.returncode == 0, result.stdout + result.stderr
     assert 'PASS:' in result.stdout
