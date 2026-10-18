@@ -1,5 +1,43 @@
 # Measured progress
 
+## Launcher game version picker and supplied banner (2026-10-17)
+
+Implemented on `feature/launcher-game-versions`, based on main `a44784b`.
+Host: Windows x64, .NET Framework 4.x compiler/WPF, Python 3.12.14. No game
+runtime/source, dependency pins or Mac adapters changed. Launcher version remains
+1.2.12 for development; this feature has not been merged or published.
+
+`tools/build-launcher.ps1 -Output build/launcher-validation -RequireArtwork -Test`
+passed 198 checks: 100 updater/cleanup, 27 download/recovery, 11 game-version
+catalog/UI, 15 release-news, 25 settings and 20 maintenance checks. Tiny synthetic
+packages verified v2.0.0 → v1.1.0 downgrade and v1.1.0 reinstall, rollback,
+personal settings/saves/data/textures and ISO preservation, and preservation of
+launcher v1.2.12 even when a game package contains launcher v99.0.0. Existing
+transaction, corruption, interrupted-install and resume tests passed. No game
+was executed and personal files were not used.
+
+Catalog/UI checks covered semantic sorting, stable/preview flags, raw-record
+pagination including launcher-only pages, deduplication, invalid or foreign assets,
+checksum sidecars, rate limits, cancellation, retained choices on refresh failure,
+busy/running-game state, inert bounded notes, sidebar visibility and retained
+settings/maintenance drafts. The bootstrap forwards the versions preview route. A controller-level fake-HTTP
+check confirmed normal updates reject an older target and a failed explicit
+download retries that same older tag even after the normal candidate changes.
+All three Python launcher packaging tests also passed.
+Read-only live GitHub discovery returned seven compatible releases from
+v0.3.0-alpha.1 through v0.1.0-alpha.1; exact oldest-tag lookup retained its verified
+asset identity. Real public game ZIP downgrades and manual gameplay/save-format
+compatibility across these versions were not tested; older saves may differ.
+
+Home and Game versions previews were rendered at 1152×772 and 1000×720. The
+minimum-size images were inspected for fitting controls, readable notes, sidebar
+visibility and banner crop. The supplied 1600×1200 image is embedded byte-for-byte,
+SHA-256 `f318dac55d35da823386570c11f5cff9654e8b42963766eee54bc8a8dcd6e764`;
+the sidebar logo is also unchanged. The authoritative artwork/provenance and one
+previous-banner recovery copy stay in ignored `private/launcher-art`. Validation
+log and selected previews remain in ignored `build/launcher-validation`.
+Mac work is queued in [MAC-036](MAC_PORT_BACKLOG.md#mac-036--published-game-version-picker-and-banner-replacement).
+
 ## Cutscene width fill and FPS investigation (issue #30, 2026-10-17)
 
 Implemented on `30-cutscenes-playing-at-lower-fps`, based on `cef0778`.

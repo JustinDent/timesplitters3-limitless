@@ -55,6 +55,12 @@ namespace TimeSplitters.Launcher
     {
         public string Tag, Notes, Url, Name, Published, AssetName, AssetUrl, ChecksumUrl, Digest;
         public long Size;
+        public bool IsPreview;
+    }
+    public sealed class GameReleaseList
+    {
+        public Release[] Releases;
+        public bool HasMore;
     }
     public sealed class LauncherRelease
     {
@@ -125,7 +131,8 @@ namespace TimeSplitters.Launcher
                 if (!long.TryParse(Json.String(asset, "size"), out size) || size <= 0 || size > 4L * 1024 * 1024 * 1024) continue;
                 if (best == null || version.CompareTo(GameVersion.Parse(best.Tag)) > 0)
                     best = new Release { Tag = tag, Notes = Json.String(r, "body"), Url = ReleasesPage + "/tag/" + Uri.EscapeDataString(tag), Name=Json.String(r,"name"),Published=Json.String(r,"published_at"),
-                        AssetName = expected, AssetUrl = assetUrl, Size = size, ChecksumUrl = checkUrl, Digest = digest };
+                        AssetName = expected, AssetUrl = assetUrl, Size = size, ChecksumUrl = checkUrl, Digest = digest,
+                        IsPreview = Json.Flag(r,"prerelease") || version.Pre.Length != 0 };
             }
             return best;
         }
@@ -163,6 +170,32 @@ namespace TimeSplitters.Launcher
             var release = json.Length == 0 ? null : Select(json,true);
             Core.Require(release != null && release.Tag == version, "This installed game release is not available for repair on GitHub. No installed files were changed.");
             return release;
+        }
+        public static GameReleaseList GameVersions(string json)
+        {
+            var records = Json.Serializer().DeserializeObject(json) as object[];
+            Core.Require(records != null && records.Length <= 100,"GitHub returned an invalid game release list.");
+            var releases = new List<Release>();
+            foreach (var record in records)
+            {
+                var data = record as Dictionary<string,object>;
+                object assets;
+                if(data==null || !data.TryGetValue("assets",out assets) || !(assets is object[]) ||
+                    ((object[])assets).Any(asset=>!(asset is Dictionary<string,object>))) continue;
+                // A withdrawn, incompatible or unsafe asset must not hide the other releases.
+                try {
+                    var release = Select(Json.Encode(data),true);
+                    if (release != null && !releases.Any(r=>r.Tag==release.Tag)) releases.Add(release);
+                } catch (InvalidDataException) { }
+            }
+            return new GameReleaseList { Releases = releases.OrderByDescending(r=>GameVersion.Parse(r.Tag)).ToArray(), HasMore = records.Length == 100 };
+        }
+        public async Task<GameReleaseList> ReadGameVersions(int page,CancellationToken token)
+        {
+            Core.Require(page > 0 && page <= 10000,"Invalid release list page.");
+            string json = await Text("https://api.github.com/repos/"+Repository+"/releases?per_page=100&page="+page.ToString(CultureInfo.InvariantCulture),4*1024*1024,token).ConfigureAwait(false);
+            Core.Require(!String.IsNullOrWhiteSpace(json),"GitHub returned no release information. Try refreshing the list.");
+            return GameVersions(json);
         }
         public async Task<Release> FindLauncher(string version, CancellationToken token)
         {

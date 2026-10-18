@@ -1,5 +1,35 @@
 # PC features awaiting Mac adaptation
 
+### MAC-036 — Published game version picker and banner replacement
+
+- **Status:** Queued
+- **PC behavior:** Home's Updates card opens a Game versions page inside the
+  launcher with the sidebar visible. Paginated GitHub metadata lists compatible
+  stable and preview Windows packages. Explicit confirmation permits a downgrade
+  or reinstall through the checksum-verified resumable transactional updater.
+  Retry stays pinned to the chosen release. Saves, existing settings, imported
+  game data, the ISO and the independent launcher are preserved. Normal channel
+  updates remain newer-only. The local private banner uses supplied 1600 x 1200
+  key art unchanged, top-aligned inside the header; original assets remain ignored.
+- **Source:** `feature/launcher-game-versions` (PR pending);
+  `tools/launcher/GameVersionsPage.cs`, `ReleaseClient.cs`, `Launcher.cs`,
+  `Core.cs`, `Bootstrap.cs`, `Launcher.xaml`; `tools/build-launcher.ps1`;
+  `tests/launcher_versions.cs` and `tests/launcher_updates.cs`.
+- **Mac support:** No Mac release-browser/transactional-updater adapter exists.
+  Native Mac launch/build scripts are unchanged. Private artwork is local and
+  its availability on another device is unverified.
+- **Remaining:** Add a native release picker once signed/verified Mac runtime
+  packages and an updater exist. Reuse version comparison, repository checks,
+  exact release selection and personal-data preservation rules. Adapt the banner
+  viewport if a corresponding Mac UI is added; retain local asset provenance.
+- **Acceptance:** Browse more than one API page including launcher-only pages;
+  filter drafts and incompatible/unverified packages; test older, equal, newer,
+  missing and unversioned installs; cancellation/resume/retry, request limits,
+  corrupt ZIPs and interrupted install recovery. Keep the launcher, settings,
+  saves, ISO and data unchanged; block running-game installs; verify normal
+  update channels, keyboard navigation and minimum-size layout on Mac.
+- **PC evidence:** [Version picker and banner checks](STATUS.md#launcher-game-version-picker-and-supplied-banner-2026-10-17).
+
 ### MAC-035 — Cinematic width fill (issue #30 investigation)
 
 - **Status:** Awaiting validation

@@ -177,7 +177,12 @@
         <Border Grid.Column="2" Background="#152435" BorderBrush="#30485F" BorderThickness="1" CornerRadius="4" Padding="20,17">
           <Grid>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-            <DockPanel><TextBlock Text="UPDATES" Style="{StaticResource Label}"/><Button x:Name="ReleaseNotesButton" Content="Release notes ↗" Padding="0" Background="Transparent" BorderThickness="0" Foreground="#86CDFF" FontSize="10" HorizontalAlignment="Right"/></DockPanel>
+            <DockPanel><TextBlock Text="UPDATES" Style="{StaticResource Label}"/>
+              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="GameVersionsButton" Content="Game versions" Margin="0,0,14,0" Padding="0" BorderThickness="0" Background="Transparent" Foreground="#86CDFF" FontSize="10" ToolTip="Install a specific published game release for comparisons and bug reproduction"/>
+                <Button x:Name="ReleaseNotesButton" Content="Release notes ↗" Padding="0" Background="Transparent" BorderThickness="0" Foreground="#86CDFF" FontSize="10"/>
+              </StackPanel>
+            </DockPanel>
             <TextBlock x:Name="ReleaseTitle" Grid.Row="1" Text="Checking for updates…" FontSize="19" FontWeight="SemiBold" Margin="0,13,0,0"/>
             <TextBlock x:Name="ReleaseDescription" Grid.Row="2" Text="Game releases from GitHub." FontSize="12" Foreground="#A4B8CA" Margin="0,7,0,12"/>
             <StackPanel x:Name="UpdateChannelSection" Grid.Row="3">
@@ -214,6 +219,7 @@
       </Grid>
     </Grid>
     <ContentControl x:Name="NewsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+    <ContentControl x:Name="VersionsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="MaintenanceHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     <ContentControl x:Name="SettingsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>

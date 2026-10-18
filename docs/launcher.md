@@ -48,6 +48,21 @@ the installed game; optional textures also need their own space.
 Launcher updates are checked separately at startup. **Open installed launcher**
 lets you continue with the installed launcher while a startup check is underway.
 
+## Compare specific game versions (upcoming launcher update)
+
+Under **Home → Updates**, select **Game versions**. Choose a published stable or
+preview Windows release, read its notes and select **Install selected version**.
+Use **Load older releases** if the version is further back in the list. Selecting
+the installed version offers **Reinstall selected version** instead. Review the
+confirmation before the download begins; progress and pause/retry appear on Home.
+
+This replaces the installed game runtime while keeping your launcher, ISO,
+imported game data, saves and settings. Close the game first. Back up saves before
+testing older builds because save compatibility can vary. You can choose a newer
+release again from the same page or use the normal update controls to return to
+the latest release. Published versions need no Git checkout or rebuild; unpublished
+development commits are not included. Your development source checkout is unchanged.
+
 ## What's new (launcher v1.2.11)
 
 The sidebar's **What's new** page shows game and launcher release notes inside
