@@ -2,6 +2,12 @@
 
 Describe the user-visible behavior and the platform implemented in this PR.
 
+## Cause and fix
+
+Explain what caused the problem and how this change fixes it. Describe the
+behavior before and after, including any remaining limits. For enhancements,
+explain how the new behavior works.
+
 ## Validation
 
 Record relevant tests and host results. Mark unavailable checks as pending;
