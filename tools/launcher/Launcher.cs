@@ -161,6 +161,7 @@ namespace TimeSplitters.Launcher
             root = path; previewMode = preview; client = releases;
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Launcher.xaml"))
                 Window = (Window)XamlReader.Load(stream);
+            WindowTheme.Attach(Window);
             using (var icon = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher.ico"))
                 Window.Icon = BitmapFrame.Create(icon, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
             Text("LauncherVersionLabel", "TSFP  /  COMMUNITY PC PROJECT  /  LAUNCHER v" + LauncherVersion.Value);

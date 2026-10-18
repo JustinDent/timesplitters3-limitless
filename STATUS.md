@@ -1,5 +1,36 @@
 # Measured progress
 
+## Windows title-bar theme experiment
+
+2026-10-18, branch `feature/system-theme-title-bars`, base `a5d61ea`.
+The main launcher, bootstrap startup window and windowed game caption read
+Windows' app light/dark preference at creation and on settings/theme messages.
+WPF hooks detach on close; native APIs are resolved from System32 without new
+linker dependencies. Missing theme APIs retain standard title bars. Both paths
+request the standard light setting for high contrast. Interior palettes,
+rendering settings and caption/fullscreen styles remain unchanged.
+
+Windows x64 build 26300, Python 3.14.2, MSVC x64 / WPF .NET Framework 4.8:
+`build-launcher.ps1 -Test` compiled both executables and passed 213 checks,
+including a real-HWND light/dark/light notification regression. The native DWM
+test passed initial/explicit themes and borderless/restored-style preservation.
+`tsfp.ps1 Build` validated the supported US XBE and complete patch stack,
+refreshed generated hooks, compiled the Release game and passed native build
+checks. Disposable build test files were recycled. Actionlint and diff checks
+passed. Per-window launcher caption overrides were verified and captured from
+the isolated preview; these did not change the system theme or run an update.
+
+A bounded Test Lab session used `private/test-saves/title-theme`, with isolated
+save, controls, PC display and runtime display files. The actual game's initial
+DWM attribute matched the app preference; both WM_SETTINGCHANGE and
+WM_THEMECHANGED restored that preference after per-window test overrides.
+This tests the real handlers without changing personal Windows preferences;
+human switching in Windows Settings, high-contrast visual review and older
+Windows fallback validation remain pending. No gameplay completion claim is
+made. Native Mac behavior and other-device synchronization are unverified;
+no Mac adapter is needed for this Windows-specific DWM feature. See
+[MAC-021](MAC_PORT_BACKLOG.md#mac-021--published-release-launcher-and-pre-game-settings).
+
 ## Audio-menu mouse sliders (issue #115, 2026-10-18)
 
 Implemented on `115-bug-audio-menu-sliders-cannot-be-adjusted-with-mouse-pointer`,

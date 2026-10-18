@@ -4,6 +4,13 @@
 
 ## Launcher settings
 
+The launcher, its startup window and the windowed game title bar follow
+Windows' **app mode** (Light or Dark), including changes made while they are
+open. This changes the title bar only; the launcher's interior keeps its own
+theme. High-contrast mode uses the standard light title-bar setting. Windows
+versions without the optional DWM theme attribute retain their normal title
+bars. There is no separate game preference to save.
+
 The current source launcher groups **Game settings** into two tabs with a fixed
 Save/Cancel footer. **Keyboard & mouse** contains Input & mouse and the key-binding
 table, with four labeled slots per action. **Graphics & resolution** groups Display,
