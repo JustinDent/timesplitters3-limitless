@@ -20,7 +20,9 @@ public static class LauncherIconBuilder
         return path;
     }
 
-    static Bitmap Render(int size)
+    static Bitmap Render(int size) { return Render(size, false, null); }
+
+    static Bitmap Render(int size, bool game, Image logo)
     {
         var bitmap = new Bitmap(size, size, PixelFormat.Format32bppArgb);
         using (var g = Graphics.FromImage(bitmap))
@@ -53,7 +55,14 @@ public static class LauncherIconBuilder
                 }
             }
 
-            using (var t = Polygon(56, 86, 130, 86, 126, 107, 105, 107,
+            if (game && logo != null && size >= 128)
+            {
+                // Keep the complete original lockup, including its subtitle.
+                float width=224, height=width*logo.Height/logo.Width;
+                g.InterpolationMode=InterpolationMode.HighQualityBicubic;
+                g.DrawImage(logo, new RectangleF(16, (256-height)/2, width, height));
+            }
+            else using (var t = Polygon(56, 86, 130, 86, 126, 107, 105, 107,
                 105, 171, 80, 178, 80, 107, 53, 107))
             using (var s = Polygon(151, 86, 198, 86, 194, 107, 155, 107,
                 155, 119, 190, 119, 201, 131, 196, 160, 182, 173,
@@ -68,19 +77,46 @@ public static class LauncherIconBuilder
                         Color.FromArgb(114, 151, 181), Color.FromArgb(230, 244, 254) },
                     Positions = new[] { 0f, 0.46f, 0.51f, 1f }
                 };
+                if (game)
+                {
+                    using (var matrix = new Matrix(1, 0, 0, 0.65f, 0, 12))
+                    { t.Transform(matrix); s.Transform(matrix); }
+                }
                 g.DrawPath(outline, t); g.DrawPath(outline, s);
                 g.FillPath(chrome, t); g.FillPath(chrome, s);
+                if (game)
+                {
+                    using (var f = Polygon(64,142,122,142,120,158,83,158,83,167,
+                        113,167,111,183,83,183,83,204,64,208))
+                    using (var p = Polygon(138,142,184,142,201,155,199,175,
+                        184,187,158,187,158,205,138,209))
+                    {
+                        p.AddPolygon(new[] {new PointF(158,158),new PointF(179,158),
+                            new PointF(181,162),new PointF(179,170),new PointF(158,170)});
+                        g.DrawPath(outline,f);g.DrawPath(outline,p);
+                        g.FillPath(chrome,f);g.FillPath(chrome,p);
+                    }
+                }
             }
         }
         return bitmap;
     }
 
     public static void Write(string output)
+    { Write(output, Render); }
+
+    public static void WriteGame(string output, string logoPath)
+    {
+        using (var logo=String.IsNullOrEmpty(logoPath)?null:Image.FromFile(logoPath))
+            Write(output, size=>Render(size,true,logo));
+    }
+
+    static void Write(string output, Func<int,Bitmap> render)
     {
         var images = new byte[Sizes.Length][];
         for (int i = 0; i < Sizes.Length; i++)
         {
-            using (var bitmap = Render(Sizes[i]))
+            using (var bitmap = render(Sizes[i]))
             using (var stream = new MemoryStream())
             {
                 bitmap.Save(stream, ImageFormat.Png);
@@ -105,6 +141,15 @@ public static class LauncherIconBuilder
     }
 
     public static void Preview(string output)
+    { Preview(output, Render); }
+
+    public static void PreviewGame(string output, string logoPath)
+    {
+        using (var logo=String.IsNullOrEmpty(logoPath)?null:Image.FromFile(logoPath))
+            Preview(output, size=>Render(size,true,logo));
+    }
+
+    static void Preview(string output, Func<int,Bitmap> render)
     {
         using (var sheet = new Bitmap(850, 320))
         using (var g = Graphics.FromImage(sheet))
@@ -115,7 +160,7 @@ public static class LauncherIconBuilder
             int x = 20;
             foreach (int size in Sizes)
             {
-                using (var icon = Render(size)) g.DrawImageUnscaled(icon, x, (280 - size) / 2);
+                using (var icon = render(size)) g.DrawImageUnscaled(icon, x, (280 - size) / 2);
                 g.DrawString(size + " px", font, label, x, 286);
                 x += Math.Max(size + 18, 52);
             }

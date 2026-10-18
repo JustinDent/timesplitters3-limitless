@@ -15,6 +15,7 @@ spec.loader.exec_module(scope)
     (['tests/launcher_maintenance.cs'], {'launcher'}),
     (['tests/launcher_downloads.cs'], {'launcher'}),
     (['tests/launcher_news.cs'], {'launcher'}),
+    (['tools/build-game-icon.ps1', 'tests/test_game_icon.py'], {'launcher'}),
     (['tools/publish-release.py'], {'release'}),
     (['tools/publish-release.py', 'docs/releasing.md', 'STATUS.md'], {'release'}),
     (['src/pc_display.c'], {'native'}),

@@ -72,7 +72,8 @@ def digest(path):
 def game_release_path(path):
     """Game source/runtime inputs, excluding launcher and release housekeeping."""
     return (path.startswith(('src/', 'patches/', 'config/'))
-            or path in ('tsfp.ps1', 'setup.ps1', 'requirements.txt', 'CMakeLists.txt')
+            or path in ('tsfp.ps1', 'setup.ps1', 'requirements.txt', 'CMakeLists.txt',
+                        'tools/build-game-icon.ps1', 'tools/launcher/IconBuilder.cs')
             or path.startswith('tools/release/')
             or path in {'tools/' + name for name in (
                 'recomp-generation.py', 'build-native-mac.py',
