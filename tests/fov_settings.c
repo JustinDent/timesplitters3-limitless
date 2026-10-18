@@ -42,6 +42,8 @@ void d3d8_display_output_shape(unsigned w,unsigned h,unsigned *ow,unsigned *oh)
 MOUSE_STUB(sub_00074760) MOUSE_STUB(sub_00076EF0) MOUSE_STUB(sub_00076510)
 MOUSE_STUB(sub_002E6D40) MOUSE_STUB(sub_00079860)
 MOUSE_STUB(sub_002E49F0) MOUSE_STUB(sub_002E4A30)
+/* Audio-slider preview calls are covered by menu_mouse.c, not this fixture. */
+MOUSE_STUB(sub_00045C60) MOUSE_STUB(sub_00021780)
 #undef MOUSE_STUB
 /* Bot helpers share the menu translation unit, but must never execute in
  * this isolated FOV fixture. Bot behavior has its own network regressions. */

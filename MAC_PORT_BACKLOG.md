@@ -275,6 +275,18 @@
 ### MAC-030 — Menu mouse selection (#86)
 
 - **Status:** Queued
+- **Issue #115 follow-up** (`115-bug-audio-menu-sliders-cannot-be-adjusted-with-mouse-pointer`): Windows Music/Sound volume bars now
+  accept click-to-set and held dragging in main and paused Audio/Video Options.
+  `src/pc_menu_audio.inc` captures both original painter layouts, reuses the
+  shared proportional pointer mapping, and updates the game's staged 0..16
+  volumes through its existing preview functions. Accept/Cancel remain native.
+  `audio-menu-mouse.patch` adds two painter wrappers; Mac calls the original
+  painters unchanged until the SDL pointer adapter below is implemented.
+  Acceptance must include both bars at 4:3/widescreen/ultrawide, endpoint
+  clamping, focus-loss/release/resize cancellation, disabled music/sound, and
+  Accept/Cancel with keyboard/controller navigation retained. Shared policy
+  tests run on Windows; native Mac input/rendering remains unverified. See
+  `STATUS.md` under Audio-menu mouse sliders for measured PC validation.
 - **PC behavior:** Move the visible cursor over a main, pause or Tab/Objectives menu item to select
   it, left-click to activate, and right-click to go back. The hit test follows
   the proportional UI and presentation bars, using the full UI canvas rather

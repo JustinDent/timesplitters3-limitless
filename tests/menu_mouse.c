@@ -21,6 +21,9 @@ static unsigned long long GetTickCount64(void) {return tick;}
 static int footer_enabled=1,measure_profile;
 static uint32_t early_action,early_held;
 static unsigned shape_w=16,shape_h=9;
+static unsigned music_previews,sound_previews;
+void sub_00045C60(void) {mode=13;}
+void sub_00021780(void) {mode=14;}
 static PcMenuPointer pc_controls_menu_pointer(void) { PcMenuPointer p=cursor;cursor.wheel=0;return p; }
 static PcMenuPointer pc_controls_menu_hover_pointer(void) { return cursor; }
 static void pc_controls_menu_mode(int on) { mode=on; }
@@ -37,6 +40,8 @@ void sub_002E4A30(void) {mode=12;}
 static uint32_t guest_call(void (*fn)(void),unsigned n,...)
 {
     va_list ap; uint32_t menu,item;
+    if(fn==sub_00045C60) {CHECK(n==0);++music_previews;return 0;}
+    if(fn==sub_00021780) {CHECK(n==1);++sound_previews;return 0;}
     if(fn==sub_002E49F0) {CHECK(n==0);return 0;}
     if(fn==sub_002E4A30) {CHECK(n==0);return 3;}
     va_start(ap,n);menu=va_arg(ap,uint32_t);
@@ -127,6 +132,70 @@ static void profile_draw(void)
     profile_x[profile_draws]=FLOAT_AT(g_esp+4);
     snprintf(profile_labels[profile_draws],100,"%s",(char *)&WORD_AT(WORD_AT(g_esp+12)));
     ++profile_draws;g_esp+=4;
+}
+static void audio_draw_original(void) {g_esp+=4;}
+static void audio_tracks(uint32_t m,uint32_t music,uint32_t sound,int compact)
+{
+    for(unsigned i=0;i<2;i++) {
+        uint32_t row=i?sound:music;
+        WORD_AT(row)=4;WORD_AT(row+0x88)=m;WORD_AT(row+0x14)=i?3:1;
+        FLOAT_AT(0x7000)=180;FLOAT_AT(0x7004)=100.f+(float)i*100;
+        FLOAT_AT(0x7008)=460;FLOAT_AT(0x700c)=160.f+(float)i*100;
+        g_esp=0x1800;WORD_AT(g_esp+4)=m;WORD_AT(g_esp+8)=row;WORD_AT(g_esp+12)=0x7000;
+        pc_display_menu_audio_draw(audio_draw_original,compact);CHECK(g_esp==0x1804);
+    }
+}
+static void audio_tests(void)
+{
+    const uint32_t m=0x2000,music=0x3000,sound=0x3400;
+    memset(memory,0,sizeof memory);memset(&menu_mouse,0,sizeof menu_mouse);
+    memset(menu_mouse_footer,0,sizeof menu_mouse_footer);menu_audio_drag=0;
+    active=1;navigation=0;WORD_AT(0x79094c)=101;
+    WORD_AT(0x4e8cf0)=640;WORD_AT(0x4e8cf4)=480;
+    WORD_AT(m+0x1b0)=3;WORD_AT(m+0x178)=music;WORD_AT(music+4)=sound;
+    FLOAT_AT(m+0xe4)=100;FLOAT_AT(m+0xe8)=70;FLOAT_AT(m+0xec)=540;FLOAT_AT(m+0xf0)=400;
+    WORD_AT(0x7ba16c)=1;WORD_AT(0x7ba178)=0x6000;WORD_AT(0x6008)=42;
+    for(unsigned layout=0;layout<2;layout++) for(unsigned ratio=0;ratio<4;ratio++) {
+        const unsigned widths[]={640,1920,3440,1280},heights[]={480,1080,1440,1024};
+        shape_w=widths[ratio];shape_h=heights[ratio];
+        float scale=fminf((float)shape_w/640,(float)shape_h/480);
+        float ox=((float)shape_w-640*scale)*.5f,oy=((float)shape_h-480*scale)*.5f;
+        cursor=(PcMenuPointer){0,0,(float)shape_w,(float)shape_h,1,0,0,0};run(m);
+        audio_tracks(m,music,sound,(int)layout);
+        MenuAudioTrack *t=&menu_audio_tracks[0];
+        CHECK(t->x==225 && t->w==215 && t->h==(layout?10:20));
+        WORD_AT(0x5236bc)=16;WORD_AT(0x5236c0)=16;
+        cursor.x=ox+(t->x+t->w*.25f)*scale;cursor.y=oy+(t->y+2)*scale;
+        run(m);cursor.left=1;run(m);
+        CHECK(WORD_AT(0x5236bc)==4 && WORD_AT(m+0x198)==music);
+        CHECK(!(WORD_AT(m+0xc4)&0x10) && menu_audio_drag==music);
+        unsigned previews=music_previews;run(m);CHECK(music_previews==previews);
+        cursor.x=ox+(t->x+t->w*.75f)*scale;cursor.y=oy+(t->y+105)*scale;cursor.wheel=-1;
+        run(m);CHECK(WORD_AT(0x5236bc)==12 && WORD_AT(0x5236c0)==16);
+        CHECK(WORD_AT(m+0x198)==music && !(WORD_AT(m+0xc4)&0x001F001F));
+        cursor.x=ox+(t->x-30)*scale;run(m);CHECK(WORD_AT(0x5236bc)==0);
+        cursor.x=ox+(t->x+t->w+30)*scale;run(m);CHECK(WORD_AT(0x5236bc)==16);
+        cursor.left=0;run(m);CHECK(!menu_audio_drag);
+        t=&menu_audio_tracks[1];cursor.x=ox+(t->x+t->w*.5f)*scale;cursor.y=oy+(t->y+2)*scale;
+        run(m);cursor.left=1;run(m);CHECK(WORD_AT(0x5236c0)==8);
+        CHECK(WORD_AT(m+0x198)==sound && WORD_AT(0x5236bc)==16);
+        cursor.valid=0;run(m);cursor.valid=1;cursor.x+=20;run(m);
+        CHECK(!menu_audio_drag && WORD_AT(0x5236c0)==8); /* focus loss cancels */
+        cursor.left=0;run(m);WORD_AT(sound+0x28)=1;cursor.left=1;run(m);
+        CHECK(!menu_audio_drag && WORD_AT(0x5236c0)==8); /* disabled */
+        WORD_AT(sound+0x28)=0;cursor.left=0;run(m);tick+=101;cursor.left=1;run(m);
+        CHECK(!menu_audio_drag && WORD_AT(0x5236c0)==8); /* stale draw */
+        audio_tracks(m,music,sound,(int)layout);run(m);
+        CHECK(!menu_audio_drag); /* held button cannot resume after cancellation */
+        cursor.left=0;run(m);cursor.left=1;run(m);CHECK(menu_audio_drag==sound);
+        ++shape_w;run(m);CHECK(!menu_audio_drag); /* resize invalidates drag */
+        --shape_w;cursor.left=0;run(m);cursor.left=1;run(m);
+        WORD_AT(m+4)=1;run(m);CHECK(!menu_audio_drag); /* replaced menu */
+        WORD_AT(m+4)=0;cursor.left=0;run(m);
+    }
+    CHECK(music_previews && sound_previews);
+    CHECK(pc_menu_slider_value(-1,0,100,16)==0 && pc_menu_slider_value(101,0,100,16)==16);
+    CHECK(pc_menu_slider_value(NAN,0,100,16)==0 && pc_menu_slider_value(1,0,0,16)==0);
 }
 int main(void)
 {
@@ -365,6 +434,7 @@ int main(void)
     cursor.left=1;run(m);CHECK(!early_action); /* stale profile footer */
     cursor.left=0;run(m);WORD_AT(m+4)=0;cursor.left=1;run(m);CHECK(!early_action);
     CHECK(original_calls>10);
+    audio_tests();
     puts("PASS: menu pointer mapping, selection, click lifetime and gameplay isolation");
     return 0;
 }

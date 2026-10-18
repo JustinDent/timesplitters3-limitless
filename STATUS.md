@@ -1,5 +1,50 @@
 # Measured progress
 
+## Audio-menu mouse sliders (issue #115, 2026-10-18)
+
+Implemented on `115-bug-audio-menu-sliders-cannot-be-adjusted-with-mouse-pointer`,
+based on main `e6c68bd`. Windows x64, D3D11, MSVC 14.44.35207, SDL 3.4.16,
+the pinned runtime and supported US XBE. The tested local executable reports
+build `9eec7d5` (base plus this change); it is not a published release.
+
+The volume rows use custom painters rather than the native choice-slider path,
+so pointer selection previously highlighted the row without changing its level.
+Two reproducible painter wrappers capture the actual main/compact bar rectangles.
+The mouse adapter maps clicks and held drags to the original 0..16 staged values
+and invokes the original preview functions. It leaves profile writes to Accept
+and restores the original values through Cancel. A drag keeps ownership of its
+bar when crossing another row, and release, invalid focus, resize, disabled or
+stale controls and a replaced menu invalidate it.
+
+Validation: full `tsfp.ps1 Build` and its native build checks passed. The menu-mouse
+and patch-upgrade suite passed 18 cases, including a mutation that removes the
+volume update and must fail. Patch tracking, recompilation generation and CI
+scope suites passed another 37 cases. The slider regression exercises both
+painter layouts at 640x480, 1920x1080, 3440x1440 and 1280x1024, endpoint clamping,
+capture ownership, preview calls and cancellation cases. `git diff --check` passed.
+
+PR #146 CI exposed two missing audio-preview symbols in the isolated Windows
+FOV/settings fixture, which also compiles the menu translation unit. Added
+fail-fast stubs for those out-of-scope callbacks; the production audio paths
+remain exercised by `menu_mouse.c`. All six FOV/settings, menu-mouse and display
+mode cases passed locally after this fixture correction.
+
+Bounded real-game sessions used disposable Test Lab saves and isolated controls,
+display and runtime configuration. Before the change, dragging the Music bar
+left its value at 11. After rebuilding, GUI dragging set Music to 4 and clicking
+Sound's midpoint set it to 8, both in frontend Settings and the first mission's
+Pause menu. Screenshots and read-only process-state samples agree. Cancel restored
+11/16 in each menu; Accept committed 4/8 from Settings and 11/8 from Pause to the
+test profile, while the other profiles retained their values. Frontend checks
+included a letterboxed small window and a maximized window at configured 1280x720.
+The pause session mapped Start to middle-click only in the disposable controls
+file because the automation's brief keyboard events were not reliably sampled.
+This does not establish physical keyboard/controller testing. Automated navigation
+regressions passed; native Mac input remains unverified and queued under MAC-030.
+The test game was closed and the runner recycled its disposable disk images.
+Selected screenshots and read-only value samples remain in ignored
+`private/captures/issue-115`; personal settings, saves and the fixture were preserved.
+
 ## Launcher v1.2.14 release preparation (2026-10-18)
 
 Prepared from main `c802385` after merging PR #126. Shared launcher version,

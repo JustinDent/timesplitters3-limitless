@@ -25,6 +25,8 @@ typedef struct MenuMouseDispatch {
 } MenuMouseDispatch;
 static MenuMouseDispatch *menu_mouse_dispatch;
 
+#include "pc_menu_audio.inc"
+
 /* The player-1 pause/status flags cover both Start and Back/Tab menus.
  * Scene alone cannot distinguish them from gameplay. */
 static int menu_mouse_context(void)
@@ -50,7 +52,10 @@ void pc_display_menu_mouse_mode(void)
 {
     int enabled=menu_mouse_context();
     pc_controls_menu_mode(enabled);
-    if(!enabled) memset(&menu_mouse,0,sizeof menu_mouse);
+    if(!enabled) {
+        memset(&menu_mouse,0,sizeof menu_mouse);
+        menu_audio_drag=0;
+    }
 }
 
 /* Pause tab labels are rendered by the parent, separately from menu rows.
@@ -430,7 +435,11 @@ void pc_display_menu_mouse(void (*original)(void))
     d3d8_display_output_shape((unsigned)gw,(unsigned)gh,&sw,&sh);
     if(!sh || !pc_menu_mouse_position(pointer,(float)sw/sh,gw,gh,&x,&y)) {
         menu_mouse.wheel_pending=0;
+        menu_audio_drag=0;
         restore_registers(&r); return;
+    }
+    if(menu_audio_pointer(menu,pointer,actions,x,y,sw,sh)) {
+        restore_registers(&r);return;
     }
     /* Use final screen rectangles, including scroll offsets and submenu
      * animations. Ignore labels, disabled rows and clipped-away portions. */
@@ -478,6 +487,7 @@ void pc_display_menu_mouse(void (*original)(void))
     restore_registers(&r);
 }
 #else
+void pc_display_menu_audio_draw(void (*original)(void),int compact) { (void)compact;original(); }
 static int menu_mouse_profile_text(void (*original)(void)) { (void)original;return 0; }
 void pc_display_menu_mouse_mode(void) {}
 static int menu_mouse_footer_text(void) { return 0; }

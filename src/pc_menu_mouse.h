@@ -16,6 +16,16 @@ typedef struct PcMenuMouse {
     uint64_t wheel_at, pointer_at;
 } PcMenuMouse;
 
+/* Snap pointer position to the game's inclusive discrete volume range. */
+static inline unsigned pc_menu_slider_value(float x,float left,float width,unsigned maximum)
+{
+    if(!isfinite(x) || !isfinite(left) || !isfinite(width) || !(width>0)) return 0;
+    float fraction=(x-left)/width;
+    if(fraction<=0) return 0;
+    if(fraction>=1) return maximum;
+    return (unsigned)floorf(fraction*(float)maximum+.5f);
+}
+
 /* Invert presentation letterboxing, then the centred proportional UI fit.
  * Coordinates outside the displayed image stay invalid, not edge-clamped. */
 static inline int pc_menu_mouse_position(PcMenuPointer p, float aspect,
