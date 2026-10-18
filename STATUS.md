@@ -22,7 +22,7 @@ was updated for mobile viewing; display on a physical phone remains unverified.
 
 Source: `tools/launcher/Launcher.xaml` and `Launcher.cs`. Artwork/provenance
 remain ignored under `private/launcher-art`; renders and layout checks are in
-ignored `build/launcher-validation`. [MAC-036](MAC_PORT_BACKLOG.md#mac-036--published-game-version-picker-and-banner-replacement)
+ignored `build/launcher-validation`. [MAC-041](MAC_PORT_BACKLOG.md#mac-041--published-game-version-picker-and-banner-replacement)
 records the full-image layout requirement for a future Mac launcher. This is
 an unpublished source change; launcher version remains 1.2.12 during development.
 
@@ -63,7 +63,160 @@ SHA-256 `f318dac55d35da823386570c11f5cff9654e8b42963766eee54bc8a8dcd6e764`;
 the sidebar logo is also unchanged. The authoritative artwork/provenance and one
 previous-banner recovery copy stay in ignored `private/launcher-art`. Validation
 log and selected previews remain in ignored `build/launcher-validation`.
-Mac work is queued in [MAC-036](MAC_PORT_BACKLOG.md#mac-036--published-game-version-picker-and-banner-replacement).
+Mac work is queued in [MAC-041](MAC_PORT_BACKLOG.md#mac-041--published-game-version-picker-and-banner-replacement).
+
+## Launcher startup security recovery (2026-10-18)
+
+Implemented in `a9b79e7` on `fix/launcher-startup-recovery`, based on main `e6c68bd` (launcher
+1.2.13), independently of pending installer/version-picker branches. Initial
+checks used uncommitted source. Host: Windows x64, .NET Framework 4.8/WPF system
+C# compiler, Windows PowerShell 5.1 and Python 3.12.14. No game source, runtime
+dependency pin, importer or Mac adapter changed; no release was published.
+
+The reported Win32 cancellation occurred in the bootstrap's final application
+launch. Startup previously logged the exception, showed a generic modal message
+and closed. It now explains a possible security prompt for native error 1223,
+offers distinct access-denied/missing-file guidance, and keeps Retry, Open
+launcher folder and View logs available. Retry repeats only application startup.
+Repeated failures remain recoverable; successful launch or closing exits normally.
+Folder-opening failures preserve the original recovery instructions. Native codes
+and exception details are retained in the log; Windows security is not bypassed.
+
+`tools/build-launcher.ps1 -Output build/startup-recovery-validation -RequireArtwork -Test`
+passed all 200 checks: 99 updater/cleanup, 27 downloads/recovery, ten new startup
+recovery checks, 15 release news, 29 settings and 20 maintenance. Synthetic launch
+and folder delegates exercised repeated cancellation followed by success, native
+vs. generic error classification, actions, close behavior, retained guidance and
+unchanged application/ISO/data/save/settings/download fixture hashes. No actual
+game or application was executed by the new tests. The full suite uses its
+existing isolated synthetic process fixtures; personal files were not used.
+All 29 Python CI-scope, portable startup preference and launcher packaging
+checks passed, plus two packaging subtests.
+
+Recovery layout was measured for text/progress/action overlap and bounds. A WPF
+render at 544 x 350 was visually inspected; all instructions and three actions
+fit. Log and selected render stay ignored in `build/startup-recovery-validation`.
+Actual SmartScreen prompts, manual first-run approval on another PC and signed
+binary behavior remain unverified. Code signing is not configured. The relevant
+Windows and Mac CI scope routes include the new regression source. Native Mac
+paths are unchanged; [MAC-039](MAC_PORT_BACKLOG.md#mac-039--recoverable-launcher-startup-security-interruptions)
+records why this Windows shell recovery needs no native adapter.
+
+## Launcher 1.2.13 version follow-up (2026-10-18)
+
+Bump the shared launcher version, assembly version and file version to 1.2.13
+for the issue #128 startup fix merged in PR #129. This keeps bootstrap, application,
+update metadata and versioned ZIP names consistent and allows a future published
+launcher update to compare newer than 1.2.12. Existing 1.2.12 references below
+record the earlier development build; the ISO importer and game version are
+unchanged. The local build includes the existing banner/logo artwork. This
+source change does not itself publish a GitHub release. MAC-037 still applies;
+version metadata requires no Mac adapter.
+
+## Issue resolution comments after PR merges (2026-10-18)
+
+Implemented on `128-fix-constrained-language-launch` in
+`Fix fresh-install launch and explain merged fixes on issues`.
+The Issue resolution notes workflow responds to PR merges into main and reads
+GitHub's closing-issue links, including links made in the Development sidebar.
+It posts the reviewed Cause and fix and Validation sections to same-repository
+issues, with a link to the merged PR. An unmerged closure, a non-default base,
+or an incidental issue mention does not generate a resolution comment. A missing
+or unchanged placeholder explanation fails clearly before writing comments.
+Reruns update only this workflow's marked GitHub Actions bot comment; human
+comments are preserved. All linked issues and comment lists are paginated.
+
+The write-enabled job checks out only trusted default-branch code. PR prose is
+read as API data, never interpolated into shell commands. Permissions are scoped
+to reading source/PR links and writing issue comments. The workflow has offline
+unit checks for publishing, skipping, pagination, duplication, updating, missing
+explanations and API errors. A read-only live check of already-merged PR #127
+correctly found issue #111 and generated the expected ghost-fix explanation;
+no GitHub comment was posted during development. This automation will become
+active after it reaches main and is not a retroactive backfill. It changes no
+PC or Mac game behavior and needs no Mac adapter. No hosted run is claimed yet.
+
+## Fresh-install launcher failure (issue #128, 2026-10-18)
+
+Implemented on `128-fix-constrained-language-launch`, based on `afb562c`,
+in `Fix fresh-install launch and explain merged fixes on issues`.
+Host: Windows x64, Windows PowerShell 5.1 and the system .NET Framework x64 C#
+compiler. The game runtime, pinned dependencies and ISO importer are unchanged.
+
+The report's log confirms a successful ISO import. Startup fails afterward in
+`Launch.ps1`: ConstrainedLanguage rejects `New-Object System.Diagnostics.ProcessStartInfo`.
+The launcher previously used this script only while `Settings/runtime.conf` was
+absent; saving graphics settings selected its native C# process path instead.
+`Play` now uses that direct path for both fresh and configured installations,
+with the same game-data verification, environment isolation, log redirection,
+window monitoring and exit status. Missing portable settings use runtime defaults;
+launch preparation does not save or overwrite settings. No security policy changes
+are requested or performed. Direct manual use of the legacy `Launch.ps1` still
+requires its existing PowerShell capabilities; Play Game no longer invokes it.
+
+Validation: the original New-Object operation reproduces the exact reported
+error in a child PowerShell session explicitly set to ConstrainedLanguage.
+The supported `tools/build-launcher.ps1 -Test` run passes 190 isolated checks
+(99 updater, 27 download, 15 release-news, 29 settings and 20 maintenance).
+The 29 settings checks also pass when the compiled test host is started from
+that constrained session. Four new cases exercise the production process/logging
+method with synthetic child executables: fresh versus configured settings and
+exit codes 0 versus 7. They verify paths with spaces, portable data/save/config
+paths, mouse and startup-video preferences, inherited override removal, stdout/
+stderr capture, status reporting, and byte-for-byte preservation of settings.
+They do not bypass the production Play action's ISO/data verification.
+Portable startup, packaging and CI-scope pytest checks pass: 28 tests and two
+subtests. Game assets, personal settings and saves were not used. These tests
+simulate the reported language restriction; they do not certify all AppLocker/
+WDAC configurations or reproduce the reporter's complete Windows installation.
+
+Local development launcher application SHA-256:
+`29b000d7f43b7dfe5ec2a353c5db4c5321534a45d4a9794d86ac2914b6b0357c`.
+The build retains version 1.2.12 and has not been published as a launcher update.
+Logs are ignored under `build/issue-128-*.log`. MAC-037 records why this Windows
+launcher fix needs no Mac adapter. No Mac execution is claimed.
+
+## Ghost Gun full-body rendering (issue #111, 2026-10-18)
+
+Implemented on `111-bug-ghosts-are-still-not-visible-with-ghost-gun`, based on
+`a44784b`, in the commit `Fix Ghost Gun humanoid rendering and target feedback`.
+Runtime pin and supported US XBE hash are unchanged. Host: Windows x64,
+MSVC 19.44, D3D11, NVIDIA RTX 4070 SUPER (driver 32.0.16.1742).
+Production executable SHA-256:
+`3b2eb5307fcd3341f35882d50f1a7428a363be78bb160dff28afcf0c00f84ee4`.
+
+The humanoid effect is the original US `sub_00121F50` path reached by
+`sub_001263A0`, not #17's floating-skull renderer. The normal model is intentionally
+hidden. Its replacement renders into a colour texture, filters/tints that image
+in place, and composites it into the scene. Two host errors prevented it:
+HLE substituted an unrelated depth buffer when changing colour targets, and
+D3D11 rejected a sampled image that was simultaneously the render target.
+
+The patch preserves the original automatic depth/stencil surface. Its full-frame
+colour target is promoted to the same physical dimensions while retaining
+logical texture coordinates; viewport/scissor and copy operations account for
+that scale. In-place 2D colour draws use one reusable snapshot refreshed before
+each draw, shared by all affected sampler stages. No ghost animation, AI,
+visibility flag, colour or shader is overridden. Temporary title diagnostic
+hooks have been removed. Native GL follow-up is tracked as MAC-036.
+
+An isolated Test Lab session in What Lies Below reproduced the actual humanoid
+model using mission template GHT2 and the real Ghost Gun pickup (item 34,
+equipped weapon 15). Test-only process-memory setup triggered the native spawn
+loop and held the actor in view; this was not a normal level playthrough.
+Live captures at 1280x720 and 3440x1440 show the red translucent body, and
+their complete draw captures replay with no failed host calls. The ultrawide
+run uses the clean production executable above, without title diagnostic hooks. This establishes the affected
+humanoid path, not every ghost encounter or Mansion's TV-room Deadwina.
+
+The supported Windows build runs a synthetic, asset-free GPU regression via
+`tests/ghost_targets.py`: 4:3, 16:9, ultrawide and 2x supersampling verify nearer
+geometry hides the effect, two successive feedback draws read fresh pixels,
+and offscreen depth writes survive returning to the scene. The normal build's
+existing checks also pass. All 34 selected patch tracking/transition, framebuffer,
+ghost-state and channel-clear tests pass (98.86 seconds); full-stack reapplication
+changes zero runtime files. Captures and logs are local and ignored under
+`build/issue-111-ghosts`; original game content is not committed.
 
 ## Cutscene width fill and FPS investigation (issue #30, 2026-10-17)
 

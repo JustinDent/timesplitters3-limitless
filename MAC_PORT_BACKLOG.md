@@ -1,6 +1,6 @@
 # PC features awaiting Mac adaptation
 
-### MAC-036 — Published game version picker and banner replacement
+### MAC-041 — Published game version picker and banner replacement
 
 - **Status:** Queued
 - **PC behavior:** Home's Updates card opens a Game versions page inside the
@@ -36,6 +36,69 @@
 - **PC evidence:** [Version picker and banner checks](STATUS.md#launcher-game-version-picker-and-supplied-banner-2026-10-17).
   [Full artwork layout](STATUS.md#complete-original-launcher-banner-artwork-2026-10-18)
   supersedes the initial cropped banner viewport.
+
+### MAC-039 — Recoverable launcher startup security interruptions
+
+- **Status:** Not applicable — Windows bootstrap only.
+- **PC behavior:** A failed application handoff keeps startup open with Retry,
+  Open launcher folder and View logs. Win32 cancellation 1223 explains a possible
+  SmartScreen/security prompt without claiming the user clicked Cancel. Access
+  denied, missing files and other failures have distinct guidance. Retry opens
+  the installed application without downloading again; success or user close
+  exits normally. Native error codes are logged. Security settings and file
+  blocking are not changed automatically; binaries remain unsigned.
+- **Source:** Feature commit `a9b79e7` on `fix/launcher-startup-recovery`, based
+  on main `e6c68bd`. `tools/launcher/Bootstrap.cs`, `DownloadTransfer.cs`,
+  `tools/build-launcher.ps1` and `tests/launcher_startup.cs`.
+- **Existing Mac support / remaining adaptation:** Native Mac startup does not
+  use this WPF bootstrap or Windows shell/SmartScreen. Existing native scripts
+  and adapters are unchanged. A future native GUI should explain its own OS
+  launch errors; no Windows dialog or registry behavior should be copied.
+- **Acceptance:** Windows synthetic cancellation, access denial, missing files,
+  retry, close and folder/log failure tests pass with isolated fixtures. Verify
+  guidance/action layout and no personal-file changes. Actual SmartScreen prompt
+  visibility and other-device behavior require manual validation; Mac execution
+  is not claimed. See [startup recovery evidence](STATUS.md#launcher-startup-security-recovery-2026-10-18).
+
+### MAC-037 — Fresh-install launch without PowerShell (issue #128)
+
+- **Status:** Not applicable — Windows launcher only.
+- **PC behavior:** Play Game starts the runtime directly even before graphics
+  settings have been saved, avoiding the reported ConstrainedLanguage script
+  failure after a successful ISO import. Settings, saves and logs retain their
+  portable paths; data verification remains required.
+- **Source:** `Fix fresh-install launch and explain merged fixes on issues`
+  on `128-fix-constrained-language-launch`;
+  `tools/launcher/Launcher.cs`, `GameSettings.cs`, and launcher settings tests.
+- **Existing Mac support / remaining adaptation:** Native Mac launchers do not
+  execute the Windows WPF launch path or `Launch.ps1`; no adapter is needed.
+  No native Mac code was changed or executed for this fix.
+- **Acceptance checks:** Windows fresh/configured startup, exit status, redirected
+  logs and settings preservation pass with synthetic executables, including a
+  constrained PowerShell test host. See issue #128 in `STATUS.md` for scope.
+
+### MAC-036 — Ghost Gun full-body visibility (issue #111)
+
+- **Status:** Queued
+- **PC behavior:** Full-body ghosts retain their native red translucent effect
+  when revealed with the Ghost Gun. Offscreen colour targets share scene depth
+  and stencil; self-sampling colour passes read a snapshot taken before each
+  draw instead of an input rejected by the graphics API.
+- **Source:** Commit `Fix Ghost Gun humanoid rendering and target feedback` on
+  `111-bug-ghosts-are-still-not-visible-with-ghost-gun`; runtime patch
+  `zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-ghost-target-feedback.patch`,
+  `tests/ghost_targets.py`, `tsfp.ps1`. Separate from the floating-skull fix #17.
+- **Shared Mac support:** HLE retains the automatic depth surface for same-size
+  full-frame targets when the native adapter can bind it. Mismatched native
+  dimensions retain the previous fallback. The Windows D3D11/Vulkan RHI adapter
+  promotes colour images to match scene depth; native OpenGL does not use it.
+- **Remaining:** Implement native GL feedback snapshots and matching physical
+  colour/depth sizes; preserve logical UVs, viewport/scissor scaling and stencil.
+  Windows visual results do not establish Mac support. See `STATUS.md`.
+- **Acceptance:** Verify What Lies Below humanoid ghosts with the Ghost Gun and
+  Mansion's TV-room Deadwina. Preserve occlusion by walls, depth writes across
+  target switches, red tint/blur, multiple ghosts, resolution changes and
+  supersampling. Reproduce the synthetic occlusion/feedback checks in native GL.
 
 ### MAC-035 — Cinematic width fill (issue #30 investigation)
 

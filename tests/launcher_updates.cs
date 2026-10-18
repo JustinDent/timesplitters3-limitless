@@ -138,12 +138,15 @@ static class LauncherTests
     {
         if (args.Length == 2 && (args[0] == "--render-preview" || args[0] == "--render-settings-preview" || args[0] == "--render-settings-graphics" || args[0] == "--render-repair-preview" || args[0] == "--render-diagnostics-preview" || args[0] == "--render-news-preview" || args[0] == "--render-versions-preview"))
         { File.WriteAllText(args[1],args[0]);return 17; } // Synthetic preview child, not a UI/game launch.
+        if (args.Length == 0 && Path.GetFileNameWithoutExtension(typeof(LauncherTests).Assembly.Location)=="futureperfect_recomp")
+            return LauncherSettingsChecks.LaunchProbe();
         if (args.Length == 1 && args[0] == "--settings-child") return LauncherSettingsChecks.Child();
         if (args.Length == 1 && args[0] == "--maintenance-readonly") return LauncherMaintenanceChecks.Run(true);
         if (args.Length == 1 && args[0] == "--maintenance") return LauncherMaintenanceChecks.Run();
         if (args.Length == 1 && args[0] == "--downloads-live") return LauncherDownloadChecks.VerifyPublicDownload();
         if (args.Length == 1 && args[0] == "--downloads") return LauncherDownloadChecks.Run();
         if (args.Length == 1 && args[0] == "--versions") return LauncherVersionChecks.Run();
+        if (args.Length == 1 && args[0] == "--startup") return LauncherStartupChecks.Run();
         if (args.Length == 1 && args[0] == "--news") return LauncherNewsChecks.Run();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();
         if (args.Length == 2 && args[0] == "--helper")

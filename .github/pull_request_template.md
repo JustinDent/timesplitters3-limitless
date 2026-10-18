@@ -2,6 +2,17 @@
 
 Describe the user-visible behavior and the platform implemented in this PR.
 
+<!-- Link issues this PR resolves with Closes #123 (or use GitHub's Development
+sidebar). After merge, the workflow posts the Cause and fix and Validation
+sections to those issues. Incidental issue mentions do not receive a comment. -->
+
+## Cause and fix
+
+Explain what caused the problem and how this change fixes it. Describe the
+behavior before and after, including any remaining limits. For enhancements,
+explain how the new behavior works. This section is posted to linked issues
+after merge, so replace these instructions with the actual explanation.
+
 ## Validation
 
 Record relevant tests and host results. Mark unavailable checks as pending;

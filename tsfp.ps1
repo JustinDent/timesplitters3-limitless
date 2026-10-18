@@ -165,7 +165,9 @@ try {
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src",
                         "-DTSFP_GAME_ICON_RESOURCE=$gameIconResource")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_clear_test', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', '4')
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tests/ghost_targets.py'),
+                        (Join-Path $buildRoot "xboxrecomp/src/replay/$Configuration/d3d8_replay.exe"))
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_network_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_pc_clear_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_format_test.exe") @()
