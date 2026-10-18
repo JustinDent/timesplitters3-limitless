@@ -10,8 +10,8 @@
   the installed application without downloading again; success or user close
   exits normally. Native error codes are logged. Security settings and file
   blocking are not changed automatically; binaries remain unsigned.
-- **Source:** `fix/launcher-startup-recovery`, based on main `e6c68bd`;
-  initially uncommitted. `tools/launcher/Bootstrap.cs`, `DownloadTransfer.cs`,
+- **Source:** Feature commit `a9b79e7` on `fix/launcher-startup-recovery`, based
+  on main `e6c68bd`. `tools/launcher/Bootstrap.cs`, `DownloadTransfer.cs`,
   `tools/build-launcher.ps1` and `tests/launcher_startup.cs`.
 - **Existing Mac support / remaining adaptation:** Native Mac startup does not
   use this WPF bootstrap or Windows shell/SmartScreen. Existing native scripts

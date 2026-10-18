@@ -2,7 +2,7 @@
 
 ## Launcher startup security recovery (2026-10-18)
 
-Implemented on `fix/launcher-startup-recovery`, based on main `e6c68bd` (launcher
+Implemented in `a9b79e7` on `fix/launcher-startup-recovery`, based on main `e6c68bd` (launcher
 1.2.13), independently of pending installer/version-picker branches. Initial
 checks used uncommitted source. Host: Windows x64, .NET Framework 4.8/WPF system
 C# compiler, Windows PowerShell 5.1 and Python 3.12.14. No game source, runtime
