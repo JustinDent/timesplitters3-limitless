@@ -153,7 +153,29 @@
           </StackPanel>
         </Grid>
         <Border x:Name="HeroBanner" CornerRadius="4" Visibility="Collapsed"
-                AutomationProperties.Name="TimeSplitters: Future Perfect — Cortez and the time portal"/>
+                AutomationProperties.Name="TimeSplitters: Future Perfect — complete original Cortez artwork">
+          <Grid ClipToBounds="True">
+            <Grid.Background><LinearGradientBrush StartPoint="0,0" EndPoint="1,0.5"><GradientStop Color="#102237"/><GradientStop Color="#203E58" Offset="0.65"/><GradientStop Color="#476177" Offset="1"/></LinearGradientBrush></Grid.Background>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="0.48*"/><ColumnDefinition Width="0.52*"/></Grid.ColumnDefinitions>
+            <Grid Grid.ColumnSpan="2" ClipToBounds="True" IsHitTestVisible="False">
+              <Ellipse Width="480" Height="480" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="150,0,0,0" Stroke="#678BA7" StrokeThickness="1" Opacity="0.22"/>
+              <Ellipse Width="420" Height="420" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="180,0,0,0" Stroke="#8EC7EF" StrokeThickness="2" StrokeDashArray="22 4 1 4" Opacity="0.18"/>
+              <Path Stroke="#91B2CE" StrokeThickness="1" Opacity="0.12" Data="M0,34 L850,34 M0,228 L850,228 M80,0 L80,264 M150,0 L150,264"/>
+            </Grid>
+            <Grid Margin="28,20">
+              <Image x:Name="HeroTitle" Stretch="Uniform" MaxWidth="345" Visibility="Collapsed"
+                     AutomationProperties.Name="TimeSplitters Future Perfect"/>
+              <StackPanel x:Name="HeroTitleFallback" VerticalAlignment="Center">
+                <TextBlock Text="TIMESPLITTERS" FontFamily="Bahnschrift" FontWeight="Bold" FontStyle="Italic" FontSize="29" Foreground="#E4EDF5"/>
+                <TextBlock Text="FUTURE PERFECT" FontFamily="Bahnschrift" FontSize="18" Foreground="#A7D9FA" Margin="0,7,0,0"/>
+              </StackPanel>
+            </Grid>
+            <Border Grid.Column="1" HorizontalAlignment="Right" BorderBrush="#7792A8" BorderThickness="1,0,0,0" Background="#122233">
+              <Image x:Name="HeroPhoto" Stretch="Uniform" HorizontalAlignment="Right" VerticalAlignment="Center"
+                     AutomationProperties.Name="Complete supplied artwork, including Cortez, both weapons and his boot"/>
+            </Border>
+          </Grid>
+        </Border>
         </Grid>
       </Border>
       <Grid Grid.Row="4">

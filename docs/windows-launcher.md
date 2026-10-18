@@ -47,8 +47,9 @@ no extra runtime image file or download is required. If the private image is
 absent, the build retains the blue/silver vector header. Generated source
 artwork and its provenance stay ignored under `private/launcher-art`.
 The current private banner is the supplied 1600 x 1200 Future Perfect key art,
-embedded unchanged. The banner fills the header with top alignment to keep
-Cortez's face and both weapons visible. Its source hash and the previous
+embedded unchanged. The full photo fits proportionally inside the right side
+of the header, with no cropping or redraw. The original game wordmark and a
+blue/silver panel fill the remaining width. Its source hash and the previous
 generated banner's recovery copy are recorded in `banner-provenance.json`.
 
 The optional `private/launcher-art/timesplitters-future-perfect-logo.png`

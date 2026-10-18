@@ -171,6 +171,9 @@ namespace TimeSplitters.Launcher
                     var bitmap = BitmapFrame.Create(logo, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
                     bitmap.Freeze();
                     Find<Image>("SidebarLogo").Source = bitmap;
+                    Find<Image>("HeroTitle").Source = bitmap;
+                    Find<Image>("HeroTitle").Visibility = Visibility.Visible;
+                    Find<StackPanel>("HeroTitleFallback").Visibility = Visibility.Collapsed;
                     // Display the original subtitle lettering at a readable sidebar size.
                     // Coordinates refer to the unchanged 500x187 source lockup.
                     var subtitle = new CroppedBitmap(bitmap, new Int32Rect(263, 150, 228, 22));
@@ -187,8 +190,9 @@ namespace TimeSplitters.Launcher
                     var bitmap = BitmapFrame.Create(banner, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
                     bitmap.Freeze();
                     var hero = Find<Border>("HeroBanner");
-                    hero.Background = new ImageBrush(bitmap) { Stretch = Stretch.UniformToFill,
-                        AlignmentX = AlignmentX.Center, AlignmentY = AlignmentY.Top };
+                    // Keep the complete supplied photograph. The surrounding WPF
+                    // composition fills the wide header without cropping or redrawing it.
+                    Find<Image>("HeroPhoto").Source = bitmap;
                     hero.Visibility = Visibility.Visible;
                     Find<Grid>("HeroFallback").Visibility = Visibility.Collapsed;
                 }

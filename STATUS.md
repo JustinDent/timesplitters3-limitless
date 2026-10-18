@@ -1,5 +1,31 @@
 # Measured progress
 
+## Complete original launcher banner artwork (2026-10-18)
+
+Follow-up on `feature/launcher-game-versions` in [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+The shallow header previously filled its width by cropping the supplied 4:3
+artwork, hiding most of Cortez's lower half. It now fits the complete original
+image on the right, with the original title wordmark and a blue/silver temporal
+panel filling the remaining width. The image is neither regenerated nor edited.
+The vector fallback remains available when private artwork is absent.
+
+The Windows x64/.NET Framework build with required artwork and all 198 existing
+launcher regressions passed. Home was rendered and visually inspected at
+1152×772 and 1000×720. Geometry inspection confirmed the full image fits inside
+a 349×262 display frame at both sizes (within one pixel of proportional sizing
+due to WPF layout rounding), with all edges inside the header. The launcher
+embeds the original PNG byte-for-byte with SHA-256
+`f318dac55d35da823386570c11f5cff9654e8b42963766eee54bc8a8dcd6e764`;
+the sidebar/header wordmark bytes are also unchanged. No image generation,
+game execution or personal-file changes were needed. The private preview Page
+was updated for mobile viewing; display on a physical phone remains unverified.
+
+Source: `tools/launcher/Launcher.xaml` and `Launcher.cs`. Artwork/provenance
+remain ignored under `private/launcher-art`; renders and layout checks are in
+ignored `build/launcher-validation`. [MAC-036](MAC_PORT_BACKLOG.md#mac-036--published-game-version-picker-and-banner-replacement)
+records the full-image layout requirement for a future Mac launcher. This is
+an unpublished source change; launcher version remains 1.2.12 during development.
+
 ## Launcher game version picker and supplied banner (2026-10-17)
 
 Implemented in feature commit `04eaf1c` on `feature/launcher-game-versions`,

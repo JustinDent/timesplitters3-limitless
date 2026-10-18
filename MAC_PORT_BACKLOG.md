@@ -10,7 +10,9 @@
   Retry stays pinned to the chosen release. Saves, existing settings, imported
   game data, the ISO and the independent launcher are preserved. Normal channel
   updates remain newer-only. The local private banner uses supplied 1600 x 1200
-  key art unchanged, top-aligned inside the header; original assets remain ignored.
+  key art unchanged, fully fitted on the right of the header. The original game
+  wordmark and a blue/silver panel fill the remaining width without cropping or
+  redrawing the photo; original assets remain ignored.
 - **Source:** [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126),
   feature commit `04eaf1c` on `feature/launcher-game-versions`;
   `tools/launcher/GameVersionsPage.cs`, `ReleaseClient.cs`, `Launcher.cs`,
@@ -28,8 +30,12 @@
   missing and unversioned installs; cancellation/resume/retry, request limits,
   corrupt ZIPs and interrupted install recovery. Keep the launcher, settings,
   saves, ISO and data unchanged; block running-game installs; verify normal
-  update channels, keyboard navigation and minimum-size layout on Mac.
+  update channels, keyboard navigation and minimum-size layout on Mac. Fit the
+  entire supplied image proportionally beside the wordmark without cropping,
+  distortion or a generated redraw at minimum and normal window sizes.
 - **PC evidence:** [Version picker and banner checks](STATUS.md#launcher-game-version-picker-and-supplied-banner-2026-10-17).
+  [Full artwork layout](STATUS.md#complete-original-launcher-banner-artwork-2026-10-18)
+  supersedes the initial cropped banner viewport.
 
 ### MAC-035 — Cinematic width fill (issue #30 investigation)
 
