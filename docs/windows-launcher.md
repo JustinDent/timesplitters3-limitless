@@ -490,14 +490,21 @@ exact version, looking up an older release directly when it is outside the lates
 100 records. Unavailable or unpublished versions are not replaced with another
 version's notes. Release dates and titles appear when published.
 
-Headings, bullets and code blocks are displayed as native text. Images are omitted;
-HTML, scripts, embedded XAML and automatic link navigation are not executed.
+Game versions and What's new share a selectable native Markdown view. Headings,
+bold/italic and struck-out text, ordered/unordered lists, quotes, inline code and
+fenced code blocks are formatted in the blue/silver theme. Markdown links show
+their label (for example, `#106`), and bare HTTP/HTTPS URLs are clickable. Links
+open in the default browser only when activated; their destination is available
+as a tooltip. Copying selected text remains available. This is a compact Markdown
+subset: advanced GitHub extensions and raw HTML are displayed as text rather
+than rendered as web content. Images are omitted, and scripts/embedded XAML are
+never interpreted. File, script and other non-HTTP(S) links are not navigable.
 Descriptions are limited to 64,000 characters / 512 lines, with an explicit link
 to read the complete release if shortened. **View release on GitHub** opens the
 selected release only when clicked. **Known issues** displays a published heading
 such as `## Known issues` or `## Known limitations`; if none exists, the page says
 so rather than claiming there are no issues. Other sections remain in the change
-notes. Open GitHub for the original Markdown formatting and linked information.
+notes. Open GitHub for the complete original release and unsupported formatting.
 
 **Refresh notes** has a 25-second cancellation deadline. A failed refresh retains
 previously loaded notes for the same version/channel for this session and marks

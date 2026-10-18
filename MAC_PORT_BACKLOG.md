@@ -1,5 +1,26 @@
 # PC features awaiting Mac adaptation
 
+### MAC-042 — Formatted release notes and browser links
+
+- **Status:** Queued
+- **PC behavior:** Game versions and What's new use the same selectable native
+  Markdown view for headings, emphasis, lists, quotes, code and labeled links.
+  HTTP(S) links open through the existing launcher browser action only after
+  activation; images/HTML/XAML are inert, other URI schemes are not navigable,
+  and existing note limits/known-issue separation remain in force.
+- **Source:** `fef30c9` on `fix/launcher-markdown-notes`,
+  `tools/launcher/ReleaseNotesMarkdown.cs`, `GameVersionsPage.cs`,
+  `WhatsNewPage.cs`, `Launcher.cs`, `tools/build-launcher.ps1`,
+  `tests/launcher_news.cs` and `tests/launcher_versions.cs`.
+- **Mac support:** No native release-notes page exists yet; Windows WPF types
+  are not compiled into native Mac builds. Existing Mac launch/build paths are unchanged.
+- **Remaining:** Reuse these display rules in the future native release center
+  and version picker, with a native selectable renderer and explicit safe-link action.
+- **Acceptance:** Check original published notes, labeled PR links, selection/copy,
+  browser activation and failures, inert images/markup/other URI schemes,
+  bounded long notes and scrolling. Windows rendering does not verify Mac UI.
+  See [Windows evidence](STATUS.md#formatted-launcher-release-notes-2026-10-18).
+
 ### MAC-040 — Dedicated game icon
 
 - **Status:** Queued

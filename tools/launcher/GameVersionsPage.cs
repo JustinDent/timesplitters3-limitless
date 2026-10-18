@@ -14,14 +14,14 @@ namespace TimeSplitters.Launcher
         public readonly ComboBox Versions = new ComboBox { MinWidth=240 };
         public readonly Button Install, Older, Refresh, OnGitHub;
         readonly TextBlock current, details, status;
-        readonly TextBox notes;
+        readonly ReleaseNotesMarkdown notes;
         readonly Dictionary<string,Release> releases = new Dictionary<string,Release>(StringComparer.Ordinal);
         string installed = "";
         bool blocked, loading, more, running;
         public Release Selected { get { var item=Versions.SelectedItem as ComboBoxItem;return item==null?null:item.Tag as Release; } }
         public string StatusText { get { return status.Text; } }
         public int Count { get { return releases.Count; } }
-        public GameVersionsPage()
+        public GameVersionsPage(Action<string> openLink=null)
         {
             View.Margin=new Thickness(30,24,30,20);View.Resources.MergedDictionaries.Add(PageTheme.Resources());
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});
@@ -38,7 +38,7 @@ namespace TimeSplitters.Launcher
             details=PageTheme.Text("Refresh to load stable and preview releases with verified Windows packages.",12,"#9EB4C8");details.Margin=new Thickness(0,0,0,14);header.Children.Add(details);View.Children.Add(header);
             var body=new Grid();body.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});body.RowDefinitions.Add(new RowDefinition());
             body.Children.Add(PageTheme.Text("RELEASE NOTES",10,"#9EB4C8"));
-            notes=new TextBox {IsReadOnly=true,TextWrapping=TextWrapping.Wrap,VerticalContentAlignment=VerticalAlignment.Top,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,Margin=new Thickness(0,12,0,0)};
+            notes=new ReleaseNotesMarkdown(openLink) {Margin=new Thickness(0,12,0,0)};
             AutomationProperties.SetName(notes,"Selected game release notes");Grid.SetRow(notes,1);body.Children.Add(notes);
             var card=PageTheme.Card(body);Grid.SetRow(card,1);View.Children.Add(card);
             var footer=new StackPanel {Margin=new Thickness(0,14,0,0)};Grid.SetRow(footer,2);View.Children.Add(footer);
@@ -81,11 +81,11 @@ namespace TimeSplitters.Launcher
             Install.IsEnabled=release!=null && !blocked && !loading && !running;OnGitHub.IsEnabled=release!=null;
             Install.Content=release!=null && release.Tag==installed?"Reinstall selected version":"Install selected version";
             Install.ToolTip=running?"Close the game before switching versions.":"Review and confirm the selected game version before downloading.";
-            if(release==null) {notes.Text="";return;}
+            if(release==null) {notes.SetMarkdown("");return;}
             DateTime date;string published=DateTime.TryParse(release.Published,CultureInfo.InvariantCulture,DateTimeStyles.RoundtripKind,out date)?date.ToUniversalTime().ToString("yyyy-MM-dd",CultureInfo.InvariantCulture):"Date unavailable";
             details.Text=release.Tag+"  ·  "+(release.IsPreview?"Preview":"Stable")+"  ·  "+published+"  ·  "+(release.Size/1048576.0).ToString("0.0",CultureInfo.InvariantCulture)+" MB";
             string text=String.IsNullOrWhiteSpace(release.Notes)?"No release notes were provided.":release.Notes;
-            notes.Text=ReleaseNotesText.Plain(text.Length>24000?text.Substring(0,24000)+"\n\nNotes shortened. View the release on GitHub for the full text.":text);
+            notes.SetMarkdown(text.Length>24000?text.Substring(0,24000)+"\n\nNotes shortened. View the release on GitHub for the full text.":text);
         }
     }
 }
