@@ -137,13 +137,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
-in `build/launcher`; for version 1.2.14, publish all three together:
+in `build/launcher`; for version 1.2.15, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.14-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.14-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.15-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.15-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.14`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.15`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -490,7 +490,7 @@ exact version, looking up an older release directly when it is outside the lates
 100 records. Unavailable or unpublished versions are not replaced with another
 version's notes. Release dates and titles appear when published.
 
-Game versions and What's new share a selectable native Markdown view. Headings,
+Launcher v1.2.15 gives Game versions and What's new a shared selectable native Markdown view. Headings,
 bold/italic and struck-out text, ordered/unordered lists, quotes, inline code and
 fenced code blocks are formatted in the blue/silver theme. Markdown links show
 their label (for example, `#106`), and bare HTTP/HTTPS URLs are clickable. Links
