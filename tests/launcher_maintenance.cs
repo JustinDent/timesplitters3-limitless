@@ -124,8 +124,17 @@ public static class LauncherMaintenanceChecks
                     Require(uri.Scheme=="https" && uri.Host=="github.com" && uri.AbsolutePath=="/"+ReleaseClient.Repository+"/issues/new");
                     var query=uri.Query.TrimStart('?').Split('&').Select(p=>p.Split(new[]{'='},2)).ToDictionary(p=>p[0],p=>Uri.UnescapeDataString(p[1]));
                     Require(query["template"]==(enhancement?"02-enhancement.yml":"01-bug-report.yml"));
-                    Require(query[DiagnosticIssueDraft.DiagnosticsField]==report && draft.ClipboardText==report && !draft.RequiresPaste);
+                    if(enhancement)Require(query.Count==1 && draft.ClipboardText=="" && !draft.RequiresPaste,
+                        "Improvement drafts must not include diagnostics or require clipboard paste.");
+                    else Require(query[DiagnosticIssueDraft.DiagnosticsField]==report && draft.ClipboardText==report && !draft.RequiresPaste);
                     Require(!query.ContainsKey("labels") && !query.ContainsKey("assignees"),"Draft must not require label/assignment privileges.");
+                }
+            });
+            Test("improvement drafts need no diagnostic report even when none is available",()=> {
+                foreach(string report in new[]{null,"",new String('x',70000)}) {
+                    var draft=DiagnosticIssueDraft.Create(true,report);
+                    Require(draft.Url=="https://github.com/"+ReleaseClient.Repository+"/issues/new?template=02-enhancement.yml");
+                    Require(draft.ClipboardText=="" && !draft.RequiresPaste);
                 }
             });
             Test("long diagnostic drafts retain the complete report with a bounded paste fallback",()=> {

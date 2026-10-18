@@ -18,9 +18,12 @@ namespace TimeSplitters.Launcher
         }
         public static DiagnosticIssueDraft Create(bool enhancement,string report)
         {
+            if(enhancement)return new DiagnosticIssueDraft {
+                Url="https://github.com/"+ReleaseClient.Repository+"/issues/new?template=02-enhancement.yml",
+                ClipboardText="",RequiresPaste=false};
             Core.Require(!String.IsNullOrWhiteSpace(report),"Refresh diagnostics before preparing a GitHub report.");
             string prefix="https://github.com/"+ReleaseClient.Repository+"/issues/new?template="+
-                (enhancement?"02-enhancement.yml":"01-bug-report.yml")+"&"+DiagnosticsField+"=";
+                "01-bug-report.yml&"+DiagnosticsField+"=";
             string url=report.Length<=4096?prefix+Uri.EscapeDataString(report):"";
             bool paste=url.Length==0 || url.Length>MaximumUrlLength;
             if(paste) {

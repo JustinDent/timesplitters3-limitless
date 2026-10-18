@@ -13,7 +13,9 @@ body:
     attributes:
       label: Game version
       description: Shown as the installed game version in the launcher. Pick the one you have, not an available update.
+      default: 0
       options:
+        - ""
         # BEGIN AUTO GAME VERSIONS
         - "v0.3.0-alpha.1"
         - "v0.2.0-alpha.6"
@@ -33,7 +35,9 @@ body:
     attributes:
       label: Launcher version
       description: Look for LAUNCHER v... at the top of the launcher window.
+      default: 0
       options:
+        - ""
         # BEGIN AUTO LAUNCHER VERSIONS
         - "v1.2.12"
         - "v1.2.11"
@@ -61,7 +65,9 @@ body:
     id: platform
     attributes:
       label: Platform
+      default: 0
       options:
+        - ""
         - Windows 11
         - Windows 10
         - macOS

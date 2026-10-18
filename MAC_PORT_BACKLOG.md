@@ -1,5 +1,23 @@
 # PC features awaiting Mac adaptation
 
+### MAC-034 — Plain improvement form handoff
+
+- **Status:** Not applicable
+- **PC behavior:** Request enhancement opens the idea-only GitHub form without
+  copying or sending diagnostics, including when no report has been refreshed.
+  Bug reports retain their optional diagnostic handoff. Bug version/platform
+  dropdowns start empty and require a selection.
+- **Source:** `fix/issue-form-empty-selections`;
+  `.github/ISSUE_TEMPLATE`, `tools/launcher/DiagnosticIssueDraft.cs`,
+  `tools/launcher/Launcher.cs`, and their reporting regression checks.
+- **Shared Mac support:** The GitHub forms apply to browser users on every OS.
+  The changed WPF launcher is Windows-only; there is no native Mac counterpart
+  to adapt. No native game code or Mac settings/saves are changed.
+- **Remaining:** No Mac implementation work. Native Mac execution is not claimed.
+- **Acceptance:** The improvement form has only its required idea field; the
+  launcher opens it without diagnostic query parameters or clipboard writes.
+  Bug forms retain automatic version updates and start with blank selections.
+
 ### MAC-033 — Full-display transition fades
 
 - **Status:** Awaiting validation
