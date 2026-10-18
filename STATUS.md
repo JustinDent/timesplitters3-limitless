@@ -23,6 +23,12 @@ scope suites passed another 37 cases. The slider regression exercises both
 painter layouts at 640x480, 1920x1080, 3440x1440 and 1280x1024, endpoint clamping,
 capture ownership, preview calls and cancellation cases. `git diff --check` passed.
 
+PR #146 CI exposed two missing audio-preview symbols in the isolated Windows
+FOV/settings fixture, which also compiles the menu translation unit. Added
+fail-fast stubs for those out-of-scope callbacks; the production audio paths
+remain exercised by `menu_mouse.c`. All six FOV/settings, menu-mouse and display
+mode cases passed locally after this fixture correction.
+
 Bounded real-game sessions used disposable Test Lab saves and isolated controls,
 display and runtime configuration. Before the change, dragging the Music bar
 left its value at 11. After rebuilding, GUI dragging set Music to 4 and clicking
