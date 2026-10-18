@@ -59,6 +59,10 @@ reproducibility, and validation requirements.
   host checks, and report unavailable checks. Preserve existing settings and
   supported defaults. Deferring a new feature does not authorize regressions in
   existing Mac functionality.
+- Every PR description must explain the problem or root cause and how the
+  change fixes it, in plain language. Include the resulting behavior, relevant
+  validation and known limits. Keep this explanation current when updating
+  a PR; do not substitute a list of changed files for how the fix works.
 - Use `.github/pull_request_template.md` to record PC results and link the Mac
   backlog entries. These instructions and the review checklist require agents
   to maintain the list; they are not an automated feature detector or CI gate.

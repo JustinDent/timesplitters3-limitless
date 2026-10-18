@@ -1,0 +1,444 @@
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -117,6 +117,9 @@
+ /* The device's own depth buffer as a surface object, so SetRenderTarget can
+  * name it: a NULL depth surface means no depth, as in D3D8. */
+ static D3D8Surface *g_auto_ds = NULL;
++static IDirect3DTexture8 *g_feedback_copy;
++static void prepare_feedback(void);
++
+ 
+ /* Palettized texture palettes (256 ARGB entries per stage) */
+ #define D3D8_PALETTE_ENTRIES 256
+@@ -216,21 +219,28 @@
+  * scissor rectangle -- the two pieces of state a title hands us measured
+  * in pixels rather than normalised.
+  *
+- * Only the scene target is scaled today. A title's own offscreen target is
+- * still created at the size it asked for, so anything bound there keeps a
+- * factor of one; that is what lets render-target scaling be a later step
+- * rather than a precondition. */
++ * Full-frame colour targets sharing scene depth can have a larger host
++ * image than their logical size. Viewports and scissors must scale with it,
++ * just as they do on the scene target. */
+ static float rt_scale_x(void)
+ {
+-    if (g_cur_rt || !g_device_state.present_width)
+-        return 1.0f;
++    if (g_cur_rt) {
++        RhiImageDesc desc;
++        rhi_image_get_desc(g_cur_rt->image, &desc);
++        return (float)(desc.width >> (g_cur_rt->subresource % desc.mip_levels)) / g_cur_rt->width;
++    }
++    if (!g_device_state.present_width) return 1.0f;
+     return (float)g_device_state.width / (float)g_device_state.present_width;
+ }
+ 
+ static float rt_scale_y(void)
+ {
+-    if (g_cur_rt || !g_device_state.present_height)
+-        return 1.0f;
++    if (g_cur_rt) {
++        RhiImageDesc desc;
++        rhi_image_get_desc(g_cur_rt->image, &desc);
++        return (float)(desc.height >> (g_cur_rt->subresource % desc.mip_levels)) / g_cur_rt->height;
++    }
++    if (!g_device_state.present_height) return 1.0f;
+     return (float)g_device_state.height / (float)g_device_state.present_height;
+ }
+ 
+@@ -698,6 +708,10 @@
+ #endif
+         d3d8_overlay_shutdown();
+         d3d8_movie_shutdown();
++        if (g_feedback_copy) {
++            g_feedback_copy->lpVtbl->Release(g_feedback_copy);
++            g_feedback_copy = NULL;
++        }
+         xbox_D3D8ScreenCopyShutdown();
+         d3d8_display_shutdown();
+         d3d8_vsh_shutdown();
+@@ -862,8 +876,8 @@
+             rhi_clear_color(rtv, clear_color);
+         } else {
+ #ifdef TSFP_PC_DISPLAY
+-            unsigned width=g_cur_rt ? g_cur_rt->width : g_device_state.width;
+-            unsigned height=g_cur_rt ? g_cur_rt->height : g_device_state.height;
++            unsigned width=g_cur_rt ? (unsigned)(g_cur_rt->width * rt_scale_x()) : g_device_state.width;
++            unsigned height=g_cur_rt ? (unsigned)(g_cur_rt->height * rt_scale_y()) : g_device_state.height;
+             if(!pc_clear_masked(rtv,width,height,clear_color,
+                                 (Flags & D3DCLEAR_CHANNEL_MASK)>>4))return E_FAIL;
+ #endif
+@@ -950,13 +964,13 @@
+ 
+     /* Bind SRV to pixel shader */
+     if (pTexture) {
+-        RhiView *srv = d3d8_base_srv(pTexture);
++        RhiView *srv = (g_cur_rt && d3d8_base_resource(pTexture) == g_cur_rt->image)
++                       ? NULL : d3d8_base_srv(pTexture);
+         /* P8 textures bake a palette; record which stage palette they use
+          * so SetPalette can re-bake them later. */
+         if (d3d8_format_is_palettized(d3d8_base_format(pTexture)))
+             d3d8_base_set_palette(pTexture, Stage);
+-        if (srv)
+-            rhi_set_textures(Stage, 1, &srv);
++        rhi_set_textures(Stage, 1, &srv);
+         /* Mark texture stage as active */
+         if (g_device_state.tss[Stage][D3DTSS_COLOROP] == D3DTOP_DISABLE)
+             g_device_state.tss[Stage][D3DTSS_COLOROP] = D3DTOP_MODULATE;
+@@ -1246,6 +1260,7 @@
+     if (vertex_count == 0) return E_INVALIDARG;
+ 
+     /* Prepare pipeline: shaders, input layout, constant buffers, render states */
++    prepare_feedback();
+     d3d8_shaders_prepare_draw(g_device_state.vertex_shader);  /* VS, then the combiner PS or the fixed-function one */
+     d3d8_states_apply();
+ 
+@@ -1266,6 +1281,7 @@
+     if (index_count == 0) return E_INVALIDARG;
+ 
+     /* Vertex shader: try programmable VS first, fall back to FVF fixed-function */
++    prepare_feedback();
+     d3d8_shaders_prepare_draw(g_device_state.vertex_shader);  /* VS, then the combiner PS or the fixed-function one */
+     d3d8_states_apply();
+ 
+@@ -1337,6 +1353,7 @@
+     rhi_set_vertex_buffer(0, g_up_vertex_ring.buffer, VertexStreamZeroStride, ring_offset);
+ 
+     /* Vertex shader: try programmable VS first, fall back to FVF fixed-function */
++    prepare_feedback();
+     d3d8_shaders_prepare_draw(g_device_state.vertex_shader);  /* VS, then the combiner PS or the fixed-function one */
+ 
+     /* Where a screen-space draw goes in widescreen: squeezed to 4:3 with
+@@ -1391,6 +1408,7 @@
+     rhi_set_index_buffer(g_up_index_ring.buffer, idx_bytes * 8, ib_offset);
+ 
+     /* Vertex shader: try programmable VS first, fall back to FVF fixed-function */
++    prepare_feedback();
+     d3d8_shaders_prepare_draw(g_device_state.vertex_shader);  /* VS, then the combiner PS or the fixed-function one */
+ 
+     /* Where a screen-space draw goes in widescreen: squeezed to 4:3 with
+@@ -1606,6 +1624,13 @@
+     RhiView *dsv = NULL;
+     D3D8Surface *rt = (D3D8Surface *)pRenderTarget;
+     D3D8Surface *ds = (D3D8Surface *)pZStencilSurface;
++    UINT target_width = g_device_state.width, target_height = g_device_state.height;
++    if (rt) {
++        RhiImageDesc desc;
++        rhi_image_get_desc(rt->image, &desc);
++        target_width = desc.width >> (rt->subresource % desc.mip_levels);
++        target_height = desc.height >> (rt->subresource % desc.mip_levels);
++    }
+ 
+     /* Refused before anything changes, so a bad call leaves the old targets
+      * bound on both sides. NULL is the back buffer (not D3D8, which refuses
+@@ -1630,12 +1655,11 @@
+     }
+     /* D3D11 ignores a binding whose depth is not the target's size, which
+      * would leave draws going to the previous target. */
+-    if (ds && (ds->width  != (rt ? rt->width  : g_device_state.width) ||
+-               ds->height != (rt ? rt->height : g_device_state.height))) {
++    if (ds && (ds->width  != target_width ||
++               ds->height != target_height)) {
+         fprintf(stderr, "D3D8: SetRenderTarget with depth %ux%u for a %ux%u target\n",
+                 ds->width, ds->height,
+-                rt ? rt->width : g_device_state.width,
+-                rt ? rt->height : g_device_state.height);
++                target_width, target_height);
+         return E_INVALIDARG;
+     }
+     if (rt) IDirect3DSurface8_AddRef(pRenderTarget);
+@@ -1650,6 +1674,46 @@
+     rhi_set_render_target(rtv, dsv);
+     rebind_stage_srvs(rt ? rt->image : NULL);
+     return S_OK;
++}
++
++/* Xbox permits reading the colour buffer while rendering into it. Host APIs
++ * forbid that alias: sample a snapshot taken immediately before this draw.
++ * All stages use the same snapshot, including multi-tap blur draws. */
++static void prepare_feedback(void)
++{
++    UINT stage, mask = 0, w, h;
++    D3DFORMAT fmt;
++    RhiView *source = NULL, *sample = NULL;
++    if (!g_cur_rt) return;
++    for (stage = 0; stage < MAX_TEXTURE_STAGES; ++stage) {
++        IDirect3DBaseTexture8 *t = g_cur_textures[stage];
++        if (t && d3d8_base_resource(t) == g_cur_rt->image &&
++            d3d8_base_size(t, &w, &h)) {
++            mask |= 1u << stage;
++            source = d3d8_base_srv(t);
++            fmt = d3d8_base_format(t);
++        }
++    }
++    if (!mask) return;
++    if (g_feedback_copy) {
++        D3D8Texture *copy = (D3D8Texture *)g_feedback_copy;
++        if (copy->width != w || copy->height != h || copy->d3d8_format != fmt) {
++            /* Unbind before releasing a snapshot still used by another stage. */
++            rebind_stage_srvs(g_cur_rt->image);
++            g_feedback_copy->lpVtbl->Release(g_feedback_copy);
++            g_feedback_copy = NULL;
++        }
++    }
++    if (!g_feedback_copy)
++        dev_CreateTexture(&g_device, w, h, 1, D3DUSAGE_RENDERTARGET, fmt,
++                          D3DPOOL_DEFAULT, &g_feedback_copy);
++    if (g_feedback_copy) {
++        rebind_stage_srvs(g_cur_rt->image);
++        if (SUCCEEDED(d3d8_CopyTextureView(g_feedback_copy, source)))
++            sample = d3d8_base_srv((IDirect3DBaseTexture8 *)g_feedback_copy);
++    }
++    for (stage = 0; stage < MAX_TEXTURE_STAGES; ++stage)
++        if (mask & (1u << stage)) rhi_set_textures(stage, 1, &sample);
+ }
+ 
+ static HRESULT __stdcall dev_GetRenderTarget(IDirect3DDevice8 *self, IDirect3DSurface8 **ppRenderTarget)
+--- a/src/d3d/d3d8_internal.h
++++ b/src/d3d/d3d8_internal.h
+@@ -329,6 +329,7 @@
+ /* Fetch the sampled view of any bound base texture (2D, cube or
+  * volume). All three implementations keep it at the same offset as
+  * D3D8Texture, and the image likewise. */
++HRESULT d3d8_CopyTextureView(IDirect3DTexture8 *dst, RhiView *source);
+ RhiView  *d3d8_base_srv(IDirect3DBaseTexture8 *texture);
+ RhiImage *d3d8_base_resource(IDirect3DBaseTexture8 *texture);
+ 
+--- a/src/d3d/d3d8_resources.c
++++ b/src/d3d/d3d8_resources.c
+@@ -1747,6 +1747,45 @@
+     return TRUE;
+ }
+ 
++/* A full-frame offscreen pass can share the title's automatic depth buffer.
++ * Keep its logical texture coordinates, but give its host colour image the
++ * depth buffer's physical dimensions. This preserves depth/stencil exactly
++ * at widescreen resolutions and with supersampling, without a depth copy. */
++HRESULT xbox_D3D8PrepareSharedDepthTarget(IDirect3DTexture8 *texture,
++                                         IDirect3DSurface8 *depth)
++{
++    D3D8Texture *tex = (D3D8Texture *)texture;
++    D3D8Surface *ds = (D3D8Surface *)depth;
++    D3D8Texture replacement;
++    RhiImageDesc desc;
++    RhiViewDesc view;
++    if (!tex || !ds || tex->levels != 1 || !(tex->usage & D3DUSAGE_RENDERTARGET))
++        return E_INVALIDARG;
++    rhi_image_get_desc(tex->image, &desc);
++    if (desc.width == ds->width && desc.height == ds->height) return S_OK;
++    if (desc.samples != ds->sample_count) return E_INVALIDARG;
++    replacement = *tex;
++    desc.width = ds->width;
++    desc.height = ds->height;
++    replacement.image = rhi_image_create(&desc, NULL);
++    if (!replacement.image) return E_OUTOFMEMORY;
++    memset(&view, 0, sizeof view);
++    view.format = tex->host_format;
++    view.dim = RHI_VIEW_DIM_2D;
++    view.mip_count = 1;
++    replacement.srv = rhi_view_create(replacement.image, RHI_VIEW_SAMPLED, &view);
++    if (!replacement.srv || FAILED(d3d8_CopyTextureView(&replacement.iface, tex->srv))) {
++        rhi_view_destroy(replacement.srv);
++        rhi_image_destroy(replacement.image);
++        return E_FAIL;
++    }
++    rhi_view_destroy(tex->srv);
++    rhi_image_destroy(tex->image);
++    tex->image = replacement.image;
++    tex->srv = replacement.srv;
++    return S_OK;
++}
++
+ D3DFORMAT d3d8_base_format(IDirect3DBaseTexture8 *texture)
+ {
+     if (!texture) return D3DFMT_UNKNOWN;
+--- a/src/d3d/d3d8_screencopy.c
++++ b/src/d3d/d3d8_screencopy.c
+@@ -189,20 +189,28 @@
+  * texture. With src: that rectangle of the frame, in the title's own
+  * pixels, to the same size at `at` in the texture -- CopyRects does not
+  * scale. */
+-static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at);
++static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at, RhiView *source);
+ 
+ HRESULT xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst)
+ {
+-    return copy_to_texture(dst, NULL, NULL);
++    return copy_to_texture(dst, NULL, NULL, NULL);
+ }
+ 
+ HRESULT xbox_D3D8CopyBackBufferRectToTexture(IDirect3DTexture8 *dst, const RECT *src,
+                                              const POINT *at)
+ {
+-    return copy_to_texture(dst, src, at);
+-}
+-
+-static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at)
++    return copy_to_texture(dst, src, at, NULL);
++}
++
++/* Snapshot an offscreen colour image before a draw samples its own target.
++ * The copy pass restores output state; the caller prepares draw state next. */
++HRESULT d3d8_CopyTextureView(IDirect3DTexture8 *dst, RhiView *source)
++{
++    if (!source) return E_INVALIDARG;
++    return copy_to_texture(dst, NULL, NULL, source);
++}
++
++static HRESULT copy_to_texture(IDirect3DTexture8 *dst, const RECT *src, const POINT *at, RhiView *source)
+ {
+     D3D8Texture *tex = (D3D8Texture *)dst;
+     RhiImage *dst_image;
+@@ -214,13 +222,24 @@
+     float blend_factor[4] = { 1, 1, 1, 1 };
+     UINT back_w = d3d8_GetBackBufferWidth(), back_h = d3d8_GetBackBufferHeight();
+     void *mapped;
+-
++    RhiImageDesc destination;
++    UINT dst_w, dst_h;
++
++    if (source) {
++        RhiImageDesc desc;
++        rhi_image_get_desc(rhi_view_image(source), &desc);
++        back_w = desc.width;
++        back_h = desc.height;
++    }
+     if (!rhi_device_ready() || !tex || !tex->image || !back_w || !back_h)
+         return E_INVALIDARG;
+     if (!create())
+         return E_FAIL;
+ 
+     dst_image = tex->image;
++    rhi_image_get_desc(dst_image, &destination);
++    dst_w = destination.width;
++    dst_h = destination.height;
+     memset(&rtvd, 0, sizeof rtvd);
+     rtvd.format = tex->host_format;
+     rtvd.dim = RHI_VIEW_DIM_2D;
+@@ -234,13 +253,13 @@
+     }
+ 
+     rhi_output_save(&saved);
+-    probe_source(&saved, tex, back_w, back_h);
++    if (!source) probe_source(&saved, tex, back_w, back_h);
+ 
+     vp.x = vp.y = 0.0f;
+-    vp.width = (float)tex->width;
+-    vp.height = (float)tex->height;
+-    c.scale_x = tex->width ? (float)back_w / (float)tex->width : 1.0f;
+-    c.scale_y = tex->height ? (float)back_h / (float)tex->height : 1.0f;
++    vp.width = (float)dst_w;
++    vp.height = (float)dst_h;
++    c.scale_x = dst_w ? (float)back_w / (float)dst_w : 1.0f;
++    c.scale_y = dst_h ? (float)back_h / (float)dst_h : 1.0f;
+     c.off_x = c.off_y = 0.0f;
+     if (src) {
+         /* The rectangle is in the title's pixels and the frame may be
+@@ -263,12 +282,13 @@
+         if (ay < 0) { h += ay; ay = 0; }
+         if (ax + w > (LONG)tex->width)  w = (LONG)tex->width - ax;
+         if (ay + h > (LONG)tex->height) h = (LONG)tex->height - ay;
+-        vp.x = (float)ax;
+-        vp.y = (float)ay;
+-        vp.width = (float)w;
+-        vp.height = (float)h;
+-        c.scale_x = kx;
+-        c.scale_y = ky;
++        float dx = (float)dst_w / tex->width, dy = (float)dst_h / tex->height;
++        vp.x = (float)ax * dx;
++        vp.y = (float)ay * dy;
++        vp.width = (float)w * dx;
++        vp.height = (float)h * dy;
++        c.scale_x = kx / dx;
++        c.scale_y = ky / dy;
+         c.off_x = (float)src->left * kx - (float)ax * kx;
+         c.off_y = (float)src->top * ky - (float)ay * ky;
+     }
+@@ -288,7 +308,7 @@
+     /* Asked for every time: while frame interpolation draws an in-between
+      * frame, the scene is a second image (xbox_D3D8InterpBegin). */
+     g.back_srv = d3d8_GetSceneView();
+-    rhi_set_textures(9, 1, &g.back_srv);
++    { RhiView *view = source ? source : g.back_srv; rhi_set_textures(9, 1, &view); }
+     rhi_set_blend_state(g.blend, blend_factor, 0xFFFFFFFF);
+     rhi_set_depth_state(g.depth, 0);
+     rhi_set_raster_state(g.raster);
+@@ -305,7 +325,7 @@
+     g.copies++;
+     /* A draw sampling this is re-presenting the frame, and has to cover
+      * the whole of it; see d3d8_draw_escapes_squeeze. */
+-    tex->screen_copy = TRUE;
++    tex->screen_copy = source == NULL;
+     return S_OK;
+ }
+ 
+--- a/src/d3d/d3d8_xbox.h
++++ b/src/d3d/d3d8_xbox.h
+@@ -1262,6 +1262,10 @@
+    The host's own back buffer is the source, because the guest's is empty --
+    nothing renders on that side. Scales if the texture is not screen-sized.
+    The destination must be a render-target texture. */
++#ifdef _WIN32
++HRESULT xbox_D3D8PrepareSharedDepthTarget(IDirect3DTexture8 *texture,
++                                         IDirect3DSurface8 *depth);
++#endif
+ HRESULT       xbox_D3D8CopyBackBufferToTexture(IDirect3DTexture8 *dst);
+ /* The same for one of CopyRects' rectangles: `src` in the title's own
+    pixels, copied to the same size at `at` in the texture (NULL: its
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -4015,7 +4015,21 @@
+                     HLE_MEM32(zs + SURFACE_PARENT), zw, zh, zfmt);
+         g_z_scale = xbox_depth_z_scale(zfmt);
+         own = g_autodepth_va ? zs == g_autodepth_va : (zw == w && zh == h);
+-        depth = (kind == 0 && own && g_device_depth) ? g_device_depth : NULL;
++        /* The same guest depth surface stays the same image across colour
++         * targets. Full-frame textures are scaled by the host to share it. */
++        depth = (own && kind == 0) ? g_device_depth : NULL;
++        if (!depth && own && g_device_depth && kind == 1 && zw == w && zh == h) {
++#ifdef _WIN32
++            depth = g_device_depth;
++#else
++            /* Native GL does not yet promote colour targets to match a
++             * resized scene. Preserve its existing fallback when sizes differ. */
++            D3DSURFACE_DESC desc;
++            if (SUCCEEDED(g_device_depth->lpVtbl->GetDesc(g_device_depth, &desc)) &&
++                desc.Width == w && desc.Height == h)
++                depth = g_device_depth;
++#endif
++        }
+         /* A depth texture the title will sample: render into its host copy
+          * (RECOMP_HLE_D3D8_SHADOW_MAPS=0 for the old scratch depth). */
+         if (!depth && zw == w && zh == h && depth_texture_of(zs) && shadow_maps_on()) {
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -1619,6 +1619,12 @@
+     } else if (texture) {
+         IDirect3DTexture8 *t = (IDirect3DTexture8 *)texture;
+ 
++#ifdef _WIN32
++        if (depth && depth == g_device_depth && level == 0) {
++            hr = xbox_D3D8PrepareSharedDepthTarget(t, depth);
++            if (FAILED(hr)) return hr;
++        }
++#endif
+         hr = t->lpVtbl->GetSurfaceLevel(t, level, &surface);
+         if (FAILED(hr) || !surface)
+             return FAILED(hr) ? hr : E_FAIL;
+--- a/src/replay/d3d8_replay.c
++++ b/src/replay/d3d8_replay.c
+@@ -764,6 +764,13 @@
+         } else {
+             IDirect3DTexture8 *tex = (IDirect3DTexture8 *)slot->tex;
+ 
++#ifdef _WIN32
++            if (depth == r->device_depth && t->level == 0 &&
++                FAILED(xbox_D3D8PrepareSharedDepthTarget(tex, depth))) {
++                r->failed++;
++                return;
++            }
++#endif
+             if (FAILED(tex->lpVtbl->GetSurfaceLevel(tex, t->level, &surface)))
+                 surface = NULL;
+         }

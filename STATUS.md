@@ -1,5 +1,47 @@
 # Measured progress
 
+## Ghost Gun full-body rendering (issue #111, 2026-10-18)
+
+Implemented on `111-bug-ghosts-are-still-not-visible-with-ghost-gun`, based on
+`a44784b`, in the commit `Fix Ghost Gun humanoid rendering and target feedback`.
+Runtime pin and supported US XBE hash are unchanged. Host: Windows x64,
+MSVC 19.44, D3D11, NVIDIA RTX 4070 SUPER (driver 32.0.16.1742).
+Production executable SHA-256:
+`3b2eb5307fcd3341f35882d50f1a7428a363be78bb160dff28afcf0c00f84ee4`.
+
+The humanoid effect is the original US `sub_00121F50` path reached by
+`sub_001263A0`, not #17's floating-skull renderer. The normal model is intentionally
+hidden. Its replacement renders into a colour texture, filters/tints that image
+in place, and composites it into the scene. Two host errors prevented it:
+HLE substituted an unrelated depth buffer when changing colour targets, and
+D3D11 rejected a sampled image that was simultaneously the render target.
+
+The patch preserves the original automatic depth/stencil surface. Its full-frame
+colour target is promoted to the same physical dimensions while retaining
+logical texture coordinates; viewport/scissor and copy operations account for
+that scale. In-place 2D colour draws use one reusable snapshot refreshed before
+each draw, shared by all affected sampler stages. No ghost animation, AI,
+visibility flag, colour or shader is overridden. Temporary title diagnostic
+hooks have been removed. Native GL follow-up is tracked as MAC-036.
+
+An isolated Test Lab session in What Lies Below reproduced the actual humanoid
+model using mission template GHT2 and the real Ghost Gun pickup (item 34,
+equipped weapon 15). Test-only process-memory setup triggered the native spawn
+loop and held the actor in view; this was not a normal level playthrough.
+Live captures at 1280x720 and 3440x1440 show the red translucent body, and
+their complete draw captures replay with no failed host calls. The ultrawide
+run uses the clean production executable above, without title diagnostic hooks. This establishes the affected
+humanoid path, not every ghost encounter or Mansion's TV-room Deadwina.
+
+The supported Windows build runs a synthetic, asset-free GPU regression via
+`tests/ghost_targets.py`: 4:3, 16:9, ultrawide and 2x supersampling verify nearer
+geometry hides the effect, two successive feedback draws read fresh pixels,
+and offscreen depth writes survive returning to the scene. The normal build's
+existing checks also pass. All 34 selected patch tracking/transition, framebuffer,
+ghost-state and channel-clear tests pass (98.86 seconds); full-stack reapplication
+changes zero runtime files. Captures and logs are local and ignored under
+`build/issue-111-ghosts`; original game content is not committed.
+
 ## Cutscene width fill and FPS investigation (issue #30, 2026-10-17)
 
 Implemented on `30-cutscenes-playing-at-lower-fps`, based on `cef0778`.
