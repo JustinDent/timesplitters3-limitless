@@ -85,17 +85,20 @@ class VersionTests(unittest.TestCase):
             self.assertEqual(forms.refresh_versions(root, records), [])
             for relative in forms.FORMS:
                 text = (root / relative).read_text()
-                self.assertIn('- "v3.0.0"', text)
-                self.assertIn('- "v4.0.0"', text)
-                self.assertIn('Other / source build', text)
+                self.assertIn('- `v3.0.0`', text)
+                self.assertIn('- `v4.0.0`', text)
                 self.assertIn("I don't know", text)
                 self.assertIn('Anything else? (optional)', text)
                 for field in ('game-version', 'launcher-version', 'platform'):
                     section = text.split('    id: ' + field + '\n', 1)[1].split('\n  - type:', 1)[0]
-                    self.assertIn('      default: 0\n      options:\n        - ""\n', section)
+                    self.assertIn('  - type: input\n    id: ' + field + '\n', text)
+                    self.assertNotIn('default:', section)
+                    self.assertNotIn('value:', section)
+                    self.assertNotIn('options:', section)
                     self.assertIn('      required: true', section)
             forms.refresh_versions(root, [])
-            self.assertNotIn('- "v3.0.0"', (root / forms.FORMS[0]).read_text())
+            self.assertNotIn('- `v3.0.0`', (root / forms.FORMS[0]).read_text())
+            self.assertIn('No published releases.', (root / forms.FORMS[0]).read_text())
             self.assertIn('Not installed yet', (root / forms.FORMS[0]).read_text())
 
     def test_bad_launcher_block_does_not_partially_update_game_versions(self):
@@ -128,6 +131,15 @@ class VersionTests(unittest.TestCase):
 
 
 class LabelTests(unittest.TestCase):
+    def test_typed_platforms_accept_case_and_os_version_details(self):
+        for platform, label in [('windows 11 24H2', 'platform: windows'),
+                                ('WINDOWS 10', 'platform: windows'),
+                                ('win11', 'platform: windows'),
+                                ('macOS 15.5', 'platform: macos'),
+                                ('Mac OS', 'platform: macos')]:
+            with self.subTest(platform=platform):
+                self.assertEqual(forms.report_labels(report(platform)), {'bug', label})
+
     def test_platform_and_type_come_from_form_answers(self):
         for platform, label in [('Windows 10', 'platform: windows'),
                                 ('Windows 11', 'platform: windows'),

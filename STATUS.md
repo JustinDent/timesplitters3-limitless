@@ -1,5 +1,23 @@
 # Measured progress
 
+## Required bug report answers (2026-10-17)
+
+The blank dropdowns in PR #113 were visually empty but still counted as selected
+by GitHub; the earlier preview check did not verify submission enforcement.
+`fix/required-report-identities` replaces Game version, Launcher version and
+Platform with required text inputs without `value`, `default`, or `options`.
+GitHub's documented input validation requires an answer. Users explicitly type
+an installed version or an unavailable/unknown answer rather than inheriting a
+selection. Published game/launcher versions remain a collapsed reference that
+refreshes independently and cannot populate those inputs.
+
+On Windows x64 from main `093d2a0`, all 16 issue-form tests passed, including
+refresh preservation and typed-platform labeling with case/OS-version details.
+YAML validation checks the fields' required and empty state. No game/launcher
+code or personal data changes, issue submissions, or native Mac execution are
+involved. A GitHub preview establishes rendering only; no successful blocked
+submission is claimed from that preview.
+
 ## Issue form selections and enhancement handoff (2026-10-17)
 
 On Windows x64, from main base `4defe1e`, GitHub's branch previews accepted the

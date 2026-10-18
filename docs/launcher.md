@@ -86,12 +86,14 @@ Use the [bug report](https://github.com/TheDoffman/timesplitters-future-perfect-
 or [enhancement request](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)
 form. Search existing issues first and report one problem or suggestion at a time.
 
-For a bug report, the version and platform menus start blank and require a choice.
-Pick your **game version** from the installed version shown in the launcher,
-then pick your **launcher version** from **LAUNCHER v...** at the top of its
+For a bug report, the version and platform text fields start empty and require
+an answer. Copy your **game version** from the installed version shown in the launcher,
+then copy your **launcher version** from **LAUNCHER v...** at the top of its
 window. These can be different. If you cannot find either one, choose
-**I don't know**. Choose **Other** for an unlisted version and mention it with
-your report. The version choices refresh automatically as releases are published.
+**I don't know**. You can enter an older or custom build directly. Enter your
+operating system under **Platform**. The collapsed **Published versions** list
+is a reference that refreshes automatically as releases are published; it does
+not fill in an answer for you.
 
 Tell us what happened and how to make it happen again, or describe your idea.
 Screenshots and logs are optional; **View logs** in the

@@ -75,20 +75,22 @@ list, so game releases do not need the Latest badge. See GitHub's
 
 ### Issue-form versions and labels
 
-The **Issue forms** workflow refreshes the bug report's version choices from published GitHub
+The **Issue forms** workflow refreshes the bug report's reference lists from published GitHub
 releases after publication, editing, deletion or unpublishing. Game tags use
 `v...`; launcher tags use `launcher-v...`. Draft releases and unreleased source
 version bumps are not offered as installed versions. Both stable and preview
 releases are included, newest version first, with up to 30 versions of each
-and fallbacks for older/custom, unknown and uninstalled builds. No version is
-preselected: bug dropdowns have an empty first option outside the generated
-version blocks, explicitly selected with `default: 0`, and remain required.
-Release refreshes must preserve that blank selection. The improvement form
+in a collapsed Markdown reference. Game version, Launcher version and Platform
+are required text inputs without prefilled values. GitHub counts an empty
+dropdown option as a selection, so blank dropdown entries do not enforce an
+answer. Users can type older/custom, unknown or uninstalled values explicitly.
+Release refreshes must update only the reference lists and never prefill inputs.
+The improvement form
 asks only for the idea, has no version, platform or diagnostic questions, and is
 excluded from version refreshes.
 
 The workflow also refreshes on relevant pushes to `main` and can be run manually
-from Actions. It commits only the bug form's version choices to the default
+from Actions. It commits only the bug form's reference lists to the default
 branch with `contents: write`; it never force-pushes. If branch protection is
 added later, allow these updates or adapt this job to the required review flow.
 The current publisher uses the maintainer's GitHub CLI authentication. A future
