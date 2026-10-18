@@ -1,5 +1,34 @@
 # PC features awaiting Mac adaptation
 
+### MAC-035 — Cinematic width fill (issue #30 investigation)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Story and scripted cinematic mattes no longer become
+  vertical side bars on ultrawide displays. The camera crops the vertical
+  aperture proportionally and retains the authored horizontal lens. The
+  letterboxed `attract.xmv` fills the display width proportionally, excluding
+  its encoded side padding on wide displays. Startup logos follow the same
+  width-fill policy with proportional vertical cropping. Timing is unchanged.
+- **Source:** Branch `30-cutscenes-playing-at-lower-fps`;
+  `src/pc_cutscene.h`, `src/pc_display_menu.c`, `cinematic-movie-fill.patch`,
+  `cinematic-movie-inset.patch`,
+  and `tests/test_cutscene_letterbox.py` / `tests/cutscene_letterbox.c`.
+- **Shared Mac support:** In-engine camera/matte calculations use the existing
+  native display adapter. The movie rectangle helper is portable. Native XMV
+  playback remains unavailable; the existing Windows playback path selects
+  the known movies' presentation modes. This does not enable movies on Mac.
+- **Remaining:** Native build and visual validation for real-time scenes;
+  connect the same movie policy when native movie playback is implemented.
+  Windows measurements are recorded separately in `STATUS.md`.
+- **Acceptance:** At 4:3, 16:9, 16:10, 21:9 and 32:9, verify story openings,
+  endings and animated in-game cinematic transitions. Preserve proportions,
+  subtitles, fade coverage and gameplay FOV after the scene. At ultrawide,
+  verify the first mission's space backdrop still covers the view and no
+  vertical matte appears. Check the recorded reel and startup logos' proportional
+  width fill, movie skip, audio sync and unchanged guest clock. Source-only tests
+  cover aspect math and original US cinematic call paths; they do not prove
+  every scene's performance or native movie support.
+
 ### MAC-034 — Plain improvement form handoff
 
 - **Status:** Not applicable

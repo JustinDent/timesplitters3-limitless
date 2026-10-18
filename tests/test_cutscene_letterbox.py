@@ -22,11 +22,12 @@ def compile_and_run(tmp_path, source, fails=False):
     includes = RUNTIME / 'templates/runtime'
     if os.name == 'nt':
         command = [compiler, '/nologo', '/std:c11', '/O2', '/we4028', '/we4029', '/we4142',
-                   '/I' + str(includes), '/I' + str(ROOT / 'src'), str(fixture), '/Fe:' + str(exe),
+                   '/I' + str(includes), '/I' + str(ROOT / 'src'),
+                   '/I' + str(RUNTIME / 'src/d3d'), str(fixture), '/Fe:' + str(exe),
                    '/Fo:' + str(tmp_path / 'test.obj')]
     else:
         command = [compiler, '-std=gnu11', '-O2', '-I' + str(includes), '-I' + str(ROOT / 'src'),
-                   str(fixture), '-lm', '-o', str(exe)]
+                   '-I' + str(RUNTIME / 'src/d3d'), str(fixture), '-lm', '-o', str(exe)]
     result = subprocess.run(command, cwd=tmp_path, env=environment,
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
@@ -45,7 +46,7 @@ def fixture_source():
     return fixture.replace('/* PRODUCTION_WRAPPER */', wrapper.group()).replace('/* PRODUCTION_CAMERA */', camera)
 
 
-@pytest.mark.parametrize('mutation', ['none', 'bars', 'camera', 'menu-fov'])
+@pytest.mark.parametrize('mutation', ['none', 'bars', 'camera', 'menu-fov', 'movie-fit', 'movie-inset'])
 def test_cutscene_rectangle_filter(tmp_path, mutation):
     source = fixture_source()
     if mutation == 'bars':
@@ -57,6 +58,18 @@ def test_cutscene_rectangle_filter(tmp_path, mutation):
         guard = '(int32_t)WORD_AT(0x0079094Cu)>100 ||'
         assert guard in source
         source = source.replace(guard, '')
+    elif mutation == 'movie-fit':
+        header = (RUNTIME / 'src/d3d/d3d8_movie.h').read_text(encoding='utf-8')
+        signature = 'int fill_width, float *w, float *h)\n{'
+        assert signature in header
+        (tmp_path / 'd3d8_movie.h').write_text(
+            header.replace(signature, signature + '\n    fill_width = 0;'), encoding='utf-8')
+    elif mutation == 'movie-inset':
+        header = (RUNTIME / 'src/d3d/d3d8_movie.h').read_text(encoding='utf-8')
+        signature = 'float *x, float *y, float *w, float *h)\n{'
+        assert signature in header
+        (tmp_path / 'd3d8_movie.h').write_text(
+            header.replace(signature, signature + '\n    left = right = 0;'), encoding='utf-8')
     compile_and_run(tmp_path, source, fails=mutation != 'none')
 
 
