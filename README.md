@@ -196,9 +196,9 @@ the saved bot set. The host sees how many are waiting.
 
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
 or **[request an enhancement](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)**.
-For bugs, pick your versions and platform, then describe the problem. For an
+For bugs, enter your installed versions and platform, then describe the problem. For an
 improvement, just share your idea. Screenshots and logs
-are optional. Bug version choices stay up to date automatically; both forms
+are optional. Published version references stay up to date automatically; both forms
 receive labels automatically.
 [Find your build version and logs](docs/launcher.md#report-a-problem-or-request-an-improvement);
 keep personal saves and game data private.

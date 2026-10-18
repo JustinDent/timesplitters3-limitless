@@ -6,7 +6,8 @@
 - **PC behavior:** Request enhancement opens the idea-only GitHub form without
   copying or sending diagnostics, including when no report has been refreshed.
   Bug reports retain their optional diagnostic handoff. Bug version/platform
-  dropdowns start empty and require a selection.
+  fields are now empty required text inputs: GitHub accepts a blank dropdown
+  option as selected. Published versions remain an automatically updated reference.
 - **Source:** `fix/issue-form-empty-selections`;
   `.github/ISSUE_TEMPLATE`, `tools/launcher/DiagnosticIssueDraft.cs`,
   `tools/launcher/Launcher.cs`, and their reporting regression checks.
@@ -16,7 +17,8 @@
 - **Remaining:** No Mac implementation work. Native Mac execution is not claimed.
 - **Acceptance:** The improvement form has only its required idea field; the
   launcher opens it without diagnostic query parameters or clipboard writes.
-  Bug forms retain automatic version updates and start with blank selections.
+  Bug forms retain automatic version references without prefilling their required
+  answers. A blank-looking dropdown alone does not establish enforced validation.
 
 ### MAC-033 — Full-display transition fades
 

@@ -1,4 +1,4 @@
-"""Refresh issue-form release choices and label reports using their selected fields."""
+"""Refresh issue-form version references and label reports using their answers."""
 import argparse
 import json
 import os
@@ -83,7 +83,7 @@ def release_versions(releases):
         except ValueError:
             continue
         versions[kind].add(version)
-    # Older/custom builds always have their own fallback choice in the bug form.
+    # Keep the reference list short; users can enter older/custom builds directly.
     return {kind: sorted(values, key=lambda v: (version_key(v), v), reverse=True)[:30]
             for kind, values in versions.items()}
 
@@ -97,10 +97,12 @@ def refresh_versions(root, releases, check=False):
         updated = original
         for kind, values in versions.items():
             pattern = re.compile(
-                rf'(^        # BEGIN AUTO {kind} VERSIONS\n).*?'
-                rf'(^        # END AUTO {kind} VERSIONS$)', re.M | re.S)
-            options = ''.join('        - ' + json.dumps(v) + '\n' for v in values)
-            updated, count = pattern.subn(lambda m: m[1] + options + m[2], updated)
+                rf'(^        <!-- BEGIN AUTO {kind} VERSIONS -->\n).*?'
+                rf'(^        <!-- END AUTO {kind} VERSIONS -->$)', re.M | re.S)
+            reference = ''.join('        - `' + v + '`\n' for v in values)
+            if not reference:
+                reference = '        No published releases.\n'
+            updated, count = pattern.subn(lambda m: m[1] + reference + m[2], updated)
             if count != 1:
                 raise ValueError(f'Expected one {kind} version block in {relative}.')
         if updated != original:
@@ -121,10 +123,10 @@ def report_labels(body):
         desired = {'enhancement'}
     else:
         return None
-    platform = fields.get('Platform', '')
-    if platform in ('Windows 10', 'Windows 11'):
+    platform = fields.get('Platform', '').casefold()
+    if platform == 'windows' or platform.startswith('windows ') or platform in ('win10', 'win11'):
         desired.add('platform: windows')
-    elif platform == 'macOS':
+    elif platform.startswith(('macos', 'mac os')):
         desired.add('platform: macos')
     return desired
 
