@@ -458,7 +458,7 @@ namespace TimeSplitters.Launcher
                 ? GameVersion.Parse(currentLauncher).CompareTo(GameVersion.Parse(packagedLauncher)) : 0;
             // Equal versions can have different embedded artwork. Keep a verified
             // independent launcher, while allowing a broken equal version to repair.
-            bool keepLauncher = repair || (currentLauncher.Length > 0 && (packagedLauncher.Length == 0 ||
+            bool keepLauncher = repair || Json.Flag(release,"game_only") || (currentLauncher.Length > 0 && (packagedLauncher.Length == 0 ||
                 launcherOrder > 0 || (launcherOrder == 0 && SelfUpdate.Complete(root))));
             foreach (var pair in hashes)
             {

@@ -1,5 +1,94 @@
 # PC features awaiting Mac adaptation
 
+### MAC-040 — Dedicated game icon
+
+- **Status:** Queued
+- **PC behavior:** New Windows game executables embed a seven-size transparent
+  ICO. Large sizes use the official TSFP title in a blue/silver temporal frame,
+  with the original Future Perfect lettering enlarged on a separate line.
+  Small sizes use compact series-inspired serif TSFP initials, with the same monogram
+  available at every size without private art. The initials are centered and
+  scaled radially to stay inside the rings with clear space around their outline.
+  The launcher retains its TS
+  icon. SDL's Windows backend uses the executable's first icon for its window
+  class; game packages carry it inside the sealed runtime executable.
+- **Source:** Icon feature commit `c2db36b` and current-main integration
+  `272f930` in [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126);
+  `tools/launcher/IconBuilder.cs`, `GameMonogram.cs`, `GameMonogram.NOTICE.txt`,
+  `tools/build-game-icon.ps1`, `tsfp.ps1`,
+  `patches/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-game-icon.patch`,
+  `tools/publish-release.py` and `tests/test_game_icon.py`.
+- **Mac support:** Existing native build and runtime paths are unchanged. ICO
+  resources and RC compilation are Windows-only. No Mac app bundle/Dock icon
+  has been implemented or verified by this change.
+- **Remaining:** Adapt the mark to native macOS app-bundle icon assets and
+  distribution once native packaging exists. Preserve original wordmark art
+  and its provenance; use the compact initials where the wide title is unreadable.
+- **Acceptance:** Verify native app/Dock/Finder and window icons at Retina and
+  small sizes, transparent edges, bundle/update packaging and source-only fallback.
+  Windows resource tests do not prove native icon integration. See the
+  [Windows evidence](STATUS.md#windows-game-icon-for-pr-126-2026-10-18).
+
+### MAC-041 — Published game version picker and banner replacement
+
+- **Status:** Queued
+- **PC behavior:** Home's Updates card opens a Game versions page inside the
+  launcher with the sidebar visible. Paginated GitHub metadata lists compatible
+  stable and preview Windows packages. Explicit confirmation permits a downgrade
+  or reinstall through the checksum-verified resumable transactional updater.
+  Retry stays pinned to the chosen release. Saves, existing settings, imported
+  game data, the ISO and the independent launcher are preserved. Normal channel
+  updates remain newer-only. The local private banner uses supplied 1600 x 1200
+  key art unchanged, fully fitted on the right of the header. The original game
+  wordmark and a blue/silver panel fill the remaining width without cropping or
+  redrawing the photo; original assets remain ignored.
+- **Source:** [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126),
+  feature commit `04eaf1c` on `feature/launcher-game-versions`;
+  `tools/launcher/GameVersionsPage.cs`, `ReleaseClient.cs`, `Launcher.cs`,
+  `Core.cs`, `Bootstrap.cs`, `Launcher.xaml`; `tools/build-launcher.ps1`;
+  `tests/launcher_versions.cs` and `tests/launcher_updates.cs`.
+- **Mac support:** No Mac release-browser/transactional-updater adapter exists.
+  Native Mac launch/build scripts are unchanged. Private artwork is local and
+  its availability on another device is unverified.
+- **Remaining:** Add a native release picker once signed/verified Mac runtime
+  packages and an updater exist. Reuse version comparison, repository checks,
+  exact release selection and personal-data preservation rules. Adapt the banner
+  viewport if a corresponding Mac UI is added; retain local asset provenance.
+- **Acceptance:** Browse more than one API page including launcher-only pages;
+  filter drafts and incompatible/unverified packages; test older, equal, newer,
+  missing and unversioned installs; cancellation/resume/retry, request limits,
+  corrupt ZIPs and interrupted install recovery. Keep the launcher, settings,
+  saves, ISO and data unchanged; block running-game installs; verify normal
+  update channels, keyboard navigation and minimum-size layout on Mac. Fit the
+  entire supplied image proportionally beside the wordmark without cropping,
+  distortion or a generated redraw at minimum and normal window sizes.
+- **PC evidence:** [Version picker and banner checks](STATUS.md#launcher-game-version-picker-and-supplied-banner-2026-10-17).
+  [Full artwork layout](STATUS.md#complete-original-launcher-banner-artwork-2026-10-18)
+  supersedes the initial cropped banner viewport.
+
+### MAC-039 — Recoverable launcher startup security interruptions
+
+- **Status:** Not applicable — Windows bootstrap only.
+- **PC behavior:** A failed application handoff keeps startup open with Retry,
+  Open launcher folder and View logs. Win32 cancellation 1223 explains a possible
+  SmartScreen/security prompt without claiming the user clicked Cancel. Access
+  denied, missing files and other failures have distinct guidance. Retry opens
+  the installed application without downloading again; success or user close
+  exits normally. Native error codes are logged. Security settings and file
+  blocking are not changed automatically; binaries remain unsigned.
+- **Source:** Feature commit `a9b79e7` on `fix/launcher-startup-recovery`, based
+  on main `e6c68bd`. `tools/launcher/Bootstrap.cs`, `DownloadTransfer.cs`,
+  `tools/build-launcher.ps1` and `tests/launcher_startup.cs`.
+- **Existing Mac support / remaining adaptation:** Native Mac startup does not
+  use this WPF bootstrap or Windows shell/SmartScreen. Existing native scripts
+  and adapters are unchanged. A future native GUI should explain its own OS
+  launch errors; no Windows dialog or registry behavior should be copied.
+- **Acceptance:** Windows synthetic cancellation, access denial, missing files,
+  retry, close and folder/log failure tests pass with isolated fixtures. Verify
+  guidance/action layout and no personal-file changes. Actual SmartScreen prompt
+  visibility and other-device behavior require manual validation; Mac execution
+  is not claimed. See [startup recovery evidence](STATUS.md#launcher-startup-security-recovery-2026-10-18).
+
 ### MAC-037 — Fresh-install launch without PowerShell (issue #128)
 
 - **Status:** Not applicable — Windows launcher only.

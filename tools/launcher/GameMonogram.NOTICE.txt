@@ -1,0 +1,14 @@
+TSFP monogram letter shapes
+
+The outlined TSFP lettering in GameMonogram.cs was typeset with Future
+TimeSplitters by Chequered Ink, then exported as native vector geometry.
+
+Author's page: https://www.dafont.com/future-timesplitters.font
+Published author note: "Inspired by the excellent TimeSplitters series of games.
+Free for all use!"
+
+This is a fan-made, series-inspired typeface, not the official logo font.
+Only the typeset four-letter monogram is included as geometry. The original
+font file is kept with local provenance and is not bundled or needed to build.
+The complete game title and enlarged Future Perfect subtitle still use the
+original logo image supplied locally, rather than this typeface.

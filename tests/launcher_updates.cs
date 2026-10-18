@@ -136,7 +136,7 @@ static class LauncherTests
     { return Json.Encode(new { schema = 1, version = version, size = size, sha256 = hash, asset_name = "TimeSplitters-Launcher-v" + version + "-windows-x64.zip" }); }
     public static int Main(string[] args)
     {
-        if (args.Length == 2 && (args[0] == "--render-preview" || args[0] == "--render-settings-preview" || args[0] == "--render-settings-graphics" || args[0] == "--render-repair-preview" || args[0] == "--render-diagnostics-preview" || args[0] == "--render-news-preview"))
+        if (args.Length == 2 && (args[0] == "--render-preview" || args[0] == "--render-settings-preview" || args[0] == "--render-settings-graphics" || args[0] == "--render-repair-preview" || args[0] == "--render-diagnostics-preview" || args[0] == "--render-news-preview" || args[0] == "--render-versions-preview"))
         { File.WriteAllText(args[1],args[0]);return 17; } // Synthetic preview child, not a UI/game launch.
         if (args.Length == 0 && Path.GetFileNameWithoutExtension(typeof(LauncherTests).Assembly.Location)=="futureperfect_recomp")
             return LauncherSettingsChecks.LaunchProbe();
@@ -145,6 +145,8 @@ static class LauncherTests
         if (args.Length == 1 && args[0] == "--maintenance") return LauncherMaintenanceChecks.Run();
         if (args.Length == 1 && args[0] == "--downloads-live") return LauncherDownloadChecks.VerifyPublicDownload();
         if (args.Length == 1 && args[0] == "--downloads") return LauncherDownloadChecks.Run();
+        if (args.Length == 1 && args[0] == "--versions") return LauncherVersionChecks.Run();
+        if (args.Length == 1 && args[0] == "--startup") return LauncherStartupChecks.Run();
         if (args.Length == 1 && args[0] == "--news") return LauncherNewsChecks.Run();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();
         if (args.Length == 2 && args[0] == "--helper")
@@ -188,7 +190,7 @@ static class LauncherTests
             Test("bootstrap forwards application previews and preserves spaced output paths and child status", () => {
                 string root=Path.Combine(temp,"preview launcher root");Directory.CreateDirectory(Path.Combine(root,"Bin"));
                 File.Copy(typeof(LauncherTests).Assembly.Location,Path.Combine(root,Core.AppPath));
-                foreach(string flag in new[]{"--render-preview","--render-settings-preview","--render-settings-graphics","--render-repair-preview","--render-diagnostics-preview","--render-news-preview"}) {
+                foreach(string flag in new[]{"--render-preview","--render-settings-preview","--render-settings-graphics","--render-repair-preview","--render-diagnostics-preview","--render-news-preview","--render-versions-preview"}) {
                     string output=Path.Combine(root,flag.Substring(2)+" image.png");int result;
                     Assert(Bootstrap.TryForwardPreview(root,new[]{flag,output},out result));
                     Assert(result==17 && File.ReadAllText(output)==flag);
@@ -728,6 +730,22 @@ static class LauncherTests
             Core.InstallPending(root); Assert(Core.InstalledVersion(root) == "v1.1.0"); Assert(SelfUpdate.Complete(root));
             Core.Rollback(root); Assert(Core.InstalledVersion(root) == "v1.0.0");
             Assert(SelfUpdate.InstalledVersion(root) == "9.0.0" && SelfUpdate.Complete(root)); Personal(root);
+        });
+        Test("explicit game version switching downgrades or reinstalls while keeping the launcher and personal files", () => {
+            foreach(string from in new[]{"v2.0.0","v1.1.0"}) {
+                string root=NewRoot("specific-game-"+from);PutSelf(root,"1.2.12");
+                Put(root,"BUILD.json",Json.Encode(new {version=from}));
+                Put(root,"disc.iso","personal ISO");
+                string pending=Core.PathIn(root,".launcher/pending");Directory.CreateDirectory(pending);
+                Core.Unpack(Path.Combine(temp,"valid.zip"),Path.Combine(pending,"payload"),"v1.1.0");
+                string payload=Path.Combine(pending,"payload");PutSelf(payload,"99.0.0");
+                var files=Files().Keys.Concat(new[]{Core.AppPath,Core.SelfManifest}).ToDictionary(n=>n,n=>Core.Hash(Core.PathIn(payload,n)));
+                Put(payload,"BUILD.json",Json.Encode(new {version="v1.1.0",launcher_version="99.0.0",files=files}));
+                Put(pending,"release.json",Json.Encode(new {version="v1.1.0",game_only=true}));
+                Core.InstallPending(root);Assert(Core.InstalledVersion(root)=="v1.1.0" && SelfUpdate.InstalledVersion(root)=="1.2.12" && SelfUpdate.Complete(root));
+                Assert(File.ReadAllText(Core.PathIn(root,"Bin/futureperfect_recomp.exe"))=="new game");Personal(root);Assert(File.ReadAllText(Core.PathIn(root,"disc.iso"))=="personal ISO");
+                Core.Rollback(root);Assert(Core.InstalledVersion(root)==from && SelfUpdate.InstalledVersion(root)=="1.2.12" && SelfUpdate.Complete(root));Personal(root);
+            }
         });
         Test("equal-version game launcher preserves artwork and repairs damaged copies", () => {
             foreach (bool damaged in new[] { false, true }) {

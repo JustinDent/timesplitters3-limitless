@@ -76,7 +76,7 @@ namespace TimeSplitters.Launcher
         internal static bool TryForwardPreview(string root, string[] args, out int exitCode)
         {
             exitCode = 0;
-            if (args.Length != 2 || (args[0] != "--render-preview" && args[0] != "--render-settings-preview" && args[0] != "--render-settings-graphics" && args[0] != "--render-repair-preview" && args[0] != "--render-diagnostics-preview" && args[0] != "--render-news-preview")) return false;
+            if (args.Length != 2 || (args[0] != "--render-preview" && args[0] != "--render-settings-preview" && args[0] != "--render-settings-graphics" && args[0] != "--render-repair-preview" && args[0] != "--render-diagnostics-preview" && args[0] != "--render-news-preview" && args[0] != "--render-versions-preview")) return false;
             string application = Core.PathIn(root, Core.AppPath);
             Core.Require(File.Exists(application), "Launcher application files are missing. Extract the complete launcher ZIP into this folder and try again.");
             var info = new ProcessStartInfo(application, args[0] + " " + SelfUpdate.Quote(Path.GetFullPath(args[1]))) {
@@ -127,14 +127,18 @@ namespace TimeSplitters.Launcher
         public readonly Window Window;
         readonly string root;
         readonly bool skip;
+        readonly Action startApplication;
+        readonly Action<string> openDirectory;
         readonly CancellationTokenSource stop = new CancellationTokenSource();
-        bool finished, closeRequested, running;
+        bool finished, closeRequested, running, launchFailed;
         int attempt;
         TextBlock Status { get { return (TextBlock)Window.FindName("Status"); } }
         ProgressBar Progress { get { return (ProgressBar)Window.FindName("Progress"); } }
-        public StartupWindow(string path, bool skipCheck, bool preview)
+        public StartupWindow(string path, bool skipCheck, bool preview, Action launch = null, Action<string> openFolder = null)
         {
             root = path; skip = skipCheck;
+            startApplication = launch ?? (() => SelfUpdate.StartApplication(root, Process.GetCurrentProcess().Id));
+            openDirectory = openFolder ?? (directory => { Process.Start(new ProcessStartInfo(directory) {UseShellExecute=true}); });
             Window = (Window)XamlReader.Parse(@"<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                 xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='TimeSplitters — Starting'
                 Width='560' Height='310' ResizeMode='NoResize' WindowStartupLocation='CenterScreen'
@@ -163,7 +167,7 @@ namespace TimeSplitters.Launcher
                   <TextBlock x:Name='Status' Grid.Row='2' Text='Checking GitHub Releases.' FontSize='12' Foreground='#A4B8CA' TextWrapping='Wrap' Margin='0,7,0,15'/>
                   <ProgressBar x:Name='Progress' Grid.Row='3' Height='3' IsIndeterminate='True' Background='#30485F' Foreground='#86CDFF' BorderThickness='0'/>
                   <DockPanel Grid.Row='4' Margin='0,15,0,0' VerticalAlignment='Bottom' LastChildFill='False'>
-                    <StackPanel DockPanel.Dock='Left' Orientation='Horizontal'><Button x:Name='Retry' Content='Retry update' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Visibility='Collapsed' Padding='8,6' Margin='0,0,8,0'/><Button x:Name='Logs' Content='View logs' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Visibility='Collapsed' Padding='8,6'/></StackPanel>
+                    <StackPanel DockPanel.Dock='Left' Orientation='Horizontal'><Button x:Name='Retry' Content='Retry update' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Visibility='Collapsed' Padding='8,6' Margin='0,0,8,0'/><Button x:Name='Folder' Content='Open launcher folder' Visibility='Collapsed' Padding='8,6' Margin='0,0,8,0'/><Button x:Name='Logs' Content='View logs' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Visibility='Collapsed' Padding='8,6'/></StackPanel>
                     <TextBlock x:Name='Version' DockPanel.Dock='Left' Foreground='#8CA6BE' FontSize='10' VerticalAlignment='Center'/>
                     <Button x:Name='Continue' DockPanel.Dock='Right' Content='Open installed launcher' Background='#1B2C3E' Foreground='#E4EDF5' BorderBrush='#506C86' Padding='10,6' FontSize='11' Cursor='Hand'/>
                   </DockPanel>
@@ -174,17 +178,27 @@ namespace TimeSplitters.Launcher
                 Window.Icon = BitmapFrame.Create(icon, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
             var open = (Button)Window.FindName("Continue");
             open.IsEnabled = File.Exists(Core.PathIn(root, Core.AppPath));
-            if (preview) return;
             open.Click += (s, e) => { Status.Text="Opening your installed launcher…";if(running)stop.Cancel();else Finish(false); };
-            ((Button)Window.FindName("Retry")).Click+=async(s,e)=>await Start();
-            ((Button)Window.FindName("Logs")).Click+=(s,e)=> {try{Process.Start(new ProcessStartInfo(Core.PathIn(root,".launcher")){UseShellExecute=true});}catch(Exception ex){Status.Text=RecoveryInfo.From(ex,false).Message;}};
+            ((Button)Window.FindName("Retry")).Click+=async(s,e)=> {if(launchFailed)Finish(false);else await Start();};
+            ((Button)Window.FindName("Folder")).Click+=(s,e)=>OpenDirectory(root);
+            ((Button)Window.FindName("Logs")).Click+=(s,e)=>OpenDirectory(Core.PathIn(root,".launcher"));
             Window.Closing += (s, e) => { if (!finished && running) { e.Cancel = true; closeRequested = true; stop.Cancel(); } };
-            Window.Loaded += async (s, e) => await Start();
+            if (!preview) Window.Loaded += async (s, e) => await Start();
+        }
+        void OpenDirectory(string directory)
+        {
+            try { openDirectory(directory); }
+            catch(Exception ex) {
+                LauncherLog.Write(root,"Startup folder could not open: "+ex);
+                const string notice="\nWindows couldn't open the folder. You can open it manually in File Explorer.";
+                if(!Status.Text.EndsWith(notice,StringComparison.Ordinal))Status.Text+=notice;
+            }
         }
         async Task Start()
         {
             if(running)return;
             running=true;int generation=++attempt;bool attemptedDownload=false;
+            Progress.IsIndeterminate=true;Progress.Value=0;
             ((Button)Window.FindName("Retry")).Visibility=Visibility.Collapsed;((Button)Window.FindName("Logs")).Visibility=Visibility.Collapsed;
             ((TextBlock)Window.FindName("Version")).Visibility=Visibility.Visible;
             ((TextBlock)Window.FindName("Heading")).Text="Checking launcher updates…";
@@ -235,8 +249,22 @@ namespace TimeSplitters.Launcher
         {
             if (!handedOff && !closeRequested)
             {
-                try { SelfUpdate.StartApplication(root, Process.GetCurrentProcess().Id); }
-                catch (Exception ex) { LauncherLog.Write(root, ex.ToString()); MessageBox.Show(Window, ex.Message, "TimeSplitters — Startup", MessageBoxButton.OK, MessageBoxImage.Error); }
+                try { startApplication(); }
+                catch (Exception ex) {
+                    var native = ex as System.ComponentModel.Win32Exception;
+                    LauncherLog.Write(root,"Startup application launch failed"+(native==null?"": " (Windows error "+native.NativeErrorCode+")")+": "+ex);
+                    var info=RecoveryInfo.LauncherStart(ex);
+                    launchFailed=true;
+                    Window.Height=390;
+                    ((TextBlock)Window.FindName("Heading")).Text=info.Title;Status.Text=info.Message;
+                    Progress.IsIndeterminate=false;Progress.Value=0;
+                    ((TextBlock)Window.FindName("Version")).Visibility=Visibility.Collapsed;
+                    ((Button)Window.FindName("Continue")).Visibility=Visibility.Collapsed;
+                    var retry=(Button)Window.FindName("Retry");retry.Content=info.RetryLabel;retry.Visibility=Visibility.Visible;
+                    ((Button)Window.FindName("Folder")).Visibility=Visibility.Visible;
+                    ((Button)Window.FindName("Logs")).Visibility=Visibility.Visible;
+                    return;
+                }
             }
             finished = true; Window.Close();
         }

@@ -158,10 +158,12 @@ try {
                         Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\recomp-generation.py'), $toolRoot, '--record')
                     }
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'))
+                    $gameIconResource = & (Join-Path $projectRoot 'tools\build-game-icon.ps1')
                     Invoke-Checked $cmake @('-S', 'titles/futureperfect', '-B', $buildRoot,
                         '-G', 'Visual Studio 17 2022', '-A', 'x64',
                         "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/save_paths.c",
-                        "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src")
+                        "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src",
+                        "-DTSFP_GAME_ICON_RESOURCE=$gameIconResource")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
                         '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', '4')
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tests/ghost_targets.py'),

@@ -45,8 +45,12 @@ Use `-BannerPath <image.png>` to supply a different banner (maximum 8 MiB).
 The image travels inside `Bin/TimeSplitters.App.exe` for launcher-only updates;
 no extra runtime image file or download is required. If the private image is
 absent, the build retains the blue/silver vector header. Generated source
-artwork and its prompt/provenance stay ignored under `private/launcher-art`.
-The banner fills the header with top alignment to preserve the title and face.
+artwork and its provenance stay ignored under `private/launcher-art`.
+The current private banner is the supplied 1600 x 1200 Future Perfect key art,
+embedded unchanged. The full photo fits proportionally inside the right side
+of the header, with no cropping or redraw. The original game wordmark and a
+blue/silver panel fill the remaining width. Its source hash and the previous
+generated banner's recovery copy are recorded in `banner-provenance.json`.
 
 The optional `private/launcher-art/timesplitters-future-perfect-logo.png`
 supplies the original title wordmark and subtitle lettering in the sidebar.
@@ -63,6 +67,46 @@ each transparent ICO entry directly at 16, 24, 32, 48, 64, 128 and 256 pixels;
 the small sizes use heavier portal strokes for clarity. The build also writes
 `build/launcher/icon-preview.png` to show all sizes. No image generator or
 external asset is required to reproduce the icon.
+
+### Windows game icon
+
+New Windows game builds embed a separate game icon in `futureperfect_recomp.exe`.
+It uses the same blue/silver temporal frame, with the original TSFP title at
+128 and 256 pixels and the original Future Perfect lettering on its own larger
+centered line. The subtitle is about twice its previous size. At 16, 24, 32,
+48 and 64 pixels, a compact serif TSFP monogram replaces the wide title, centered
+with space inside the rings. Source builds
+without private artwork use the TSFP monogram at every size. The launcher keeps
+its existing TS icon.
+
+The monogram uses outlined letter shapes typeset with Future TimeSplitters by
+Chequered Ink, a series-inspired typeface whose author permits all use. It is
+not claimed to be the official logo font. Geometry and attribution are in
+`GameMonogram.cs` / `GameMonogram.NOTICE.txt`; no installed or bundled font is
+needed. Both build helpers compile this geometry alongside `IconBuilder.cs`.
+Game packages include the lettering attribution in `Licenses/Game-icon-lettering.txt`.
+
+`tsfp.ps1 -Action Build` runs `tools/build-game-icon.ps1` before CMake and passes
+its generated `game-icon.rc` through `TSFP_GAME_ICON_RESOURCE`. The Windows-only
+CMake patch embeds resource group 1 before executable identity sealing. SDL's
+Windows backend uses the first executable group icon for its default window
+class, so no separate runtime image or SDL gameplay change is needed. Packaging
+continues copying the sealed executable unchanged, including its embedded icon.
+The icon builder and shared icon renderer are game inputs in release notes.
+
+Run `tools/build-game-icon.ps1 -RequireLogo` to require the local official
+wordmark, `-LogoPath <image.png>` to supply it explicitly, or `-Fallback` to
+preview the compact mark at every size. Outputs stay ignored in `build/game-icon`:
+the seven-size `game.ico`, resource source, size preview, and provenance JSON
+containing source/icon hashes and Git revision/changes. The existing PNG remains
+unchanged; no generated redraw or font substitution is used for its lettering.
+Public source includes only the renderer and build integration, with private
+original art supplied locally as with the launcher banner/logo.
+
+This requires a new game build/release. A launcher-only update does not replace
+an older game's executable or change the icon in existing published packages.
+Actual Windows taskbar/Explorer appearance should be checked with that game
+release; resource-link tests use a tiny executable without running the game.
 
 ## Publishing game updates
 
@@ -93,13 +137,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
-in `build/launcher`; for version 1.2.8, publish all three together:
+in `build/launcher`; for version 1.2.14, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.8-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.8-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.14-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.14-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.8`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.14`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -120,6 +164,24 @@ closing the splash cancels startup. Downloads have a two-minute limit. Offline,
 missing-manifest, rate-limit and verification failures fall back to the installed
 application. An incomplete installation still requires the complete ZIP if no
 usable release is available. Launcher updates never downgrade across channels.
+
+If Windows refuses the final handoff to `Bin/TimeSplitters.App.exe`, the startup
+window now remains open instead of showing a raw exception and closing. Native
+Win32 error 1223 gets conditional SmartScreen/security-prompt guidance; access
+denied and missing application errors get distinct instructions. Classification
+uses `Win32Exception.NativeErrorCode`, not its generic HRESULT or localized text.
+The log records the native code and exception. **Retry** repeats only the
+application launch; **Open launcher folder** opens this installation root, and
+**View logs** opens its `.launcher` folder. Failed folder actions keep the original
+startup guidance. Successful launch or closing the window ends the bootstrap
+normally and releases its installation mutex.
+
+`tests/launcher_startup.cs` injects synthetic launch/folder actions to verify
+failure, retry success, repeated cancellation, folder/log actions, close behavior,
+layout and personal-file preservation without executing applications or displaying
+an actual security prompt. Run it through `tools/build-launcher.ps1 -Test` or
+`launcher-tests.exe --startup`. The build remains unsigned; this handles recovery
+and does not bypass SmartScreen or configure Authenticode signing.
 
 Updates are automatic for the selected Stable/Preview channel. No game update
 is implied. The bootstrap waits for neither a game build nor a large runtime ZIP.
@@ -379,6 +441,37 @@ scratch-file recovery tests without requiring the game to close.
 resumes it in a fresh client and verifies the checksum; it never installs or runs
 the downloaded program and cleans its disposable files. Protocol reference:
 [HTTP range semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-range).
+
+## Game versions (launcher v1.2.14)
+
+Select **Home → Updates → Game versions** to install a specific published
+Windows runtime for comparison or bug reproduction. This main-window page
+keeps the sidebar visible and shows the installed version, release selector,
+stable/preview classification, publication date, download size and release notes.
+The picker includes both stable and preview builds regardless of the normal
+update channel. **Load older releases** reads subsequent GitHub release pages;
+launcher-only, draft, source-only and unverified packages are excluded.
+
+Choose **Install selected version** (or **Reinstall selected version**) and review
+the confirmation. It replaces the installed game runtime only. It does not
+change Git branches, rebuild a revision, or replace the launcher, even if the
+selected game package bundles a different launcher version. Imported `Data`,
+the ISO, `Saves`, existing `Settings` and textures are preserved by the existing
+transactional installer. Save formats can differ across game versions: back up
+your saves before comparing older builds. Unpublished development commits are
+not downloadable from this list; the source checkout remains unchanged.
+
+The same checksums, manifest validation, resumable downloads, pause/retry actions,
+disk-space checks and rollback rules apply. Download progress appears on Home.
+Retry retains the explicitly selected version even when it is older than the
+normal update candidate. Close the game before switching; a running game blocks
+installation. A failed refresh preserves loaded choices and leaves installed
+files alone. Normal **Check updates** still offers newer releases only and never
+silently reverts an installed game. No version is installed without an action.
+
+`launcher-tests.exe --versions` runs the isolated catalog and native-page checks.
+`TimeSplitters Launcher.exe --render-versions-preview preview.png` renders the
+sample version picker without accessing GitHub or an installed game.
 
 ## What's new (launcher v1.2.11)
 

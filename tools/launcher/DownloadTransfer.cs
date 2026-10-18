@@ -43,6 +43,23 @@ namespace TimeSplitters.Launcher
     public sealed class RecoveryInfo
     {
         public string Title, Message, RetryLabel;
+        public static RecoveryInfo LauncherStart(Exception error)
+        {
+            var native = error as System.ComponentModel.Win32Exception;
+            if (native != null && native.NativeErrorCode == 1223)
+                return new RecoveryInfo { Title="Windows didn't open the launcher", RetryLabel="Retry",
+                    Message="Windows cancelled the launch request. SmartScreen or another security prompt may need attention. Choose Open launcher folder, then open Bin\\TimeSplitters.App.exe directly to check for a prompt. Review it, then return here and choose Retry." };
+            if (error is UnauthorizedAccessException || (native != null && native.NativeErrorCode == 5))
+                return new RecoveryInfo { Title="Windows blocked launcher startup", RetryLabel="Retry",
+                    Message="Windows denied access to the launcher application. Check the folder's permissions and Windows Security protection history. Open launcher folder to inspect the application, then Retry. View logs for details." };
+            if (error is FileNotFoundException || error is DirectoryNotFoundException ||
+                (native != null && (native.NativeErrorCode == 2 || native.NativeErrorCode == 3)) ||
+                (error is InvalidDataException && error.Message.StartsWith("Launcher application files are missing",StringComparison.Ordinal)))
+                return new RecoveryInfo { Title="Launcher files are missing", RetryLabel="Retry",
+                    Message="Restore the complete official launcher package into this folder, keeping Bin and Support beside TimeSplitters Launcher.exe, then Retry. Open launcher folder to check the files, or View logs for details." };
+            return new RecoveryInfo { Title="The launcher couldn't open", RetryLabel="Retry",
+                Message="Try again, or choose Open launcher folder to check the application. View logs for details about the startup failure." };
+        }
         public static RecoveryInfo From(Exception error,bool download)
         {
             string title="Operation could not finish",message="Your installed files are kept. Retry, or open the logs for details.";

@@ -39,6 +39,237 @@ The test game was closed and the runner recycled its disposable disk images.
 Selected screenshots and read-only value samples remain in ignored
 `private/captures/issue-115`; personal settings, saves and the fixture were preserved.
 
+## Launcher v1.2.14 release preparation (2026-10-18)
+
+Prepared from main `c802385` after merging PR #126. Shared launcher version,
+assembly/file versions and update-package metadata are 1.2.14. This standalone
+Windows update includes the published game-version picker, complete original
+banner composition and recoverable Windows startup security interruptions from
+PR #141. The game version is unchanged. The new game icon requires a separate
+new game executable/release; this launcher ZIP cannot retrofit an installed game.
+The installer remains a separate unmerged change and is not part of this ZIP.
+
+Windows x64, .NET Framework 4.8 compiler, PowerShell 5.1 and Python 3.12.14:
+the required-art launcher build and all 212 isolated launcher checks passed
+(100 updater, 27 download/recovery, 11 version picker, 10 startup recovery,
+15 release news, 29 settings and 20 maintenance). All 56 targeted release,
+packaging and startup Python checks plus two packaging subtests passed.
+Saves/settings/ISO fixtures are isolated; no real game was launched or stopped.
+Release validation logs and assets stay ignored under build. This records
+preparation; GitHub publication and public checksum verification are separate
+steps. MAC-041 covers the picker/banner; MAC-039 explains the Windows shell
+recovery, and MAC-040 queues game-icon packaging. The version bump needs no
+native Mac adapter and establishes no native Mac execution result.
+
+## TSFP initials inside the icon rings (2026-10-18)
+
+Follow-up to `d66a1f2` in PR #126. The monogram's previous rectangular fit
+let the tall serif initials overlap the circular blue ring. The renderer now
+centers the complete glyph geometry and scales its farthest path point to an
+80-pixel radius in the 256-pixel design space. This also leaves room for the
+dark outline inside the ring's glow. All compact and source-only fallback
+sizes use this fit; the original title/subtitle artwork is unchanged.
+
+On Windows x64 with PowerShell 5.1/System.Drawing and Python 3.12.14, all five
+icon checks passed, including seven resource sizes and Windows LoadImageW.
+The required-art launcher build passed and its existing icon hash is unchanged.
+The seven-size private preview was visually inspected. The updated official-logo
+ICO SHA-256 is `ff3037c9b40de2410ac3dffe3cfe594e48e4a386b9927aaebe7244c7cdf66fdc`.
+No game was launched or release published. Native Mac icon packaging remains
+queued under MAC-040; this change adds no native Mac adapter.
+
+## Game icon serif lettering and larger subtitle (2026-10-18)
+
+Follow-up on `feature/launcher-game-versions` in PR #126, based on `c919122`.
+The compact TSFP mark now uses tall serif outlines typeset with Chequered Ink's
+Future TimeSplitters, a fan-made series-inspired typeface. It is not claimed to
+be the official logo font. The four-letter typeset shape is exported as native
+GraphicsPath geometry in `GameMonogram.cs`, with source/author attribution and
+published permission in `GameMonogram.NOTICE.txt`. No font install, download or
+font file is required to build or run the game. The original OTF and acquisition
+provenance remain ignored and local; its SHA-256 is
+`8f09bd612fec0a1aca85b3e2dcd0031d0f726240f37735330de1944bcfce1eb7`.
+
+At 128/256 sizes, the genuine title and subtitle lettering are composed from
+the unchanged 500 x 187 logo. The title retains its tall T/S descenders, while
+Future Perfect gets a separate centered line, proportionally enlarged from
+102.144 to 212 logical pixels at the 256-pixel size (about 2.1x). Arbitrary
+custom logo dimensions keep the proportional full-image fallback. The updated
+official-logo ICO SHA-256 is
+`f94398ddbaf28d33fe51d3e62090af1566d020a2d3d4ac22d4d5ed6eb21545e0`.
+The official PNG still hashes to `6f50234a380cd794fc9e82b2f1a204663c0bb741ea38fe57c2cc8f0a12aefed0`.
+The seven-size preview was visually inspected; the previous block initials
+are gone, and the subtitle is larger and readable. Game packagers carry the
+lettering attribution in `Licenses/Game-icon-lettering.txt`.
+
+Windows x64 / .NET Framework System.Drawing / PowerShell 5.1 / Python 3.12.14:
+the required-art launcher build passed; its TS icon remains byte-identical at
+`191f124e7d72e9c22d476cdf023ad38b8036680c38f298f496cfe6fcc6f2d519`.
+All 58 targeted Python checks and two packaging subtests passed, including five
+icon tests and release notes/packaging validation. A synthetic subtitle marker
+checks enlarged width and height at both large sizes. Resource linking and
+Windows LoadImageW still load every icon size without executing the stub.
+This visual refinement does not change game/runtime behavior, the banner,
+dependency pins or native Mac adapters. No actual game was launched, published
+or patched in place. The earlier 212-check launcher run is recorded below;
+this follow-up uses a fresh launcher build and targeted icon/package checks.
+Logs, source font/provenance and the current preview remain ignored under the
+existing validation/art folders. MAC-040 still queues native icon packaging.
+
+## Windows game icon for PR 126 (2026-10-18)
+
+Added in `c2db36b` on `feature/launcher-game-versions`, [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+Integration commit `272f930` merges main `78ac6a0` into this feature branch,
+retaining launcher 1.2.13, direct game launch and the startup security recovery
+from PR #141. The version-picker/banner backlog entry was renumbered MAC-041
+to preserve main's existing MAC-036 Ghost Gun entry. This does not merge PR #126
+into main or publish any game/launcher release.
+
+Host: Windows x64, .NET Framework/System.Drawing, Windows PowerShell 5.1,
+Python 3.12.14, MSVC 19.44, Windows SDK RC 10.0.26100.0, CMake 4.4.4 and
+Ninja 1.13.2. The new game icon uses the unmodified 500 x 187 wordmark at
+128/256 pixels and a compact TSFP monogram at 16/24/32/48/64. Source-only
+builds use the compact mark at all sizes. All entries retain transparent edges.
+The source PNG remains SHA-256
+`6f50234a380cd794fc9e82b2f1a204663c0bb741ea38fe57c2cc8f0a12aefed0`;
+the generated official-logo ICO is
+`7c1b53bd0e0ac954a359d93f46437afb7989cbdf4724260aed90a22e99310bcc`.
+The launcher ICO stays byte-for-byte unchanged at
+`191f124e7d72e9c22d476cdf023ad38b8036680c38f298f496cfe6fcc6f2d519`.
+The seven-size preview was visually inspected. Original art and generated
+icons/previews remain ignored and local; no source artwork was committed.
+
+`tsfp.ps1 -Action Build` generates the RC/ICO before CMake linking and executable
+identity sealing. A Windows-only CMake patch embeds the first icon resource
+group, which the pinned SDL Windows backend selects for its default window
+class. A tiny CMake/MSVC/RC executable built in a Unicode path verified all seven
+embedded payloads byte-for-byte and loaded every size using Windows LoadImageW.
+The executable was loaded as resource data only, never executed. The complete
+game executable was not rebuilt or launched; taskbar/Explorer appearance with
+a real game and other-device behavior remain unverified.
+
+Post-integration launcher build with required private artwork passed all 212
+checks: 100 updater/cleanup, 27 downloads/recovery, 11 game versions, ten startup
+recovery, 15 news, 29 settings and 20 maintenance. The combined Python run passed
+111 tests and two packaging subtests, including full patch-stack migration,
+release validation/notes, CI routing, four game-icon tests, portable startup and
+launcher packaging. The four icon tests were rerun after adding the Windows
+resource-loader assertions and passed. Tests preserve the original logo, reject
+a required missing logo without overwriting an existing icon, verify fallback
+sizes/transparency/provenance, and compare large-logo vs. small-monogram frames.
+Source-only patch fixtures share local Git objects without copying game data
+or changing the primary runtime checkout. Logs and selected evidence are in
+ignored `build/game-icon` and `build/launcher-validation`.
+
+Personal saves/settings/ISO/game data were not used or changed. Existing synthetic
+launcher process fixtures were used; no real game was terminated. Runtime pin
+and dependency pins are unchanged. Mac source/build paths remain unchanged;
+[MAC-040](MAC_PORT_BACKLOG.md#mac-040--dedicated-game-icon) queues native app icon
+packaging. A launcher-only update cannot retrofit this icon into older game
+executables; users need a matching new game build/release.
+
+## Complete original launcher banner artwork (2026-10-18)
+
+Follow-up on `feature/launcher-game-versions` in [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+The shallow header previously filled its width by cropping the supplied 4:3
+artwork, hiding most of Cortez's lower half. It now fits the complete original
+image on the right, with the original title wordmark and a blue/silver temporal
+panel filling the remaining width. The image is neither regenerated nor edited.
+The vector fallback remains available when private artwork is absent.
+
+The Windows x64/.NET Framework build with required artwork and all 198 existing
+launcher regressions passed. Home was rendered and visually inspected at
+1152×772 and 1000×720. Geometry inspection confirmed the full image fits inside
+a 349×262 display frame at both sizes (within one pixel of proportional sizing
+due to WPF layout rounding), with all edges inside the header. The launcher
+embeds the original PNG byte-for-byte with SHA-256
+`f318dac55d35da823386570c11f5cff9654e8b42963766eee54bc8a8dcd6e764`;
+the sidebar/header wordmark bytes are also unchanged. No image generation,
+game execution or personal-file changes were needed. The private preview Page
+was updated for mobile viewing; display on a physical phone remains unverified.
+
+Source: `tools/launcher/Launcher.xaml` and `Launcher.cs`. Artwork/provenance
+remain ignored under `private/launcher-art`; renders and layout checks are in
+ignored `build/launcher-validation`. [MAC-041](MAC_PORT_BACKLOG.md#mac-041--published-game-version-picker-and-banner-replacement)
+records the full-image layout requirement for a future Mac launcher. This is
+an unpublished source change; launcher version remains 1.2.12 during development.
+
+## Launcher game version picker and supplied banner (2026-10-17)
+
+Implemented in feature commit `04eaf1c` on `feature/launcher-game-versions`,
+based on main `a44784b`; [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+Host: Windows x64, .NET Framework 4.x compiler/WPF, Python 3.12.14. No game
+runtime/source, dependency pins or Mac adapters changed. Launcher version remains
+1.2.12 for development; this feature has not been merged or published.
+
+`tools/build-launcher.ps1 -Output build/launcher-validation -RequireArtwork -Test`
+passed 198 checks: 100 updater/cleanup, 27 download/recovery, 11 game-version
+catalog/UI, 15 release-news, 25 settings and 20 maintenance checks. Tiny synthetic
+packages verified v2.0.0 → v1.1.0 downgrade and v1.1.0 reinstall, rollback,
+personal settings/saves/data/textures and ISO preservation, and preservation of
+launcher v1.2.12 even when a game package contains launcher v99.0.0. Existing
+transaction, corruption, interrupted-install and resume tests passed. No game
+was executed and personal files were not used.
+
+Catalog/UI checks covered semantic sorting, stable/preview flags, raw-record
+pagination including launcher-only pages, deduplication, invalid or foreign assets,
+checksum sidecars, rate limits, cancellation, retained choices on refresh failure,
+busy/running-game state, inert bounded notes, sidebar visibility and retained
+settings/maintenance drafts. The bootstrap forwards the versions preview route. A controller-level fake-HTTP
+check confirmed normal updates reject an older target and a failed explicit
+download retries that same older tag even after the normal candidate changes.
+All three Python launcher packaging tests also passed.
+Read-only live GitHub discovery returned seven compatible releases from
+v0.3.0-alpha.1 through v0.1.0-alpha.1; exact oldest-tag lookup retained its verified
+asset identity. Real public game ZIP downgrades and manual gameplay/save-format
+compatibility across these versions were not tested; older saves may differ.
+
+Home and Game versions previews were rendered at 1152×772 and 1000×720. The
+minimum-size images were inspected for fitting controls, readable notes, sidebar
+visibility and banner crop. The supplied 1600×1200 image is embedded byte-for-byte,
+SHA-256 `f318dac55d35da823386570c11f5cff9654e8b42963766eee54bc8a8dcd6e764`;
+the sidebar logo is also unchanged. The authoritative artwork/provenance and one
+previous-banner recovery copy stay in ignored `private/launcher-art`. Validation
+log and selected previews remain in ignored `build/launcher-validation`.
+Mac work is queued in [MAC-041](MAC_PORT_BACKLOG.md#mac-041--published-game-version-picker-and-banner-replacement).
+
+## Launcher startup security recovery (2026-10-18)
+
+Implemented in `a9b79e7` on `fix/launcher-startup-recovery`, based on main `e6c68bd` (launcher
+1.2.13), independently of pending installer/version-picker branches. Initial
+checks used uncommitted source. Host: Windows x64, .NET Framework 4.8/WPF system
+C# compiler, Windows PowerShell 5.1 and Python 3.12.14. No game source, runtime
+dependency pin, importer or Mac adapter changed; no release was published.
+
+The reported Win32 cancellation occurred in the bootstrap's final application
+launch. Startup previously logged the exception, showed a generic modal message
+and closed. It now explains a possible security prompt for native error 1223,
+offers distinct access-denied/missing-file guidance, and keeps Retry, Open
+launcher folder and View logs available. Retry repeats only application startup.
+Repeated failures remain recoverable; successful launch or closing exits normally.
+Folder-opening failures preserve the original recovery instructions. Native codes
+and exception details are retained in the log; Windows security is not bypassed.
+
+`tools/build-launcher.ps1 -Output build/startup-recovery-validation -RequireArtwork -Test`
+passed all 200 checks: 99 updater/cleanup, 27 downloads/recovery, ten new startup
+recovery checks, 15 release news, 29 settings and 20 maintenance. Synthetic launch
+and folder delegates exercised repeated cancellation followed by success, native
+vs. generic error classification, actions, close behavior, retained guidance and
+unchanged application/ISO/data/save/settings/download fixture hashes. No actual
+game or application was executed by the new tests. The full suite uses its
+existing isolated synthetic process fixtures; personal files were not used.
+All 29 Python CI-scope, portable startup preference and launcher packaging
+checks passed, plus two packaging subtests.
+
+Recovery layout was measured for text/progress/action overlap and bounds. A WPF
+render at 544 x 350 was visually inspected; all instructions and three actions
+fit. Log and selected render stay ignored in `build/startup-recovery-validation`.
+Actual SmartScreen prompts, manual first-run approval on another PC and signed
+binary behavior remain unverified. Code signing is not configured. The relevant
+Windows and Mac CI scope routes include the new regression source. Native Mac
+paths are unchanged; [MAC-039](MAC_PORT_BACKLOG.md#mac-039--recoverable-launcher-startup-security-interruptions)
+records why this Windows shell recovery needs no native adapter.
+
 ## Launcher 1.2.13 version follow-up (2026-10-18)
 
 Bump the shared launcher version, assembly version and file version to 1.2.13
