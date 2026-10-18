@@ -1,5 +1,27 @@
 # Measured progress
 
+## Launcher v1.2.14 release preparation (2026-10-18)
+
+Prepared from main `c802385` after merging PR #126. Shared launcher version,
+assembly/file versions and update-package metadata are 1.2.14. This standalone
+Windows update includes the published game-version picker, complete original
+banner composition and recoverable Windows startup security interruptions from
+PR #141. The game version is unchanged. The new game icon requires a separate
+new game executable/release; this launcher ZIP cannot retrofit an installed game.
+The installer remains a separate unmerged change and is not part of this ZIP.
+
+Windows x64, .NET Framework 4.8 compiler, PowerShell 5.1 and Python 3.12.14:
+the required-art launcher build and all 212 isolated launcher checks passed
+(100 updater, 27 download/recovery, 11 version picker, 10 startup recovery,
+15 release news, 29 settings and 20 maintenance). All 56 targeted release,
+packaging and startup Python checks plus two packaging subtests passed.
+Saves/settings/ISO fixtures are isolated; no real game was launched or stopped.
+Release validation logs and assets stay ignored under build. This records
+preparation; GitHub publication and public checksum verification are separate
+steps. MAC-041 covers the picker/banner; MAC-039 explains the Windows shell
+recovery, and MAC-040 queues game-icon packaging. The version bump needs no
+native Mac adapter and establishes no native Mac execution result.
+
 ## TSFP initials inside the icon rings (2026-10-18)
 
 Follow-up to `d66a1f2` in PR #126. The monogram's previous rectangular fit
