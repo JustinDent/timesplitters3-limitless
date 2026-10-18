@@ -26,10 +26,13 @@ inspected for both pages: headings, bold text, numbered/bullet lists and blue #1
 and #108 links fit, with the sidebar and scrolling retained. Logs and two renders
 remain ignored under `build/markdown-validation`.
 
-The full local updater suite correctly stopped because a real game process is
-running in another checkout. It was not stopped; no personal game, ISO, data,
-saves or settings were used. The new focused formatting checks do not launch a
-browser. Physical browser activation and native Mac UI remain unverified.
+The first full local updater run correctly stopped while a real game process
+was running in another checkout. After the user closed it, the required-art build
+and all 216 launcher checks passed (100 updater, 27 downloads, 11 versions,
+10 startup, 19 news, 29 settings, 20 maintenance). No game process was terminated,
+and no personal ISO, data, saves or settings were used. The new focused formatting
+checks do not launch a browser. Physical browser activation and native Mac UI
+remain unverified.
 
 ## Audio-menu mouse sliders (issue #115, 2026-10-18)
 
