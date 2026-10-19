@@ -4,6 +4,8 @@
 #define _WIN32_WINNT 0x0601
 #include "pc_settings.h"
 #include "pc_debug.h"
+#include "pc_menu_theme.h"
+#include "pc_dialog_theme.h"
 #include <commctrl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +21,7 @@ enum { ID_ACTIONS=100, ID_SLOT, ID_CHANGE, ID_CLEAR, ID_DEFAULTS, ID_SENSITIVITY
        ID_INVERT, ID_ENABLED, ID_STATUS, ID_HELP, ID_SENS_LABEL };
 typedef struct Editor { PcSettings settings; HWND list; int slot; } Editor;
 typedef struct Capture { int key, accepted; } Capture;
-typedef struct DialogContext { DLGPROC procedure; LPARAM data; HFONT font; } DialogContext;
+typedef struct DialogContext { DLGPROC procedure; LPARAM data; HFONT font; PcDialogTheme theme; } DialogContext;
 static const WCHAR dialog_context_property[]=L"TSFP.Settings.DialogContext";
 
 static INT_PTR CALLBACK themed_dialog(HWND window,UINT message,WPARAM wp,LPARAM lp)
@@ -33,8 +35,14 @@ static INT_PTR CALLBACK themed_dialog(HWND window,UINT message,WPARAM wp,LPARAM 
         lp=context->data;
     }
     if(!context) return FALSE;
+    if(message==WM_SETTINGCHANGE || message==WM_THEMECHANGED) pc_dialog_theme_refresh(window,&context->theme);
+    if(pc_dialog_theme_message(window,&context->theme,message,wp,lp,&result)) return result;
     result=context->procedure(window,message,wp,lp);
-    if(message==WM_NCDESTROY) RemovePropW(window,dialog_context_property);
+    if(message==WM_INITDIALOG) pc_dialog_theme_refresh(window,&context->theme);
+    if(message==WM_NCDESTROY) {
+        RemovePropW(window,dialog_context_property);
+        if(context->theme.brush) {DeleteObject(context->theme.brush);context->theme.brush=NULL;}
+    }
     return result;
 }
 
@@ -286,6 +294,7 @@ void pc_settings_toggle_menu(HWND game)
 {
     HMENU bar=(HMENU)GetPropA(game,menu_property);
     if(!bar || !SetMenu(game,GetMenu(game) ? NULL : bar)) return;
+    if(GetMenu(game)) pc_menu_theme_refresh(game,pc_window_theme_dark());
     /* Keep the outer window bounds, including borderless fullscreen. The
        renderer follows the new client size and WM_SIZE updates mouse clipping. */
     SetWindowPos(game,NULL,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_NOACTIVATE|SWP_FRAMECHANGED);
@@ -295,6 +304,7 @@ void pc_settings_toggle_menu(HWND game)
 void pc_settings_detach(HWND game)
 {
     HMENU bar=(HMENU)RemovePropA(game,menu_property);
+    pc_menu_theme_detach(game);
     /* Windows destroys an attached menu with its window; hidden menus are ours. */
     if(bar && GetMenu(game)!=bar) DestroyMenu(bar);
 }
@@ -314,6 +324,7 @@ void pc_settings_attach(HWND game)
     AppendMenuA(bar,MF_POPUP,(UINT_PTR)settings,"&PC Settings");
     if(!SetPropA(game,menu_property,(HANDLE)bar)) { DestroyMenu(bar); return; }
     SetMenu(game,bar);
+    pc_menu_theme_attach(game);
     rect=client;
     AdjustWindowRectEx(&rect,(DWORD)GetWindowLongPtr(game,GWL_STYLE),TRUE,(DWORD)GetWindowLongPtr(game,GWL_EXSTYLE));
     SetWindowPos(game,NULL,0,0,rect.right-rect.left,rect.bottom-rect.top,SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);

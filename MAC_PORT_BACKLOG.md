@@ -1107,6 +1107,39 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
+  `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**
+  `src/pc_menu_theme.h`, `src/pc_dialog_theme.h`, `src/pc_settings.c` and
+  `src/pc_controls.c` theme the native menu bar/popups, binding editor/capture
+  and Debug controls while preserving their commands and keyboard behavior.
+  `tools/online_theme.py`/`online.py` theme the Tk browser/invitation windows;
+  the modern-look revision retains Vista layouts and uses rounded dark surfaces,
+  blue checkbox accents and state feedback, replacing the earlier Clam styling.
+  Native dialog buttons/checkboxes also use rounded surfaces. These are custom
+  Windows-like dark controls, not a switch to WinUI or Acrylic/Mica.
+  Online captions apply after native window mapping and recover from wrapper
+  resets; real mapped HWND tests cover re-showing windows and light/dark mode.
+  Bundling and content identity include the new module. High contrast uses
+  native system colors. The launcher interior and game renderer are unchanged.
+  Mac has separate Cocoa settings/menus; this Windows DWM/GDI/Tk adapter does
+  not change them or prove their appearance support. Native Mac Online remains
+  separate deferred work. Acceptance: readable light/dark controls, live changes,
+  menu mnemonics/checkmarks/F1/fullscreen behavior, unchanged settings, and
+  native Mac appearance checks if corresponding adaptation is requested.
+  [Validation](STATUS.md#windows-game-ui-theme-follow-up).
+
+- **Windows title-bar theme experiment (2026-10-18, branch
+  `feature/system-theme-title-bars`):** `tools/launcher/WindowTheme.cs` attaches
+  to the main WPF and startup windows; `src/pc_window_theme.h` and
+  `src/pc_controls.c` apply Windows app mode to the game caption at startup and
+  on settings/theme notifications. Interior colors and window styles are
+  preserved; unsupported DWM attributes fall back to the standard title bar.
+  No Mac adapter is needed for this Windows-specific DWM feature; existing
+  Cocoa title bars are unchanged and their appearance is not validated here.
+  Acceptance: light/dark preference changes while both Windows apps are open,
+  high-contrast fallback, windowed/fullscreen transitions and clean shutdown.
+  [Validation](STATUS.md#windows-title-bar-theme-experiment).
+
 - **Status:** Queued
 - **Repair / Verify and Diagnostics tabs (2026-10-17, commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98)):** Merged as `860dccd`, prepared for launcher v1.2.12. `MaintenancePage.cs`, `Launcher.cs`/XAML
   and the shared `PageTheme.cs` tab styling group both pages behind one Repair /

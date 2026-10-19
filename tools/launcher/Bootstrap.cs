@@ -173,6 +173,7 @@ namespace TimeSplitters.Launcher
                   </DockPanel>
                 </Grid>
               </Window>");
+            WindowTheme.Attach(Window);
             ((TextBlock)Window.FindName("Version")).Text = "LAUNCHER v" + LauncherVersion.Value;
             using (var icon = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher.ico"))
                 Window.Icon = BitmapFrame.Create(icon, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);

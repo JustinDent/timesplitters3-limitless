@@ -4,6 +4,25 @@
 
 ## Launcher settings
 
+The launcher, its startup window and the windowed game title bar follow
+Windows' **app mode** (Light or Dark), including changes made while they are
+open. This changes the title bar only; the launcher's interior keeps its own
+theme. High-contrast mode uses the standard light title-bar setting. Windows
+versions without the optional DWM theme attribute retain their normal title
+bars. There is no separate game preference to save.
+
+The game's **PC Settings** menu bar and dropdown, **Keyboard & Mouse** and
+**Debug** windows (including the binding-capture dialog) also follow app mode.
+Their backgrounds, text, lists and controls use a dark palette in Dark mode
+and return to system colors in Light/high-contrast mode. The separate **Online**
+window and its invitation dialog follow the same preference, checking for
+changes about once a second. The game graphics and launcher interior retain
+their existing appearance; Mica/Acrylic is not used.
+Dark controls retain Windows-style typography and layout, with rounded surfaces,
+blue checkbox accents and focus/hover feedback. Online uses Vista control
+layouts with custom dark drawing rather than switching to the classic Clam
+appearance. Light mode restores the original native styling.
+
 The current source launcher groups **Game settings** into two tabs with a fixed
 Save/Cancel footer. **Keyboard & mouse** contains Input & mouse and the key-binding
 table, with four labeled slots per action. **Graphics & resolution** groups Display,

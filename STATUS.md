@@ -133,6 +133,99 @@ failure was suppressed. The final playable rebuild also passed all build tests
 (`build/menu-playable-build.log`), and the user confirmed the menu fixes work
 before requesting commit and push to the #114 branch.
 
+Published as PR #151, menu fix commit `067812a`. Integrating main `6d351c4`
+retained both progress records and the new Windows theme changes. The 31
+menu/FOV/CI-scope checks and the full supported Windows Build/tests passed
+after integration (`build/menu-pr-integration-build.log`).
+
+## Windows game UI theme follow-up
+
+2026-10-18, `feature/system-theme-game-ui` (implementation and validation in
+this revision), based on the unmerged
+title-bar commit `7219fec` (base main `a5d61ea`). Native PC Settings menu bar and
+popups use owned brushes and documented owner drawing, retaining native menu
+commands, state/checkmarks, mnemonic handling and F1 visibility. Dialog wrappers
+theme backgrounds, edit/static text, binding lists/headers, checkboxes and
+buttons without changing save/capture logic. Dark drawing is disabled for Light
+or high contrast. The Online browser/invitation use an isolated Tk dark theme,
+restoring the original native palette on Light/high contrast and checking for
+changes once per second. The new Python adapter is bundled and hashed in the
+network identity. Launcher interior and game rendering are unchanged.
+The modern-look revision uses Vista-derived Online layouts with rounded image
+elements, native label/padding behavior, blue checkbox indicators, and focus,
+pressed, hover and disabled states. It avoids applying a Clam control theme;
+the dark tree field alone uses its colorable field primitive. Native dialog
+custom drawing now uses rounded button/checkbox surfaces and blue accents.
+The revised Online preview was captured with example data and visually reviewed.
+
+Online captions now apply after Tk maps its native window and are checked on
+each refresh, repairing wrapper resets even when the theme has not changed.
+Real mapped browser/invitation HWND tests cover dark/light captions, re-showing
+windows and recovery after a forced native caption reset.
+
+Windows x64 build 26300 / Python 3.14.2 / MSVC x64: 49 affected theme, Online,
+host, content-identity and CI-routing regressions passed. Tests cover menu brush,
+hover/measurements/mnemonics, list/dialog colors, restoring native palettes
+(including an original clam theme), timer cleanup and bundling/identity.
+`tsfp.ps1 Build` verified the supported US XBE/patch stack, rebuilt and sealed
+the current runtime and passed its native settings/debug/input/render/network
+checks; disposable build test disks were recycled.
+The caption-fix rebuild passed on retry after an initial access-violation crash
+in the unrelated ghost-target graphics replay test; the retry passed that check
+and completed executable sealing. All 49 affected Python tests passed with
+access to the local supported XBE.
+The dark Online window and
+its taller invitation dialog keep the copy/return controls visible with the
+dark widget sizing. The actual game menu theme context/brush and both caption
+notification handlers were checked in a 35-second isolated Test Lab session;
+F1 hid/restored the toolbar without changing outer window bounds, and the
+runner recycled its disposable virtual disks. The dark Online window and
+invitation were captured with example data and visually inspected; they were
+not real online sessions and did not contact a server or change personal theme
+settings. Actionlint and diff checks passed.
+
+Automated dialog/theme tests use disposable fixtures. Human Windows Settings
+switching, high-contrast visual review and older-Windows rendering remain
+pending. No Mac appearance support or cross-device synchronization is inferred;
+see [MAC-021](MAC_PORT_BACKLOG.md#mac-021--published-release-launcher-and-pre-game-settings).
+
+## Windows title-bar theme experiment
+
+PR #149 integration: merged main `0545ebe`, preserving both validation histories
+and the new launcher Markdown renderer/version. On Windows x64, the merged
+launcher build and all isolated launcher checks passed; the native DWM
+regression and diff check also passed. No game runtime behavior changed in
+this merge, and no additional gameplay session was performed.
+
+2026-10-18, branch `feature/system-theme-title-bars`, base `a5d61ea`.
+The main launcher, bootstrap startup window and windowed game caption read
+Windows' app light/dark preference at creation and on settings/theme messages.
+WPF hooks detach on close; native APIs are resolved from System32 without new
+linker dependencies. Missing theme APIs retain standard title bars. Both paths
+request the standard light setting for high contrast. Interior palettes,
+rendering settings and caption/fullscreen styles remain unchanged.
+
+Windows x64 build 26300, Python 3.14.2, MSVC x64 / WPF .NET Framework 4.8:
+`build-launcher.ps1 -Test` compiled both executables and passed 213 checks,
+including a real-HWND light/dark/light notification regression. The native DWM
+test passed initial/explicit themes and borderless/restored-style preservation.
+`tsfp.ps1 Build` validated the supported US XBE and complete patch stack,
+refreshed generated hooks, compiled the Release game and passed native build
+checks. Disposable build test files were recycled. Actionlint and diff checks
+passed. Per-window launcher caption overrides were verified and captured from
+the isolated preview; these did not change the system theme or run an update.
+
+A bounded Test Lab session used `private/test-saves/title-theme`, with isolated
+save, controls, PC display and runtime display files. The actual game's initial
+DWM attribute matched the app preference; both WM_SETTINGCHANGE and
+WM_THEMECHANGED restored that preference after per-window test overrides.
+This tests the real handlers without changing personal Windows preferences;
+human switching in Windows Settings, high-contrast visual review and older
+Windows fallback validation remain pending. No gameplay completion claim is
+made. Native Mac behavior and other-device synchronization are unverified;
+no Mac adapter is needed for this Windows-specific DWM feature. See
+[MAC-021](MAC_PORT_BACKLOG.md#mac-021--published-release-launcher-and-pre-game-settings).
+
 ## Launcher v1.2.15 release preparation (2026-10-18)
 
 Prepared from main `836aec7` after merging PR #147 with passing Windows and

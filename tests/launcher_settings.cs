@@ -8,6 +8,29 @@ using TimeSplitters.Launcher;
 public static class LauncherSettingsChecks
 {
     static int count;
+    [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+    static extern int DwmGetWindowAttribute(IntPtr window,int attribute,out int value,int size);
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    static extern IntPtr SendMessage(IntPtr window,int message,IntPtr wp,IntPtr lp);
+    static void CheckTitleTheme()
+    {
+        bool dark=false;
+        var window=new System.Windows.Window { Width=320,Height=160,Title="Title bar theme regression",ShowInTaskbar=false };
+        WindowTheme.Attach(window,()=>dark);
+        try
+        {
+            var hwnd=new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
+            int actual;
+            if(DwmGetWindowAttribute(hwnd,20,out actual,sizeof(int))<0)
+            { Console.WriteLine("SKIP: optional DWM theme attribute unavailable");return; }
+            Require(actual==0,"Initial title bar must use light mode");
+            dark=true;SendMessage(hwnd,0x001A,IntPtr.Zero,IntPtr.Zero);
+            Require(DwmGetWindowAttribute(hwnd,20,out actual,sizeof(int))>=0 && actual==1,"Settings change must select dark mode");
+            dark=false;SendMessage(hwnd,0x031A,IntPtr.Zero,IntPtr.Zero);
+            Require(DwmGetWindowAttribute(hwnd,20,out actual,sizeof(int))>=0 && actual==0,"Theme change must restore light mode");
+        }
+        finally { window.Close(); }
+    }
     static string temp;
     static void Require(bool condition, string message = "Settings assertion failed.") { if (!condition) throw new Exception(message); }
     static void Reject(Action action) { bool rejected=false; try { action(); } catch { rejected=true; } Require(rejected); }
@@ -124,6 +147,7 @@ public static class LauncherSettingsChecks
         Directory.CreateDirectory(temp);
         try
         {
+            Test("title bar follows initial theme and live setting changes",()=>STA(CheckTitleTheme));
             Test("published alpha.4 retains V1 resolution settings and rejects custom FOV atomically",()=>{
                 string root=Root("legacy-fov");Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.4\"}");
                 var model=GameSettings.Load(root,null);Require(!model.CanAdjustFov);

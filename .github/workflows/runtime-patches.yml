@@ -66,6 +66,17 @@ on:
       - src/pc_terminal.h
       - src/pc_input.c
       - src/pc_controls.c
+      - src/pc_window_theme.h
+      - src/pc_menu_theme.h
+      - src/pc_dialog_theme.h
+      - tests/game_ui_theme.c
+      - tools/online.py
+      - tools/online_theme.py
+      - tools/bundle_online.py
+      - tools/network-identity.py
+      - tests/test_online_theme.py
+      - tests/test_window_theme.py
+      - tests/window_theme.c
       - src/native/input_sdl.c
       - src/pc_menu_mouse.h
       - src/pc_menu_mouse_guest.inc
@@ -152,6 +163,17 @@ on:
       - src/pc_terminal.h
       - src/pc_input.c
       - src/pc_controls.c
+      - src/pc_window_theme.h
+      - src/pc_menu_theme.h
+      - src/pc_dialog_theme.h
+      - tests/game_ui_theme.c
+      - tools/online.py
+      - tools/online_theme.py
+      - tools/bundle_online.py
+      - tools/network-identity.py
+      - tests/test_online_theme.py
+      - tests/test_window_theme.py
+      - tests/window_theme.c
       - src/native/input_sdl.c
       - src/pc_menu_mouse.h
       - src/pc_menu_mouse_guest.inc
@@ -250,7 +272,7 @@ jobs:
             tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_quit_menu.py tests/test_ui_layout.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            tests+=(tests/test_pc_display_modes.py tests/test_fov_settings.py)
+            tests+=(tests/test_pc_display_modes.py tests/test_fov_settings.py tests/test_window_theme.py tests/test_online_theme.py tests/test_online.py tests/test_online_host.py tests/test_network_identity.py)
           fi
           python -m pytest "${tests[@]}" -q --tb=short
       - name: Test release validation and disposable fixture cleanup
