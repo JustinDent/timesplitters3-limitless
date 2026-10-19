@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #else
 #include <shellapi.h>
+#include "pc_crash.h"
 #endif
 #include <stdio.h>
 #include <string.h>
@@ -119,6 +120,9 @@ void pc_debug_shutdown(void)
 
 void pc_debug_frame(void)
 {
+#ifndef __APPLE__
+    pc_crash_frame();
+#endif
     LARGE_INTEGER now;
     QueryPerformanceCounter(&now);
     if (previous_frame.QuadPart && frequency.QuadPart &&

@@ -13,6 +13,15 @@ on:
       - tests/test_audio_timing.py
       - tests/native_compiler.py
       - tests/test_pc_display_modes.py
+      - src/pc_crash.c
+      - src/pc_crash.h
+      - src/pc_hang_policy.h
+      - tools/crash_helper.c
+      - tests/test_crash_capture.py
+      - tools/crash-symbols.py
+      - tests/test_crash_symbols.py
+      - tests/launcher_crashes.cs
+      - tests/launcher_sessions.cs
       - tools/publish-release.py
       - tools/launcher/**
       - tools/build-launcher.ps1
@@ -174,6 +183,7 @@ jobs:
             tests/test_native_compiler.py tests/test_audio_timing.py
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
             tests/test_xmv_stop.py
+            tests/test_crash_capture.py
             tests/test_cutscene_letterbox.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py
             tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_quit_menu.py tests/test_ui_layout.py
@@ -184,7 +194,7 @@ jobs:
           python -m pytest "${tests[@]}" -q --tb=short
       - name: Test release validation and disposable fixture cleanup
         if: steps.scope.outputs.release == 'true'
-        run: python -m pytest tests/test_publish_release.py -q --tb=short
+        run: python -m pytest tests/test_publish_release.py tests/test_crash_symbols.py -q --tb=short
       - name: Build and test Windows release launcher
         if: runner.os == 'Windows' && steps.scope.outputs.launcher == 'true'
         shell: powershell

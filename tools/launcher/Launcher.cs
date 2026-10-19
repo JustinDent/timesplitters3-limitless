@@ -140,6 +140,9 @@ namespace TimeSplitters.Launcher
         bool newsReady;
         VerificationResult gameVerification, launcherVerification;
         bool diagnosticsReady;
+        bool pendingCrash;
+        bool gameMonitoring;
+        System.Windows.Threading.DispatcherTimer sessionTimer;
         CancellationTokenSource maintenanceStop, updateStop;
         Func<Task> retryOperation;
         bool closeAfterTransfer;
@@ -210,7 +213,7 @@ namespace TimeSplitters.Launcher
             Button("RetryButton").Click+=async(s,e)=> {if(!busy && !checking && retryOperation!=null)await retryOperation();};
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
             Button("RecoveryLogsButton").Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
-            Window.Closed += (s,e)=> { lifetime.Cancel(); client.Dispose(); };
+            Window.Closed += (s,e)=> { if(sessionTimer!=null)sessionTimer.Stop();lifetime.Cancel(); client.Dispose(); };
             if (previewMode)
             {
                 Text("InstalledLabel", "v0.1.0-alpha.1");
@@ -258,6 +261,11 @@ namespace TimeSplitters.Launcher
                 if (File.Exists(result)) { SetStatus(File.ReadAllText(result)); File.Delete(result); }
                 string selfResult = Core.PathIn(root, ".launcher/self-last-result.txt");
                 if (File.Exists(selfResult)) { SetStatus(File.ReadAllText(selfResult)); File.Delete(selfResult); }
+                RecoverGameSession();
+                // An earlier launch can outlive a terminated launcher. Defer
+                // inference while its exact process identity is still alive.
+                sessionTimer=new System.Windows.Threading.DispatcherTimer {Interval=TimeSpan.FromSeconds(2)};
+                sessionTimer.Tick+=(sender,args)=> {if(!busy && !checking && !gameMonitoring)RecoverGameSession();};sessionTimer.Start();
             };
             Window.Closing += (s, e) =>
             {
@@ -405,6 +413,19 @@ namespace TimeSplitters.Launcher
             page.Cancel.Click+=(s,e)=> {if(maintenanceStop!=null)maintenanceStop.Cancel();page.Status("Cancellation requested; finishing the current file…");};
             if(diagnostics) {
                 diagnosticsPage=page;
+                page.OpenCrash.Click+=(s,e)=> {
+                    if(previewMode){page.Status("Preview: opens the latest local crash report.");return;}
+                    try { string name=CrashReports.Latest(root);if(name==null){page.Status("No completed crash report found.");return;}Open(CrashReports.Folder(root,name)); }
+                    catch(Exception ex){page.Status("Could not open the crash report ("+ex.GetType().Name+"). Files retained.");}
+                };
+                page.ExportCrash.Click+=(s,e)=> {
+                    if(previewMode){page.Status("Preview: saves a local crash report ZIP. Nothing is uploaded.");return;}
+                    try {
+                        string name=CrashReports.Latest(root);if(name==null){page.Status("No completed crash report found.");return;}
+                        var dialog=new Microsoft.Win32.SaveFileDialog {Filter="ZIP archive (*.zip)|*.zip",FileName=name+".zip",Title="Save crash report - may contain personal information"};
+                        if(dialog.ShowDialog(Window)==true){CrashReports.Export(root,name,dialog.FileName);page.Status("Crash report exported locally. Review the dump and log before sharing. Nothing was uploaded.");}
+                    } catch(Exception ex){page.Status("Could not export the crash report ("+ex.GetType().Name+"). Choose a new filename and try again.");}
+                };
                 page.Refresh.Click+=async(s,e)=>await RefreshDiagnostics();
                 page.ReportBug.Click+=(s,e)=>OpenDiagnosticIssue(false);
                 page.RequestEnhancement.Click+=(s,e)=>OpenDiagnosticIssue(true);
@@ -423,12 +444,13 @@ namespace TimeSplitters.Launcher
         async Task EnsureDiagnostics()
         {
             if(diagnosticsReady)return;
+            if(gameMonitoring) { await RefreshDiagnostics();return; }
             if(previewMode) {diagnosticsPage.Report.Text="TimeSplitters launcher diagnostics — interface preview\n\nRunning launcher: "+LauncherVersion.Value+"\nInstalled game: v0.2.0-alpha.5 (sample)\nWindows: 64-bit\nGraphics: available in the installed launcher\nEmbedded artwork: banner present, logo present\n\nLast verification: not checked this session.\n\nRecent launcher errors: none in this preview.\n\nReport excludes raw logs, personal paths, saves and ISO information. Nothing is uploaded automatically.";diagnosticsReady=true;}
             else if(!diagnosticsReady && !busy)await RefreshDiagnostics();
         }
         public async void ShowMaintenance(bool diagnostics)
         {
-            if(busy)return;
+            if(busy && !gameMonitoring)return;
             try {
                 if(settings!=null)settings.DismissPrompt();
                 if(maintenanceArea==null) {
@@ -442,8 +464,8 @@ namespace TimeSplitters.Launcher
                 Find<ContentControl>("VersionsHost").Visibility=Visibility.Collapsed;
                 Find<ContentControl>("MaintenanceHost").Visibility=Visibility.Visible;
                 SelectNavigation("RepairNav");
-                repairPage.SetBusy(busy || checking,Core.GameRunning());diagnosticsPage.SetBusy(busy || checking,Core.GameRunning());
-                maintenanceArea.SetBusy(busy);
+                repairPage.SetBusy(busy || checking,Core.GameRunning());diagnosticsPage.SetBusy((busy && !gameMonitoring) || checking,Core.GameRunning());
+                maintenanceArea.SetBusy(busy && !gameMonitoring);
                 bool changed=maintenanceArea.Tabs.SelectedIndex!=(diagnostics?1:0);
                 maintenanceArea.Tabs.SelectedIndex=diagnostics?1:0;
                 if(diagnostics && !changed)await EnsureDiagnostics();
@@ -476,6 +498,11 @@ namespace TimeSplitters.Launcher
         }
         async Task RefreshDiagnostics()
         {
+            if(gameMonitoring) {
+                diagnosticsPage.Report.Text="Game hang diagnostics\n\n"+CrashReports.Summary(root)+"\n\nThe game is still running. You can wait for recovery or close it yourself. Nothing was uploaded.";
+                diagnosticsPage.Status("Hang report available locally. Open or export it while the game remains running.");
+                diagnosticsReady=true;return;
+            }
             await MaintenanceOperation(diagnosticsPage,async token=> {
                 diagnosticsPage.Status("Collecting system details…");
                 string graphics=await InstallationMaintenance.GraphicsWithTimeout(token);
@@ -594,9 +621,9 @@ namespace TimeSplitters.Launcher
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
             Button("HomeNav").IsEnabled = Button("NewsNav").IsEnabled = Button("RepairNav").IsEnabled = !busy;
-            if(maintenanceArea!=null)maintenanceArea.SetBusy(busy);
+            if(maintenanceArea!=null)maintenanceArea.SetBusy(busy && !gameMonitoring);
             if(repairPage!=null)repairPage.SetBusy(busy || checking,Core.GameRunning());
-            if(diagnosticsPage!=null)diagnosticsPage.SetBusy(busy || checking,Core.GameRunning());
+            if(diagnosticsPage!=null)diagnosticsPage.SetBusy((busy && !gameMonitoring) || checking,Core.GameRunning());
             Button("GameVersionsButton").IsEnabled=!busy && !checking;
             if(versionsPage!=null)versionsPage.SetBusy(busy || checking,Core.GameRunning());
             Button("RetryButton").IsEnabled=!busy && !checking;
@@ -758,11 +785,14 @@ namespace TimeSplitters.Launcher
             }
             return ready;
         }
-        internal async Task MonitorGame(Process process)
+        internal async Task MonitorGame(Process process,string previousReport = null)
         {
             bool minimizedForGame = false;
             string observedBuild = Core.GameBuildHash(root);
             WindowState previousState = Window.WindowState;
+            string lastReport=previousReport;
+            var reportClock=Stopwatch.StartNew();long nextReportScan=0;
+            gameMonitoring=true;
             try
             {
                 SetStatus("Starting game…");
@@ -774,23 +804,40 @@ namespace TimeSplitters.Launcher
                         minimizedForGame = true;
                         SetStatus("Game running.");
                     }
+                    if(reportClock.ElapsedMilliseconds>=nextReportScan) {
+                        nextReportScan=reportClock.ElapsedMilliseconds+2000;
+                        string report=CrashReports.Latest(root);
+                        if(report!=null && report!=lastReport && CrashReports.IsHang(root,report)) {
+                            Window.WindowState=previousState;Window.Activate();
+                            diagnosticsReady=false;ShowMaintenance(true);
+                            SetStatus("The game may be frozen. Hang report saved; the game is still running.");
+                        }
+                        if(report!=null)lastReport=report;
+                    }
                     await Task.Delay(200);
                 }
                 await Task.Run(() => process.WaitForExit());
             }
             finally
             {
+                gameMonitoring=false;
                 if (minimizedForGame) { Window.WindowState = previousState; Window.Activate(); }
             }
             await Task.Run(() => Core.FinishGameSession(root, observedBuild, minimizedForGame, process.ExitCode));
         }
-        internal async Task LaunchGame()
+        internal async Task LaunchGame(string crashTestMode = null)
         {
             using (var process = new Process())
             {
                 // Fresh installs use the same native launch path as configured
                 // ones. A PowerShell fallback fails under ConstrainedLanguage.
+                try {GameSessions.Recover(root);}catch(Exception ex){Program.Log(root,"Session recovery deferred: "+ex.GetType().Name);}
+                string previousCrash = CrashReports.Latest(root);
                 process.StartInfo = GameSettings.StartInfo(root);
+                if(crashTestMode!=null) {
+                    Core.Require(crashTestMode=="main" || crashTestMode=="worker" || crashTestMode=="normal" || crashTestMode=="handled" || crashTestMode=="hang-recover" || crashTestMode=="hang-unarmed", "Unknown crash test mode.");
+                    process.StartInfo.Arguments=crashTestMode=="hang-recover"?"--tsfp-hang-test=recover":crashTestMode=="hang-unarmed"?"--tsfp-hang-test=unarmed":"--tsfp-crash-test="+crashTestMode;
+                }
                 string logs = Core.PathIn(root, "Logs"); Directory.CreateDirectory(logs);
                 string tag = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture);
                 string errorPath = Path.Combine(logs, tag + ".err");
@@ -798,13 +845,41 @@ namespace TimeSplitters.Launcher
                 using (var output = File.Create(Path.Combine(logs, tag + ".out")))
                 using (var errors = new FileStream(errorPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
                 {
-                    process.Start();
-                    var stdout = process.StandardOutput.BaseStream.CopyToAsync(output);
-                    var stderr = process.StandardError.BaseStream.CopyToAsync(errors);
-                    await MonitorGame(process); await Task.WhenAll(stdout, stderr);
+                    string session=null;
+                    try {session=GameSessions.Begin(root,tag);}
+                    catch(Exception ex) {Program.Log(root,"Session tracking unavailable: "+ex.GetType().Name);}
+                    try {process.Start();}
+                    catch {
+                        try {if(session!=null)GameSessions.CancelLaunch(root,session);}catch(Exception ex){Program.Log(root,"Session launch cancellation: "+ex.GetType().Name);}
+                        throw;
+                    }
+                    try {if(session!=null)GameSessions.Started(root,session,process);}
+                    catch(Exception ex) {Program.Log(root,"Session process identity unavailable: "+ex.GetType().Name);}
+                    try {
+                        var stdout = process.StandardOutput.BaseStream.CopyToAsync(output);
+                        var stderr = process.StandardError.BaseStream.CopyToAsync(errors);
+                        await MonitorGame(process,previousCrash); await Task.WhenAll(stdout, stderr);
+                        // Publish even a short buffered diagnostic before the
+                        // fallback reporter reads this session's log tail.
+                        errors.Flush();
+                    } finally {
+                        try {if(session!=null && process.HasExited)GameSessions.Complete(root,session,process);}
+                        catch(Exception ex) {Program.Log(root,"Session completion deferred: "+ex.GetType().Name);}
+                    }
                 }
-                SetStatus(process.ExitCode == 0 ? "Game closed." : "Game launch failed. View logs for details.");
+                string latestCrash = CrashReports.Latest(root);
+                pendingCrash = (latestCrash != null && latestCrash != previousCrash) || process.ExitCode!=0;
+                diagnosticsReady = false;
+                SetStatus(latestCrash!=null && latestCrash!=previousCrash ? CrashReports.IsUnexpectedExit(root,latestCrash)?"The game closed unexpectedly. No crash dump was captured; session report saved - see Diagnostics.":CrashReports.IsHang(root,latestCrash)?"Game closed. Hang report saved - see Diagnostics.":"The game closed unexpectedly. Crash report saved - see Diagnostics." : process.ExitCode == 0 ? "Game closed." : "The game closed unexpectedly. No crash report is available - see Diagnostics and logs.");
             }
+        }
+        internal void RecoverGameSession()
+        {
+            try {
+                string report=GameSessions.Recover(root);if(report==null)return;
+                diagnosticsReady=false;ShowMaintenance(true);
+                SetStatus(CrashReports.IsUnexpectedExit(root,report)?"The previous game session ended unexpectedly. No crash dump was captured; see Diagnostics.":"The previous game session ended unexpectedly. Crash report saved - see Diagnostics.");
+            } catch(Exception ex) {Program.Log(root,"Session recovery deferred: "+ex.GetType().Name);}
         }
         async Task Play()
         {
@@ -817,7 +892,7 @@ namespace TimeSplitters.Launcher
                 await LaunchGame();
             }
             catch (Exception ex) { Fail(ex); }
-            finally { busy = false; Refresh(); }
+            finally { busy = false; Refresh(); if(pendingCrash){pendingCrash=false;ShowMaintenance(true);} }
         }
     }
 }

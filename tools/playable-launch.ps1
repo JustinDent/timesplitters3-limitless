@@ -18,6 +18,7 @@ $info.RedirectStandardError = $true
 foreach ($name in @($info.EnvironmentVariables.Keys)) {
     if ($name -like 'RECOMP_*' -or $name -like 'TSFP_*') { $info.EnvironmentVariables.Remove($name) }
 }
+$info.EnvironmentVariables['TSFP_CRASH_DIR'] = Join-Path $logRoot 'Crashes'
 $info.EnvironmentVariables['RECOMP_GAME_DIR'] = Join-Path $gameRoot 'Data'
 $info.EnvironmentVariables['RECOMP_SAVE_DIR'] = Join-Path $gameRoot 'Saves'
 $info.EnvironmentVariables['RECOMP_INPUT_CONFIG'] = $settingsPath

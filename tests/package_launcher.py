@@ -50,6 +50,8 @@ class LauncherPackaging(unittest.TestCase):
                 path.write_bytes(b'synthetic test fixture')
 
             for path in [root / 'build/windows/Release/futureperfect_recomp.exe',
+                         root / 'build/windows/Release/futureperfect_recomp.pdb',
+                         root / 'build/windows/Release/tsfp_crash_helper.exe',
                          root / 'build/launcher/TimeSplitters Launcher.exe',
                          root / 'build/launcher/Bin/TimeSplitters.App.exe',
                          root / 'config/pc-controls.default.json', root / 'tools/playable-launch.ps1',
@@ -79,11 +81,13 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertEqual(build.call_count, 2)
                 self.assertIn(str(root / 'tools/build-launcher.ps1'), build.call_args.args[0])
                 self.assertIn('-RequireArtwork', build.call_args.args[0])
-            archive_path = next((root / 'build/releases').glob('*.zip'))
+            archive_path = root / 'build/releases/TimeSplitters-Future-Perfect-PC-v1.2.3-windows-x64.zip'
             prefix = archive_path.stem + '/'
             with zipfile.ZipFile(archive_path) as archive:
                 self.assertIn(prefix + 'TimeSplitters Launcher.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/TimeSplitters.App.exe', archive.namelist())
+                self.assertIn(prefix + 'Bin/tsfp_crash_helper.exe', archive.namelist())
+                self.assertFalse(any(name.endswith('.pdb') for name in archive.namelist()))
                 self.assertIn(prefix + 'Support/Launcher/manifest.json', archive.namelist())
                 self.assertIn(prefix + 'Licenses/Game-icon-lettering.txt', archive.namelist())
                 self.assertFalse(any('/Data/' in name or '/Saves/' in name for name in archive.namelist()))
@@ -95,6 +99,10 @@ class LauncherPackaging(unittest.TestCase):
                     self.assertEqual(hashlib.sha256(archive.read(prefix + name)).hexdigest(), digest)
             digest = archive_path.with_suffix('.zip.sha256').read_text().split()[0]
             self.assertEqual(hashlib.sha256(archive_path.read_bytes()).hexdigest(), digest)
+            with zipfile.ZipFile(root/'build/releases/TimeSplitters-Future-Perfect-PC-v1.2.3-windows-x64-symbols.zip') as symbols:
+                self.assertIn('futureperfect_recomp.pdb', symbols.namelist())
+                info = json.loads(symbols.read('BUILD.json'))
+                self.assertEqual(info['files']['futureperfect_recomp.exe'], hashlib.sha256(symbols.read('futureperfect_recomp.exe')).hexdigest())
 
     def test_invalid_release_versions_are_rejected(self):
         for tag in ['main', '../escape', 'v01.2.3', 'v1.2.3-alpha.01']:

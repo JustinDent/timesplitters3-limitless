@@ -249,7 +249,7 @@ namespace TimeSplitters.Launcher
             foreach (string key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())
                 if (key.StartsWith("RECOMP_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("TSFP_", StringComparison.OrdinalIgnoreCase)) info.EnvironmentVariables.Remove(key);
             foreach (var pair in new Dictionary<string, string> {
-                {"RECOMP_GAME_DIR","Data"}, {"RECOMP_SAVE_DIR","Saves"}, {"RECOMP_INPUT_CONFIG",Files[0]}, {"RECOMP_FFMPEG_DIR","Bin"}, {"RECOMP_DISPLAY_CONFIG",Files[2]}, {"TSFP_DISPLAY_CONFIG",Files[1]}, {"TSFP_TEXTURE_PACK_DIR","Textures"}, {"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"} }) info.EnvironmentVariables[pair.Key] = Core.PathIn(root, pair.Value);
+                {"TSFP_CRASH_DIR","Logs/Crashes"}, {"RECOMP_GAME_DIR","Data"}, {"RECOMP_SAVE_DIR","Saves"}, {"RECOMP_INPUT_CONFIG",Files[0]}, {"RECOMP_FFMPEG_DIR","Bin"}, {"RECOMP_DISPLAY_CONFIG",Files[2]}, {"TSFP_DISPLAY_CONFIG",Files[1]}, {"TSFP_TEXTURE_PACK_DIR","Textures"}, {"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"} }) info.EnvironmentVariables[pair.Key] = Core.PathIn(root, pair.Value);
             info.EnvironmentVariables["RECOMP_TRACE_BUDGET"] = "0";
             // The existing XMV HLE completes skipped movies normally. Story
             // cutscenes are rendered by the game and do not use this player.

@@ -20,14 +20,17 @@ def affected(paths, *, full=False):
                 'tools/build-launcher.ps1', 'tools/playable-launch.ps1',
                 'tools/build-game-icon.ps1', 'tests/test_game_icon.py',
                 'tests/launcher_updates.cs', 'tests/launcher_settings.cs', 'tests/launcher_maintenance.cs', 'tests/launcher_downloads.cs', 'tests/launcher_news.cs', 'tests/launcher_startup.cs',
+                'tests/launcher_crashes.cs', 'tests/launcher_sessions.cs',
                 'tests/test_launcher_startup.py', 'tests/package_launcher.py',
                 'tools/release/ImportGame.cs', 'config/pc-controls.default.json')):
             selected.add('launcher')
         elif path in ('tools/publish-release.py', 'tests/test_publish_release.py',
+                      'tools/crash-symbols.py', 'tests/test_crash_symbols.py',
                       'tools/recycle-release-work.ps1', 'tools/package-release.py'):
             selected.add('release')
         elif path.startswith(('src/', 'tests/')) or path in (
                 'tools/recomp-generation.py', 'tools/online.py', 'tools/online_theme.py',
+                'tools/crash_helper.c',
                 'tools/bundle_online.py', 'tools/network-identity.py'):
             # Other paths admitted by the workflow are native/runtime inputs.
             selected.add('native')

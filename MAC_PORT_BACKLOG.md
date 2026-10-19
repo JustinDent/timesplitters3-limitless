@@ -1,5 +1,55 @@
 # PC features awaiting Mac adaptation
 
+### MAC-044 - Game crash capture and launcher reports
+
+- **Status:** Queued
+- **PC behavior:** Windows unhandled-exception capture through a prestarted helper;
+  bounded minidump, cached Xbox registers, executable hash and log tail. Launcher
+  detects new reports, opens Diagnostics and offers local open/export actions.
+  Matching executable/PDB archives are separate from player packages. The same
+  helper now saves a suspected-hang report after 60 seconds without frame
+  progress (180 seconds before the first frame), with modal/background/minimized
+  suppression and sleep/resume grace. One report per stall; frame recovery
+  rearms it. The game is left running and the launcher offers live open/export.
+  Launcher-started sessions now persist an atomic completion record, infer
+  abandoned sessions after checking PID/start-time identity, and create local
+  unexpected-exit summaries when no matching native fatal report exists.
+- **Source:** [PR #160](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/160),
+  implementation commit `20058fa` on `feature/windows-crash-logger`; `src/pc_crash.*`,
+  `tools/crash_helper.c`, the `windows-crash-logger` patch,
+  `tools/launcher/CrashReports.cs`, `Launcher.cs`, `MaintenancePage.cs`,
+  `tools/crash-symbols.py`, `tools/test-windows-crash.py`, `src/pc_hang_policy.h`,
+  `src/pc_debug.c`, `src/pc_controls.c`, the `windows-hang-watchdog` patch,
+  `tools/test-windows-hang.py` and `tests/pc_hang_policy.c`.
+  Session follow-up `3222e52` in the same PR: `tools/launcher/GameSessions.cs`,
+  `tests/launcher_sessions.cs`, and launcher report/lifecycle integration.
+  Review follow-up in this PR: concurrent fatal threads wait for capture,
+  report/export temporary names fit valid Windows paths, selected build
+  configurations retain their own symbols, and source-only CI covers these cases.
+- **Mac support:** Existing fault/signal diagnostics remain; these Win32 sources
+  and build targets are guarded and are not compiled by the Mac adapter.
+- **Remaining:** Implement native crash capture with signal-safe notification and
+  an external reporter or OS crash-report integration, dSYM retention and native
+  report open/export UI. Reuse the versioned report metadata where applicable.
+  Add external frame-stall observation, native focus/modal/sleep suppression,
+  nonfatal hang dumps, recovery rearming and live report UI.
+  Add persistent launch/completion records, native process-identity checks,
+  uncertain unfinished-session reporting, and report/export recovery without a dump.
+- **Acceptance:** Isolated main/worker crash resolves against the exact Mach-O and
+  dSYM; expected MMIO signals and normal exit create no crash reports; bounded
+  storage, missing reporter/unwritable destination, log privacy, and native UI.
+  Validate deliberate freeze/recovery/repeated stalls and a later crash, exact
+  thread symbols, no false reports in responsive/paused/modal/background or
+  sleep/resume cases, and export while the game stays alive.
+  Confirm clean/failed launches do not flag, an interrupted launcher does not
+  flag a still-running game, PID reuse cannot hide an abandoned run, and recovery
+  creates one bounded report with an unknown cause/code where unobserved.
+  Include simultaneous fatal faults and native filesystem path limits in adapter
+  validation; retain the symbols for the actual selected build configuration.
+  Windows checks do not establish native Mac behavior. See
+  [Windows design and checks](docs/windows-crash-logger.md); measured Windows
+  results are recorded in `STATUS.md`.
+
 ### MAC-043 — Automatic mouse Auto Lookahead override
 
 - **Status:** Awaiting validation
