@@ -12,15 +12,17 @@ namespace TimeSplitters.Launcher
         public static TextBlock Text(string text,int size,string color="#E4EDF5")
         { return new TextBlock { Text=text,FontSize=size,Foreground=Brush(color),TextWrapping=TextWrapping.Wrap }; }
         public static Border Card(UIElement child)
-        { return new Border { Background=Brush("#122233"),BorderBrush=Brush("#2D455C"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(7),Padding=new Thickness(20),Child=child }; }
+        { return new Border { Background=Brush("#122233"),BorderBrush=Brush("#2D455C"),BorderThickness=new Thickness(1),CornerRadius=new CornerRadius(7),Padding=new Thickness(16),Child=child }; }
         public static StackPanel Section(Panel parent,string title,string description)
         {
             var body=new StackPanel();var heading=Text(title,17);heading.FontWeight=FontWeights.SemiBold;body.Children.Add(heading);
-            if(description.Length>0){var hint=Text(description,12,"#9EB4C8");hint.Margin=new Thickness(0,5,0,16);body.Children.Add(hint);}
+            if(description.Length>0){var hint=Text(description,13,"#B4C7D8");hint.Margin=new Thickness(0,4,0,10);body.Children.Add(hint);}
             var card=Card(body);card.Margin=new Thickness(0,0,0,14);parent.Children.Add(card);return body;
         }
         public static void Primary(Button button)
         { button.Background=Brush("#A7D9FA");button.Foreground=Brush("#0B2337");button.BorderBrush=Brush("#D6EBFA"); }
+        public static void Secondary(Button button)
+        { button.Background=Brush("#1C3349");button.Foreground=Brush("#DFEAF4");button.BorderBrush=Brush("#405D76"); }
         public static ResourceDictionary Tabs()
         {
             // Native TabItem selection and keyboard navigation, with a compact accent underline.
@@ -28,7 +30,7 @@ namespace TimeSplitters.Launcher
 <ResourceDictionary xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                     xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
   <Style TargetType='TabItem'>
-    <Setter Property='Foreground' Value='#9EB4C8'/><Setter Property='Padding' Value='18,12'/>
+    <Setter Property='Foreground' Value='#B4C7D8'/><Setter Property='Padding' Value='18,12'/>
     <Setter Property='MinHeight' Value='44'/><Setter Property='Cursor' Value='Hand'/>
     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TabItem'>
       <Grid Background='Transparent' Margin='0,0,20,0'>
@@ -48,7 +50,7 @@ namespace TimeSplitters.Launcher
     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='TabControl'>
       <Grid KeyboardNavigation.TabNavigation='Local'>
         <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
-        <Border BorderBrush='#2D455C' BorderThickness='0,0,0,1' Margin='0,0,0,18'>
+        <Border BorderBrush='#2D455C' BorderThickness='0,0,0,1' Margin='0,0,0,12'>
           <TabPanel IsItemsHost='True' KeyboardNavigation.TabIndex='1' Panel.ZIndex='1'/>
         </Border>
         <ContentPresenter Grid.Row='1' x:Name='PART_SelectedContentHost' ContentSource='SelectedContent'/>
@@ -66,7 +68,7 @@ namespace TimeSplitters.Launcher
     <Setter Property='Background' Value='#1C3349'/><Setter Property='Foreground' Value='#DFEAF4'/>
     <Setter Property='BorderBrush' Value='#405D76'/><Setter Property='BorderThickness' Value='1'/>
     <Setter Property='Padding' Value='14,9'/><Setter Property='MinHeight' Value='38'/>
-    <Setter Property='FontSize' Value='12'/><Setter Property='FontWeight' Value='SemiBold'/><Setter Property='Cursor' Value='Hand'/>
+    <Setter Property='FontSize' Value='13'/><Setter Property='FontWeight' Value='SemiBold'/><Setter Property='Cursor' Value='Hand'/>
     <Setter Property='Template'><Setter.Value><ControlTemplate TargetType='Button'>
       <Border x:Name='Face' Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}'
               BorderThickness='{TemplateBinding BorderThickness}' Padding='{TemplateBinding Padding}' CornerRadius='4'>

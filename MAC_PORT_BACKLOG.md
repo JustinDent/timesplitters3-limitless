@@ -1228,6 +1228,35 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Visual polish (2026-10-19, `feature/launcher-visual-polish`):**
+  `Launcher.xaml`, `Launcher.cs`, `PageTheme.cs` and `SettingsPage.cs` add a
+  compact verified-data disclosure, matching native control styles, distinct
+  aligned vector navigation icons, clearer labels, tighter settings and an
+  uncropped original-art banner frame. Home scrolls when expanded content
+  exceeds its viewport; existing incomplete data remains protected from import.
+  Native Mac does not use this WPF UI; adaptation remains queued with this
+  entry. Reuse the information hierarchy in the native UI rather than Windows
+  templates. Acceptance: missing/verified/incomplete data actions, keyboard
+  access, maintained drafts, readable minimum-size layouts, original art
+  preservation and platform-appropriate icon/control rendering. Windows checks
+  are recorded in STATUS.md; no Mac execution is verified.
+  The same branch's follow-up groups version/readiness/Play/data management,
+  chooses one emphasized Home action, and adds labeled vector update states with
+  local progress and reserved layout space. The banner contracts at smaller
+  heights. Adapt these state semantics and action priorities to native controls
+  with MAC-021; preserve pause/error progress reset and clean update completion.
+  `tests/launcher_downloads.cs` covers pause/error/retry feedback. Mac behavior
+  remains unverified and no native adapter was changed.
+  A subsequent banner redesign on the same branch (based on `40b83a3`) replaces
+  the inset photo with an edge-to-edge generated environment, larger original
+  wordmark and uncropped original Cortez photo with a narrow background-edge
+  transparency blend. `tools/build-launcher.ps1` embeds the private companion
+  backdrop separately and requires it for release builds. For native adaptation,
+  preserve both original image sources, uniform photo scaling, responsive action
+  visibility and a fallback when private artwork is unavailable. Generated art
+  and full provenance must be transferred privately, not through Git. Windows
+  preview/package validation is recorded in STATUS.md; Mac remains unverified.
+
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**
   `src/pc_menu_theme.h`, `src/pc_dialog_theme.h`, `src/pc_settings.c` and

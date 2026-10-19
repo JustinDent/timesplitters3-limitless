@@ -34,6 +34,96 @@ The relevant terminal-depth, framebuffer, ghost, channel-clear, patch-tracking,
 patch-update and CI-scope suites passed: 74 tests in 130.67 seconds. Native
 macOS execution remains unverified (MAC-045).
 
+## Launcher banner composition (2026-10-19)
+
+Local follow-up on `feature/launcher-visual-polish`, based on `40b83a3` and
+dependent on its Home layout. Replaced the inset thumbnail treatment with an
+edge-to-edge composition: an original, larger title lockup over a generated
+blue/silver time-fracture background, joined to the supplied Cortez photo with
+a narrow left-edge transparency blend. The complete photo still uses uniform
+scaling without cropping; its source hash and the logo hash are unchanged.
+The original adaptive banner height is retained so Home controls stay visible.
+
+The generated 2172x724 companion backdrop and its full prompt/provenance remain
+ignored in `private/launcher-art`. `tools/build-launcher.ps1` embeds it separately
+and accepts `-BackdropPath`; required-artwork builds now reject a missing backdrop.
+Source builds may fall back to the existing gradient. All three embedded image
+streams were checked against their source SHA-256 hashes; the packaged app needs
+no external art files. Public publication has not been performed.
+
+Windows x64 .NET Framework build passed, as did 36 page/state layout previews
+at 1152x772 and 984x681, three package checks, and the missing-backdrop release
+gate. Home was visually inspected at both sizes. Broader existing suites passed
+28 download, 30 settings, 19 news and 14 read-only maintenance checks, including
+the source-build UI without the optional backdrop resource. The game-version
+suite passed its first nine checks, then the running game blocked the synthetic
+download/retry case; that suite is not claimed as passing. No personal data or
+running game was changed. Native Mac validation remains queued in MAC-021.
+
+## Launcher Home hierarchy and update states (2026-10-19)
+
+Follow-up on `feature/launcher-visual-polish`, building on local `e763ec2` rather
+than replacing its six visual improvements. Home now groups installed version,
+readiness, Play and game data in the stronger card, with a quieter update card.
+One next action uses the shared primary style: Play, install, ISO import, data
+inspection, or Retry/Resume depending on the workflow. Embedded Save/Verify
+actions retain the same primary treatment. A shorter window contracts the banner
+without cropping or modifying the original artwork.
+
+Update checks, ready/available results, download, verification, pause, failure
+and no-release states have distinct text/icon feedback. A local progress strip
+tracks downloading and is indeterminate during checks/preparation. It stops and
+resets after pause/error/result states; existing download/update guards remain.
+Reserved message/progress/action slots kept the measured normal action row fixed
+at y=586 (1152x772) and y=499 (984x681) for checking, ready, available, downloading,
+verifying and empty-release previews. Recovery uses a full-width primary action
+plus quieter repair/log links; longer exceptional messages remain scrollable.
+
+Windows x64 .NET Framework build with required artwork passed. Thirty-six
+preview/layout checks covered the original ten page/data states plus eight
+update states at both sizes. Minimum-size Home and download/pause/error renders
+were visually inspected. Current-source suites passed: 28 download/recovery,
+30 settings, 19 release-news, 11 game-version and 14 read-only maintenance checks.
+The new regression verifies progress shutdown/reset through pause, error and
+retry without starting an installation. Six transaction-maintenance checks are
+outside the read-only suite; no actual game was started/stopped or personal
+files changed. Native Mac, physical high-DPI testing and publication are not
+claimed. See MAC-021 and the ignored `build/launcher-visual-validation` evidence.
+
+## Launcher visual polish (2026-10-19)
+
+Windows x64 work on `feature/launcher-visual-polish`, based on main `c006c24`.
+Implemented all six requested visual improvements: collapsed verified game-data
+management, matching Home dropdown/softer Play button, six distinct vector
+sidebar icons, larger small labels with clearer muted-text contrast, compact
+settings rows, and a softer banner frame. Source artwork remains untouched and
+uses uniform scaling. Existing incomplete data offers inspection rather than
+import; verification changes update the default disclosure state while routine
+refreshes preserve the user's expansion choice. Home cards scroll as necessary.
+
+The .NET Framework x64 build with required original banner/logo passed.
+Twenty local preview/layout checks passed across Home (ready, expanded, missing
+and incomplete data), both Settings tabs, Repair, Diagnostics, What's new and
+Game versions at 1152x772 and 984x681 content sizes (the latter allows for the
+frame of a minimum-size 1000x720 window). The initial small-window pass caught
+clipped data actions; the scrollable Home cards fix was rebuilt and rechecked.
+Rendered pages were visually inspected; data actions were checked for reachability
+after scrolling, and verified-data expansion was checked across refreshes.
+
+Current-source regression results: 30 settings, 19 release-news, 11 game-version
+and 14 read-only maintenance checks passed. Six transaction maintenance checks
+were intentionally skipped in read-only mode while real game processes remained
+running; no updater/runtime changes require those checks for this visual work.
+No personal files or real game processes were modified. Native Mac execution,
+physical high-DPI testing and publication are not claimed. MAC-021 records the
+native UI follow-up. Prior local transaction-lock and minimize-on-start fixes
+remain on their separate branches and are not included in this branch.
+
+Ignored evidence: `build/launcher-visual-validation` contains the build, preview
+images, harness and suite logs; `build/launcher-visual-layout.log` records the
+layout pass. Test binaries used the short `%TEMP%/tsfp-visual-tests` path to avoid
+the pre-existing long-path crash-report fixture limit.
+
 ## Launcher v1.2.16 release preparation (2026-10-19)
 
 Prepared from main `4a489af`, which includes the reviewed crash/session changes

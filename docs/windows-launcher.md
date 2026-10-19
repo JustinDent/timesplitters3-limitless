@@ -48,9 +48,19 @@ absent, the build retains the blue/silver vector header. Generated source
 artwork and its provenance stay ignored under `private/launcher-art`.
 The current private banner is the supplied 1600 x 1200 Future Perfect key art,
 embedded unchanged. The full photo fits proportionally inside the right side
-of the header, with no cropping or redraw. The original game wordmark and a
-blue/silver panel fill the remaining width. Its source hash and the previous
-generated banner's recovery copy are recorded in `banner-provenance.json`.
+of the header, with no cropping or redraw. A narrow transparency blend along
+the photo's left background edge joins it to a generated blue/silver time-fracture
+environment; Cortez, both weapons and the boot remain visible. The larger original
+game wordmark sits over a darker area of that environment. Source hashes and the
+previous generated banner's recovery copy are recorded in `banner-provenance.json`.
+
+The companion environment is `private/launcher-art/future-perfect-backdrop-v1.png`
+(2172 x 724), embedded separately as `launcher-backdrop.png`. Use
+`-BackdropPath <image.png>` to override it (maximum 8 MiB). Its generation prompt,
+source and dimensions are recorded privately in `backdrop-provenance.json`.
+Source builds without it use the existing gradient. Release builds with
+`-RequireArtwork` require the banner, logo and backdrop so artwork is not silently
+omitted. No external image files are needed after installation.
 
 The optional `private/launcher-art/timesplitters-future-perfect-logo.png`
 supplies the original title wordmark and subtitle lettering in the sidebar.
@@ -297,6 +307,36 @@ launcher and its sidebar, at 1152 × 772, using the same embedded settings page.
 
 ## Installation and recovery
 
+### Home and settings layout
+
+Home uses matching vector sidebar icons, readable blue/silver controls and a
+themed update-channel picker. The banner displays the complete original artwork
+with uniform scaling inside a softly lit frame; the source image is unchanged.
+After game data is verified, setup actions collapse into **Manage game data**.
+Expand it to open the installed Data folder. Missing data shows the ISO/folder
+import actions; existing incomplete data shows an inspection action instead of
+offering to overwrite it. A routine refresh preserves the expanded/collapsed
+state unless verification status changes. Home cards scroll when expanded
+content exceeds the available window height.
+
+Settings use tighter section spacing and adjacent FOV/window controls while
+retaining the fixed Save/Cancel footer, key bindings and draft behavior. These
+layout changes do not modify saved preferences or the install/update process.
+
+The game card groups the installed version, readiness, Play and data management.
+Home highlights one next action: Play for a ready game, install/import/inspection
+during setup, or Retry/Resume during recovery. Secondary actions use the same
+quieter style as embedded-page controls. The banner contracts in shorter windows
+to preserve space for these actions while keeping the complete artwork visible.
+
+The update card identifies checking, up-to-date, available, downloading,
+verifying, paused, attention-needed and no-release states with both text and
+vector icons. It shows local progress during checks/downloads/preparation and
+stops that indicator on pause, failure or completion. Reserved message/progress/
+action space keeps routine transitions steady; unusually long messages and
+expanded data details can still scroll rather than being truncated. These cues
+describe existing update operations and do not change their safety checks.
+
 Starting with v1.1.2, Play keeps the launcher visible during startup and
 minimizes it once the installed game's window appears. It restores the previous
 normal/maximized launcher state when the launch script finishes. Startup failures
@@ -392,7 +432,7 @@ is newer, or when an equal installed version fails its manifest checks. A valid
 equal/newer launcher keeps its binaries and manifest together, including embedded
 banner/logo artwork. Explicit launcher updates use their separate transaction.
 
-Public game packaging requires the private banner and title logo via
+Public game packaging requires the private banner, backdrop and title logo via
 `tools/build-launcher.ps1 -RequireArtwork`; missing artwork stops packaging.
 Developer/CI builds may still omit the switch to use the fallback interface.
 For an installation already affected by an older updater, close the launcher
