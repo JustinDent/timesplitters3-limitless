@@ -1,5 +1,39 @@
 # Measured progress
 
+## Terminal camera depth clears (issue #47, 2026-10-19)
+
+Implemented on `47-what-lies-below-camera-visual-bug`, based on main `c006c24`.
+The user's What Lies Below / Containment Area A capture reproduces a blank
+camera feed. The captured 256x256 camera target contains 142 geometry draws,
+but replays entirely black. Injecting only a depth/stencil clear before that
+pass restores the room, door and character; this established the cause in a
+diagnostic replay before testing the rebuilt fix live.
+
+The HLE allocates a smaller host depth image when a guest depth attachment
+cannot fit a camera target. Previously these fallback images were cached only
+by dimensions and missed clears issued while the main image was bound. The
+additive `terminal-depth-clear` patch keys them by guest storage/layout plus
+host size, records independent depth/stencil clear generations, and delivers
+pending clears through `host_Clear` after binding. Repeated binds and
+colour-only clears retain occlusion; separate guest depth images stay separate.
+The existing full-frame shared-depth/ghost path is preserved. Unsupported
+texture-to-texture CopyRects were also seen in the log, but did not explain
+this camera pass and are not changed here.
+
+Windows x64 / MSVC 19.44 / D3D11: supported US XBE SHA-256 checked; complete
+patch stack applied; `tsfp.ps1 Build` succeeded including its GPU and native
+build checks. The production clear/cache regression and its deliberate
+lost-clear mutation both passed. CI and `tsfp.ps1 Test` now include that test.
+Capture and replay evidence stays ignored under `private/captures/issue-47`.
+The user tested the isolated unlocked Test Lab build and reported the camera
+feeds and controls appear to work. The new live capture at
+`private/captures/issue-47/fixed/frame000.bmp` visibly shows the Operation Room
+feed rendering its room. Its matching capture replays 546 draws with zero
+failed host calls, malformed chunks, unmapped handles or unknown chunks.
+The relevant terminal-depth, framebuffer, ghost, channel-clear, patch-tracking,
+patch-update and CI-scope suites passed: 74 tests in 130.67 seconds. Native
+macOS execution remains unverified (MAC-045).
+
 ## Launcher v1.2.16 release preparation (2026-10-19)
 
 Prepared from main `4a489af`, which includes the reviewed crash/session changes
