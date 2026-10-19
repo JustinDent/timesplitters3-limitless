@@ -227,6 +227,10 @@ receive labels automatically.
 [Find your build version and logs](docs/launcher.md#report-a-problem-or-request-an-improvement);
 keep personal saves and game data private.
 
+Want to help? Read the [contributing guide](CONTRIBUTING.md) and
+[code of conduct](CODE_OF_CONDUCT.md). For security vulnerabilities, follow the
+[security policy](SECURITY.md) to report privately instead of opening a public issue.
+
 ---
 
 ### Faster gameplay testing
