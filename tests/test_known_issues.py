@@ -2,6 +2,7 @@
 import contextlib
 import importlib.util
 import io
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import unittest
 
@@ -55,23 +56,23 @@ class FakeGitHub:
             return {'errors': [{'message': 'Access denied'}]}
         if payload['query'] == known.CREATE:
             assert payload['variables']['id'] == 'discussion-id'
-            self.discussion_comments.append({'id': 'comment-id', 'body': payload['variables']['body'],
+            stamp = datetime(2026, 10, 19, tzinfo=timezone.utc) + timedelta(seconds=len(self.discussion_comments))
+            self.discussion_comments.append({'id': 'comment-' + str(len(self.discussion_comments)),
+                'createdAt': stamp.isoformat(), 'body': payload['variables']['body'],
                 'url': self.target['url'] + '#discussioncomment-123',
                 'author': {'login': 'github-actions[bot]', '__typename': 'Bot'}})
-            field = 'addDiscussionComment'
         else:
-            assert payload['query'] == known.UPDATE
-            target = next(c for c in self.discussion_comments if c['id'] == payload['variables']['id'])
-            target['body'] = payload['variables']['body']
-            field = 'updateDiscussionComment'
-        return {'data': {field: {'comment': {'url': self.target['url'] + '#discussioncomment-123'}}}}
+            raise AssertionError('Unexpected mutation; workflow token must never attempt edits.')
+        return {'data': {'addDiscussionComment': {'comment': {'url': self.target['url'] + '#discussioncomment-123'}}}}
 
     @property
     def generated_body(self):
-        return next(c['body'] for c in self.discussion_comments if c['id'] == 'comment-id')
+        return max((c for c in self.discussion_comments
+                    if c['author']['login'].removesuffix('[bot]') == 'github-actions'),
+                   key=lambda c: c['createdAt'])['body']
 
     def writes(self):
-        return [r for r in self.requests if r[2] and r[2].get('query') in (known.CREATE, known.UPDATE)]
+        return [r for r in self.requests if r[2] and r[2].get('query') == known.CREATE]
 
 
 class KnownIssuesTests(unittest.TestCase):
@@ -100,8 +101,7 @@ class KnownIssuesTests(unittest.TestCase):
         self.assertIn('/issues/1)', api.generated_body)
         api.issues[0]['labels'] = []; self.publish(api)
         self.assertNotIn('/issues/1)', api.generated_body)
-        self.assertEqual(api.writes()[0][2]['variables']['id'], 'discussion-id')
-        self.assertTrue(all(r[2]['variables']['id'] == 'comment-id' for r in api.writes()[1:]))
+        self.assertTrue(all(r[2]['variables']['id'] == 'discussion-id' for r in api.writes()))
 
     def test_changed_title_updates_and_identical_runs_do_not_write(self):
         api = FakeGitHub()
@@ -124,32 +124,35 @@ class KnownIssuesTests(unittest.TestCase):
         self.assertEqual(api.discussion_comments[:2], [human, other_bot])
         self.assertEqual(len(api.discussion_comments), 3)
         api.issues = []; self.publish(api)
-        self.assertEqual(len(api.discussion_comments), 3)
+        self.assertEqual(len(api.discussion_comments), 4)
+        self.assertEqual(api.discussion_comments[:2], [human, other_bot])
         self.assertEqual(api.target['body'], 'Previous manual post.')
 
-    def test_existing_bot_comment_on_later_page_is_updated_without_duplicate(self):
+    def test_latest_snapshot_on_later_page_is_found_and_unchanged_run_skips(self):
         api = FakeGitHub(); self.publish(api)
         api.discussion_comments[:0] = [{'id': str(n), 'body': 'Conversation.',
             'author': {'login': 'human', '__typename': 'User'}} for n in range(100)]
+        self.assertFalse(self.publish(api))
         api.issues = []; self.publish(api)
-        self.assertEqual(len(api.discussion_comments), 101)
-        self.assertEqual(api.writes()[-1][2]['query'], known.UPDATE)
+        self.assertEqual(len(api.discussion_comments), 102)
+        self.assertEqual(api.writes()[-1][2]['query'], known.CREATE)
         self.assertIn('No open issues', api.generated_body)
 
     def test_graphql_bot_login_without_rest_suffix_is_reused(self):
         api = FakeGitHub(); self.publish(api)
         api.discussion_comments[0]['author']['login'] = 'github-actions'
-        api.issues = []; self.publish(api)
+        self.assertFalse(self.publish(api))
         self.assertEqual(len(api.discussion_comments), 1)
-        self.assertEqual(api.writes()[-1][2]['query'], known.UPDATE)
+        self.assertEqual(api.writes()[-1][2]['query'], known.CREATE)
 
-    def test_multiple_managed_comments_fail_without_editing_either(self):
+    def test_newest_snapshot_wins_even_if_comments_arrive_out_of_order(self):
         api = FakeGitHub(); self.publish(api)
-        api.discussion_comments.append(dict(api.discussion_comments[0], id='duplicate'))
-        before = len(api.writes())
-        with self.assertRaisesRegex(ValueError, 'Multiple managed'):
-            self.publish(api)
-        self.assertEqual(len(api.writes()), before)
+        original = api.discussion_comments[0].copy()
+        api.issues = []; self.publish(api)
+        api.discussion_comments.reverse()
+        self.assertFalse(self.publish(api))
+        self.assertEqual(len(api.writes()), 2)
+        self.assertEqual(api.discussion_comments[-1], original)
 
     def test_existing_comment_update_rejection_is_reported(self):
         api = FakeGitHub(); self.publish(api)
@@ -261,7 +264,7 @@ class KnownIssuesTests(unittest.TestCase):
         self.assertIn('persist-credentials: false', workflow)
         self.assertIn('group: known-issues-discussion', workflow)
         self.assertIn('discussions: write', workflow)
-        self.assertIn('issues: write', workflow)
+        self.assertNotIn('issues: write', workflow)
         self.assertNotIn('contents: write', workflow)
         self.assertIn("github.repository == 'TheDoffman/timesplitters-future-perfect-pc'", workflow)
 

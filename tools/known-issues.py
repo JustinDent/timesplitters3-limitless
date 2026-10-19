@@ -16,15 +16,10 @@ QUERY = '''query($owner: String!, $name: String!, $number: Int!, $after: String)
     discussion(number: $number) {
       id title body url
       comments(first: 100, after: $after) {
-        nodes { id body url author { login __typename } }
+        nodes { id body url createdAt author { login __typename } }
         pageInfo { hasNextPage endCursor }
       }
     }
-  }
-}'''
-UPDATE = '''mutation($id: ID!, $body: String!) {
-  updateDiscussionComment(input: {commentId: $id, body: $body}) {
-    comment { url }
   }
 }'''
 CREATE = '''mutation($id: ID!, $body: String!) {
@@ -126,9 +121,10 @@ def render(api, repository, labels):
               and labels.intersection(label['name'].casefold() for label in issue['labels'])}
     base = f'https://github.com/{repository}'
     body = (f'{MARKER}\n'
-            'This list is maintained automatically from open bug reports. '
-            'Reports are removed when closed or when their bug label is removed, '
-            'and return if reopened and still labeled as bugs. '
+            'This is an automatic snapshot of open bug reports. '
+            'The newest bot comment contains the current list; older comments are history. '
+            'Closed or untagged reports are removed from the next snapshot, '
+            'and reopened bugs return if still labeled. '
             'A closed report does not necessarily mean a fix is in a published build.\n\n'
             'Workarounds below come from explicit maintainer notes on the linked issues. '
             'Follow each report for affected versions, evidence and the latest status.\n\n'
@@ -195,23 +191,21 @@ def publish(api, repository, config, dry_run=False):
              if (comment.get('author') or {}).get('login', '').removesuffix('[bot]') == 'github-actions'
              and (comment.get('author') or {}).get('__typename') == 'Bot'
              and comment['body'].startswith(MARKER + '\n')]
-    if len(owned) > 1:
-        raise ValueError('Multiple managed bot comments found; refusing to edit the wrong one.')
-    previous = owned[0] if owned else None
+    previous = max(owned, key=lambda c: (c['createdAt'], c['id'])) if owned else None
     if previous and previous['body'] == body:
         print('Known-issues Discussion already up to date: ' + target['url'])
         return False
-    mutation = UPDATE if previous else CREATE
-    field = 'updateDiscussionComment' if previous else 'addDiscussionComment'
-    result = api.request('POST', 'graphql', {'query': mutation,
-        'variables': {'id': previous['id'] if previous else target['id'], 'body': body}})
+    # GITHUB_TOKEN can publish but GitHub rejects edits, even to bot-owned
+    # Discussion bodies/comments. Keep history and publish only changed lists.
+    result = api.request('POST', 'graphql', {'query': CREATE,
+        'variables': {'id': target['id'], 'body': body}})
     if result.get('errors'):
         errors = '; '.join(f'{error.get("type", "GraphQL")}: {error.get("message", "Unknown error")}'
                            for error in result['errors'])
-        raise RuntimeError('GitHub rejected the known-issues Discussion update: ' + errors)
-    if not ((result.get('data') or {}).get(field) or {}).get('comment'):
-        raise RuntimeError('GitHub could not update the known-issues Discussion.')
-    print('Known-issues bot comment updated: ' + result['data'][field]['comment']['url'])
+        raise RuntimeError('GitHub rejected the known-issues snapshot: ' + errors)
+    if not ((result.get('data') or {}).get('addDiscussionComment') or {}).get('comment'):
+        raise RuntimeError('GitHub could not publish the known-issues snapshot.')
+    print('Known-issues snapshot posted: ' + result['data']['addDiscussionComment']['comment']['url'])
     return True
 
 
