@@ -1,4 +1,9 @@
 /* Exercise the real HLE redraw/gate with renderer outcomes, no game assets. */
+#include "platform/xbox_winnt.h"
+static BOOL test_counter(LARGE_INTEGER *value);
+static BOOL test_frequency(LARGE_INTEGER *value);
+#define QueryPerformanceCounter test_counter
+#define QueryPerformanceFrequency test_frequency
 #include "hle/hle_d3d8_interp.c"
 #include <assert.h>
 #include <stdlib.h>
@@ -24,15 +29,18 @@ BOOL xbox_D3D8InterpBegin(void){begins++;return begin_ok;}
 BOOL xbox_D3D8InterpPresent(void){presents++;return present_ok;}
 void xbox_D3D8InterpEnd(void){ends++;}
 const float *hle_d3d8_interp_constants(void){static float values[256*4];return values;}
-void d3d8_vsh_set_constant(int start,const float *values,int count){(void)start;(void)values;(void)count;}
+static float uploaded_constants[256*4];
+void d3d8_vsh_set_constant(int start,const float *values,int count){
+    assert(start>=0 && count>=0 && start+count<=256);
+    memcpy(uploaded_constants+start*4,values,(size_t)count*4*sizeof(float));
+}
 void hle_d3d8_overlay_redraw(void){overlays++;}
 int hle_d3d8_dump_back_buffer(const char *path){(void)path;return -1;}
 int hle_d3d8_capture_active(void){return 0;}
 int hle_d3d8_movie_layer_shown(void){return 0;}
-#ifdef __APPLE__
-BOOL QueryPerformanceCounter(LARGE_INTEGER *value){static LONGLONG t=100;value->QuadPart=++t;return TRUE;}
-BOOL QueryPerformanceFrequency(LARGE_INTEGER *value){(void)value;unexpected_hook("clock initialization");return FALSE;}
-#endif
+static LONGLONG clock_ticks=100;
+static BOOL test_counter(LARGE_INTEGER *value){value->QuadPart=++clock_ticks;return TRUE;}
+static BOOL test_frequency(LARGE_INTEGER *value){(void)value;unexpected_hook("clock initialization");return FALSE;}
 int main(void) {
     g_on=1;hle_d3d8_interp_rec=1;
     assert(redraw(.5));

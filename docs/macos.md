@@ -115,6 +115,11 @@ use `frame_cap = 60` with interpolation, or the `--fps 120` override. Do not rai
 
 The isolated test runner also accepts `--fps 60` / `--fps 120`. Profile rows label
 each present as `guest` or `interpolated`, and the statistics report both rates.
+For a separate performance measurement, `--profile-frames --profile-without-validation`
+disables Vulkan validation layers for that isolated run only. The default
+keeps validation enabled. Report which mode was used, exclude loading/readback
+from steady-scene timings, and do not treat a profiling-only run as a clean
+Vulkan validation pass.
 For motion evidence, `--capture-interpolation` enables a request file at
 `private/test-saves/native-mac/capture-interpolation.txt`; write `1` while moving
 to replace exactly two BMPs (`interpolation-guest.bmp` and

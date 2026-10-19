@@ -279,3 +279,13 @@ def test_native_fixture_rejects_redirected_xdg_config(tmp_path, unlocked_fixture
 def test_present_counts_require_actual_backend_evidence():
     assert probe.present_counts('[NATIVE-GUEST] completed frame 600') is None
     assert probe.present_counts('[PRESENT] backend=vulkan total=300 guest=180 interpolated=119 other=1 skipped=4 failed=2') == dict(total=300,guest=180,interpolated=119,other=1,skipped=4,failed=2)
+
+
+def test_disabling_validation_requires_explicit_profiling(monkeypatch,capsys):
+    monkeypatch.setattr(probe.platform,'system',lambda:'Darwin')
+    monkeypatch.setattr(probe.platform,'machine',lambda:'arm64')
+    monkeypatch.setattr(sys,'argv',['test-native-mac.py','--profile-without-validation'])
+    with pytest.raises(SystemExit) as stopped:
+        probe.main()
+    assert stopped.value.code==2
+    assert 'requires --profile-frames' in capsys.readouterr().err

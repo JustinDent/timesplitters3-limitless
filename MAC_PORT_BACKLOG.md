@@ -750,6 +750,21 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-005 — Multiple texture stages and shader fidelity
 
 - **Status:** In progress
+- **Shared scene interpolation (2026-10-19, commit carrying this update):**
+  `codex/shared-scene-interpolation` depends on `codex/khallos-sky` at `683026d`
+  and its unmerged shared-renderer base. Both entry points now select the same
+  title transform registers. The shared HLE path recognizes draws that use a
+  precomposed projection/model-view matrix, recovers and interpolates its
+  affine transform, and reapplies the projection instead of presenting the
+  unchanged matrix. Portable production-code tests cover motion, FOV changes,
+  unrelated stale registers, endpoints, HUD/unmatched draws and camera cuts.
+  Short Mac Khallos captures retain scene geometry. Both drivers passed RHI and
+  replay contracts; Windows runtime validation remains pending. A 15-second
+  MoltenVK sample measured 119.802 host API presents/s, but a separate gameplay
+  validation found portability swizzle errors. Fix feature negotiation and add
+  format readback coverage before changing the default. Shared one-shot paired
+  captures also remain missing. This does not fix the static sky or certify
+  sustained 120 FPS. [Evidence](STATUS.md#shared-scene-interpolation-and-khallos-pacing-2026-10-19).
 - **Khallos investigation (2026-10-19):** The commit carrying this update on
   `codex/khallos-sky`, based on unmerged `codex/shared-renderer-default` at
   `d30b652`, adds the Mac SDL adapter for the shared frame-replay tool and a

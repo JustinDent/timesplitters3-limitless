@@ -119,6 +119,8 @@ def main():
     parser.add_argument('--trace-render', action='store_true', help='Enable bounded frame tracing on request')
     parser.add_argument('--profile-frames', action='store_true',
                         help='Record up to 20,000 host present intervals, without GPU readback')
+    parser.add_argument('--profile-without-validation', action='store_true',
+                        help='With --profile-frames, measure Vulkan without validation-layer overhead; not a validation pass')
     parser.add_argument('--fps', type=int, choices=(60,120), help='Override the native display target for this test only')
     parser.add_argument('--capture-interpolation', action='store_true', help='Capture one guest/midpoint pair when capture-interpolation.txt requests it')
     parser.add_argument('--vulkan-driver',choices=('moltenvk','kosmickrisp'),default='kosmickrisp',
@@ -128,6 +130,8 @@ def main():
         parser.error('This probe requires an Apple Silicon Mac.')
     if not 1 <= args.seconds <= 1800:
         parser.error('--seconds must be between 1 and 1800')
+    if args.profile_without_validation and not args.profile_frames:
+        parser.error('--profile-without-validation requires --profile-frames')
     xbe = ROOT / 'private/game/default.xbe'
     if hashlib.sha256(xbe.read_bytes()).hexdigest() != EXPECTED_XBE:
         raise SystemExit('Unsupported game executable')
@@ -149,7 +153,7 @@ def run_probe(args, test, env, exe, kind):
         import vulkan_sdk
         env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(),
             getattr(args,'vulkan_driver','kosmickrisp'))
-        env['RECOMP_VK_VALIDATION']='1'
+        env['RECOMP_VK_VALIDATION']='0' if getattr(args,'profile_without_validation',False) else '1'
     if args.fps:
         env.update(RECOMP_FRAME_INTERP='2' if args.fps==120 else '1',
                    RECOMP_FPS_CAP='60' if args.fps==120 else 'adaptive')

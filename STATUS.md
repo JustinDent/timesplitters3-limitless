@@ -8167,3 +8167,60 @@ The sky remains visually unverified. A known-good matched scene is still
 needed to distinguish an upstream scene/state error from the original low
 resolution artwork and its intended appearance. A blanket wrapping, fog or
 brightness change is unsupported by the evidence collected so far.
+
+### Shared scene interpolation and Khallos pacing (2026-10-19)
+
+The commit carrying this section on `codex/shared-scene-interpolation` depends
+on `codex/khallos-sky` at `683026d` and the unmerged shared-renderer stack.
+Both title entry points now configure projection c60 and transform c64-c75
+through `src/graphics/tsfp_interpolation.h`. The shared recorder recognizes
+programs reading composed transforms such as c68. The HLE patch deprojects
+these matrices, interpolates their recovered affine motion and reapplies the
+projection; it does not substitute unrelated/stale c64 values. Replay scheduling
+also accounts for preparation time and refreshes the clock before drawing.
+Guest timing and saved interpolation preferences remain unchanged.
+
+Production-code tests cover transform/FOV interpolation, endpoints, HUD,
+unmatched geometry, camera cuts, invalid projection, configured-register draw
+classification and preparation overruns. The selected source suite passed
+125 tests with two host-specific skips. Native build and both pinned drivers'
+asset-free RHI plus production replay contracts passed. Windows runtime and
+GitHub CI for this change remain unrun. `--profile-without-validation` now
+explicitly permits frame profiling without layers; normal tests keep validation.
+
+Host: Apple M5 Pro, ARM64 macOS 27.0.1, Apple Clang 21, pinned SDK 1.4.363.0,
+upstream `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`; supported XBE hash unchanged.
+Build source is `683026d` plus these then-uncommitted changes; executable SHA-256
+`f3396fd435609f9bea91a90d182b093f9aaa794c6e841a650581333f0c1b5696`.
+Short isolated Khallos runs used the disposable unlocked profile and synthetic
+SDL navigation. Reviewed captures retain train, weapon and landscape geometry;
+this is not a full playthrough or physical-input test. A retained interpolated
+frame is not a matched same-frame guest/midpoint comparison.
+
+In separate 120-second runs, the 80-95-second gameplay window at 1920x1080,
+without validation layers or readback in that window, measured:
+
+| Driver | Host presents/s | Guest/s | Interpolated/s | Median interval | p95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| KosmicKrisp | 50.498 | 46.568 | 3.931 | 19.054 ms | 37.607 ms |
+| MoltenVK | 119.802 | 59.934 | 59.868 | 8.738 ms | 9.779 ms |
+
+These count successful presentation API calls, not GPU completion or scanout;
+a single 15-second scene sample does not certify sustained campaign-wide 120 FPS.
+Local comparison: `logs/shared-scene-pacing-comparison.json` and
+`logs/shared-khallos-{scheduled,moltenvk}-120-*`. The default is still KosmicKrisp.
+
+A separate 95-second MoltenVK validation run exited normally with no shader
+compile failures or native fault, but reported ten capped instances of
+`VUID-VkImageViewCreateInfo-imageViewFormatSwizzle-04465`. Thus gameplay was
+NOT validation-clean even though the narrower GPU contracts passed. Fix and
+extend coverage of portability feature negotiation before changing the default.
+Evidence: `logs/shared-khallos-moltenvk-validation-120-*` and
+`private/captures/native-mac/shared-khallos-validation-120.png`.
+
+The static Khallos sky remains unresolved; this interpolation fix does not
+correct it. The common renderer also does not yet implement the documented
+legacy-GL one-shot `--capture-interpolation` request; shared paired-capture
+support remains acceptance work. Personal config presence and controls fixture
+hash were unchanged, disposable test partitions recycled, and retained capture
+allocation stayed below 256 MiB.

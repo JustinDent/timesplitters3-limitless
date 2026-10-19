@@ -85,6 +85,8 @@ on:
       - tests/rhi_host.c
       - tests/present_metrics.c
       - tests/interpolation_present.c
+      - tests/interpolation_scene.c
+      - tests/interpolation_draw_key.c
       - tests/vulkan_present_outcomes.h
       - tests/text_bitmap_macos.c
       - tests/rhi_depth_replay.h
