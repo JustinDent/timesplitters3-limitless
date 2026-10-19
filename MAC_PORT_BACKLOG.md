@@ -1255,7 +1255,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Awaiting validation
-- **Automatic compatibility review (2026-10-19, uncommitted on
+- **Automatic compatibility review (2026-10-19, `f96d1be`, PR #190 on
   `codex/launcher-compatibility-automation`):** The GitHub workflow inspects
   launcher changes in both directions, proposes bounded separate adapter-fix PRs,
   and reuses the Windows/Mac release build/package checks. No game adapter is

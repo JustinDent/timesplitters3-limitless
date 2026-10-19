@@ -190,7 +190,7 @@ class PatchPolicy(unittest.TestCase):
     def write(self, path, content):
         target = self.root/path
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content, encoding='utf-8')
+        target.write_text(content, encoding='utf-8', newline='\n')
 
     def proposal(self, path, text):
         self.write(path, text)
@@ -211,6 +211,16 @@ class PatchPolicy(unittest.TestCase):
         diff = compat.git(self.root, 'diff', 'HEAD').decode()
         compat.git(self.root, 'reset', '--hard', '-q', 'HEAD')
         self.assertIsNone(compat.apply_patch(self.root, diff)[0][2])
+
+    def test_windows_adapter_patch_preserves_checkout_crlf(self):
+        self.write('.gitattributes', '*.ps1 text eol=crlf\n')
+        self.write('tools/build-launcher.ps1', 'old\n')
+        compat.git(self.root, 'add', '.')
+        compat.git(self.root, '-c', 'user.name=Test', '-c', 'user.email=test@localhost', 'commit', '-qm', 'Windows adapter')
+        diff = self.proposal('tools/build-launcher.ps1', 'new\n')
+        changes = compat.apply_patch(self.root, diff)
+        self.assertEqual(changes[0][2], b'new\n')
+        self.assertEqual((self.root/'tools/build-launcher.ps1').read_bytes(), b'new\r\n')
 
     def test_protected_files_and_unrelated_code_rejected(self):
         for path in ['.github/workflows/guard.yml', 'AGENTS.md', 'tools/launcher-compatibility.py',

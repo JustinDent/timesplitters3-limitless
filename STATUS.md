@@ -7822,7 +7822,7 @@ and CLI/proxy 0.163.0. Linux reviews source; Windows and Mac run actual launcher
 checks through the same reusable workflow as release builds. Proposed repairs are
 separate PRs; automatic merging and release publication are not enabled.
 
-Local validation: 21 offline compatibility tests, 16 publication/recovery tests,
+Local validation: 22 offline compatibility tests, 16 publication/recovery tests,
 and 52 CI-scope/backlog checks passed. Actual temporary Git repositories exercise
 patch add/modify/delete, protected paths, symlink rejection and sanitized source
 snapshots. Other cases cover both directions, incomplete file lists, credentials,
@@ -7836,3 +7836,10 @@ remain unrun until the dedicated API key is provisioned, the workflow stack is
 merged, and the activation steps are completed. No API key has been created or
 written by this work. Credential provisioning is pending. Existing MAC-021 delivery,
 notarization and visual acceptance limits remain unchanged.
+
+The first Windows CI run caught OS-default newline expansion in the new disposable
+fixtures. Explicit LF fixture writes fix that test-harness issue; an additional
+Git regression verifies that accepted PowerShell patches retain CRLF working-tree
+files and normalized Git blobs. The actual PR source snapshot passed locally
+(78 source files, 1.6 MB); the existing native launcher's read-only prerequisite
+check also passed. No launcher runtime change was needed.
