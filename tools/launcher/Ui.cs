@@ -28,6 +28,7 @@ namespace TimeSplitters.Launcher
     public static class Ui
     {
 #if MACOS
+        public static FontFamily Monospace { get { return new FontFamily("Menlo"); } }
         public static Brush Brush(string value) { return Avalonia.Media.Brush.Parse(value); }
         public static void Freeze(SolidColorBrush brush) { }
         public static void Theme(Control view) { view.Styles.Add((Styles)AvaloniaXamlLoader.Load(new Uri("avares://TimeSplitters.Launcher/PageTheme.axaml"))); }
@@ -61,6 +62,7 @@ namespace TimeSplitters.Launcher
         public static void ForwardWheel(ReleaseNotesMarkdown notes,ScrollViewer parent)
         { notes.PointerWheelChanged+=(s,e)=> { parent.Offset=new Vector(parent.Offset.X,parent.Offset.Y-e.Delta.Y*60);e.Handled=true; }; }
 #else
+        public static FontFamily Monospace { get { return new FontFamily("Consolas"); } }
         public static Brush Brush(string value) { return (Brush)new BrushConverter().ConvertFromString(value); }
         public static void Freeze(SolidColorBrush brush) { brush.Freeze(); }
         public static ResourceDictionary LoadTheme(string name) { using(var stream=typeof(Ui).Assembly.GetManifestResourceStream(name))return (ResourceDictionary)System.Windows.Markup.XamlReader.Load(stream); }

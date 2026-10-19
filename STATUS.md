@@ -2,18 +2,20 @@
 
 ## Shared launcher interface (2026-10-19)
 
-Source: uncommitted on `codex/shared-launcher-interface`, based on `306d6dd`
+Source: `2ac286d`, `ee495e6` and `a0c4e14` on `codex/shared-launcher-interface`, based on `306d6dd`
 and dependent on PR #187 / #186. The concurrent primary renderer checkout is
 untouched. Local host: macOS 27.0.1 ARM64, .NET SDK 8.0.426, Avalonia 11.3.22.
 
 Both builds now compile the same settings, news, versions and maintenance pages;
 Home remains generated from the shared XAML. Shared theme values, button states
-and expander geometry feed the Mac syntax adapter. Mac-only duplicate page
+and expander geometry feed the Mac syntax adapter, including Home; its separate
+Mac button/expander override file is removed. Mac-only duplicate page
 construction is removed. Native OS integrations and rich-text/control rendering
 remain adapters; this does not make Windows-specific OS code portable.
 
-Local checks pass: 18 native launcher regression groups, six shared UI groups
-(settings drafts/cancel/FOV/save, Discord preservation, news selection/stale status
+Local checks pass: 18 native launcher regression groups, seven shared UI groups
+(settings drafts/cancel/FOV/save, binding conflicts/cancel/reassign/clear, Discord
+preservation, news selection/stale status
 and spacing, installed notes/issues, version pagination/locking, maintenance
 navigation/cancellation/repair gating), three source-mutation/compilation contracts
 and the read-only native prerequisite check. Actual Mac screenshots were reviewed
@@ -22,7 +24,21 @@ field-width/expander/disabled-button differences were corrected by shared-theme
 translation. Evidence is retained in ignored `private/captures/launcher-shared`.
 These checks do not run the game or alter personal settings.
 
-Windows execution and final packaged update/repair/restart are pending. The
+Both real host builds and all seven shared UI groups passed in
+[release run 39324010569](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39324010569)
+on `ee495e6`: Windows Server 2025 x64 / .NET Framework 4.8 and macOS 15.7.9
+ARM64 / pinned SDK and Avalonia. Windows also passed 105 updater, 28 download,
+11 version, 10 startup, 30 news, 32 settings and 20 maintenance checks, plus
+session/crash checks. Mac passed its 18 native regression groups and actual
+packaged install, deliberate corruption, copied-helper repair, restart and render,
+preserving fixture saves/game metadata. Combined verification accepted all 12
+release assets; publication was skipped on the PR. The initial Windows run exposed
+locale-dependent layout output; explicit UTF-8 fixed it. The final Home theme
+consolidation also passes local Mac tests and collapsed/expanded visual review.
+Diagnostics retain each host's monospace font through the framework adapter.
+
+62 native-launcher/CI-selection Python checks, three source propagation contracts,
+16 release-policy cases and backlog integrity pass locally. The
 Windows package format and updater limits are unchanged; existing published
 launchers do not need a special bridge release. Developer ID/notarization and
 clean-machine delivery remain the existing MAC-021 acceptance gaps.

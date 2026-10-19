@@ -82,8 +82,7 @@ namespace TimeSplitters.Launcher
             var title=Text(diagnostics?"Diagnostics":"Repair / Verify",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
             heading.Children.Add(PageTheme.Text(diagnostics?"Review your system report and prepare a GitHub issue.":"Check your installation. Restore release files when something needs attention.",12,"#9EB4C8"));if(!embedded)View.Children.Add(heading);
             Report=new TextBox { Name=diagnostics?"DiagnosticsReport":"VerificationReport",IsReadOnly=true,AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,VerticalContentAlignment=VerticalAlignment.Top,
-
-                Background=Brush("#0B1826"),BorderThickness=new Thickness(0),FontFamily=new FontFamily("Consolas"),FontSize=12,Padding=new Thickness(12) };
+                Background=Brush("#0B1826"),BorderThickness=new Thickness(0),FontFamily=Ui.Monospace,FontSize=12,Padding=new Thickness(12) };
             Ui.ScrollBars(Report);
             Report.Text=diagnostics?"Collecting diagnostics…":"No verification results yet. Choose Verify files to check the game or launcher.";
             if(diagnostics) {
