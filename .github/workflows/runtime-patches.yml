@@ -7,6 +7,11 @@ on:
       - .github/workflows/runtime-patches.yml
       - tools/recomp-generation.py
       - tests/test_recomp_generation.py
+      - tests/test_recomp_float_joins.py
+      - tests/test_recomp_vehicle_joins.py
+      - tests/vehicle_companion.c
+      - tests/pickup_collision.c
+      - tests/controller_sensitivity.c
       - tools/apply-patches.py
       - tests/test_patch_updates.py
       - tests/test_patch_tracking.py
@@ -176,11 +181,22 @@ jobs:
       - name: Apply shared runtime patches
         if: steps.scope.outputs.native == 'true'
         run: python tools/apply-patches.py external/ts3FPrecomp patches
+      - name: Install pinned recompiler test dependency
+        if: steps.scope.outputs.native == 'true'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, sys
+          dependency = next(line for line in Path('requirements.txt').read_text().splitlines()
+                            if line.startswith('capstone=='))
+          subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
+          PY
       - name: Test native runtime, rendering and input regressions
         if: steps.scope.outputs.native == 'true'
         run: |
           tests=(
             tests/test_native_compiler.py tests/test_audio_timing.py
+            tests/test_recomp_float_joins.py tests/test_recomp_vehicle_joins.py
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
             tests/test_xmv_stop.py
             tests/test_crash_capture.py

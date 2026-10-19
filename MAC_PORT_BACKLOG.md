@@ -1,5 +1,23 @@
 # PC features awaiting Mac adaptation
 
+### MAC-046 - Companion vehicle zero-flag joins (#100)
+
+- **Status:** Awaiting validation
+- **Behavior:** Correct the reversed stay/dismount decision that makes Captain
+  Ash repeatedly leave and re-enter the jeep without an enemy target. Preserve
+  the original driver, vehicle-mode and combat checks.
+- **Source:** `100-captain-ash-buggin-out-in-the-car`;
+  `patches/recomp-zf-join-polarity.patch`, `tests/test_recomp_vehicle_joins.py`
+  and `tests/vehicle_companion.c`. Windows Test and runtime CI include the tests.
+- **Mac support:** Shared Python recompiler and patch stack; no OS adapter is
+  required. Existing generation fingerprinting invalidates old generated C.
+  Windows results do not establish native macOS gameplay correctness.
+- **Remaining:** Regenerate/rebuild on native macOS, run source-only ZF tests and
+  the supported-XBE mounted-AI regression, then validate the encounter.
+- **Acceptance:** Ash remains seated with a player driving away from enemies,
+  still fights and can dismount appropriately. Check Harry Tipper separately
+  before claiming that encounter verified. See `STATUS.md` for Windows evidence.
+
 ### MAC-044 - Game crash capture and launcher reports
 
 - **Status:** Queued

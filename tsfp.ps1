@@ -120,7 +120,8 @@ try {
                         (Join-Path $projectRoot 'tests\test_decal_projection.py'),
                         (Join-Path $projectRoot 'tests\test_channel_clears.py'),
                         (Join-Path $projectRoot 'tests\test_recomp_generation.py'),
-                        (Join-Path $projectRoot 'tests\test_recomp_float_joins.py'), '-q', '--tb=short')
+                        (Join-Path $projectRoot 'tests\test_recomp_float_joins.py'),
+                        (Join-Path $projectRoot 'tests\test_recomp_vehicle_joins.py'), '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'pytest', 'tools', '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'tools.conformance')
                 }
