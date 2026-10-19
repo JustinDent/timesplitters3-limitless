@@ -788,6 +788,7 @@ namespace TimeSplitters.Launcher
         internal async Task MonitorGame(Process process,string previousReport = null)
         {
             bool minimizedForGame = false;
+            bool gameWindowShown = false;
             string observedBuild = Core.GameBuildHash(root);
             WindowState previousState = Window.WindowState;
             string lastReport=previousReport;
@@ -796,12 +797,19 @@ namespace TimeSplitters.Launcher
             try
             {
                 SetStatus("Starting game…");
+                // Process.Start has succeeded. Do not delay taskbar minimization
+                // while waiting for a detectable game window; cleanup still must.
+                if (!process.HasExited)
+                {
+                    Window.ShowInTaskbar = true;
+                    Window.WindowState = WindowState.Minimized;
+                    minimizedForGame = true;
+                }
                 while (!process.HasExited)
                 {
-                    if (!minimizedForGame && GameWindowReady(root))
+                    if (!gameWindowShown && GameWindowReady(root))
                     {
-                        Window.WindowState = WindowState.Minimized;
-                        minimizedForGame = true;
+                        gameWindowShown = true;
                         SetStatus("Game running.");
                     }
                     if(reportClock.ElapsedMilliseconds>=nextReportScan) {
@@ -823,7 +831,7 @@ namespace TimeSplitters.Launcher
                 gameMonitoring=false;
                 if (minimizedForGame) { Window.WindowState = previousState; Window.Activate(); }
             }
-            await Task.Run(() => Core.FinishGameSession(root, observedBuild, minimizedForGame, process.ExitCode));
+            await Task.Run(() => Core.FinishGameSession(root, observedBuild, gameWindowShown, process.ExitCode));
         }
         internal async Task LaunchGame(string crashTestMode = null)
         {

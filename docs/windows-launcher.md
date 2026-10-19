@@ -297,14 +297,18 @@ launcher and its sidebar, at 1152 × 772, using the same embedded settings page.
 
 ## Installation and recovery
 
-Starting with v1.1.2, Play keeps the launcher visible during startup and
-minimizes it once the installed game's window appears. It restores the previous
-normal/maximized launcher state when the launch script finishes. Startup failures
-before a game window appears leave the launcher visible with status/log access.
-Window detection matches this installation's executable path.
+Play minimizes the launcher to the Windows taskbar as soon as the game process
+starts, including while its window is still loading. The taskbar button remains
+available. When the process exits, the launcher restores its previous normal or
+maximized state. If the process cannot start, the launcher stays visible with
+status/log access. Early game exits restore it immediately. Successful-session
+cleanup still requires an observed game window and a zero exit code; minimizing
+alone never confirms an update. Window detection matches this installation's
+executable path.
 `tools/test-launcher-lifecycle.ps1 -LauncherRoot build/launcher-v1.1.2`
-checks normal/maximized minimize-and-restore and failed startup using a bounded
-synthetic executable/window. It uses no game data or personal files. The broader
+checks immediate normal/maximized minimize-and-restore, taskbar availability,
+early exits, cleanup eligibility and failed startup using a bounded synthetic
+executable/window. It uses no game data or personal files. The broader
 updater suite requires real game processes to be closed before its install tests.
 
 The installation directory is the folder containing the launcher. The updater
