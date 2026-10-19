@@ -88,7 +88,7 @@ partition images are sparse, then recycled with validated paths; profiles,
 configuration and logs remain. Native CTest uses `build/macos/path-tests` and
 recycles its partition images after the pass as well.
 
-`--profile-frames` uses the same recorder in GL and the opt-in common Vulkan
+`--profile-frames` uses the same recorder in GL and the common Vulkan
 renderer. It records CPU wall-clock intervals between successful presentation
 API returns and time spent in the call, capped at 20,000 rows (under 2 MiB).
 Guest, interpolated and other presents are separate; failed/skipped calls do not

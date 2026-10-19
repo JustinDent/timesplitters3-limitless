@@ -153,7 +153,7 @@ integration work, tracked in the backlog.
 | `codex/shared-present-metrics` | `3e78f7c` | Shared API-acceptance counts, frame timing and interpolation failure handling |
 | `codex/shared-platform-validation` | `a0c8a1a` | `083e57c`: pinned SDK download and Windows test-harness fixes; both hosted jobs and GPU contracts pass |
 | `codex/shared-native-window-acceptance` | `37b4af9` plus validation fixes `083e57c` | One native settings/host fixture for both renderers; common Vulkan settings and window transitions pass |
-| `codex/shared-renderer-default` | `42462f0` | Common frontend selected on SDK-supported hosts; explicit GL and older-host fallback retained |
+| `codex/shared-renderer-default` | `42462f0` | `a4261ee`: common frontend selected on SDK-supported hosts; both hosted jobs pass, GL fallback retained |
 | `codex/shared-screen-copy-contract` | `c553f9a` | Common rectangle clipping and production screen-copy GPU contract; local Mac and both hosted GPU contracts pass at `42462f0` |
 | `codex/shared-texture-contract` | `296f970` | `f2c2261`: both hosted lower-level and Xbox-factory cube/volume contracts pass |
 
@@ -165,3 +165,10 @@ the other milestone branch refs remain local.
 The native window acceptance work depends on these validation fixes. Nothing has been
 merged into main or verified on the other physical computer. Hosted CI results,
 measured scope and unavailable checks are recorded in `STATUS.md`.
+
+The normal shared-renderer build policy and all selected host suites pass at
+`a4261ee` in [run 39314716127](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39314716127).
+The complete integration stack is published on `codex/shared-renderer-default`.
+Merge/review that branch before expecting the main checkout on another device to
+use this architecture; no merge into main has been performed. New common code
+still needs both-host checks, and genuine adapter exceptions stay in the backlog.

@@ -34,8 +34,22 @@
   Isolated saves/controls/both display paths were used; six images recycled
   (5,243,406,848 logical / 135,168 allocated bytes), after the native suite
   recycled 12 images (8,192 allocated bytes). Free space before build: 223 GiB.
-- **Limits:** Hosted checks for this build-policy change are pending. Older-host
-  selection is covered by portable tests, not a physical older Mac. Legacy GL
+- **Hosted acceptance at `a4261ee`:** Both jobs pass in
+  [run 39314716127](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39314716127).
+  Windows: 49 CI/backlog, 28 patch, 213 runtime (30 host skips, including new
+  builder tests among the passes), 52 release, 104 isolated launcher regressions,
+  crash/session checks, six startup tests/two subtests and five icon checks.
+  Mac: 49 CI/backlog, 26 patch (two skips), 200 runtime (18 skips), actual
+  MoltenVK GPU contract, 49 release (three skips) and 17 native launcher groups.
+  No source changes were needed after this validation; this follow-up records
+  the results and corrects one obsolete opt-in description.
+- **Milestone:** The published focused branch now provides shared-by-default
+  feature/settings/shader policy and the common Xbox frontend for supported
+  Macs, with thin OS/GPU adapters and both-host contracts. This completes the
+  incremental shared-architecture goal; it does not close the graphics backlog
+  or merge the stack into main.
+- **Limits:** Older-host selection is covered by portable tests, not a physical
+  older Mac. Legacy GL
   retains its preceding complete GPU/native pass. Khallos sky distortion, movie
   playback, some GL-only tracing hooks, full campaign/texture-pack fidelity and
   sustained 120-present performance remain explicit gaps. The other physical

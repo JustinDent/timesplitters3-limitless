@@ -810,8 +810,9 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   adapter; its missing features remain compatibility exceptions. SDK failure
   stops before patching/generation, and only `--setup` installs the pinned SDK.
   Local normal build, full native suite, launcher check, 101 portable checks
-  and bounded startup pass. Hosted validation of this build-policy change is
-  pending; full visual parity, Khallos sky and movie support remain open.
+  and bounded startup pass. Both hosted jobs pass at `a4261ee` in run
+  39314716127, including Mac Vulkan/Windows WARP GPU contracts. Full visual
+  parity, Khallos sky and movie support remain open.
   [Evidence](STATUS.md#common-renderer-selected-by-normal-mac-builds-2026-10-19).
 
 - **Common native frontend (2026-10-19):** The commit carrying this entry on
