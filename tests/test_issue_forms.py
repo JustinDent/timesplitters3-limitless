@@ -32,6 +32,96 @@ def http_error(code):
     return urllib.error.HTTPError('https://api.github.com/', code, 'Fixture error', {}, None)
 
 
+class VersionPullRequestTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.file = self.root / forms.FORMS[0]
+        self.file.parent.mkdir(parents=True)
+        self.file.write_text('generated reference data\n')
+        self.base = 'a' * 40
+        self.previous = None
+        self.extra_files = []
+        self.existing = []
+        self.client = forms.GitHub('owner/repo')
+        self.client.request = Mock(side_effect=self.response)
+
+    def response(self, method, path, payload=None):
+        if method == 'GET' and path == 'git/ref/heads/main':
+            return {'object': {'sha': self.base}}
+        if method == 'GET' and path == 'git/ref/heads/automation/issue-form-versions':
+            if self.previous is None:
+                raise http_error(404)
+            return {'object': {'sha': self.previous}}
+        if path.startswith('compare/'):
+            return {'files': self.extra_files}
+        if path.startswith('git/commits/'):
+            return {'tree': {'sha': 'base-tree'}}
+        if method == 'POST' and path == 'git/trees':
+            return {'sha': 'updated-tree'}
+        if method == 'POST' and path == 'git/commits':
+            return {'sha': 'new-commit'}
+        if method == 'GET' and path.startswith('pulls?'):
+            return self.existing
+        if method == 'POST' and path == 'pulls':
+            return {'html_url': 'https://github.com/owner/repo/pull/7'}
+        if method in ('POST', 'PATCH') and path.startswith('git/ref'):
+            return {}
+        self.fail(f'Unexpected request: {method} {path}')
+
+    def publish(self, changed=None):
+        return forms.publish_version_pr(self.client, self.root,
+                                        [self.file] if changed is None else changed,
+                                        'main', 'a' * 40)
+
+    def test_current_references_make_no_requests(self):
+        self.assertIsNone(self.publish([]))
+        self.client.request.assert_not_called()
+
+    def test_new_pr_uses_main_tree_and_only_generated_file(self):
+        self.assertEqual(self.publish(), 'https://github.com/owner/repo/pull/7')
+        calls = self.client.request.call_args_list
+        tree = next(call.args[2] for call in calls if call.args[:2] == ('POST', 'git/trees'))
+        self.assertEqual(tree['base_tree'], 'base-tree')
+        self.assertEqual(tree['tree'], [dict(path=forms.FORMS[0], mode='100644',
+                                           type='blob', content='generated reference data\n')])
+        self.client.request.assert_any_call('POST', 'git/refs',
+            {'ref': 'refs/heads/automation/issue-form-versions', 'sha': 'new-commit'})
+        self.assertFalse(any(call.args[1].startswith('git/refs/heads/main') for call in calls))
+
+    def test_existing_pr_preserves_both_ancestors_without_force_push(self):
+        self.previous = 'b' * 40
+        self.existing = [{'html_url': 'https://github.com/owner/repo/pull/5'}]
+        self.extra_files = [{'filename': forms.FORMS[0]}]
+        self.assertEqual(self.publish(), self.existing[0]['html_url'])
+        self.client.request.assert_any_call('POST', 'git/commits', {
+            'message': 'Refresh issue form release references', 'tree': 'updated-tree',
+            'parents': [self.base, self.previous]})
+        self.client.request.assert_any_call('PATCH', 'git/refs/heads/automation/issue-form-versions',
+                                            {'sha': 'new-commit', 'force': False})
+        self.assertFalse(any(call.args[:2] == ('POST', 'pulls')
+                             for call in self.client.request.call_args_list))
+
+    def test_unrelated_bot_branch_edits_are_preserved(self):
+        self.previous = 'b' * 40
+        self.extra_files = [{'filename': 'README.md'}]
+        with self.assertRaisesRegex(ValueError, 'other edits'):
+            self.publish()
+        self.assertTrue(all(call.args[0] == 'GET' for call in self.client.request.call_args_list))
+
+    def test_stale_checkout_cannot_publish(self):
+        self.base = 'c' * 40
+        with self.assertRaisesRegex(ValueError, 'advanced'):
+            self.publish()
+        self.assertEqual(self.client.request.call_count, 1)
+
+    def test_unlisted_file_cannot_be_uploaded(self):
+        with self.assertRaisesRegex(ValueError, 'Only generated'):
+            self.publish([self.root / 'README.md'])
+        self.client.request.assert_not_called()
+
+
 class VersionTests(unittest.TestCase):
     def test_release_kinds_drafts_and_semantic_order(self):
         records = [release(tag) for tag in (

@@ -2,10 +2,6 @@ name: Issue resolution notes
 
 on:
   pull_request:
-    paths:
-      - .github/workflows/issue-resolution.yml
-      - tools/issue-resolution.py
-      - tests/test_issue_resolution.py
   push:
     branches: [main]
     paths:
@@ -21,6 +17,7 @@ permissions:
 
 jobs:
   test:
+    name: Issue resolution tests
     if: github.event_name != 'pull_request_target'
     runs-on: ubuntu-latest
     timeout-minutes: 5

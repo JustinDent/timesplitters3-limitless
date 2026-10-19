@@ -103,104 +103,6 @@ on:
       - tools/recycle-release-work.ps1
       - tools/package-release.py
   pull_request:
-    branches: [main]
-    paths:
-      - .github/workflows/runtime-patches.yml
-      - tools/recomp-generation.py
-      - tests/test_recomp_generation.py
-      - tools/apply-patches.py
-      - tests/test_patch_updates.py
-      - tests/test_patch_tracking.py
-      - tests/test_audio_timing.py
-      - tests/native_compiler.py
-      - tests/test_pc_display_modes.py
-      - tools/publish-release.py
-      - tools/launcher/**
-      - tools/build-launcher.ps1
-      - tools/build-game-icon.ps1
-      - tests/test_game_icon.py
-      - tools/release/ImportGame.cs
-      - config/pc-controls.default.json
-      - tools/playable-launch.ps1
-      - tests/launcher_updates.cs
-      - tests/launcher_settings.cs
-      - tests/launcher_maintenance.cs
-      - tests/launcher_downloads.cs
-      - tests/launcher_startup.cs
-      - tests/launcher_news.cs
-      - tests/test_launcher_startup.py
-      - tests/package_launcher.py
-      - tests/test_publish_release.py
-      - tests/pc_display_modes.c
-      - tests/test_fov_settings.py
-      - tests/fov_settings.c
-      - src/pc_tutorial_ui.inc
-      - tests/tutorial_layout.c
-      - src/pc_display_ui.inc
-      - src/pc_ui_layout.h
-      - tests/test_ui_layout.py
-      - tests/ui_layout.c
-      - tests/ui_viewport.c
-      - tests/ui_screen_effects.c
-      - src/pc_display_modes.inc
-      - src/pc_display.h
-      - src/pc_display.c
-      - tests/test_native_compiler.py
-      - tests/test_framebuffer_sampling.py
-      - tests/test_ghost_rendering.py
-      - tests/ghost_targets.py
-      - tests/test_ghost_targets.py
-      - tests/ghost_rendering.c
-      - src/pc_ghost_render_guest.inc
-      - tests/test_cutscene_letterbox.py
-      - tests/test_decal_projection.py
-      - tests/test_channel_clears.py
-      - tests/pc_clear.c
-      - src/pc_clear_rhi.inc
-      - src/native/renderer_gl.c
-      - tests/cutscene_letterbox.c
-      - tests/test_objectives_health.py
-      - tests/objectives_health.c
-      - tests/objectives_layout.c
-      - src/pc_objectives.h
-      - src/pc_cutscene.h
-      - src/pc_terminal.h
-      - src/pc_input.c
-      - src/pc_controls.c
-      - src/pc_window_theme.h
-      - src/pc_menu_theme.h
-      - src/pc_dialog_theme.h
-      - tests/game_ui_theme.c
-      - tools/online.py
-      - tools/online_theme.py
-      - tools/bundle_online.py
-      - tools/network-identity.py
-      - tests/test_online_theme.py
-      - tests/test_window_theme.py
-      - tests/window_theme.c
-      - src/native/input_sdl.c
-      - src/pc_menu_mouse.h
-      - src/pc_menu_mouse_guest.inc
-      - src/pc_menu_sliders.inc
-      - src/pc_menu_choices.inc
-      - src/pc_menu_team.inc
-      - src/pc_menu_characters.inc
-      - src/pc_controls.h
-      - tests/test_menu_mouse.py
-      - tests/menu_mouse.c
-      - tests/test_terminal_mouse.py
-      - tests/terminal_mouse.c
-      - src/pc_display_menu.c
-      - tests/framebuffer_sampling.c
-      - tests/audio_stream_timing.c
-      - tests/audio_buffer_timing.c
-      - patches/**
-      - tsfp.ps1
-      - requirements.txt
-      - tools/ci-runtime-scope.py
-      - tests/test_ci_runtime_scope.py
-      - tools/recycle-release-work.ps1
-      - tools/package-release.py
   workflow_dispatch:
 
 # Superseded commits on the same PR/ref do not need to finish testing.
@@ -249,6 +151,8 @@ jobs:
                             if line.startswith('pytest=='))
           subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
           PY
+      - name: Test CI suite selection
+        run: python -m pytest tests/test_ci_runtime_scope.py -q --tb=short
       - name: Check out pinned upstream source only
         if: steps.scope.outputs.transitions == 'true' || steps.scope.outputs.native == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -267,7 +171,6 @@ jobs:
         if: steps.scope.outputs.native == 'true'
         run: |
           tests=(
-            tests/test_ci_runtime_scope.py
             tests/test_native_compiler.py tests/test_audio_timing.py
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
             tests/test_xmv_stop.py
