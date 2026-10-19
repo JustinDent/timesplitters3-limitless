@@ -41,7 +41,11 @@ the isolated session owner. An unfinished record establishes lost observation,
 not a crash cause: a reboot, forced close, or normal exit after launcher
 termination can leave the same record. Only launcher-started games are tracked;
 an observed zero exit is clean, and unavailable storage can prevent tracking.
-Native Mac adaptation remains queued in MAC-044. No merge or release was made.
+Native Mac adaptation remains queued in MAC-044. The PR remains unmerged and no
+release was published. Main `7609d4a` was incorporated into the feature branch,
+preserving its ghost-replay fixture correction and both sets of status notes.
+The combined fixture/CI-scope/package/publisher checks passed: **80 passed,
+2 subtests passed**, recorded in `logs/session-main-integration-tests.log`.
 
 ## Windows freeze detection and live launcher reports (2026-10-19)
 
@@ -190,6 +194,28 @@ new gameplay breadcrumb instrumentation. PDBs identify native and generated
 functions, not a complete original Xbox call stack. Native Mac capture is queued;
 no Mac build, device synchronization, commit, push or release publication is
 claimed. Symbol bundle: `build/windows/crash-symbols.zip`.
+
+## Ghost replay fixture access violation (2026-10-19)
+
+Implemented in this revision on `fix/ghost-replay-crash`, based on main
+`511c686`. Reproduced the
+publishing build's intermittent 0xC0000005 without game data. A temporary native
+exception probe located the fault in `d3d8_upload_mip_level`, called by texture
+UnlockRect; the faulting instruction reads a swizzled texel. The synthetic
+64x48 A8R8G8B8 texture violated the unswizzler's power-of-two requirement,
+allowing Morton addresses beyond its 12 KiB allocation. The fixture now uses
+64x64 storage while retaining swizzled format, occlusion, feedback-refresh and
+supersampling assertions. No production renderer behavior changed and the
+temporary exception probe was removed from the replay source before validation.
+
+Windows x64 / Python 3.14.2 / MSVC x64 / D3D11: 28 fixture, ghost-wrapper and
+CI-scope tests passed. Thirty complete GPU test passes (120 replay processes)
+passed all pixel assertions across 128x96, 160x90, 344x144 and 2x supersampling.
+`tsfp.ps1 Build` verified the supported US XBE and full patch stack, completed
+native build checks and executable sealing, and recycled disposable test disks.
+Actionlint and diff checks passed. The fixture contract test is included in source CI and
+publishing's full pytest suite. Windows-only GPU evidence does not establish
+native Mac rendering support; see MAC-036. No release was published.
 
 ## Release Python dependency refresh (2026-10-19)
 

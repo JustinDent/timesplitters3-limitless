@@ -21,7 +21,7 @@
   `tools/crash-symbols.py`, `tools/test-windows-crash.py`, `src/pc_hang_policy.h`,
   `src/pc_debug.c`, `src/pc_controls.c`, the `windows-hang-watchdog` patch,
   `tools/test-windows-hang.py` and `tests/pc_hang_policy.c`.
-  Session follow-up in the same PR: `tools/launcher/GameSessions.cs`,
+  Session follow-up `3222e52` in the same PR: `tools/launcher/GameSessions.cs`,
   `tests/launcher_sessions.cs`, and launcher report/lifecycle integration.
 - **Mac support:** Existing fault/signal diagnostics remain; these Win32 sources
   and build targets are guarded and are not compiled by the Mac adapter.
@@ -201,6 +201,13 @@
 ### MAC-036 — Ghost Gun full-body visibility (issue #111)
 
 - **Status:** Queued
+- **Fixture follow-up (2026-10-19, this revision on `fix/ghost-replay-crash`):**
+  `tests/ghost_targets.py` now uses a valid power-of-two 64x64 swizzled target;
+  the former 64x48 fixture caused out-of-bounds unswizzle reads and intermittent
+  Windows publishing crashes. `tests/test_ghost_targets.py` validates storage
+  and CI runs it. No runtime/Mac adapter change is needed for the fixture fix;
+  native GL acceptance remains queued and unverified. See the
+  [Windows evidence](STATUS.md#ghost-replay-fixture-access-violation-2026-10-19).
 - **PC behavior:** Full-body ghosts retain their native red translucent effect
   when revealed with the Ghost Gun. Offscreen colour targets share scene depth
   and stencil; self-sampling colour passes read a snapshot taken before each
