@@ -136,7 +136,10 @@ preserving all isolated save/config paths. See the [developer commands](macos.md
 First-mission evidence is scoped in [STATUS](../STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).
 Normal `--renderer auto` builds now select this implementation on supported
 hosts. `--setup` installs its pinned SDK; an explicit `--renderer gl` build needs
-no SDK. `BUILD.json` records both the request and resolved renderer.
+no SDK. `BUILD.json` records the requested/resolved renderer and Vulkan driver.
+New builds select MoltenVK; older manifests without a driver retain KosmicKrisp.
+Both launchers call `tools/vulkan_sdk.py` for the same verified driver mapping.
+Driver overrides do not change gameplay settings or the 60 Hz guest clock.
 
 Interpolation now uses common replay-owned depth/stencil per source subresource,
 with fresh history each replay and restoration of guest target bindings. The

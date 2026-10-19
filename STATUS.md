@@ -8273,3 +8273,70 @@ Evidence: `logs/shared-firstmission-swizzle-control-120-*` and
 `private/captures/native-mac/shared-firstmission-swizzle-control.png`.
 Personal settings/fixture remained unchanged; both runs recycled their six
 known disposable partition images. Captures remain under 100 MiB allocated.
+
+### Manifest-selected MoltenVK and short pacing checks (2026-10-19)
+
+The commit carrying this section on `codex/mac-moltenvk-default` depends on
+`codex/vulkan-portability-swizzle` at `cc364fd` and the unmerged shared renderer
+and scene-interpolation stack. New native Vulkan builds record `vulkan_driver`
+in `BUILD.json`, defaulting to MoltenVK. Python and native-app launchers use the
+same read-only `tools/vulkan_sdk.py` helper. Old manifests lacking the field
+retain KosmicKrisp; invalid values fail rather than silently switching drivers.
+Builder, Python launcher and isolated runner accept explicit driver selection;
+launch overrides leave manifests, preferences and the 60 Hz guest unchanged.
+The bounded summary now records the selected driver separately from renderer.
+The SDK/upstream/Python pins and legacy GL selection remain unchanged.
+
+Validation on Apple M5 Pro/ARM64 macOS 27.0.1, Clang 21, pinned Vulkan SDK
+1.4.363.0 and launcher SDK 8.0.426: 114 Python checks passed; the native builder's
+three CTest checks and renderer/input/settings/debug self-tests passed. The
+native launcher built and passed 18 regression groups, including bounded helper
+output, error and timeout handling. Read-only checks passed for both launchers.
+The final isolated eight-second launcher/game quit test confirmed the actual
+production environment selected MoltenVK before test isolation was applied,
+observed the game window, and verified minimize/restore and clean exit. Its
+reported older crash-record path was pre-existing test evidence, not a new crash.
+
+Repeated native-app prerequisite checks exposed an ARM64 .NET pipe crash:
+13/30 attempts failed with `AccessViolationException` while both pipes were
+redirected, even with synchronous readers. The final helper uses one bounded
+stdout pipe for results and controlled Python errors; 30/30 fresh processes
+passed. This is empirical scope, not proof that every .NET pipe issue is fixed.
+A [related upstream runtime report](https://github.com/dotnet/runtime/issues/88288)
+describes the dual-redirection failure pattern; it does not establish identical
+root cause or justify upgrading the pinned SDK. Logs retain the failures and
+final results in `logs/moltenvk-default-launcher-*-checks.json`.
+
+Both 120-second isolated Khallos runs used the build manifest's default driver
+(no `--vulkan-driver` argument), disposable Test Lab saves and synthetic SDL
+menu input. Same executable SHA-256:
+`bd48e193d9b636596d4d1554748a1d0ada2481c68356ca9ee469dc04df04c8e8`;
+build revision `cc364fd` plus the then-uncommitted driver-selection changes.
+The binary code is unchanged from the validated swizzle fix; BUILD.json records
+the new selection. Supported XBE and upstream hashes remain as above.
+
+| Setting | Host API presents/s | Guest/s | Interpolated/s | Median interval | p95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 60 | 59.995 | 59.995 | 0 | 16.610 ms | 17.654 ms |
+| 120 | 119.995 | 59.998 | 59.998 | 8.563 ms | 9.551 ms |
+
+Samples cover elapsed seconds 80-95 at 1920x1080, after loading/navigation;
+validation was explicitly off for timing and readback occurred afterward.
+Launcher/build activity finished before each measured window (the last check
+ended about 77.96 seconds into the 120-setting run). These are successful host
+presentation API calls, not GPU completion or monitor scanout. No sustained
+whole-campaign 120 FPS claim follows from a single 15-second sample.
+Both reviewed final captures retain train, weapon, landscape and HUD. Sky
+fidelity remains unresolved. The final launcher test and preceding swizzle
+scene tests provide separate validation-on evidence; timing runs are not
+validation passes. Logs: `logs/shared-khallos-default-{60,120}-*`,
+`logs/moltenvk-default-gameplay-pacing.json`,
+`logs/moltenvk-default-launcher-final-e2e.log`.
+
+Personal configuration presence and tracked controls fixture remain unchanged;
+known disposable partitions were recycled, captures remain below 256 MiB, and
+free space before the builds was 221 GiB. Main and concurrent duplicate files
+were untouched. These changes are local until explicitly published; Windows
+runtime execution, another Mac, and this branch's GitHub CI remain unverified.
+Next: shared one-shot guest/midpoint capture, additional representative graphics
+checks, and a known-good matched reference to resolve the Khallos sky.

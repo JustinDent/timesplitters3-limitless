@@ -9,6 +9,8 @@ import urllib.request
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_DRIVER = 'moltenvk'
+DRIVERS = {'moltenvk': 'MoltenVK_icd.json', 'kosmickrisp': 'libkosmickrisp_icd.json'}
 CRITICAL = (
     'VERSIONS.txt', 'macOS/include/dxc/dxcapi.h', 'macOS/include/dxc/WinAdapter.h',
     'macOS/lib/libdxcompiler.dylib', 'macOS/lib/libvulkan.1.dylib',
@@ -119,14 +121,27 @@ def setup(root=ROOT):
     return sdk
 
 
+def select_driver(manifest, override=None):
+    """New builds record their driver; older manifests keep their tested default."""
+    driver = override if override is not None else manifest.get('vulkan_driver', 'kosmickrisp')
+    if not isinstance(driver, str) or driver not in DRIVERS:
+        raise ValueError('Unknown pinned Vulkan driver in build manifest or override')
+    return driver
+
+
+def launch_environment(root, manifest, override=None):
+    """Shared read-only launcher boundary; no preferences or manifest writes."""
+    driver = select_driver(manifest, override)
+    return gpu_environment(verify_install(root), driver)
+
+
 def gpu_environment(sdk, driver):
     """Pinned loader settings only; no file creation or save/config routing."""
-    drivers = {'moltenvk': 'MoltenVK_icd.json', 'kosmickrisp': 'libkosmickrisp_icd.json'}
-    if driver not in drivers:
+    if driver not in DRIVERS:
         raise ValueError('Unknown pinned Vulkan driver')
     return dict(DYLD_LIBRARY_PATH=str(sdk / 'lib'),
                 SDL_VULKAN_LIBRARY=str(sdk / 'lib/libvulkan.1.dylib'),
-                VK_DRIVER_FILES=str(sdk / 'share/vulkan/icd.d' / drivers[driver]),
+                VK_DRIVER_FILES=str(sdk / 'share/vulkan/icd.d' / DRIVERS[driver]),
                 VK_LAYER_PATH=str(sdk / 'share/vulkan/explicit_layer.d'),
                 RECOMP_SHADER_CACHE='0')
 

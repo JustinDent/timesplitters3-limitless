@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 from native_mac_common import recycle_test_disks
+import vulkan_sdk
 
 ROOT = Path(__file__).resolve().parents[1]
 UPSTREAM = ROOT / 'external/ts3FPrecomp'
@@ -45,6 +46,8 @@ def main():
     parser.add_argument('--test', action='store_true', help='Run native platform, MMIO and path regression tests after building')
     parser.add_argument('--renderer', choices=('auto','gl','vulkan'), default='auto',
                         help='Default: common Xbox/Vulkan frontend on supported macOS; legacy GL on older hosts')
+    parser.add_argument('--vulkan-driver', choices=tuple(vulkan_sdk.DRIVERS), default=vulkan_sdk.DEFAULT_DRIVER,
+                        help='Pinned Vulkan driver recorded in the build manifest (default: MoltenVK)')
     parser.add_argument('--runtime-root', type=Path, default=ROOT, help='Reuse this same-host checkout’s ignored dependencies, game data and single native build')
     args = parser.parse_args()
     runtime_root=args.runtime_root.resolve()
@@ -62,7 +65,6 @@ def main():
         raise SystemExit('Unsupported XBE; preserve the supported US build.')
     if shutil.disk_usage(ROOT).free < 2 * 1024**3:
         raise SystemExit('Native generation/build needs at least 2 GiB of free disk space.')
-    import vulkan_sdk
     try:
         renderer = ('gl' if args.renderer == 'gl' else
                     select_renderer(args.renderer, platform.mac_ver()[0],
@@ -136,7 +138,7 @@ def main():
                     working_tree_changes=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,
                     compatibility_identity=json.loads((BUILD / 'generated/network-identity.json').read_text())['compatibility'],
-                    renderer=renderer, renderer_requested=args.renderer, build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
+                    renderer=renderer, vulkan_driver=args.vulkan_driver if renderer=='vulkan' else None, renderer_requested=args.renderer, build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
                     symbol_uuid=subprocess.check_output(['dwarfdump','--uuid',str(BUILD/'futureperfect_recomp.dSYM')],text=True).split(' (arm64)')[0],
                     symbols_sha256=hashlib.sha256((BUILD/'futureperfect_recomp.dSYM/Contents/Resources/DWARF/futureperfect_recomp').read_bytes()).hexdigest(),
                     compiler=subprocess.check_output(['clang', '--version'], text=True).splitlines()[0],
@@ -159,7 +161,7 @@ def main():
                        XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'),
                        XDG_CACHE_HOME=str(test / 'xdg-cache'))
             if renderer=='vulkan':
-                env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(runtime_root),'kosmickrisp')
+                env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(runtime_root),vulkan_sdk.select_driver(manifest))
                 env['RECOMP_VK_VALIDATION']='1'
             for check in ('--renderer-self-test', '--input-self-test', '--settings-self-test', '--debug-self-test'):
                 if check in ('--settings-self-test', '--debug-self-test'):

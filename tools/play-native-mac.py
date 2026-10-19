@@ -68,17 +68,17 @@ def prepare_settings(root):
             output.write('# Native runtime settings; PC settings remain in config/pc-display.ini\n')
 
 
-def renderer_environment(existing, root, manifest):
+def renderer_environment(existing, root, manifest, driver=None):
     """Honor the executable's renderer without changing saved preferences."""
     env = {k:v for k,v in existing.items() if not k.startswith(('VK_', 'SDL_VULKAN', 'DYLD_'))}
     renderer = manifest.get('renderer', 'gl')
     if renderer == 'vulkan':
         import vulkan_sdk
         try:
-            sdk = vulkan_sdk.verify_install(root)
+            gpu = vulkan_sdk.launch_environment(root, manifest, driver)
         except RuntimeError as error:
             raise ValueError(f'Native Vulkan prerequisites: {error}') from error
-        env.update(vulkan_sdk.gpu_environment(sdk, 'kosmickrisp'))
+        env.update(gpu)
     elif renderer != 'gl':
         raise ValueError(f'Unsupported native renderer in BUILD.json: {renderer}')
     return env
@@ -102,6 +102,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true', help='Read-only prerequisite check')
     parser.add_argument('--fps', type=int, choices=(60,120), help='Display target for this launch (default: saved preference or 120)')
+    parser.add_argument('--vulkan-driver', choices=('moltenvk','kosmickrisp'), help='Temporary driver override; default comes from BUILD.json')
     parser.add_argument('--texture-pack', type=Path, help='Use an existing compiled DDS texture pack for this launch')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
@@ -118,7 +119,7 @@ def main():
     read_controls(controls if controls.exists() else ROOT / 'config/pc-controls.default.json')
     if args.check:
         sys.dont_write_bytecode = True
-    env = renderer_environment(game_environment(os.environ, ROOT, args.fps), ROOT, manifest)
+    env = renderer_environment(game_environment(os.environ, ROOT, args.fps), ROOT, manifest, args.vulkan_driver)
     print(f'Native ARM64 build ready: {executable}')
     if args.texture_pack and not args.texture_pack.is_dir():
         raise ValueError('Texture pack directory does not exist.')

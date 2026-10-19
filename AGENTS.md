@@ -114,8 +114,11 @@ reproducibility, and validation requirements.
   frontends on SDK failure. Preserve its checksum, receipt, licenses and manifest
   inside ignored `external/vulkan-sdk`. Upstream/Python pins are unchanged.
   `tools/test-rhi-mac.py` runs asset-free GPU contracts. Both launchers and the
-  bounded runner select verified SDK loading from `BUILD.json`; prerequisite
-  checks remain read-only. Keep GPU contracts, guest frames and reviewed scenes
+  bounded runner select verified SDK loading from `BUILD.json`; new Vulkan
+  builds record MoltenVK, while older manifests without a driver field retain
+  KosmicKrisp. Use the shared `tools/vulkan_sdk.py` selection helper for both
+  launchers and tests; temporary driver overrides must not edit saved settings.
+  Prerequisite checks remain read-only. Keep GPU contracts, guest frames and reviewed scenes
   distinct. The shared recorder counts successful presentation API calls and
   separates guest/interpolated/other kinds; it does not measure GPU completion
   or monitor scanout. Skips/errors must not inflate FPS. Full visual fidelity,

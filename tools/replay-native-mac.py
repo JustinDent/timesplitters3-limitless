@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('capture', type=Path)
-    parser.add_argument('--driver', choices=('kosmickrisp', 'moltenvk'), default='kosmickrisp')
+    parser.add_argument('--driver', choices=('kosmickrisp', 'moltenvk'), default=vulkan_sdk.DEFAULT_DRIVER)
     parser.add_argument('--draws', type=int, help='Replay only this many draws')
     parser.add_argument('--skip-draw', type=int, help='Skip this zero-based draw')
     args = parser.parse_args()

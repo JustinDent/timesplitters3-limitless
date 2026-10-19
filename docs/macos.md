@@ -307,8 +307,12 @@ With verified local game data/generated sources and the pinned SDK installed:
 ```
 
 The builder reuses `build/macos` and records the renderer in `BUILD.json`; there
-is no second game build tree. The isolated runner uses the pinned KosmicKrisp
-driver by default, or `--vulkan-driver moltenvk`, and enables validation.
+is no second game build tree. New Vulkan builds record the pinned MoltenVK
+driver in `BUILD.json`; build with `--vulkan-driver kosmickrisp` to select the
+alternative. Both launchers and the isolated runner honor that recorded choice.
+Older manifests without a driver field retain KosmicKrisp. The Python launcher
+and runner accept `--vulkan-driver moltenvk|kosmickrisp` as a temporary override
+without changing the manifest or saved settings. The runner enables validation.
 This path compiles the PC Xbox frontend directly. The Mac adapters supply the
 window, SDL events and CoreText overlay bitmap. It has bounded first-mission
 coverage, not full rendering, physical-input or 120-present certification.
@@ -318,7 +322,7 @@ GPU completion or display scanout. GL-specific `--trace-render` and paired
 interpolation-capture hooks remain unavailable on the common renderer.
 Use the isolated runner for automated checks. For interactive use, both the
 native app and `Play-Native-Mac.command` read the renderer from `BUILD.json`,
-verify the pinned SDK receipt, and configure the KosmicKrisp loader without
+verify the pinned SDK receipt, and configure the manifest-selected loader without
 changing saved graphics preferences. `--check` remains read-only and now catches
 missing or modified Vulkan dependencies before launch. Rebuild with
 `--renderer gl --test` to select the fallback explicitly. Khallos sky distortion,

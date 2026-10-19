@@ -123,8 +123,8 @@ def main():
                         help='With --profile-frames, measure Vulkan without validation-layer overhead; not a validation pass')
     parser.add_argument('--fps', type=int, choices=(60,120), help='Override the native display target for this test only')
     parser.add_argument('--capture-interpolation', action='store_true', help='Capture one guest/midpoint pair when capture-interpolation.txt requests it')
-    parser.add_argument('--vulkan-driver',choices=('moltenvk','kosmickrisp'),default='kosmickrisp',
-                        help='Driver for an explicitly built common Vulkan renderer')
+    parser.add_argument('--vulkan-driver',choices=('moltenvk','kosmickrisp'),
+                        help='Temporary Vulkan driver override; default comes from BUILD.json')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
@@ -152,7 +152,7 @@ def run_probe(args, test, env, exe, kind):
     if manifest.get('renderer')=='vulkan':
         import vulkan_sdk
         env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(),
-            getattr(args,'vulkan_driver','kosmickrisp'))
+            vulkan_sdk.select_driver(manifest,getattr(args,'vulkan_driver',None)))
         env['RECOMP_VK_VALIDATION']='0' if getattr(args,'profile_without_validation',False) else '1'
     if args.fps:
         env.update(RECOMP_FRAME_INTERP='2' if args.fps==120 else '1',
@@ -240,6 +240,7 @@ def run_probe(args, test, env, exe, kind):
                   test_directory=str(test.relative_to(ROOT)),
                   unlocked_profile=bool(args.unlocked_profile),
                   overrides={k:v for k,v in env.items() if k.startswith(('RECOMP_', 'TSFP_'))},
+                  vulkan_driver=(vulkan_sdk.select_driver(manifest,getattr(args,'vulkan_driver',None)) if manifest.get('renderer')=='vulkan' else None),
                   frame_captures=captures,
                   rendered_game_verified=False) # Visual recognition is a separate reviewed result.
     if args.profile_frames:

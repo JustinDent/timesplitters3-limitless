@@ -2124,6 +2124,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 ### MAC-050 — Restore a reproducible native build from current main
 
 - **Status:** Verified
+- **Driver selection follow-up (2026-10-19, commit carrying this update):**
+  `codex/mac-moltenvk-default` depends on the unmerged renderer/interpolation
+  stack through `cc364fd`. New builds record MoltenVK in `BUILD.json`; both
+  launchers and the isolated runner share `tools/vulkan_sdk.py` selection.
+  Older manifests retain KosmicKrisp and explicit overrides remain available.
+  `tools/launcher/macos/NativeHost.cs` uses a single bounded helper pipe after
+  repeated checks exposed a dual-pipe ARM64 runtime crash. Native build/input/
+  settings checks, 114 Python checks, 18 launcher groups, 30 fresh prerequisite
+  checks and bounded launcher start/quit passed. Windows was not run for these
+  Mac adapter changes. The default-path Khallos sample measured 59.995/119.995
+  host API presents/s at 60/120; this is not campaign-wide FPS certification or
+  a static sky correction. [Evidence](STATUS.md#manifest-selected-moltenvk-and-short-pacing-checks-2026-10-19).
 - **PC behavior:** The supported build regenerates from the complete pinned
   patch stack and supplies generated build identity to the shared debug code.
   Current project rules permit focused branches on either platform.

@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--setup-sdk', action='store_true', help='Download and verify the pinned checkout-local SDK')
-    parser.add_argument('--driver', choices=['moltenvk', 'kosmickrisp'], default='moltenvk')
+    parser.add_argument('--driver', choices=['moltenvk', 'kosmickrisp'], default=vulkan_sdk.DEFAULT_DRIVER)
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('Requires Apple Silicon macOS')

@@ -72,7 +72,9 @@ def test_fps_override_does_not_change_console_clock(tmp_path):
     assert 'RECOMP_FRAME_INTERP' not in launcher.game_environment({},tmp_path)
 
 
-def test_manifest_gpu_routing_preserves_personal_paths_without_writes(tmp_path,monkeypatch):
+@pytest.mark.parametrize('driver,filename',[(None,'libkosmickrisp_icd.json'),
+    ('moltenvk','MoltenVK_icd.json'),('kosmickrisp','libkosmickrisp_icd.json')])
+def test_manifest_gpu_routing_preserves_personal_paths_without_writes(tmp_path,monkeypatch,driver,filename):
     import vulkan_sdk
     calls=[]
     def verify(root):
@@ -80,9 +82,11 @@ def test_manifest_gpu_routing_preserves_personal_paths_without_writes(tmp_path,m
         return root/'sdk'
     monkeypatch.setattr(vulkan_sdk,'verify_install',verify)
     base=launcher.game_environment({'DYLD_INSERT_LIBRARIES':'stale','VK_DRIVER_FILES':'stale'},tmp_path,120)
-    env=launcher.renderer_environment(base,tmp_path,{'renderer':'vulkan'})
+    manifest={'renderer':'vulkan'}
+    if driver is not None:manifest['vulkan_driver']=driver
+    env=launcher.renderer_environment(base,tmp_path,manifest)
     assert calls==[tmp_path]
-    assert env['VK_DRIVER_FILES']==str(tmp_path/'sdk/share/vulkan/icd.d/libkosmickrisp_icd.json')
+    assert env['VK_DRIVER_FILES']==str(tmp_path/'sdk/share/vulkan/icd.d'/filename)
     assert 'DYLD_INSERT_LIBRARIES' not in env
     for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','RECOMP_DISPLAY_CONFIG','TSFP_DISPLAY_CONFIG',
                 'XDG_CONFIG_HOME','XDG_DATA_HOME','RECOMP_FRAME_INTERP','RECOMP_FPS_CAP'):
