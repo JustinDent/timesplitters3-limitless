@@ -48,6 +48,14 @@ def patch_records(paths):
                 network = by_name[name]
                 paths.remove(network)
                 paths.insert(paths.index(native_boot), network)
+    # Discord appends its Windows adapter beside the original native input
+    # block. Apply it before build identity extends that block's final lines.
+    # Both patches keep their original bytes so tracked older stacks unwind.
+    identity = next((p for p in paths if p.name.endswith('-native-build-identity.patch')), None)
+    discord = next((p for p in paths if p.name.endswith('-discord-presence.patch')), None)
+    if identity and discord:
+        paths.remove(identity)
+        paths.insert(paths.index(discord) + 1, identity)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

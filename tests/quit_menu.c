@@ -16,9 +16,13 @@ static int guest_writable(uint32_t p,size_t n) {return p>=0x1000 && p<sizeof mem
 static uint32_t xbox_HeapAlloc(uint32_t bytes,uint32_t align) {CHECK(bytes==112 && align==4);return 0x8000;}
 #define WM_CLOSE 16
 static int close_calls,post_ok=1;
+#ifdef TSFP_NATIVE_DISPLAY
+int tsfp_native_request_quit(void) {++close_calls;return post_ok;}
+#else
 static uintptr_t xbox_D3D8Window(void) {return 123;}
 static int PostMessage(uintptr_t window,unsigned msg,int w,int l)
 {CHECK(window==123 && msg==WM_CLOSE && !w && !l);++close_calls;return post_ok;}
+#endif
 static volatile int stub;
 void sub_00079B70(void) {stub=0;}
 void sub_00075B70(void) {stub=1;}

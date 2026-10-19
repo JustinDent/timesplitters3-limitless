@@ -72,6 +72,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-choice-arrows.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-setting-sliders.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-audio-menu-mouse.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-build-identity.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-menu-mode.patch',
                           'zzzzzzzzzz-decal-projection.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch',
                           'zzzzzzzzzzz-model-projection.patch',

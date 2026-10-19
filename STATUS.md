@@ -1,5 +1,60 @@
 # Measured progress
 
+## Shared-platform integration baseline (2026-10-19)
+
+- **Source:** `codex/shared-platform-baseline`, merging current main `5131d29`
+  and the unmerged native stack ending at `f562e14`. Main has 160 newer commits;
+  the native stack contributes 12. Tests below used this merge working tree plus
+  the integration fixes, before the merge commit. Neither main nor another
+  device's checkout was changed. Historical evidence below retains its revision.
+- **Cause and fix:** Discord's Windows CMake patch and the native build-identity
+  patch extended the same native block. Apply Discord first, then identity;
+  preserve both original patch payloads and tracked-stack migration. Shared menu
+  sliders also called a FOV callback guarded only for Windows. Enable the same
+  callback and bar capture on native Mac; no second FOV implementation is added.
+  A real native menu translation-unit compile check now catches this class of
+  undefined internal callback without game assets.
+- **Backlog:** Preserve all PC and native feature entries, native evidence and
+  newer PC follow-ups. Resolve five ID collisions as MAC-049 through MAC-053,
+  retain historical aliases, and rebuild the queue. CI checks unique IDs/titles,
+  supported statuses and agreement between queue and entries on both hosts.
+- **Host/build:** macOS 27.0.1 arm64, Apple Clang 21.0.0, SDL 3.4.16,
+  OpenGL 4.1 Metal 91.7; pinned upstream `d90c929`, supported US XBE hash verified
+  by the builder. Regenerated game C with the complete patch stack, preserving
+  all dependency pins. Free disk before generation/build: 231 GiB.
+  Native executable SHA-256:
+  `3887b6cee495d9ae98307ef0d6f37eaab80ed70f782eef2a7eefeb7abc0384f9`.
+  Exact working-tree source hashes/provenance are in ignored `build/macos/BUILD.json`.
+- **Checks:** Patch/CI-selection/transition suite: 69 passed, 2 skipped.
+  Native tools, isolated Test Lab, launcher and backlog/index checks: 77 passed.
+  The native CI policy selection: 140 passed, 7 skipped. Added native menu compile,
+  pointer and index/scope checks: 50 passed, 1 Windows-only skip. Native builder
+  `--test`: all 3 CTests and real-GPU renderer, SDL input, Cocoa settings and debug
+  checks passed. Read-only interactive launcher prerequisite check passed.
+  Windows-only checks and an actual Windows build were unavailable on this host;
+  configuring the two-host CI matrix is not a completed Windows CI run.
+- **Bounded native run:** `--unlocked-profile --seconds 120 --capture --test-keys
+  --profile-frames --fps 120`, 120.17 seconds, normal time-limit termination,
+  exit 0. Synthetic menu input selected Test Lab, Story and the first mission.
+  Reviewed captures show terrain, weapon, HUD and objective after the opening
+  cinematic. Selected capture: ignored
+  `private/captures/native-mac/shared-baseline-first-mission.png`.
+  Late movement/fire commands did not establish a visible response before the
+  time limit; no new movement, firing, physical-input or campaign claim.
+  The 110–119 second interval measured 115.55 host presents/s = 59.78 guest +
+  55.78 interpolated, p95 13.792 ms, worst 20.531 ms, zero intervals above 33.33 ms.
+  This short capture-enabled sample is not stable-120 certification or scanout FPS.
+- **Preservation:** Personal saves/settings and the canonical Test Lab fixture
+  were not used for writes; bounded tests isolated both display configs, controls
+  and XDG paths, and recycled only disposable partitions. Concurrent untracked
+  duplicate files remain untouched except two duplicate `.patch` copies that
+  incorrectly joined the active stack: preserved byte-for-byte with SHA-256
+  manifest in ignored `private/recovery/shared-baseline-sync/`.
+- **Next:** Consolidate shared shader/rendering policy and settings definitions.
+  The native GL adapter still duplicates renderer semantics; this baseline does
+  not claim automatic graphics parity, resolved Khallos sky fidelity, movie,
+  cube/volume, networking or full texture-pack support.
+
 ## Launcher v1.2.18 release candidate (2026-10-19)
 
 Prepared on `feature/launcher-live-known-issues`, integrating main `d63a156`
@@ -1890,6 +1945,485 @@ Final Release executable SHA-256:
 Shared native Mac hooks use existing STRETCH, font metrics and guest projection
 support; native visual/runtime validation remains pending under MAC-032.
 
+## Native fog combiner input (2026-10-17)
+
+`codex/mac-fog-rendering` depends on effects evidence `3231c8c` and the repaired
+native stack. The Mac vertex/fragment interface previously omitted the NV2A fog
+register entirely. GPU vertex programs and CPU fallback now pass the written
+fog factor through to the combiner. Unwritten fog uses the existing shared PC
+marker/threshold: fog enabled selects the sky fallback, disabled selects the
+particle fallback. A written factor still applies with fog disabled, as required
+by the title's custom blend. Fog RGB comes from the render state, independently
+of its packed alpha. Fixed vertices retain the PC shader's default factor one;
+this does not implement the full fixed-function fog-distance pipeline.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+49 actual-GPU cases pass: MAC/ILU writes, scalar fog masks, unwritten and
+post-END writes, clamping, enabled/disabled fog, indexed/unindexed draws,
+GPU/CPU paths and fixed default. All three CTests, existing GPU checks, SDL
+input and Cocoa settings/debug tests pass. Six portable spirit-wrapper,
+channel/capture and framebuffer-cache checks pass. The first combined test run
+exposed that the new fixture left TEX1 disabled for a later A8 fixture; restoring
+its prior vertex format fixed the test-state leak. No Windows code was changed;
+Windows host execution is unavailable.
+
+The verified-US-XBE isolated Test Lab runner completed 110 seconds in Khallos
+Express at target 60 and 120 seconds in the first mission at target 120. Synthetic
+SDL input moved, turned and fired; reviewed captures retain terrain/train panels,
+weapons, HUD and window glass. First-mission smoke/fire remains visible and its
+opening canyon is consistent with the earlier baseline capture. Khallos's dark,
+stretched exterior sky persists: the missing fog input was a concrete parity gap,
+but fixing it did not resolve that separate fidelity issue. Full effects parity,
+Mansion spirits and campaign completion remain unverified.
+
+The Khallos 85–105 second sample measured 59.70 host/guest presents/sec,
+p95 17.476 ms, worst 98.022 ms (two intervals over 50 ms). First mission at
+85–105 seconds measured 117.25 host presents/sec (59.65 guest + 57.60
+interpolated), p95 15.583 ms, worst 28.400 ms, none over 33.33 ms. Captures
+were enabled; these are host presents, not a stable-120 or display-scanout claim.
+
+Build evidence: `logs/native-fog-build.out` / `.err`; source `3231c8c` plus
+this branch's six renderer/test source changes, pinned upstream and verified XBE.
+Tested executable SHA-256: `a8776bf117fe7f59a497c7e2d1cdf4899802b0409b35ec3e26518946d50d3e0b`.
+Runtime evidence: `logs/native-fog-khallos-60-*`,
+`logs/native-fog-first-mission-120-*` and corresponding `.err` files.
+Selected images: `private/captures/native-mac/khallos-fog-60-after.png`,
+`fog-first-mission-before.png` and `fog-first-mission-after.png` in that directory.
+Canonical Test Lab signatures/checksums still match; disposable test disks were
+recycled. Personal settings/saves and unrelated duplicate files were preserved.
+The interactive launcher's read-only prerequisite check passes.
+
+## Native Khallos Express effects check (2026-10-17)
+
+`codex/mac-framebuffer-effects` depends on channel-clear validation `63b3177`.
+Built that exact source revision with the shared upstream/XBE pins on macOS
+27.0.1 arm64, Clang 21, SDL 3.4.16, OpenGL 4.1 Metal 91.7. The isolated Test Lab
+runner completed 180 seconds at target 60 and 120 seconds at target 120.
+Synthetic SDL events selected Khallos Express, skipped opening scenes, moved
+into the engine cab, turned and fired (ammo 8 to 7). Reviewed captures show
+solid train sides/interior panels and weapon, with separately transparent window
+glass. Exterior sky has dark/stretched areas; this is an unresolved renderer
+fidelity gap, not evidence that all effects or the whole level are correct.
+Native shader review found that the PC fog register is not populated on Mac;
+its sky/particle path needs adaptation and a separate GPU/scene check.
+
+At 60, the 95–115 second gameplay sample had 1,200 guest/host presents,
+60.00 presents/sec, p95 17.572 ms and worst 30.571 ms. At 120, the 85–105 second
+sample had 2,171 host presents, 108.55/sec (58.75 guest + 49.80 interpolated),
+p95 17.060 ms and worst 24.625 ms. Neither sample had intervals over 33.33 ms.
+These are host-present intervals with rotating captures enabled, not scanout
+measurements or proof of stable 120 FPS. One bounded draw trace was collected
+outside the 120 timing sample. Logs report no GL error or guest fault.
+
+Evidence: `logs/native-khallos-{60,120}-summary.json`, corresponding `.err`,
+`-frames.csv` and `-run.log`; selected captures
+`private/captures/native-mac/khallos-{60,120}-{before,after}.png`.
+Four shared channel/capture/framebuffer-cache checks and the native screen-copy
+GPU suite pass. Earlier first-mission effects evidence remains separately scoped.
+MAC-019 stays Awaiting validation until the remaining glow/exterior fidelity is
+reviewed; neither Windows results nor these cab views establish full parity.
+Personal saves/settings were not used; disposable partition images were recycled.
+
+## Native channel-clear GPU validation (2026-10-17)
+
+Branch `codex/mac-channel-clears` depends on the published native branch stack
+ending at `22169d9`. Added `src/native/channel_clear_selftest.inc` to the
+bounded renderer self-test. All 192 combinations of 16 channel masks (including
+no color clear) and four depth/stencil flag combinations pass on Original,
+1920x1080 and 16x16 offscreen targets. Direct GPU readback checks RGBA, depth
+and stencil, inherited empty drawing scissors, write-mask restoration, clipped
+clear rectangles, invalid rectangle pointers and preservation of the main scene
+while clearing an offscreen target. No production clear-path change was needed.
+
+Host: macOS 27.0.1 arm64, Clang 21, SDL 3.4.16, OpenGL 4.1 Metal 91.7.
+Built from `22169d9` plus the two self-test source changes, using the pinned
+upstream and verified US XBE. The complete native suite passed (three CTests,
+GPU, SDL input, Cocoa settings/debug); four portable channel-mapping/capture
+and framebuffer-cache tests also passed. Evidence: `logs/native-channel-clears-build.out`
+and `.err`, with source hashes/provenance in the local `build/macos/BUILD.json`.
+Test partition images were recycled; personal settings/saves were not used.
+Windows execution is unavailable. Lobby page cycling and title-effect fidelity
+remain pending; MAC-007 stays In progress.
+
+All eight preceding focused branches were published and their exact remote
+commit hashes verified on 2026-10-17. No merge into main was performed. The
+other computer has not been inspected, so its synchronization remains unverified.
+
+## Alpha.6 branch-stack refresh (2026-10-17)
+
+During local validation, a separate pull advanced `main` from `0dc9fea` to
+`d9c145f`. Its only changes are VERSION `0.2.0-alpha.6` and the issue-form
+release choice; AGENTS.md and runtime source are unchanged. Rebased the eight
+local focused branches onto `d9c145f` with dependent branch refs updated.
+`git range-diff` confirms all eight implementation commits are identical.
+The original commit IDs in earlier evidence below describe the binaries tested
+before that rebase, rather than claiming they were built from alpha.6.
+
+Rebuilt and reran the full native suite from rebased `941d065`: all three
+CTest suites, GPU, SDL input, Cocoa settings and debug checks pass. Reviewed
+`private/captures/native-mac/build-watermark-alpha6.png`, which reads
+`TSFP PC v0.2.0-alpha.6  40b4e7d1`, matching the generated build manifest.
+Executable SHA-256:
+`b1d932fa3f1a7d7de8607f4dae481c63dd87ee5bcfe4bff48844d57628c96526`.
+Evidence: `logs/native-alpha6-build.out` / `.err`. Host and dependency versions
+are unchanged from the tests below. The earlier bounded gameplay evidence is
+retained with its original alpha.5 provenance; it was not relabeled alpha.6.
+
+Canonical Test Lab checksums/signature verified after gameplay tests. All known
+native disposable partition images and run locks were cleaned up. Personal
+saves/settings and unrelated untracked duplicate files were preserved. The branch
+stack is committed locally, not pushed or merged into main; other-device
+synchronization is unverified. The native launcher prerequisite check passes.
+
+## Native build watermark (2026-10-17)
+
+`codex/mac-build-watermark` depends on unmerged native exit `83b50b4`. The
+host OpenGL overlay draws the shared version/build identity at the lower right,
+independently of the optional upper-left FPS line. CoreText measures its width
+and ellipsizes labels exceeding the 1024-pixel cache; narrow drawables fit the
+complete cached line. Separate fixed-size caches are released on normal SDL
+shutdown. The same existing scene-presentation function is used for ordinary
+and interpolated presents; guest scene/readback/history remains separate.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+the full native suite passed: three CTests plus GPU, SDL input and Cocoa
+settings/debug. New GPU coverage checks independent visibility with FPS off,
+text pixels and placement, narrow/long labels, resource destruction/recreation,
+and FBO/texture/scissor/pixel-unpack/PBO restoration. Existing screen-copy and
+interpolation regressions also passed. The initial test sampled the text cache
+instead of the destination FBO after a direct helper call; correcting the test's
+read target made that new assertion pass. The production draw restores both
+read/draw targets. No Windows-specific implementation changed; Windows host
+execution is unavailable here.
+
+Reviewed `private/captures/native-mac/build-watermark.png`: text reads
+`TSFP PC v0.2.0-alpha.5  6296ca9d`, matching VERSION and
+`build/macos/BUILD.json`. That manifest records source `83b50b4` plus the
+uncommitted overlay changes; executable SHA-256:
+`f7e6028db973b1a8a2879c6a9745f91881eef29a8822155a21d2ae3dfe2dcb23`.
+Evidence: `logs/native-watermark-build.out` / `.err` and the small GPU bitmap.
+Live fullscreen/window interaction and actual host-present capture review at
+60/120 remain pending; MAC-034 stays Awaiting validation. This does not verify
+native networking.
+
+## Native Quit to Desktop (2026-10-17)
+
+`codex/mac-quit-desktop` depends on unmerged native menu input `db11ff7`.
+The shared guest finalizer and confirmation callbacks now run on Mac. Confirm
+queues SDL_QUIT for the existing main-thread exit path; Cancel and Back use the
+guest's existing return callback. Other players, original Quit behavior and
+Windows WM_CLOSE behavior are preserved.
+
+The full native build/test suite passed on macOS 27.0.1 arm64 / Clang 21 /
+SDL 3.4.16 / OpenGL 4.1 Metal 91.7: three CTests plus GPU, input and Cocoa
+settings/debug checks. The SDL test verifies an actual queued quit event.
+Five portable menu/quit tests passed, including both host dispatch variants,
+safe default, Cancel/Back, failed-post retry and repeated-confirm protection.
+Evidence: `logs/native-quit-build.out`, `.err`, `logs/native-quit-shared.log`.
+
+A bounded main-menu test using synthetic SDL keys verified the visible Cancel
+default, Cancel, reopening and Back, then reopening and confirming desktop exit.
+The process exited normally after 61.21 seconds with code 0; the log contains
+three confirmation opens, two cancellations and one confirmed desktop exit,
+followed by the native window-close path. The runner reports `process_exit`
+(and its startup-smoke command returns 1 because this was deliberately early),
+not a timeout or fault. Its summary has no native fault or sampled GL errors.
+Evidence: `logs/native-quit-main-summary.json`, `logs/native-quit-main.err`,
+`logs/native-quit-main.log`, and
+`private/captures/native-mac/native-quit-cancel-default.png`.
+Saves, input, both display configs and XDG roots were runner-isolated; known test
+images were recycled after exit. Source/build provenance is `db11ff7` plus the
+uncommitted quit changes. Pause and mouse-confirm tests remain pending, so
+MAC-031 remains Awaiting validation.
+
+A subsequent 180.17-second isolated run at 1280×720, 75° FOV and the
+120-present target reached first-mission gameplay. Reviewed before/after captures
+show movement, changed camera direction and ammo dropping from 16 to 14 after
+firing. Escape pause/resume restored capture, with the world still visible.
+Pause includes Quit to Desktop. The attempted right-click/quit route supplied
+a synthetic button before its queued pointer motion had been dispatched; it
+did not establish right-click return or Pause exit and is not counted as such.
+The saved test display file was restored after the run.
+
+During seconds 110–130, 2,310 presents averaged 115.52/sec: 59.36 guest plus
+56.16 interpolated. Median host interval was 11.093 ms, p95 16.408 ms and
+p99 17.692 ms, with one 107.238 ms hitch. Across the entire run including
+loading/opening/menus, average was 93.00 host / 54.03 guest presents per second;
+it is not locked 120 FPS. At least 9,600 guest frames / 16,489 host presents
+were logged, with no sampled GL errors or native fault. These are CPU present
+intervals, not display scanout. Evidence: `logs/native-first-mission-120-*`,
+`private/captures/native-mac/native-wide-before-input.png`,
+`native-wide-after-input.png`, and `native-wide-pause.png`. Raw guest captures
+retain 640×480 storage while the actual scene is 1280×720; the presentation fits
+that wide aspect to the window. No full-level or complete visual-fidelity claim.
+
+## Native menu pointer adapter (2026-10-17)
+
+`codex/mac-menu-mouse` depends on unmerged display adaptation `e9545de` and
+its native build/renderer/Test Lab prerequisites. Enabled shared guest menu
+hit testing, footer/tab policy and button-edge handling on native builds. The
+SDL adapter publishes point coordinates, buttons and bounded/fractional wheel
+input under a mutex. Main-thread capture requests release the pointer in menus
+and restore it when returning to focused gameplay. Focus loss clears held input
+and pending wheel packets; held menu clicks remain blocked until release.
+The separate `native-menu-mode` patch enables the existing per-frame context
+hook on Mac, with regeneration through the supported builder.
+
+On the same macOS 27.0.1 arm64 / Clang 21 / SDL 3.4.16 / OpenGL 4.1 Metal 91.7
+host, the actual SDL-window test checks pointer coordinates, wheel accumulation,
+flipped direction, clamping and expiry, non-consuming hover reads, capture
+transitions, held-click suppression and focus recovery. Native GPU/settings/
+input/debug suites and three CTests passed again after regenerating and rebuilding
+with the final context-hook patch (`logs/native-menu-build.out` / `.err`).
+14 shared menu/quit/camera/UI tests passed; the Windows FOV fixture was skipped.
+Patch migration initially exposed the new dependent patch being included in a
+historical pre-display fixture. Excluded it from that historical subset; the
+upgrade scenario then passed. Remaining patch scenarios passed (26 passed,
+2 Windows-only skips on the initial run; the failing scenario passed on rerun).
+
+A 90.13-second isolated run at the 120-present target used only synthetic SDL
+pointer/button/wheel events to select 1 Player, Test Lab, Story, scroll two
+levels, return with right-click, and open Settings. Reviewed screenshots show
+the correct selected level (The Russian Connection). It logged at least 5,100
+guest frames and 5,456 successful host presents, no sampled GL errors and no
+native fault; this is not a claim of sustained 120 FPS. Evidence:
+`logs/native-menu-pointer-summary.json`, `logs/native-menu-pointer.log`,
+`private/captures/native-mac/native-menu-mouse-wheel.png`,
+`logs/native-menu-shared.log`, `logs/native-menu-patches.log` and
+`logs/native-menu-patch-recheck.log`. This binary records `e9545de` plus the
+uncommitted adapter, before the additional per-frame context patch.
+Physical input, pause/Objectives tabs/footers and the wide-ratio acceptance
+matrix remain unverified; MAC-030 stays Awaiting validation.
+
+The preceding 120.12-second 60-present baseline run reached visible first-mission
+gameplay with the canyon, weapon, HUD and tutorial panel. Across loading, menus,
+opening sequence and gameplay, 7,161 host presents averaged 59.80/sec, median
+16.644 ms, p95 18.792 ms and p99 22.701 ms; six intervals exceeded 33.33 ms.
+These are CPU intervals between successful host presents, not display scanout.
+Logged at least 6,900 guest/host frames, no sampled GL errors or native fault.
+Evidence: `logs/native-first-mission-60-summary.json`,
+`logs/native-first-mission-60-frames.csv`, `logs/native-first-mission-60.log` and
+`private/captures/native-mac/main-restored-first-mission.png`. That binary was
+built from `16a6a10` plus the display changes subsequently committed as
+`e9545de`; Git branch naming changed during the run. This establishes visible
+first-mission startup, not level completion or complete rendering fidelity.
+
+## Native display settings parity (2026-10-17)
+
+`codex/mac-display-parity` depends on unmerged Test Lab runner `16a6a10` and
+its native build/renderer prerequisites. Cocoa Graphics now exposes the shared
+aspect groups and 40–100° vertical FOV control. The guest and Cocoa menus use one
+nearest-mode helper, including an exact-match tie fix for Original versus explicit
+640×480. Custom resolutions survive opening the panel. Defaults and Cancel are
+drafts; failed persistence restores both resolution and FOV.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+`tools/build-native-mac.py --test` passed all three CTests and native GPU,
+SDL input, Cocoa settings and debug checks. The new actual Cocoa-modal test
+checks all aspect groups, custom 1000×600, FOV bounds/default, Cancel, Save
+1280×720 at 90°, reopen and a read-only destination failure. It restores the
+disposable file and graphics state. The same Original/640×480 regression was
+added to the Windows FOV fixture; Windows execution is unavailable on this host.
+83 shared native-compiler/runtime/UI/CI checks passed. Evidence:
+`logs/native-display-build.out`, `.err` and `logs/native-display-shared.log`.
+Build provenance records `16a6a10` plus the uncommitted source changes.
+
+These are functional Cocoa/GPU checks, not physical input or complete visual
+acceptance. The computer-control tool could not select the unbundled native
+executable, and a cached AppKit-view capture did not capture the rendered panel;
+that capture is not used as visual evidence. Live panel layout, the full ratio
+matrix, zoom, ledge/landing and authored cinematic/terminal lenses remain pending.
+MAC-022 and MAC-024 remain Awaiting validation.
+
+## Native Test Lab runner (2026-10-17)
+
+`codex/mac-test-lab` is based on unmerged renderer integration `14a0717`, which
+in turn depends on native build restoration `bab79f0`. The bounded native runner
+now accepts `--unlocked-profile` and calls shared `testing_profile.prepare_run`
+inside `private/test-saves/native-mac/unlocked`. Saves, controls, both display
+configs and both XDG roots are isolated; startup movies are skipped. Its root
+lock prevents concurrent native sessions, and its nested lock prevents resetting
+an active fixture copy. Known partition cleanup runs after child shutdown and
+on exceptional exits. Symlink redirects, unowned directories and missing/corrupt
+fixtures fail before game launch. Ordinary native test saves remain unchanged.
+
+On macOS 27.0.1 arm64 / Python 3.13.16, 60 combined routing, native-tool,
+launcher and shared-profile tests passed. Added native-specific coverage for
+fixture immutability, fresh reset, saved test-setting preservation, inherited XDG
+overrides, concurrent preparation, missing fixtures, linked destinations/XDG
+roots and cleanup-before-unlock on startup failure. Windows execution is unrun;
+shared profile implementation is unchanged. Native fixture checks are now in CI.
+
+Created a fresh seed through native menus using synthetic SDL input in the
+ordinary isolated save directory. After that 90-second run exited, the shared
+creator validated the supported XBE and signed save and made the canonical
+local Test Lab fixture. The subsequent 120.20-second unlocked-profile run at
+60 host presents reached the native Test Lab picker, Story level list and a late
+level's difficulty screen (You Take the High Road). Logged at least
+6,900 guest frames and 6,900 host presents,
+no sampled GL errors and no native fault. This is menu/navigation evidence,
+not physical-input or later-level gameplay validation.
+
+After exit, fixture checksums and runtime HMAC still matched and collectible
+flags remained zero. Run locks were released. Cleanup recycled
+6 known images (5,243,406,848 logical bytes,
+135,168 allocated bytes), preserving profiles/configs.
+Evidence: `logs/native-test-lab-driver.log`, `logs/native-test-lab-summary.json`,
+`private/captures/native-mac/test-lab-late-story.png` and
+`test-lab-unlocked-difficulty.png`. Canonical data remains ignored in
+`private/test-fixtures/unlocked`; personal saves/settings were not used.
+MAC-025 is Awaiting validation: live Arcade character/challenge availability
+and scene-specific gameplay still need checks. No full playthrough is required.
+
+## Native dependent-texture integration (2026-10-17)
+
+Focused branch `codex/mac-dependent-textures` depends on unmerged native build
+fix `bab79f0`. Reapplied only the renderer and GPU-test changes from `5cba184`:
+`gl_fragment.inc`, `renderer_gl.c`, `multitexture_selftest.inc` and
+`dependent_texture_selftest.inc` under `src/native`. Retained all current-main
+channel clears, proportional layout and viewport/scissor changes. No older
+packaging scripts, unrelated settings tests or wholesale branch merge included.
+
+On the same macOS arm64 / Clang 21 / SDL 3.4.16 / OpenGL 4.1 Metal 91.7 host,
+`tools/build-native-mac.py --test` passed: three CTests, real-GPU renderer tests,
+SDL input, Cocoa settings and debug tests. The restored 36 dependent-texture
+cases cover AR/GB chaining, input selection, signed dot mappings, linear DOT_ST
+and invalid-stage behavior through fixed FVF, GPU programs and interpreted
+vertices. Build executable SHA-256: `15f4eca72fb0f75598f0ed1781763eaf05b29e8b0f3040b481f898694a13a374`.
+This binary records `bab79f0` plus uncommitted renderer changes in BUILD.json.
+Evidence: `logs/native-dependent-build.out` and `.err`; generated identity and
+BUILD.json stay local. Native game render fidelity and remaining Xbox texture
+modes are not established by these fixtures; MAC-005 remains In progress.
+
+The preceding bounded baseline boot completed 90.14 seconds at the 120-present
+target, logging at least 5,100 guest frames and 10,104 host presents, no sampled
+GL errors and no native fault. Those are counters, not a sustained-FPS claim.
+Six disposable disk images were recycled (5.24 GB logical, 132 KiB allocated);
+menu captures and isolated metadata were retained.
+
+## Native build restoration (2026-10-17)
+
+Implemented locally on `codex/mac-native-build`, based on audit commit
+`b884c68` (unmerged documentation dependency) and main `0dc9fea`. Removed the
+obsolete platform-branch restriction while retaining Apple Silicon, XBE and
+upstream pin checks. Missing game data now has an explicit error. The build
+generates the shared content/source identity under `build/macos/generated`;
+a new final runtime patch supplies native include/version wiring. `BUILD.json`
+records that identity and uncommitted source state. This does not add multiplayer.
+Cocoa debug Save now preserves options outside its four exposed controls,
+including `show_latency`. Native tool checks are included in affected CI routing.
+
+Located the user's existing archive in Downloads, extracted one `private/game`
+with the pinned XISO tool and verified the supported US SHA-256. Kept the archive,
+recorded ignored import provenance, and removed only the temporary extracted ISO.
+Disk had about 203 GiB free before setup; the game allocates about 3.8 GiB.
+Restored Python 3.13.16, the unchanged requirements pins, upstream `d90c929` and
+its pinned SDL/XbSymbolDatabase submodules. The first Homebrew Python install
+stopped on an already-linked certificate dependency; installing Python against
+existing dependencies succeeded without replacing the existing OpenSSL.
+
+Validation: macOS 27.0.1 arm64, Apple Clang 21.0.0, SDL 3.4.16,
+OpenGL 4.1 Metal 91.7 / GLSL 4.10. Fresh setup/generation and native compilation
+succeeded. The first GPU suite exposed a stale upload-test assumption: shared
+main now applies proportional menu scaling without a camera frame. The upload
+fixture explicitly requests STRETCH; additional pixel assertions verify AUTO
+still applies the intended 16:9 proportions. No production rendering rule was
+disabled to pass the test.
+
+The corrected `tools/build-native-mac.py --test` passed all three CTests and
+renderer, input, settings and debug self-tests, including real GPU readback,
+screen copies/scissors, vertex GPU/CPU agreement, four texture stages,
+resolution/offscreen/interpolation, Cocoa save/cancel, true-latency preservation
+and atomic-write failure behavior. Test metadata/profiles were retained and
+only known test partition images recycled (10.49 GB logical capacity, 8 KiB
+allocated in that pass). The read-only launcher check passed.
+
+Source regressions: initial patch/launcher/tool suite 43 passed, two skipped;
+build-input/identity/generation suite 12 passed, one skipped; all 78 shared
+runtime/graphics/input CI regressions passed on this Mac. After CI routing
+changes, 45 routing/native-tool/launcher checks passed. Skips remain scoped to
+their existing host-specific conditions, not ignored failures. Windows build
+and hosted CI execution remain unrun here.
+
+Build evidence: `logs/native-build.out`, `.err`, `native-shared-tests.log` and
+`build/macos/BUILD.json`. Executable SHA-256 at this validation point:
+`cf3e1461975578a0a444e562d960f039f37f0fac50e647ad7c15db6988588938`.
+It contains local source changes over `b884c68`; it is not an unchanged main
+binary. An isolated 120-present-target boot visibly reached the player-count,
+profile and name-entry/storage menus using synthetic SDL keys; selected capture
+`private/captures/native-mac/build-baseline-menu.png`. These observations do not
+verify physical input, sustained 120 FPS or current-revision gameplay fidelity.
+MAC-033 remains Awaiting validation for its remaining gameplay/60–120 scope;
+MAC-003 retains its remaining physical shortcut/fullscreen checks.
+
+## Mac current-main backlog audit (2026-10-17)
+
+Source: fetched `main` and `origin/main` both resolved to
+`0dc9fea49041bdca985d372a8e5513d6cac514ac`; no pull was needed. Compared
+`d83ca5e..0dc9fea`: 133 commits (82 non-merge), 134 changed tracked files.
+Game VERSION is `0.2.0-alpha.5`; launcher source is v1.2.12. Reviewed the
+commit/change inventory, full Mac backlog, shared feature/native adapter
+boundaries and build/test wiring. This is a parity and readiness review, not
+an exhaustive correctness review of every Windows launcher line.
+
+Documentation changes are local and uncommitted on `codex/mac-backlog-audit`,
+created from that main revision under the updated focused-branch rules. Main,
+mac-port and remote branches were not modified. Eleven pre-existing untracked
+files with ` 2` in their names were preserved. Other-device checkout/build/data
+synchronization is unverified; fetching Git does not transfer ignored assets.
+
+The backlog now has 33 unique feature entries, a complete queue, explicit
+MAC-022 status and an implementation sequence. The duplicate spirit-rendering
+MAC-026 became MAC-032; the character/weapon MAC-026 and its history remain.
+Existing PC feature handoffs were retained, including all launcher follow-ups.
+New MAC-033 records native build readiness, and MAC-034 records the missing
+build-identity watermark. MAC-003 now records Cocoa debug-setting preservation.
+Documentation checks passed: unique IDs, one status per entry, exact queue
+coverage/status agreement, unchanged unrelated feature descriptions, corrected
+spirit reference and `git diff --check` with CRLF handling. Counts are 20
+Awaiting validation, 10 Queued, two In progress and one historically Verified.
+See [audit coverage and priorities](MAC_PORT_BACKLOG.md#audit-scope-and-next-work).
+
+Current integration findings:
+
+- `python3 tools/build-native-mac.py` exits with the obsolete requirement to
+  switch to `mac-port`, before setup/build writes. This conflicts with the
+  current focused-branch policy (MAC-033).
+- Shared `src/pc_debug.c` includes generated `pc_network_build.h`, but generation,
+  include-directory and version wiring are Windows-only. Clean native compilation
+  is expected to fail without this input; a full compiler reproduction was not
+  possible with the local prerequisites absent (MAC-033).
+- Cocoa debug Save initializes four of the five `PcDebugOptions` fields. The
+  shared saver writes the fifth, `show_latency`, so Save clears an existing true
+  preference. This is source-confirmed behavior, not a live UI test (MAC-003).
+- Menu mouse and desktop-exit guest implementations remain gated to Windows
+  or portable fixtures; passing the fixtures does not enable SDL/Cocoa adapters
+  (MAC-030/031). Native build-identity overlay drawing is absent (MAC-034).
+- `git log main..mac-port` retains `5cba184`, merge `b8857ba` and `1a8f4dd`.
+  The first commit's diff contains dependent-texture rendering/fixtures absent
+  from main, despite its debug-oriented title. Review that work separately from
+  the older branch's packaging/settings-test changes; no integration was made
+  during this audit (MAC-005).
+
+Local validation host: Apple Silicon arm64, macOS 27.0.1, Apple Clang 21.0.0
+(`clang-2100.3.34.2`), system Python 3.9.6. Compiled and executed five existing
+portable C fixtures directly using the POSIX commands from their Python test
+wrappers: `menu_mouse`, `quit_menu`, `terminal_mouse` (with `src/pc_input.c`),
+`ui_layout` and `tutorial_layout`. All five passed. Commands used `cc -std=c11
+-O2 -I<checkout>/src`, `-lm`, and `-Wall -Wextra -Werror` for the first three.
+Temporary executables were removed automatically. These cover pointer policy,
+guest confirmation with a mocked close callback, terminal bounds/ownership,
+placement rules and tutorial layout. They do not cover pytest mutation variants,
+generated-wrapper integration, native window-event delivery or real GPU draws.
+
+The read-only launcher prerequisite check reports missing `private/game`.
+Also absent: `.venv`, `external/ts3FPrecomp`, `build/macos`, and the unlocked
+test-profile fixture. Python 3.12+ and pinned build dependencies must be restored
+before building; no dependencies or game files were downloaded during review.
+No supported XBE was available to hash, no game executable was launched, and no
+graphics backend was exercised. Full patch/generation, native build/GPU/audio,
+physical-input, texture-pack and gameplay checks remain pending, as do current
+Windows checks. No backlog feature was newly marked Verified.
 
 ## Issue #86 frontend mouse menus (2026-10-17)
 
@@ -2747,7 +3281,7 @@ reference; it is not used as a fidelity pass.
 Remaining validation: original-Xbox fidelity, later ghost-girl/What Lies Below
 encounters, and native macOS GPU/interpreted-vertex paths. This is evidence for
 the Mansion entrance-hall spirits, not a claim that every encounter in #17 is
-verified. See [MAC-026](MAC_PORT_BACKLOG.md#mac-026--spirit-skull-and-eye-rendering-17).
+verified. See [MAC-032](MAC_PORT_BACKLOG.md#mac-032--spirit-skull-and-eye-rendering-17).
 
 ## Arcade RANK widget placement (2026-10-17)
 

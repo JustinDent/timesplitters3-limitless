@@ -6,6 +6,14 @@ on:
     paths:
       - .github/workflows/runtime-patches.yml
       - tools/recomp-generation.py
+      - tools/build-native-mac.py
+      - tools/play-native-mac.py
+      - tools/test-native-mac.py
+      - tools/testing_profile.py
+      - tests/test_testing_profile.py
+      - tools/native_mac_common.py
+      - tests/test_native_mac_tools.py
+      - tests/test_native_mac_launcher.py
       - tests/test_recomp_generation.py
       - tests/test_recomp_float_joins.py
       - tests/test_recomp_vehicle_joins.py
@@ -175,8 +183,8 @@ jobs:
                             if line.startswith('pytest=='))
           subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
           PY
-      - name: Test CI suite selection
-        run: python -m pytest tests/test_ci_runtime_scope.py -q --tb=short
+      - name: Test CI suite selection and feature handoff index
+        run: python -m pytest tests/test_ci_runtime_scope.py tests/test_mac_backlog.py -q --tb=short
       - name: Check out pinned upstream source only
         if: steps.scope.outputs.transitions == 'true' || steps.scope.outputs.native == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -205,6 +213,7 @@ jobs:
         if: steps.scope.outputs.native == 'true'
         run: |
           tests=(
+            tests/test_native_mac_tools.py tests/test_native_mac_launcher.py tests/test_testing_profile.py
             tests/test_native_compiler.py tests/test_audio_timing.py
             tests/test_recomp_float_joins.py tests/test_recomp_vehicle_joins.py
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_terminal_depth.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
@@ -212,10 +221,11 @@ jobs:
             tests/test_crash_capture.py
             tests/test_cutscene_letterbox.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py
+            tests/test_fov_settings.py
             tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_quit_menu.py tests/test_ui_layout.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            tests+=(tests/test_pc_display_modes.py tests/test_fov_settings.py tests/test_menu_sampling.py tests/test_window_theme.py tests/test_online_theme.py tests/test_online.py tests/test_online_host.py tests/test_network_identity.py)
+            tests+=(tests/test_pc_display_modes.py tests/test_menu_sampling.py tests/test_window_theme.py tests/test_online_theme.py tests/test_online.py tests/test_online_host.py tests/test_network_identity.py)
           fi
           python -m pytest "${tests[@]}" -q --tb=short
       - name: Test release validation and disposable fixture cleanup

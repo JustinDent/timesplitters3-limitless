@@ -3,7 +3,7 @@
 #include <unistd.h>
 /* Text rasterization uses thread-safe CoreText/CG objects, never AppKit views
  * on the rendering thread. Pixels are opaque RGBA for a separate host overlay. */
-int tsfp_native_debug_bitmap(const char *text,unsigned char *pixels,int width,int height) {
+int tsfp_native_debug_bitmap(const char *text,unsigned char *pixels,int width,int height,int *used_width) {
     CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
     CGContextRef c=CGBitmapContextCreate(pixels,width,height,8,width*4,space,kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
     CGColorSpaceRelease(space);if(!c)return 0;
@@ -15,6 +15,16 @@ int tsfp_native_debug_bitmap(const char *text,unsigned char *pixels,int width,in
     CFDictionaryRef attrs=CFDictionaryCreate(NULL,keys,values,2,&kCFTypeDictionaryKeyCallBacks,&kCFTypeDictionaryValueCallBacks);
     CFAttributedStringRef attributed=CFAttributedStringCreate(NULL,string,attrs);
     CTLineRef line=CTLineCreateWithAttributedString(attributed);
+    double measured=CTLineGetTypographicBounds(line,NULL,NULL,NULL);
+    if(measured>width-16) {
+        CFAttributedStringRef dots=CFAttributedStringCreate(NULL,CFSTR("…"),attrs);
+        CTLineRef token=CTLineCreateWithAttributedString(dots);
+        CTLineRef truncated=CTLineCreateTruncatedLine(line,width-16,kCTLineTruncationEnd,token);
+        if(truncated){CFRelease(line);line=truncated;}
+        CFRelease(token);CFRelease(dots);
+        measured=CTLineGetTypographicBounds(line,NULL,NULL,NULL);
+    }
+    if(used_width)*used_width=(int)fmin(width,ceil(measured)+16);
     CGContextSetTextPosition(c,8,12);CTLineDraw(line,c);
     CFRelease(line);CFRelease(attributed);CFRelease(attrs);CFRelease(string);CGColorRelease(white);CFRelease(font);CGContextRelease(c);
     return 1;
@@ -66,7 +76,11 @@ static void (^debug_test_ready)(TSFPDebug *,NSButton * __strong *);
     if(game_window)SDL_RaiseWindow(game_window);tsfp_native_settings_release_input(game_window);
 }
 - (void)save:(id)sender {
-    PcDebugOptions options={checks[0].state==NSControlStateValueOn,checks[1].state==NSControlStateValueOn,checks[2].state==NSControlStateValueOn,checks[3].state==NSControlStateValueOn};
+    PcDebugOptions options;pc_debug_get(&options);
+    options.show_fps=checks[0].state==NSControlStateValueOn;
+    options.show_frame_time=checks[1].state==NSControlStateValueOn;
+    options.show_issues=checks[2].state==NSControlStateValueOn;
+    options.log_performance=checks[3].state==NSControlStateValueOn;
     char error[512];if(!pc_debug_config_save(&options,error,sizeof error)){alert_text(error);return;}[NSApp stopModal];
 }
 - (void)cancel:(id)sender {[NSApp stopModal];}
@@ -97,7 +111,7 @@ int tsfp_native_debug_test(void) {
         FILE *f=fopen(path,"w");if(!f)return 1;
         fputs("[INFO] startup\n[WARN] unsupported fixture\n[ERROR] failed fixture\n[PC-DEBUG] warning counters\n",f);fclose(f);
         setenv("RECOMP_LOG_FILE",path,1);[NSApplication sharedApplication];pc_debug_init(NULL);
-        PcDebugSnapshot snap;PcDebugOptions before={0},got,on={1,1,1,0};pc_debug_set(&before);
+        PcDebugSnapshot snap;PcDebugOptions before={0},got,on={1,1,1,0,1};pc_debug_set(&before);
         pc_debug_snapshot(&snap);int ok=snap.log_available && snap.errors==1 && snap.warnings==1;
         pc_debug_poll();pc_debug_snapshot(&snap);ok &= snap.errors==1 && snap.warnings==1;
         f=fopen(path,"a");if(!f)return 1;fputs("fatal",f);fclose(f);pc_debug_poll();pc_debug_snapshot(&snap);ok &= snap.errors==1;
@@ -116,7 +130,7 @@ int tsfp_native_debug_test(void) {
         pc_debug_show(NULL);pc_debug_get(&got);ok &= !memcmp(&got,&on,sizeof got);
         debug_test_ready=^(TSFPDebug *dialog,NSButton * __strong *checks){for(int i=0;i<4;i++)checks[i].state=NSControlStateValueOff;checks[0].state=NSControlStateValueOn;[dialog save:nil];};
         pc_debug_show(NULL);debug_test_ready=nil;
-        pc_debug_config_read(&got);ok &= got.show_fps && !got.show_frame_time && !got.show_issues && !got.log_performance;
+        pc_debug_config_read(&got);ok &= got.show_fps && !got.show_frame_time && !got.show_issues && !got.log_performance && got.show_latency;
         const char *config=getenv("RECOMP_INPUT_CONFIG");struct stat st;
         if(!config || stat(config,&st) || chmod(config,0400))ok=0;
         else {ok &= !pc_debug_config_save(&on,error,sizeof error);if(chmod(config,st.st_mode&0777))ok=0;}

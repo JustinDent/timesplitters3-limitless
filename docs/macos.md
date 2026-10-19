@@ -24,6 +24,9 @@ From the project root, use Python 3.12 or newer, Xcode command-line tools, and
 an installed OpenSSL development library. The tested Mac has Apple Clang 21,
 OpenSSL 3.6.3, and pinned SDL 3.4.16 built from its upstream submodule. No system
 SDL installation is used. The script does not upgrade system dependencies.
+Use a focused branch based on current main (or an explicitly documented
+unmerged dependency); the native builder does not require a branch named
+`mac-port`. Host, game hash and upstream revision checks still apply.
 
 ```sh
 # First native setup and generation; reuses the existing private/game.
@@ -35,6 +38,9 @@ python3 tools/build-native-mac.py --setup --generate --test
 # Bounded native execution, with isolated saves and configuration.
 .venv/bin/python tools/test-native-mac.py --seconds 120 --capture
 
+# Reusable unlocked Test Lab copy, when its local fixture is available.
+.venv/bin/python tools/test-native-mac.py --unlocked-profile --seconds 120 --capture
+
 # Frame timing without screenshot readback (navigate using isolated test input).
 .venv/bin/python tools/test-native-mac.py --seconds 150 --test-keys --profile-frames
 # Select a known gameplay window, excluding menus/loading and the opening animation.
@@ -43,7 +49,9 @@ python3 tools/build-native-mac.py --setup --generate --test
 
 Output stays in `build/macos`. `BUILD.json` records the source and runtime
 revision, source/patch hashes, executable hash, compiler, Python packages and
-linked libraries. Native changes to the upstream runtime are reproduced by
+linked libraries, plus working-tree changes and the shared source/content
+identity. Native identity files stay in `build/macos/generated`; they do not
+enable native multiplayer. Native changes to the upstream runtime are reproduced by
 `patches/zz-mac-native-boot.patch`, `patches/zzz-mac-renderer.patch`,
 `patches/zzzz-mac-input.patch`, `patches/zzzzz-mac-high-refresh.patch`,
 `patches/zzzzzz-interpolation-layouts.patch` and
@@ -59,6 +67,9 @@ upstream and PC settings, bounds duration/log size, and records
 until its time limit. The default is 15 seconds; an explicit `--seconds` accepts
 up to 1800 seconds for sustained testing, with the same 8 MiB log limit.
 An intentional early stop is recorded as `process_exit`, not a passed timed probe.
+`--unlocked-profile` uses the shared [Test Lab fixture](testing-profile.md) in
+a disposable nested save directory and skips startup movies. The default probe
+retains its existing profile. Neither mode uses personal saves or configurations.
 It separately reports sampled host presents/GL errors;
 menu recognition still requires reviewing the captures. `--capture` retains two
 rotating BMPs under `private/captures/native-mac`; it does not capture the desktop.
@@ -119,18 +130,26 @@ gameplay and save/load still need validation.
 Native controls use the same JSON bindings as Windows. Focus the game window:
 
 - Arrow keys navigate; **Enter**, **Space** or **E** selects; **Backspace** goes back.
-- **Click inside the game** to capture the pointer, then move the mouse to look
+- In menus, move the pointer to highlight a row, left-click to select, right-click
+  to go back, or scroll to change rows. Keyboard/controller navigation remains
+  available. Held menu clicks are suppressed when gameplay resumes.
+- **Click inside gameplay** to capture the pointer, then move the mouse to look
   around. This first click is consumed; subsequent left clicks fire. Relative
   mouse counts now update camera angles directly using the shared PC model,
   including zoom sensitivity and pitch limits; they no longer emulate a stick.
-- **Escape** pauses and releases the mouse. After resuming, click to capture
-  again. **F1** also toggles relative mouse capture
+- **Escape** pauses and releases the mouse. Resuming a menu automatically restores
+  mouse look while the game stays focused. Focus loss releases controls; click
+  inside gameplay to capture again. **F1** also toggles relative mouse capture
   (use Fn+F1 if macOS reserves the function key for brightness).
 - **WASD** moves; left mouse fires; right mouse activates the right-stick action;
   **R** reloads, **G** uses the left trigger, **Tab** maps to Xbox Back.
 - The first unassigned SDL controller also shares player 1. Explicit controllers
   assigned to other players are reserved. Physical controller play is unverified;
   SDL virtual-controller mapping/hotplug has regression coverage.
+
+**Quit to Desktop** is available from the main and Pause menus. Its confirmation
+starts on Cancel; Back returns to the current menu. The original Quit still
+returns to the frontend.
 
 Formatted menu/HUD hints use the current keyboard/mouse bindings and switch to
 controller icons on deliberate controller activity. Text baked into artwork or
@@ -147,10 +166,17 @@ Unsupported saved keys are preserved and labeled unavailable on Mac.
 
 **Save this tab** applies the edits and backs up the controls file; Cancel discards
 unsaved edits. Capture and conflict changes remain drafts until Save.
-The Graphics tab selects the render resolution and fullscreen. **F11** toggles
-fullscreen directly. Resolutions persist in `config/pc-display.ini`; fullscreen
+The Graphics tab filters resolutions by aspect ratio and sets vertical field of
+view (40–100°, default 55°), render resolution and fullscreen. Defaults and
+changes remain drafts until Save; Cancel leaves settings unchanged. A failed
+display save restores both resolution and FOV. **F11** toggles fullscreen
+directly. Resolution and FOV persist in `config/pc-display.ini`; fullscreen
 is a session setting. The original in-game Settings/Options menu also includes
 **Display settings**, with a 15-second resolution preview and automatic rollback.
+
+The lower-right host overlay shows the shared game version and generated build
+identity independently of the performance display. It stays out of guest
+screen-copy textures and capture files.
 
 **Mac debug tools:** **F9** toggles the FPS overlay for the current session.
 **F12** or **Game Settings → Debug & Performance…** opens options for FPS,

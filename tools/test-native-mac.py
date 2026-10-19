@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Bounded native boot probe, always using isolated saves and configuration."""
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -26,6 +27,66 @@ def isolated_environment(root, test):
                RECOMP_TRACE_BUDGET='500', RECOMP_LOG_FILE=str(root / 'logs/native-boot.err'))
     return env
 
+
+def prepare_environment(root, test, unlocked=False):
+    """Use the shared immutable fixture inside the existing native test root."""
+    from testing_profile import contained, prepare_run
+    test = contained(root, test, 'private/test-saves')
+    if unlocked:
+        run = test / 'unlocked'
+        env = isolated_environment(root, run)
+        prepared = prepare_run(root, run)
+        env.update({k:v for k,v in prepared.items() if k.startswith(('RECOMP_', 'TSFP_'))})
+        for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
+                    'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME'):
+            contained(root, Path(env[key]), 'private/test-saves')
+        return env
+    test.mkdir(parents=True, exist_ok=True)
+    config = contained(root, test / 'pc-controls.json', 'private/test-saves')
+    if not config.exists():
+        shutil.copyfile(root / 'tests/fixtures/pc-controls.json', config)
+    runtime = contained(root, test / 'runtime.conf', 'private/test-saves')
+    if not runtime.exists():
+        runtime.write_text('# Isolated native boot defaults\n')
+    contained(root, test / 'pc-display.ini', 'private/test-saves')
+    env = isolated_environment(root, test)
+    for key in ('XDG_CONFIG_HOME', 'XDG_DATA_HOME'):
+        contained(root, Path(env[key]), 'private/test-saves')
+    return env
+
+
+@contextmanager
+def test_session(root, test, unlocked=False):
+    """Hold native/profile ownership until the child and disk cleanup finish."""
+    from testing_profile import contained
+    test = contained(root, test, 'private/test-saves')
+    if test != root.resolve() / 'private/test-saves/native-mac':
+        raise ValueError('Unexpected native test root')
+    test.mkdir(parents=True, exist_ok=True)
+    locks = []
+    prepared = False
+    try:
+        lock = test / 'run.lock'
+        with lock.open('x') as stream:
+            stream.write(str(os.getpid()))
+        locks.append(lock)
+        env = prepare_environment(root, test, unlocked)
+        if unlocked:
+            lock = test / 'unlocked/run.lock'
+            with lock.open('x') as stream:
+                stream.write(str(os.getpid()))
+            locks.append(lock)
+        prepared = True
+        yield env
+    finally:
+        try:
+            if prepared:
+                recycle_test_disks(root, test)
+        finally:
+            for lock in reversed(locks):
+                lock.unlink()
+
+
 def capture_environment(root):
     captures = root / 'private/captures/native-mac'
     if captures.is_symlink() or not captures.resolve().is_relative_to(root.resolve() / 'private'):
@@ -42,6 +103,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--seconds', type=int, default=15,
                         help='Bounded run duration, 1–1800 seconds (default: 15)')
+    parser.add_argument('--unlocked-profile', action='store_true',
+                        help='Reset a disposable copy of the local Test Lab fixture and skip startup movies')
     parser.add_argument('--capture', action='store_true', help='Retain two rotating native frame captures')
     parser.add_argument('--test-keys', action='store_true', help='Read synthetic SDL key/mouse events from isolated test-keys.txt')
     parser.add_argument('--trace-render', action='store_true', help='Enable bounded frame tracing on request')
@@ -64,14 +127,11 @@ def main():
     test = ROOT / 'private/test-saves/native-mac'
     if test.is_symlink() or not test.resolve().is_relative_to((ROOT / 'private/test-saves').resolve()):
         raise SystemExit('Unexpected isolated test path')
-    test.mkdir(parents=True, exist_ok=True)
-    config = test / 'pc-controls.json'
-    if not config.exists():
-        shutil.copyfile(ROOT / 'tests/fixtures/pc-controls.json', config)
-    runtime_config = test / 'runtime.conf'
-    if not runtime_config.exists():
-        runtime_config.write_text('# Isolated native boot defaults\n')
-    env = isolated_environment(ROOT, test)
+    with test_session(ROOT, test, args.unlocked_profile) as env:
+        return run_probe(args, test, env, exe, kind)
+
+
+def run_probe(args, test, env, exe, kind):
     if args.fps:
         env.update(RECOMP_FRAME_INTERP='2' if args.fps==120 else '1',
                    RECOMP_FPS_CAP='60' if args.fps==120 else 'adaptive')
@@ -104,7 +164,7 @@ def main():
         profile.write_text('')
         env['TSFP_NATIVE_FRAME_PROFILE'] = str(profile)
     out_path, err_path = logs / 'native-boot.out', logs / 'native-boot.err'
-    print(f'Native probe: {exe}\nIsolated saves: {test}\nLimit: {args.seconds}s, 8 MiB logs', flush=True)
+    print(f'Native probe: {exe}\nIsolated saves: {env["RECOMP_SAVE_DIR"]}\nLimit: {args.seconds}s, 8 MiB logs', flush=True)
     started = time.monotonic()
     reason = 'process_exit'
     with out_path.open('wb') as out, err_path.open('wb') as err:
@@ -149,6 +209,7 @@ def main():
                   executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
                   seconds=round(time.monotonic()-started, 2), reason=reason, exit_code=proc.returncode,
                   test_directory=str(test.relative_to(ROOT)),
+                  unlocked_profile=bool(args.unlocked_profile),
                   overrides={k:v for k,v in env.items() if k.startswith(('RECOMP_', 'TSFP_'))},
                   frame_captures=captures,
                   rendered_game_verified=False) # Visual recognition is a separate reviewed result.

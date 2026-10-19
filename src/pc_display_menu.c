@@ -507,7 +507,7 @@ static void row(int id,const char *label)
     guest_call(sub_00079D60_gen,6,text_at(id+1,"%s",label),(uint32_t)id,0u,0u,SELECT_CB,0u);
 }
 static void fov_label(void) { text_at(8,"Vertical FOV: %d",staged_fov); }
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
 static void menu_slider_fov_pointer(float x,float left,float width)
 {
     unsigned value=pc_menu_slider_value(x,left,width,PC_FOV_MAX-PC_FOV_MIN);
@@ -527,7 +527,7 @@ static void fov_draw(void)
         memcpy(bounds,(void *)((uintptr_t)rect+g_xbox_mem_offset),sizeof bounds);
         dark=guest_call(sub_00154FE0,2,0x11193c7fu,WORD_AT(menu+0xf4));
         light=guest_call(sub_00154FE0,2,0x69737f7fu,WORD_AT(menu+0xf4));
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
         if(page==0)
             menu_slider_capture(MENU_FOV,menu,WORD_AT(g_esp+8),
                 (float)(int)(bounds[2]-102.f),(float)(int)((bounds[1]+bounds[3]-8.f)*.5f),100.f,8.f);
@@ -542,18 +542,8 @@ static void fov_draw(void)
 static void refresh(int next,int selected);
 static void filter_modes(void)
 {
-    unsigned long long best=~0ull;
-    mode_count=0;selected_mode=0;
-    for(int i=0;i<all_mode_count;i++) {
-        PcDisplayMode m=all_modes[i];
-        if(selected_aspect && pc_display_aspect(m)!=selected_aspect)continue;
-        unsigned mw=m.width?m.width:640,mh=m.height?m.height:480;
-        unsigned sw=staged.width?staged.width:640,sh=staged.height?staged.height:480;
-        unsigned long long score=(unsigned long long)abs((int)mh-(int)sh)*10000+abs((int)mw-(int)sw);
-        if(m.width==staged.width && m.height==staged.height)score=0;
-        if(score<best){best=score;selected_mode=mode_count;}
-        modes[mode_count++]=m;
-    }
+    mode_count=pc_display_filter_modes(all_modes,all_mode_count,selected_aspect,
+        staged,modes,PC_DISPLAY_MODE_CAPACITY,&selected_mode);
     if(mode_count)staged=modes[selected_mode];
 }
 static void labels(void)
@@ -761,11 +751,13 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
     case FOV_DRAW_CB: return fov_draw;
-#ifdef _WIN32
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
     case QUIT_OPEN_CB: return quit_open;
     case QUIT_BUILD_CB: return quit_build;
     case QUIT_SELECT_CB: return quit_select;
     case QUIT_BACK_CB: return quit_back;
+#endif
+#ifdef _WIN32
     case 0x1200du: return online_activate;
     case 0x002C2C20u: return network_bots_build;
     case 0x002C0490u: return network_bots_tick;

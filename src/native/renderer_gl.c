@@ -128,7 +128,7 @@ static unsigned trace_draw;
 static void native_trace(const char *kind,const float *vertices,UINT count) {
     if(!trace_draw || trace_draw>2000)return;
     BYTE pixel[4]={0};glReadPixels(native_target_width/2,native_target_height/2,1,1,GL_RGBA,GL_UNSIGNED_BYTE,pixel);
-    fprintf(stderr,"[native-draw] %u %s pixel=%u,%u,%u,%u vsh=%x ps=%x depth=%u/%u/%u blend=%u/%u/%u cull=%u vp=%u,%u,%u,%u tex=%p,%p,%p,%p\n",trace_draw++,kind,pixel[0],pixel[1],pixel[2],pixel[3],g.current_vsh,g.current_psh,g.rs[7],g.rs[14],g.rs[23],g.rs[27],g.rs[19],g.rs[20],g.rs[22],g.viewport.X,g.viewport.Y,g.viewport.Width,g.viewport.Height,g.textures[0],g.textures[1],g.textures[2],g.textures[3]);
+    fprintf(stderr,"[native-draw] %u %s pixel=%u,%u,%u,%u vsh=%x ps=%x depth=%u/%u/%u blend=%u/%u/%u cull=%u vp=%u,%u,%u,%u tex=%p,%p,%p,%p texmodes=%x dotmap=%x inputs=%x\n",trace_draw++,kind,pixel[0],pixel[1],pixel[2],pixel[3],g.current_vsh,g.current_psh,g.rs[7],g.rs[14],g.rs[23],g.rs[27],g.rs[19],g.rs[20],g.rs[22],g.viewport.X,g.viewport.Y,g.viewport.Width,g.viewport.Height,g.textures[0],g.textures[1],g.textures[2],g.textures[3],g.rs[D3DRS_PSTEXTUREMODES],g.rs[D3DRS_PSDOTMAPPING],g.rs[D3DRS_PSINPUTTEXTURE]);
     if(vertices && count) {
         const float *v=vertices;
         fprintf(stderr,"[native-draw] vertex=%g,%g,%g,%g color=%g,%g,%g,%g uv=%g,%g comb=%x final=%x,%x\n",v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9],g.rs[234],g.rs[208],g.rs[209]);
@@ -214,10 +214,11 @@ static const char *VS_SRC =
     "layout(location=3) in vec4 a_uv1;\n"
     "layout(location=4) in vec4 a_uv2;\n"
     "layout(location=5) in vec4 a_uv3;\n"
+    "layout(location=6) in float a_fog;\n"
     "uniform mat4 u_mvp;\n"
     "uniform int  u_use_xform;\n"
     "uniform vec2 u_size;\n"
-    "out vec4 v_color;\n"
+    "out vec4 v_color;out float v_fog;\n"
     "out vec4 v_uv[4];\n"
     "void main() {\n"
     "  if (u_use_xform == 1) {\n"
@@ -228,7 +229,7 @@ static const char *VS_SRC =
     "    gl_Position = a_pos;\n"
     "    if (u_use_xform == 0) { float w = a_pos.w != 0.0 ? 1.0/a_pos.w : 1.0; gl_Position = vec4((a_pos.x+0.5)*2.0/u_size.x-1.0, 1.0-(a_pos.y+0.5)*2.0/u_size.y, a_pos.z*2.0-1.0, 1.0)*w; }\n"
     "  }\n"
-    "  v_color = a_color;\n"
+    "  v_color = a_color;v_fog=a_fog;\n"
     "  v_uv[0]=a_uv0;v_uv[1]=a_uv1;v_uv[2]=a_uv2;v_uv[3]=a_uv3;\n"
     "}\n";
 
@@ -688,6 +689,10 @@ static void native_frame_timing(Uint64 swap_start,Uint64 now) {
     last=now;
 }
 
+/* Pointer hit testing must invert the same full-canvas shape as presentation. */
+void d3d8_display_output_shape(unsigned w,unsigned h,unsigned *out_w,unsigned *out_h)
+{ (void)w;(void)h;pc_display_shape(out_w,out_h); }
+
 static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const RECT *dst,
                                      HWND hwnd, void *dirty)
 { NATIVE_GL_SCOPE;
@@ -717,6 +722,7 @@ static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const
         tsfp_native_input_event(&ev,g.window);
         if (ev.type == SDL_EVENT_QUIT || ev.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
             fprintf(stderr, "[native-input] window close requested\n");
+            native_debug_release();
             exit(0);
         }
     }
@@ -869,6 +875,9 @@ static void setup_fvf_attribs(DWORD fvf, UINT stride)
         glDisableVertexAttribArray(1);
         glVertexAttrib4f(1, 1.f, 1.f, 1.f, 1.f);
     }
+    /* Fixed-function vertices default to the PC shader's no-fog factor.
+     * Programmable fog travels through this attribute only in CPU fallback. */
+    glDisableVertexAttribArray(6);glVertexAttrib1f(6,1.0f);
     /* Specular */
     if (fvf & D3DFVF_SPECULAR) off += 4;
     unsigned count=(fvf&D3DFVF_TEXCOUNT_MASK)>>D3DFVF_TEXCOUNT_SHIFT;
@@ -915,7 +924,7 @@ static void bind_texture0(void)
         } else if(tm&D3D8_PSTEXTUREMODES_XBOX)modes[stage]=(tm>>(5*stage))&31;
         else {unsigned m=(tm>>(4*stage))&15;modes[stage]=m==0?32:m==3?0:31;}
         unsigned mode=modes[stage];
-        if(mode!=0 && mode!=1 && mode!=4 && mode!=32 && !(warned&(1u<<mode))) {
+        if(mode!=0 && mode!=1 && mode!=4 && mode!=9 && mode!=15 && mode!=16 && mode!=17 && mode!=32 && !(warned&(1u<<mode))) {
             warned|=1u<<mode;fprintf(stderr,"[native-gl] texture shader mode %u remains unsupported\n",mode);
         }
         char name[24];snprintf(name,sizeof name,"u_tex%d",stage);
@@ -953,7 +962,7 @@ static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *s, D3DPRIMITIVETY
     GLuint gpu=native_gpu_prepare(stride);
     if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
         converted=native_shader_vertices(verts,vcount,stride);if(!converted)return E_FAIL;
-        verts=converted;stride=96;
+        verts=converted;stride=100;
     }
     GLsizeiptr size = (GLsizeiptr)vcount * stride;
     native_select_program(gpu?gpu:native_fixed_program);
@@ -996,7 +1005,7 @@ static HRESULT __stdcall dev_DrawIndexedPrimitiveUP(IDirect3DDevice8 *s, D3DPRIM
     GLuint gpu=native_gpu_prepare(stride);
     if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
         converted=native_shader_vertices(verts,nv,stride);if(!converted)return E_FAIL;
-        verts=converted;stride=96;
+        verts=converted;stride=100;
     }
     GLsizeiptr vbytes = (GLsizeiptr)nv * stride;
     native_select_program(gpu?gpu:native_fixed_program);

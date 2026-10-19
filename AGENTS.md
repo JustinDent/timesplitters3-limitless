@@ -159,6 +159,12 @@ reproducibility, and validation requirements.
   Keep the canonical fixture unchanged. Tests of first-run, startup videos or
   unlock progression must explicitly use an appropriate fresh isolated save
   instead. See `docs/testing-profile.md` for creation and routing details.
+  On Apple Silicon, use the same local fixture through
+  `.venv/bin/python tools/test-native-mac.py --unlocked-profile --seconds 120`.
+  This resets only its disposable nested copy; omit `--unlocked-profile` for
+  fresh-profile, startup or unlock-progression tests. Never replace the canonical
+  fixture or prepare an active test directory; the native runner holds run locks
+  through child shutdown and partition cleanup.
 
 - Preserve `private/saves`, `config/pc-controls.json`, and
   `config/pc-display.ini` on every device. Create defaults only when personal
