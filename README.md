@@ -246,3 +246,27 @@ the original C/C++ source. [Pinned upstream and licensing →](docs/building.md#
 This repository contains port code, patches and tooling. Original game assets,
 the Xbox executable, generated game code, personal settings and saves remain
 local. Retain the applicable upstream and third-party licenses with builds.
+
+### License
+
+This project's original port code, launcher, tools, tests, configuration and
+documentation are licensed under the **GNU General Public License v3.0 only
+(`GPL-3.0-only`)**, except where a file states different terms. See
+[LICENSE](LICENSE) for the full license and [NOTICE](NOTICE) for scope and credits.
+
+You may use, modify and share the GPL-covered code, including commercially.
+If you distribute GPL-covered binaries or modified versions, preserve the
+notices, license the covered work under GPLv3, and provide its corresponding
+source and build instructions as the license requires. Private changes do not
+have to be published.
+
+**This does not license the original TimeSplitters game.** The original Xbox
+executable, game logic translated from it, artwork, music, levels, branding and
+other game assets remain subject to their owners' rights. You still need to
+supply your own supported game files. Generated game code does not become GPL
+just because these tools produced it, and is not included in this repository.
+
+Upstream and third-party components retain their own copyrights and licenses.
+The pinned runtime's GPL, MIT, LGPL, attribution and contributor files are
+preserved in [LICENSES](LICENSES/README.md); the existing icon lettering credits
+and dependency notices remain in place. Keep these notices when redistributing.
