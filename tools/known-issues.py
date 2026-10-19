@@ -11,14 +11,20 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 MARKER = '<!-- tsfp-known-issues:v1 -->'
 TRUSTED = {'OWNER', 'MEMBER', 'COLLABORATOR'}
-QUERY = '''query($owner: String!, $name: String!, $number: Int!) {
+QUERY = '''query($owner: String!, $name: String!, $number: Int!, $after: String) {
   repository(owner: $owner, name: $name) {
-    discussion(number: $number) { id title body url }
+    discussion(number: $number) {
+      id title body url
+      comments(first: 100, after: $after) {
+        nodes { id body url createdAt author { login __typename } }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
   }
 }'''
-UPDATE = '''mutation($id: ID!, $body: String!) {
-  updateDiscussion(input: {discussionId: $id, body: $body}) {
-    discussion { url }
+CREATE = '''mutation($id: ID!, $body: String!) {
+  addDiscussionComment(input: {discussionId: $id, body: $body}) {
+    comment { url }
   }
 }'''
 
@@ -115,13 +121,14 @@ def render(api, repository, labels):
               and labels.intersection(label['name'].casefold() for label in issue['labels'])}
     base = f'https://github.com/{repository}'
     body = (f'{MARKER}\n'
-            'This list is maintained automatically from open bug reports. '
-            'Reports are removed when closed or when their bug label is removed, '
-            'and return if reopened and still labeled as bugs. '
+            'This is an automatic snapshot of open bug reports. '
+            'The newest bot comment contains the current list; older comments are history. '
+            'Closed or untagged reports are removed from the next snapshot, '
+            'and reopened bugs return if still labeled. '
             'A closed report does not necessarily mean a fix is in a published build.\n\n'
             'Workarounds below come from explicit maintainer notes on the linked issues. '
             'Follow each report for affected versions, evidence and the latest status.\n\n'
-            f'## Open reports ({len(issues)})\n\n')
+            f'## Open bug reports ({len(issues)})\n\n')
     if issues:
         body += '| Report | Workaround |\n| --- | --- |\n'
         for number, issue in sorted(issues.items()):
@@ -136,7 +143,7 @@ def render(api, repository, labels):
              'Include your installed game version, launcher version, platform and steps to reproduce. '
              'Add evidence to an existing report if it covers the same problem.\n\n'
              'Maintainers: add or edit a comment with a `### Workaround` heading on an issue '
-             'to update its workaround here. This post is generated; keep notes on the issue.\n')
+             'to update its workaround here. This comment is generated; keep notes on the issue.\n')
     if len(body) > 60000:
         raise ValueError('Known-issues post is too large; Discussion was not changed.')
     return body
@@ -144,14 +151,27 @@ def render(api, repository, labels):
 
 def discussion(api, repository, number):
     owner, name = repository.split('/')
-    result = api.request('POST', 'graphql', {'query': QUERY, 'variables': {
-        'owner': owner, 'name': name, 'number': number}})
-    if result.get('errors'):
-        raise RuntimeError('GitHub could not read the configured Discussion.')
-    target = ((result.get('data') or {}).get('repository') or {}).get('discussion')
-    if not target:
-        raise ValueError('Configured Discussion is missing; refusing to create a duplicate.')
-    return target
+    after, seen, comments, target = None, set(), [], None
+    for _ in range(100):
+        result = api.request('POST', 'graphql', {'query': QUERY, 'variables': {
+            'owner': owner, 'name': name, 'number': number, 'after': after}})
+        if result.get('errors'):
+            raise RuntimeError('GitHub could not read the configured Discussion.')
+        current = ((result.get('data') or {}).get('repository') or {}).get('discussion')
+        if not current:
+            raise ValueError('Configured Discussion is missing; refusing to create a duplicate.')
+        target = target or current
+        connection = current['comments']
+        comments.extend(connection['nodes'])
+        page = connection['pageInfo']
+        if not page['hasNextPage']:
+            target['comments'] = comments
+            return target
+        after = page['endCursor']
+        if not after or after in seen:
+            raise ValueError('Discussion comment pagination did not advance; nothing was written.')
+        seen.add(after)
+    raise ValueError('Too many Discussion comment pages; nothing was written.')
 
 
 def publish(api, repository, config, dry_run=False):
@@ -167,14 +187,25 @@ def publish(api, repository, config, dry_run=False):
     target = discussion(api, repository, number)
     if target['title'] != config['title']:
         raise ValueError('Discussion title differs from configuration; refusing to edit another post.')
-    if target['body'] == body:
+    owned = [comment for comment in target['comments']
+             if (comment.get('author') or {}).get('login', '').removesuffix('[bot]') == 'github-actions'
+             and (comment.get('author') or {}).get('__typename') == 'Bot'
+             and comment['body'].startswith(MARKER + '\n')]
+    previous = max(owned, key=lambda c: (c['createdAt'], c['id'])) if owned else None
+    if previous and previous['body'] == body:
         print('Known-issues Discussion already up to date: ' + target['url'])
         return False
-    result = api.request('POST', 'graphql', {'query': UPDATE,
-                                           'variables': {'id': target['id'], 'body': body}})
-    if result.get('errors') or not (result.get('data') or {}).get('updateDiscussion'):
-        raise RuntimeError('GitHub could not update the known-issues Discussion.')
-    print('Known-issues Discussion updated: ' + target['url'])
+    # GITHUB_TOKEN can publish but GitHub rejects edits, even to bot-owned
+    # Discussion bodies/comments. Keep history and publish only changed lists.
+    result = api.request('POST', 'graphql', {'query': CREATE,
+        'variables': {'id': target['id'], 'body': body}})
+    if result.get('errors'):
+        errors = '; '.join(f'{error.get("type", "GraphQL")}: {error.get("message", "Unknown error")}'
+                           for error in result['errors'])
+        raise RuntimeError('GitHub rejected the known-issues snapshot: ' + errors)
+    if not ((result.get('data') or {}).get('addDiscussionComment') or {}).get('comment'):
+        raise RuntimeError('GitHub could not publish the known-issues snapshot.')
+    print('Known-issues snapshot posted: ' + result['data']['addDiscussionComment']['comment']['url'])
     return True
 
 
