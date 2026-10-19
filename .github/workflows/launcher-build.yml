@@ -141,4 +141,3 @@ jobs:
           path: build/launcher-release
           merge-multiple: true
       - run: python tools/launcher-release.py verify
-

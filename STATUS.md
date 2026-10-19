@@ -48,7 +48,7 @@ clean-machine delivery remain the existing MAC-021 acceptance gaps.
 Source: `55d3141` and `d58bcf2` on `codex/launcher-dual-platform-release`, based on `60c3aea`
 and dependent on the native launcher in PR #186. The primary checkout and its
 concurrent renderer work are preserved. No game runtime or personal settings
-are changed. Local host: macOS 27.0.1 ARM64.
+are changed. Local host: macOS 27.0.1 ARM64, Python 3.13.16.
 
 The shared publisher validates both Windows x64 and native Mac ARM64 packages,
 update manifests, permanent download aliases and source receipts. Publication
@@ -7816,7 +7816,7 @@ revision. Personal files and the primary checkout were preserved.
 
 Source: `codex/launcher-compatibility-automation`, based on shared launcher UI
 `725b27ca906d8af37d10925e54980e9908e36453` / PR #189, which depends on #187/#186.
-Local host: macOS 27.0.1 ARM64. No game renderer/runtime or personal data changes.
+Local host: macOS 27.0.1 ARM64, Python 3.13.16. No game renderer/runtime or personal data changes.
 The workflow uses a pinned Codex Action (`bdf19a4a223ec2549a3e2274a0cf61556bc07675`)
 and CLI/proxy 0.163.0. Linux reviews source; Windows and Mac run actual launcher
 checks through the same reusable workflow as release builds. Proposed repairs are
@@ -7857,3 +7857,10 @@ Windows skips its symlink fixture, which Mac exercises). Publication was skipped
 results are linked from PR #190. Actions is already allowed to create PRs and
 retains read-only default token permissions; OPENAI_API_KEY is absent. No repository
 permission or required-check setting was changed before service activation.
+
+The complete implementation at `b0f3ddb01bd8b79f282ea66852647e19d0bb6bba`
+also passed both host builds and combined verification in
+[launcher run 39329520086](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39329520086).
+This includes all 23 compatibility contracts (the Windows symlink case remains an
+explicit skip). Later edits only update this validation record and remove a blank
+line at the end of the reusable workflow; the launcher source is unchanged.
