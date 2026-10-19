@@ -4,7 +4,8 @@
 
 - **Source/dependency:** `codex/shared-native-window-acceptance` depends on
   unmerged `37b4af9`, with validation fixes `083e57c` integrated by `8b3866b`;
-  local working changes were tested. No main merge.
+  local working changes were tested. The acceptance commits through `24b5403`
+  are now published on that focused branch. No main merge.
 - **Coverage gap closed:** The existing Cocoa graphics-settings fixture now
   exercises the actual common Xbox/Vulkan device as well as GL. The SDL host
   fixture takes its window and quit callback as parameters, so both renderers
@@ -35,8 +36,11 @@
   A separate `codex/mac-launcher-parity` worktree reconfigured the shared
   `build/macos` to its Vulkan sources during the GL build, causing mixed GL/C++
   link inputs. Its source and new binary were preserved. Exclusive build
-  ownership must be coordinated before rerunning GL or changing that output;
-  the current binary is not certified as this branch's build. Broader scene
+  ownership must be coordinated before rerunning GL or changing that output.
+  The user explicitly gave the launcher chat priority to finish first; this
+  chat must leave the shared build and patched runtime alone until that work
+  finishes. Source work and hosted CI may continue independently. The current
+  binary is not certified as this branch's build. Broader scene
   acceptance remains pending.
 
 ## Shared platform CI validation (2026-10-19)

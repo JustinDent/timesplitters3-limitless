@@ -138,7 +138,8 @@ integration work, tracked in the backlog.
 
 The complete ancestor stack through `a0c8a1a` is published on
 `codex/shared-present-metrics`, with `codex/shared-platform-validation` also
-published at `083e57c`; the other milestone branch refs remain local.
+published at `083e57c`, and `codex/shared-native-window-acceptance` published
+through `24b5403`; the other milestone branch refs remain local.
 The native window acceptance work depends on these validation fixes. Nothing has been
 merged into main or verified on the other physical computer. Hosted CI results,
 measured scope and unavailable checks are recorded in `STATUS.md`.
