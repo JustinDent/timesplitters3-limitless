@@ -16,6 +16,10 @@ RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 RECOMP_TLS uint16_t g_fp_cc,g_fp_control_word;
 static int available=1,returned;
+static char runtime_path[MAX_PATH];
+uint32_t recomp_config_title_id(void) { return 0x45410066; }
+int recomp_settings_path(uint32_t title,char *out,size_t size)
+{ (void)title;return snprintf(out,size,"%s",runtime_path)>0; }
 static int slider_capture_enabled;
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x); exit(1); } } while(0)
 HWND xbox_D3D8Window(void) { return NULL; }
@@ -68,8 +72,9 @@ void sub_00075B70(void) {
 STUB(sub_00071B10) STUB(sub_00071C50)
 STUB(sub_000771D0) STUB(sub_000770E0)
 void sub_00078980(void) {
-    unsigned old=WORD_AT(0x200200+0xc8);build_menu();
-    if(resolution_row)WORD_AT(resolution_row+0xc8)=old; /* Native refresh restores by row ID. */
+    unsigned first=WORD_AT(0x200000+0xc8),second=WORD_AT(0x200200+0xc8);build_menu();
+    /* Native refresh restores choices by row ID, even across different pages. */
+    WORD_AT(0x200000+0xc8)=first;WORD_AT(0x200200+0xc8)=second;
 }
 STUB(sub_0007D480) STUB(sub_000717D0)
 void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+=4; }
@@ -104,6 +109,8 @@ static void content(const char *expected)
 int main(int argc,char **argv)
 {
     CHECK(argc==2); CHECK(!_putenv_s("TSFP_DISPLAY_CONFIG",argv[1]));
+    snprintf(runtime_path,sizeof runtime_path,"%s.runtime",argv[1]);
+    {FILE *f=fopen(runtime_path,"wb");CHECK(f);fputs("# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n",f);fclose(f);}
     void *mem=VirtualAlloc(NULL,0x800000,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);CHECK(mem);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)mem;
     pc_display_current();reload("TSFP_DISPLAY_V1 1280 720\n");
@@ -118,6 +125,8 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     call(PC_DISPLAY_MENU_CALLBACK,0,0);CHECK(staged_fov==55);
     call(BUILD_CB,0,0);
+    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(7)),"Aspect ratio"));
+    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(9)),"Smoothness / refresh"));
     for(unsigned a=1;a<PC_DISPLAY_ASPECT_COUNT;a++) {
         WORD_AT(aspect_row+0xc8)=a;call(TICK_CB,0,0);
         CHECK(selected_aspect==(int)a && mode_count>0);
@@ -174,6 +183,20 @@ int main(int argc,char **argv)
     call(SELECT_CB,3,0);CHECK(pc_display_fov()==90 && page==2);
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));content("TSFP_DISPLAY_V2 1920 1080 90\n");
     CHECK(pc_display_set_fov(55) && pc_display_save());content("TSFP_DISPLAY_V1 1920 1080\n");
+    /* Actual guest Smoothness page: native choices, Cancel, save and reopen. */
+    call(BACK_CB,0,0);call(SELECT_CB,6,0);CHECK(page==3);
+    CHECK(WORD_AT(motion_fps_row+0xc8)==0 && WORD_AT(motion_refresh_row+0xc8)==0);
+    WORD_AT(motion_fps_row+0xc8)=3;WORD_AT(motion_refresh_row+0xc8)=2;
+    call(BACK_CB,0,0);call(SELECT_CB,6,0);CHECK(page==3 && staged_motion.fps==0);
+    WORD_AT(motion_fps_row+0xc8)=3;WORD_AT(motion_refresh_row+0xc8)=2;
+    call(SELECT_CB,2,0);CHECK(page==2 && strstr(status,"restart"));
+    {PcMotionSettings saved;CHECK(pc_motion_load(&saved));CHECK(saved.fps==144 && saved.refresh==144);}
+    call(BACK_CB,0,0);call(SELECT_CB,6,0);CHECK(WORD_AT(motion_fps_row+0xc8)==3);
+    CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_READONLY));
+    WORD_AT(motion_fps_row+0xc8)=1;call(SELECT_CB,2,0);CHECK(page==2 && strstr(status,"failed"));
+    CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_NORMAL));
+    {PcMotionSettings saved;CHECK(pc_motion_load(&saved));CHECK(saved.fps==144);}
+    content("TSFP_DISPLAY_V1 1920 1080\n"); /* Performance page never commits resolution/FOV. */
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: FOV config, bounds, staging, reset, cancellation, atomic failure, preview rollback, keep and guest ABI");
     return 0;

@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <wchar.h>
 #include <stdlib.h>
+#include "pc_refresh_guard.h"
 
 /* One helper per game. DbgHelp is used only on this process's single thread. */
 static int directory(const WCHAR *path)
@@ -305,6 +306,7 @@ finish:
 }
 int wmain(int argc, WCHAR **argv)
 {
+    if (argc > 1 && !wcscmp(argv[1], L"--restore-refresh")) return pc_refresh_guard(argc,argv);
     if (argc == 6 && !wcscmp(argv[1], L"--resolve")) return resolve(argv[2], argv[3], argv[4], argv[5], 0);
     if (argc == 7 && !wcscmp(argv[1], L"--resolve-hang")) {
         WCHAR *end; unsigned long id = wcstoul(argv[5], &end, 10);

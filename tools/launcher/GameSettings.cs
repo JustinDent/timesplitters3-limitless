@@ -37,9 +37,19 @@ namespace TimeSplitters.Launcher
             }
         }
         public bool CanAdjustFov { get { return SupportsExtendedDisplay; } }
+        public bool SupportsPresentationTarget {
+            get {
+                try {
+                    string version=Core.InstalledVersion(root);
+                    return version.Length==0 || GameVersion.Parse(version).CompareTo(GameVersion.Parse("v0.3.0-alpha.2"))>0;
+                } catch { return false; }
+            }
+        }
         public bool SupportsResolution(int width, int height)
         { return DisplayMode.Valid(width,height) && (SupportsExtendedDisplay || height <= 2160); }
         public int Width, Height, Scale = 1, Anisotropy = 1, Interpolation = 1;
+        public int PresentationFps;
+        public int RefreshRate;
         public string FrameCap = "adaptive";
         public string Device { get { return Convert.ToString(controller["device"], CultureInfo.InvariantCulture); } set { controller["device"] = value; } }
         static readonly string[] Files = { "Settings/pc-controls.json", "Settings/pc-display.ini", "Settings/runtime.conf", "Settings/pc-discord.ini" };
@@ -95,6 +105,8 @@ namespace TimeSplitters.Launcher
             model.Scale = Number(settings, "resolution_scale", 1);
             model.Anisotropy = Number(settings, "anisotropy", 1);
             model.Interpolation = Number(settings, "frame_interp", 1);
+            model.PresentationFps = Number(settings, "frame_target", 0);
+            model.RefreshRate = Number(settings, "refresh_rate", 0);
             model.Fullscreen = Number(settings, "fullscreen", 0) != 0;
             model.Vrr = Number(settings, "vrr", 1) != 0;
             model.FpsOverlay = Number(settings, "fps_overlay", 0) != 0;
@@ -195,6 +207,11 @@ namespace TimeSplitters.Launcher
             Core.Require(SupportsResolution(Width,Height), "Choose a supported landscape resolution from 640×480, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default. Maximum: " + (SupportsExtendedDisplay ? "7680×4320." : "7680×2160 for this game release."));
             Core.Require(Scale >= 1 && Scale <= 8 && Anisotropy >= 1 && Anisotropy <= 16 && Interpolation >= 1 && Interpolation <= 4, "A graphics setting is outside the supported range.");
             Core.Require(new[] { "adaptive", "30", "60", "0" }.Contains(FrameCap), "Unsupported frame pacing option.");
+            Core.Require(new[] { 0, 120, 144 }.Contains(PresentationFps), "Choose the legacy multiplier, 120 FPS or 144 FPS.");
+            Core.Require(PresentationFps==0 || SupportsPresentationTarget, "120/144 FPS targets require a game release newer than v0.3.0-alpha.2.");
+            Core.Require(new[]{0,120,144}.Contains(RefreshRate), "Choose the current desktop refresh rate, 120 Hz or 144 Hz.");
+            Core.Require(RefreshRate==0 || SupportsPresentationTarget, "Monitor refresh selection requires a game release newer than v0.3.0-alpha.2.");
+            Core.Require(PresentationFps == 0 || FrameCap == "adaptive" || FrameCap == "60", "120/144 FPS requires adaptive or 60 Hz game pacing.");
             Core.Require(new[] { "keyboard", "none", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "xinput:0", "xinput:1", "xinput:2", "xinput:3" }.Contains(Device), "Unsupported Player 1 input device.");
             for (int i = 0; i < 24; i++) Binding(i);
         }
@@ -244,6 +261,8 @@ namespace TimeSplitters.Launcher
             if (!document.TryGetValue("launcher", out value)) document["launcher"] = value = new Dictionary<string, object>();
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
+            graphics["frame_target"] = PresentationFps.ToString();
+            graphics["refresh_rate"] = RefreshRate.ToString();
             var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
                 "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n" };
             int committed = 0;
