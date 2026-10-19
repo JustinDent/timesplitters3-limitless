@@ -1,5 +1,6 @@
 """SDK pin, integrity and isolated probe environment; no download/install."""
 from pathlib import Path
+import io
 import sys
 import zipfile
 import pytest
@@ -34,6 +35,27 @@ def test_unknown_existing_install_is_preserved(tmp_path):
     with pytest.raises(RuntimeError,match='missing/unverified'):
         sdk.setup(root)
     assert keep.read_bytes()==b'preserve'
+
+
+def test_download_identifies_client_but_still_rejects_unpinned_bytes(tmp_path,monkeypatch):
+    root=root_fixture(tmp_path)
+    spec=sdk.pin(root)
+    requests=[]
+    def open_download(request,timeout):
+        requests.append(request)
+        assert request.full_url==spec['url']
+        assert request.get_header('User-agent')=='TSFP-SDK-Setup/1.0'
+        assert timeout==60
+        return io.BytesIO(b'upstream error page instead of the pinned archive')
+    monkeypatch.setattr(sdk.urllib.request,'urlopen',open_download)
+    monkeypatch.setattr(sdk.shutil,'disk_usage',lambda _:type('Usage',(),{'free':6*1024**3})())
+    def no_installer(*args,**kwargs):
+        pytest.fail('Unverified downloads must never be extracted or executed')
+    monkeypatch.setattr(sdk.subprocess,'run',no_installer)
+    with pytest.raises(RuntimeError,match='checksum pin'):
+        sdk.setup(root)
+    assert len(requests)==1
+    assert not sdk.install_path(root).exists()
 
 
 @pytest.mark.parametrize('member',['safe/data','../escape','/absolute'])
@@ -71,7 +93,7 @@ def test_gpu_overlay_preserves_runner_isolation(tmp_path,monkeypatch):
     env=sdk.with_probe_gpu_environment(existing,tmp_path/'sdk','kosmickrisp',tmp_path)
     for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','TSFP_DISPLAY_CONFIG','RECOMP_DISPLAY_CONFIG','XDG_CONFIG_HOME','XDG_CACHE_HOME'):
         assert env[key]==existing[key]
-    assert env['VK_DRIVER_FILES'].endswith('/libkosmickrisp_icd.json')
+    assert Path(env['VK_DRIVER_FILES'])==tmp_path/'sdk/share/vulkan/icd.d/libkosmickrisp_icd.json'
     assert 'DYLD_INSERT_LIBRARIES' not in env
     assert env['RECOMP_SHADER_CACHE']=='0'
     assert existing['VK_DRIVER_FILES']=='/wrong/driver'

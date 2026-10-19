@@ -2,7 +2,7 @@
 
 ## Dual-platform launcher release automation (2026-10-19)
 
-Source: uncommitted on `codex/launcher-dual-platform-release`, based on `60c3aea`
+Source: `55d3141` and `d58bcf2` on `codex/launcher-dual-platform-release`, based on `60c3aea`
 and dependent on the native launcher in PR #186. The primary checkout and its
 concurrent renderer work are preserved. No game runtime or personal settings
 are changed. Local host: macOS 27.0.1 ARM64.
@@ -17,6 +17,25 @@ These tests use disposable fixtures and no GitHub writes. Both host builds and
 Mac packaged repair/restart are required by the new workflow; their live CI
 results are pending. No existing release has been modified or new release
 published. Developer ID/notarization and clean-machine acceptance remain open.
+
+The first Windows CI run exposed a port regression in `PreserveGameFile`: legacy
+game manifests with lowercase launcher filenames bypassed the new strict package
+path predicate and removed the installed launcher during game upgrades. `d58bcf2`
+restores case-insensitive preservation while keeping package-path validation
+strict. The existing Windows upgrade/rollback regression now passes; native tests
+cover preservation, and both hosts test platform selection from one combined
+release. The Windows build, complete launcher regressions and package validation
+passed in [run 39319648658](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39319648658).
+
+The broader required CI inherited two failures from PR #186. Reused only the
+existing harness/downloader fixes from `37b4af9` and `083e57c`: identify the pinned
+SDK downloader to avoid the CDN's generic-client 403; provide fail-loud hooks for
+the full interpolation test translation unit on MSVC; compare driver paths through
+`Path`. SDK versions/checksums and game behavior are unchanged. The affected
+interpolation test and SDK tests pass locally. A broader exploratory run gave
+94 passes and one unrelated screen-copy compile failure because the shared ignored
+upstream tree already contains the other chat's newer renderer patch; this branch's
+matching clean upstream is validated in CI, without rewinding that shared tree.
 
 ## Native launcher visual spacing follow-up (2026-10-19)
 
