@@ -1261,8 +1261,10 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   original artwork, manifests, checksums and source receipts must pass before
   publication; the release remains a draft until both uploads are verified.
   Existing shared release selection uses each host's manifest. No game adapter
-  is needed. Acceptance includes real Windows/Mac CI builds, Mac packaged
-  repair/restart, interrupted publication recovery and immutable published assets.
+  is needed. Both real Windows/Mac CI builds, Mac packaged repair/restart/render
+  and combined asset verification passed. Offline tests cover interrupted
+  publication recovery and immutable published assets. Actual publication is
+  intentionally unrun until a new version is merged and released.
   Developer ID/notarization, clean-machine delivery and native game publication
   remain separate. See [STATUS](STATUS.md#dual-platform-launcher-release-automation-2026-10-19).
   The first Windows run caught a legacy-path casing regression in launcher
@@ -1285,7 +1287,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   packaged helper repair/restart and live Discord acknowledgement pass. See
   [measured acceptance](STATUS.md#native-launcher-parity-completion-2026-10-19).
   This supersedes the historical adapter gaps below. Remaining release acceptance
-  is Windows host regression execution, Developer ID/notarization, clean-machine
+  is Developer ID/notarization, clean-machine
   delivery and published native runtime packages (MAC-012).
 
 - **Native launcher port (2026-10-19, `codex/mac-launcher-parity`, commit `c252956`):**

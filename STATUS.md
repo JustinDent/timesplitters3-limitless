@@ -13,10 +13,22 @@ starts with a draft and exposes neither platform until all 12 release assets
 match GitHub's digests. Sixteen offline tests pass for missing/corrupt/mixed-source
 packages, unsafe paths, permissions, version/tag/default-branch gates, failed
 uploads, retry/repair, published-asset immutability and preview/Latest policy.
-These tests use disposable fixtures and no GitHub writes. Both host builds and
-Mac packaged repair/restart are required by the new workflow; their live CI
-results are pending. No existing release has been modified or new release
-published. Developer ID/notarization and clean-machine acceptance remain open.
+These tests use disposable fixtures and no GitHub writes. In
+[run 39319648658](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39319648658)
+both actual host builds, Mac packaged repair/restart/render and the combined
+12-asset verification passed. Publication was correctly skipped on the PR;
+no existing release was modified or new release published. Developer
+ID/notarization and clean-machine acceptance remain open.
+
+Windows Server 2025 x64 / .NET Framework 4.8: 105 updater regressions, 28 download,
+11 version-picker, 10 startup, 30 release-news, 32 settings, 14 session and 20
+maintenance checks, plus crash report discovery/export checks passed. Hosted
+macOS 15.7.9 ARM64 / pinned .NET SDK 8.0.426 / Avalonia 11.3.22: 18 native regression
+groups passed, including combined-release selection, case-independent launcher
+preservation, settings and crash export. The actual packaged app was installed,
+altered, repaired through its copied helper, restarted and rendered while
+preserving fixture saves/game metadata. Both jobs received the identical pinned
+PNG artwork and shared icon. This is launcher validation, not game-play testing.
 
 The first Windows CI run exposed a port regression in `PreserveGameFile`: legacy
 game manifests with lowercase launcher filenames bypassed the new strict package
@@ -32,7 +44,8 @@ existing harness/downloader fixes from `37b4af9` and `083e57c`: identify the pin
 SDK downloader to avoid the CDN's generic-client 403; provide fail-loud hooks for
 the full interpolation test translation unit on MSVC; compare driver paths through
 `Path`. SDK versions/checksums and game behavior are unchanged. The affected
-interpolation test and SDK tests pass locally. A broader exploratory run gave
+interpolation test, SDK tests, release policy and handoff checks pass locally:
+79 checks plus 10 subtests. A broader exploratory run gave
 94 passes and one unrelated screen-copy compile failure because the shared ignored
 upstream tree already contains the other chat's newer renderer patch; this branch's
 matching clean upstream is validated in CI, without rewinding that shared tree.
