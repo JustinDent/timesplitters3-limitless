@@ -5,7 +5,7 @@ import subprocess
 import pytest
 from native_compiler import native_compiler
 ROOT=Path(__file__).resolve().parents[1]
-@pytest.mark.parametrize("fixture", ["ui_layout", "tutorial_layout", "weapon_effects", "transition_overlay"])
+@pytest.mark.parametrize("fixture", ["ui_layout", "tutorial_layout", "weapon_effects", "transition_overlay", "title_matte", "flash_overlay"])
 def test_ui_layout(tmp_path,fixture):
     compiler,environment=native_compiler(tmp_path)
     exe=tmp_path/('ui.exe' if os.name=='nt' else 'ui')
@@ -41,6 +41,8 @@ def test_guest_placement_hooks():
     assert 'pc_display_transition_overlay(sub_0001EFB0_gen)' in manual
     assert 'pc_display_scope_mask(sub_0001EFB0_gen)' in manual
     assert 'pc_display_menu_backdrop(sub_002DB010_gen);' in manual
+    assert 'pc_display_flash_overlay(sub_000F90D0_gen);' in manual
+    assert 'pc_display_title_matte(sub_002BD810_gen);' in manual
     assert 'pc_display_main_menu_font(sub_002D0BE0_gen,1);' in manual
     assert 'pc_display_main_menu_font(sub_00076150_gen,0);' in manual
     assert 'pc_display_health(sub_0013AB60_gen);' in manual

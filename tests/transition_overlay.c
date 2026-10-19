@@ -14,9 +14,9 @@ int main(void)
     const unsigned sizes[][2]={{640,480},{1280,1024},{1920,1080},{1920,1200},
         {3440,1440},{5120,1440},{7680,4320},{1080,1920}};
     const uint32_t callers[]={0x6f227,0x6f264,0x6f2f0,0x6f381,0x6f3ab,
-        0x70755,0x1cf429,0x1cf5e5,0x2bf803,0x2bda88,0x2da4d0,0x2da715};
-    const uint32_t colours[]={0,1,0x40,0x7f,0xff,0x1234567f};
-    for(unsigned m=0;m<8;m++)for(unsigned c=0;c<sizeof callers/sizeof callers[0];c++)for(unsigned a=0;a<6;a++)for(unsigned inclusive=0;inclusive<2;inclusive++) {
+        0xfea07,0x70755,0x1cf429,0x1cf5e5,0x2bf803,0x2bda88,0x2da4d0,0x2da715};
+    const uint32_t colours[]={0,1,0x40,0x7f,0xff,0x1234567f,0x7f7f7f00,0x7f7f7f40,0x7f7f7f7f};
+    for(unsigned m=0;m<8;m++)for(unsigned c=0;c<sizeof callers/sizeof callers[0];c++)for(unsigned a=0;a<sizeof colours/sizeof colours[0];a++)for(unsigned inclusive=0;inclusive<2;inclusive++) {
         /* Reset the bounded queue for every alpha step. */
         draw_count=selection_count=0;pending=-1;g_esp=0;
         hud_scale=4.f*sizes[m][1]/(3.f*sizes[m][0]);wide=hud_scale!=1.f;
@@ -35,7 +35,7 @@ int main(void)
        Each must span the output without changing its alpha or vertical bounds. */
     const uint32_t bands[][3]={{0x155f8e,0,71},{0x156102,422,480},
         {0x15682d,71,480},{0x15682d,0,480}};
-    for(unsigned m=0;m<8;m++)for(unsigned b=0;b<4;b++)for(unsigned a=0;a<6;a++) {
+    for(unsigned m=0;m<8;m++)for(unsigned b=0;b<4;b++)for(unsigned a=0;a<sizeof colours/sizeof colours[0];a++) {
         draw_count=selection_count=0;pending=-1;g_esp=0;
         hud_scale=4.f*sizes[m][1]/(3.f*sizes[m][0]);wide=hud_scale!=1.f;
         memset(stack,0,sizeof stack);stack[0]=bands[b][0];stack[2]=bands[b][1];

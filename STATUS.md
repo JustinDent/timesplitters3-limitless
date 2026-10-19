@@ -1,5 +1,88 @@
 # Measured progress
 
+## Full-width gameplay white flashes (2026-10-19)
+
+Implemented follow-up on `152-bug-launch-title-screen-not-covering-larger-resolutions`
+(base `6ad7767`), retaining the title-screen correction. The user reports a
+4:3 white cover when facing an explosion in the first mission. Source tracing
+identified two separate fullscreen white passes: `sub_000F90D0` emits a
+textured white wash through `sub_0001FB40` (including caller `00119913`),
+while `sub_000FE990` emits an additive solid white rectangle at `000FEA07`.
+Both previously retained AUTO/proportional HUD placement.
+
+The shared `pc_display_flash_overlay` wraps only the white-wash routine;
+`pc_display_transition_overlay` now recognizes the solid flash caller. Both
+use scoped STRETCH placement with flushes before/after the draw, restore the
+previous placement/tag and keep original intensity, colour, UVs and timing.
+They exclude invalid/partial/split viewports and leave 4:3 unchanged. The new
+runtime wrapper is an additive patch; generated C is regenerated, not edited.
+
+Validation on Windows x64/MSVC/D3D11:
+- A new solid-white case reproduced the old transition-hook failure before
+  the correction. All nine shared UI fixtures/checks now pass, including a
+  white-wash fixture across nine resolutions, all 256 intensity values,
+  both guest viewport conventions and all six preceding placement modes.
+  Deferred draws before/after, original arguments and partial-view exclusions
+  are checked. The solid flash is tested with black/white/tinted alpha values
+  alongside the existing transition/loading coverage.
+- The complete patch stack applied successfully. All 29 patch-update,
+  patch-tracking and recompilation-generation checks passed; together with
+  the nine UI checks, 38 targeted checks passed. The supported Windows Release
+  build and all build checks passed, including real D3D11 feedback/depth and
+  channel-clear checks. `git diff --check` passed with the repository CRLF rule.
+  Logs: `build/white-flash-build.log`, `build/white-flash-patch-tests.log`.
+  Release executable SHA-256: `d41c029395fc4e65b70ba77da32f9788cd96ed5e1bc70d720711d63c75993497`.
+  This is a build of the base revision plus the local title/white-flash changes.
+- The user tested the rebuilt game at 3440x1440 and confirmed that the
+  white flash now covers the full screen. Mac visual validation remains
+  pending (MAC-032).
+
+## Full-width title reveal (issue #152, 2026-10-18)
+
+Implemented on `152-bug-launch-title-screen-not-covering-larger-resolutions`,
+based on main `6ad7767`. Reproduced the reported blue menu strips beside the
+launch logo at 3440x1440. The title reveal uses a textured logo and four black
+3D surround quads in US `sub_002BDA00`; the left/right outer edges retained
+their original width after the camera's horizontal field expanded.
+
+The shared `pc_display_title_matte` hook extends only the first two X
+coordinates at callers `002BDDB4` / `002BDE0A`, by the display camera factor.
+The two inner edges, top/bottom quads, logo textures, wipe, colour, depth and
+animation remain original. The helper emits inside an open primitive, so it
+does not flush or change renderer placement; it restores the arguments after
+emission. Unrelated callers, gameplay, partial/invalid viewports and 4:3/narrow
+modes retain their original geometry. The additive `title-screen-matte.patch`
+wraps the original generated vertex helper; generated C is not hand-edited.
+
+Validation:
+- All 43 selected UI/menu/FOV, patch-tracking/transition and regeneration checks
+  passed across the initial run and corrected historical-fixture rerun. The
+  historical controls-only fixture excludes the new display-dependent patch;
+  it still upgrades to and validates the complete current stack. All 14 patch
+  update checks passed on rerun.
+- The new production-code fixture checks ten resolutions/aspect ratios,
+  offscreen outer coverage, unchanged inner vertices/colour/depth, open-batch
+  preservation, stack restoration and excluded callers/viewports.
+- The supported Windows Release build and its full build checks passed. Its
+  first post-build ghost-target replay hit the previously observed intermittent
+  D3D11 access violation; a complete unchanged build/check rerun passed.
+- Five bounded live startup runs at 1280x960, 1920x1080, 1920x1200,
+  3440x1440 and 5120x1440 were captured. Visually checked the title reveal,
+  full-width black surround and subsequent player-count menu. At
+  3440x1440 the recorded outer X moved from +/-2.370000 to +/-4.246250;
+  the inner X remained +/-1.580000. Side-strip samples fell from a peak
+  channel value of 135 to 1, matching the original near-black matte.
+- Evidence is ignored under `build/issue-152-before-mask`,
+  `build/issue-152-after-*`, `build/issue-152-measurements.json`,
+  `build/issue-152-tests.log`, `build/issue-152-patch-retest.log` and
+  `build/issue-152-build-recheck.log`. Test Lab saves/configuration were isolated
+  under `private/test-saves/issue-152`; temporary virtual disks were recycled.
+
+Executable SHA-256:
+`0e5b9ea17e3f61577898b3be2e0ce9d0239a4491c908270518da02eecfad03a1`.
+The shared Mac hook is included, but native Mac visual validation remains
+pending under MAC-032. No release version bump or publication was performed.
+
 ## PR #151 CI fixture correction (2026-10-18)
 
 Both Windows and macOS jobs in run 39188642901 failed to compile the shared
@@ -809,7 +892,7 @@ this integration reran build/regression checks. Native Mac remains unverified.
 
 ## Responsive loading label (2026-10-17)
 
-Local, uncommitted follow-up on `fix/responsive-transition-overlay` (`fe8e253`).
+Implemented follow-up on `fix/responsive-transition-overlay` (`fe8e253`).
 The loading-picture text at US return PC `001560E5` now uses the shared LEFT UI
 placement instead of staying in the central 4:3 area. Font sizing remains
 proportional to the output, with the original inset measured from its left edge.
@@ -918,7 +1001,7 @@ unverified; see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-di
 
 ## Lock-on and special scope effects (2026-10-17)
 
-Local, uncommitted follow-up on `fix/responsive-menu-footer`, base `0dc9fea`.
+Implemented follow-up on `fix/responsive-menu-footer`, base `0dc9fea`.
 The lock-on renderer (`00138590`) uses `lockonbox`, `custom_homing_lockon`,
 `lockoninner` and `lockontri`. Both integer box halves and all four pointer-based
 quad call sites now scale around the current target record's screen position.
