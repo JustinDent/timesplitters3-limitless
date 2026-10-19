@@ -765,6 +765,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   format readback coverage before changing the default. Shared one-shot paired
   captures also remain missing. This does not fix the static sky or certify
   sustained 120 FPS. [Evidence](STATUS.md#shared-scene-interpolation-and-khallos-pacing-2026-10-19).
+- **Portability swizzle repair (2026-10-19, commit carrying this update):**
+  `codex/vulkan-portability-swizzle` depends on `f1f4236`. The common Vulkan
+  device now queries/enables the optional image-view swizzle feature required
+  by the existing A8/BGRX views. Shared resource tests cover those formats and
+  ordinary-format controls; both Mac drivers pass, and a 95-second Khallos
+  validation run reports no validation errors. Windows execution remains
+  pending. This fixes device feature negotiation, not the static sky.
+  Sources: `patches/*-vulkan-portability-swizzle.patch`,
+  `tests/rhi_texture_resources.h`; [evidence](STATUS.md#vulkan-portability-texture-swizzles-2026-10-19).
 - **Khallos investigation (2026-10-19):** The commit carrying this update on
   `codex/khallos-sky`, based on unmerged `codex/shared-renderer-default` at
   `d30b652`, adds the Mac SDL adapter for the shared frame-replay tool and a

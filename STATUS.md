@@ -8224,3 +8224,52 @@ legacy-GL one-shot `--capture-interpolation` request; shared paired-capture
 support remains acceptance work. Personal config presence and controls fixture
 hash were unchanged, disposable test partitions recycled, and retained capture
 allocation stayed below 256 MiB.
+
+### Vulkan portability texture swizzles (2026-10-19)
+
+The commit carrying this section on `codex/vulkan-portability-swizzle` depends
+on `codex/shared-scene-interpolation` at `f1f4236` and its unmerged renderer stack.
+The shared Vulkan device enabled `VK_KHR_portability_subset` but never queried
+or enabled its optional `imageViewFormatSwizzle` feature. Alpha-only and
+opaque-X texture views consequently violated Vulkan's portability requirements.
+The additive `vulkan-portability-swizzle.patch` queries and explicitly enables
+that feature, preserving the custom-border-color feature chain; an unsupported
+portability device now gets a clear prerequisite error instead of invalid views.
+Native Vulkan devices without the extension retain their existing feature path.
+This follows the [Vulkan feature-enabling contract](https://docs.vulkan.org/refpages/latest/refpages/source/VkPhysicalDevicePortabilitySubsetFeaturesKHR.html).
+
+The shared D3D11/Vulkan resource contract now samples A8, BGRX, R8 and RGBA
+textures and verifies all channels. Before the fix, the new MoltenVK test
+reproduced two swizzle validation errors even though its sampled pixels matched.
+After the fix, both pinned Mac drivers passed the expanded resource/pixel tests
+and production frame replay with no validation errors. The historical patch
+upgrade fixture excludes this dependent patch from its pre-Vulkan starting
+state, then checks installation of the complete stack. Relevant source checks:
+75 passed and three host-specific skips across the initial run and focused
+retest. Windows D3D11 execution and GitHub CI have not run for this change.
+
+The native build succeeded on the same M5 Pro/macOS 27.0.1/Clang 21 host with
+pinned SDK 1.4.363.0 and unchanged supported XBE/upstream revisions. Its source
+is `f1f4236` plus this then-uncommitted repair; executable SHA-256
+`bd48e193d9b636596d4d1554748a1d0ada2481c68356ca9ee469dc04df04c8e8`.
+A separate 95.12-second isolated Khallos run on MoltenVK with validation enabled
+reached at least 5,400 guest frames, reported zero Vulkan validation errors,
+zero shader compilation failures and no native fault, and exited normally.
+The reviewed capture retains the train, weapon and landscape; static sky
+fidelity remains unresolved. Logs: `logs/shared-khallos-swizzle-validation-120-*`;
+selected capture: `private/captures/native-mac/shared-khallos-swizzle-fixed.png`.
+Driver warnings about Metal primitive-restart support remain distinct from
+validation errors. The driver default has not changed, and no new performance
+claim is made from validation-enabled runs.
+
+A second isolated 95.15-second run of the opening mission used the same binary
+and MoltenVK with validation enabled. It likewise reported zero validation
+errors, shader failures or native faults and exited normally. The reviewed
+capture shows canyon terrain, NPCs, weapon, HUD/tutorial text and fire/smoke
+with the world present. Synthetic movement, mouse/button and pause/resume events
+were delivered; this single final capture does not independently verify every
+input response or physical mouse operation. No level completion was attempted.
+Evidence: `logs/shared-firstmission-swizzle-control-120-*` and
+`private/captures/native-mac/shared-firstmission-swizzle-control.png`.
+Personal settings/fixture remained unchanged; both runs recycled their six
+known disposable partition images. Captures remain under 100 MiB allocated.

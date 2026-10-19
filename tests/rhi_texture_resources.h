@@ -117,6 +117,30 @@ static void rhi_texture_resources_test(void) {
         float expected[4],query[4]={(x+.5f)/2,(y+.5f)/2,(z+.5f)/2,0};
         volume_color(x,y,z,1,1,expected);texture_expect(queries,query,expected);
     }
+    /* Xbox alpha-only and opaque-X formats require nonidentity view mapping.
+     * Include ordinary red/RGBA controls so a blanket shader remap cannot pass. */
+    RhiShader *format_ps=shader(RHI_STAGE_PIXEL,
+        "Texture2D<float4> tex:register(t0);SamplerState s:register(s0);"
+        "float4 main():SV_TARGET{return tex.SampleLevel(s,float2(.5,.5),0);}","ps_5_0");
+    const uint32_t formats[]={RHI_FORMAT_A8_UNORM,RHI_FORMAT_B8G8R8X8_UNORM,
+                              RHI_FORMAT_R8_UNORM,RHI_FORMAT_R8G8B8A8_UNORM};
+    const unsigned char bytes[4][4]={{64,0,0,0},{32,64,128,0},{64,0,0,0},{32,64,128,16}};
+    const float expected[4][4]={{0,0,0,64/255.f},{128/255.f,64/255.f,32/255.f,1},
+                               {64/255.f,0,0,1},{32/255.f,64/255.f,128/255.f,16/255.f}};
+    rhi_set_shader(RHI_STAGE_PIXEL,format_ps);
+    for(unsigned f=0;f<4;f++) {
+        RhiImageDesc fd={0};fd.width=fd.height=fd.depth=fd.mip_levels=fd.samples=1;
+        fd.format=formats[f];fd.bind=RHI_BIND_SAMPLED;
+        RhiSubresourceData initial={bytes[f],(f==0 || f==2)?1:4,4};
+        RhiImage *image=rhi_image_create(&fd,&initial);CHECK(image);
+        RhiView *view=rhi_view_create(image,RHI_VIEW_SAMPLED,NULL);CHECK(view);
+        rhi_set_textures(0,1,&view);
+        const float query[4]={0};texture_expect(queries,query,expected[f]);
+        RhiView *unbound=NULL;rhi_set_textures(0,1,&unbound);
+        rhi_view_destroy(view);rhi_image_destroy(image);
+    }
+    rhi_shader_destroy(format_ps);
+    puts("PASS: shared RHI A8 alpha, BGRX opaque alpha and ordinary format controls");
     RhiView *none=NULL;rhi_set_textures(0,1,&none);
     RhiBuffer *no_buffer=NULL;rhi_set_uniform_buffers(RHI_STAGE_PIXEL,0,1,&no_buffer);
     RhiSampler *no_sampler=NULL;rhi_set_samplers(0,1,&no_sampler);
