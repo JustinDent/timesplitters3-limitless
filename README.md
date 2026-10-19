@@ -12,9 +12,9 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
 
 </div>
 
-![TimeSplitters launcher with Play Game, game import, update channel and release controls](docs/assets/launcher-preview.png)
+![TimeSplitters launcher v1.2.18 with the updated banner, aligned sidebar, Play Game, game versions and update controls](docs/assets/launcher-preview.png)
 
-<p align="center"><sub>Launcher interface preview from the current source. Version and channel shown are sample state; choose <strong>Preview</strong> to install current game prereleases.</sub></p>
+<p align="center"><sub>Launcher v1.2.18 interface preview. The game version and channel shown are sample data; choose <strong>Preview</strong> to install current game prereleases.</sub></p>
 
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it
