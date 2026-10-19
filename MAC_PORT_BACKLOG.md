@@ -1,5 +1,30 @@
 # PC features awaiting Mac adaptation
 
+### MAC-047 — Main-menu image and lettering fidelity
+
+- **Status:** Queued
+- **PC behavior:** Windows frontend textures use clamped Catmull-Rom
+  reconstruction during magnification. Verified main-menu row draws additionally
+  reconstruct A8 glyph coverage without changing glyph placement or measurement.
+  Native-size/minified samples, point filtering, framebuffer copies, render
+  targets and gameplay retain their existing paths. `TSFP_MENU_FILTER=linear`
+  restores previous sampling for an individual process.
+- **Source:** Commit titled `Improve main-menu image and lettering fidelity` on
+  `fix/main-menu-image-fidelity`;
+  `src/pc_menu_sampling.h`, `src/pc_display.c`, `src/pc_display_ui.inc`,
+  the `menu-sampling.patch`, and `tests/menu_sampling_gpu.c`.
+- **Mac support:** The frontend/glyph scope and per-present reset are shared.
+  The native OpenGL renderer does not use the Windows HLSL helper, so its
+  current sampling is retained. Native execution is unverified.
+- **Remaining:** Adapt reconstruction and glyph coverage to the native GLSL
+  sampling paths, retaining wrap/clamp, alpha, texture dimensions and minification.
+  Reuse the shared frontend/row scope; exclude framebuffer and depth effects.
+- **Acceptance:** GPU comparison at native size and during minification is
+  unchanged; magnified menu background, logo, glyphs and icons sharpen without
+  ringing, atlas bleed, opacity drift or changes to gameplay. Check 1080p and
+  ultrawide captures, font measurements, fades and menu/gameplay transitions.
+  Windows evidence is recorded in `STATUS.md`; it is not native Mac validation.
+
 ### MAC-045 - Terminal camera depth clears (issue #47)
 
 - **Status:** Implemented, pending native validation
@@ -1767,3 +1792,42 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   network adapter is implemented; Windows results do not verify Mac behavior.
 - **Mac implementation and evidence:** No Mac execution or other-device
   synchronization verified for this prototype.
+
+### MAC-048 - Discord Rich Presence (issue #63)
+
+- **Status:** Queued
+- **PC behavior:** Optional launcher Discord tab with an enable switch and public
+  Application ID. A Windows worker connects to the running Discord desktop client
+  over local RPC, sends Story mission/difficulty/co-op and cutscene/pause state,
+  Arcade/League/Challenge map/game type/event, Online/LAN map/type and actual
+  human/bot counts with capacity and lobby host/member state, plus elapsed time.
+  It coalesces changes to at most one update per 15 seconds and reconnects after
+  Discord restarts,
+  and disconnects on game-window destruction. Default off; missing or invalid
+  runtime configuration disables the integration without blocking play.
+- **Source:** [Implementation `ff8d6c0`](https://github.com/TheDoffman/timesplitters-future-perfect-pc/commit/ff8d6c0240bdeccf85a49034dca121071a0adfec)
+  on `feature/63-discord-rich-presence`, based on main `c006c24`;  `src/pc_discord.h`, `pc_discord_model.c`,
+  `pc_discord_guest.h`, `pc_discord.c`,
+  the camera sampling hook in `src/pc_display_menu.c`, lifecycle calls in
+  `src/pc_controls.c`, the `discord-presence` patch, launcher `GameSettings.cs`,
+  `SettingsPage.cs`, portable launch/package scripts, and
+  [setup instructions](docs/discord-presence.md).
+- **Existing Mac support:** Configuration validation, mode policy and JSON
+  serialization and guarded-callback guest metadata decoding are plain shared C.
+  The new Win32 adapter and camera sampling define are Windows-only; existing native Mac source/build paths stay intact.
+  No Mac transport or settings UI is implemented or verified.
+- **Remaining adaptation:** Native local Unix-domain Discord IPC, bounded
+  asynchronous I/O/reconnect/exit, native preferences and lifecycle integration,
+  and guest-thread snapshot publication using the same shared model/decoder.
+  Preserve the US table bounds, Latin-1 to UTF-8 conversion, active versus menu
+  config distinction, frontend event-name caching, and occupied human-slot
+  counting (including holes). An established LAN session must work before any
+  remote latency peer/socket initializes. LAN/Online status must follow the native networking adapter when MAC-013 is implemented.
+- **Acceptance:** Compile shared policy tests on Mac; verify disabled/missing and
+  malformed settings, Discord absent/start/restart, fragmented/oversized/error
+  frames, mission/difficulty/co-op, map/type/event and population transitions,
+  pause/menu/mode transitions and shutdown. Verify a real Discord profile
+  and elapsed timer on Apple Silicon with isolated saves/configuration. Never
+  infer native support from the Windows results below.
+- **PC evidence:** See [issue #63 validation](STATUS.md#issue-63---discord-rich-presence-2026-10-19)
+  and [detailed activity validation](STATUS.md#issue-63---detailed-discord-activity-2026-10-19).

@@ -29,6 +29,7 @@ public class Child {
     public static int Main() {
         Console.WriteLine("XMV_PLAY=" + Environment.GetEnvironmentVariable("RECOMP_XMV_PLAY"));
         Console.WriteLine("UNWANTED=" + Environment.GetEnvironmentVariable("TSFP_UNWANTED"));
+        Console.WriteLine("DISCORD_CONFIG=" + Environment.GetEnvironmentVariable("TSFP_DISCORD_CONFIG"));
         return 0;
     }
 }
@@ -43,3 +44,4 @@ public class Child {
     output = next((tmp_path / 'Logs').glob('*.out')).read_text()
     assert 'XMV_PLAY=' + ('0' if skip else '1') in output
     assert 'UNWANTED=\n' in output.replace('\r\n', '\n')
+    assert 'DISCORD_CONFIG=' + str(tmp_path / 'Settings/pc-discord.ini') in output

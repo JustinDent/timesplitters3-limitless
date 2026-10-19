@@ -17,6 +17,21 @@ static PcDisplayMode current;
 static int initialized;
 static int vertical_fov=PC_FOV_DEFAULT, preview_fov;
 static int camera_frame;
+static int menu_filter_frame, menu_font_filter;
+void pc_display_menu_filter_begin(int frontend) { menu_filter_frame=!!frontend; }
+int pc_display_menu_font_filter(int active)
+{
+    int previous=menu_font_filter;menu_font_filter=!!active;return previous;
+}
+int pc_display_menu_filter(void)
+{
+    static int configured, enabled=1;
+    if(!configured) {
+        const char *value=getenv("TSFP_MENU_FILTER");
+        enabled=!value || strcmp(value,"linear");configured=1;
+    }
+    return menu_filter_frame && enabled ? (menu_font_filter?2:1) : 0;
+}
 static PcDisplayMode preview_previous;
 static ULONGLONG preview_deadline;
 static char path[32768];
@@ -244,6 +259,8 @@ float pc_display_hud_scale(void)
 int pc_display_wide_now(void) { init(); return current.width && current.width*3u!=current.height*4u; }
 void pc_display_frame_done(void)
 {
+    menu_filter_frame=0;
+    menu_font_filter=0;
     camera_frame=0;
     /* Covers leaving the guest menu through a global pause/Start action too.
        Never persist a preview; a crash or forced exit also reloads the old mode. */

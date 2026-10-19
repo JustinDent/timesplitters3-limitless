@@ -37,6 +37,11 @@ static int drawn[1024],selected[1024],selection_count;
 static uint32_t tag;
 #define CHECK(x) do { if(!(x)){fprintf(stderr,"FAIL: %s line %d\n",#x,__LINE__);exit(1);} } while(0)
 float pc_display_hud_scale(void) { return hud_scale; }
+static int menu_filter_frontend;
+void pc_display_menu_filter_begin(int frontend) { menu_filter_frontend=frontend; }
+static int menu_font_filter;
+int pc_display_menu_font_filter(int active)
+{ int old=menu_font_filter;menu_font_filter=active;return old; }
 int pc_display_wide_now(void) { return wide; }
 void sub_00022FF0(void) { if(pending>=0){memcpy(&drawn_projection[draw_count],projection,4);drawn[draw_count++]=placement;pending=-1;} }
 void sub_001CDAE0(void) {}
@@ -105,8 +110,10 @@ static void mask_draw(void)
     pending=1;g_esp+=4;
 }
 static float font_seen[2];
+static int font_filter_seen;
 static void font_draw(void)
 {
+    font_filter_seen=menu_font_filter;
     memcpy(font_seen,font_xy,sizeof font_seen);pending=1;g_esp+=4;
 }
 static float aim_seen[8];
@@ -182,6 +189,7 @@ int main(void)
         if(mode==3)item_data[0]=9;
         scene=mode==4?1:101;
         pc_display_main_menu_font(font_draw,mode==0);
+        CHECK(font_filter_seen==(mode==1) && menu_font_filter==0);
         float scale=mode<2?.75f:1.f;
         CHECK(fabsf(font_seen[0]-initial[0]*scale)<.00001f);
         CHECK(fabsf(font_seen[1]-initial[1]*scale)<.00001f);
@@ -383,6 +391,7 @@ int main(void)
         hud_scale=4*sizes[r][1]/(3*sizes[r][0]);wide=hud_scale!=1.f;
         g_esp=0;stack[0]=0x2da51b;pending=1;n=draw_count;count=projection_sets;
         pc_display_menu_backdrop(draw);sub_00022FF0();
+        CHECK(menu_filter_frontend==1);
         if(hud_scale<1.f){
             CHECK(drawn_projection[n]==original_projection);
             CHECK(fabsf(drawn_projection[n+1]-original_projection/hud_scale)<.00001f);
@@ -396,6 +405,7 @@ int main(void)
         g_esp=0;stack[0]=guard==0?0x2da564:0x2da51b;
         scene=guard==1?1:101;view[1]=guard==2?320:640;hud_scale=guard==3?0.f:.5f;
         count=projection_sets;pc_display_menu_backdrop(draw);sub_00022FF0();
+        CHECK(menu_filter_frontend==(scene>100));
         CHECK(projection_sets==count && !memcmp(projection,&original_projection,4));
     }
     puts("PASS: queued widget boundaries, radar world-marker separation, anchors, defaults and split-screen guard");

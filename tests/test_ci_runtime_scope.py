@@ -74,6 +74,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
 
 @pytest.mark.parametrize('paths, expected', [
     (['tools/launcher/MainWindow.cs'], {'launcher'}),
+    (['config/pc-discord.default.ini'], {'launcher'}),
     (['tests/launcher_maintenance.cs'], {'launcher'}),
     (['tests/launcher_downloads.cs'], {'launcher'}),
     (['tests/launcher_startup.cs'], {'launcher'}),

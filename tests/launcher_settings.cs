@@ -340,6 +340,42 @@ public static class LauncherSettingsChecks
                 Require(model.Sensitivity==.10 && model.Binding(14)[0]=="key:W" && !model.SkipStartupSplashes);
                 Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
             });
+            Test("Discord defaults, validation, persistence, launch routing and concurrent edits",()=>{
+                string root=Root("discord");var model=GameSettings.Load(root,null);
+                Require(!model.DiscordEnabled && model.DiscordApplicationId=="1561627743353962566");
+                model.DiscordEnabled=true;
+                foreach(string invalid in new[]{"", "bot-token", "+1561627743353962566", "01561627743353962566", "18446744073709551616", "1561627743353962566\n"}) {
+                    model.DiscordApplicationId=invalid;Reject(()=>model.Save());
+                    Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+                }
+                model.DiscordApplicationId="1561627743353962566";model.Save();
+                Require(Read(root,"Settings/pc-discord.ini")=="TSFP_DISCORD_V1 1 1561627743353962566\n");
+                Require(GameSettings.Load(root,null).DiscordEnabled);
+                Require(GameSettings.StartInfo(root).EnvironmentVariables["TSFP_DISCORD_CONFIG"]==Path.Combine(root,"Settings","pc-discord.ini"));
+                model=GameSettings.Load(root,null);model.DiscordEnabled=false;model.Save();
+                Require(!GameSettings.Load(root,null).DiscordEnabled && Read(root,"Settings/pc-discord.ini.bak").Contains("V1 1"));
+                model=GameSettings.Load(root,null);string before=Read(root,"Settings/pc-controls.json");
+                Put(root,"Settings/pc-discord.ini","TSFP_DISCORD_V1 1 1561627743353962566\n");
+                model.Sensitivity=.9;Reject(()=>model.Save());Require(Read(root,"Settings/pc-controls.json")==before);
+                Put(root,"Settings/pc-discord.ini","TSFP_DISCORD_V1 1 0\n");Reject(()=>GameSettings.Load(root,null));
+            });
+            Test("Discord settings UI saves and cancels without altering unrelated preferences",()=>STA(()=>{
+                string root=Root("discord-ui");var owner=new System.Windows.Window();
+                var editor=new SettingsPage(owner.Resources,root,true);editor.SelectTab(2);owner.Content=editor.View;
+                var nodes=Descendants(editor.View).ToList();
+                var enabled=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="DiscordPresenceEnabled");
+                var id=nodes.OfType<System.Windows.Controls.TextBox>().Single(c=>c.Name=="DiscordApplicationId");
+                Require(enabled.IsChecked==false && id.Text=="1561627743353962566");
+                enabled.IsChecked=true;id.Text="wrong";
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
+                Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+                id.Text="1561627743353962566";
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsCancelButton"));
+                Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
+                var saved=GameSettings.Load(root,null);Require(saved.DiscordEnabled && saved.Sensitivity==.10 && !saved.SkipStartupSplashes);
+                owner.Close();
+            }));
             Test("startup preference round-trips, preserves other launcher keys and can be disabled",()=>{
                 string root=Root("startup");var model=GameSettings.Load(root,null);model.Save();
                 var json=Json.Object(Read(root,"Settings/pc-controls.json"));
