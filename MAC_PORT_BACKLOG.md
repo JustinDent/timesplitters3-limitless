@@ -1,9 +1,11 @@
 # PC features awaiting Mac adaptation
 
-This is the handoff list for Windows PC features to bring to native Mac later.
-Add or update an entry when implementing a new PC feature, before reporting the
-PC work complete. Also record behavioral fixes that need Mac adaptation. Mac
-work is deferred until requested; it does not block completion of the PC feature.
+This tracks platform exceptions and native validation for shared PC/Mac features.
+Ordinary feature logic now belongs in shared source by default; follow
+[the shared implementation contract](docs/shared-platform.md). Add/update an
+entry when a platform adapter or host validation remains, including behavioral
+fixes. Explicitly scoped PC-only work and genuine host dependencies may be queued,
+with a reason and acceptance checks. Shared source alone does not verify Mac.
 
 Keep one stable ID per feature (`MAC-001`, `MAC-002`, and so on). Update existing
 entries rather than duplicating them, and retain completed entries as history.

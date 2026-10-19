@@ -33,17 +33,30 @@ reproducibility, and validation requirements.
   personal settings, and saves remain ignored and local. Transfer those only
   when needed for the task, preserving the authoritative copy and settings.
 
-## PC features and deferred Mac adaptation
+## Shared features and platform exceptions
 
-- New Windows PC features may be implemented and completed on PC first. Do not
-  automatically implement their Mac adapters in the same task unless requested.
-  Before reporting a new PC feature complete, add or update its entry in
-  `MAC_PORT_BACKLOG.md` so later Mac work has a durable handoff. Also record
-  behavioral fixes that need corresponding Mac work.
+- Implement ordinary new gameplay, input rules, rendering policy, settings and
+  fixes once in shared source or the shared patch stack, for both Windows and
+  native Mac. Build on the shared interfaces documented in
+  `docs/shared-platform.md`; extend their host adapters when needed. Do not copy
+  feature logic into a second Mac implementation or guard portable behavior
+  behind `_WIN32` merely because it was first developed on PC.
+- Keep OS events/windows, graphics resource access and file-system operations in
+  thin platform adapters. Shared shader algorithms belong in `src/graphics`;
+  shader-language adapters map syntax/intrinsics rather than duplicate policy.
+  Shared debug setting fields, labels, keys and capability requirements belong
+  in `src/pc_debug_options.def`, consumed by both dialogs and JSON persistence.
+- Genuine platform dependencies or an explicitly PC-only task may be deferred.
+  Record the missing capability, why common code cannot yet supply it, and the
+  adapter/acceptance work in `MAC_PORT_BACKLOG.md` before reporting completion.
+  Distinguish implementation from each host's validation. Preserve unsupported
+  saved options; do not silently reset them when another host edits settings.
+  A deferred exception is not permission to regress existing Mac support.
 - Each entry must describe the PC behavior, source files and commit/PR when
   available (otherwise mark uncommitted), Mac support already present, remaining
-  adaptation, and acceptance checks. Use the backlog's statuses; a queued Mac
-  adaptation does not block completion of the PC feature. If no Mac adaptation
+  adaptation, and acceptance checks. Use the backlog's statuses. An explicitly
+  scoped platform exception may complete on PC while its Mac adapter is queued.
+  If no Mac adaptation
   is needed, record why and distinguish verified support from pending validation.
 - When asked to port features to Mac, consult `MAC_PORT_BACKLOG.md`, implement
   the requested entries, and update their status and evidence. Do not mark an
@@ -52,8 +65,8 @@ reproducibility, and validation requirements.
 - Implement platform-independent gameplay, input rules, asset/configuration
   handling and runtime fixes once in shared source or the shared patch stack.
   Keep operating-system event handling, native settings windows and graphics
-  API calls in platform adapters. Preserve reusable common logic while allowing
-  new Mac integration to be deferred to the backlog.
+  API calls in platform adapters. Avoid a second settings/model definition in
+  native UI code; map shared capabilities to available host controls.
 - Changes to code already shared by both builds must preserve existing platform
   support. Review affected build paths, run relevant shared tests and available
   host checks, and report unavailable checks. Preserve existing settings and
@@ -71,8 +84,10 @@ reproducibility, and validation requirements.
   correct the PR description and rerun the failed workflow; reruns update the
   existing bot comment. Merging source is not evidence of a published release.
 - Use `.github/pull_request_template.md` to record PC results and link the Mac
-  backlog entries. These instructions and the review checklist require agents
-  to maintain the list; they are not an automated feature detector or CI gate.
+  backlog entries. CI runs shared contracts and selected host checks on Windows/macOS and checks
+  backlog ID/status integrity. Register new behavioral tests in that workflow.
+  These checks do not detect every missing feature or prove visual parity;
+  agents must still maintain the handoff and report unavailable host checks.
 - Git revisions must contain the change and backlog update before another
   checkout can use them. Keep each task's changes on its focused branch;
   transferring changes between branches or devices must preserve their edits

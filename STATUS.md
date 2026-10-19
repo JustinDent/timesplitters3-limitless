@@ -1,5 +1,17 @@
 # Measured progress
 
+## Shared feature contract (2026-10-19)
+
+`codex/shared-feature-contract` depends on local `780346f`. Root `AGENTS.md`
+now requires shared implementation by default, thin adapters and explicit
+capability/backlog exceptions; the PR checklist uses the same rule.
+`docs/shared-platform.md` records current source boundaries, the four focused
+branches, test routing and the remaining common-RHI integration milestone.
+Backlog integrity and CI scope checks pass (44 tests); documentation-only changes
+need no game rebuild. Branches are local, not pushed; main and the other computer
+were not changed. The consolidation goal remains in progress: menu shader and
+debug settings are shared, but the full native renderer is not yet behind RHI.
+
 ## Shared debug setting definitions (2026-10-19)
 
 - **Source/dependency:** `codex/shared-debug-settings` starts at unmerged shared
