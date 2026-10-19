@@ -1265,7 +1265,9 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   changes build/test Windows and Mac through the shared release pipeline. No AI
   service, secret, paid call or automatic repair PR remains. GitHub's API key and
   enable variable were removed. Local policy/release tests and 18 native launcher
-  plus eight shared UI groups pass; fresh integrated CI is pending. Existing
+  plus eight shared UI groups pass. CI run 39340698617 also passed both host
+  builds and all package checks at `02acfe0`; runtime integration follow-up CI
+  is pending. Existing
   delivery/signing limits remain. See [STATUS](STATUS.md#api-free-launcher-integration-2026-10-19).
 - **Shared interface (2026-10-19, `2ac286d`, `ee495e6`, `a0c4e14`, PR #189):**
   Windows and Mac compile the same `*Page.cs` sources for settings, news, game
@@ -2285,6 +2287,19 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 ### MAC-054 — Fractional presentation targets and Windows transform setup (issue #167)
 
 - **Status:** Queued
+- **Shared stack integration (2026-10-19, PR #186 follow-up, uncommitted):**
+  Current main's presentation series overlapped the earlier shared renderer
+  patches. The three presentation patches now apply after the shared host,
+  replay-depth and present-result changes. CPU prediction uses the same replay
+  depth cache; failed/skipped presents retain the shared counting and retry
+  contract. Original payloads remain in `patches/legacy` for recorded-stack
+  migration tests. This adapts the concurrent renderer integration repair to
+  this launcher's earlier baseline without importing its scene/capture work.
+  Local Mac source-only checks pass: 28 patch transitions/tracking tests (two
+  Windows-only skips), and 71 renderer/frame-clock/CI-scope checks. Windows and
+  actual GPU validation of the follow-up remain pending CI. Native fixed
+  presentation targets remain queued; this is integration preservation only.
+  [Evidence](STATUS.md#launcher-main-patch-integration-follow-up-2026-10-19).
 - **Launcher integration (2026-10-19, PR #186, uncommitted):** The common page
   retains the new Windows controls through framework adapters. Native Mac does
   not yet implement fixed fractional targets or temporary monitor switching, so

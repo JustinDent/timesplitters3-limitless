@@ -14,7 +14,7 @@ def affected(paths, *, full=False):
         if (path in ('.github/workflows/runtime-patches.yml', 'requirements.txt', 'tsfp.ps1',
                      'tools/ci-runtime-scope.py', 'tests/test_ci_runtime_scope.py',
                      'tools/apply-patches.py', 'tests/test_patch_tracking.py',
-                     'tests/test_patch_updates.py') or path.startswith('patches/')):
+                     'tests/test_patch_updates.py', 'tests/fixtures/launcher-patch-stacks.json') or path.startswith('patches/')):
             selected.update(SUITES)
         elif (path.startswith('tools/launcher/') or path in (
                 '.github/workflows/launcher-release.yml', '.github/workflows/launcher-build.yml',

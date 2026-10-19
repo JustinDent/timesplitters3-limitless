@@ -1,4 +1,9 @@
 /* Exercise the real HLE redraw/gate with renderer outcomes, no game assets. */
+#include "platform/xbox_winnt.h"
+static BOOL test_counter(LARGE_INTEGER *value);
+static BOOL test_frequency(LARGE_INTEGER *value);
+#define QueryPerformanceCounter test_counter
+#define QueryPerformanceFrequency test_frequency
 #include "hle/hle_d3d8_interp.c"
 #include <assert.h>
 #include <stdlib.h>
@@ -18,6 +23,11 @@ int recomp_config_int(const char *env_name,const char *key,int fallback){
     (void)env_name;(void)key;(void)fallback;unexpected_hook("configuration");return 0;
 }
 void xbox_Nv2aFlipGateSetIdle(xbox_FlipGateIdleFn fn){(void)fn;unexpected_hook("gate installation");}
+void xbox_D3D8SetInterpRegisters(int p,int a,int n){(void)p;(void)a;(void)n;unexpected_hook("title registers");}
+void xbox_SetRecompIdle(void (*fn)(void)){(void)fn;unexpected_hook("CPU prediction installation");}
+const char *xbox_Nv2aFlipGateModeName(void){unexpected_hook("gate mode");return "60";}
+BOOL xbox_D3D8InterpCanPredict(void){unexpected_hook("CPU prediction target");return FALSE;}
+void xbox_D3D8InterpPredict(BOOL on){(void)on;unexpected_hook("CPU prediction state");}
 static int begin_ok=1,present_ok=1,begins,presents,ends,overlays;
 int hle_d3d8_interp_rec;
 BOOL xbox_D3D8InterpBegin(void){begins++;return begin_ok;}
@@ -29,10 +39,9 @@ void hle_d3d8_overlay_redraw(void){overlays++;}
 int hle_d3d8_dump_back_buffer(const char *path){(void)path;return -1;}
 int hle_d3d8_capture_active(void){return 0;}
 int hle_d3d8_movie_layer_shown(void){return 0;}
-#ifdef __APPLE__
-BOOL QueryPerformanceCounter(LARGE_INTEGER *value){static LONGLONG t=100;value->QuadPart=++t;return TRUE;}
-BOOL QueryPerformanceFrequency(LARGE_INTEGER *value){(void)value;unexpected_hook("clock initialization");return FALSE;}
-#endif
+static LONGLONG clock_ticks=100;
+static BOOL test_counter(LARGE_INTEGER *value){value->QuadPart=++clock_ticks;return TRUE;}
+static BOOL test_frequency(LARGE_INTEGER *value){(void)value;unexpected_hook("clock initialization");return FALSE;}
 int main(void) {
     g_on=1;hle_d3d8_interp_rec=1;
     assert(redraw(.5));
@@ -54,6 +63,20 @@ int main(void) {
         assert(g_slot==2 && g_redraw_est==100 && g_redraws==0);
         assert(g_presents_total==1 && hle_d3d8_interp_rec==1);
     }
-    puts("PASS: HLE present outcome counts, restore on failure and stale-timestamp rejection");
+    /* The PC target clock must keep the same failure/counting contract,
+     * while retrying unavailable targets at most once per second. */
+    g_target=144;g_replayed=0;g_on=1;g_frame_ok=1;g_retry_after=0;
+    begin_ok=0;present_ok=1;
+    int before=begins;
+    assert(!redraw(.5) && g_on && begins==before+1 && !g_frame_ok);
+    assert(!hle_d3d8_interp_skip_guest() && g_replayed==0);
+    assert(!redraw(.5) && begins==before+1);
+    clock_ticks+=g_qpf;begin_ok=1;present_ok=0;g_frame_ok=1;
+    assert(!redraw(.5) && begins==before+2 && g_replayed==0);
+    assert(!hle_d3d8_interp_skip_guest() && g_presents_total==1);
+    present_ok=1;assert(redraw(.5) && g_replayed==1 && g_presents_total==2);
+    assert(hle_d3d8_interp_skip_guest());
+    g_target=0;
+    puts("PASS: HLE present outcome counts, bounded retry, restore on failure and stale-timestamp rejection");
     return 0;
 }

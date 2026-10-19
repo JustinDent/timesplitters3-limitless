@@ -8409,3 +8409,30 @@ rebuilt launcher passes its read-only prerequisite check. The native
 launcher was rebuilt from this integration's uncommitted source; its build receipt
 records that state. Fresh Windows/Mac CI and the final main merge are pending. No release was published and these checks
 do not certify native gameplay or complete visual parity.
+
+
+## Launcher main patch integration follow-up (2026-10-19)
+
+At `02acfe0`, GitHub run [39340698617](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39340698617)
+passed the API-free scope gate, Windows launcher build/regressions, native Mac
+build/regressions and packaged repair/restart, and complete dual-platform asset
+verification. Required runtime CI exposed the independently developed main
+presentation patches overlapping shared event pumping, replay depth and present
+outcome code. This follow-up adapts the in-progress presentation rebase from the
+concurrent `codex/renderer-main-integration` checkout to this earlier baseline;
+that checkout and its scene/capture work remain untouched and excluded.
+
+The original three PC presentation payloads remain under `patches/legacy`.
+Their integrated forms apply after the shared renderer stack, retain its replay
+depth cache and successful-present counters, and keep bounded failure retries.
+A small subsequent patch guards the Windows refresh adapter include. Historical
+stack fixtures at `4d5b3f0` and `efbcc4e` exercise upgrade/downgrade/re-upgrade
+while retaining unrelated edits. GPU depth fixtures now cover prediction as well
+as gate replay; the Windows interpolation fixture uses the shared present result.
+
+Host: macOS 27.0.1 ARM64, Python 3.13.16, Apple Clang. Source: uncommitted
+follow-up to `02acfe0`. The patch suite passed 28 tests with two Windows-only
+skips. Another 71 renderer/frame-clock/CI-scope checks passed against a disposable
+source-only archive of pinned upstream `d90c929`; the active runtime checkout was
+not patched. Fresh Windows/macOS CI and the real-GPU contract are pending.
+No game execution, new game build or release publication occurred in this pass.

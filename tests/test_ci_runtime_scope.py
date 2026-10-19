@@ -108,6 +108,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tests/test_publish_release.py', 'tools/recycle-release-work.ps1'], {'release'}),
     (['patches/legacy/old.patch'], set(scope.SUITES)),
     (['tools/apply-patches.py'], set(scope.SUITES)),
+    (['tests/fixtures/launcher-patch-stacks.json'], set(scope.SUITES)),
     (['tsfp.ps1'], set(scope.SUITES)),
     (['requirements.txt'], set(scope.SUITES)),
     (['.github/workflows/runtime-patches.yml'], set(scope.SUITES)),

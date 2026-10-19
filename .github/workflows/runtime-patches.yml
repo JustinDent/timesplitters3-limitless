@@ -25,6 +25,7 @@ on:
       - tests/controller_sensitivity.c
       - tools/apply-patches.py
       - tests/test_patch_updates.py
+      - tests/fixtures/launcher-patch-stacks.json
       - tests/test_patch_tracking.py
       - tests/test_audio_timing.py
       - tests/native_compiler.py

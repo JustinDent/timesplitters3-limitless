@@ -12,7 +12,7 @@ void xbox_D3D8SetInterpRegisters(int p,int a,int n) { title_projection=p;title_a
 BOOL xbox_D3D8InterpBegin(void) { assert(allow_redraw);begin_calls++;return begin_ok; }
 BOOL xbox_D3D8InterpCanPredict(void) { return can_predict; }
 void xbox_D3D8InterpPredict(BOOL on) { prediction=on; }
-void xbox_D3D8InterpPresent(void) { presents++; }
+BOOL xbox_D3D8InterpPresent(void) { presents++; return TRUE; }
 void xbox_D3D8InterpEnd(void) { }
 void d3d8_vsh_interp_registers(int *p,int *a,int *n) { *p=60;*a=64;*n=12; }
 uint32_t d3d8_vsh_bound_reads(int first,int count) { return 1; }
