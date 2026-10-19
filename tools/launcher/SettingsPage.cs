@@ -19,8 +19,8 @@ namespace TimeSplitters.Launcher
         readonly GameSettings model;
         readonly TextBlock status;
         readonly Slider fov;
-        readonly TextBox sensitivity, width, height;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes;
+        readonly TextBox sensitivity, width, height, discordId;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled;
         readonly ComboBox device, resolution, aspect, scale, filtering, pacing, interpolation;
         readonly Button[,] bindingButtons = new Button[24,4];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
@@ -176,6 +176,17 @@ namespace TimeSplitters.Launcher
             skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);startup.Children.Add(skipSplashes);
             var startupHint=Text("Skips opening logo videos and the idle attract video. Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
             tabs.Items.Add(new TabItem { Header="Graphics & resolution", Content=Scroll(graphics) }); RefreshBindings();
+            var discord=new StackPanel();
+            var presence=PageTheme.Section(discord,"Discord Rich Presence","Share your current game mode and elapsed session time on your Discord profile.");
+            discordEnabled=Check("Enable Discord Rich Presence",model.DiscordEnabled);discordEnabled.Name="DiscordPresenceEnabled";presence.Children.Add(discordEnabled);
+            discordId=Entry(model.DiscordApplicationId);discordId.Name="DiscordApplicationId";discordId.MaxLength=20;
+            Field(presence,"Application ID",discordId);
+            presence.Children.Add(Text("Create an application in the Discord Developer Portal, then copy General Information → Application ID here. This ID is public; no bot token or client secret is needed.",12));
+            var portal=Button("Open Discord Developer Portal");portal.HorizontalAlignment=HorizontalAlignment.Left;
+            portal.Click+=(s,e)=> { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://discord.com/developers/applications") { UseShellExecute=true }); } catch(Exception ex) { status.Text=ex.Message; } };
+            presence.Children.Add(portal);
+            presence.Children.Add(Text("Keep the Discord desktop app open and allow activity sharing in Discord. Changes apply on your next game launch. Requires a game build with Rich Presence support.",12));
+            tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
         }
         static string KeyName(string token)
         {
@@ -240,6 +251,7 @@ namespace TimeSplitters.Launcher
                 model.VerticalFov=(int)Math.Round(fov.Value);
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
+                model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem); model.FrameCap=(string)pacing.SelectedItem; model.Interpolation=Int32.Parse((string)interpolation.SelectedItem);
                 model.Save(); status.Foreground=Accent; status.Text="Settings saved. Changes apply on your next launch.";
                 if(Saved!=null)Saved();

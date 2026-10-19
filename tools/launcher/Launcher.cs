@@ -30,7 +30,8 @@ namespace TimeSplitters.Launcher
                 bool newsPreview = args.Length == 2 && args[0] == "--render-news-preview";
                 bool versionsPreview = args.Length == 2 && args[0] == "--render-versions-preview";
                 bool graphicsPreview = args.Length == 2 && args[0] == "--render-settings-graphics";
-                bool settingsPreview = graphicsPreview || (args.Length == 2 && args[0] == "--render-settings-preview");
+                bool discordPreview = args.Length == 2 && args[0] == "--render-settings-discord";
+                bool settingsPreview = discordPreview || graphicsPreview || (args.Length == 2 && args[0] == "--render-settings-preview");
                 bool preview = versionsPreview || newsPreview || repairPreview || diagnosticsPreview || settingsPreview || (args.Length == 2 && args[0] == "--render-preview");
                 bool fromBootstrap = args.Length == 2 && args[0] == "--from-bootstrap";
                 if (args.Length == 0)
@@ -52,7 +53,7 @@ namespace TimeSplitters.Launcher
                         var ui = new LauncherWindow(root, preview);
                         if (preview)
                         {
-                            if (settingsPreview) ui.ShowSettings(graphicsPreview?1:0);
+                            if (settingsPreview) ui.ShowSettings(discordPreview?2:graphicsPreview?1:0);
                             if (repairPreview || diagnosticsPreview) ui.ShowMaintenance(diagnosticsPreview);
                             if (newsPreview) ui.ShowNews();
                             if (versionsPreview) ui.ShowGameVersions();

@@ -22,7 +22,8 @@ def affected(paths, *, full=False):
                 'tests/launcher_updates.cs', 'tests/launcher_settings.cs', 'tests/launcher_maintenance.cs', 'tests/launcher_downloads.cs', 'tests/launcher_news.cs', 'tests/launcher_startup.cs',
                 'tests/launcher_crashes.cs', 'tests/launcher_sessions.cs',
                 'tests/test_launcher_startup.py', 'tests/package_launcher.py',
-                'tools/release/ImportGame.cs', 'config/pc-controls.default.json')):
+                'tools/release/ImportGame.cs', 'config/pc-controls.default.json',
+                'config/pc-discord.default.ini')):
             selected.add('launcher')
         elif path in ('tools/publish-release.py', 'tests/test_publish_release.py',
                       'tools/crash-symbols.py', 'tests/test_crash_symbols.py',

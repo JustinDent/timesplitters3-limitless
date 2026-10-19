@@ -6341,3 +6341,213 @@ were not validated by these loopback Online tests. MAC-033's experimental
 network-bot entry records the session-lifetime requirement for the eventual
 Mac network adapter. Other-device synchronization is unverified. Personal
 saves/settings were preserved; bounded runners recycle their disposable disks.
+
+## Issue #63 - Discord Rich Presence (2026-10-19)
+
+Implemented locally, uncommitted on `feature/63-discord-rich-presence`, based on
+main `c006c24`. The launcher has a Discord preferences tab with an enable switch
+and public Application ID. The default ID is `1561627743353962566`; packaged
+defaults remain off. The ignored source-checkout configuration is enabled with
+the ID supplied by the user. No release was published or installed over a
+running game. The pre-existing untracked `frame000.d3dcap` was left untouched.
+
+`src/pc_discord_model.c` shares configuration validation, game-mode policy and
+bounded JSON serialization. `src/pc_discord.c` is a Windows local named-pipe RPC
+worker with bounded overlapped I/O, READY gating, fragmented-frame assembly,
+64 KiB inbound limits, ping/pong, reconnect and disconnect cleanup. No Discord
+SDK DLL, player login or bot secret is required. The guest camera hook publishes
+plain snapshots once per second; no worker reads guest memory and the guest
+does no pipe I/O. Changed activity is coalesced to one update per 15 seconds;
+the elapsed timestamp is retained across modes and reconnects.
+
+Story gameplay can have runtime flags `0x80008` after its opening cutscene.
+Classifying mode solely by flags initially mislabeled that state Arcade. The
+final model uses the game's mode latched at `0x78AD20` by US `sub_002D38C0`,
+separately from menu selection at `0x78AD2C`. The isolated live test observed
+scene 2 with both mode fields 4. Regression coverage includes Story with zero
+flags and a different menu selection, preserving Story through pause/cutscenes.
+
+Windows validation: Windows 11 Pro x64, build 26300, MSVC 19.44/VS 2022 and the
+pinned runtime `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`; D3D11 backend.
+The supported US XBE SHA-256 was checked before the normal Release build and
+each isolated game run. Final Release executable SHA-256:
+`e411c413c625f617398e059562898066c25ad97dd9f1041fba3da414449bc722`.
+
+- The complete local patch stack validated and the normal Windows build/native
+  checks passed, including the new `tsfp_pc_discord_test` target.
+- Seven Discord pytest checks passed: policy/serialization, disabled/malformed/
+  absent-client behavior, fragmented handshake and ping/pong, reconnect, oversize
+  frame, error reply, no activity before READY and bounded silent-peer shutdown.
+  Automated pipe tests use a private compile-time endpoint and no real account.
+- Patch migration/tracking checks passed after adding the new build patch to
+  the historical fixture's deferred native/display-dependent set.
+- All 32 isolated launcher settings checks passed, including Discord ID
+  validation, persistence/backup, concurrent-edit rejection, save/cancel and
+  child-process configuration routing. Portable startup, FOV and Auto Lookahead
+  checks passed (five pytest checks). The Discord settings render was visually
+  inspected at 1152x772: `logs/discord-settings.png`.
+- Real Discord desktop RPC connected and acknowledged SET_ACTIVITY. The
+  corrected game's bounded isolated Test Lab run verified menu-to-Story,
+  cinematic-to-gameplay and pause activity transitions; selected evidence and
+  bounded logs are in `private/test-saves/discord-presence/verified.*`.
+  Canonical fixture and personal settings/saves were preserved, and test disks
+  recycled. The reproducible opt-in harness is `tests/discord_presence_game.py`.
+- The full launcher updater suite stopped at its existing running-game guard:
+  two pre-existing user game processes were open. They were preserved. The
+  affected launcher settings suite passed separately. No updater behavior changed.
+
+Actual LAN/Online/Arcade/Challenge activity cards, a second user's Discord card
+rendering, and native Mac integration were not manually verified. Their policy
+cases are covered by native tests. Mission/map names, party size and join
+invites are outside this first version. MAC-048 records the queued Mac transport,
+preferences and lifecycle adaptation. Other-device synchronization is unverified.
+
+## Issue #63 - Detailed Discord activity (2026-10-19)
+
+Extended the local, uncommitted `feature/63-discord-rich-presence` implementation
+based on main `c006c24`. Story now publishes its mission title, difficulty,
+single player/co-op and cinematic/gameplay/pause state. Arcade Custom publishes
+its game type, map, humans and bots; League and Challenge include the event
+name. Online/LAN publish map, game type, actual occupied human slots, bots,
+map capacity, host/member lobby state and match/pause state. No player names,
+server addresses or player-created map names are included. The default-off
+setting, worker isolation, 15-second coalescing and elapsed timer are retained.
+
+The shared `src/pc_discord_guest.h` decoder takes bounded read callbacks; only
+the guest thread touches guest RAM. It distinguishes active settings from
+frontend settings, scans the thirteen Story and seventeen Arcade records by
+running scene, reads the rules index separately from the engine category, and
+copies frontend event titles before their level-local strings unload. Title
+text is converted from the game's single-byte Latin-1 to bounded UTF-8; control
+characters and unreadable pointers fall back to the mode. MapMaker uses a
+generic built-in label. Network humans are counted from occupied roster bits,
+including split-screen players and holes left by departures; config slot extent
+and transport peer counts are not population counts.
+
+Live verification corrected two adjacent metadata fields: Story record +0 is
+the year and +2 is the mission title; the Arcade map name precedes its scene
+field by eight bytes, while following fields are thumbnail resources. Story
+cinematics use a separate scene and force their configuration difficulty to
+zero: presence uses the latched mission, selected Story difficulty at 0x78AD54
+and local player count during that transition, then active mission settings in
+play. Tests guard these distinctions and stale-menu cleanup.
+
+Windows 11 Pro x64 build 26300, MSVC 19.44 / VS 2022, D3D11; pinned runtime
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. The supported US XBE hash was verified
+by the normal build and each disposable game run. Current Release executable
+SHA-256: `acc74624fe345d10880ccdb45cf91a97714c572b9f9c15257f966ba08e11e9a6`.
+
+- Full patch validation, normal Windows Release build and native build checks
+  passed. The final decoder/policy also compiled under strict MSVC `/W4 /WX`.
+- Nine pytest checks passed: seven Discord checks plus FOV and Auto Lookahead.
+  Coverage includes bounded guest-memory reads, Story year/title distinction,
+  cinematic selection, co-op/difficulty, map/rules/event lookup and caching,
+  occupied roster bits with empty slots, host/member lobbies, LAN/Online active
+  counts, stale menus, Latin-1/UTF-8, long text, maximum JSON escaping, changed
+  population serialization, reconnect, fragmented frames, READY gating and exit.
+  Protocol tests use an isolated pipe and do not touch a real Discord account.
+- Real Discord accepted Story's `Time to Split` title through cinematic,
+  gameplay and pause. One earlier run was closed through the game window before
+  completing its assertions; subsequent complete bounded runs passed. The final
+  executable also passed with `Normal | Single player` retained through the
+  cinematic, gameplay and pause transitions.
+- Real Discord accepted Arcade Custom `Deathmatch`, map `Vietnam`, one human
+  and six bots through gameplay/pause. The default bot count was checked against
+  a rendered configuration capture. The corrected replay passed.
+- A replay initially intended for Custom selected League instead; its real
+  activity correctly showed `Rockets 101`, `Zeppelin`, `Deathmatch`, one human
+  and seven bots through gameplay/pause. Its Custom-specific assertion failed;
+  the navigation was corrected and the League trace retained as `league.*`.
+- The first LAN run exposed that a host with no remote peers can establish a
+  guest session before transport latency initializes. Such established sessions
+  now default to LAN unless the Online adapter explicitly reports Online;
+  disconnected/offline sessions still require both guest session guards.
+  Regression policy covers the no-peer case. The corrected real-client replay
+  passed from `LAN - Hosting lobby / Deathmatch | Subway | 1 player / 16` to
+  `LAN - Deathmatch / Subway | 1 player / 16 | Hosting | In game`. A rendered
+  Subway gameplay capture was inspected. The old result's misleading sixteen
+  players came from the engine's reserved slot extent; occupied-slot counting
+  now reports the actual one human.
+
+All gameplay validation uses `private/test-saves/discord-presence` and the
+canonical unlocked Test Lab fixture with isolated controls, save and both display
+paths. Logs are bounded to 4 MiB each; runs are limited to 95 seconds and owned
+virtual disks are recycled. Existing user game processes and personal files are
+preserved. MAC-048 records the shared decoder and remaining native adaptation.
+Actual two-peer Online/Internet activity and live Challenge/co-op cards were
+not exercised in this follow-up; their shared decoding/formatting paths have
+regression coverage. No commit, push or release publication was performed;
+other-device execution and another user's Discord card appearance remain
+unverified.
+
+## Issue #63 - Pull request preparation (2026-10-19)
+
+Added the portable Discord policy test and Windows-only private-pipe tests to
+the explicit runtime CI test list. Push routing includes Discord sources,
+configuration and tests; a default Discord settings change selects launcher
+validation. Package fixtures now include the new default/settings guide and
+assert that the archive carries disabled defaults rather than the personal
+source-checkout configuration.
+
+The complete Windows `tools/build-launcher.ps1 -Test` run passed now that no game
+process was open: 100 updater regressions, 27 download/recovery checks, 11 game
+version checks, 10 startup recovery checks, 19 release-news checks, 32 settings
+checks, crash-report checks, 14 unfinished-session checks and 20 maintenance
+checks. The earlier running-game guard in the implementation notes is a
+historical result, no longer an outstanding validation gap. Synthetic launcher
+packaging passed three pytest checks plus two subtests. No real game package or
+release was published; artwork, saves, personal configs and the existing
+`frame000.d3dcap` remain local.
+
+The final PR-preparation pytest run passed 76 checks covering CI suite routing,
+patch transitions/tracking, Discord policy and private IPC, and launcher startup
+configuration routing. `git diff --check` passed. The game runtime sources and
+patch stack are unchanged from the live-tested executable recorded above.
+
+Feature implementation and validation committed as `ff8d6c0240bdeccf85a49034dca121071a0adfec`
+on `feature/63-discord-rich-presence`; MAC-048 links that source revision.
+
+## Issue #63 - Merge conflict resolution (2026-10-19)
+
+Merged main `5e89eaa` (terminal-camera depth clears, PR #168) into the Discord
+feature branch for PR #169. Kept both terminal-depth and Discord tests in the
+runtime CI list, and retained both Mac backlog entries. Main already allocated
+MAC-045 to the terminal-camera fix, so Discord is now MAC-046 and its references
+are updated. Both `tsfp.ps1` test entries and validation records are retained.
+Resolution was performed in a temporary source-only worktree because the shared
+checkout had unrelated uncommitted menu-image work. No personal settings,
+shared build, game data or that in-progress work was changed.
+
+The complete merged patch stack applied successfully to a separate sparse
+checkout of the pinned upstream runtime (51 runtime files updated). All 75
+selected Windows checks passed: CI scope, patch transitions/tracking,
+terminal-depth production-code and missed-clear mutation tests, and Discord
+policy/private IPC. Backlog IDs are unique, both test suites are in CI, and
+`git diff --check` passed. The combined game executable was not rebuilt and
+native Mac execution was not rerun for this conflict-resolution update; prior
+feature builds/live tests and main's terminal-fix evidence remain recorded above.
+
+## Issue #63 - Current main backlog conflict (2026-10-19)
+
+Updated PR #169 from its GitHub merge `577726b` to include main `a8fc545`,
+including the merged launcher v1.2.17 and main-menu image fidelity work.
+The new conflict was another insertion at the top of MAC_PORT_BACKLOG.md.
+Preserved menu fidelity (MAC-047), update rename contention (MAC-046), terminal
+camera clears (MAC-045) and all existing entries. Discord is now MAC-048, placed
+at the end of the backlog to avoid the common top-of-file insertion conflict.
+The earlier MAC-046 allocation is historical; current Discord references use
+MAC-048. Both Discord and menu/terminal CI coverage remain in the merged list.
+
+Validation on Windows 11 x64: the complete patch stack migrated successfully
+(two runtime files updated in the isolated upstream checkout). All 89 selected
+checks passed across CI routing, patch migration/tracking, terminal depth,
+Discord policy/private IPC, menu GPU sampling, UI layout, FOV and launcher
+startup. Full launcher regressions passed with the integrated v1.2.17 code:
+104 updater checks, 28 download/recovery checks, 11 version checks, 10 startup
+checks, 19 news checks, all 32 settings checks, crash report checks, 14 session
+checks and 20 maintenance checks. Packaging passed three checks and two
+subtests. All main backlog entries are preserved and Discord uniquely adds
+MAC-048. No conflict markers remain and `git diff --check` passed.
+The combined game executable and native Mac runtime were not rebuilt/retested
+for this merge; earlier build/live-game evidence remains scoped to its recorded
+revision. Personal files and the primary checkout were preserved.

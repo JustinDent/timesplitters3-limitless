@@ -1,5 +1,10 @@
 # Windows release launcher
 
+Game settings now includes a **Discord** tab for optional Rich Presence.
+The public project Application ID is prefilled; enabling it takes effect on the
+next game launch. Both launcher and game need builds containing issue #63.
+See [Discord setup and configuration](discord-presence.md).
+
 `TimeSplitters Launcher.exe` is the portable Windows x64 bootstrap. Extract the
 whole launcher ZIP into a writable installation folder, keeping the application
 `Bin/TimeSplitters.App.exe` and `Support/Launcher/manifest.json` beside it in

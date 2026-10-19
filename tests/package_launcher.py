@@ -55,12 +55,16 @@ class LauncherPackaging(unittest.TestCase):
                          root / 'build/launcher/TimeSplitters Launcher.exe',
                          root / 'build/launcher/Bin/TimeSplitters.App.exe',
                          root / 'config/pc-controls.default.json', root / 'tools/playable-launch.ps1',
+                         root / 'config/pc-discord.default.ini', root / 'docs/discord-presence.md',
                          root / 'tools/start-game.ps1', root / 'tools/release/ImportGame.cs',
                          root / 'tools/launcher/GameMonogram.NOTICE.txt',
                          root / 'tools/release/Import-game.ps1', root / 'tools/release/Play.cmd',
                          root / 'Data/default.xbe', root / 'Saves/profile',
                          root / 'Settings/pc-controls.json']:
                 put(path)
+            discord_default = (ROOT / 'config/pc-discord.default.ini').read_bytes()
+            (root / 'config/pc-discord.default.ini').write_bytes(discord_default)
+            (root / 'config/pc-discord.ini').write_text('TSFP_DISCORD_V1 1 999999999999999999\n')
             manifest_path = root / 'build/launcher/Support/Launcher/manifest.json'
             manifest_path.parent.mkdir(parents=True, exist_ok=True)
             manifest_path.write_text(json.dumps({'schema': 1, 'version': '1.1.0', 'files': {}}))
@@ -87,6 +91,10 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertIn(prefix + 'TimeSplitters Launcher.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/TimeSplitters.App.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/tsfp_crash_helper.exe', archive.namelist())
+                self.assertIn(prefix + 'Discord-setup.txt', archive.namelist())
+                self.assertEqual(archive.read(prefix + 'Settings/pc-discord.ini'), discord_default)
+                self.assertTrue(discord_default.startswith(b'TSFP_DISCORD_V1 0 '))
+                self.assertFalse(any('/config/pc-discord.ini' in name for name in archive.namelist()))
                 self.assertFalse(any(name.endswith('.pdb') for name in archive.namelist()))
                 self.assertIn(prefix + 'Support/Launcher/manifest.json', archive.namelist())
                 self.assertIn(prefix + 'Licenses/Game-icon-lettering.txt', archive.namelist())
