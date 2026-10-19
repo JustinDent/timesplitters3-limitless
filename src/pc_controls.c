@@ -8,6 +8,7 @@
 #include "pc_settings.h"
 #include "pc_prompts.h"
 #include "pc_window_theme.h"
+#include "pc_menu_theme.h"
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -215,6 +216,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     int captured, frontend;
     *result = 0;
     if (window != window_handle) return 0;
+    if (pc_menu_theme_message(window,message,wp,lp,result)) return 1;
     if (message == WM_SETTINGCHANGE || message == WM_THEMECHANGED) pc_window_theme_apply(window);
     if (message == WM_TIMER && wp == PC_DEBUG_TIMER) { pc_debug_poll(); return 1; }
     if (message == WM_DESTROY) { pc_settings_detach(window); pc_debug_shutdown(); }

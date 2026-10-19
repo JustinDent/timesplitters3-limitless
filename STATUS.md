@@ -1,5 +1,56 @@
 # Measured progress
 
+## Windows game UI theme follow-up
+
+2026-10-18, `feature/system-theme-game-ui` (implementation and validation in
+this revision), based on the unmerged
+title-bar commit `7219fec` (base main `a5d61ea`). Native PC Settings menu bar and
+popups use owned brushes and documented owner drawing, retaining native menu
+commands, state/checkmarks, mnemonic handling and F1 visibility. Dialog wrappers
+theme backgrounds, edit/static text, binding lists/headers, checkboxes and
+buttons without changing save/capture logic. Dark drawing is disabled for Light
+or high contrast. The Online browser/invitation use an isolated Tk dark theme,
+restoring the original native palette on Light/high contrast and checking for
+changes once per second. The new Python adapter is bundled and hashed in the
+network identity. Launcher interior and game rendering are unchanged.
+The modern-look revision uses Vista-derived Online layouts with rounded image
+elements, native label/padding behavior, blue checkbox indicators, and focus,
+pressed, hover and disabled states. It avoids applying a Clam control theme;
+the dark tree field alone uses its colorable field primitive. Native dialog
+custom drawing now uses rounded button/checkbox surfaces and blue accents.
+The revised Online preview was captured with example data and visually reviewed.
+
+Online captions now apply after Tk maps its native window and are checked on
+each refresh, repairing wrapper resets even when the theme has not changed.
+Real mapped browser/invitation HWND tests cover dark/light captions, re-showing
+windows and recovery after a forced native caption reset.
+
+Windows x64 build 26300 / Python 3.14.2 / MSVC x64: 49 affected theme, Online,
+host, content-identity and CI-routing regressions passed. Tests cover menu brush,
+hover/measurements/mnemonics, list/dialog colors, restoring native palettes
+(including an original clam theme), timer cleanup and bundling/identity.
+`tsfp.ps1 Build` verified the supported US XBE/patch stack, rebuilt and sealed
+the current runtime and passed its native settings/debug/input/render/network
+checks; disposable build test disks were recycled.
+The caption-fix rebuild passed on retry after an initial access-violation crash
+in the unrelated ghost-target graphics replay test; the retry passed that check
+and completed executable sealing. All 49 affected Python tests passed with
+access to the local supported XBE.
+The dark Online window and
+its taller invitation dialog keep the copy/return controls visible with the
+dark widget sizing. The actual game menu theme context/brush and both caption
+notification handlers were checked in a 35-second isolated Test Lab session;
+F1 hid/restored the toolbar without changing outer window bounds, and the
+runner recycled its disposable virtual disks. The dark Online window and
+invitation were captured with example data and visually inspected; they were
+not real online sessions and did not contact a server or change personal theme
+settings. Actionlint and diff checks passed.
+
+Automated dialog/theme tests use disposable fixtures. Human Windows Settings
+switching, high-contrast visual review and older-Windows rendering remain
+pending. No Mac appearance support or cross-device synchronization is inferred;
+see [MAC-021](MAC_PORT_BACKLOG.md#mac-021--published-release-launcher-and-pre-game-settings).
+
 ## Windows title-bar theme experiment
 
 PR #149 integration: merged main `0545ebe`, preserving both validation histories
