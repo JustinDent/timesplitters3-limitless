@@ -29,16 +29,17 @@ def main():
     parser.add_argument('--setup', action='store_true', help='Install shared pinned Python requirements and build the symbol scanner')
     parser.add_argument('--generate', action='store_true', help='Regenerate game C from the verified local XBE')
     parser.add_argument('--test', action='store_true', help='Run native platform, MMIO and path regression tests after building')
+    parser.add_argument('--renderer', choices=('gl','vulkan'), default='gl',
+                        help='Native renderer; Vulkan opts into the common Xbox frontend')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('The native bring-up target currently supports Apple Silicon macOS only.')
-    branch = subprocess.check_output(['git', 'branch', '--show-current'], cwd=ROOT, text=True).strip()
-    if branch != 'mac-port':
-        raise SystemExit('Native work belongs on mac-port; switch explicitly before building.')
     pins = (ROOT / 'tsfp.ps1').read_text()
     revision = re.search(r"\$revision = '([a-f0-9]{40})'", pins)[1]
     expected = re.search(r"\$expectedHash = '([A-F0-9]{64})'", pins)[1].lower()
     xbe = ROOT / 'private/game/default.xbe'
+    if not xbe.is_file():
+        raise SystemExit('Missing private/game/default.xbe; import the supported US game before building.')
     if hashlib.sha256(xbe.read_bytes()).hexdigest() != expected:
         raise SystemExit('Unsupported XBE; preserve the supported US build.')
     if shutil.disk_usage(ROOT).free < 2 * 1024**3:
@@ -81,20 +82,29 @@ def main():
                if name not in generated.read_text()]
     if missing:
         raise SystemExit('Generated wrappers are stale; regenerate with --generate.')
+    # Shared debug code uses the same content/source identity on both hosts.
+    # This supplies build provenance, not a native multiplayer implementation.
+    run(PYTHON, ROOT / 'tools/network-identity.py', '--output', BUILD / 'generated')
     command = [CMAKE, '-S', UPSTREAM / 'titles/futureperfect', '-B', BUILD, '-G', 'Ninja',
                f'-DCMAKE_MAKE_PROGRAM={NINJA}', '-DCMAKE_BUILD_TYPE=Debug',
                '-DCMAKE_OSX_ARCHITECTURES=arm64', f'-DTSFP_NATIVE_DIR={ROOT / "src/native"}']
     # Use an installed crypto dependency, without independently upgrading it.
     if Path('/opt/homebrew/opt/openssl@3').exists():
         command.append('-DOPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3')
+    command.append('-DTSFP_NATIVE_RHI='+('ON' if args.renderer=='vulkan' else 'OFF'))
+    if args.renderer=='vulkan':
+        import vulkan_sdk
+        command.append('-DTSFP_VULKAN_SDK='+str(vulkan_sdk.verify_install()))
     run(*command)
     run(CMAKE, '--build', BUILD, '--target', 'futureperfect_recomp', '--parallel', '4')
     run('file', BUILD / 'futureperfect_recomp')
     # Include shared PC source hashes as well as the native adapters.
     sources = sorted((ROOT / 'patches').glob('*.patch')) + sorted((ROOT / 'src').rglob('*'))
     manifest = dict(source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+                    working_tree_changes=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,
-                    build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
+                    compatibility_identity=json.loads((BUILD / 'generated/network-identity.json').read_text())['compatibility'],
+                    renderer=args.renderer, build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
                     compiler=subprocess.check_output(['clang', '--version'], text=True).splitlines()[0],
                     executable_sha256=hashlib.sha256((BUILD / 'futureperfect_recomp').read_bytes()).hexdigest(),
                     source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources if p.is_file()},
@@ -112,7 +122,11 @@ def main():
                        RECOMP_SAVE_DIR=str(test), RECOMP_GAME_DIR=str(ROOT / 'private/game'),
                        RECOMP_DISPLAY_CONFIG=str(test / 'runtime.conf'),
                        TSFP_DISPLAY_CONFIG=str(test / 'pc-display.ini'),
-                       XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'))
+                       XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'),
+                       XDG_CACHE_HOME=str(test / 'xdg-cache'))
+            if args.renderer=='vulkan':
+                env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(),'kosmickrisp')
+                env['RECOMP_VK_VALIDATION']='1'
             for check in ('--renderer-self-test', '--input-self-test', '--settings-self-test', '--debug-self-test'):
                 if check in ('--settings-self-test', '--debug-self-test'):
                     settings = json.loads((ROOT / 'tests/fixtures/pc-controls.json').read_text())
@@ -122,8 +136,13 @@ def main():
                     control_path.write_text(json.dumps(settings))
                     before = control_path.read_bytes()
                     env['RECOMP_INPUT_CONFIG'] = str(control_path)
-                subprocess.run([str(BUILD / 'futureperfect_recomp'), check],
-                               cwd=ROOT, env=env, check=True, timeout=20)
+                result=subprocess.run([str(BUILD / 'futureperfect_recomp'), check],
+                               cwd=ROOT, env=env, timeout=20,
+                               capture_output=True,text=True)
+                print(result.stdout,end='');print(result.stderr,end='',file=sys.stderr)
+                result.check_returncode()
+                if args.renderer=='vulkan' and check=='--renderer-self-test':
+                    vulkan_sdk.require_clean_validation(result.stdout+result.stderr)
                 if check in ('--settings-self-test', '--debug-self-test'):
                     saved = json.loads(control_path.read_text())
                     assert saved['keep_test_member'] == settings['keep_test_member']

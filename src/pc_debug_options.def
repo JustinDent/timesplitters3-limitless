@@ -1,0 +1,8 @@
+/* Shared persisted boolean settings. Add entries here to expose them in both
+ * native dialogs and the shared JSON reader/writer. Keep existing keys stable.
+ * Required capabilities describe behavior, not operating-system names. */
+PC_DEBUG_OPTION(FPS, show_fps, "Show FPS (F9 toggles during play)", 0)
+PC_DEBUG_OPTION(FRAME_TIME, show_frame_time, "Show average guest frame interval", 0)
+PC_DEBUG_OPTION(ISSUES, show_issues, "Show error / warning counters (E / W)", 0)
+PC_DEBUG_OPTION(LOG, log_performance, "Log performance samples (up to twice per second)", 0)
+PC_DEBUG_OPTION(LATENCY, show_latency, "Show network latency (round-trip time)", PC_DEBUG_CAP_NETWORK)

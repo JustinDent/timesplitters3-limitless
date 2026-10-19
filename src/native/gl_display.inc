@@ -56,7 +56,10 @@ static void native_scene_present(void) {
     GLint read,draw;glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&read);glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&draw);
     GLboolean scissor=glIsEnabled(GL_SCISSOR_TEST),mask[4];GLfloat clear[4];
     glGetBooleanv(GL_COLOR_WRITEMASK,mask);glGetFloatv(GL_COLOR_CLEAR_VALUE,clear);
-    int w,h;SDL_GetWindowSizeInPixels(g.window,&w,&h);unsigned shape_w,shape_h;pc_display_shape(&shape_w,&shape_h);
+    uint32_t drawable_w,drawable_h;
+    if(!rhi_drawable_size(g.window,&drawable_w,&drawable_h))return;
+    int w=(int)drawable_w,h=(int)drawable_h;
+    unsigned shape_w,shape_h;pc_display_shape(&shape_w,&shape_h);
     int width=w,height=(int)((double)w*shape_h/shape_w);
     if(height>h){height=h;width=(int)((double)h*shape_w/shape_h);}
     glDisable(GL_SCISSOR_TEST);glColorMask(1,1,1,1);glClearColor(0,0,0,1);

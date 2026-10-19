@@ -12,6 +12,34 @@ spec = importlib.util.spec_from_file_location('native_probe', ROOT / 'tools/test
 probe = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(probe)
 
+build_spec = importlib.util.spec_from_file_location('native_build', ROOT / 'tools/build-native-mac.py')
+builder = importlib.util.module_from_spec(build_spec)
+build_spec.loader.exec_module(builder)
+
+
+@pytest.mark.parametrize('game', [None, b'unsupported revision'])
+def test_native_build_accepts_focused_branches_but_validates_game(tmp_path, monkeypatch, game):
+    (tmp_path / 'tsfp.ps1').write_bytes((ROOT / 'tsfp.ps1').read_bytes())
+    if game is not None:
+        path = tmp_path / 'private/game/default.xbe'
+        path.parent.mkdir(parents=True)
+        path.write_bytes(game)
+    monkeypatch.setattr(builder, 'ROOT', tmp_path)
+    monkeypatch.setattr(builder.platform, 'system', lambda: 'Darwin')
+    monkeypatch.setattr(builder.platform, 'machine', lambda: 'arm64')
+    monkeypatch.setattr(sys, 'argv', ['build-native-mac.py'])
+    # A focused branch is allowed; missing/wrong data must stop before setup,
+    # generation or configuration, without inspecting or switching branches.
+    def unexpected(*args, **kwargs):
+        pytest.fail('Build touched tools or Git before verifying its game input')
+    monkeypatch.setattr(builder.subprocess, 'check_output', unexpected)
+    monkeypatch.setattr(builder, 'run', unexpected)
+    message = 'Missing private/game/default.xbe' if game is None else 'Unsupported XBE'
+    with pytest.raises(SystemExit, match=message):
+        builder.main()
+    assert not (tmp_path / '.venv').exists()
+    assert not (tmp_path / 'build').exists()
+
 
 def test_all_runtime_settings_are_isolated(tmp_path, monkeypatch):
     monkeypatch.setenv('RECOMP_LOG_FILE', '/personal/log')
@@ -21,7 +49,7 @@ def test_all_runtime_settings_are_isolated(tmp_path, monkeypatch):
     test = tmp_path / 'private/test-saves/native-mac'
     env = probe.isolated_environment(tmp_path, test)
     for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
-                'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME'):
+                'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
         assert Path(env[key]).is_relative_to(test)
     assert env['RECOMP_LOG_FILE'] == str(tmp_path / 'logs/native-boot.err')
     assert 'RECOMP_INPUT_SEQ' not in env
@@ -83,3 +111,121 @@ def test_capture_is_bounded_and_refuses_symlinks(tmp_path):
     with pytest.raises(RuntimeError, match='Unexpected native capture file'):
         probe.capture_environment(tmp_path)
     assert target.read_bytes() == b'keep'
+
+
+@pytest.fixture
+def unlocked_fixture(tmp_path, monkeypatch):
+    import hashlib
+    import struct
+    import testing_profile as profile
+    game = tmp_path / 'private/game/default.xbe'
+    game.parent.mkdir(parents=True)
+    game.write_bytes(b'test-only executable')
+    monkeypatch.setattr(profile, 'XBE_SHA256', hashlib.sha256(game.read_bytes()).hexdigest())
+    seed = tmp_path / 'private/test-saves/seed'
+    title = seed / 'UserData/45410066'
+    slot = title / '16D15BD8D404'
+    slot.mkdir(parents=True)
+    body = bytearray(profile.BODY_SIZE)
+    struct.pack_into('<I', body, 0x1EE0, 2)
+    (slot / 'tsftrpft').write_bytes(body + profile.signature(body))
+    for name in ('TitleMeta.xbx', 'TitleImage.xbx', 'SaveImage.xbx'):
+        (title / name).write_bytes(b'test-only metadata')
+    controls = tmp_path / 'tests/fixtures/pc-controls.json'
+    controls.parent.mkdir(parents=True)
+    controls.write_text('{}')
+    fixture = profile.create_fixture(tmp_path, seed)
+    return profile, fixture
+
+
+def test_native_unlocked_copy_isolated_reset_and_locked(tmp_path, monkeypatch, unlocked_fixture):
+    profile, fixture = unlocked_fixture
+    before = {p.relative_to(fixture):p.read_bytes() for p in fixture.rglob('*') if p.is_file()}
+    monkeypatch.setenv('XDG_CONFIG_HOME', '/personal/config')
+    monkeypatch.setenv('XDG_DATA_HOME', '/personal/data')
+    monkeypatch.setenv('TSFP_PC_INPUT_REPLAY', '/personal/replay')
+    test = tmp_path / 'private/test-saves/native-mac'
+    test.mkdir(parents=True)
+    old_save = test / 'existing-profile'
+    old_save.write_bytes(b'preserve')
+    for iteration in range(2):
+        with probe.test_session(tmp_path, test, unlocked=True) as env:
+            run = test / 'unlocked'
+            for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
+                        'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
+                assert Path(env[key]).is_relative_to(run)
+            assert 'TSFP_PC_INPUT_REPLAY' not in env
+            assert env['RECOMP_XMV_PLAY'] == '0'
+            saved = next(Path(env['RECOMP_SAVE_DIR']).rglob('tsftrpft'))
+            assert saved.read_bytes() == next(fixture.rglob('tsftrpft')).read_bytes()
+            saved.write_bytes(b'progress from disposable session')
+            controls = Path(env['RECOMP_INPUT_CONFIG'])
+            if iteration:
+                assert controls.read_text() == '{"custom":true}'
+            controls.write_text('{"custom":true}')
+            with pytest.raises(FileExistsError):
+                with probe.test_session(tmp_path, test, unlocked=True):
+                    pytest.fail('Concurrent session was allowed')
+            with pytest.raises(ValueError, match='in use'):
+                profile.prepare_run(tmp_path, run)
+            assert (test / 'run.lock').exists()
+        assert not (test / 'run.lock').exists()
+        assert not (test / 'unlocked/run.lock').exists()
+    assert before == {p.relative_to(fixture):p.read_bytes() for p in fixture.rglob('*') if p.is_file()}
+    assert old_save.read_bytes() == b'preserve'
+
+
+def test_native_missing_fixture_does_not_launch_or_leave_lock(tmp_path):
+    test = tmp_path / 'private/test-saves/native-mac'
+    with pytest.raises(FileNotFoundError):
+        with probe.test_session(tmp_path, test, unlocked=True):
+            pytest.fail('Missing fixture was accepted')
+    assert not (test / 'run.lock').exists()
+
+
+def test_native_session_failure_cleans_disks_before_releasing_lock(tmp_path, monkeypatch, unlocked_fixture):
+    test = tmp_path / 'private/test-saves/native-mac'
+    calls = []
+    def cleanup(root, directory):
+        assert (test / 'run.lock').exists()
+        assert (test / 'unlocked/run.lock').exists()
+        calls.append(directory)
+    monkeypatch.setattr(probe, 'recycle_test_disks', cleanup)
+    with pytest.raises(RuntimeError, match='child startup failed'):
+        with probe.test_session(tmp_path, test, unlocked=True):
+            raise RuntimeError('child startup failed')
+    assert calls == [test]
+    assert not (test / 'run.lock').exists()
+    assert not (test / 'unlocked/run.lock').exists()
+
+
+def test_native_fixture_destination_refuses_symlink(tmp_path, unlocked_fixture):
+    test = tmp_path / 'private/test-saves/native-mac'
+    test.mkdir(parents=True)
+    personal = tmp_path / 'private/saves'
+    personal.mkdir(parents=True)
+    create_symlink(test / 'unlocked', personal)
+    with pytest.raises(ValueError, match='linked'):
+        with probe.test_session(tmp_path, test, unlocked=True):
+            pytest.fail('Linked destination was accepted')
+    assert not list(personal.iterdir())
+    assert not (test / 'run.lock').exists()
+
+
+def test_native_fixture_rejects_redirected_xdg_config(tmp_path, unlocked_fixture):
+    test = tmp_path / 'private/test-saves/native-mac'
+    with probe.test_session(tmp_path, test, unlocked=True):
+        pass
+    personal = tmp_path / 'personal-config'
+    personal.mkdir()
+    create_symlink(test / 'unlocked/xdg-config', personal)
+    with pytest.raises(ValueError, match='linked'):
+        with probe.test_session(tmp_path, test, unlocked=True):
+            pytest.fail('XDG redirect was accepted')
+    assert not list(personal.iterdir())
+    assert not (test / 'run.lock').exists()
+
+
+def test_present_counts_require_actual_backend_evidence():
+    assert probe.present_counts('[NATIVE-GUEST] completed frame 600') is None
+    assert probe.present_counts('[PRESENT] backend=vulkan total=300 guest=180 interpolated=119 other=1 skipped=4 failed=2') == dict(total=300,guest=180,interpolated=119,other=1,skipped=4,failed=2)

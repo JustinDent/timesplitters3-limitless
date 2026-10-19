@@ -99,10 +99,26 @@ static unsigned native_read_input(const BYTE *p,UINT available,RhiFormat f,float
     }
     return 0;
 }
+/* Use the shared output-mask decoder, including NV2A's unusual scalar fog
+ * mask, and the shared unwritten marker used by the Windows combiner. */
+static int native_program_writes_fog(const NV2AVshProgram *p) {
+    for(int i=0;i<p->length;i++) {
+        const NV2AVshInstruction *in=&p->insns[i];
+        if(in->mac_op>NV2A_VSH_MAC_NOP && in->mac_op<NV2A_VSH_MAC_ARL &&
+           in->mac_dst.output_reg==NV2A_VSH_OUT_FOG && nv2a_vsh_output_write_mask(&in->mac_dst))return 1;
+        if(in->ilu_op>NV2A_VSH_ILU_NOP && in->ilu_op<=NV2A_VSH_ILU_LIT &&
+           in->ilu_dst.output_reg==NV2A_VSH_OUT_FOG && nv2a_vsh_output_write_mask(&in->ilu_dst))return 1;
+        if(in->is_final)break;
+    }
+    return 0;
+}
 static float *native_shader_vertices(const void *data,UINT count,UINT stride) {
     if(!d3d8_vsh_is_programmable(g.current_vsh)||!count||count>1000000)return NULL;
     NV2AVshSlot *s=&native_slots[g.current_vsh-0x10000];
-    float *out=malloc((size_t)count*24*sizeof(float));if(!out)return NULL;
+    float *out=malloc((size_t)count*25*sizeof(float));if(!out)return NULL;
+    int writes_fog=native_program_writes_fog(&native_programs[g.current_vsh-0x10000]);
+    /* Shared shader literal is parenthesized; parse its numeric payload once. */
+    float unwritten_fog=strtof(D3D8_VSH_FOG_UNWRITTEN+1,NULL);
     for(UINT i=0;i<count;i++) {
         float inputs[16][4];memcpy(inputs,native_inputs,sizeof inputs);
         for(int j=0;j<s->decl_count;j++) {
@@ -112,20 +128,22 @@ static float *native_shader_vertices(const void *data,UINT count,UINT stride) {
             }
         }
         NV2AVshState st;nv2a_vsh_execute(&native_programs[g.current_vsh-0x10000],inputs,native_constants,NV2A_VS_MAX_CONSTANTS,&st);
-        float *v=out+i*24;memcpy(v,st.out[NV2A_VSH_OUT_POS],16);
+        float *v=out+i*25;memcpy(v,st.out[NV2A_VSH_OUT_POS],16);
         if(native_screen) {
             for(int k=0;k<4;k++)v[k]=(v[k]-native_offset[k])/native_scale[k];
             if(v[3]==0)v[3]=1;for(int k=0;k<3;k++)v[k]*=v[3];
         }
         v[2]=2*v[2]-v[3];
         memcpy(v+4,st.out[NV2A_VSH_OUT_D0],16);memcpy(v+8,st.out[NV2A_VSH_OUT_T0],64);
+        v[24]=writes_fog?st.out[NV2A_VSH_OUT_FOG][0]:unwritten_fog;
     }
     return out;
 }
 static void native_shader_attribs(void) {
-    glEnableVertexAttribArray(0);glVertexAttribPointer(0,4,GL_FLOAT,GL_FALSE,96,0);
-    glEnableVertexAttribArray(1);glVertexAttribPointer(1,4,GL_FLOAT,GL_FALSE,96,(void*)16);
-    for(int i=0;i<4;i++){glEnableVertexAttribArray(2+i);glVertexAttribPointer(2+i,4,GL_FLOAT,GL_FALSE,96,(void*)(uintptr_t)(32+i*16));}
+    glEnableVertexAttribArray(0);glVertexAttribPointer(0,4,GL_FLOAT,GL_FALSE,100,0);
+    glEnableVertexAttribArray(1);glVertexAttribPointer(1,4,GL_FLOAT,GL_FALSE,100,(void*)16);
+    for(int i=0;i<4;i++){glEnableVertexAttribArray(2+i);glVertexAttribPointer(2+i,4,GL_FLOAT,GL_FALSE,100,(void*)(uintptr_t)(32+i*16));}
+    glEnableVertexAttribArray(6);glVertexAttribPointer(6,1,GL_FLOAT,GL_FALSE,100,(void*)96);
     glUniform1i(g.u_use_xform,2);
 }
 

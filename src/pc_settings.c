@@ -342,6 +342,20 @@ void pc_settings_show(HWND game)
 enum { ID_DEBUG_FPS=200, ID_DEBUG_TIME, ID_DEBUG_ISSUES, ID_DEBUG_LOG,
        ID_DEBUG_STATS, ID_DEBUG_RECENT, ID_DEBUG_FOLDER, ID_DEBUG_CLEAR, ID_DEBUG_HELP, ID_DEBUG_LATENCY };
 
+/* Preserve existing automation/control IDs; new shared options get a private
+ * ID range automatically. OS widget IDs stay out of the common definitions. */
+static int debug_control_id(unsigned option)
+{
+    switch(option) {
+    case PC_DEBUG_OPTION_FPS:return ID_DEBUG_FPS;
+    case PC_DEBUG_OPTION_FRAME_TIME:return ID_DEBUG_TIME;
+    case PC_DEBUG_OPTION_ISSUES:return ID_DEBUG_ISSUES;
+    case PC_DEBUG_OPTION_LOG:return ID_DEBUG_LOG;
+    case PC_DEBUG_OPTION_LATENCY:return ID_DEBUG_LATENCY;
+    default:return 400+(int)option;
+    }
+}
+
 static void debug_refresh(HWND d)
 {
     PcDebugSnapshot stats;
@@ -376,26 +390,20 @@ static INT_PTR CALLBACK debug_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
         RECT r; int width,height;
         GetClientRect(d,&r); width=r.right; height=r.bottom;
         pc_debug_get(&options);
-        control(d,"BUTTON","Show FPS (F9 toggles during play)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_FPS);
-        control(d,"BUTTON","Show average frame time",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_TIME);
-        control(d,"BUTTON","Show error / warning counters (E / W)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_ISSUES);
-        control(d,"BUTTON","Write performance samples to log (twice per second)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_LOG);
-        control(d,"BUTTON","Show network latency (round-trip time)",WS_TABSTOP|BS_AUTOCHECKBOX,ID_DEBUG_LATENCY);
-        place(d,ID_DEBUG_FPS,16,12,width-32,24);
-        place(d,ID_DEBUG_TIME,16,40,width-32,24);
-        place(d,ID_DEBUG_ISSUES,16,68,width-32,24);
-        place(d,ID_DEBUG_LOG,16,96,width-32,24);
-        place(d,ID_DEBUG_LATENCY,16,124,width-32,24);
-        CheckDlgButton(d,ID_DEBUG_FPS,options.show_fps?BST_CHECKED:BST_UNCHECKED);
-        CheckDlgButton(d,ID_DEBUG_TIME,options.show_frame_time?BST_CHECKED:BST_UNCHECKED);
-        CheckDlgButton(d,ID_DEBUG_ISSUES,options.show_issues?BST_CHECKED:BST_UNCHECKED);
-        CheckDlgButton(d,ID_DEBUG_LOG,options.log_performance?BST_CHECKED:BST_UNCHECKED);
-        CheckDlgButton(d,ID_DEBUG_LATENCY,options.show_latency?BST_CHECKED:BST_UNCHECKED);
-        control(d,"STATIC","",0,ID_DEBUG_STATS); place(d,ID_DEBUG_STATS,16,164,width-32,62);
+        unsigned row=0;
+        for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++) {
+            if(!pc_debug_option_available(i,PC_DEBUG_CAP_NETWORK))continue;
+            int id=debug_control_id(i);
+            control(d,"BUTTON",pc_debug_option(i)->label,WS_TABSTOP|BS_AUTOCHECKBOX,id);
+            place(d,id,16,12+(int)row++*28,width-32,24);
+            CheckDlgButton(d,id,pc_debug_option_value(&options,i)?BST_CHECKED:BST_UNCHECKED);
+        }
+        int extra=((int)pc_debug_option_count(PC_DEBUG_CAP_NETWORK)-5)*28;
+        control(d,"STATIC","",0,ID_DEBUG_STATS); place(d,ID_DEBUG_STATS,16,164+extra,width-32,62);
         control(d,"STATIC","Recent log diagnostics (up to 12). Matches include failed calls, unsupported features and warnings;\nthis does not detect every gameplay or visual anomaly. Pause the game before opening settings.",0,ID_DEBUG_HELP);
-        place(d,ID_DEBUG_HELP,16,236,width-32,40);
+        place(d,ID_DEBUG_HELP,16,236+extra,width-32,40);
         control(d,"EDIT","",WS_TABSTOP|WS_VSCROLL|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL,ID_DEBUG_RECENT);
-        place(d,ID_DEBUG_RECENT,16,284,width-32,height-382);
+        place(d,ID_DEBUG_RECENT,16,284+extra,width-32,height-382-extra);
         control(d,"BUTTON","Open logs folder",WS_TABSTOP|BS_PUSHBUTTON,ID_DEBUG_FOLDER);
         place(d,ID_DEBUG_FOLDER,16,height-84,145,28);
         control(d,"BUTTON","Clear counters / recent",WS_TABSTOP|BS_PUSHBUTTON,ID_DEBUG_CLEAR);
@@ -414,11 +422,9 @@ static INT_PTR CALLBACK debug_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
         case IDOK: {
             PcDebugOptions options;
             char error[320];
-            options.show_fps=IsDlgButtonChecked(d,ID_DEBUG_FPS)==BST_CHECKED;
-            options.show_frame_time=IsDlgButtonChecked(d,ID_DEBUG_TIME)==BST_CHECKED;
-            options.show_issues=IsDlgButtonChecked(d,ID_DEBUG_ISSUES)==BST_CHECKED;
-            options.log_performance=IsDlgButtonChecked(d,ID_DEBUG_LOG)==BST_CHECKED;
-            options.show_latency=IsDlgButtonChecked(d,ID_DEBUG_LATENCY)==BST_CHECKED;
+            pc_debug_get(&options);
+            for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++)
+                if(pc_debug_option_available(i,PC_DEBUG_CAP_NETWORK))pc_debug_option_set(&options,i,IsDlgButtonChecked(d,debug_control_id(i))==BST_CHECKED);
             if (!pc_debug_config_save(&options,error,sizeof error)) {
                 MessageBoxA(d,error,"Debug settings were not saved",MB_OK|MB_ICONERROR); return TRUE;
             }
@@ -439,5 +445,5 @@ static INT_PTR CALLBACK debug_dialog(HWND d,UINT message,WPARAM wp,LPARAM lp)
 
 void pc_debug_show(HWND owner)
 {
-    dialog(owner,L"Debug - TimeSplitters Future Perfect",760,620,debug_dialog,0);
+    dialog(owner,L"Debug - TimeSplitters Future Perfect",760,620+((int)pc_debug_option_count(PC_DEBUG_CAP_NETWORK)-5)*28,debug_dialog,0);
 }

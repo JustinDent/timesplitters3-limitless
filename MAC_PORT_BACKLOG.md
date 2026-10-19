@@ -1,5 +1,186 @@
 # PC features awaiting Mac adaptation
 
+This tracks platform exceptions and native validation for shared PC/Mac features.
+Ordinary feature logic now belongs in shared source by default; follow
+[the shared implementation contract](docs/shared-platform.md). Add/update an
+entry when a platform adapter or host validation remains, including behavioral
+fixes. Explicitly scoped PC-only work and genuine host dependencies may be queued,
+with a reason and acceptance checks. Shared source alone does not verify Mac.
+
+Keep one stable ID per feature (`MAC-001`, `MAC-002`, and so on). Update existing
+entries rather than duplicating them, and retain completed entries as history.
+Include commit/PR references when available; label local changes uncommitted
+until those references exist. Keep paths relative to the repository.
+
+## Integration and ID reconciliation (2026-10-19)
+
+The integration branch `codex/shared-platform-baseline` combines main `5131d29`
+with the unmerged native stack ending at `f562e14`. Historical checks below
+apply to their stated revisions. The merged native build, regression suite and
+bounded first-mission run pass; see [integration evidence](STATUS.md#shared-platform-integration-baseline-2026-10-19).
+Windows build/runtime validation remains pending.
+
+Independent branches reused IDs. Current IDs below disambiguate those features;
+historical STATUS records retain their original identifiers and dates.
+
+| Feature | Historical ID(s) | Current ID |
+| --- | --- | --- |
+| Spirit skull and eyes | MAC-026 on main, MAC-032 on native stack | MAC-049 |
+| Native build restoration | MAC-033 on native stack | MAC-050 |
+| Native build watermark | MAC-034 on native stack | MAC-051 |
+| Network bots | MAC-028, then MAC-033 on main | MAC-052 |
+| Discord Rich Presence | MAC-048 on main | MAC-053 |
+
+Main's MAC-032 menu backgrounds, MAC-033 transition fades, MAC-034 issue-form
+handoff and MAC-048 vehicle joins retain their IDs. MAC-026 remains proportions.
+
+## Audit scope and next work
+
+**Historical native baseline (2026-10-17):** The focused native branch stack was based on main
+`d9c145f` (alpha.6). This release-only update preserves the runtime source
+reviewed below. The rebuilt native regression suite passes; historical gameplay
+evidence keeps its original revision. [Refresh evidence](STATUS.md#alpha6-branch-stack-refresh-2026-10-17).
+
+Reviewed on 2026-10-17 against fetched `main` / `origin/main`
+`0dc9fea49041bdca985d372a8e5513d6cac514ac`; no pull was necessary. Compared with
+previously reviewed main `d83ca5e`: 133 commits including merges, 134 changed
+tracked files. Current game VERSION is `0.2.0-alpha.5`; launcher source is
+v1.2.12. Reviewed commit history, changed-file inventory, feature implementations,
+native adapter changes, test/build wiring and the full handoff list. This is a
+source/parity audit, not complete line-by-line correctness certification.
+
+At the initial audit, baseline Mac evidence dated from October 15–16 rather
+than this main revision. The focused native work below now adds current-source
+build, GPU/settings/input checks and bounded menu/first-mission evidence.
+Most recent PC runtime features already have entries; shared code is not proof
+of native rendering/input. This audit adds the missing build-readiness and
+watermark handoffs, distinguishes the Cocoa latency-setting regression, restores
+omitted queue entries/status, and resolves the duplicate MAC-026 ID as MAC-049.
+IDs remain stable otherwise; MAC-017 is unassigned and is not a missing feature.
+
+The initial audit was against `93dc422` on 2026-10-15. Historical implementation
+and bounded checks remain in [renderer/camera/prompts](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15)
+and [native settings/graphics](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
+Upstream references mean pinned `d90c929` plus the complete local patch stack.
+The other device's checkout, ignored files and current build remain unverified.
+
+Recommended implementation sequence (each task starts on a focused branch from
+updated main unless its dependency is explicitly unmerged):
+
+1. **Build baseline:** MAC-050 and MAC-003 setting preservation. Review the
+   unmerged MAC-005 implementation at `5cba184` rather than losing or duplicating
+   it. Run shared patch/generation and native smoke checks before visual triage.
+2. **Repeatable scene access:** MAC-025 Test Lab fixture support in the isolated
+   native runner, with immutable fixture and disposable copies. This enables
+   later-level checks without a full campaign playthrough.
+3. **Shared fixes and native validation:** camera/terminal (MAC-001), pickups
+   and sensitivity (MAC-016), audio (MAC-018), screen-copy/clear/refresh effects
+   (MAC-007/019), decals/resolution/FOV/cinematic framing/UI/spirits
+   (MAC-010/020/022/023/024/026/027/028/032). Finish the Cocoa FOV slider and
+   aspect filter within MAC-022/024. Keep GPU, listening and physical-input
+   evidence separate from portable helper checks.
+4. **Native interaction adapters:** menu hover/click/wheel/footer/tab handling
+   (MAC-030), confirmed desktop exit (MAC-031), remaining binding/prompt/debug
+   checks (MAC-002/003/004), and accurate build watermark (MAC-051).
+5. **Larger runtime gaps:** remaining dependent/cube/volume texture paths
+   (MAC-005/006), movies and idle-demo stop integration (MAC-009/029), native
+   audio playback-position accounting (MAC-018), then real texture-pack scenes
+   when the existing pack is transferred (MAC-011). Prioritize graphics paths
+   with scene evidence; no fix is yet a confirmed diagnosis of world disappearance.
+6. **Distribution and multiplayer:** standalone runtime (MAC-012), staged
+   release-launcher delivery (MAC-021), and native transport/Online integration
+   (MAC-013). These require separate host adapters and acceptance routes.
+
+Shared patch/cleanup checks (MAC-014/015) accompany relevant stages. Existing
+scissor verification (MAC-008) is historical and limited to its supported
+rectangle contract; rerun affected GPU checks after renderer changes.
+
+### Coverage of work since the previous review
+
+| PC additions / implementation commits | Mac handoff and current boundary |
+| --- | --- |
+| Terminal pointer/click `a60deb5` | MAC-001: SDL adapter already updated; physical terminal test pending |
+| Decal alignment `a28a8b6`; model proportions `6485069` | MAC-010/026: shared hooks; native scene validation pending |
+| FOV `bf31b24`, falling `df3bc2e`, frontend exclusion `ad2f09f` | MAC-022/028: shared camera/menu; Cocoa slider implemented/tested; gameplay matrix pending |
+| Objectives `5da8cf6`; aspect/HUD/tutorial layout `2d69459`; rank `3e747a5` | MAC-023/024/027: shared rules plus native viewport/scissor changes; Cocoa aspect filter tested; full visual matrix pending |
+| Channel clears `f17026b`; spirits `70d8e7f` | MAC-007/032: shared/native clear wiring and shared spirit wrappers; GPU checks pending |
+| Idle movie stop `c797b65` | MAC-029: shared stop/symbol corrections; movie player still MAC-009 |
+| Frontend/pause mouse and desktop exit `e18baa9` | MAC-030/031: native pointer and quit adapters implemented; acceptance evidence in their entries |
+| Test Lab `0c69834` | MAC-025: portable save preparation; native runner integrated; late Story selection checked, Arcade/challenge checks pending |
+| Patch/CI efficiency `4c5848d`; test linkage/portability fixes | MAC-014 and affected entries: shared tooling; source tests do not boot the game |
+| Launcher v1.2.1–v1.2.12: startup skip, embedded settings, capability gates, cleanup/artwork, repair/diagnostics/reporting, resumable downloads, release news and tabs | MAC-021: detailed commit references and acceptance below; native launcher queued |
+| Release comparison `3ed4223`, packaging/version/provenance and runtime-settings preservation tests | MAC-012/021: common release rules; Windows package/UI checks do not verify Mac distribution |
+| Guided issue forms `4d70d96`, automation `6c5ee41`, simplified requests, release-choice refreshes; copy/line-ending fixes | Repository/GitHub behavior requires no Mac game adapter. Future native diagnostic reporting uses MAC-021; no live GitHub automation or Mac UI verification claimed |
+
+[Measured local review and portable checks](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
+
+## Status meanings
+
+- **Queued:** PC feature recorded; Mac adaptation is pending.
+- **In progress:** Mac implementation is underway.
+- **Awaiting validation:** Implementation is present but relevant Mac checks remain.
+- **Verified:** Mac acceptance checks passed, with evidence linked below.
+- **Not applicable:** No corresponding Mac capability is needed; explain why.
+
+If shared code already supplies the feature, record that fact and use awaiting
+validation until Mac checks pass. Do not infer Mac support from Windows results.
+
+## Queue
+
+| ID | Feature | Status |
+| --- | --- | --- |
+| MAC-001 | Direct-camera mouse look | Awaiting validation |
+| MAC-002 | Keyboard/mouse prompts and device switching | Awaiting validation |
+| MAC-003 | Debug settings and on-screen performance information | Awaiting validation |
+| MAC-004 | Capture-to-bind and conflict reassignment | Awaiting validation |
+| MAC-005 | Multiple texture stages and shader fidelity | In progress |
+| MAC-006 | Cube and volume texture resources | Queued |
+| MAC-007 | Screen-copy effects and image surfaces | In progress |
+| MAC-008 | Scissor clipping | Verified |
+| MAC-009 | Intro and in-game movie playback | Queued |
+| MAC-010 | In-game resolution preview and rollback | Awaiting validation |
+| MAC-011 | Real texture-pack gameplay coverage | Awaiting validation |
+| MAC-012 | Standalone Mac runtime distribution | Queued |
+| MAC-013 | System Link and Online multiplayer | Queued |
+| MAC-014 | Patch upgrades across Windows watermark and native overlay guards | Awaiting validation |
+| MAC-015 | Release test privileges and disposable cleanup | Awaiting validation |
+| MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
+| MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
+| MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
+| MAC-020 | Adaptive cutscene letterboxing (issue #33) | Awaiting validation |
+| MAC-021 | Published-release launcher and pre-game settings | Queued |
+| MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
+| MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
+| MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
+| MAC-025 | Reusable unlocked testing profile | Awaiting validation |
+| MAC-026 | Character picker and weapon proportions (issue #22) | Awaiting validation |
+| MAC-027 | Arcade RANK widget left placement | Awaiting validation |
+| MAC-028 | Preserve frontend camera FOV (#82) | Awaiting validation |
+| MAC-029 | Skippable idle demo video (#50) | Awaiting validation |
+| MAC-030 | Menu mouse selection (#86) | Awaiting validation |
+| MAC-031 | Quit to Desktop menu entries | Awaiting validation |
+| MAC-032 | Responsive menu backgrounds and scope masks | Awaiting validation |
+| MAC-033 | Full-display transition fades | Awaiting validation |
+| MAC-034 | Plain improvement form handoff | Not applicable |
+| MAC-035 | Cinematic width fill (issue #30 investigation) | Awaiting validation |
+| MAC-036 | Ghost Gun full-body visibility (issue #111) | Queued |
+| MAC-037 | Fresh-install launch without PowerShell (issue #128) | Not applicable |
+| MAC-039 | Recoverable launcher startup security interruptions | Not applicable |
+| MAC-040 | Dedicated game icon | Queued |
+| MAC-041 | Published game version picker and banner replacement | Queued |
+| MAC-042 | Formatted release notes and browser links | Queued |
+| MAC-043 | Automatic mouse Auto Lookahead override | Awaiting validation |
+| MAC-044 | Game crash capture and launcher reports | Queued |
+| MAC-045 | Terminal camera depth clears (issue #47) | Awaiting validation |
+| MAC-046 | Update transaction rename contention | Queued |
+| MAC-047 | Main-menu image and lettering fidelity | Awaiting validation |
+| MAC-048 | Companion vehicle zero-flag joins (#100) | Awaiting validation |
+| MAC-049 | Spirit skull and eye rendering (#17) | Awaiting validation |
+| MAC-050 | Restore a reproducible native build from current main | Verified |
+| MAC-051 | Version and build-identity watermark | Awaiting validation |
+| MAC-052 | Experimental network bot setup (issue #25) | Queued |
+| MAC-053 | Discord Rich Presence (issue #63) | Queued |
+
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
 - **Status:** Awaiting validation
@@ -20,7 +201,7 @@
 
 ### MAC-047 — Main-menu image and lettering fidelity
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** Windows frontend textures use clamped Catmull-Rom
   reconstruction during magnification. Verified main-menu row draws additionally
   reconstruct A8 glyph coverage without changing glyph placement or measurement.
@@ -43,9 +224,21 @@
   ultrawide captures, font measurements, fades and menu/gameplay transitions.
   Windows evidence is recorded in `STATUS.md`; it is not native Mac validation.
 
+- **Shared implementation (2026-10-19):** `codex/shared-menu-rendering`, based
+  on unmerged integration `bee4ed9`, moves the reconstruction and glyph coverage
+  algorithm into `src/graphics/menu_sampling_shader.h`. Windows HLSL and native
+  GLSL consume the same body; adapters map texture access and intrinsic syntax.
+  Texture eligibility is also shared. Mac binding tests cover glyph scope and
+  point/render-target/screen-copy/dependent exclusions. An asset-free OpenGL
+  test runs the same pixel contract as Windows D3D11 WARP; CI selects it on both
+  hosts. Native full regressions and menu/mission-opening captures pass.
+  Windows execution after extraction, the aspect/resolution matrix, font
+  measurements and post-change gameplay transitions remain pending.
+  [Measured evidence](STATUS.md#shared-menu-shader-2026-10-19).
+
 ### MAC-045 - Terminal camera depth clears (issue #47)
 
-- **Status:** Implemented, pending native validation
+- **Status:** Awaiting validation
 - **PC behavior:** The terminal camera's smaller depth attachment receives clears
   issued to the same guest depth image on the main target. This addresses the
   blank What Lies Below camera feed without clearing on every target switch.
@@ -250,7 +443,8 @@
 
 ### MAC-039 — Recoverable launcher startup security interruptions
 
-- **Status:** Not applicable — Windows bootstrap only.
+- **Status:** Not applicable
+- **Scope:** Windows bootstrap only.
 - **PC behavior:** A failed application handoff keeps startup open with Retry,
   Open launcher folder and View logs. Win32 cancellation 1223 explains a possible
   SmartScreen/security prompt without claiming the user clicked Cancel. Access
@@ -273,7 +467,8 @@
 
 ### MAC-037 — Fresh-install launch without PowerShell (issue #128)
 
-- **Status:** Not applicable — Windows launcher only.
+- **Status:** Not applicable
+- **Scope:** Windows launcher only.
 - **PC behavior:** Play Game starts the runtime directly even before graphics
   settings have been saved, avoiding the reported ConstrainedLanguage script
   failure after a successful ISO import. Settings, saves and logs retain their
@@ -456,322 +651,6 @@
   and cutscenes retain their lens.
 
 
-### MAC-031 — Quit to Desktop menu entries
-
-- **Status:** Queued
-- **PC behavior:** Main Story/Arcade menu and Pause append Quit to Desktop.
-  The game's confirmation screen defaults to Cancel, supports normal menu
-  controls, and posts WM_CLOSE only after confirmation. Existing Quit retains
-  its return-to-menu behavior. Only player one's menus expose desktop exit.
-- **Source:** Commit `e18baa9` on the #86 menu controls branch;
-  `src/pc_quit_menu.inc`, `src/pc_display_menu.c/.h`, `quit-desktop.patch`,
-  and `tests/quit_menu.c` / `tests/test_quit_menu.py`.
-- **Shared Mac support:** Shared finalizer hooks preserve original Mac menus.
-  Confirmation code is currently gated to Windows (or the portable C test).
-- **Remaining:** Add a native window-thread shutdown adapter, enable the guest
-  confirmation code and verify native input; no Mac runtime validation yet.
-- **Acceptance:** Cancel and Back restore main/Pause without exiting; Pause
-  stays paused; confirmed exit closes normally from both screens with mouse
-  and keyboard/controller. Verify menu layout at supported aspect ratios.
-  Windows evidence belongs to the issue #86 entry in `STATUS.md`.
-
-### MAC-030 — Menu mouse selection (#86)
-
-- **Status:** Queued
-- **Issue #114 menu follow-up** (implemented on
-  `114-bug-mouse-pointer-cannot-select-some-menu-footer-elements`):
-  Tracks the recent slider, resolution-label and choice-arrow changes under
-  [#114](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/114).
-  The same captured-bar pointer policy now handles Controls sensitivity and
-  Display settings FOV. Sensitivity uses the selected player's original 0..1
-  value in 0.05 steps and original preview, leaving Accept/Cancel unchanged.
-  FOV edits only the 40..100 draft, with Apply/Back retaining save/discard rules.
-  `menu-setting-sliders.patch` wraps the sensitivity painter and scopes capture
-  of its actual bar rectangle; progress/capacity meters remain noninteractive.
-  Source: `src/pc_menu_sliders.inc`, `src/pc_display_menu.c/.h` and the existing
-  menu pointer adapter. Mac wrappers pass through pending SDL integration.
-  The shared Display settings builder also reserves width for long resolution
-  values beside their label; native Mac visual validation remains pending.
-  Add both settings, per-player isolation, translated bar widths, focus/resize
-  cancellation and Apply/Back checks to the native Mac acceptance work.
-  `src/pc_menu_choices.inc` and `menu-choice-arrows.patch` capture the standard
-  type-1 choice arrows and emit one native Previous/Next edge per mouse click.
-  Mac currently retains original drawing through pass-through wrappers; adapt
-  pointer input and check both arrow directions, variable-width choices,
-  disabled rows, held clicks and stale/resize/focus invalidation. The two custom
-  type-1 painters also scope their row owner (`menu-custom-choice-arrows.patch`).
-  Windows lobby clicks now select the logical network pad buffer used by native
-  callbacks. `src/pc_menu_team.inc` and `menu-team-mouse.patch` capture the local
-  player's team arrows and inject directions/Select/Back before the parent tick;
-  native wrapping/readiness/network callbacks remain authoritative. PC menu-only
-  WASD aliases use D-pad input. Port these input adapters to SDL; verify lobby
-  Options/Select Character, team colour changes and ready/cancel with mouse and
-  A/D, plus immediate gameplay recapture. These paths passed local Windows
-  System Link checks; Mac and remote Internet sessions remain unverified.
-  Character-selection portraits use a separate custom carousel. The Windows
-  adapter (`src/pc_menu_characters.inc`, `menu-character-mouse.patch`) captures
-  actual player-one portrait/variant quads, validates their container ownership,
-  and uses native preview and confirmation callbacks. Port click-preview, wheel
-  browsing and Select/Back/right-click cancellation; cover clipped/invisible
-  portraits, focus loss, resize, stale draws and other players. Local Windows
-  System Link portrait/variant selection and confirm/cancel were verified.
-- **Issue #115 follow-up** (`115-bug-audio-menu-sliders-cannot-be-adjusted-with-mouse-pointer`): Windows Music/Sound volume bars now
-  accept click-to-set and held dragging in main and paused Audio/Video Options.
-  `src/pc_menu_sliders.inc` captures both original painter layouts, reuses the
-  shared proportional pointer mapping, and updates the game's staged 0..16
-  volumes through its existing preview functions. Accept/Cancel remain native.
-  `audio-menu-mouse.patch` adds two painter wrappers; Mac calls the original
-  painters unchanged until the SDL pointer adapter below is implemented.
-  Acceptance must include both bars at 4:3/widescreen/ultrawide, endpoint
-  clamping, focus-loss/release/resize cancellation, disabled music/sound, and
-  Accept/Cancel with keyboard/controller navigation retained. Shared policy
-  tests run on Windows; native Mac input/rendering remains unverified. See
-  `STATUS.md` under Audio-menu mouse sliders for measured PC validation.
-- **PC behavior:** Move the visible cursor over a main, pause or Tab/Objectives menu item to select
-  it, left-click to activate, and right-click to go back. The hit test follows
-  the proportional UI and presentation bars, using the full UI canvas rather
-  than the cropped world viewport during paused updates. Keyboard/controller selection
-  remains active until the pointer moves; mouse ownership suppresses old
-  directional repeats until a fresh direction takes over, including after a click
-  opens a submenu or goes back with the pointer stationary. Held clicks do not
-  cross screens or fire when gameplay resumes. Confirm callbacks receive a scoped
-  player-one pad edge, so mouse selection preserves valid controller mappings.
-  Wheel notches navigate menu rows (including level selection) without activation;
-  queued steps are bounded and discarded on clicks, menu changes, or focus loss.
-  Wheel ownership spans the gaps between packets and continuous pointer motion;
-  hover resumes on a new move after both inputs briefly settle. Clicks stay immediate.
-  Bottom prompts use measured rendered text bounds and original enabled/hidden
-  checks; clicks feed the existing actions before menu shortcut callbacks.
-  Enabled footer prompts turn light blue under the pointer, preserving menu
-  fade alpha. Profile-picker prompts are measured separately within their
-  centered text rows, including Select, Back and enabled Delete Profile.
-  Pause/Objectives Options and Status headings highlight and accept clicks;
-  tab replacement waits until the original input dispatch has returned.
-  Drawing reads pointer state without consuming wheel input.
-  Right-click closes root Pause/Objectives through the original pause handler.
-  Returning to gameplay restores mouse capture automatically while preserving
-  focus-loss protection and suppressing held menu clicks.
-- **Source:** Commit `e18baa9` on `86-enhancement-use-mouse-to-control-main-menu`,
-  based on main `e942ef0`; `src/pc_menu_mouse.h`,
-  `src/pc_menu_mouse_guest.inc`, `src/pc_controls.c/.h`, the final
-  `menu-mouse*.patch` stack, and `tests/menu_mouse.c`.
-- **Shared Mac support:** Pointer geometry and button-edge rules are shared.
-  The guest hook calls the original layout unchanged on Mac until an adapter
-  is supplied. Existing native keyboard/controller input is preserved.
-- **Remaining:** Supply an SDL client-position/button/wheel snapshot, release/hide
-  transitions, focus handling and gameplay button suppression; then enable
-  the shared guest adapter. Native build and physical input are unverified.
-- **Acceptance:** Hover/click main/profile/settings menus at 4:3, 16:9 and
-  ultrawide sizes; reject disabled/clipped items and presentation bars, retain
-  keyboard/controller navigation, select the profile using only the mouse and
-  verify controller mappings stay valid, wheel up/down through level selection
-  without activating a level or leaking steps across screens; move the pointer
-  up/down while scrolling and verify selection follows only the wheel until
-  the gesture settles, then verify hover and immediate clicks work; click enabled footer
-  prompts in main/pause/Objectives menus and verify hidden/disabled prompts are inert;
-  verify hover tint follows the same hit area, clears on focus loss, retains
-  fade transparency and does not drain queued scrolling; check profile Select/Back
-  independently and disabled/enabled Delete Profile; switch Options/Status in
-  both Pause and Objectives and reject stale labels during transitions;
-  close root Pause/Objectives with right-click and resume mouse look without an
-  extra click, including after Escape, while unfocused windows stay uncaptured;
-  keep selection stable after mouse-driven
-  transitions without further pointer motion, and prevent held selection clicks
-  from becoming gameplay shots. Run `tests/test_menu_mouse.py` and native input
-  tests. Windows evidence is recorded in the issue #86 entry in `STATUS.md`.
-
-### MAC-029 — Skippable idle demo video (#50)
-
-- **Status:** Awaiting validation
-- **PC behavior:** The menu idle demo accepts the game's existing skip controls,
-  closes its host audio/video and returns to the menu. Repeated stops are safe;
-  subsequent movies and normal end-of-file playback remain functional.
-- **Source:** Branch `50-cannot-skip-menu-idle-video`, initially based on main
-  `abaf001`; final `xmv-stop.patch`, `tools/recomp-generation.py`, `tsfp.ps1`,
-  `tests/xmv_stop.c` and `tests/test_xmv_stop.py`.
-- **Shared Mac support:** Stop handling and the corrected US symbol map are
-  shared. Native generation already refreshes symbols; metadata edits now
-  invalidate generated wrappers. This does not add native host XMV playback.
-- **Remaining:** Run the portable stop regression and generation checks on Mac.
-  Native build/live validation and other-device synchronization are unverified.
-- **Acceptance:** A stop reports EOF even without a host decoder; destroy is
-  safe afterward. When native movie playback is available, verify idle-demo
-  skipping, overlay/audio cleanup and returning to a responsive menu. Preserve
-  original-body fallback and genuine Start behavior for other titles.
-  See the issue #50 validation entry in `STATUS.md`.
-
-### MAC-028 — Preserve frontend camera FOV (#82)
-
-- **Status:** Awaiting validation
-- **PC behavior:** Gameplay FOV settings leave the main-menu/profile background
-  at its authored lens. In-game cameras retain the selected FOV, including
-  falling/landing; aspect correction and cinematic framing remain active.
-- **Source:** Branch `82-bug-fov-change-affects-the-main-menu`, based on
-  main `abaf001`; `src/pc_display_menu.c`, `tests/cutscene_letterbox.c` and
-  `tests/test_cutscene_letterbox.py`.
-- **Shared Mac support:** The camera function is already shared with native Mac.
-  The scene check uses guest state and requires no platform adapter.
-- **Remaining:** Run the camera regressions and compare frontend backgrounds at
-  55 and 90 degrees on macOS. Native execution and other-device synchronization
-  are unverified on this Windows host.
-- **Acceptance:** Menu backgrounds retain their lens at either setting; entering
-  gameplay and returning to the menu applies the appropriate FOV without
-  accumulating changes. Preserve falling, terminal and cinematic behavior.
-  See the issue #82 validation entry in `STATUS.md`.
-
-### MAC-026 — Spirit skull and eye rendering (#17)
-
-- **Status:** Awaiting validation
-- **PC behavior:** The US spirit renderer uses clockwise culling for rigid
-  skull nodes while keeping skinned trails two sided. Its two eye-billboard
-  batches use unbiased clip-space positions and no fog, preserving their
-  red texture and depth testing. Overrides are restored after each node/batch.
-- **Source:** Spirit rendering commit `70d8e7f` on
-  `17-ghosts-in-mansion-of-madness-and-what-lies-below-are-nonvisible`;
-  `src/pc_ghost_render_guest.inc`, the `spirit-rendering.patch` at the end of
-  the shared patch stack, and `tests/ghost_rendering.c`.
-- **Shared Mac support:** Guest wrappers and HLE render-state forwarding are
-  shared with Windows. No shader hash/string rewriting, geometry fingerprint,
-  Windows-only API, or diagnostic switch is required.
-- **Remaining:** Build on macOS and verify GPU and interpreted-vertex paths.
-  No native execution was available on this Windows host. Confirm the native
-  unwritten-fog fallback observes the scoped fog-disable state.
-- **Acceptance:** Check Mansion entrance-hall spirits from several angles;
-  preserve solid faces, wispy trails, red eyes and wall occlusion. Check
-  ordinary particles/fog immediately afterward and other ghost encounters in
-  both affected levels. Run `tests/test_ghost_rendering.py` and patch-transition
-  suites. See `STATUS.md` for measured Windows evidence and remaining limits.
-
-### MAC-025 — Reusable unlocked testing profile
-
-- **Status:** Queued
-- **PC behavior:** Local Test Lab fixture unlocks story/Arcade/characters and
-  challenges without changing fresh collectible/pickup progress. Disposable
-  copies use isolated configurations and the existing startup-video switch.
-- **Source:** Commit `0c69834`, [PR #80](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/80)
-  on `test-profile-fast-start`; `tools/testing_profile.py`,
-  `tests/test_testing_profile.py`, `docs/testing-profile.md` and `AGENTS.md`.
-- **Shared Mac support:** The US save layout and runtime HMAC key are shared;
-  fixture generation/preparation uses portable Python. Native execution unverified.
-- **Remaining:** Integrate fixture cloning and `RECOMP_XMV_PLAY=0` with the bounded
-  native runner. The new play/Recycle Bin wrapper is Windows only. No gameplay or
-  existing native launcher behavior changed; no Mac adapter was modified.
-- **Acceptance:** Load the profile in native menus, verify late story levels,
-  Arcade character selection and challenge availability, retain fresh pickup
-  data, isolate both display configs/controls and recycle only test disks.
-  Windows evidence is recorded in `STATUS.md`; other-device sync is unverified.
-
-This is the handoff list for Windows PC features to bring to native Mac later.
-Add or update an entry when implementing a new PC feature, before reporting the
-PC work complete. Also record behavioral fixes that need Mac adaptation. Mac
-work is deferred until requested; it does not block completion of the PC feature.
-
-Keep one stable ID per feature (`MAC-001`, `MAC-002`, and so on). Update existing
-entries rather than duplicating them, and retain completed entries as history.
-Include commit/PR references when available; label local changes uncommitted
-until those references exist. Keep paths relative to the repository.
-
-## Audit scope and next work
-
-Audited on 2026-10-15 against local `mac-port` commit
-`93dc422139bae4acb64d1e24c528cf3869a4ce20`. All PC source references below refer to
-that snapshot, not a claim about newer Windows-device work. `external/ts3FPrecomp`
-references identify the pinned upstream `d90c929` plus the shared local patches;
-keep future changes reproducible through that patch stack. The other computer
-was inaccessible, so its revision, features and synchronization are unverified.
-
-The initial audit was a source/documentation comparison. The subsequent Mac implementation and bounded tests are recorded in
-[Mac backlog renderer, camera and prompts](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
-Windows evidence remains historical where linked; implementation alone does not
-establish fidelity. Earlier Mac evidence remains in
-[Native Mac settings and graphics adapters](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
-
-Next work: finish the remaining camera/prompt and resolution acceptance checks,
-then reproduce the reported world disappearance with a short controlled route.
-Four-stage 2D rendering improved reviewed first-mission captures, but does not
-establish the cause of every missing-world symptom. Prioritize remaining
-MAC-005/006/007 paths from scene evidence, and movies. Debug tools and binding
-capture are implemented with remaining physical-input and live-window validation
-below. MAC-011 needs the actual texture pack on this device; packaging follows
-runtime readiness. No full campaign playthrough is required.
-
-## Queue
-
-| ID | Feature | Status |
-| --- | --- | --- |
-| MAC-025 | Reusable unlocked testing profile | Queued |
-| MAC-033 | Experimental network bots (issue #25) | Queued |
-| MAC-001 | Direct-camera mouse look | Awaiting validation |
-| MAC-002 | Keyboard/mouse prompts and device switching | Awaiting validation |
-| MAC-003 | Debug settings and on-screen performance information | Awaiting validation |
-| MAC-004 | Capture-to-bind and conflict reassignment | Awaiting validation |
-| MAC-005 | Multiple texture stages and shader fidelity | In progress |
-| MAC-006 | Cube and volume texture resources | Queued |
-| MAC-007 | Screen-copy effects and image surfaces | In progress |
-| MAC-008 | Scissor clipping | Verified |
-| MAC-009 | Intro and in-game movie playback | Queued |
-| MAC-010 | In-game resolution preview and rollback | Awaiting validation |
-| MAC-011 | Real texture-pack gameplay coverage | Awaiting validation |
-| MAC-012 | Standalone Mac runtime distribution | Queued |
-| MAC-013 | System Link and Online multiplayer | Queued |
-| MAC-014 | Patch upgrades and branch-switch transitions | Awaiting validation |
-| MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
-| MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
-| MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
-| MAC-021 | Published-release launcher and pre-game settings | In progress |
-| MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
-| MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
-| MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
-| MAC-026 | Character picker and weapon proportions (issue #22) | Awaiting validation |
-| MAC-027 | Arcade RANK widget left placement | Awaiting validation |
-| MAC-028 | Preserve frontend camera FOV (issue #82) | Awaiting validation |
-| MAC-029 | Skippable idle demo video (issue #50) | Awaiting validation |
-
-### MAC-027 — Arcade RANK widget left placement
-
-- **Status:** Awaiting validation
-- **PC behavior:** In widescreen single-player Arcade, anchor the complete RANK
-  widget (caption, ordinal and frame) to the left inset, matching the status icons
-  below it. Flush preceding/following sprite batches at the placement boundary.
-  Preserve 4:3, narrower outputs and the existing split-screen layout.
-- **Source:** Commit `3e747a5`, [PR #83](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/83), on
-  `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
-  `src/pc_display_ui.inc`,
-  `patches/zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch`,
-  `tests/ui_layout.c` and `tests/test_ui_layout.py`.
-- **Shared Mac support:** The existing native LEFT placement adapter and shared
-  widget scope handle this hook under `TSFP_NATIVE_DISPLAY`; no new adapter is
-  required. Native build/gameplay validation remains pending.
-- **Remaining:** Validate Arcade RANK alignment in the native renderer and keep
-  the label, number and frame together during rank changes. Other-device
-  synchronization is unverified.
-- **Acceptance:** Compare 4:3, 16:9 and ultrawide with the original left inset,
-  status icon alignment and proportional size; check changing ranks and confirm
-  split-screen and unrelated HUD groups keep their existing placement. See
-  [Windows validation](STATUS.md#arcade-rank-widget-placement-2026-10-17).
-
-### MAC-026 — Character picker and weapon proportions (issue #22)
-
-- **Status:** Awaiting validation
-- **PC behavior:** Correct the horizontal aperture of newly built character
-  picker and first-person weapon projections for the selected output aspect.
-  Keep each lens, zoom, depth and the original 4:3 behavior; do not reuse or
-  repeatedly scale the preceding character's projection during model changes.
-- **Source:** Commit `6485069`, [PR #83](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/83), on
-  `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
-  `src/pc_display_menu.c`, `src/pc_display_menu.h`,
-  `patches/zzzzzzzzzzz-model-projection.patch`, `tests/test_decal_projection.py`.
-- **Shared Mac support:** The perspective hook is already enabled by
-  `TSFP_NATIVE_DISPLAY`; this correction uses the shared aspect model. Both
-  platform defines pass the source wrapper tests. No new OS/graphics adapter is
-  required; native execution and visual fidelity are unverified.
-- **Remaining:** Build and visually validate on Apple Silicon. Other-device
-  synchronization is unverified; Windows captures do not establish Mac support.
-- **Acceptance:** Cycle character models at 4:3, 16:9 and ultrawide without
-  changing their proportions during loading; verify first-person weapons,
-  aiming/zoom, split-screen, and unchanged world/decal/cinematic projections.
-  See [Windows evidence](STATUS.md#issue-22-model-projections-2026-10-16).
-
 ### MAC-001 — Direct-camera mouse look
 
 - **Issue #7 follow-up (2026-10-16):** `src/pc_terminal.h`
@@ -808,6 +687,9 @@ runtime readiness. No full campaign playthrough is required.
 - **Mac adaptation needed:** Implementation is present. Finish live gameplay checks across pause/settings/focus transitions and physical mouse use. Native adapter tests now cover equal counts batched or applied per event, both pitch limits and stale motion suppression.
 - **Mac acceptance checks:** Equal counts give equal angles across polling rates; zoom scaling, inversion and pitch limits work; pause/settings/focus changes cause no jump or unwanted shot. Use isolated settings and a short mission check.
 - **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `src/native/input_sdl.c`, `src/pc_camera.h`, `src/pc_guest_memory.h`, `src/pc_controls.c`, `patches/zzzzzzzzzzzzz-native-camera.patch`. Native fixtures passed sensitivity, inversion, FOV, capture/release, focus and no-stick-injection checks. A bounded first-mission run logged 8/-2 counts changing yaw/pitch by -1.6/+0.4 degrees at sensitivity 0.2 and FOV 55. These are synthetic SDL events, not physical-device validation. Further native adapter checks for batched/per-event counts, pitch limits and stale motion passed; see [capture and camera validation](STATUS.md#mac-binding-capture-and-camera-checks-2026-10-15). [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
+- **Local source check (2026-10-17):** Terminal mouse C fixture passed
+  on Apple Silicon with Clang. This does not verify native window input, rendering
+  or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
@@ -829,7 +711,26 @@ runtime readiness. No full campaign playthrough is required.
 - **Existing Mac support:** F9 toggles a host-only OpenGL text overlay; F12 and the Game Settings menu open a Cocoa debug panel. Both use the shared statistics, options, configuration and diagnostic classifier. POSIX log reading handles truncation/replacement and runs on the main thread.
 - **Mac adaptation needed:** Implementation is present. Finish visual Cocoa layout, physical F9/F12 and live fullscreen panel/focus checks. A synthetic shortcut smoke run does not establish physical event delivery.
 - **Mac acceptance checks:** Toggle in windowed/fullscreen modes; distinguish guest and interpolated presents; save/cancel and issue-counter reset work; log polling stays off the render thread; preserve unrelated JSON.
-- **Mac implementation and evidence:** Uncommitted on `mac-port` over `e83e074`: shared `src/pc_debug.c`, native `debug_macos.inc`, `gl_debug.inc`, SDL/renderer hooks and `patches/zzzzzzzzzzzzzz-native-debug.patch`. Native GPU text/state/isolation tests, real Cocoa Save/Cancel, configuration preservation/failure, log rotation/reset and synthetic F9 repeat/release checks pass. [Measured validation](STATUS.md#mac-debug-and-performance-tools-2026-10-15).
+- **Mac implementation and evidence:** Commit `149939f`, integrated into `main`: shared `src/pc_debug.c`, native `debug_macos.inc`, `gl_debug.inc`, SDL/renderer hooks and `patches/zzzzzzzzzzzzzz-native-debug.patch`. Native GPU text/state/isolation tests, real Cocoa Save/Cancel, configuration preservation/failure, log rotation/reset and synthetic F9 repeat/release checks pass. [Measured validation](STATUS.md#mac-debug-and-performance-tools-2026-10-15).
+- **Current-main follow-up (2026-10-17):** PC latency diagnostics were added in
+  `e2f655a`. `PcDebugOptions` now has five fields, but Cocoa `save:` initializes
+  only four, so Save writes `show_latency=false` even when it was previously
+  true. Preserve this setting before further native validation; exercise true
+  and false values, Save/Cancel and unrelated JSON on a disposable file.
+  A native latency control and live measurements depend on MAC-013; setting
+  preservation does not. The native Save path now reads current options before
+  changing its four exposed fields; real Cocoa Save/Cancel and true-latency
+  preservation checks pass in the native build-restoration run. See MAC-050 for the generated-header build dependency
+  and MAC-051 for the separate build-identity overlay.
+
+- **Shared definitions (2026-10-19):** `codex/shared-debug-settings` makes
+  `src/pc_debug_options.def` the single list for fields, keys, labels and native
+  debug controls. Both dialogs and shared JSON persistence iterate it. Cocoa
+  Save/Cancel, hidden latency preservation, generated labels, capability
+  visibility and failed-write behavior pass. Definition-extension tests run
+  on each host in CI; Windows dialog execution remains pending. This does not
+  supply the missing native network provider or complete every overlay check.
+  [Evidence](STATUS.md#shared-debug-setting-definitions-2026-10-19).
 
 ### MAC-004 — Capture-to-bind and conflict reassignment
 
@@ -852,6 +753,82 @@ runtime readiness. No full campaign playthrough is required.
 - **Mac adaptation needed:** Implement remaining dependent/dot-product and other Xbox texture modes, plus cube/volume integration with MAC-006. Continue matched scene/material checks and frame-time profiling; the 120-present setting is a target, not a demonstrated sustained rate.
 - **Mac acceptance checks:** Use distinguishable multi-stage GPU fixtures plus matched mission captures; verify fallback agreement, alpha/depth behavior and interpolation. Reproduce the reported disappearing world separately before attributing its cause.
 - **Mac implementation and evidence:** Implementation included with this backlog revision on `mac-port`: `src/native/renderer_gl.c`, `gl_fragment.inc`, `gl_vertex.inc`, `gl_bridge.inc`, `multitexture_selftest.inc`, `vertex_selftest.inc` (all latter paths under `src/native/`), and `patches/zzzzzzzzzzz-shared-linear-formats.patch`. Real-GPU four-stage fixtures passed distinct coordinates, projected/linear inputs and FVF/GPU/CPU agreement. Reviewed first-mission captures show improved terrain, weapons and NPC surfaces. Complete fidelity and the reported world-disappearance case remain unverified. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
+- **Branch reconciliation (2026-10-17):** `mac-port` at `1a8f4dd` contains
+  `5cba184`, whose actual diff adds dependent AR/GB and DOTPRODUCT/DOT_ST
+  sampling, signed mappings/source selection and GPU fixtures despite its
+  debug-oriented commit title. This implementation is **absent from main
+  `0dc9fea`**. Review and integrate that specific work on a focused branch before
+  reimplementing it, preserving newer main renderer changes. The prior branch's
+  recorded GPU results are historical; rerun native fixtures and matched scene
+  checks after integration. Do not merge the entire older branch just to obtain
+  this feature: its packaging/settings-test changes need separate review.
+
+- **Current integration (2026-10-17):** `codex/mac-dependent-textures`
+  reapplies only the four renderer/test files from `5cba184` on build fix
+  `bab79f0`, retaining main's viewport/scissor/channel-clear work. All 36
+  dependent-mode GPU cases (12 each through FVF, GPU programs and CPU fallback)
+  and the complete native self-test suite pass on this Mac. Other texture modes
+  and scene fidelity remain pending.
+  [Evidence](STATUS.md#native-dependent-texture-integration-2026-10-17).
+
+- **Fog input adaptation (2026-10-17):** `codex/mac-fog-rendering` now passes
+  programmed fog through GPU and CPU vertex paths into the final combiner,
+  using the shared PC unwritten marker for the sky/particle fallback. All 49
+  GPU fog cases and the full native suite pass. Bounded Khallos/first-mission
+  checks retain visible world and weapons; Khallos exterior sky remains dark
+  and stretched. Remaining shader inputs/modes and matched scene fidelity are
+  still open; this is not a sky fix. [Evidence and limits](STATUS.md#native-fog-combiner-input-2026-10-17).
+
+- **Shared renderer preparation (2026-10-19):** The commit carrying this entry
+  on `codex/shared-renderer-host`, dependent on `1a650b5`, introduces `RhiHost`
+  for event pumping and physical drawable dimensions. Windows common device
+  code and the native GL renderer consume that interface; SDL/Cocoa owns its
+  main-thread events and cached worker dimensions. Twelve common core files
+  compile on Mac; CI registers the same contract for both hosts. This prepares
+  common graphics integration but does not add missing texture modes or select
+  a new Mac GPU backend. Windows execution and common-RHI gameplay remain
+  pending. [Evidence](STATUS.md#shared-renderer-host-interface-2026-10-19).
+
+- **Common Vulkan backend (2026-10-19):** The commit carrying this entry on
+  `codex/shared-vulkan-mac` depends on `e382e50`. The production RHI now creates
+  SDL/Metal surfaces and compiles the same PC HLSL on Mac. The shared menu pixel
+  contract and swapchain checks pass on the pinned SDK's two Mac drivers; the
+  standalone probe needs no game files. This supplies a backend for the common
+  frontend rather than a second shader implementation. The native game still
+  uses GL; connect its common Xbox frontend, window creation and overlay host
+  services next. Missing modes and scene acceptance remain open, and Windows
+  RHI/WARP execution is pending. [Evidence](STATUS.md#common-vulkan-backend-on-mac-2026-10-19).
+
+- **Common native frontend (2026-10-19):** The commit carrying this entry on
+  `codex/shared-native-renderer` depends on `4d23a6d`. Opt-in Vulkan builds compile
+  the same PC Xbox device, resources, shaders, combiners and display code. SDL
+  window/event and CoreText text adapters replace the remaining host services.
+  Shared HLSL dialect and point-output fixes address actual boot/mission errors;
+  synthetic GPU contracts and bounded first-mission captures provide limited
+  evidence. Default GL remains available. Next: common interpolation depth
+  isolation, host-present measurement, fullscreen/settings integration and
+  targeted cube/volume/movie/framebuffer/advanced-combiner scenes. Windows
+  execution and complete scene parity remain pending.
+  [Evidence](STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).
+
+- **Shared interpolation depth (2026-10-19):** The commit carrying this entry
+  on `codex/shared-interpolation-depth` depends on `2c63fbf`. The common PC/Mac
+  renderer now gives every depth subresource touched by replay its own fresh
+  depth/stencil history, retains it across target switches, and restores guest
+  target bindings after replay. This moves the GL preservation behavior into
+  common source and extends it to custom depth surfaces. The asset-free RHI
+  contract and native Xbox-device checks pass on Mac; Windows WARP execution,
+  host-present timing and broader scene parity remain pending.
+  [Evidence](STATUS.md#shared-interpolation-depth-isolation-2026-10-19).
+
+- **Shared presentation metrics (2026-10-19):** The commit carrying this entry
+  on `codex/shared-present-metrics` depends on `3e78f7c`. Common RHI and fallback
+  GL use `src/graphics/present_metrics.h` for bounded API-return timing and
+  guest/interpolated/other counters. Vulkan acquire/present skips and errors no
+  longer report success; the shared HLE only counts accepted replay presents and
+  does not reuse a stale scheduling timestamp on failure. Windows runs the same
+  source/fault contracts in CI; its execution and stable-120 gameplay remain
+  pending. [Evidence](STATUS.md#shared-presentation-outcomes-and-timing-2026-10-19).
 
 ### MAC-006 — Cube and volume texture resources
 
@@ -859,7 +836,7 @@ runtime readiness. No full campaign playthrough is required.
 - **PC behavior:** Windows has resource factories and sampling paths for cube/volume textures.
 - **PC source:** Audited revision above; `external/ts3FPrecomp/src/d3d/d3d8_device.c`, `external/ts3FPrecomp/src/d3d/d3d8_combiners.c`; `src/native/renderer_gl.c`, `src/native/gl_bridge.inc`.
 - **PC validation:** Factories are implemented on the Windows path; usage and fidelity in particular game scenes need targeted evidence.
-- **Existing Mac support:** Native cube/volume creation returns `E_NOTIMPL`; cube metadata/level queries return false.
+- **Existing Mac support:** Default GL cube/volume creation returns `E_NOTIMPL`; cube metadata/level queries return false. The opt-in common Vulkan game now compiles the PC factories; face/slice/mip and scene acceptance remain unverified (see MAC-005).
 - **Mac adaptation needed:** Add resource lifetime, face/slice/mip uploads and sampler integration. Coordinate with MAC-005; establish actual title usage before prioritizing expensive format work.
 - **Mac acceptance checks:** Synthetic face/slice/mip checks and resource release pass on the GPU; validate a game scene if one uses these resources. Unsupported formats must fail explicitly.
 - **Mac implementation and evidence:** Remaining work pending. Existing coverage:
@@ -878,7 +855,10 @@ runtime readiness. No full campaign playthrough is required.
   and capture tests are in `tests/test_channel_clears.py`. The shared mapping
   also feeds Mac, so `src/native/renderer_gl.c` now applies the corresponding
   GL colour mask and restores the existing render state. No additional native
-  adapter is needed; native build/GPU validation is pending. Acceptance:
+  adapter is needed. Native GPU coverage now passes all 192 combinations of
+  channel masks and independent depth/stencil clears at Original, 1080p and
+  offscreen sizes, including alpha readback, viewport/rectangle clipping and
+  restoration of write masks. [Native evidence](STATUS.md#native-channel-clear-gpu-validation-2026-10-17). Remaining scene acceptance:
   repeatedly cycle lobby information pages at default and enlarged resolutions;
   verify readable text without white fill or stale page masks, unchanged
   backgrounds, and preserved clipping, depth/stencil and offscreen targets.
@@ -947,7 +927,7 @@ runtime readiness. No full campaign playthrough is required.
 
 - **Status:** Awaiting validation
 - **PC behavior:** Windows loads compiled DDS replacements with matching keys/mips and bounded residency.
-- **Windows build fix (2026-10-15):** Uncommitted on `mac-port`,
+- **Windows build fix (2026-10-15; integrated in current `main`):**
   `src/texture_pack.c` restores the local `FILE *f` declaration used by
   `dump_original`. MSVC syntax compilation passes; no Mac adapter change is
   needed because the native renderer uses `src/native/gl_texture_pack.inc`.
@@ -1007,19 +987,10 @@ runtime readiness. No full campaign playthrough is required.
 - **Mac implementation and evidence:** Remaining work pending. Existing coverage:
   [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
 
-## Shared uncertainties, not confirmed Mac-only omissions
-
-Campaign completion, checkpoint/save-load round trips, physical-controller play,
-multiplayer/online, vehicle/MapMaker controls and exhaustive audio/rendering
-fidelity lack complete evidence across the project. They should not be described
-as proven PC features missing only on Mac. Track focused validation in `STATUS.md`.
-The reported world disappearance remains unresolved until reproduced and checked;
-none of the renderer entries above is a confirmed diagnosis of that symptom.
-
 ### MAC-013 — System Link and Online multiplayer
 
 - **Status:** Queued
-- **Temporary diagnostics experiment (uncommitted, 2026-10-16):** Windows
+- **Temporary diagnostics experiment (`e9eed34`, 2026-10-16):** Windows
   `Play-Quiet.cmd` / `TSFP_DEBUG_QUIET=1` routes stdout/stderr to `NUL` and skips
   Debug log polling and performance-log writes, retaining FPS measurement and
   saved options. Sources: `src/pc_debug_output.h`, `src/pc_debug.c`,
@@ -1029,7 +1000,7 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   alone do not verify a full native quiet run. Acceptance: isolated normal/quiet
   comparison with unchanged personal settings, no quiet diagnostic writes, FPS
   still measured, and reporting restored on a normal launch.
-- **Issue #20 follow-up (2026-10-16, uncommitted):** Active Windows PC matches
+- **Issue #20 follow-up (2026-10-16, commit `e9eed34`):** Active Windows PC matches
   open the movement-send gate once per guest tick instead of waiting seven
   ticks. A subsequent candidate bounds full movement-state refresh to three
   match ticks (20 Hz), including unchanged held keys and mouse-only turning.
@@ -1067,52 +1038,6 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
 - **Mac implementation and evidence:** Deferred. Conflict resolution preserves
   the Mac build boundary; host-independent dispatch and Windows checks are
   recorded in `STATUS.md`. Native Mac execution remains unverified for this merge.
-
-### MAC-016 — Shared pickup-range comparison fix (issue #6)
-
-- **Status:** Awaiting validation
-- **Issue #24 follow-up (2026-10-16, this revision):** The same existing
-  `patches/recomp-float-joins.patch` from `837692d` also fixes the controller
-  sensitivity slider's shared clamp at guest address `0x002EABEB`.
-  `tests/controller_sensitivity.c` and `tests/test_recomp_float_joins.py` execute
-  the original slider callback with its XBE constants, covering 0.05 steps,
-  endpoints, no input and guest register preservation on all four profiles.
-  A test restoring the older generator behavior reproduces the endpoint jump.
-  No new platform adapter or runtime patch is needed. On Mac, regenerate/rebuild
-  and run this shared regression with Clang, then check the slider in the menu
-  with isolated settings. Native validation and other-device synchronization
-  remain pending. [Windows evidence](STATUS.md#controller-sensitivity-slider-issue-24--2026-10-16).
-- **PC behavior:** Restore the original horizontal-distance rejection for pickups
-  by preserving SSE comparison snapshots across control-flow joins. The old
-  translation ignored this rejection; pickup radii and input bindings are unchanged.
-- **PC source:** Focused `fix-pickup-range` change (this commit): `patches/recomp-float-joins.patch`,
-  `tools/recomp-generation.py`, `tsfp.ps1`, `tests/test_recomp_float_joins.py`,
-  `tests/pickup_collision.c`.
-- **PC validation:** The original US pickup tick reproduces the out-of-range grant
-  with the pinned translator and passes isolated range/height/ABI cases with the
-  patch. Build and gameplay evidence is recorded in
-  [STATUS.md](STATUS.md#pickup-range-comparison-fix--october-16-2026).
-- **Existing Mac support:** The same patch stack and generator are used by both
-  builds. `tools/build-native-mac.py` now rejects stale generator hashes and records
-  them after `--generate`.
-- **Mac adaptation needed:** No platform adapter is required for this math fix.
-  Transfer the patch through Git, regenerate the game C and rebuild on Apple Silicon.
-- **Mac acceptance checks:** Run the shared regression with the supported US XBE
-  and Clang; verify near/far pickup behavior while turning and strafing in a bounded
-  isolated native gameplay run. Body-collision symptoms need separate confirmation.
-- **Mac implementation and evidence:** Shared implementation is present; native
-  compilation/gameplay and cross-device synchronization remain unverified.
-
-## Status meanings
-
-- **Queued:** PC feature recorded; Mac adaptation is pending.
-- **In progress:** Mac implementation is underway.
-- **Awaiting validation:** Implementation is present but relevant Mac checks remain.
-- **Verified:** Mac acceptance checks passed, with evidence linked below.
-- **Not applicable:** No corresponding Mac capability is needed; explain why.
-
-If shared code already supplies the feature, record that fact and use awaiting
-validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-014 — Patch upgrades across Windows watermark and native overlay guards
 
@@ -1176,7 +1101,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   1314; other errors still fail. Release test/staging cleanup removes validated
   disposable directories without shell Recycle Bin support, preserves archives,
   and does not mask the original test failure if cleanup also fails.
-- **PC source:** Uncommitted on `fix/release-cleanup` over `2ef7536`:
+- **PC source:** Commit `b89fbe3` on `fix/release-cleanup`, integrated into `main`:
   `tests/test_native_mac_tools.py`, `tests/test_publish_release.py`,
   `tools/recycle-release-work.ps1`, `tools/publish-release.py`.
 - **PC validation:** 22 passed, three skipped; see `STATUS.md` release cleanup.
@@ -1188,6 +1113,41 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   cleanup and capture must still reject redirects and preserve target files.
 - **Mac implementation and evidence:** macOS checks and other-device
   synchronization remain unverified.
+
+### MAC-016 — Shared pickup-range comparison fix (issue #6)
+
+- **Status:** Awaiting validation
+- **Issue #24 follow-up (2026-10-16, this revision):** The same existing
+  `patches/recomp-float-joins.patch` from `837692d` also fixes the controller
+  sensitivity slider's shared clamp at guest address `0x002EABEB`.
+  `tests/controller_sensitivity.c` and `tests/test_recomp_float_joins.py` execute
+  the original slider callback with its XBE constants, covering 0.05 steps,
+  endpoints, no input and guest register preservation on all four profiles.
+  A test restoring the older generator behavior reproduces the endpoint jump.
+  No new platform adapter or runtime patch is needed. On Mac, regenerate/rebuild
+  and run this shared regression with Clang, then check the slider in the menu
+  with isolated settings. Native validation and other-device synchronization
+  remain pending. [Windows evidence](STATUS.md#controller-sensitivity-slider-issue-24--2026-10-16).
+- **PC behavior:** Restore the original horizontal-distance rejection for pickups
+  by preserving SSE comparison snapshots across control-flow joins. The old
+  translation ignored this rejection; pickup radii and input bindings are unchanged.
+- **PC source:** Focused `fix-pickup-range` change (this commit): `patches/recomp-float-joins.patch`,
+  `tools/recomp-generation.py`, `tsfp.ps1`, `tests/test_recomp_float_joins.py`,
+  `tests/pickup_collision.c`.
+- **PC validation:** The original US pickup tick reproduces the out-of-range grant
+  with the pinned translator and passes isolated range/height/ABI cases with the
+  patch. Build and gameplay evidence is recorded in
+  [STATUS.md](STATUS.md#pickup-range-comparison-fix--october-16-2026).
+- **Existing Mac support:** The same patch stack and generator are used by both
+  builds. `tools/build-native-mac.py` now rejects stale generator hashes and records
+  them after `--generate`.
+- **Mac adaptation needed:** No platform adapter is required for this math fix.
+  Transfer the patch through Git, regenerate the game C and rebuild on Apple Silicon.
+- **Mac acceptance checks:** Run the shared regression with the supported US XBE
+  and Clang; verify near/far pickup behavior while turning and strafing in a bounded
+  isolated native gameplay run. Body-collision symptoms need separate confirmation.
+- **Mac implementation and evidence:** Shared implementation is present; native
+  compilation/gameplay and cross-device synchronization remain unverified.
 
 ### MAC-018 — Story audio timing, queue retry and ADPCM resume (issue #8)
 
@@ -1253,6 +1213,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   scene at 60 and interpolated 120 FPS. Check solid walls/weapon, windows and
   glow, plus a first-mission effects smoke test. Native rendering and other-device
   synchronization are unverified; Windows results do not establish Mac support.
+- **Native progress (2026-10-17):** Shared cache and GPU screen-copy checks pass.
+  Bounded Khallos Express runs at targets 60/120 show solid train panels/weapon
+  after movement, turning and firing, plus window transparency. Dark/stretched
+  exterior sky remains; the native fog register is missing and needs adaptation.
+  Overall glow/exterior fidelity remains pending. [Measured scope and captures](STATUS.md#native-khallos-express-effects-check-2026-10-17).
 
 ### MAC-020 — Adaptive cutscene letterboxing (issue #33)
 
@@ -1282,10 +1247,6 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   build on macOS, then check story and scripted cutscenes at 4:3, 16:9, 16:10 and
   ultrawide output, including resolution changes, fades, subtitles, scopes and
   60/120 FPS. Mac compilation, GPU execution and other-device sync are unverified.
-
-## Entry template
-
-Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
@@ -1612,21 +1573,19 @@ Copy this template into the queue for each new entry. Replace all placeholders.
   update recovery, isolated settings save/cancel, conflicts, file preservation,
   primary display modes, and actual runtime consumption of all selected settings.
   Windows results do not verify Mac adapters or rendering.
-
-### MAC-NNN — Feature name
-
-- **Status:** Queued
-- **PC behavior:** What the user can do and how it should behave.
-- **PC source:** Branch, commit/PR (or uncommitted), and relevant source/patch paths.
-- **PC validation:** Checks performed and any remaining Windows gaps.
-- **Existing Mac support:** Shared behavior already available, or unknown.
-- **Mac adaptation needed:** Adapter, build, UI, rendering or configuration work;
-  include dependencies and settings compatibility where relevant.
-- **Mac acceptance checks:** Concrete behavior to verify with isolated tests.
-- **Mac implementation and evidence:** Commit/files, host checks and a link to
-  the relevant `STATUS.md` validation record; pending until performed.
+- **Delivery order (audit 2026-10-17):** This ID covers a complete launcher,
+  not just a settings window. Implement in independently validated slices:
+  (1) MAC-012 runtime package/import/provenance; (2) pre-game settings with
+  version capability gates and preserved drafts; (3) verified game/self-update,
+  rollback and clean-start/clean-exit retirement; (4) resumable downloads and
+  recovery; (5) repair/verify, privacy-filtered diagnostics and reviewed issue
+  drafts; (6) release notes/known issues and accessible page polish. Preserve
+  the detailed acceptance requirements above for every slice. Native game
+  input/rendering work can proceed without waiting for this entire launcher.
 
 ### MAC-022 — Configurable gameplay FOV (issue #29)
+
+- **Status:** Awaiting validation
 
 - **Issue #66 follow-up (2026-10-16, commit `df3bc2e`,
   [PR #72](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/72)):**
@@ -1651,10 +1610,14 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 - **Shared Mac support:** the existing shared camera/menu hooks and config model
   use the same behavior. Config accepts legacy V1 (55°) and V2 with explicit FOV;
   existing Cocoa resolution saves retain the loaded FOV through the shared writer.
-  No native Mac execution has been performed for this change.
-- **Remaining:** validate native compilation, menu slider drawing/input, gameplay
-  and zoom on Mac. Adding a slider to the separate Cocoa settings window is
-  deferred; Windows launcher UI does not constitute a Mac launcher implementation.
+  Native compilation and Cocoa FOV controls now pass the isolated checks below.
+- **Native adaptation (2026-10-17, `codex/mac-display-parity`):** Added the
+  40–100° Cocoa slider, numeric value and shared default. Real Cocoa/GPU checks
+  cover draft cancellation, Save/reopen, and failed-save rollback of both FOV
+  and resolution. See [native settings evidence](STATUS.md#native-display-settings-parity-2026-10-17).
+- **Remaining:** guest menu slider, gameplay/zoom and ledge/landing checks on Mac;
+  visual review of the live Cocoa panel. Windows launcher UI does not constitute
+  a Mac launcher implementation.
 - **Acceptance:** default framing unchanged; 40/55/75/100° at 4:3, 16:9 and
   ultrawide; zoom retains relative magnification; cinematics/terminals unchanged;
   configuration round trips and resolution timeout reverts both choices. See
@@ -1730,10 +1693,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Shared Mac support:** The catalog, config bounds, guest picker and title HUD
   hooks are shared. Native OpenGL uses the shared side-anchor rule and fits narrow
   widgets vertically, including their scissor rectangles. Cocoa consumes the same
-  capacity and catalog without duplicating Original. Native execution is unverified.
-- **Remaining:** Build and validate on Apple Silicon; add the new aspect filter
-  to the separate Cocoa settings window when adapting its UI. The Windows launcher
-  is not a Mac launcher implementation. Existing split-screen layout is preserved.
+  capacity and catalog without duplicating Original. The Cocoa aspect filter now
+  shares nearest-mode selection with the guest menu, preserving custom modes and
+  distinguishing Original from explicit 640×480. Real Cocoa/GPU tests exercise
+  all six groups, custom mode, Save/Cancel/Defaults and failed-save recovery.
+  See [native settings evidence](STATUS.md#native-display-settings-parity-2026-10-17).
+- **Remaining:** Visual layout checks across the requested ratios and scenes;
+  live Cocoa panel visual review. The Windows launcher is not a Mac launcher
+  implementation. Existing split-screen layout is preserved.
 - **Acceptance:** 4:3, 5:4, 16:9, 16:10, 21:9 and 32:9 menu captures with readable,
   unclipped, proportional text; full backgrounds; ammo/radar corners; centred
   crosshairs and scope aim; zoom controls aligned; pause/return; no leaked placement
@@ -1743,8 +1710,372 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   wrapped descriptions, and keyboard/controller switching. Verify supported GPU
   sizes and allocation failure recovery. See issue #27/#31 in
   `STATUS.md` for Windows evidence; do not infer Mac runtime verification from it.
+- **Local source check (2026-10-17):** HUD placement and tutorial layout C fixtures passed
+  on Apple Silicon with Clang. This does not verify native window input, rendering
+  or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
 
-### MAC-033 — Experimental network bot setup (issue #25)
+### MAC-025 — Reusable unlocked testing profile
+
+- **Status:** Awaiting validation
+- **PC behavior:** Local Test Lab fixture unlocks story/Arcade/characters and
+  challenges without changing fresh collectible/pickup progress. Disposable
+  copies use isolated configurations and the existing startup-video switch.
+- **Source:** Commit `0c69834`, [PR #80](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/80)
+  on `test-profile-fast-start`; `tools/testing_profile.py`,
+  `tests/test_testing_profile.py`, `docs/testing-profile.md` and `AGENTS.md`.
+- **Shared Mac support:** The US save layout and runtime HMAC key are shared;
+  fixture generation/preparation uses portable Python. Native execution unverified.
+- **Remaining:** Integrate fixture cloning and `RECOMP_XMV_PLAY=0` with the bounded
+  native runner. The new play/Recycle Bin wrapper is Windows only. No gameplay or
+  existing native launcher behavior changed; no Mac adapter was modified.
+- **Acceptance:** Load the profile in native menus, verify late story levels,
+  Arcade character selection and challenge availability, retain fresh pickup
+  data, isolate both display configs/controls and recycle only test disks.
+  Windows evidence is recorded in `STATUS.md`; other-device sync is unverified.
+
+- **Native implementation (2026-10-17):** `codex/mac-test-lab` adds
+  `--unlocked-profile` to `tools/test-native-mac.py`, using shared fixture
+  preparation with native XDG isolation, ownership locks and bounded cleanup.
+  The local native-created fresh seed produced a verified immutable fixture.
+  A 120-second isolated run loaded Test Lab and selected a late Story level
+  through its difficulty screen. Checksums, HMAC and fresh pickup flags are
+  preserved. Arcade character/challenge availability and actual later-level
+  gameplay remain pending; no completion or pickup-progression claim.
+  [Native evidence](STATUS.md#native-test-lab-runner-2026-10-17).
+
+### MAC-026 — Character picker and weapon proportions (issue #22)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Correct the horizontal aperture of newly built character
+  picker and first-person weapon projections for the selected output aspect.
+  Keep each lens, zoom, depth and the original 4:3 behavior; do not reuse or
+  repeatedly scale the preceding character's projection during model changes.
+- **Source:** Commit `6485069`, [PR #83](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/83), on
+  `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
+  `src/pc_display_menu.c`, `src/pc_display_menu.h`,
+  `patches/zzzzzzzzzzz-model-projection.patch`, `tests/test_decal_projection.py`.
+- **Shared Mac support:** The perspective hook is already enabled by
+  `TSFP_NATIVE_DISPLAY`; this correction uses the shared aspect model. Both
+  platform defines pass the source wrapper tests. No new OS/graphics adapter is
+  required; native execution and visual fidelity are unverified.
+- **Remaining:** Build and visually validate on Apple Silicon. Other-device
+  synchronization is unverified; Windows captures do not establish Mac support.
+- **Acceptance:** Cycle character models at 4:3, 16:9 and ultrawide without
+  changing their proportions during loading; verify first-person weapons,
+  aiming/zoom, split-screen, and unchanged world/decal/cinematic projections.
+  See [Windows evidence](STATUS.md#issue-22-model-projections-2026-10-16).
+
+### MAC-027 — Arcade RANK widget left placement
+
+- **Status:** Awaiting validation
+- **PC behavior:** In widescreen single-player Arcade, anchor the complete RANK
+  widget (caption, ordinal and frame) to the left inset, matching the status icons
+  below it. Flush preceding/following sprite batches at the placement boundary.
+  Preserve 4:3, narrower outputs and the existing split-screen layout.
+- **Source:** Commit `3e747a5`, [PR #83](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/83), on
+  `22-character-selection-screen-is-stretched-when-using-higher-resolutions`;
+  `src/pc_display_ui.inc`,
+  `patches/zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch`,
+  `tests/ui_layout.c` and `tests/test_ui_layout.py`.
+- **Shared Mac support:** The existing native LEFT placement adapter and shared
+  widget scope handle this hook under `TSFP_NATIVE_DISPLAY`; no new adapter is
+  required. Native build/gameplay validation remains pending.
+- **Remaining:** Validate Arcade RANK alignment in the native renderer and keep
+  the label, number and frame together during rank changes. Other-device
+  synchronization is unverified.
+- **Acceptance:** Compare 4:3, 16:9 and ultrawide with the original left inset,
+  status icon alignment and proportional size; check changing ranks and confirm
+  split-screen and unrelated HUD groups keep their existing placement. See
+  [Windows validation](STATUS.md#arcade-rank-widget-placement-2026-10-17).
+
+### MAC-028 — Preserve frontend camera FOV (#82)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Gameplay FOV settings leave the main-menu/profile background
+  at its authored lens. In-game cameras retain the selected FOV, including
+  falling/landing; aspect correction and cinematic framing remain active.
+- **Source:** Branch `82-bug-fov-change-affects-the-main-menu`, based on
+  main `abaf001`; `src/pc_display_menu.c`, `tests/cutscene_letterbox.c` and
+  `tests/test_cutscene_letterbox.py`.
+- **Shared Mac support:** The camera function is already shared with native Mac.
+  The scene check uses guest state and requires no platform adapter.
+- **Remaining:** Run the camera regressions and compare frontend backgrounds at
+  55 and 90 degrees on macOS. Native execution and other-device synchronization
+  are unverified on this Windows host.
+- **Acceptance:** Menu backgrounds retain their lens at either setting; entering
+  gameplay and returning to the menu applies the appropriate FOV without
+  accumulating changes. Preserve falling, terminal and cinematic behavior.
+  See the issue #82 validation entry in `STATUS.md`.
+
+### MAC-029 — Skippable idle demo video (#50)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The menu idle demo accepts the game's existing skip controls,
+  closes its host audio/video and returns to the menu. Repeated stops are safe;
+  subsequent movies and normal end-of-file playback remain functional.
+- **Source:** Branch `50-cannot-skip-menu-idle-video`, initially based on main
+  `abaf001`; final `xmv-stop.patch`, `tools/recomp-generation.py`, `tsfp.ps1`,
+  `tests/xmv_stop.c` and `tests/test_xmv_stop.py`.
+- **Shared Mac support:** Stop handling and the corrected US symbol map are
+  shared. Native generation already refreshes symbols; metadata edits now
+  invalidate generated wrappers. This does not add native host XMV playback.
+- **Remaining:** Run the portable stop regression and generation checks on Mac.
+  Native build/live validation and other-device synchronization are unverified.
+- **Acceptance:** A stop reports EOF even without a host decoder; destroy is
+  safe afterward. When native movie playback is available, verify idle-demo
+  skipping, overlay/audio cleanup and returning to a responsive menu. Preserve
+  original-body fallback and genuine Start behavior for other titles.
+  See the issue #50 validation entry in `STATUS.md`.
+
+### MAC-030 — Menu mouse selection (#86)
+
+- **Integration (2026-10-19):** Shared FOV pointer callback and drawn-bar capture
+  now compile on native Mac as well as Windows. Native build and asset-free
+  translation-unit compile pass; live slider acceptance remains pending. The
+  newer audio/choice/carousel wrappers still need their separate native review.
+  [Evidence](STATUS.md#shared-platform-integration-baseline-2026-10-19).
+
+- **Status:** Awaiting validation
+- **Issue #114 menu follow-up** (implemented on
+  `114-bug-mouse-pointer-cannot-select-some-menu-footer-elements`):
+  Tracks the recent slider, resolution-label and choice-arrow changes under
+  [#114](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/114).
+  The same captured-bar pointer policy now handles Controls sensitivity and
+  Display settings FOV. Sensitivity uses the selected player's original 0..1
+  value in 0.05 steps and original preview, leaving Accept/Cancel unchanged.
+  FOV edits only the 40..100 draft, with Apply/Back retaining save/discard rules.
+  `menu-setting-sliders.patch` wraps the sensitivity painter and scopes capture
+  of its actual bar rectangle; progress/capacity meters remain noninteractive.
+  Source: `src/pc_menu_sliders.inc`, `src/pc_display_menu.c/.h` and the existing
+  menu pointer adapter. Mac wrappers pass through pending SDL integration.
+  The shared Display settings builder also reserves width for long resolution
+  values beside their label; native Mac visual validation remains pending.
+  Add both settings, per-player isolation, translated bar widths, focus/resize
+  cancellation and Apply/Back checks to the native Mac acceptance work.
+  `src/pc_menu_choices.inc` and `menu-choice-arrows.patch` capture the standard
+  type-1 choice arrows and emit one native Previous/Next edge per mouse click.
+  Mac currently retains original drawing through pass-through wrappers; adapt
+  pointer input and check both arrow directions, variable-width choices,
+  disabled rows, held clicks and stale/resize/focus invalidation. The two custom
+  type-1 painters also scope their row owner (`menu-custom-choice-arrows.patch`).
+  Windows lobby clicks now select the logical network pad buffer used by native
+  callbacks. `src/pc_menu_team.inc` and `menu-team-mouse.patch` capture the local
+  player's team arrows and inject directions/Select/Back before the parent tick;
+  native wrapping/readiness/network callbacks remain authoritative. PC menu-only
+  WASD aliases use D-pad input. Port these input adapters to SDL; verify lobby
+  Options/Select Character, team colour changes and ready/cancel with mouse and
+  A/D, plus immediate gameplay recapture. These paths passed local Windows
+  System Link checks; Mac and remote Internet sessions remain unverified.
+  Character-selection portraits use a separate custom carousel. The Windows
+  adapter (`src/pc_menu_characters.inc`, `menu-character-mouse.patch`) captures
+  actual player-one portrait/variant quads, validates their container ownership,
+  and uses native preview and confirmation callbacks. Port click-preview, wheel
+  browsing and Select/Back/right-click cancellation; cover clipped/invisible
+  portraits, focus loss, resize, stale draws and other players. Local Windows
+  System Link portrait/variant selection and confirm/cancel were verified.
+- **Issue #115 follow-up** (`115-bug-audio-menu-sliders-cannot-be-adjusted-with-mouse-pointer`): Windows Music/Sound volume bars now
+  accept click-to-set and held dragging in main and paused Audio/Video Options.
+  `src/pc_menu_sliders.inc` captures both original painter layouts, reuses the
+  shared proportional pointer mapping, and updates the game's staged 0..16
+  volumes through its existing preview functions. Accept/Cancel remain native.
+  `audio-menu-mouse.patch` adds two painter wrappers; Mac calls the original
+  painters unchanged until the SDL pointer adapter below is implemented.
+  Acceptance must include both bars at 4:3/widescreen/ultrawide, endpoint
+  clamping, focus-loss/release/resize cancellation, disabled music/sound, and
+  Accept/Cancel with keyboard/controller navigation retained. Shared policy
+  tests run on Windows; native Mac input/rendering remains unverified. See
+  `STATUS.md` under Audio-menu mouse sliders for measured PC validation.
+- **PC behavior:** Move the visible cursor over a main, pause or Tab/Objectives menu item to select
+  it, left-click to activate, and right-click to go back. The hit test follows
+  the proportional UI and presentation bars, using the full UI canvas rather
+  than the cropped world viewport during paused updates. Keyboard/controller selection
+  remains active until the pointer moves; mouse ownership suppresses old
+  directional repeats until a fresh direction takes over, including after a click
+  opens a submenu or goes back with the pointer stationary. Held clicks do not
+  cross screens or fire when gameplay resumes. Confirm callbacks receive a scoped
+  player-one pad edge, so mouse selection preserves valid controller mappings.
+  Wheel notches navigate menu rows (including level selection) without activation;
+  queued steps are bounded and discarded on clicks, menu changes, or focus loss.
+  Wheel ownership spans the gaps between packets and continuous pointer motion;
+  hover resumes on a new move after both inputs briefly settle. Clicks stay immediate.
+  Bottom prompts use measured rendered text bounds and original enabled/hidden
+  checks; clicks feed the existing actions before menu shortcut callbacks.
+  Enabled footer prompts turn light blue under the pointer, preserving menu
+  fade alpha. Profile-picker prompts are measured separately within their
+  centered text rows, including Select, Back and enabled Delete Profile.
+  Pause/Objectives Options and Status headings highlight and accept clicks;
+  tab replacement waits until the original input dispatch has returned.
+  Drawing reads pointer state without consuming wheel input.
+  Right-click closes root Pause/Objectives through the original pause handler.
+  Returning to gameplay restores mouse capture automatically while preserving
+  focus-loss protection and suppressing held menu clicks.
+- **Source:** Commit `e18baa9` on `86-enhancement-use-mouse-to-control-main-menu`,
+  based on main `e942ef0`; `src/pc_menu_mouse.h`,
+  `src/pc_menu_mouse_guest.inc`, `src/pc_controls.c/.h`, the final
+  `menu-mouse*.patch` stack, and `tests/menu_mouse.c`.
+- **Shared Mac support (2026-10-17, `codex/mac-menu-mouse`):** Enabled the
+  shared guest policy using a locked SDL point/button/wheel snapshot. Window
+  operations stay on the main thread; gameplay transitions request recapture
+  only while focused. Held menu buttons cannot fire on return. Added the native
+  per-frame mode hook as a separate reproducible patch. Real SDL regression
+  checks pass; an isolated mouse-only run selected Test Lab, opened Story,
+  scrolled two levels, returned with right-click and opened Settings.
+  [Evidence and limits](STATUS.md#native-menu-pointer-adapter-2026-10-17).
+- **Remaining:** Full acceptance matrix below, physical input, pause/Objectives
+  tabs and footer prompts, widescreen/ultrawide alignment and gameplay recapture.
+- **Acceptance:** Hover/click main/profile/settings menus at 4:3, 16:9 and
+  ultrawide sizes; reject disabled/clipped items and presentation bars, retain
+  keyboard/controller navigation, select the profile using only the mouse and
+  verify controller mappings stay valid, wheel up/down through level selection
+  without activating a level or leaking steps across screens; move the pointer
+  up/down while scrolling and verify selection follows only the wheel until
+  the gesture settles, then verify hover and immediate clicks work; click enabled footer
+  prompts in main/pause/Objectives menus and verify hidden/disabled prompts are inert;
+  verify hover tint follows the same hit area, clears on focus loss, retains
+  fade transparency and does not drain queued scrolling; check profile Select/Back
+  independently and disabled/enabled Delete Profile; switch Options/Status in
+  both Pause and Objectives and reject stale labels during transitions;
+  close root Pause/Objectives with right-click and resume mouse look without an
+  extra click, including after Escape, while unfocused windows stay uncaptured;
+  keep selection stable after mouse-driven
+  transitions without further pointer motion, and prevent held selection clicks
+  from becoming gameplay shots. Run `tests/test_menu_mouse.py` and native input
+  tests. Windows evidence is recorded in the issue #86 entry in `STATUS.md`.
+- **Local source check (2026-10-17):** Menu pointer policy and guest-adapter C fixture passed
+  on Apple Silicon with Clang. This does not verify native window input, rendering
+  or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
+
+### MAC-031 — Quit to Desktop menu entries
+
+- **Status:** Awaiting validation
+- **PC behavior:** Main Story/Arcade menu and Pause append Quit to Desktop.
+  The game's confirmation screen defaults to Cancel, supports normal menu
+  controls, and posts WM_CLOSE only after confirmation. Existing Quit retains
+  its return-to-menu behavior. Only player one's menus expose desktop exit.
+- **Source:** Commit `e18baa9` on the #86 menu controls branch;
+  `src/pc_quit_menu.inc`, `src/pc_display_menu.c/.h`, `quit-desktop.patch`,
+  and `tests/quit_menu.c` / `tests/test_quit_menu.py`.
+- **Native adaptation (2026-10-17, `codex/mac-quit-desktop`):** Enabled shared
+  menu insertion and confirmation callbacks on Mac. Confirm queues SDL_QUIT;
+  the main-thread event pump owns normal process exit. Cancel, Back, player-one
+  checks, failed-post retry and duplicate-confirm protection remain shared.
+  Both guest dispatch variants and real SDL queue tests pass.
+  [Native evidence](STATUS.md#native-quit-to-desktop-2026-10-17).
+- **Remaining:** Pause Cancel/Back/Confirm and mouse-confirm checks. Main-menu
+  keyboard Cancel/Back/Confirm now passes; exit code is 0 after SDL shutdown.
+  A wide gameplay run also shows the Pause entry, but does not establish its exit.
+- **Acceptance:** Cancel and Back restore main/Pause without exiting; Pause
+  stays paused; confirmed exit closes normally from both screens with mouse
+  and keyboard/controller. Verify menu layout at supported aspect ratios.
+  Windows evidence belongs to the issue #86 entry in `STATUS.md`.
+- **Local source check (2026-10-17):** Guest quit-confirmation C fixture with a mocked close callback passed
+  on Apple Silicon with Clang. This does not verify native window input, rendering
+  or gameplay. [Exact scope](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
+
+### MAC-049 — Spirit skull and eye rendering (#17)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The US spirit renderer uses clockwise culling for rigid
+  skull nodes while keeping skinned trails two sided. Its two eye-billboard
+  batches use unbiased clip-space positions and no fog, preserving their
+  red texture and depth testing. Overrides are restored after each node/batch.
+- **Source:** Spirit rendering commit `70d8e7f` on
+  `17-ghosts-in-mansion-of-madness-and-what-lies-below-are-nonvisible`;
+  `src/pc_ghost_render_guest.inc`, the `spirit-rendering.patch` at the end of
+  the shared patch stack, and `tests/ghost_rendering.c`.
+- **Shared Mac support:** Guest wrappers and HLE render-state forwarding are
+  shared with Windows. No shader hash/string rewriting, geometry fingerprint,
+  Windows-only API, or diagnostic switch is required.
+- **Remaining:** Build on macOS and verify GPU and interpreted-vertex paths.
+  No native execution was available on this Windows host. Confirm the native
+  unwritten-fog fallback observes the scoped fog-disable state. The native
+  fog adapter now passes enabled/disabled and GPU/CPU fixture checks; actual
+  Mansion spirit appearance/occlusion remains pending.
+  [Fog adapter evidence](STATUS.md#native-fog-combiner-input-2026-10-17).
+- **Acceptance:** Check Mansion entrance-hall spirits from several angles;
+  preserve solid faces, wispy trails, red eyes and wall occlusion. Check
+  ordinary particles/fog immediately afterward and other ghost encounters in
+  both affected levels. Run `tests/test_ghost_rendering.py` and patch-transition
+  suites. See `STATUS.md` for measured Windows evidence and remaining limits.
+
+### MAC-050 — Restore a reproducible native build from current main
+
+- **Status:** Verified
+- **PC behavior:** The supported build regenerates from the complete pinned
+  patch stack and supplies generated build identity to the shared debug code.
+  Current project rules permit focused branches on either platform.
+- **Source:** Main `0dc9fea`; `tools/build-native-mac.py`, `tsfp.ps1`,
+  `tools/network-identity.py`, `src/pc_debug.c`,
+  `patches/zzzz-pc-debug-latency-watermark.patch`,
+  `patches/zzzzzzzzzzzzzz-native-debug.patch`, and `AGENTS.md`.
+  The original integration gaps were found during source review; repair evidence
+  is recorded below.
+- **Initial audit findings (repaired below):** The native builder used the shared
+  pins, generator cache validation, patch stack and isolated regression paths, but its
+  hard-coded `branch != 'mac-port'` rejection prevents the current focused-branch
+  workflow. Shared `pc_debug.c` unconditionally includes `pc_network_build.h`;
+  only the Windows script generates it and only Windows CMake wiring adds the
+  generated include directory/version definition. A clean native compile is
+  found to fail during restoration and is now repaired below.
+- **Implemented adaptation:** Removed the obsolete platform-branch restriction
+  while retaining host/XBE/pin checks. Provided reproducible native build identity
+  and include/version wiring through a separate reproducible CMake patch.
+  Repaired MAC-003's settings preservation and independently reapplied
+  MAC-005's dependent-texture work, preserving current-main renderer changes.
+- **Acceptance:** From a focused branch, build with the supported US XBE,
+  Python 3.12+, pinned dependencies and full patch stack; regenerate wrappers,
+  run native platform/MMIO/path/GPU/input/settings/debug tests, check manifest
+  provenance, then perform a bounded menu/first-mission smoke test using the
+  isolated runner at 60 and up to 120 host presents with a 60 Hz guest clock.
+  Preserve both display configurations and personal data. Run affected shared
+  checks and report Windows checks unavailable on this host.
+- **Evidence/dependencies:** [Current-main audit](STATUS.md#mac-current-main-backlog-audit-2026-10-17).
+  These prerequisites were absent during the initial audit and have now been
+  restored from the local archive and pinned sources. Restore only required inputs;
+  do not transfer an entire Windows build tree or duplicate game extracts.
+
+- **Build repair (2026-10-17):** Implemented on `codex/mac-native-build`,
+  based on audit `b884c68`. Focused branches now build; native identity/header/
+  version wiring and dirty-source provenance are present. Fresh generation,
+  compilation, platform/MMIO/path, real-GPU, SDL input, Cocoa settings/debug
+  checks pass. Native upload fixtures explicitly select full-width placement;
+  new pixel assertions check the updated proportional-menu contract. Current
+  menu boot is visible; remaining scene/60–120 checks are tracked below.
+  [Measured scope](STATUS.md#native-build-restoration-2026-10-17).
+
+
+- **Bounded baseline verified:** Focused-branch generation/build and all native
+  suites pass. Current-source first-mission smoke tests at 60 and the 120 target
+  show visible gameplay; the wide run checks movement, firing, mouse look and
+  keyboard pause/resume. [Scope and measured timing](STATUS.md#native-quit-to-desktop-2026-10-17).
+  This status covers build restoration and bounded smoke only. Feature-specific
+  acceptance remains in its own entry; Windows execution is unavailable here.
+
+### MAC-051 — Version and build-identity watermark
+
+- **Status:** Awaiting validation
+- **PC behavior:** Windows presents a separate lower-right version/compatibility
+  identity line on normal and interpolated frames, independently of the optional
+  performance line, allowing screenshots to identify the running build.
+- **Source:** `e2f655a`, integrated in main; `src/pc_debug.c`,
+  `tools/network-identity.py`, `patches/zzzz-pc-debug-latency-watermark.patch`.
+- **Native adaptation (2026-10-17, `codex/mac-build-watermark`):**
+  `src/native/gl_debug.inc` now draws `pc_debug_watermark()` independently at the
+  lower right, through the existing normal/interpolated host-presentation path.
+  CoreText measures/truncates long labels; narrow windows fit the full cached
+  line. Separate bounded texture/FBO caches preserve the optional FPS line;
+  normal SDL shutdown releases them. Shared build metadata comes from MAC-050.
+- **Validation:** Real GPU tests check visible text with FPS on/off, lower-right
+  placement, narrow/long labels, cache destruction/recreation, pixel-unpack/PBO,
+  texture/FBO/scissor restoration and guest-scene isolation. Reviewed generated
+  bitmap matches VERSION and the build manifest identity prefix.
+  [Measured evidence](STATUS.md#native-build-watermark-2026-10-17).
+- **Remaining acceptance:** Live window/fullscreen visual checks and host capture
+  review at 60/120 presents. Guest captures intentionally omit the host overlay.
+  A compatibility identifier does not establish native network support; see MAC-013.
+
+
+### MAC-052 — Experimental network bot setup (issue #25)
 
 - **Status:** Queued
 - **PC behavior:** The host's multiplayer lobby Options flow exposes
@@ -1854,7 +2185,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Mac implementation and evidence:** No Mac execution or other-device
   synchronization verified for this prototype.
 
-### MAC-048 - Discord Rich Presence (issue #63)
+### MAC-053 - Discord Rich Presence (issue #63)
 
 - **Status:** Queued
 - **PC behavior:** Optional launcher Discord tab with an enable switch and public
@@ -1892,3 +2223,29 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   infer native support from the Windows results below.
 - **PC evidence:** See [issue #63 validation](STATUS.md#issue-63---discord-rich-presence-2026-10-19)
   and [detailed activity validation](STATUS.md#issue-63---detailed-discord-activity-2026-10-19).
+
+## Shared uncertainties, not confirmed Mac-only omissions
+
+Campaign completion, checkpoint/save-load round trips, physical-controller play,
+multiplayer/online, vehicle/MapMaker controls and exhaustive audio/rendering
+fidelity lack complete evidence across the project. They should not be described
+as proven PC features missing only on Mac. Track focused validation in `STATUS.md`.
+The reported world disappearance remains unresolved until reproduced and checked;
+none of the renderer entries above is a confirmed diagnosis of that symptom.
+
+## Entry template
+
+Copy this template for each new entry and add its queue row. Replace all placeholders.
+
+### MAC-NNN — Feature name
+
+- **Status:** Queued
+- **PC behavior:** What the user can do and how it should behave.
+- **PC source:** Branch, commit/PR (or uncommitted), and relevant source/patch paths.
+- **PC validation:** Checks performed and any remaining Windows gaps.
+- **Existing Mac support:** Shared behavior already available, or unknown.
+- **Mac adaptation needed:** Adapter, build, UI, rendering or configuration work;
+  include dependencies and settings compatibility where relevant.
+- **Mac acceptance checks:** Concrete behavior to verify with isolated tests.
+- **Mac implementation and evidence:** Commit/files, host checks and a link to
+  the relevant `STATUS.md` validation record; pending until performed.
