@@ -11,7 +11,8 @@
   progress (180 seconds before the first frame), with modal/background/minimized
   suppression and sleep/resume grace. One report per stall; frame recovery
   rearms it. The game is left running and the launcher offers live open/export.
-- **Source:** Implementation on `feature/windows-crash-logger`; `src/pc_crash.*`,
+- **Source:** [PR #160](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/160),
+  implementation commit `20058fa` on `feature/windows-crash-logger`; `src/pc_crash.*`,
   `tools/crash_helper.c`, the `windows-crash-logger` patch,
   `tools/launcher/CrashReports.cs`, `Launcher.cs`, `MaintenancePage.cs`,
   `tools/crash-symbols.py`, `tools/test-windows-crash.py`, `src/pc_hang_policy.h`,

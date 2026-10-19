@@ -2,9 +2,19 @@
 
 ## Windows freeze detection and live launcher reports (2026-10-19)
 
-PR preparation rebased the source onto main `511c686`. The binary hashes and
-native runs recorded below identify the pre-rebase validation builds; source
-integration checks are recorded separately from those earlier game runs.
+[PR #160](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/160)
+commits the implementation as `20058fa`, rebased onto main `511c686`. Post-rebase
+validation passed: 78 source/patch/Auto Lookahead/package/profile/publisher tests
+plus two subtests; a fresh supported Windows Build and native checks; deliberate
+main/worker crash captures and exact-symbol verification; all nine hang cases;
+and both real launcher crash/hang export integrations. Rebuilt executable SHA-256:
+`d748c090e88ff2ce04223a766f3f50d043174f56189a5f58c35e0cc7811f270a`.
+The matching executable/PDB archive was verified. Evidence: ignored
+`logs/crash-pr-integration-tests.log`, `logs/crash-pr-windows-build.log`,
+`logs/crash-pr-capture-tests.log`, `logs/crash-pr-hang-tests.log`,
+`logs/crash-pr-launcher-crash.log`, and `logs/crash-pr-launcher-hang.log`.
+The earlier hashes/runs below remain as historical validation records. No
+release was published and native Mac gameplay remains unverified.
 
 Extends the uncommitted Windows crash logger on `feature/windows-crash-logger`
 (base main `9c92ae8`). Windows 11 Pro 10.0.26300 x64, MSVC 19.44.35207 and
