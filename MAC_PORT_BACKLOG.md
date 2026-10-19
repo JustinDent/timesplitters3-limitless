@@ -1,5 +1,25 @@
 # PC features awaiting Mac adaptation
 
+### MAC-045 - Terminal camera depth clears (issue #47)
+
+- **Status:** Implemented, pending native validation
+- **PC behavior:** The terminal camera's smaller depth attachment receives clears
+  issued to the same guest depth image on the main target. This addresses the
+  blank What Lies Below camera feed without clearing on every target switch.
+- **Source:** `47-what-lies-below-camera-visual-bug` branch; `terminal-depth-clear` additive runtime patch,
+  `tests/terminal_depth.c`, `tests/test_terminal_depth.py`, and build/CI wiring.
+- **Mac support:** The fix uses shared HLE clear/cache logic and existing
+  `host_Clear` / depth-surface APIs; no new OS or D3D11-only call is introduced.
+  The native GL renderer already provides those APIs. Windows regression/build
+  evidence is recorded in STATUS.md; native execution remains unverified.
+- **Remaining:** Run the native compiler regression and exercise the terminal
+  cameras on Apple Silicon. No separate implementation is currently expected.
+- **Acceptance:** Containment Area A and Laboratory Entrance feeds show their
+  rooms over multiple frames; changing cameras, opening doors and leaving the
+  terminal work. Colour-only clears and repeated target binds preserve depth;
+  independent guest images do not share cached depth. Recheck humanoid ghosts
+  and ordinary scene occlusion on the existing shared-depth path.
+
 ### MAC-044 - Game crash capture and launcher reports
 
 - **Status:** Queued
