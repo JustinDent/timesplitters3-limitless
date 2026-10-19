@@ -4662,3 +4662,19 @@ queued under MAC-021; other-device synchronization is unverified.
 - Zero game launches; no runtime/tool changes. Shared code retains the 512 MiB replacement residency cap; actual scene residency/fallback and representative Windows/Mac scene/platform/1080p/4K/ultrawide validation remain pending. Near-completion gate not reached. Other-device synchronization unverified.
 - Pack 940,489,422 bytes (896.92 MiB / 6144 MiB). Texture workspace at audit 5,096,896,364 logical/allocated bytes (4.75 GiB); temporary output 261,378,971 bytes (249.27 MiB / 256 MiB); free disk 104,419,393,536 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-143-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 144 corrections
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8821d73`.
+- Corrected eight held opaque drafts with built-in image generation; accepted two after offline review and retained six as unresolved. Installed/offline-approved coverage is now 1,062 of 6,812 supported unique catalog keys; 51 held and 5,699 still need artwork. This is not a completed remaster.
+- Accepted 831ceabae6c2d679: four staggered perforation rows, borders and highlights retained; desaturated pale gray/brass restored. Full luminance -3.45% versus original (previous -18.31%); upper/lower focus -3.51%/-4.40%.
+- Accepted 91b0e9401f9209c3: vertical board/joint placement and pale weathered strips retained. Full luminance +14.70% versus original, improved from +26.90%; pale-strip samples +16.92%/+15.42%, dark strip +10.50%. Residual brightness is documented for scene review; broad muted weathered appearance accepted offline.
+- Held paired riveted plates: full luminance +30.28%, lower plate +44.95% grayscale. Five crop-guided label/marking corrections remain held for changed stroke shapes; the weapon atlas also gained an unrelated white stripe. Enlarged original crop guidance did not reliably preserve markings, so do not repeat the same full-atlas correction strategy unchanged.
+- Reviewed two primary sheets, two 2x2 repeat sheets, eight full detail comparisons and eight focused comparisons. Re-decoded all eight originals from catalog payloads and verified RGBA bytes and opacity. Repeat sheets and edge metrics do not prove in-scene adjacency.
+- Generated five 1254x1254 and three 1774x887 sources. The two accepted 1774x887 sources were downsampled to 1024x512 DXT1 with mipmaps; these are not native 4K textures. Source artwork, prompts, previous prompt backups and correction evidence remain private.
+- Native format/mip validation passed for all 1,062 installed DDS files; worklist, hybrid planner and inventory audits passed. Removed 12 rejected compiled files after resolved-parent and SHA256 verification, preserving source artwork.
+- Retired 21 redundant accepted-only detail enlargements from batches 140/141 (3,475,033 bytes); primary comparison sheets, source artwork and provenance retained. One active pack; no game copies, ZIPs or staging trees created.
+- No runtime/source behavior changed and no gameplay launched. Residency limit remains 512 MiB. Final scene/category/embedded-asset coverage, 1080p/4K/ultrawide, memory and fallback validation remain pending; broader inventory gaps remain in scope.
+- Pack 941,189,626 bytes (897.59 MiB / 6144 MiB). Texture workspace at audit 5,122,794,576 logical/allocated bytes (4.77 GiB); temporary output 262,415,011 bytes (250.26 MiB / 256 MiB); free disk 104,233,201,664 bytes.
+- Private evidence: `review/hybrid-144-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
