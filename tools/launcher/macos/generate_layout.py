@@ -14,6 +14,7 @@ def local(tag):return tag.rsplit('}',1)[-1]
 def generate(source,destination):
  root=ET.parse(source).getroot();root.set('{'+X+'}Class','TimeSplitters.Launcher.NativeWindow')
  styles=ET.Element('{'+A+'}Window.Styles')
+ ET.SubElement(styles,'{'+A+'}StyleInclude',{'Source':'/PageTheme.axaml'})
  for resource in list(root.find('{'+W+'}Window.Resources')):
   if local(resource.tag)!='Style':continue
   key=resource.attrib.get('{'+X+'}Key');target=resource.attrib['TargetType']
@@ -24,12 +25,18 @@ def generate(source,destination):
    if setter.attrib['Property'] in ('StrokeStartLineCap','StrokeEndLineCap'):setter.set('Property','StrokeLineCap')
    if setter.attrib['Property']=='Stroke':setter.set('Value','#B4C7D8')
    style.append(setter)
+  if target=='Button':
+   template=resource.find('.//{'+W+'}ControlTemplate')
+   if template is not None:
+    converted=template_styles(styles,template,target+('.'+key if key else ''))
+    setter=ET.SubElement(style,'{'+A+'}Setter',{'Property':'Template'});setter.append(converted)
+    # An implicit WPF style replaces, rather than merges, theme defaults.
+    ET.SubElement(style,'{'+A+'}Setter',{'Property':'MinHeight','Value':'0'})
   root.find('{'+W+'}Window.Resources').remove(resource)
  # Avalonia's default button alignment and expander theme differ from WPF.
  for selector,values in [('TabItem',{'FontSize':'13','Padding':'16,12'}),('Button',{'HorizontalAlignment':'Stretch','CornerRadius':'3'}),('Expander',{'HorizontalAlignment':'Stretch','Background':'Transparent'}),('ComboBox',{'Background':'#102031','BorderBrush':'#416685','Foreground':'#E4EDF5'})]:
   style=ET.SubElement(styles,'{'+A+'}Style',{'Selector':selector})
   for key,value in values.items():ET.SubElement(style,'{'+A+'}Setter',{'Property':key,'Value':value})
- ET.SubElement(styles,'{'+A+'}StyleInclude',{'Source':'/NativeHomeStyles.axaml'})
  root.insert(1,styles)
  root.find('{'+W+'}Grid').set('Background','#0B1420')
  for element in root.iter():

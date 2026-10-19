@@ -19,11 +19,15 @@ class SharedLauncherUi(unittest.TestCase):
             button = next(n for n in tree.iter() if n.attrib.get('{'+layout.X+'}Name') == 'RollbackButton')
             button.set('Content', 'Shared button revision')
             button.set('Margin', '3,5,17,11')
+            template = tree.getroot().find('.//{'+layout.W+'}ControlTemplate[@TargetType="Button"]/{'+layout.W+'}Border')
+            template.set('CornerRadius', '8')
             tree.write(source)
             layout.generate(source, target)
             result = next(n for n in ET.parse(target).iter() if n.attrib.get('{'+layout.X+'}Name') == 'RollbackButton')
             self.assertEqual(result.attrib['Content'], 'Shared button revision')
             self.assertEqual(result.attrib['Margin'], '3,5,17,11')
+            self.assertIn('CornerRadius="8"', target.read_text(encoding='utf-8'))
+            self.assertNotIn('NativeHomeStyles', target.read_text(encoding='utf-8'))
 
     def test_theme_template_geometry_and_states_change_together(self):
         with tempfile.TemporaryDirectory() as directory:
