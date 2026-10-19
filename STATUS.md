@@ -7822,7 +7822,7 @@ and CLI/proxy 0.163.0. Linux reviews source; Windows and Mac run actual launcher
 checks through the same reusable workflow as release builds. Proposed repairs are
 separate PRs; automatic merging and release publication are not enabled.
 
-Local validation: 22 offline compatibility tests, 16 publication/recovery tests,
+Local validation: 23 offline compatibility tests, 16 publication/recovery tests,
 and 52 CI-scope/backlog checks passed. Actual temporary Git repositories exercise
 patch add/modify/delete, protected paths, symlink rejection and sanitized source
 snapshots. Other cases cover both directions, incomplete file lists, credentials,
@@ -7843,3 +7843,6 @@ Git regression verifies that accepted PowerShell patches retain CRLF working-tre
 files and normalized Git blobs. The actual PR source snapshot passed locally
 (78 source files, 1.6 MB); the existing native launcher's read-only prerequisite
 check also passed. No launcher runtime change was needed.
+
+A stale-run failure handler also rechecks head/base/target before changing the
+commit status, so cancellation cannot overwrite a newer review after retargeting.

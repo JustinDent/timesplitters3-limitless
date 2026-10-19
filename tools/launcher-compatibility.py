@@ -232,6 +232,16 @@ def current_pr(api, context):
     return pr
 
 
+def fail_current(api, context):
+    # An older/cancelled run must not overwrite a newer review of the same head
+    # after its base or target branch changed.
+    try:
+        current_pr(api, context)
+    except ValueError:
+        return
+    api.status(context['head'], 'failure', 'Compatibility automation failed; inspect the workflow and rerun.')
+
+
 def create_fix(api, context, report, root):
     changes = apply_patch(root, report['patch'])
     current_pr(api, context)
@@ -329,7 +339,7 @@ def main():
         output({'run': context['run'], 'head': context['head'], 'context': context})
         return
     if args.command == 'fail':
-        api.status(context['head'], 'failure', 'Compatibility automation failed; inspect the workflow and rerun.')
+        fail_current(api, context)
         return
     raw = os.environ.get('REVIEW_JSON', '')
     try:
@@ -347,7 +357,7 @@ def main():
             with open(os.environ['GITHUB_STEP_SUMMARY'], 'a', encoding='utf-8') as summary:
                 summary.write('<pre>' + html.escape(json.dumps({k: v for k, v in report.items() if k != 'patch'}, indent=2)) + '</pre>\n')
     except Exception:
-        api.status(context['head'], 'failure', 'Compatibility automation failed; inspect the workflow and rerun.')
+        fail_current(api, context)
         raise
 
 

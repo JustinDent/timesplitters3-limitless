@@ -152,6 +152,16 @@ class ReviewPolicy(unittest.TestCase):
                     compat.finalize(self.api, context, report(), 'success', 'success', None)
                 self.assertEqual(len(self.api.statuses), before)
 
+    def test_stale_failure_handler_cannot_overwrite_newer_review(self):
+        context = self.prepare()
+        self.api.pr['base']['sha'] = 'd'*40
+        before = len(self.api.statuses)
+        compat.fail_current(self.api, context)
+        self.assertEqual(len(self.api.statuses), before)
+        self.api.pr = pull()
+        compat.fail_current(self.api, context)
+        self.assertEqual(self.api.statuses[-1][1], 'failure')
+
     @patch.object(compat, 'apply_patch', return_value=[('tools/launcher/Ui.cs', '100644', b'source')])
     def test_fix_goes_to_separate_branch_and_dispatches_ci_without_auto_merge(self, apply):
         context = self.prepare()
