@@ -3,16 +3,19 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+using System.Windows.Documents;
 
 namespace TimeSplitters.Launcher
 {
     public sealed class WhatsNewPage
     {
         public readonly Grid View=new Grid();
-        public readonly Button Refresh, OnGitHub, GameTab, LauncherTab;
+        public readonly Button Refresh, OnGitHub, GameTab, LauncherTab, RefreshIssues, BugTracker;
         public readonly ComboBox Edition=new ComboBox { MinWidth=190,Margin=new Thickness(0,0,0,10) };
         readonly TextBlock status,installedLabel,availableLabel,availability,channel,title,published;
-        readonly StackPanel changes=new StackPanel(),issues=new StackPanel();
+        readonly StackPanel changes=new StackPanel(),publishedIssues=new StackPanel(),issues=new StackPanel();
+        readonly TextBlock issuesStatus,issuesCount;
+        KnownIssues knownIssues;
         readonly ScrollViewer scroll;
         readonly Action<string> openLink;
         ReleaseNews news;
@@ -21,6 +24,7 @@ namespace TimeSplitters.Launcher
         public string SelectedUrl { get; private set; }
         public string StatusText { get { return status.Text; } }
         public string AvailabilityText { get { return availability.Text; } }
+        public string IssuesStatusText { get { return issuesStatus.Text; } }
         static Button Button(string text,string name) { return new Button { Content=text,Name=name,Margin=new Thickness(0,0,10,10) }; }
         public WhatsNewPage(Action<string> openLink=null)
         {
@@ -48,7 +52,15 @@ namespace TimeSplitters.Launcher
             var notes=PageTheme.Section(body,"What this release changes","");
             title=PageTheme.Text("Release notes",18,"#A7D9FA");title.Margin=new Thickness(0,12,0,4);notes.Children.Add(title);
             published=PageTheme.Text("",11,"#9EB4C8");published.Margin=new Thickness(0,0,0,14);notes.Children.Add(published);notes.Children.Add(changes);
-            var known=PageTheme.Section(body,"Known issues","");issues.Margin=new Thickness(0,12,0,0);known.Children.Add(issues);
+            notes.Children.Add(publishedIssues);
+            var known=PageTheme.Section(body,"Known issues","Current open GitHub reports labeled bug, across all versions.");
+            issuesCount=PageTheme.Text("Not checked",13,"#A7D9FA");known.Children.Add(issuesCount);
+            issues.Margin=new Thickness(0,10,0,0);known.Children.Add(issues);
+            issuesStatus=PageTheme.Text("Open this page to check the bug tracker.",12,"#B4C7D8");issuesStatus.Margin=new Thickness(0,8,0,8);known.Children.Add(issuesStatus);
+            var issueActions=new WrapPanel();known.Children.Add(issueActions);
+            RefreshIssues=Button("Refresh issues","RefreshKnownIssues");BugTracker=Button("View bug tracker ↗","KnownIssuesOnGitHub");
+            issueActions.Children.Add(RefreshIssues);issueActions.Children.Add(BugTracker);
+            BugTracker.ToolTip=KnownIssues.TrackerUrl;BugTracker.Click+=(s,e)=>{if(this.openLink!=null)this.openLink(KnownIssues.TrackerUrl);};
             var footer=new StackPanel {Margin=new Thickness(0,12,0,0)};Grid.SetRow(footer,2);View.Children.Add(footer);
             var actions=new WrapPanel();footer.Children.Add(actions);
             Refresh=Button("Refresh notes","RefreshReleaseNotes");OnGitHub=Button("View release on GitHub ↗","NewsOnGitHub");
@@ -80,6 +92,29 @@ namespace TimeSplitters.Launcher
             status.Text=news==null?"Could not load release notes. Check your connection and refresh; your installed game remains available.":
                 "Could not refresh. Showing notes checked "+news.CheckedUtc.ToLocalTime().ToString("g",CultureInfo.CurrentCulture)+"; available versions may have changed.";
         }
+        public void SetIssuesLoading()
+        { RefreshIssues.IsEnabled=false;issuesStatus.Text=knownIssues==null?"Checking open bug reports…":"Checking open bug reports… Showing the previous list until this check finishes."; }
+        public void SetIssues(KnownIssues value)
+        {
+            knownIssues=value;RefreshIssues.IsEnabled=true;issues.Children.Clear();
+            issuesCount.Text=value.Items.Length==1?"1 open bug report":value.Items.Length+" open bug reports";
+            if(value.Items.Length==0)issues.Children.Add(PageTheme.Text("No open issues labeled bug were returned by GitHub. This does not mean every version is bug-free.",12,"#B4C7D8"));
+            foreach(var issue in value.Items) {
+                var row=PageTheme.Text("",13);row.Margin=new Thickness(0,0,0,10);
+                // Titles are literal text, not Markdown/HTML. Ignore remote URLs;
+                // links always target this repository's numbered issue page.
+                string url=issue.Url;var link=new Hyperlink(new Run("#"+issue.Number+"  "+issue.Title)) {NavigateUri=new Uri(url),ToolTip=url,Foreground=PageTheme.Brush("#A7D9FA")};
+                link.RequestNavigate+=(s,e)=>{e.Handled=true;if(openLink!=null)openLink(url);};
+                row.Inlines.Add(link);issues.Children.Add(row);
+            }
+            issuesStatus.Text="Checked "+value.CheckedUtc.ToLocalTime().ToString("g",CultureInfo.CurrentCulture)+" · Automatically checks every 5 minutes while this page is visible.";
+        }
+        public void IssuesFailed()
+        {
+            RefreshIssues.IsEnabled=true;
+            issuesStatus.Text=knownIssues==null?"Could not check GitHub. Check your connection or request limit, then refresh or view the bug tracker.":
+                "Could not refresh GitHub. Showing the list checked "+knownIssues.CheckedUtc.ToLocalTime().ToString("g",CultureInfo.CurrentCulture)+"; reports may have changed. Refresh or view the bug tracker.";
+        }
         void Render()
         {
             GameTab.Background=PageTheme.Brush(launcher?"#1C3349":"#294C69");LauncherTab.Background=PageTheme.Brush(launcher?"#294C69":"#1C3349");
@@ -96,9 +131,11 @@ namespace TimeSplitters.Launcher
             if(selected!=null && !String.IsNullOrWhiteSpace(selected.Name))published.Text+=(published.Text.Length==0?"":" · ")+selected.Name;
             var text=new ReleaseNotesText(selected==null?null:selected.Notes);
             Paint(changes,text.Changes,selected==null?"Refresh notes or select another release. Unpublished or unavailable versions may have no release notes.":"No change notes were published for this release.");
-            Paint(issues,text.KnownIssues,selected==null?"Select a published release to see its known issues.":text.Shortened?
-                "Known issues may be outside these shortened notes. View the complete release on GitHub.":
-                "No separate known-issues section was published for this release. This does not mean the release has no issues.");
+            publishedIssues.Children.Clear();
+            if(!String.IsNullOrWhiteSpace(text.KnownIssues)) {
+                var label=PageTheme.Text("Limitations published with this release",13,"#A7D9FA");label.Margin=new Thickness(0,14,0,8);publishedIssues.Children.Add(label);
+                var content=new StackPanel();publishedIssues.Children.Add(content);Paint(content,text.KnownIssues,"");
+            }
             if(text.Shortened)changes.Children.Add(PageTheme.Text("Notes shortened for display. View the complete release on GitHub.",12,"#A7D9FA"));
         }
         void Paint(Panel panel,string text,string empty)

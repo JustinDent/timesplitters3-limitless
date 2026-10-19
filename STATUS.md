@@ -1,5 +1,59 @@
 # Measured progress
 
+## Launcher v1.2.18 release candidate (2026-10-19)
+
+Prepared on `feature/launcher-live-known-issues`, integrating main `d63a156`
+with live Known Issues commit `2f5ca68`. Both executable versions are 1.2.18.0.
+This also includes main's Discord presence setting; it requires a compatible
+game runtime. This candidate is built locally, not published for auto-update.
+
+The Windows x64 .NET Framework required-artwork build and full launcher tests
+passed: 104 updater, 28 download, 11 version, 10 startup, 30 news, 32 settings,
+20 maintenance and 14 unfinished-session checks, plus crash-report checks.
+Three packaging tests and 42 page/state layout checks passed. The exact ZIP
+passed upgrade and injected-failure rollback through the published v1.2.17
+updater, preserving isolated game, ISO, data, saves, settings, textures,
+rollback and untracked fixtures. Embedded banner, logo and backdrop hashes
+match the private source artwork. No real game or personal data was changed.
+
+The launcher-only ZIP, checksum, update metadata, release notes and provenance
+are retained in ignored `build/launcher-release-1.2.18`. Its only contents are
+the two launch executables and launcher manifest. Native Mac execution remains
+unverified and the Known Issues adaptation is queued under MAC-021.
+
+Subsequently integrated main `ae9f86d` (vehicle-runtime fix and issue-form
+versions), preserving both progress records. Launcher source, assets and build
+script inputs are unchanged from the tested candidate; no game rebuild is
+claimed by this launcher package.
+
+## Live known issues in the launcher (2026-10-19)
+
+Implemented on `feature/launcher-live-known-issues`, based on main `a8fc545`.
+Known issues previously came only from release descriptions. It now fetches
+current open GitHub issues labeled bug, excluding PRs and other labels/states,
+and replaces its list after a complete successful refresh. The selected
+release's published limitations remain separately identified in its notes.
+Issue titles are literal text and links are constructed from validated issue
+numbers in this repository; remote HTML, URLs and issue bodies are not rendered.
+
+Requests use independent five-minute polling while What's new is visible and
+the launcher is not minimized/busy, with entry/activation checks when due and
+an immediate manual refresh. No overlapping requests; close stops the timer,
+cancels outstanding work and prevents late repaint. Pagination is bounded to
+ten 100-record pages, responses to 4 MiB, and the entire check to 25 seconds,
+including a transport that ignores cancellation. Errors or incomplete results
+retain the old list with a checked-time warning; a successful empty result is
+distinct from unavailable GitHub data. No sign-in or saved cache is required.
+
+Windows x64 .NET Framework required-artwork build passed. Thirty release-news
+checks (including eleven new issue-feed/UI/scheduling cases) and 28 existing
+download/recovery checks passed. Forty-two page/state previews at 1152x772 and
+984x681 covered live, empty and stale issue lists as well as existing launcher
+pages. Live unauthenticated access returned eight open bug reports; preview
+screenshots used that read-only snapshot. No game, saves, personal settings,
+GitHub issues or release was modified. Full updater/gameplay checks were not
+needed for this display/network change. Native Mac remains queued in MAC-021.
+
 ## Issue #100 - companion jeep dismount loop (2026-10-19)
 
 Local branch `100-captain-ash-buggin-out-in-the-car`, based on main `3d0b687`;

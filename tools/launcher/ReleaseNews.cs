@@ -6,6 +6,52 @@ using System.Text.RegularExpressions;
 
 namespace TimeSplitters.Launcher
 {
+    public sealed class KnownIssue
+    {
+        public long Number;
+        public string Title;
+        public string Url { get { return "https://github.com/"+ReleaseClient.Repository+"/issues/"+Number.ToString(System.Globalization.CultureInfo.InvariantCulture); } }
+    }
+    public sealed class KnownIssues
+    {
+        public const string TrackerUrl="https://github.com/"+ReleaseClient.Repository+"/issues?q=is%3Aissue%20is%3Aopen%20label%3Abug";
+        public KnownIssue[] Items=new KnownIssue[0];
+        public DateTime CheckedUtc;
+        internal static KnownIssue[] ParsePage(string json,out bool more)
+        {
+            var records=Json.Serializer().DeserializeObject(json) as object[];
+            if(records==null || records.Length>100)throw new System.IO.InvalidDataException("GitHub returned invalid issue information.");
+            more=records.Length==100;
+            var issues=new List<KnownIssue>();
+            foreach(var item in records) {
+                var record=item as Dictionary<string,object>;
+                if(record==null)throw new System.IO.InvalidDataException("GitHub returned an invalid issue.");
+                // GitHub's issues endpoint also returns pull requests. Recheck the
+                // state and label locally instead of trusting only query filters.
+                if(record.ContainsKey("pull_request"))continue;
+                string state=Json.String(record,"state");
+                if(state!="open" && state!="closed")throw new System.IO.InvalidDataException("GitHub returned an invalid issue state.");
+                if(state!="open")continue;
+                object raw;var labels=record.TryGetValue("labels",out raw)?raw as object[]:null;
+                if(labels==null)throw new System.IO.InvalidDataException("GitHub returned invalid issue labels.");
+                bool bug=false;
+                foreach(var label in labels) {
+                    string name=label is string?(string)label:label is Dictionary<string,object>?Json.String((Dictionary<string,object>)label,"name"):"";
+                    if(String.IsNullOrWhiteSpace(name))throw new System.IO.InvalidDataException("GitHub returned an invalid issue label.");
+                    if(String.Equals(name,"bug",StringComparison.OrdinalIgnoreCase))bug=true;
+                }
+                if(!bug)continue;
+                long number;string title=Json.String(record,"title");
+                if(!Int64.TryParse(Json.String(record,"number"),System.Globalization.NumberStyles.None,System.Globalization.CultureInfo.InvariantCulture,out number) || number<=0 || String.IsNullOrWhiteSpace(title))
+                    throw new System.IO.InvalidDataException("GitHub returned an invalid bug report.");
+                title=new string(title.Select(c=>Char.IsControl(c)?' ':c).ToArray()).Trim();
+                if(title.Length>300)title=title.Substring(0,297)+"…";
+                issues.Add(new KnownIssue {Number=number,Title=title});
+            }
+            return issues.ToArray();
+        }
+    }
+
     // Release descriptions are display-only data, never HTML, XAML or executable links.
     public sealed class ReleaseNews
     {
