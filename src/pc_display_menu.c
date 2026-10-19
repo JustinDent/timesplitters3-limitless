@@ -310,6 +310,8 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     restore_registers(&r);
     return result;
 }
+#include "pc_profile_accept.inc"
+
 /* Recreate only a missing guest body using the same constructor as the
  * original Arcade initializer. Keep the existing actor-list entry and scores;
  * never run guest AI decisions or add a duplicate entry to 0x7A3580. */

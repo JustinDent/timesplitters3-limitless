@@ -197,9 +197,10 @@ rebuild with `tsfp.ps1 -Action Build` to refresh older generated code and the
 executable. This setting is separate from raw mouse sensitivity in F2.
 
 For the original game's **Settings → Controls** page (for example, Inverse
-look), choose **Accept**, then **Back** out of Settings to the main menu before
-quitting. Accept applies the choice; leaving Settings writes the profile.
-Closing the game while still inside Settings can lose that change. This is
+look), **Accept** now writes the selected profile before returning to Settings.
+You can then quit directly from Settings; returning to the main menu is no
+longer required. **Cancel** discards the draft. If saving fails, follow the
+game's save-error screen before quitting. This is
 separate from the PC keyboard/mouse window's **Save & Close** and Display
 settings' explicit save/confirmation controls.
 

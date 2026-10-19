@@ -1882,9 +1882,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Transition evidence:** Windows `tests/stability_transitions_game.py` has
   exercised two Story scenes, level restart/menu return, paused resolution
   keep/timeout, window/focus changes and profile persistence over relaunches.
-  Original Controls requires Accept then leaving Settings to persist; closing
-  inside Settings lost that draft in the Windows check. No autosave behavior
-  was changed. Native equivalents and physical high-refresh monitor tests
+  The original Controls save-delay finding is addressed by MAC-050 below.
+  Native equivalents and physical high-refresh monitor tests
   remain unverified; see the latest STATUS.md transition evidence.
 - **Source:** Uncommitted on `feature/167-144-fps`; the additive `144-fps.patch`,
   `src/pc_frame_clock.h`, `pc_refresh.c`, `pc_refresh_guard.h`, `tools/crash_helper.c`,
@@ -1911,3 +1910,26 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Record CPU submission statistics separately from measured monitor scanout;
   do not infer Mac support or constant 144 FPS from Windows results.
 - **PC evidence:** [Implementation and validation](STATUS.md#issue-167---experimental-smoother-presentation-2026-10-19).
+
+### MAC-050 — Persist accepted frontend Controls before quitting Settings
+
+- **Status:** Implemented, pending native validation.
+- **Behavior:** Accept in main-menu Settings → Controls commits the draft,
+  then immediately invokes the original signed-profile save and error-dialog
+  workflow. Cancel retains the prior saved controls. The all-profile save pass
+  preserves pending accepted edits because the guest's dirty flag is global.
+  Pause-menu controls retain their existing behavior.
+- **Source:** Uncommitted on `feature/167-144-fps`, continuing the stability
+  investigation there: additive `controls-accept-save.patch`,
+  `src/pc_profile_accept.inc`, `src/pc_display_menu.c` / `.h`,
+  `tests/profile_accept.c`, `tests/test_profile_accept.py`, and the Windows
+  isolated integration runner `tests/profile_accept_game.py`.
+- **Existing Mac support:** Hook and guest save routing use shared source under
+  `TSFP_NATIVE_DISPLAY`; no new OS adapter is needed. Windows compilation and
+  execution do not establish native Mac save/menu behavior.
+- **Acceptance:** Build the complete stack on Mac, run the portable routing
+  regression, then use isolated profiles to change Inverse Look, Accept, close
+  directly from Settings, and reload. Repeat with Cancel and verify unchanged
+  signed bytes. Validate save-error/retry UI and multiple loaded profiles;
+  ensure no draft is committed by Cancel. Preserve personal saves and configs.
+- **PC evidence:** See the Controls Accept save follow-up in STATUS.md.
