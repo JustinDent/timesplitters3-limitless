@@ -35,6 +35,33 @@ Cancel discards unsaved edits. The sidebar stays visible while editing.
 
 These instructions describe the current Windows source build. Downloaded releases may predate individual features.
 
+For FPS and monitor refresh, open **Settings → Display settings → Smoothness /
+refresh** from the main menu, or the same Display settings page under paused
+**Options**. Use left/right on each row:
+
+- **Motion:** 60 FPS (original), 120 FPS (experimental), or 144 FPS (experimental).
+  **Keep current** preserves a custom/legacy pacing setup. Selecting 120/144
+  also enables fullscreen and VRR and keeps the game simulation at 60 Hz.
+- **Monitor refresh:** Desktop rate, 120 Hz if supported, or 144 Hz if supported.
+  This is separate from the FPS target. The game checks the actual monitor at
+  launch and leaves unsupported modes unchanged.
+- **Save for next launch:** saves these preferences, then shows a restart
+  reminder. Restart normally to apply them. **Back (discard changes)** leaves
+  the saved preferences alone. Resolution, FOV and other graphics preferences
+  are preserved by this save.
+
+Start with 120 FPS and a supported matching refresh rate; compare the same
+scene while turning the camera before trying 144. Use **60 FPS (original)** to
+turn interpolation off. These are presentation targets, not guaranteed frame
+rates. The [launcher guide](windows-launcher.md) explains resolution/quality
+adjustments and the FPS counters. `Play-Smooth.cmd` and environment overrides
+take priority over saved preferences; use normal `Play.cmd` or the launcher's
+Play button when checking the saved selection.
+
+Smoothness/refresh uses the runtime display configuration shared with the
+launcher (`RECOMP_DISPLAY_CONFIG` in isolated tests). It applies after restart;
+resolution and FOV below retain their existing live confirmation behavior.
+
 Open **Settings → Display settings** from the main menu, or **Options → Display
 settings** while paused. Choose an **Aspect ratio** group (All, 4:3, 5:4,
 16:9, 16:10, 21:9 or 32:9), then use the resolution row's left/right arrows to choose
@@ -70,7 +97,9 @@ custom dimensions, and a live current-ratio label. Selecting a group only change
 the draft; the existing Save/Cancel and in-game confirmation rules still apply.
 These settings change the native
 3D rendering resolution; the window still follows its existing size. Use
-**Alt+Enter** for fullscreen. Desktop resolution and refresh rate are unchanged.
+**Alt+Enter** for fullscreen. Render resolution does not change desktop
+resolution or refresh; the separate Smoothness / refresh option can request
+a supported monitor rate while the game is foreground and fullscreen.
 Menu backgrounds fill the selected canvas, while text, buttons and panels fit
 proportionally. Narrower layouts fit widgets vertically instead of cropping them.
 Windows frontend menus reconstruct magnified background, logo and icon textures
@@ -167,6 +196,14 @@ The shared float-comparison fix in `837692d` restores intermediate values;
 rebuild with `tsfp.ps1 -Action Build` to refresh older generated code and the
 executable. This setting is separate from raw mouse sensitivity in F2.
 
+For the original game's **Settings → Controls** page (for example, Inverse
+look), **Accept** now writes the selected profile before returning to Settings.
+You can then quit directly from Settings; returning to the main menu is no
+longer required. **Cancel** discards the draft. If saving fails, follow the
+game's save-error screen before quitting. This is
+separate from the PC keyboard/mouse window's **Save & Close** and Display
+settings' explicit save/confirmation controls.
+
 In-game button prompts automatically show the **first assigned keyboard or mouse
 binding** for each control, for example **[E] Select** and **[F] Back**. Saving
 bindings in F2 updates the prompts immediately. Unassigned controls show
@@ -202,6 +239,9 @@ pause the simulation. The Debug window offers:
 
 - **Show FPS:** game frame rate; when interpolation adds presentations, the
   overlay shows game/shown FPS. F9 toggles the FPS display for the current session.
+  With the experimental 120/144 FPS target, Shown excludes guest endpoints
+  replaced by interpolated presentations, avoiding double-counting. These are
+  host submissions, not a measurement of the monitor's scanout rate.
 - **Show average frame time:** the average interval between game frames in
   milliseconds, measured over roughly half a second; this is not GPU execution time.
 - **Show error / warning counters:** on-screen E/W counts of matching runtime log

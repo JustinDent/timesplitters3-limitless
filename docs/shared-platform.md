@@ -166,6 +166,6 @@ margin, button-padding, corner-radius or disabled-state edit reaches the Mac out
 The release workflow runs both builds before publishing one release's packages.
 The Windows two-executable package and existing updater size limits are retained.
 
-Automatic review and proposed adapter fixes are described in
+API-free Windows/Mac build and regression checks are described in
 [launcher compatibility](launcher-compatibility.md). Both host tests remain
-required evidence; automatic review does not replace additional OS/visual checks.
+required evidence; CI does not generate missing OS adapters or replace visual review.

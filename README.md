@@ -61,6 +61,15 @@ Python, Git and Visual Studio are not required to play.
 
 ## PC features
 
+Current Windows source adds experimental [120/144 FPS smooth motion and
+fullscreen monitor refresh controls](docs/windows-launcher.md#pre-game-settings).
+The development launcher provides 60/120/144 FPS setups, current monitor-rate
+information and guidance for conflicting settings under **Game settings →
+Graphics & resolution → Smoothness setup**. Save and restart to apply.
+For a local development build, `Play-Smooth.cmd` temporarily selects 144 FPS;
+`Play-Smooth.cmd 120` selects 120 FPS. Published builds require a runtime update
+containing these changes.
+
 Optional Windows [Discord Rich Presence](docs/discord-presence.md) shows the
 current game mode and session timer. Enable it in **Game settings → Discord**
 with the Discord desktop app running. Fresh installs leave it off.
@@ -303,6 +312,6 @@ restart with an abandoned session, Diagnostics can flag an unexpected exit even
 when no dump was captured. These reports can be exported locally; an unobserved
 exit has an unknown cause and can also follow a reboot or interrupted launcher.
 
-Launcher maintenance: [automatic Windows/Mac compatibility review](docs/launcher-compatibility.md)
+Launcher maintenance: [automatic Windows/Mac compatibility checks](docs/launcher-compatibility.md)
 checks both directions and proposes separate fix PRs, with shared build/package
 validation. Activation requires the dedicated API credential and repository setup.

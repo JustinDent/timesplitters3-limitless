@@ -41,6 +41,7 @@ namespace TimeSplitters.Launcher
         public static bool From(RoutedEventArgs e,Control view) { return e.Source==view; }
         public static void ScrollHome(ScrollViewer view) { view.Offset=new Vector(0,0); }
         public static void ScrollBars(TextBox view) { ScrollViewer.SetVerticalScrollBarVisibility(view,ScrollBarVisibility.Auto);ScrollViewer.SetHorizontalScrollBarVisibility(view,ScrollBarVisibility.Disabled); }
+        public static void CheckedChanged(CheckBox view,Action action) { view.IsCheckedChanged+=(s,e)=>action(); }
         public static string InheritedSettings(bool preview) { return null; }
         public static void FocusWhenReady(Control view) { view.Loaded+=(s,e)=>view.Focus();view.Focus(); }
         public static void Capture(Control area,Action<int> accept,Action cancel)
@@ -76,6 +77,7 @@ namespace TimeSplitters.Launcher
         public static bool From(RoutedEventArgs e,Control view) { return e.OriginalSource==view; }
         public static void ScrollHome(ScrollViewer view) { view.ScrollToHome(); }
         public static void ScrollBars(TextBox view) { view.VerticalScrollBarVisibility=ScrollBarVisibility.Auto;view.HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled; }
+        public static void CheckedChanged(CheckBox view,Action action) { view.Checked+=(s,e)=>action();view.Unchecked+=(s,e)=>action(); }
         public static string InheritedSettings(bool preview) { return preview?null:Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),"xboxrecomp","titles","45410066.conf"); }
         public static void FocusWhenReady(Control view) { view.Loaded+=(s,e)=>view.Focus();view.Focus(); }
         public static void Capture(Control area,Action<int> accept,Action cancel)

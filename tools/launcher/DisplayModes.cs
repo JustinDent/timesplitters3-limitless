@@ -62,6 +62,8 @@ namespace TimeSplitters.Launcher
             [FieldOffset(168)] public uint Bits;
             [FieldOffset(172)] public int Width;
             [FieldOffset(176)] public int Height;
+            [FieldOffset(180)] public uint Flags;
+            [FieldOffset(184)] public int Hertz;
         }
         [DllImport("user32.dll", CharSet=CharSet.Unicode, ExactSpelling=true)]
         [return:MarshalAs(UnmanagedType.Bool)]
@@ -91,6 +93,34 @@ namespace TimeSplitters.Launcher
             }
             #endif
             return Choices(reported,savedWidth,savedHeight);
+        }
+        public static List<int> PrimaryRefreshRates()
+        {
+            var rates=new List<int>{0};
+#if MACOS
+            return rates; // Native refresh switching is not implemented; keep the saved rate.
+#else
+            var screen=System.Windows.Forms.Screen.PrimaryScreen;
+            var current=new Mode{Size=220};
+            if(screen==null || !EnumDisplaySettingsW(screen.DeviceName,UInt32.MaxValue,ref current)) return rates;
+            for(uint index=0;;index++) {
+                var mode=new Mode{Size=220};if(!EnumDisplaySettingsW(screen.DeviceName,index,ref mode))break;
+                if(mode.Width==current.Width && mode.Height==current.Height && mode.Bits==current.Bits &&
+                    (mode.Flags&2)==0 && (mode.Hertz==120 || mode.Hertz==144) && !rates.Contains(mode.Hertz)) rates.Add(mode.Hertz);
+            }
+            rates.Sort();return rates;
+#endif
+        }
+        public static int PrimaryRefreshRate()
+        {
+#if MACOS
+            return 0; // Variable refresh displays may not expose a fixed desktop rate.
+#else
+            var screen=System.Windows.Forms.Screen.PrimaryScreen;
+            var current=new Mode{Size=220};
+            return screen!=null && EnumDisplaySettingsW(screen.DeviceName,UInt32.MaxValue,ref current)
+                && current.Hertz>1 ? current.Hertz : 0;
+#endif
         }
     }
 }

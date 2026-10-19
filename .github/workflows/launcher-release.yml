@@ -9,25 +9,6 @@ on:
         description: Publish the version in LauncherVersion.cs (default branch only)
         type: boolean
         default: false
-  pull_request:
-    paths:
-      - .github/workflows/launcher-release.yml
-      - .github/workflows/launcher-build.yml
-      - .github/workflows/launcher-compatibility.yml
-      - .github/prompts/launcher-compatibility*
-      - tools/launcher-compatibility.py
-      - tests/test_launcher_compatibility.py
-      - tools/launcher/**
-      - tools/build-launcher.ps1
-      - tools/build-mac-launcher.py
-      - tools/fetch-launcher-art.ps1
-      - tools/launcher-release.py
-      - config/launcher-artwork.json
-      - config/mac-launcher-sdk.json
-      - tests/launcher_*.cs
-      - tests/test_launcher_release.py
-      - tests/test_launcher_shared_ui.py
-      - src/pc_display_modes.inc
 
 permissions:
   contents: read

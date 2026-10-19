@@ -74,10 +74,10 @@ reproducibility, and validation requirements.
   existing Mac functionality.
 - Launcher changes follow the same rule in both directions: implement common
   behavior once, adapt Windows/macOS system calls, and run both host checks.
-  `docs/launcher-compatibility.md` describes the automatic review/fix workflow.
+  `docs/launcher-compatibility.md` describes the API-free build/test workflow.
   Its passing check is evidence of its scope, not a guarantee of visual parity.
-  Automated fixes must remain separate reviewable PRs and must not weaken tests,
-  edit their own workflow policy, merge, or publish releases.
+  CI does not generate OS adapters. Follow-up fixes stay in reviewed source
+  changes; no AI API credentials or paid agent calls belong in this workflow.
 - Every PR description must explain the problem or root cause and how the
   change fixes it, in plain language. Include the resulting behavior, relevant
   validation and known limits. Keep this explanation current when updating
