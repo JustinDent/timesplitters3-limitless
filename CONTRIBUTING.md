@@ -38,3 +38,9 @@ or the applicable existing file license.
 
 Maintainers review changes before merging. This is a community project, so
 review and release timing can vary.
+
+CI reports on every PR, including documentation changes. All required checks
+must pass and the branch must include the latest `main` before merging. Use
+GitHub's **Update branch** button (or merge `main` into your branch) when needed.
+Maintainers can choose **Enable auto-merge** on an individual PR to merge it
+after these requirements are met. See [CI and branch protection](docs/ci.md).

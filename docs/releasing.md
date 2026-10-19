@@ -90,9 +90,12 @@ asks only for the idea, has no version, platform or diagnostic questions, and is
 excluded from version refreshes.
 
 The workflow also refreshes on relevant pushes to `main` and can be run manually
-from Actions. It commits only the bug form's reference lists to the default
-branch with `contents: write`; it never force-pushes. If branch protection is
-added later, allow these updates or adapt this job to the required review flow.
+from Actions. It proposes only the bug form's reference lists through a PR on
+`automation/issue-form-versions`, with `contents: write` and `pull-requests: write`;
+it never pushes directly to the protected default branch or force-pushes.
+Approve workflows to run if GitHub requests it on the bot-created PR, then let
+the required checks pass before merging. Auto-merge can be enabled for that PR.
+See [CI and branch protection](ci.md) for repository settings and check names.
 The current publisher uses the maintainer's GitHub CLI authentication. A future
 publisher using `GITHUB_TOKEN` must explicitly dispatch **Issue forms** because
 token-created release events do not start another workflow.
