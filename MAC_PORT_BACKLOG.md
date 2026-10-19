@@ -244,6 +244,16 @@
   gauges use explicit edge anchors, and full-view crosshairs/borders stretch.
   Lock-on box halves and orbiting pieces share their target anchor. Special
   scope rings stay fitted while their gradients/composite cover the output.
+  Issue #152 also extends the title reveal's two outer black 3D panels with
+  the display aspect ratio, preserving the proportional logo and animated wipe.
+  The related white-flash correction on the #152 branch scopes the gameplay white
+  wash and additive flash to the full output, preserving intensity and timing.
+  It uses `pc_display_flash_overlay`, `white-flash-overlay.patch`, and the
+  shared transition hook; coverage is in `tests/flash_overlay.c` and
+  `tests/transition_overlay.c`. The wrapper also enables `TSFP_NATIVE_DISPLAY`.
+  Check explosion flashes at 4:3, widescreen, ultrawide and portrait on Mac;
+  confirm partial/split views and later HUD elements retain their placement.
+  Windows unit/build evidence does not establish Mac visual correctness.
 - **Source:** [Feature branch](https://github.com/TheDoffman/timesplitters-future-perfect-pc/tree/fix/responsive-menu-footer);
   `src/pc_display_ui.inc`, `src/pc_display_menu.h`,
   `menu-footer-background.patch`, `menu-backdrop.patch`,
@@ -254,6 +264,10 @@
   compiled for `TSFP_NATIVE_DISPLAY`; the native renderer already supports this
   placement. The blue sheet uses the shared guest projection setter and restores
   it before subsequent layers. No new operating-system adapter is needed.
+  The #152 title-matte hook also uses `TSFP_NATIVE_DISPLAY`; it adjusts guest
+  vertices directly, without adding renderer placement state or an OS adapter.
+  Its shared coverage is in `tests/title_matte.c` and `test_ui_layout.py`;
+  native startup-animation visual validation remains required.
 - **Remaining:** Run shared regression tests and native visual validation.
   Windows evidence is in the responsive frontend backgrounds and Objectives
   bars/scope masks entries in `STATUS.md`, including the live 3440x1440
