@@ -1,5 +1,22 @@
 # Measured progress
 
+## PR #151 CI fixture correction (2026-10-18)
+
+Both Windows and macOS jobs in run 39188642901 failed to compile the shared
+UI-layout fixture and its weapon-effects/transition variants. The new
+`pc_display_aim_primitive` character-capture call had no implementation in
+these isolated placement harnesses. Added an explicit inactive-carousel stub
+in their shared fixture; the real adapter remains exercised by `menu_mouse.c`.
+The test runner now includes compiler stdout/stderr in assertion failures,
+so a missing symbol is visible instead of only a subprocess exit code.
+No production behavior or Mac adapter changed; MAC-030 remains queued.
+
+Windows x64/MSVC reproduced the three unresolved-symbol failures, then passed
+all 12 UI-layout/menu checks. The full native CI selection passed 111 checks;
+two Online theme checks could not initialize this local Python installation's
+Tcl/Tk (`init.tcl`/`tcl_findLibrary` errors). Those passed in the original Windows
+hosted run. Hosted reruns are required for final Windows/macOS CI confirmation.
+
 ## Menu mouse controls and layout (issue #114, 2026-10-18)
 
 Implemented on

@@ -67,6 +67,9 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 }
 void host_SetTwoDPlacement(int value,uint32_t t)
 { CHECK(pending<0);placement=value;tag=t;selected[selection_count++]=value; }
+/* Character hit capture belongs to the menu adapter (covered by menu_mouse.c).
+ * These placement fixtures have no active character carousel. */
+static void menu_character_quad(void) {}
 #include "pc_display_ui.inc"
 static void draw(void){pending=1;g_esp+=4;}
 static void rank_widget(void)
