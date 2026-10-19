@@ -114,6 +114,7 @@ try {
                         (Join-Path $projectRoot 'tests\test_terminal_depth.py'),
                         (Join-Path $projectRoot 'tests\test_ghost_rendering.py'),
                         (Join-Path $projectRoot 'tests\test_auto_look.py'),
+                        (Join-Path $projectRoot 'tests\test_discord_presence.py'),
                         (Join-Path $projectRoot 'tests\test_menu_mouse.py'),
                         (Join-Path $projectRoot 'tests\test_quit_menu.py'),
                         (Join-Path $projectRoot 'tests\test_xmv_stop.py'),
@@ -168,10 +169,11 @@ try {
                         "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src",
                         "-DTSFP_GAME_ICON_RESOURCE=$gameIconResource")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_hang_policy_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_discord_test', 'tsfp_hang_policy_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', '4')
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tests/ghost_targets.py'),
                         (Join-Path $buildRoot "xboxrecomp/src/replay/$Configuration/d3d8_replay.exe"))
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_network_test.exe") @()
+                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_discord_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_hang_policy_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_pc_clear_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_format_test.exe") @()

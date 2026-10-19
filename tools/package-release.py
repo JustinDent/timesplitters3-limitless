@@ -56,6 +56,8 @@ def main():
     for path in candidates[-1].parent.glob('*.dll'):
         copy(path, 'Bin/'+path.name)
     copy(ROOT / 'config/pc-controls.default.json', 'Settings/pc-controls.json')
+    copy(ROOT / 'config/pc-discord.default.ini', 'Settings/pc-discord.ini')
+    copy(ROOT / 'docs/discord-presence.md', 'Discord-setup.txt')
     copy(ROOT / 'tools/playable-launch.ps1', 'Launch.ps1')
     copy(ROOT / 'tools/start-game.ps1', 'Start-game.ps1')
     for file in ['ImportGame.cs', 'Import-game.ps1', 'Play.cmd']:
@@ -111,6 +113,8 @@ The first controller not assigned to another player also controls player 1.
 Pause before opening F2: the editor blocks input but does not pause the game.
 Settings and paused Options include Display settings for render resolution.
 Confirmed display choices are saved in Settings/pc-display.ini.
+Optional Discord Rich Presence: enable Game settings > Discord with the Discord
+desktop app running. See Discord-setup.txt. Fresh installs leave this disabled.
 
 Online multiplayer: choose Online / System Link > Online in the game.
 Host: Start New Match detects your public IPv4 and starts the HTTPS directory.
