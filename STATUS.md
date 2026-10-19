@@ -13,15 +13,27 @@
   rejection of an unknown format. Sampling uses the same HLSL and expected
   texels on both backends; cube uploads also receive direct subresource readback.
   Pixel comparisons reject non-finite output as well as out-of-tolerance values.
-- **Validation state:** The complete Vulkan fixture passes a local Clang syntax
+- **Initial validation:** The complete Vulkan fixture passes a local Clang syntax
   check without modifying the shared runtime/build. All 47 CI selection/backlog
   checks pass. GPU execution is pending a published hosted run; this does not
   yet prove cube/volume support, Xbox resource-factory behavior or any game scene.
-- **Publication:** Commits through `e864831` are published on the focused branch.
+- **Publication:** Commits through `4419205` are published on the focused branch.
   [Run 39306301875](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39306301875)
-  is executing both host jobs at that revision. Main remains unchanged. The
+  tests the lower-level contract at `e864831`. Main remains unchanged. The
   latest fetched main is `ade3763`; its remaining changes concern repository
   maintenance and launcher documentation, not the renderer contract.
+- **Hosted Mac result at `e864831`:** The Mac job completes successfully on
+  macOS 26.6.2 arm64 / Apple Paravirtual GPU with the pinned SDK and MoltenVK.
+  The cube/volume GPU contract passes along with the menu, depth/stencil and
+  presentation checks. Vulkan validation reports no errors and seven known
+  primitive-restart capability warnings. The unknown-format rejection and
+  injected presentation failure are expected cases. Other checks: 47 CI/backlog,
+  26 patch (two skips), 167 runtime (18 skips), 49 release/cleanup (three skips).
+  Windows also completes successfully: 47 CI/backlog, 28 patch, 198 runtime
+  checks (including the actual D3D11 WARP cube/volume contract; 12 other tests
+  skipped), 52 release/cleanup, six startup/packaging (two subtests), five icon
+  checks and the existing launcher suites. This does not validate Xbox factories, palette or
+  compressed resources, actual title usage, fallback GL, or gameplay.
 - **Xbox factory follow-up (commit carrying this entry):** The same fixture now links the
   production `d3d8_resources.c`. It creates Xbox cube and non-cubic volume
   resources, requests automatic mip chains, writes through Lock/Unlock in both
@@ -29,7 +41,7 @@
   and checks that child cube surfaces/volume levels survive parent release.
   Palette, feedback and device-query hooks abort if reached; those paths are
   outside this test's scope. Clang syntax and 47 CI/backlog checks pass. Actual
-  factory GPU execution is pending a subsequent run; run 39306301875 covers
+  factory GPU execution for `4419205` is pending a subsequent run; run 39306301875 covers
   only the lower-level RHI cases. No local runtime/build files were modified.
 
 ## Common renderer Mac settings acceptance (2026-10-19)

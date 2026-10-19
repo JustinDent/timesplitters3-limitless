@@ -870,10 +870,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   RHI GPU fixture for Windows and Mac. It checks cube faces, volume voxels,
   mip chains, pitched uploads, isolated updates, restricted views, retain/release
   and unknown-format rejection using common shaders/expectations. Local syntax
-  and CI/backlog checks pass; hosted GPU execution is pending. The Xbox factories
-  and title scenes remain separate acceptance work.
+  and CI/backlog checks pass. Both hosted jobs and the Mac Vulkan/Windows WARP
+  GPU contracts pass at `e864831`. The Xbox factories and title scenes remain separate
+  acceptance work.
   [Evidence](STATUS.md#shared-cube-and-volume-resource-contract-2026-10-19).
-- **Xbox factory follow-up (commit carrying this entry, same branch):** Adds the production
+- **Xbox factory follow-up (`4419205`, same published branch):** Adds the production
   resource implementation to both GPU fixtures. It covers automatic mip counts,
   linear/swizzled Lock/Unlock uploads, face/voxel sampling and child lifetime
   after parent release. Source checks pass; GPU execution remains pending.

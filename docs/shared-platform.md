@@ -90,8 +90,9 @@ requirement. Run `--setup-sdk` once, then `--driver moltenvk` or
 The same `tests/rhi_menu_sampling.c` pixel test runs on Windows D3D11 WARP,
 without a swapchain there. Hosted Windows and Mac validation passed at
 `083e57c`; see [the CI results](../STATUS.md#shared-platform-ci-validation-2026-10-19).
-New cube/volume resource cases are published at `e864831` and have a separate
-hosted run pending; the earlier green result does not cover those additions.
+New cube/volume resource cases pass on hosted Mac Vulkan and Windows WARP at
+`e864831`. The deeper Xbox-factory cases at published `4419205` await
+their own GPU run; the earlier green results do not cover those additions.
 
 The game can now be built with `tools/build-native-mac.py --renderer vulkan`.
 Its SDL adapter creates the window and supplies physical dimensions/events;
@@ -139,12 +140,12 @@ integration work, tracked in the backlog.
 | `codex/shared-present-metrics` | `3e78f7c` | Shared API-acceptance counts, frame timing and interpolation failure handling |
 | `codex/shared-platform-validation` | `a0c8a1a` | `083e57c`: pinned SDK download and Windows test-harness fixes; both hosted jobs and GPU contracts pass |
 | `codex/shared-native-window-acceptance` | `37b4af9` plus validation fixes `083e57c` | One native settings/host fixture for both renderers; common Vulkan settings and window transitions pass |
-| `codex/shared-texture-contract` | `296f970` | `e864831`: shared cube/volume sampling and resource acceptance; hosted GPU execution pending |
+| `codex/shared-texture-contract` | `296f970` | `e864831`: both hosted cube/volume contracts pass. `4419205`: Xbox factory acceptance added, GPU run pending |
 
 The complete ancestor stack through `a0c8a1a` is published on
 `codex/shared-present-metrics`, with `codex/shared-platform-validation` also
 published at `083e57c`, and `codex/shared-native-window-acceptance` published
-through `296f970`, and `codex/shared-texture-contract` published at `e864831`;
+through `296f970`, and `codex/shared-texture-contract` published at `4419205`;
 the other milestone branch refs remain local.
 The native window acceptance work depends on these validation fixes. Nothing has been
 merged into main or verified on the other physical computer. Hosted CI results,
