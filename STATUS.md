@@ -892,7 +892,7 @@ this integration reran build/regression checks. Native Mac remains unverified.
 
 ## Responsive loading label (2026-10-17)
 
-Implemented follow-up on `fix/responsive-transition-overlay` (`fe8e253`).
+Local, uncommitted follow-up on `fix/responsive-transition-overlay` (`fe8e253`).
 The loading-picture text at US return PC `001560E5` now uses the shared LEFT UI
 placement instead of staying in the central 4:3 area. Font sizing remains
 proportional to the output, with the original inset measured from its left edge.
@@ -1001,7 +1001,7 @@ unverified; see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-di
 
 ## Lock-on and special scope effects (2026-10-17)
 
-Implemented follow-up on `fix/responsive-menu-footer`, base `0dc9fea`.
+Local, uncommitted follow-up on `fix/responsive-menu-footer`, base `0dc9fea`.
 The lock-on renderer (`00138590`) uses `lockonbox`, `custom_homing_lockon`,
 `lockoninner` and `lockontri`. Both integer box halves and all four pointer-based
 quad call sites now scale around the current target record's screen position.
