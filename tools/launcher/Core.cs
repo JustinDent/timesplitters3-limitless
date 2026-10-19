@@ -14,13 +14,13 @@ namespace TimeSplitters.Launcher
     public sealed class Original { public string Name; public bool Existed; }
     public static class Core
     {
-        public const string LauncherName = "TimeSplitters Launcher.exe";
+        public const string LauncherName = LauncherPlatform.LauncherBinary;
         public const string AppName = "TimeSplitters.App.exe";
-        public const string AppPath = "Bin/" + AppName;
+        public const string AppPath = LauncherPlatform.LauncherApplication;
         public const string SelfManifest = "Support/Launcher/manifest.json";
         public static bool LauncherFile(string name)
         {
-            return name == LauncherName || name == AppPath || name == SelfManifest;
+            return name == LauncherName || name == AppPath || name == SelfManifest || LauncherPlatform.LauncherResource(name);
         }
         static readonly HashSet<string> RootFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase) {
             LauncherName, "Play.cmd", "Launch.ps1", "Start-game.ps1", "Import-game.ps1", "ImportGame.cs", "README.txt", "BUILD.json" };
@@ -36,14 +36,17 @@ namespace TimeSplitters.Launcher
             foreach (string part in name.Split('/'))
             {
                 Require(part.Length > 0 && part != "." && part != ".." && part.TrimEnd(' ', '.') == part &&
-                    part.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 && !Regex.IsMatch(part, @"^(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(?:\.|$)", RegexOptions.IgnoreCase),
+                    part.IndexOfAny(Path.GetInvalidFileNameChars()) < 0 && part.IndexOfAny(new[]{':','*','?','"','<','>','|'}) < 0 && !Regex.IsMatch(part, @"^(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(?:\.|$)", RegexOptions.IgnoreCase),
                     "Unsafe Windows filename in update.");
             }
         }
         public static bool Allowed(string name)
         {
             Name(name);
-            if (RootFiles.Contains(name)) return true;
+            if (RootFiles.Contains(name) || name == LauncherPlatform.GameBinary || name == LauncherPlatform.LaunchScript || LauncherFile(name)) return true;
+#if MACOS
+            if (name.StartsWith("Bin/",StringComparison.Ordinal) && name.EndsWith(".dylib",StringComparison.Ordinal)) return true;
+#endif
             var p = name.Split('/');
             // Existing public releases include their corresponding source archive
             // and a bundled Python/online-support tree. These are package-owned,
@@ -99,7 +102,7 @@ namespace TimeSplitters.Launcher
         }
         public static string InstalledVersion(string root)
         {
-            string path = PathIn(root, "BUILD.json");
+            string path = PathIn(root, LauncherPlatform.ManifestPath(root));
             return File.Exists(path) ? Json.String(Json.Object(File.ReadAllText(path)), "version") : "";
         }
         public static bool GameRunning()
@@ -150,7 +153,7 @@ namespace TimeSplitters.Launcher
                     Require(Regex.IsMatch(hash, "^[0-9a-fA-F]{64}$") && !expected.ContainsKey(pair.Key), "Invalid or duplicate manifest hash.");
                     expected.Add(pair.Key, hash);
                 }
-                Require(expected.ContainsKey("Bin/futureperfect_recomp.exe") && expected.ContainsKey("Launch.ps1") &&
+                Require(expected.ContainsKey(LauncherPlatform.GameBinary) && expected.ContainsKey(LauncherPlatform.LaunchScript) &&
                     expected.ContainsKey("Settings/pc-controls.json"), "The release is missing required runtime files.");
                 long size = 0;
                 var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -207,7 +210,7 @@ namespace TimeSplitters.Launcher
                     string backup = PathIn(folder, "files/" + item.Name);
                     Require(File.Exists(backup), "Recovery file is missing. Keep the .launcher folder for repair.");
                     Directory.CreateDirectory(Path.GetDirectoryName(target));
-                    File.Copy(backup, target, true);
+                    LauncherPlatform.CopyFile(backup, target);
                 }
                 else if (File.Exists(target)) File.Delete(target);
             }
@@ -283,7 +286,7 @@ namespace TimeSplitters.Launcher
                     var change = changes.First(c => c.Name == item.Name);
                     string target = PathIn(root, item.Name);
                     if (change.Source == null) { if (File.Exists(target)) File.Delete(target); }
-                    else { Directory.CreateDirectory(Path.GetDirectoryName(target)); File.Copy(change.Source, target, true); }
+                    else { Directory.CreateDirectory(Path.GetDirectoryName(target)); LauncherPlatform.CopyFile(change.Source, target); }
                 }
                 if (!launcher && Directory.Exists(PathIn(root, rollback))) CheckGameCleanupTree(PathIn(root, rollback), false);
                 RemoveOwned(root, rollback);
@@ -325,13 +328,17 @@ namespace TimeSplitters.Launcher
                     Regex.IsMatch(hash, "^[0-9a-fA-F]{64}$"), "Unsafe game manifest entry.");
                 result.Add(pair.Key, hash);
             }
-            Require(result.ContainsKey("Bin/futureperfect_recomp.exe") && result.ContainsKey("Launch.ps1"), "Game manifest is incomplete.");
+            Require(result.ContainsKey(LauncherPlatform.GameBinary) && result.ContainsKey(LauncherPlatform.LaunchScript), "Game manifest is incomplete.");
             return result;
         }
         internal static bool PreserveGameFile(string name)
         {
+            // Legacy game manifests may use different filename casing. Keep
+            // installed launchers protected on case-insensitive filesystems,
+            // while LauncherFile still requires canonical package paths.
             return name.StartsWith("Settings/", StringComparison.OrdinalIgnoreCase) ||
-                new[] { LauncherName, AppPath, SelfManifest }.Contains(name, StringComparer.OrdinalIgnoreCase);
+                new[] { LauncherName, AppPath, SelfManifest }.Contains(name, StringComparer.OrdinalIgnoreCase) ||
+                LauncherPlatform.LauncherResource(name);
         }
         public static string GameBuildHash(string root)
         {
@@ -496,7 +503,7 @@ namespace TimeSplitters.Launcher
                         !Hash(PathIn(root,pair.Key)).Equals(Convert.ToString(pair.Value),StringComparison.OrdinalIgnoreCase)))))
                     changes.Add(new Change { Name = pair.Key, Source = path });
             }
-            Require(hashes.ContainsKey("Bin/futureperfect_recomp.exe") && hashes.ContainsKey("Launch.ps1"), "Staged runtime is incomplete.");
+            Require(hashes.ContainsKey(LauncherPlatform.GameBinary) && hashes.ContainsKey(LauncherPlatform.LaunchScript), "Staged runtime is incomplete.");
             // Remove only unchanged files explicitly owned by the old release.
             // These removals share the install journal and therefore roll back
             // normally if installation fails or the user restores the old game.

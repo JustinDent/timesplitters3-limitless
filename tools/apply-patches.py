@@ -48,6 +48,24 @@ def patch_records(paths):
                 network = by_name[name]
                 paths.remove(network)
                 paths.insert(paths.index(native_boot), network)
+    # Discord appends its Windows adapter beside the original native input
+    # block. Apply it before build identity extends that block's final lines.
+    # Both patches keep their original bytes so tracked older stacks unwind.
+    identity = next((p for p in paths if p.name.endswith('-native-build-identity.patch')), None)
+    discord = next((p for p in paths if p.name.endswith('-discord-presence.patch')), None)
+    if identity and discord:
+        paths.remove(identity)
+        paths.insert(paths.index(discord) + 1, identity)
+    # Integrate the PC presentation series after the shared renderer adapters.
+    # Its rebased hunks retain shared replay depth and successful-present counts;
+    # exact prior bytes/order remain recorded for safe branch migration.
+    for suffix in ('-144-fps.patch', '-presentation-timing.patch',
+                   '-interpolation-recovery.patch', '-controls-accept-save.patch',
+                   '-launcher-presentation-integration.patch'):
+        patch = next((p for p in paths if p.name.endswith(suffix)), None)
+        if patch:
+            paths.remove(patch)
+            paths.append(patch)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

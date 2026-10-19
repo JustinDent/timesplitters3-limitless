@@ -98,3 +98,17 @@ match replay. `--scenario lan` hosts a local loopback session and checks the
 map, mode and single-player count through lobby and gameplay. Logs are capped at
 4 MiB each and disposable virtual disks are recycled. These checks do not cover
 every game mode or the appearance of the activity card in another user's client.
+
+## Native Mac
+
+The native launcher uses the same Discord tab and optional configuration. The
+runtime shares Windows framing, activity formatting, guest decoding and reconnect
+policy; `src/native/discord_posix.h` supplies local Unix sockets and worker I/O.
+Native startup/shutdown and the shared camera snapshot hook are enabled by the
+`native-launcher-services` patch. Network-specific status still depends on the
+native networking adapter (MAC-013); it is not inferred from Windows peers.
+
+Run `python -m pytest tests/test_discord_macos.py tests/test_discord_presence.py -q`
+for isolated protocol/policy checks. The Mac end-to-end wrapper's `--discord`
+option explicitly publishes its disposable game session and checks the running
+desktop client's acknowledgement; see `docs/mac-launcher.md`.

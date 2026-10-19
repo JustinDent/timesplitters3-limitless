@@ -28,7 +28,7 @@ namespace TimeSplitters.Launcher
             bool paste=url.Length==0 || url.Length>MaximumUrlLength;
             if(paste) {
                 // Preserve the complete report on the clipboard. Never silently cut off its findings.
-                string[] headings={"Running launcher:","Installed launcher:","Installed game:","Windows:",".NET CLR:"};
+                string[] headings={"Running launcher:","Installed launcher:","Installed game:","Windows:","Host:",".NET CLR:"};
                 string[] summary=report.Split('\n').Select(line=>line.TrimEnd('\r'))
                     .Where(line=>headings.Any(heading=>line.StartsWith(heading,StringComparison.Ordinal))).Take(5).ToArray();
                 string text="Summary only. The complete diagnostic report is copied in the launcher. Replace this field with that report before submitting.\n\n"+

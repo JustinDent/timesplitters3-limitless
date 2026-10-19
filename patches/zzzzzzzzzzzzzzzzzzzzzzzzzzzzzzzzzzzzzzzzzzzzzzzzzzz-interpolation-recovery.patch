@@ -1,6 +1,8 @@
+diff --git a/src/hle/hle_d3d8_interp.c b/src/hle/hle_d3d8_interp.c
+index 76eaec7..c61ec18 100644
 --- a/src/hle/hle_d3d8_interp.c
 +++ b/src/hle/hle_d3d8_interp.c
-@@ -126,7 +126,7 @@
+@@ -126,7 +126,7 @@ static int        g_multiple;                    /* frames shown a frame drawn;
  static int        g_on;
  static int g_target, g_replayed;
  static HleFrameClock g_clock;
@@ -9,21 +11,14 @@
  static unsigned long g_suppressed;
  
  unsigned long hle_d3d8_interp_suppressed(void) { return g_suppressed; }
-@@ -752,23 +752,29 @@
- 
- /* ---------------------------------------------------------- drawing it */
- 
--static void redraw(double a)
-+static int redraw(double a)
- {
-     InterpList *cur = &g_list[g_cur];
-     const float *c = hle_d3d8_interp_constants();
-     int rec = hle_d3d8_interp_rec;
+@@ -907,14 +907,22 @@ static int redraw(double a)
      size_t off;
  
 +    LARGE_INTEGER now;
 +    QueryPerformanceCounter(&now);
-+    if (g_target && now.QuadPart < g_retry_after) return 0;
++    if (g_target && now.QuadPart < g_retry_after) {
++        return 0;
++    }
      if (!xbox_D3D8InterpBegin()) {
          static int said;
          if (!said++) {
@@ -34,35 +29,15 @@
              fflush(stderr);
          }
 -        g_on = 0;
--        return;
--    }
 +        if (g_target) g_retry_after = now.QuadPart + g_qpf;
-+        else g_on = 0; /* Preserve the legacy/native failure policy. */
++        else g_on = 0;
 +        g_frame_ok = g_idle_ok = 0;
-+        return 0;
-+    }
+         return 0;
+     }
 +    g_retry_after = 0;
      hle_d3d8_interp_rec = 0;                     /* what is drawn now is not kept */
      for (off = 0; off < cur->len; ) {
-         op_header *h = (op_header *)(cur->ops + off);
-@@ -822,6 +828,7 @@
-     g_presents_total++;
-     g_shown++;
-     g_replayed++;
-+    return 1;
- }
- 
- /* The gate's wait, lent (xbox_Nv2aFlipGateSetIdle). In-between frame k of
-@@ -875,7 +882,7 @@
-         if (alpha > 1.0)
-             alpha = 1.0;
-         QueryPerformanceCounter(&a);
--        redraw(alpha);
-+        if (!redraw(alpha)) return 0;
-         QueryPerformanceCounter(&b);
-         /* What a redraw costs up to its present, followed slowly, and never
-          * taken as more than a quarter of the period: a frame that stalled
-@@ -940,7 +947,7 @@
+@@ -1118,7 +1127,7 @@ void hle_d3d8_interp_finish(void)
      }
      QueryPerformanceCounter(&now);
      if (now.QuadPart + g_redraw_est > due + g_qpf / 1000) return;
@@ -71,7 +46,7 @@
      cost = g_presented_at - now.QuadPart;
      if (cost > span / 4) cost = span / 4;
      g_redraw_est = (g_redraw_est * 7 + cost) / 8;
-@@ -1015,9 +1022,15 @@
+@@ -1193,9 +1202,15 @@ static void guest_idle(void)
          if (!g_list[3].whole) { g_cur=recording;g_idle_busy=0;return; }
          hle_d3d8_interp_predicting = 1;
          xbox_D3D8InterpPredict(TRUE);

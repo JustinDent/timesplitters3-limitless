@@ -81,6 +81,9 @@ namespace TimeSplitters.Launcher
         public static List<DisplayMode> Primary(int savedWidth,int savedHeight)
         {
             var reported=new List<DisplayMode>();
+            #if MACOS
+            reported.AddRange(NativeHost.DisplayModes());
+#else
             var screen=System.Windows.Forms.Screen.PrimaryScreen;
             if(screen!=null) for(uint index=0;;index++)
             {
@@ -88,11 +91,15 @@ namespace TimeSplitters.Launcher
                 if(!EnumDisplaySettingsW(screen.DeviceName,index,ref mode)) break;
                 if(mode.Bits>=24) reported.Add(new DisplayMode(mode.Width,mode.Height));
             }
+            #endif
             return Choices(reported,savedWidth,savedHeight);
         }
         public static List<int> PrimaryRefreshRates()
         {
             var rates=new List<int>{0};
+#if MACOS
+            return rates; // Native refresh switching is not implemented; keep the saved rate.
+#else
             var screen=System.Windows.Forms.Screen.PrimaryScreen;
             var current=new Mode{Size=220};
             if(screen==null || !EnumDisplaySettingsW(screen.DeviceName,UInt32.MaxValue,ref current)) return rates;
@@ -102,13 +109,18 @@ namespace TimeSplitters.Launcher
                     (mode.Flags&2)==0 && (mode.Hertz==120 || mode.Hertz==144) && !rates.Contains(mode.Hertz)) rates.Add(mode.Hertz);
             }
             rates.Sort();return rates;
+#endif
         }
         public static int PrimaryRefreshRate()
         {
+#if MACOS
+            return 0; // Variable refresh displays may not expose a fixed desktop rate.
+#else
             var screen=System.Windows.Forms.Screen.PrimaryScreen;
             var current=new Mode{Size=220};
             return screen!=null && EnumDisplaySettingsW(screen.DeviceName,UInt32.MaxValue,ref current)
                 && current.Hertz>1 ? current.Hertz : 0;
+#endif
         }
     }
 }

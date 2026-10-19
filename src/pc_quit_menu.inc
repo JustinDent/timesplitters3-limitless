@@ -1,6 +1,9 @@
 /* Append only after the US menu builders finish their row setters, before
    the original layout pass. The original Quit returns to the frontend. */
-#if defined(_WIN32) || defined(TSFP_QUIT_MENU_TEST)
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY) || defined(TSFP_QUIT_MENU_TEST)
+#ifdef TSFP_NATIVE_DISPLAY
+extern int tsfp_native_request_quit(void);
+#endif
 #define QUIT_OPEN_CB 0x12018u
 #define QUIT_BUILD_CB 0x12019u
 #define QUIT_SELECT_CB 0x1201au
@@ -63,9 +66,12 @@ static void quit_select(void)
     if(guest_writable(menu,0x190)) {
         if(WORD_AT(menu+0x18c)==0) guest_call(quit_back,1,menu);
         else if(WORD_AT(menu+0x18c)==1 && !quit_requested) {
-            /* The window thread owns shutdown. Use its ordinary WM_CLOSE path,
-               including the runtime's normal exit diagnostics. */
+            /* The window thread owns shutdown through its ordinary close path. */
+#ifdef TSFP_NATIVE_DISPLAY
+            quit_requested=tsfp_native_request_quit();
+#else
             quit_requested=PostMessage(xbox_D3D8Window(),WM_CLOSE,0,0)!=0;
+#endif
             if(quit_requested) fprintf(stderr,"[PC-QUIT] Desktop exit confirmed\n");
         }
     }
@@ -75,7 +81,7 @@ static void quit_select(void)
 
 void pc_display_menu_finish(void (*original)(void))
 {
-#if defined(_WIN32) || defined(TSFP_QUIT_MENU_TEST)
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY) || defined(TSFP_QUIT_MENU_TEST)
     const uint32_t caller=WORD_AT(g_esp), menu=WORD_AT(g_esp+4);
     const int frontend=caller==0x002D0EDFu;
     const int paused=caller==0x002F582Fu || caller==0x002F5879u;

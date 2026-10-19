@@ -8,6 +8,7 @@
 #include <string.h>
 #include <math.h>
 #include "pc_menu_sampling.h"
+#include "menu_sampling_cases.h"
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x);exit(1); } } while(0)
 #define HR(x) CHECK(SUCCEEDED(x))
 static ID3D11Device *device;
@@ -60,12 +61,7 @@ int main(void)
     HR(ID3D11Device_CreateRenderTargetView(device,(ID3D11Resource *)target,NULL,&rtv));
     td.BindFlags=0;td.Usage=D3D11_USAGE_STAGING;td.CPUAccessFlags=D3D11_CPU_ACCESS_READ;
     HR(ID3D11Device_CreateTexture2D(device,&td,NULL,&readback));
-    float texels[16*16*4];
-    for(int y=0;y<16;y++)for(int x=0;x<16;x++) {
-        int i=(y*16+x)*4;
-        texels[i]=x<8?.1f:.9f;texels[i+1]=.4f;texels[i+2]=y<8?.2f:.7f;
-        texels[i+3]=x<8?0.f:1.f;
-    }
+    float texels[16*16*4];menu_sampling_texels(texels);
     td.Width=td.Height=16;td.Usage=D3D11_USAGE_IMMUTABLE;td.CPUAccessFlags=0;td.BindFlags=D3D11_BIND_SHADER_RESOURCE;
     D3D11_SUBRESOURCE_DATA initial={texels,16*4*sizeof(float),0};
     HR(ID3D11Device_CreateTexture2D(device,&td,&initial,&texture));
@@ -83,28 +79,7 @@ int main(void)
     ID3D11DeviceContext_PSSetShaderResources(context,0,1,&srv);
     ID3D11DeviceContext_PSSetSamplers(context,0,1,&sampler);
     ID3D11DeviceContext_PSSetConstantBuffers(context,0,1,&parameters);
-    float linear[64*64*4],cubic[64*64*4];int changed=0;
-    render(0,1,linear);render(1,1,cubic);
-    for(int i=0;i<64*64*4;i++) {
-        CHECK(isfinite(cubic[i]));CHECK(cubic[i]>=-.00001f && cubic[i]<=1.00001f);
-        if(fabsf(cubic[i]-linear[i])>.005f)changed++;
-        if(i%4==1)CHECK(fabsf(cubic[i]-.4f)<.00001f);
-    }
-    CHECK(changed>100);
-    /* The dark side of a glyph edge darkens and the bright side brightens,
-       while opaque/transparent plateaus retain exactly their original alpha. */
-    CHECK(cubic[(20*64+30)*4+3]<linear[(20*64+30)*4+3]);
-    CHECK(cubic[(20*64+33)*4+3]>linear[(20*64+33)*4+3]);
-    CHECK(cubic[(20*64+10)*4+3]==0.f && cubic[(20*64+50)*4+3]==1.f);
-    render(2,1,cubic);
-    CHECK(cubic[(20*64+30)*4+3]<linear[(20*64+30)*4+3]);
-    CHECK(cubic[(20*64+33)*4+3]>linear[(20*64+33)*4+3]);
-    for(int i=0;i<64*64*4;i++)CHECK(cubic[i]>=-.00001f && cubic[i]<=1.00001f);
-    for(int scale=4;scale<=8;scale+=4) {
-        render(0,(float)scale,linear);render(1,(float)scale,cubic);
-        CHECK(!memcmp(linear,cubic,sizeof(linear)));
-        render(2,(float)scale,cubic);CHECK(!memcmp(linear,cubic,sizeof(linear)));
-    }
+    CHECK(menu_sampling_cases(render));
     ID3D11DeviceContext_ClearState(context);
     ID3D11Buffer_Release(parameters);ID3D11SamplerState_Release(sampler);
     ID3D11ShaderResourceView_Release(srv);ID3D11Texture2D_Release(texture);

@@ -1,0 +1,255 @@
+--- a/src/d3d/rhi.h
++++ b/src/d3d/rhi.h
+@@ -343,9 +343,12 @@
+ /* Follow the window: new back buffers of this size. 0 on success. */
+ int         rhi_swapchain_resize(uint32_t width, uint32_t height);
+ /* Show the back buffer. interval 0 must not block (vulkan-backend.md,
+- * section 4.10). Returns the backend's status, 0 or positive on success
+- * (D3D11 passes its HRESULT through). */
++ * section 4.10). D3D11 preserves its HRESULT. */
++/* 0: API accepted presentation; positive: skipped/status; negative: failure.
++ * API acceptance does not establish GPU completion or display scanout. */
+ int32_t     rhi_present(uint32_t interval);
++enum { RHI_PRESENT_OTHER, RHI_PRESENT_GUEST, RHI_PRESENT_INTERPOLATED };
++int32_t     rhi_present_kind(uint32_t interval, uint32_t kind);
+ /* The swap chain's back buffer as the next present will show it, as RGBA8
+  * rows at dst_pitch, whatever the swap chain's own format (a BGRA swap
+  * chain is swizzled on the way). dst NULL only reports the size. 0 on
+--- a/src/d3d/rhi.c
++++ b/src/d3d/rhi.c
+@@ -8,6 +8,8 @@
+  */
+ 
+ #include "rhi_backend.h"
++#include "graphics/present_metrics.h"
++#include <time.h>
+ 
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -155,7 +157,27 @@
+ int      rhi_device_ready(void)                        { return g_rhi && g_rhi->device_ready(); }
+ RhiView *rhi_swapchain_view(void)                      { return g_rhi ? g_rhi->swapchain_view() : NULL; }
+ int      rhi_swapchain_resize(uint32_t w, uint32_t h)  { return g_rhi ? g_rhi->swapchain_resize(w, h) : -1; }
+-int32_t  rhi_present(uint32_t interval)                { return g_rhi ? g_rhi->present(interval) : -1; }
++static TsfpPresentMetrics g_present_metrics;
++static uint64_t present_clock_ns(void)
++{
++#if defined(_WIN32)
++    LARGE_INTEGER now, frequency;
++    QueryPerformanceCounter(&now);QueryPerformanceFrequency(&frequency);
++    return (uint64_t)((double)now.QuadPart * 1e9 / (double)frequency.QuadPart);
++#else
++    struct timespec now;
++    if(clock_gettime(CLOCK_MONOTONIC,&now)!=0)return 0;
++    return (uint64_t)now.tv_sec*1000000000u+(uint64_t)now.tv_nsec;
++#endif
++}
++int32_t rhi_present_kind(uint32_t interval, uint32_t kind)
++{
++    uint64_t start=present_clock_ns();
++    int32_t result=g_rhi ? g_rhi->present(interval) : -1;
++    tsfp_present_record(&g_present_metrics,rhi_backend_name(),kind,result,start,present_clock_ns());
++    return result;
++}
++int32_t rhi_present(uint32_t interval) {return rhi_present_kind(interval,RHI_PRESENT_OTHER);}
+ int      rhi_swapchain_readback(void *dst, uint32_t pitch, uint32_t *w, uint32_t *h)
+ {
+     return g_rhi ? g_rhi->swapchain_readback(dst, pitch, w, h) : -1;
+--- a/src/d3d/rhi_vulkan.c
++++ b/src/d3d/rhi_vulkan.c
+@@ -810,11 +810,13 @@
+     return create_swapchain(SC.extent.width, SC.extent.height);
+ }
+ 
++static VkResult g_acquire_result;
+ static int acquire(void)
+ {
+     VkResult r;
+     int tries;
+ 
++    g_acquire_result=VK_NOT_READY;
+     if (SC.acquired)
+         return 1;
+     if (!SC.sc)
+@@ -827,6 +829,7 @@
+         cmd();
+         r = vkAcquireNextImageKHR(V.dev, SC.sc, UINT64_MAX, V.frames[V.fi].acquire,
+                                   VK_NULL_HANDLE, &SC.index);
++        g_acquire_result=r;
+         if (r == VK_ERROR_OUT_OF_DATE_KHR) {
+             SC.stale = 1;
+             continue;
+@@ -1652,7 +1655,7 @@
+             if (V.recording)
+                 submit(VK_NULL_HANDLE);
+             next_frame();
+-            return 0;
++            return g_acquire_result<0 && g_acquire_result!=VK_ERROR_OUT_OF_DATE_KHR ? (int32_t)g_acquire_result : 1; /* no presentation accepted */
+         }
+         end_rendering();
+         memset(&black, 0, sizeof black);
+@@ -1674,7 +1677,12 @@
+         SC.stale = 1;
+     SC.acquired = 0;
+     next_frame();
+-    return 0;
++    /* SUBOPTIMAL still presents; OUT_OF_DATE rejects this image and retries
++     * after recreation. Propagate other errors instead of counting a frame. */
++    if(r==VK_SUCCESS || r==VK_SUBOPTIMAL_KHR)return 0;
++    if(r==VK_ERROR_OUT_OF_DATE_KHR)return 1;
++    fprintf(stderr,"[RHI] vulkan: presentation failed: %d\n",(int)r);
++    return r<0 ? (int32_t)r : 1;
+ }
+ 
+ static int v_image_readback(RhiImage *img, uint32_t sub, void *dst, uint32_t dst_pitch);
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -792,7 +792,7 @@
+     DWORD now = GetTickCount();
+     if (last_tick == 0) last_tick = now;
+     if (now - last_tick >= 2000) {
+-        fprintf(stderr, "  [D3D] %.1fs: %u present (%.1f fps), %u begin, %u end, "
++        fprintf(stderr, "  [D3D] %.1fs: %u present calls (%.1f calls/s), %u begin, %u end, "
+                 "%u clear, %u draw, %u xform, %u rs, %u tex\n",
+                 (now - last_tick) / 1000.0, frame_count,
+                 frame_count * 1000.0 / (now - last_tick),
+@@ -812,7 +812,7 @@
+     rhi_pump_events();
+ 
+     present_resolve();
+-    return (HRESULT)rhi_present(1);
++    return (HRESULT)rhi_present_kind(1,RHI_PRESENT_GUEST);
+ }
+ 
+ static HRESULT __stdcall dev_GetBackBuffer(IDirect3DDevice8 *self, INT iBackBuffer, DWORD Type, IDirect3DSurface8 **ppSurface)
+@@ -2310,7 +2310,7 @@
+     rhi_pump_events();
+ 
+     present_resolve();
+-    return (HRESULT)rhi_present(g_present_interval);
++    return (HRESULT)rhi_present_kind(g_present_interval,RHI_PRESENT_GUEST);
+ }
+ 
+ /* ================================================================
+@@ -2404,13 +2404,13 @@
+ 
+ /* The resolve and the present, without counting a frame: the title drew
+  * none. */
+-void xbox_D3D8InterpPresent(void)
++BOOL xbox_D3D8InterpPresent(void)
+ {
+     if (!g_interp_on || g_interp_depth.failed)
+-        return;
++        return FALSE;
+     follow_vrr();
+     present_scene();
+-    rhi_present(g_present_interval);
++    return rhi_present_kind(g_present_interval,RHI_PRESENT_INTERPOLATED)==0;
+ }
+ 
+ void xbox_D3D8InterpEnd(void)
+--- a/src/d3d/d3d8_xbox.h
++++ b/src/d3d/d3d8_xbox.h
+@@ -1282,7 +1282,7 @@
+    waits to be shown; Present shows it without counting a frame; End puts
+    the scene target back. FALSE from Begin: no second image, draw nothing. */
+ BOOL xbox_D3D8InterpBegin(void);
+-void xbox_D3D8InterpPresent(void);
++BOOL xbox_D3D8InterpPresent(void);
+ void xbox_D3D8InterpEnd(void);
+ 
+ /* Which vertex shader constants hold the transforms frame interpolation
+--- a/src/d3d/d3d8_gl.c
++++ b/src/d3d/d3d8_gl.c
+@@ -1111,7 +1111,7 @@
+ void xbox_D3D8SetWideFrames(BOOL wide) { (void)wide; }
+ /* Nor frame interpolation. */
+ BOOL xbox_D3D8InterpBegin(void) { return FALSE; }
+-void xbox_D3D8InterpPresent(void) {}
++BOOL xbox_D3D8InterpPresent(void) { return FALSE; }
+ void xbox_D3D8InterpEnd(void) {}
+ void xbox_D3D8SetInterpRegisters(int projection, int affine_first, int affine_count)
+ {
+--- a/src/hle/hle_d3d8_interp.c
++++ b/src/hle/hle_d3d8_interp.c
+@@ -724,7 +724,7 @@
+ 
+ /* ---------------------------------------------------------- drawing it */
+ 
+-static void redraw(double a)
++static int redraw(double a)
+ {
+     InterpList *cur = &g_list[g_cur];
+     const float *c = hle_d3d8_interp_constants();
+@@ -739,7 +739,7 @@
+             fflush(stderr);
+         }
+         g_on = 0;
+-        return;
++        return 0;
+     }
+     hle_d3d8_interp_rec = 0;                     /* what is drawn now is not kept */
+     for (off = 0; off < cur->len; ) {
+@@ -765,18 +765,17 @@
+         d3d8_vsh_set_constant(g_aff_first, c + g_aff_first * 4, g_aff_count);
+     hle_d3d8_overlay_redraw();
+     {
+-        /* The moment it goes to the screen. A present can then block --
+-         * a Vulkan swap chain waits there for an image to draw the next
+-         * frame into -- but this one is already on its way. */
++        /* CPU submission-start estimate for scheduling, not scanout time.
++         * The backend's result below decides whether to count this attempt. */
+         LARGE_INTEGER t;
+         QueryPerformanceCounter(&t);
+         g_presented_at = t.QuadPart;
+     }
+-    xbox_D3D8InterpPresent();
++    int presented=xbox_D3D8InterpPresent();
+     xbox_D3D8InterpEnd();
+     hle_d3d8_interp_rec = rec;
+-    g_presents_total++;
+-    g_shown++;
++    if(presented) {g_presents_total++;g_shown++;}
++    return presented;
+ }
+ 
+ /* The gate's wait, lent (xbox_Nv2aFlipGateSetIdle). In-between frame k of
+@@ -821,8 +820,14 @@
+         if (alpha > 1.0)
+             alpha = 1.0;
+         QueryPerformanceCounter(&a);
+-        redraw(alpha);
++        int presented=redraw(alpha);
+         QueryPerformanceCounter(&b);
++        if(!presented) {
++            /* Never use an old timestamp after Begin/present failure or spin
++             * retrying a lost/minimized surface during this guest frame. */
++            g_slot=g_multiple;
++            return 0;
++        }
+         /* What a redraw costs up to its present, followed slowly, and never
+          * taken as more than a quarter of the period: a frame that stalled
+          * (a pipeline built, a page fault) is not what the next one costs. */
+@@ -837,7 +842,7 @@
+         g_redraws++;
+         if (ms > g_redraw_ms_max)
+             g_redraw_ms_max = ms;
+-        /* How far from its moment it reached the screen. */
++        /* How far CPU submission start was from its scheduled moment. */
+         ms = fabs((double)(g_presented_at - due)) * 1000.0 / (double)g_qpf;
+         g_off_ms_sum += ms;
+         if (ms > g_off_ms_max)
+@@ -963,10 +968,10 @@
+ 
+     if (!g_multiple)
+         return;
+-    fprintf(stderr, "[INTERP] %dx: %lu frames, %lu in-between shown, %lu late; held "
++    fprintf(stderr, "[INTERP] %dx: %lu frames, %lu in-between accepted, %lu late; held "
+             "%lu (%lu no 3D, %lu matched too little, %lu cut, %lu other); matched "
+-            "%.0f%% of 3D primitives; redraw %.2f ms average, %.2f worst; shown "
+-            "%.2f ms from its moment on average, %.2f worst; blend %.2f average%s\n",
++            "%.0f%% of 3D primitives; redraw %.2f ms average, %.2f worst; submission start "
++            "%.2f ms from schedule on average, %.2f worst; blend %.2f average%s\n",
+             g_multiple, g_frames, g_shown, g_late, held, g_held_2d, g_held_match,
+             g_held_cut, g_held_other,
+             g_matched_frames ? g_matched_sum * 100.0 / (double)g_matched_frames : 0.0,

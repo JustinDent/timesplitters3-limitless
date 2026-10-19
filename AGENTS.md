@@ -33,17 +33,30 @@ reproducibility, and validation requirements.
   personal settings, and saves remain ignored and local. Transfer those only
   when needed for the task, preserving the authoritative copy and settings.
 
-## PC features and deferred Mac adaptation
+## Shared features and platform exceptions
 
-- New Windows PC features may be implemented and completed on PC first. Do not
-  automatically implement their Mac adapters in the same task unless requested.
-  Before reporting a new PC feature complete, add or update its entry in
-  `MAC_PORT_BACKLOG.md` so later Mac work has a durable handoff. Also record
-  behavioral fixes that need corresponding Mac work.
+- Implement ordinary new gameplay, input rules, rendering policy, settings and
+  fixes once in shared source or the shared patch stack, for both Windows and
+  native Mac. Build on the shared interfaces documented in
+  `docs/shared-platform.md`; extend their host adapters when needed. Do not copy
+  feature logic into a second Mac implementation or guard portable behavior
+  behind `_WIN32` merely because it was first developed on PC.
+- Keep OS events/windows, graphics resource access and file-system operations in
+  thin platform adapters. Shared shader algorithms belong in `src/graphics`;
+  shader-language adapters map syntax/intrinsics rather than duplicate policy.
+  Shared debug setting fields, labels, keys and capability requirements belong
+  in `src/pc_debug_options.def`, consumed by both dialogs and JSON persistence.
+- Genuine platform dependencies or an explicitly PC-only task may be deferred.
+  Record the missing capability, why common code cannot yet supply it, and the
+  adapter/acceptance work in `MAC_PORT_BACKLOG.md` before reporting completion.
+  Distinguish implementation from each host's validation. Preserve unsupported
+  saved options; do not silently reset them when another host edits settings.
+  A deferred exception is not permission to regress existing Mac support.
 - Each entry must describe the PC behavior, source files and commit/PR when
   available (otherwise mark uncommitted), Mac support already present, remaining
-  adaptation, and acceptance checks. Use the backlog's statuses; a queued Mac
-  adaptation does not block completion of the PC feature. If no Mac adaptation
+  adaptation, and acceptance checks. Use the backlog's statuses. An explicitly
+  scoped platform exception may complete on PC while its Mac adapter is queued.
+  If no Mac adaptation
   is needed, record why and distinguish verified support from pending validation.
 - When asked to port features to Mac, consult `MAC_PORT_BACKLOG.md`, implement
   the requested entries, and update their status and evidence. Do not mark an
@@ -52,13 +65,19 @@ reproducibility, and validation requirements.
 - Implement platform-independent gameplay, input rules, asset/configuration
   handling and runtime fixes once in shared source or the shared patch stack.
   Keep operating-system event handling, native settings windows and graphics
-  API calls in platform adapters. Preserve reusable common logic while allowing
-  new Mac integration to be deferred to the backlog.
+  API calls in platform adapters. Avoid a second settings/model definition in
+  native UI code; map shared capabilities to available host controls.
 - Changes to code already shared by both builds must preserve existing platform
   support. Review affected build paths, run relevant shared tests and available
   host checks, and report unavailable checks. Preserve existing settings and
   supported defaults. Deferring a new feature does not authorize regressions in
   existing Mac functionality.
+- Launcher changes follow the same rule in both directions: implement common
+  behavior once, adapt Windows/macOS system calls, and run both host checks.
+  `docs/launcher-compatibility.md` describes the API-free build/test workflow.
+  Its passing check is evidence of its scope, not a guarantee of visual parity.
+  CI does not generate OS adapters. Follow-up fixes stay in reviewed source
+  changes; no AI API credentials or paid agent calls belong in this workflow.
 - Every PR description must explain the problem or root cause and how the
   change fixes it, in plain language. Include the resulting behavior, relevant
   validation and known limits. Keep this explanation current when updating
@@ -71,8 +90,10 @@ reproducibility, and validation requirements.
   correct the PR description and rerun the failed workflow; reruns update the
   existing bot comment. Merging source is not evidence of a published release.
 - Use `.github/pull_request_template.md` to record PC results and link the Mac
-  backlog entries. These instructions and the review checklist require agents
-  to maintain the list; they are not an automated feature detector or CI gate.
+  backlog entries. CI runs shared contracts and selected host checks on Windows/macOS and checks
+  backlog ID/status integrity. Register new behavioral tests in that workflow.
+  These checks do not detect every missing feature or prove visual parity;
+  agents must still maintain the handoff and report unavailable host checks.
 - Git revisions must contain the change and backlog update before another
   checkout can use them. Keep each task's changes on its focused branch;
   transferring changes between branches or devices must preserve their edits
@@ -89,6 +110,18 @@ reproducibility, and validation requirements.
   `requirements.txt`, and the verified FFmpeg download in `tools/fetch-video.ps1`.
   Do not independently upgrade dependencies on one device. Intentional version
   changes must update the shared scripts/documentation and relevant checks.
+- The opt-in common-RHI Mac probe uses the SDK pinned in
+  `config/vulkan-sdk.json` through `tools/test-rhi-mac.py`. Preserve its archive
+  checksum, installed-file receipt, licenses and version manifest; install only
+  inside ignored `external/vulkan-sdk`. This new adapter dependency does not
+  replace existing upstream/Python pins or change the default GL game renderer.
+  `tools/build-native-mac.py --renderer vulkan` opts into the common Xbox
+  frontend; use the bounded runner, which selects pinned GPU loading from the
+  build manifest. Restore `--renderer gl` before normal interactive use while
+  launcher integration is pending. Keep GPU contracts, guest frame counts and
+  common-renderer scene validation distinct. The shared recorder counts successful
+  presentation API calls and separates guest/interpolated/other kinds; it does not
+  measure GPU completion or monitor scanout. Skips/errors must not inflate FPS.
 - Apply the complete local patch stack with `tools/apply-patches.py` before
   generation/build. Preserve existing patches and add subsequent runtime
   changes as separate patches. Never hand-edit generated game C; keep changes
@@ -119,6 +152,9 @@ reproducibility, and validation requirements.
   `frame_interp = 1` preferences; use `--fps 60` / `--fps 120` on the launcher
   or isolated runner for a temporary override. Report guest and interpolated
   presents separately. Never raise the console clock as an FPS shortcut.
+  Interpolated replay must preserve guest depth/stencil and target bindings;
+  use the common replay-depth helper and GPU contract for RHI changes rather
+  than adding separate Windows/Mac depth behavior.
   The shared patch stack enables optimized scalar native game code with debug
   symbols; GPU vertex programs retain the CPU interpreter as fallback/reference.
 - `Play-Native-Mac.command` is the interactive ARM64 launcher. It preserves
@@ -159,6 +195,12 @@ reproducibility, and validation requirements.
   Keep the canonical fixture unchanged. Tests of first-run, startup videos or
   unlock progression must explicitly use an appropriate fresh isolated save
   instead. See `docs/testing-profile.md` for creation and routing details.
+  On Apple Silicon, use the same local fixture through
+  `.venv/bin/python tools/test-native-mac.py --unlocked-profile --seconds 120`.
+  This resets only its disposable nested copy; omit `--unlocked-profile` for
+  fresh-profile, startup or unlock-progression tests. Never replace the canonical
+  fixture or prepare an active test directory; the native runner holds run locks
+  through child shutdown and partition cleanup.
 
 - Preserve `private/saves`, `config/pc-controls.json`, and
   `config/pc-display.ini` on every device. Create defaults only when personal

@@ -8,7 +8,7 @@ namespace TimeSplitters.Launcher
 {
     public static class CrashReports
     {
-        static readonly string[] Names = { "report.txt", "report.json", "crash.dmp", "game-log-tail.txt" };
+        static readonly string[] Names = { "report.txt", "report.json", "crash.dmp", "game-log-tail.txt", "native-stack.txt" };
         public static string Latest(string root)
         {
             try {
@@ -47,6 +47,7 @@ namespace TimeSplitters.Launcher
                     return name+"\nType: Unexpected exit\n"+detail+"\nMinidump: not captured for this session\nAn interrupted launcher, forced closure or reboot can also leave an unfinished session.";
                 }
                 string code = Json.String(metadata,"exception_code"), hash = Json.String(metadata,"executable_sha256");
+                if(Json.String(metadata,"platform")=="macos-arm64")return name+"\nType: "+(Json.String(metadata,"kind")=="suspected_hang"?"Suspected hang (the game was left running)":"Fatal native signal "+Json.String(metadata,"signal"))+"\nNative context: "+(metadata.ContainsKey("native_capture_saved")&&Object.Equals(metadata["native_capture_saved"],true)?"saved":"unavailable")+"\nExecutable SHA-256: "+(Regex.IsMatch(hash,@"^[0-9a-f]{64}$")?hash:"unavailable");
                 if (!Regex.IsMatch(code,@"^0x[0-9A-Fa-f]{8}$")) code="unknown";
                 if (!Regex.IsMatch(hash,@"^[0-9a-f]{64}$")) hash="unavailable";
                 return name+(Json.String(metadata,"kind")=="suspected_hang"?"\nType: Suspected hang (the game was left running)":"\nException: "+code)+"\nMinidump: "+(metadata.ContainsKey("dump_saved") && Object.Equals(metadata["dump_saved"],true)?"saved":"unavailable; summary retained")+"\nExecutable SHA-256: "+hash;
@@ -102,7 +103,7 @@ namespace TimeSplitters.Launcher
                 foreach (string file in Names) {
                     string path=Core.PathIn(root,"Logs/Crashes/"+name+"/"+file);
                     if (!File.Exists(path)) continue;
-                    long limit=file=="crash.dmp"?16*1024*1024:file=="game-log-tail.txt"?65536:8192;
+                    long limit=file=="crash.dmp"?16*1024*1024:file=="native-stack.txt"?262144:file=="game-log-tail.txt"?65536:8192;
                     using (var input=new FileStream(path,FileMode.Open,FileAccess.Read,FileShare.Read)) {
                         Core.Require(input.Length<=limit,"Crash report file exceeds its size limit.");
                         using (var entry=zip.CreateEntry(file,CompressionLevel.Fastest).Open()) input.CopyTo(entry);

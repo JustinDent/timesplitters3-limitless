@@ -1,5 +1,716 @@
 # Measured progress
 
+## Shared launcher interface (2026-10-19)
+
+Source: `2ac286d`, `ee495e6` and `a0c4e14` on `codex/shared-launcher-interface`, based on `306d6dd`
+and dependent on PR #187 / #186. The concurrent primary renderer checkout is
+untouched. Local host: macOS 27.0.1 ARM64, .NET SDK 8.0.426, Avalonia 11.3.22.
+
+Both builds now compile the same settings, news, versions and maintenance pages;
+Home remains generated from the shared XAML. Shared theme values, button states
+and expander geometry feed the Mac syntax adapter, including Home; its separate
+Mac button/expander override file is removed. Mac-only duplicate page
+construction is removed. Native OS integrations and rich-text/control rendering
+remain adapters; this does not make Windows-specific OS code portable.
+
+Local checks pass: 18 native launcher regression groups, seven shared UI groups
+(settings drafts/cancel/FOV/save, binding conflicts/cancel/reassign/clear, Discord
+preservation, news selection/stale status
+and spacing, installed notes/issues, version pagination/locking, maintenance
+navigation/cancellation/repair gating), three source-mutation/compilation contracts
+and the read-only native prerequisite check. Actual Mac screenshots were reviewed
+for news, graphics, Discord, input, repair, diagnostics and Home. Initial framework
+field-width/expander/disabled-button differences were corrected by shared-theme
+translation. Evidence is retained in ignored `private/captures/launcher-shared`.
+These checks do not run the game or alter personal settings.
+
+Both real host builds and all seven shared UI groups passed in
+[release run 39324010569](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39324010569)
+on `ee495e6`: Windows Server 2025 x64 / .NET Framework 4.8 and macOS 15.7.9
+ARM64 / pinned SDK and Avalonia. Windows also passed 105 updater, 28 download,
+11 version, 10 startup, 30 news, 32 settings and 20 maintenance checks, plus
+session/crash checks. Mac passed its 18 native regression groups and actual
+packaged install, deliberate corruption, copied-helper repair, restart and render,
+preserving fixture saves/game metadata. Combined verification accepted all 12
+release assets; publication was skipped on the PR. The initial Windows run exposed
+locale-dependent layout output; explicit UTF-8 fixed it. The final Home theme
+consolidation also passes local Mac tests and collapsed/expanded visual review.
+Diagnostics retain each host's monospace font through the framework adapter.
+
+62 native-launcher/CI-selection Python checks, three source propagation contracts,
+16 release-policy cases and backlog integrity pass locally. The
+Windows package format and updater limits are unchanged; existing published
+launchers do not need a special bridge release. Developer ID/notarization and
+clean-machine delivery remain the existing MAC-021 acceptance gaps.
+
+## Dual-platform launcher release automation (2026-10-19)
+
+Source: `55d3141` and `d58bcf2` on `codex/launcher-dual-platform-release`, based on `60c3aea`
+and dependent on the native launcher in PR #186. The primary checkout and its
+concurrent renderer work are preserved. No game runtime or personal settings
+are changed. Local host: macOS 27.0.1 ARM64, Python 3.13.16.
+
+The shared publisher validates both Windows x64 and native Mac ARM64 packages,
+update manifests, permanent download aliases and source receipts. Publication
+starts with a draft and exposes neither platform until all 12 release assets
+match GitHub's digests. Sixteen offline tests pass for missing/corrupt/mixed-source
+packages, unsafe paths, permissions, version/tag/default-branch gates, failed
+uploads, retry/repair, published-asset immutability and preview/Latest policy.
+These tests use disposable fixtures and no GitHub writes. In
+[run 39319648658](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39319648658)
+both actual host builds, Mac packaged repair/restart/render and the combined
+12-asset verification passed. Publication was correctly skipped on the PR;
+no existing release was modified or new release published. Developer
+ID/notarization and clean-machine acceptance remain open.
+
+Windows Server 2025 x64 / .NET Framework 4.8: 105 updater regressions, 28 download,
+11 version-picker, 10 startup, 30 release-news, 32 settings, 14 session and 20
+maintenance checks, plus crash report discovery/export checks passed. Hosted
+macOS 15.7.9 ARM64 / pinned .NET SDK 8.0.426 / Avalonia 11.3.22: 18 native regression
+groups passed, including combined-release selection, case-independent launcher
+preservation, settings and crash export. The actual packaged app was installed,
+altered, repaired through its copied helper, restarted and rendered while
+preserving fixture saves/game metadata. Both jobs received the identical pinned
+PNG artwork and shared icon. This is launcher validation, not game-play testing.
+
+The first Windows CI run exposed a port regression in `PreserveGameFile`: legacy
+game manifests with lowercase launcher filenames bypassed the new strict package
+path predicate and removed the installed launcher during game upgrades. `d58bcf2`
+restores case-insensitive preservation while keeping package-path validation
+strict. The existing Windows upgrade/rollback regression now passes; native tests
+cover preservation, and both hosts test platform selection from one combined
+release. The Windows build, complete launcher regressions and package validation
+passed in [run 39319648658](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39319648658).
+
+The broader required CI inherited two failures from PR #186. Reused only the
+existing harness/downloader fixes from `37b4af9` and `083e57c`: identify the pinned
+SDK downloader to avoid the CDN's generic-client 403; provide fail-loud hooks for
+the full interpolation test translation unit on MSVC; compare driver paths through
+`Path`. SDK versions/checksums and game behavior are unchanged. The affected
+interpolation test, SDK tests, release policy and handoff checks pass locally:
+79 checks plus 10 subtests. A broader exploratory run gave
+94 passes and one unrelated screen-copy compile failure because the shared ignored
+upstream tree already contains the other chat's newer renderer patch; this branch's
+matching clean upstream is validated in CI, without rewinding that shared tree.
+
+## Native launcher visual spacing follow-up (2026-10-19)
+
+Source: `1a24135` on `codex/mac-launcher-visual-polish`, based on the unmerged
+native launcher port at `da926fc`. The primary checkout and its concurrent work
+were preserved. The updated app and ZIP were built from a clean source tree;
+these commits are local, with no push, main merge or other-device validation.
+
+Host: macOS 27.0.1 / ARM64, pinned .NET SDK 8.0.426 and Avalonia 11.3.22.
+This is launcher UI work; the native game remains the `356e5a3` build below.
+
+- Matched `WhatsNewPage.cs`'s 10-unit horizontal/bottom button margins and aligned
+  the release selector with both component buttons. The footer and issue actions
+  use the same spacing.
+- Adapted the transparent Windows Restore previous button face and disabled
+  opacity, removing Avalonia's gray disabled background for that control.
+- Matched `PageTheme.cs`'s compact game-data header: left chevron, transparent
+  header/body, 22-unit label column and content without the default theme box.
+- Reviewed collapsed/expanded Home and the actual What's New page captures.
+  macOS UI interaction confirmed expand/collapse, component switching and opening
+  the available/installed release selector; the disabled rollback stays disabled.
+  Captures remain under ignored `private/launcher-art/mac-*-polish.png`.
+- 16 native launcher regression groups and 12 Python launcher checks passed.
+  The read-only prerequisite check passed. The rebuilt ZIP installed, repaired
+  through the copied helper, restarted and rendered with fixtures preserved.
+  Evidence: ignored `logs/mac-launcher-visual-{build,package}.log`.
+
+Windows source and game behavior are unchanged. Comparison used the Windows
+layout/templates; a live Windows screenshot comparison was unavailable here.
+
+## Native launcher parity completion (2026-10-19)
+
+Source: `356e5a3` on `codex/mac-launcher-parity`, depending on native runtime
+baseline `a0c8a1a` through integration `8012f22`. The primary checkout's branch
+and source edits were preserved. Both final app and game manifests record
+`356e5a34263cfeed6f9419517f9c406621379e59` with a clean source tree. The single
+ignored native build uses `--runtime-root`; its executable SHA-256 is
+`d755ff5765abbe53de5baf24a791bdf453f9f9229a712a2424010db89d87bb6c`, with matching
+dSYM UUID `88DC189B-64F2-30DF-B440-ECD35810FC4E`. No main merge, push, release
+publication or other-device execution is claimed.
+
+Host: macOS 27.0.1 (26A434), Apple Silicon ARM64; .NET SDK 8.0.426, Avalonia
+11.3.22; native game uses the existing pinned Vulkan SDK/KosmicKrisp backend.
+The supported US XBE checksum was verified before building and each game run.
+
+Implemented:
+
+- Shared Discord protocol, configuration, activity model and guest decoder with
+  Windows named-pipe and native Unix-socket host adapters. Native settings are
+  editable; missing/disabled/malformed preferences do not block the game.
+- External native fatal/hang reporter with preallocated signal notification,
+  native/Xbox registers, executable hash, PC/LR symbolication, bounded stack
+  sample and log tail. Shared hang policy handles startup, suppression, sleep
+  gaps and rearming. Native build retains matching dSYM/UUID/hash provenance.
+  Launcher discovers, opens and exports reports, restores on crash/hang, and
+  shares unfinished-session recovery and conservative successful-run cleanup.
+- Shared bounded rich Markdown parsing for WPF/Avalonia (headings, emphasis,
+  numbered/bullet lists, quotes, code, rules and safe links). Remote images and
+  markup stay inert. Native release, version-selection and maintenance pages
+  follow the Windows structure and use the shared release/repair transactions.
+
+Measured validation:
+
+- 16 native launcher regression groups pass, including corrupt package rejection,
+  transactional rollback, personal settings preservation, rich Markdown safety,
+  native crash export bounds and actual nonzero process/session log handling.
+- Eight isolated Unix-socket scenarios and the portable Discord policy test pass.
+  Ten native crash-helper tests pass: fatal capture/symbols/log tail; hang,
+  recovery/rearm and later crash; startup, unarmed, responsive, background/modal
+  suppression; and linked-root refusal. Tests never connect to real Discord.
+- Separately, the installed Discord desktop client acknowledged Rich Presence
+  during a 75-second isolated real native game session. Observed updates covered
+  Main menu, Story menu, Time to Split / Normal / Single player, Watching a
+  cutscene, In game and Paused. This is an IPC acknowledgement, not a screenshot
+  of another account's profile or certification of all multiplayer modes.
+- The real launcher/game completed both normal quit (exit 0) and intentional
+  native fatal signal (exit 134), with minimize/restore and local report export.
+  Both final-build runs observed the OS game window through CoreGraphics.
+  Reviewed captures show rendered native menus and the first mission canyon.
+  Saves came from a disposable Test Lab copy; both display configurations, controls, Discord and crash paths
+  were isolated. Personal control/display/Discord/runtime files were unchanged.
+  Virtual disks were recycled after child shutdown. The launcher and interactive
+  entry point also passed their read-only prerequisite checks. Evidence is in
+  ignored `logs/mac-launcher-e2e-{quit,crash}.json`, with the source revision and
+  executable hash. No campaign certification.
+- The actual packaged app was extracted/installed, deliberately modified, repaired
+  by its copied self-update helper after a test parent exited, restarted and
+  rendered. Manifest verification and personal/game fixtures survived the cycle.
+  This tests local delivery; no public native release was published.
+- Native runtime build, three CTests and renderer/input/settings/debug GPU/SDL
+  checks pass. Windows launcher source compiles for .NET Framework 4.8 with zero
+  warnings/errors; Windows WPF and named-pipe execution remain unavailable here.
+- Focused Python regressions: 105 passed, 9 host-specific skips, including the
+  patch suite after registering the new patch dependency in its historical-stack
+  fixture. No dependency upgrade or game-data duplication.
+- macOS UI events rejected reserved F2, captured K into a disposable binding
+  draft, and saved enabled Discord settings to the disposable installation.
+  This is OS event automation, not physical keyboard/controller playtesting.
+  Release, repair, Discord and rich-note layout captures were reviewed.
+
+Remaining release acceptance: Developer ID signing/notarization, clean-machine
+installation, published native runtime packages (MAC-012), Windows-host execution
+and broader live mode/profile checks. Native context files intentionally use a
+Mac report format; Windows minidumps are OS-specific. The renderer's broader
+campaign/visual/performance limits remain separate from launcher acceptance.
+
+## Native Mac launcher port (2026-10-19)
+
+Implemented in `c252956` on `codex/mac-launcher-parity`, based on main `ade3763`, in
+an isolated source worktree because the primary checkout had active native
+renderer edits. Those edits and its branch were preserved. The native game is
+still the primary checkout's separately built binary; the launcher is not a new
+game build and does not claim that binary matches main.
+
+Host: macOS 27.0.1 (26A434), Apple Silicon ARM64. Launcher: shared Windows
+v1.2.18 source, pinned .NET SDK 8.0.426 and Avalonia 11.3.22. The home interface
+is generated from the Windows XAML; the original released banner, backdrop,
+logo and seven-size icon were recovered unchanged from the SHA-256-verified
+public launcher-v1.2.18 ZIP. Artwork/provenance remain local under ignored
+`private/launcher-art`. Native self-contained `.app`, build provenance, license
+notices and file-hash manifest are under ignored `build/macos-launcher`.
+
+Validation:
+
+- 13 native regression groups passed: host release filtering, JSON/journal
+  compatibility, settings drafts/backups/unknown-field preservation, failed-save
+  rollback, checkout launch routing, shared binding conflicts/reserved keys/wheel
+  codes, native update/failure recovery/rollback, corrupted archives and unsafe
+  paths, symlink refusal, independent launcher updates, read-only prerequisite
+  rejection, verified/cached downloads and known-issue filtering. Fixtures were
+  disposable; no game was executed by these tests.
+- The generated Mac launcher ZIP passed extraction, transactional installation
+  and full manifest verification in a disposable installation while preserving
+  synthetic game metadata and saves. This is a local package check, not a
+  published-release upgrade.
+- The complete existing Windows launcher sources compile for .NET Framework
+  4.8 with the shared changes: zero errors/warnings. Compilation on Mac does not
+  replace the Windows WPF/runtime tests; those remain unrun on this host.
+- Existing native command-launcher tests: 12 passed. CI suite routing: 40 passed.
+  The new native tests are registered for ARM64 Mac CI; Windows retains its
+  existing runtime/launcher checks. Python compilation and `git diff --check`
+  passed.
+- Read-only native `.app --check --root <checkout>` passed, including supported
+  XBE, ARM64 executable hash and the active Vulkan SDK receipt. The existing
+  `tools/play-native-mac.py --check` also passed. The active native binary was
+  concurrently rebuilt on another focused branch; these are prerequisite
+  observations, not a stable source/build synchronization claim.
+- The built app opened through Finder/LaunchServices. Native accessibility
+  inspection confirmed the Home and settings interfaces, detected the local
+  native build and game data, and displayed that no compatible Mac release was
+  available. Native rendered Home/settings images were reviewed. No personal
+  settings were saved and no personal game session was started by this task.
+
+This is a working native launcher development port, not full one-to-one parity
+certification. Physical key/mouse capture, actual minimize/restore around an
+isolated game process, every page's layout/accessibility, clean-machine delivery,
+real published native update/repair/rollback, Developer ID/notarization and
+native crash dumps remain unverified. Rich release-note document formatting is
+simpler than WPF. Discord preferences are preserved but disabled for editing
+until native game IPC support exists. Public native runtime packages still need
+MAC-012; none were published here. See [Mac launcher usage](docs/mac-launcher.md)
+and MAC-021. Other-device execution and synchronization remain unverified.
+## Shared presentation outcomes and timing (2026-10-19)
+
+- **Source/dependency:** `codex/shared-present-metrics` depends on local unmerged
+  `3e78f7c`; tests used the task's working changes. No main merge or publication;
+  other-device synchronization and Windows execution remain unverified. The
+  existing duplicate files and personal saves/settings were preserved.
+- **Cause and fix:** The HLE counted interpolation even when its void present
+  function returned without presenting. Vulkan also returned 0 after failed
+  acquire/present. Present now reports acceptance, HLE always restores replay
+  state and counts only accepted calls, and its gate avoids stale timestamps or
+  retries within the same guest frame on failure. Vulkan retains successful
+  suboptimal presents, skips out-of-date/no-image cases, and propagates other
+  errors. These classifications follow the [Vulkan swapchain contract](https://docs.vulkan.org/refpages/latest/refpages/source/VK_KHR_swapchain.html).
+  D3D11 keeps its HRESULT, including positive statuses such as occlusion; only
+  zero counts as acceptance ([Microsoft Present documentation](https://learn.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-present)).
+- **Shared instrumentation:** `src/graphics/present_metrics.h` is consumed by
+  common RHI and native GL. It records CPU intervals between successful API
+  returns and call duration, separates guest/interpolated/other kinds and retains
+  failed/skipped counts. Failures leave a gap in the next successful interval.
+  The optional CSV is capped at 20,000 rows and retains the previous column schema;
+  `TSFP_FRAME_PROFILE` is the common name, with `TSFP_NATIVE_FRAME_PROFILE` as an
+  alias. Cumulative `[PRESENT]` snapshots feed the isolated runner's lower-bound
+  counts. Neither API acceptance nor CPU call timing proves GPU completion or
+  display scanout. Legacy call-count/HLE logs now label their scope explicitly.
+- **Host/pins:** macOS 27.0.1 arm64, Apple M5 Pro, Clang 21, SDL 3.4.16;
+  SDK 1.4.363.0, KosmicKrisp Vulkan 1.4 and MoltenVK Vulkan 1.3. Same upstream
+  `d90c929` and supported XBE SHA-256
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+- **Source/GPU checks:** 33 host/isolation/statistics/replay checks pass, including
+  actual HLE redraw/gate outcomes, production recorder gaps/CSV cap, and common
+  RHI forwarding of success/status/error. The real Vulkan fixture passes on both
+  drivers, injecting present/acquire results while retaining valid real queue
+  ownership. Its expected `presentation failed: -4` line tests error propagation;
+  it is not actual device-loss/recovery validation. No Vulkan validation errors;
+  MoltenVK retains five known primitive-restart capability warnings. Native
+  Vulkan `--test` passes three CTests plus GPU, SDL and Cocoa settings/debug tests.
+  Windows registers the same common source contracts and WARP missing-swapchain
+  check, but has not executed them here.
+- **Bounded gameplay evidence:** The isolated Test Lab run ended at its
+  150.20-second limit (exit 0), with no shader compilation failures, native faults
+  or Vulkan validation errors. It logged at least 7,800 completed guest frames
+  and 10,500 accepted presents (7,832 guest, 2,668 interpolated, zero other,
+  skipped or failed in the last snapshot). The counters are independently
+  sampled, so guest completion/present snapshots need not end at the same frame.
+  Reviewed captures show Time to Split's opening, first-person weapon/HUD/world,
+  forward movement after synthetic W, and ammunition dropping 16 to 14 after
+  synthetic mouse input. The first click captured the pointer; the second fired.
+  This is SDL event injection, not physical input or full-level verification.
+- **Timing evidence:** With validation and rotating capture enabled at 1920x1080,
+  the 100–140 second reviewed gameplay interval contains 2,382 samples and averages
+  **59.53 accepted presents/s** (54.33 guest + 5.20 interpolated), median 16.62 ms,
+  p95 22.94 ms, p99 61.75 ms and worst 64.52 ms. Capture/readback is part of this
+  workload; this is not a capture-free benchmark or stable-120 result. The 10–25
+  second menu interval averages 111.28/s (58.04 guest + 53.24 interpolated), which
+  must not be reported as gameplay performance. Guest clock remains 60 Hz and
+  interpolation target remains 2x. Evidence: `logs/shared-present-summary.json`,
+  `logs/shared-present-frame-times.csv`, `logs/shared-present-windows.json`, and
+  selected `private/captures/native-mac/shared-present-first-mission.png` /
+  `shared-present-after-input.png`.
+- **Build provenance/cleanup:** Gameplay binary SHA-256 is
+  `911cac9c1136e3b56ecd82169cc41e8f3e491952f4fef3110cef3b38dcc5e162`.
+  Final source changes after that run only clarify legacy log wording and add
+  Windows-only test coverage. The runner recycled six disposable disk images
+  (135,168 allocated bytes versus 5,243,406,848 logical bytes); fixture and personal
+  data were unchanged.
+- **Final checks/default restored:** All 26 patch transition/tracking checks pass
+  (two Windows-only checks skip), including CRLF and idempotence after the final
+  patch. All 47 CI/backlog checks pass. The default GL build is restored; its full
+  native `--test` suite and read-only launcher check pass, including active/inactive
+  interpolation present results. Restored GL executable SHA-256 is
+  `6fbef111dd6c4d1f39951e43e53477eb12c661c7b0a3d62a50107d29c4abc837`.
+- **Remaining:** Windows execution, fullscreen/settings integration, offscreen
+  color replay preservation, broader scene fidelity and capture-free pacing
+  investigation remain. The successful-present measurement gap is now addressed;
+  the measured gameplay rate does not meet a stable 120 target.
+
+## Shared interpolation depth isolation (2026-10-19)
+
+- **Source/dependency:** `codex/shared-interpolation-depth` starts at local
+  unmerged `2c63fbf`; checks used this task's working changes. No main merge or
+  publication, and no changes to the other device or concurrent duplicate files.
+- **Cause and fix:** The common Xbox renderer swapped interpolation color targets
+  but reused guest depth/stencil. A replay could inherit completed-frame depth,
+  reject translucent/equal-depth draws and alter depth needed after replay.
+  `src/graphics/interpolation_depth.h` now provides common RHI scratch depth for
+  each source image/subresource. It clears depth to 1 and stencil to 0 once per
+  replay, preserves writes across target switches, retains source identity against
+  pointer reuse, and evicts entries unused in the latest replay. Depth-only formats
+  clear only depth. Allocation/view failures preserve guest resources and suppress
+  the invalid replay; bindings are restored after replay. An additive patch routes
+  common device clears and target bindings through this helper. The existing GL
+  implementation already preserves its guest depth and remains unchanged.
+- **Host/tools:** Apple M5 Pro, macOS 27.0.1 arm64, Clang 21, SDL 3.4.16,
+  pinned SDK 1.4.363.0. Same upstream `d90c929` and verified US XBE
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+  Vulkan build SHA-256 `d852a89832c96b91c204ce515a9fafd45252d84ee4fbad47b6b390b69cedfe31`.
+- **GPU evidence:** Actual common Xbox device tests pass for automatic and custom
+  depth surfaces, repeated replay without guest clears, nested-begin rejection,
+  target switching within replay, and guest color/depth/stencil/binding restoration.
+  The shared RHI pixel contract also checks fresh/reused scratch history and guest
+  depth/stencil preservation on KosmicKrisp and MoltenVK. No Vulkan validation
+  errors; MoltenVK retains its known primitive-restart capability warning.
+  Windows uses this same RHI fixture through the registered WARP test; execution
+  on Windows is still pending. This is stronger than a source-only Mac adapter
+  check, but not a substitute for Windows execution.
+- **Source/build evidence:** 15 host contracts pass, including production-helper
+  fault injection for allocation/view failures, subresource dimensions, repeated
+  lookup, eviction, source release and epoch wrap. All 26 patch transition/tracking
+  checks pass (two Windows checks skip); a legacy texture-branch include-context
+  conflict was corrected without removing transition/conflict-preservation tests.
+  All 47 CI/backlog checks pass. Native Vulkan `--test` passes three CTests plus
+  the real-device/GPU and SDL/Cocoa input/settings/debug preservation suite.
+- **Bounded scene check:** The isolated Test Lab run with 2x interpolation
+  finished at its 120.20-second limit (exit 0), with at least 6,300 guest frames,
+  no shader compilation failures, native faults or Vulkan validation errors.
+  Earlier reviewed captures showed the mission opening with terrain, sky and ship;
+  the final capture is the pause/options menu. This does not establish continuous
+  first-person play or physical input. Run evidence is
+  `logs/shared-depth-summary.json`; selected final evidence is
+  `private/captures/native-mac/shared-depth-pause-menu.png`. The runner recycled
+  six disposable disk images (135,168 allocated bytes, 5,243,406,848 logical bytes).
+- **Default restored:** Rebuilt the default GL executable and passed the read-only
+  launcher prerequisite check. GL code is unchanged by this task; its prior full
+  suite was not repeated. Restored binary SHA-256 is
+  `bc70b59b67e9fa43575941106b779d2941267fa381abb353119fd973b7c7733c`.
+- **Remaining scope:** Offscreen color-resource replay effects, accurate
+  successful-present accounting/timing, fullscreen/settings integration and
+  broader scene/physical-input/Windows checks remain. The HLE's legacy replay
+  counter increments after a void present call, so it is not yet evidence of a
+  successful host present when a backend/replay fails. This depth fix does not
+  certify 120 host presents, complete rendering fidelity or a diagnosis of the
+  originally reported disappearing world.
+
+## Common Xbox renderer on native Mac (2026-10-19)
+
+- **Source/dependency:** `codex/shared-native-renderer` starts at local unmerged
+  `4d23a6d`; validation used this task's working changes. The focused stack is
+  local, not pushed or merged into main; the other device is unverified. Existing
+  concurrent duplicate files were preserved. Upstream remains `d90c929` and the
+  verified US XBE remains `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+- **Implementation:** `--renderer vulkan` links the PC `d3d8_*` frontend into
+  the ARM64 game. Device/resources, HLSL generation, combiners, screen copies and
+  display policy are now common code in this opt-in build. Mac supplies an SDL
+  window/event/drawable adapter and CoreText bitmap callback for the common
+  overlay. The default GL build remains available. `BUILD.json` records the
+  selected renderer; the bounded runner adds pinned GPU loading without replacing
+  its isolated saves, input, runtime/PC display settings or XDG paths.
+- **Boot fixes:** The first game boot failed on vector HLSL conditionals because
+  newer DXC defaults to HLSL 2021. The common Vulkan compiler now explicitly uses
+  HLSL 2018, with a shader-cache ABI tag change and a real GPU vector-conditional
+  regression. See Microsoft's [migration guide](https://devblogs.microsoft.com/directx/hlsl-2021-migration-guide/).
+  The first mission then exposed missing Vulkan PointSize output (13 validation
+  errors in that exploratory run). Both common vertex generators now consume
+  one shared API-mapping snippet that emits Vulkan's required one-pixel output,
+  matching D3D11 point-list rasterization. Larger guest point sprites remain
+  separate work. The mapping follows [DXC's SPIR-V attributes](https://github.com/microsoft/DirectXShaderCompiler/blob/main/docs/SPIR-V.rst).
+  Validation checks now reject the runtime's actual `[VKVAL]` error prefix;
+  warnings are recorded separately, never silently counted as clean errors.
+- **Host/tools:** macOS 27.0.1 arm64, Apple M5 Pro, Clang 21, SDL 3.4.16;
+  pinned SDK 1.4.363.0. The game used KosmicKrisp Vulkan 1.4, D32S8, validation
+  enabled, explicit 60-present setting and unchanged 60 Hz guest clock.
+- **GPU/native checks:** The shared RHI menu sampling, HLSL vector conditionals,
+  one-pixel point rasterization, swapchain readback and present pass on both
+  KosmicKrisp and MoltenVK. MoltenVK reports its known warning about disabling
+  primitive restart; no validation errors. The actual common Xbox device passes
+  fixed-function triangle/point draw readback, overlay and presentation. Native
+  Vulkan `--test` also passes all three CTests and SDL/Cocoa input, capture,
+  settings/debug preservation checks. The final Vulkan self-test binary SHA-256
+  is `c5b72cd8c11bd1ff2616c68019e9b5106a097e2e117d74c7cd7604ffc982a7cf`.
+- **Bounded scene evidence:** After the shader fixes, a 150.13-second isolated
+  Test Lab run ended normally at its time limit (exit 0), logged at least 8,400
+  guest frames and no shader compilation errors, native faults or Vulkan
+  validation errors. Reviewed captures show menu/profile navigation, Time to
+  Split's opening and the first-person weapon/HUD, terrain, character and objective
+  text at 1920x1080. Selected evidence is ignored
+  `private/captures/native-mac/shared-native-first-mission-before.png`; structured
+  run evidence is `logs/shared-native-renderer-summary.json`. Gameplay binary
+  SHA-256 was `3ec653e168efcb82c13ade9dccbcc6bd015d774c452ac9f0fc21504696b5e4af`;
+  the subsequent rebuild changed patch ordering/context and provenance, not the
+  point-output algorithm. Synthetic movement/fire events were submitted, but
+  intervening pause/menu state prevents a clean attribution of their results;
+  movement/fire acceptance is therefore still pending for this renderer.
+  The six disposable partition files were recycled (5,243,406,848 logical bytes,
+  135,168 physically allocated bytes); the canonical fixture/personal data stayed
+  separate. No complete level or campaign playthrough was attempted.
+- **Source checks:** 96 adapter/CI/backlog checks pass; 26 patch transition/tracking
+  checks pass, two Windows checks skip on this host. Historical texture-branch
+  transitions initially exposed an include-context conflict in the new point
+  patch; narrowing only that context preserves both branches and restores all
+  transitions, including CRLF and conflict-preservation checks. CoreText tests
+  check real glyph pixels and invalid UTF-8, and host callback tests check copied
+  registration and output preservation. Windows WARP/MSVC and remote CI have not
+  run; shared source and Mac passes do not substitute for them.
+- **Default restoration:** Rebuilt with `--renderer gl --test`; all three
+  CTests and the full GL GPU/SDL/Cocoa regression suite pass. The one active
+  native executable is again GL, SHA-256 `6f9d0e0223b6e76ac6c04caa0a5c30b74e91a88eec7d1819eda20c08d6909af0`.
+  The final save/config/cache-isolation checks pass (23 tests), including the
+  added isolated XDG cache route. No personal launcher test was used.
+- **Remaining acceptance:** Common-renderer interpolation depth isolation and
+  truthful host-present profiling, fullscreen/settings application, targeted
+  advanced-combiner/cube/volume/movie/framebuffer scenes, texture-pack scenes,
+  physical input and audio checks, and Windows execution. The Vulkan summary
+  marks its host-present counter unavailable; 8,400 guest frames are not measured
+  host presents. No stable-120 claim. The validated GL implementation remains
+  the normal interactive build while this migration continues.
+
+## Common Vulkan backend on Mac (2026-10-19)
+
+- **Source/dependency:** `codex/shared-vulkan-mac` starts at local unmerged
+  host-interface commit `e382e50`. Validation used this task's working changes.
+  Main advanced independently from `5131d29` to `ade3763` (known-issues workflow
+  and README preview changes); comparison found no renderer overlap. This task
+  did not change main or the other device. The focused stack is not pushed.
+- **Backend:** The existing production `rhi_vulkan.c` now obtains SDL's surface
+  extensions, creates its surface through SDL and initializes volk with SDL's
+  exact loader entry point. The initial probe exposed a crash when SDL and volk
+  independently selected different loader/driver dispatch tables. Sharing the
+  loader fixes that instance-handle mismatch. Portability instance/device
+  extensions are enabled when advertised. DXC loads its macOS dylib; POSIX
+  pipeline-cache file operations use temporary-file/rename semantics. The
+  existing POSIX shader-cache stub still disables persistent caching.
+- **Reproducibility:** New optional SDK pin `config/vulkan-sdk.json` records
+  version 1.4.363.0, 396,088,200-byte archive and publisher SHA-256
+  `163431e0203c8215286a17cf393643ce6b951f77d1b4f74ab30821a1f0beb09b`.
+  The archive was verified before running the installer with `copy_only=1`;
+  no system-wide SDK installation. Installed-file hashes, licenses and version
+  manifests remain under ignored `external/vulkan-sdk`. The verified temporary
+  installer/archive were removed (about 812 MiB reclaimed); installed core uses
+  2.5 GiB physical, standalone test build 19 MiB, no game-data duplication.
+  Existing upstream, SDL, Vulkan-header/volk/VMA submodule and Python pins were
+  retained. The new validation SDK requires macOS 26+; the GL game path's
+  requirement/default is unchanged. Official provenance:
+  [SDK catalog](https://vulkan.lunarg.com/sdk/files.json) and
+  [installation guide](https://vulkan.lunarg.com/doc/view/latest/mac/getting_started.html).
+- **Real GPU contract:** `tools/test-rhi-mac.py` configures a standalone test
+  using no game data or generated game C. The production common RHI compiles
+  the shared PC HLSL through DXC, draws the same menu reconstruction fixture,
+  checks magnification/alpha/flat-color/minification expectations, and checks
+  swapchain channel order/readback/presentation. It uses pinned loader/driver
+  paths, validation layers, isolated cache/config paths and a 60-second bound.
+  Both MoltenVK and KosmicKrisp passed, exit 0, with validation enabled and no
+  validation errors. MoltenVK reports a warning that Metal cannot disable
+  primitive restart; this triangle-only contract does not establish indexed
+  strip/restart fidelity. KosmicKrisp produced no validation warnings here.
+  Logs/JSON receipts: `logs/rhi-moltenvk.*`, `logs/rhi-kosmickrisp.*`.
+- **Host/evidence:** Apple M5 Pro, macOS 27.0.1 arm64, Clang 21, SDL 3.4.16;
+  RHI reports Vulkan 1.3 through MoltenVK and 1.4 through KosmicKrisp. Probe
+  executable SHA-256:
+  `31848a34cc984d8f05761de06712d6e5bdc7a2cd3336823880bed74a8ae34131`.
+  This is an asset-free GPU result, not common-frontend gameplay or an FPS test.
+- **Checks/CI:** Initial integrity, CI scope and complete patch migration/tracking
+  selection: 75 passed, 2 host skips. Final helper/core/native-tool/backlog
+  selection: 78 passed, 1 Windows skip. Documentation/scope rerun: 53 passed,
+  1 Windows skip. The same RHI pixel fixture is registered on Windows through
+  D3D11 WARP (no swapchain on that route); Mac CI additionally installs the pinned
+  SDK and runs the standalone Vulkan contract. Remote CI and Windows execution
+  remain pending. The check fails if validation is unavailable or reports an
+  error; it does not treat a successful compile as a GPU pass.
+- **Existing game path:** Full native builder `--test` still passes all 3 CTests
+  and real-GL renderer, SDL input and Cocoa settings/debug regressions. Verified
+  supported XBE and isolated settings/saves; personal/canonical data preserved
+  and disposable partitions recycled. GL game executable SHA-256:
+  `796398454eff5ac155ac6ea00962dbc691bc2f0156a790256e16cc387fd8fa1c`.
+  No new gameplay run was needed for this opt-in backend/probe addition; the
+  earlier gameplay run remains tied to its recorded host-interface binary.
+- **Remaining integration:** The game still uses `renderer_gl.c`. Connect the
+  common Xbox frontend to the new native backend, adapt window creation and
+  overlay/font services, then validate resources, shaders, gameplay and pacing.
+  Keep missing texture/movie modes, scene fidelity, persistent cache behavior,
+  Windows execution and the MoltenVK restart warning explicit. This milestone
+  does not complete the shared-architecture goal or promise automatic parity.
+
+## Shared renderer host interface (2026-10-19)
+
+- **Source/dependency:** `codex/shared-renderer-host` depends on unmerged local
+  `1a650b5` and its earlier integration/shader/settings stack. Checks used that
+  revision plus this task's working changes; no main merge or publication.
+- **Cause and fix:** The common Xbox device implementation directly pumped
+  Win32 events and queried client rectangles, and portable display policy was
+  hidden behind a Windows guard. An additive `shared-renderer-host.patch`
+  introduces `RhiHost` callbacks with physical-pixel dimensions, explicit
+  registration lifetime and unchanged outputs on failure. Win32 retains its
+  default message pump and window query. Both the common device and current
+  native GL renderer use that interface. `renderer_host_sdl.c` owns SDL events
+  on the main thread and supplies a mutex-protected dimension snapshot to
+  workers. Portable display/compile helpers now compile on Mac; the POSIX shader
+  cache is still the existing no-cache stub. Dependency pins are unchanged.
+- **Asset-free validation:** 26 passed, 2 host-specific skips for patch migration,
+  backlog integrity and new host/core contracts; another 60 passed, 2 Windows
+  skips for CI scope, patch tracking, menu sampling and debug definitions.
+  Twelve actual common renderer translation units compile on Mac, rather than
+  replacing them with mocks. Callback tests cover copied registration, context,
+  dispatch, failed/zero-size queries and output preservation. CI registers the
+  same contracts on Windows/macOS; Windows execution remains pending.
+- **Native validation:** Full builder `--test` passed all 3 CTests and real-GPU,
+  SDL input and Cocoa settings/debug suites. The installed production SDL host
+  regression verifies physical dimensions, worker snapshot access, worker event
+  non-consumption, main-thread event consumption, unbind and rebind. Host:
+  macOS 27.0.1 arm64, Clang 21.0.0, SDL 3.4.16, OpenGL 4.1 Metal 91.7.
+  Supported XBE verified; executable SHA-256:
+  `dac2541da2193a26d89e65d72d763651d2366818bbd1400db47da07534bab872`.
+- **Bounded gameplay:** Isolated unlocked Test Lab, 120.16 seconds, time-limit
+  exit 0, `--capture --test-keys --profile-frames --fps 120`. Reviewed menu,
+  mission intro and playable first-mission terrain/weapon/HUD. Synthetic SDL
+  movement/look/fire input changed the viewpoint and magazine from 16 to 13;
+  world geometry remained visible in reviewed captures. This is not physical
+  input, complete-level or campaign certification. Retained ignored capture:
+  `private/captures/native-mac/shared-renderer-host-gameplay.png`.
+- **Timing:** The 110–119 second gameplay sample measured 119.77 host presents/s
+  (60.00 guest + 59.78 interpolated), p95 12.564 ms, worst 14.334 ms, none over
+  33.33 ms. Whole run including loading/intro averaged 105.54 host presents/s,
+  worst 421.503 ms with 10 intervals over 33.33 ms. These CPU present intervals
+  do not certify scanout or stable 120 FPS across the game. Guest clock remains
+  60 Hz. Both display configs, controls and saves were isolated; canonical
+  fixture and personal files preserved, disposable partition images recycled.
+- **Remaining work:** This is the host boundary and compile preparation, not a
+  native common-RHI GPU implementation. Mac still renders through its GL Xbox
+  frontend. Common GPU/backend selection, shader/resource integration, missing
+  texture/movie capabilities, Windows execution and scene parity remain open.
+
+## Shared feature contract (2026-10-19)
+
+`codex/shared-feature-contract` depends on local `780346f`. Root `AGENTS.md`
+now requires shared implementation by default, thin adapters and explicit
+capability/backlog exceptions; the PR checklist uses the same rule.
+`docs/shared-platform.md` records current source boundaries, the four focused
+branches, test routing and the remaining common-RHI integration milestone.
+Backlog integrity and CI scope checks pass (44 tests); documentation-only changes
+need no game rebuild. Branches are local, not pushed; main and the other computer
+were not changed. The consolidation goal remains in progress: menu shader and
+debug settings are shared, but the full native renderer is not yet behind RHI.
+
+## Shared debug setting definitions (2026-10-19)
+
+- **Source/dependency:** `codex/shared-debug-settings` starts at unmerged shared
+  shader commit `dde016d`, itself dependent on integration `bee4ed9`. Validation
+  used working changes; no changes were merged into main or pushed.
+- **Cause and fix:** Windows and Cocoa repeated debug labels, field lists and
+  save assignments. A new field could silently be omitted on Mac or reset when
+  saving. `src/pc_debug_options.def` now supplies the struct fields, persisted
+  keys, labels, capability requirements and both native dialogs. The shared JSON
+  reader/writer iterates that definition. OS controls, layout and atomic file
+  writes remain adapters. Existing keys/defaults and Windows control IDs remain
+  stable. Mac hides latency until a network provider exists and preserves its
+  saved value while editing available options.
+- **Checks:** Shared model tests include appending a new option only to a
+  disposable copy of the definition and verifying its registration, field
+  access, capabilities and unchanged unrelated values. Together with CI scope:
+  45 passed, 1 Windows-only skip. CI now includes these model checks on both
+  hosts plus a Win32 settings translation-unit compile. Windows execution and
+  a live Win32 dialog remain pending on this Mac.
+- **Native validation:** Full builder `--test` passed all 3 CTests and GPU,
+  SDL input, Cocoa settings/debug checks. Cocoa checks verify generated labels
+  and capability visibility, Cancel, Save, hidden latency preservation, backup
+  and unrelated configuration preservation, and failed-write rollback. The
+  definition change does not implement behavior for a future option; that still
+  belongs in the shared runtime or an explicit capability adapter.
+- **Host/provenance:** macOS 27.0.1 arm64, Clang 21.0.0, SDL 3.4.16,
+  OpenGL 4.1 Metal 91.7; upstream/XBE/dependency pins unchanged. Executable hash:
+  `fe8b92bf291db091c7cb54b3457a93f9bf4dbcf38a62519250826396a1312ecd`.
+  Disposable settings/save paths and cleanup used by the builder; no personal
+  settings or canonical profile writes. Existing source CRLF bytes were retained.
+  No additional gameplay run was needed for this settings-definition change.
+
+## Shared menu shader (2026-10-19)
+
+- **Source/dependency:** `codex/shared-menu-rendering` starts at unmerged
+  integration `bee4ed9`; no main merge. Checks used this branch's working changes.
+- **Change:** The PC menu Catmull-Rom/glyph reconstruction now has a single
+  shader body in `src/graphics/menu_sampling_shader.h`. HLSL/GLSL adapters map
+  resource access, vector/intrinsic names and loop hints only. Both backends use
+  the same texture-eligibility policy in `src/pc_menu_sampling.h`. The native
+  fragment path consumes it directly, retaining projected/ordinary 2D scope;
+  dependent reads, point filtering, render targets, screen copies, gameplay and
+  minification retain their original sampling. No dependency/pin or guest-clock
+  change. The rest of the native renderer still needs incremental consolidation.
+- **Asset-free checks:** OpenGL offscreen shader test passes the shared Windows
+  WARP pixel contract: magnification changes edges, flat colors and alpha plateaus
+  remain stable, glyph coverage stays bounded, and unmodified/minified results
+  remain exact. The same C fixture supplies inputs and assertions to both APIs.
+  CI runs the appropriate GPU test on Windows/macOS without game data; it does
+  not silently skip a missing GPU on the selected host. Local selection:
+  54 passed, 1 Windows-only skip (shader, UI layout, CI scope and backlog checks).
+  Windows HLSL/WARP execution is pending; a successful Mac GPU run does not
+  establish Windows rendering verification.
+- **Native checks:** Builder `--test` passes all three CTests and real-GPU,
+  SDL input, Cocoa settings/debug suites. New production binding checks cover
+  all four stages, mode 0/1/2, glyph scope, point filtering, render-target and
+  screen-copy exclusion, plus dependent reads. Host remains macOS 27.0.1 arm64,
+  Clang 21.0.0, SDL 3.4.16, OpenGL 4.1 Metal 91.7, pinned upstream `d90c929`
+  and supported US XBE. Executable SHA-256:
+  `6256f2d59c9fe9ef44d3870125a8e271c9ea13aaa10fa570068c415eb7e63c84`.
+- **Bounded run:** Isolated Test Lab, `--seconds 120 --capture --test-keys
+  --profile-frames --fps 120`, time-limit exit 0 after 120.19 seconds. Reviewed
+  player selection, main menu and mission-opening cutscene; no sampled native
+  fault. Retained ignored `shared-menu-main.png` and `shared-menu-intro.png` in
+  `private/captures/native-mac`. This run ended during the opening movie-like
+  game scene; it does not establish post-change playable gameplay, a completed
+  mission, physical input or a resolution/ultrawide visual matrix. Earlier
+  integration gameplay evidence remains explicitly tied to its earlier binary.
+  Personal/canonical data preserved; runner recycled disposable partitions.
+
+## Shared-platform integration baseline (2026-10-19)
+
+- **Source:** `codex/shared-platform-baseline`, merging current main `5131d29`
+  and the unmerged native stack ending at `f562e14`. Main has 160 newer commits;
+  the native stack contributes 12. Tests below used this merge working tree plus
+  the integration fixes, before the merge commit. Neither main nor another
+  device's checkout was changed. Historical evidence below retains its revision.
+- **Cause and fix:** Discord's Windows CMake patch and the native build-identity
+  patch extended the same native block. Apply Discord first, then identity;
+  preserve both original patch payloads and tracked-stack migration. Shared menu
+  sliders also called a FOV callback guarded only for Windows. Enable the same
+  callback and bar capture on native Mac; no second FOV implementation is added.
+  A real native menu translation-unit compile check now catches this class of
+  undefined internal callback without game assets.
+- **Backlog:** Preserve all PC and native feature entries, native evidence and
+  newer PC follow-ups. Resolve five ID collisions as MAC-049 through MAC-053,
+  retain historical aliases, and rebuild the queue. CI checks unique IDs/titles,
+  supported statuses and agreement between queue and entries on both hosts.
+- **Host/build:** macOS 27.0.1 arm64, Apple Clang 21.0.0, SDL 3.4.16,
+  OpenGL 4.1 Metal 91.7; pinned upstream `d90c929`, supported US XBE hash verified
+  by the builder. Regenerated game C with the complete patch stack, preserving
+  all dependency pins. Free disk before generation/build: 231 GiB.
+  Native executable SHA-256:
+  `3887b6cee495d9ae98307ef0d6f37eaab80ed70f782eef2a7eefeb7abc0384f9`.
+  Exact working-tree source hashes/provenance are in ignored `build/macos/BUILD.json`.
+- **Checks:** Patch/CI-selection/transition suite: 69 passed, 2 skipped.
+  Native tools, isolated Test Lab, launcher and backlog/index checks: 77 passed.
+  The native CI policy selection: 140 passed, 7 skipped. Added native menu compile,
+  pointer and index/scope checks: 50 passed, 1 Windows-only skip. Native builder
+  `--test`: all 3 CTests and real-GPU renderer, SDL input, Cocoa settings and debug
+  checks passed. Read-only interactive launcher prerequisite check passed.
+  Windows-only checks and an actual Windows build were unavailable on this host;
+  configuring the two-host CI matrix is not a completed Windows CI run.
+- **Bounded native run:** `--unlocked-profile --seconds 120 --capture --test-keys
+  --profile-frames --fps 120`, 120.17 seconds, normal time-limit termination,
+  exit 0. Synthetic menu input selected Test Lab, Story and the first mission.
+  Reviewed captures show terrain, weapon, HUD and objective after the opening
+  cinematic. Selected capture: ignored
+  `private/captures/native-mac/shared-baseline-first-mission.png`.
+  Late movement/fire commands did not establish a visible response before the
+  time limit; no new movement, firing, physical-input or campaign claim.
+  The 110–119 second interval measured 115.55 host presents/s = 59.78 guest +
+  55.78 interpolated, p95 13.792 ms, worst 20.531 ms, zero intervals above 33.33 ms.
+  This short capture-enabled sample is not stable-120 certification or scanout FPS.
+- **Preservation:** Personal saves/settings and the canonical Test Lab fixture
+  were not used for writes; bounded tests isolated both display configs, controls
+  and XDG paths, and recycled only disposable partitions. Concurrent untracked
+  duplicate files remain untouched except two duplicate `.patch` copies that
+  incorrectly joined the active stack: preserved byte-for-byte with SHA-256
+  manifest in ignored `private/recovery/shared-baseline-sync/`.
+- **Next:** Consolidate shared shader/rendering policy and settings definitions.
+  The native GL adapter still duplicates renderer semantics; this baseline does
+  not claim automatic graphics parity, resolved Khallos sky fidelity, movie,
+  cube/volume, networking or full texture-pack support.
+
 ## Launcher v1.2.18 release candidate (2026-10-19)
 
 Prepared on `feature/launcher-live-known-issues`, integrating main `d63a156`
@@ -1890,6 +2601,485 @@ Final Release executable SHA-256:
 Shared native Mac hooks use existing STRETCH, font metrics and guest projection
 support; native visual/runtime validation remains pending under MAC-032.
 
+## Native fog combiner input (2026-10-17)
+
+`codex/mac-fog-rendering` depends on effects evidence `3231c8c` and the repaired
+native stack. The Mac vertex/fragment interface previously omitted the NV2A fog
+register entirely. GPU vertex programs and CPU fallback now pass the written
+fog factor through to the combiner. Unwritten fog uses the existing shared PC
+marker/threshold: fog enabled selects the sky fallback, disabled selects the
+particle fallback. A written factor still applies with fog disabled, as required
+by the title's custom blend. Fog RGB comes from the render state, independently
+of its packed alpha. Fixed vertices retain the PC shader's default factor one;
+this does not implement the full fixed-function fog-distance pipeline.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+49 actual-GPU cases pass: MAC/ILU writes, scalar fog masks, unwritten and
+post-END writes, clamping, enabled/disabled fog, indexed/unindexed draws,
+GPU/CPU paths and fixed default. All three CTests, existing GPU checks, SDL
+input and Cocoa settings/debug tests pass. Six portable spirit-wrapper,
+channel/capture and framebuffer-cache checks pass. The first combined test run
+exposed that the new fixture left TEX1 disabled for a later A8 fixture; restoring
+its prior vertex format fixed the test-state leak. No Windows code was changed;
+Windows host execution is unavailable.
+
+The verified-US-XBE isolated Test Lab runner completed 110 seconds in Khallos
+Express at target 60 and 120 seconds in the first mission at target 120. Synthetic
+SDL input moved, turned and fired; reviewed captures retain terrain/train panels,
+weapons, HUD and window glass. First-mission smoke/fire remains visible and its
+opening canyon is consistent with the earlier baseline capture. Khallos's dark,
+stretched exterior sky persists: the missing fog input was a concrete parity gap,
+but fixing it did not resolve that separate fidelity issue. Full effects parity,
+Mansion spirits and campaign completion remain unverified.
+
+The Khallos 85–105 second sample measured 59.70 host/guest presents/sec,
+p95 17.476 ms, worst 98.022 ms (two intervals over 50 ms). First mission at
+85–105 seconds measured 117.25 host presents/sec (59.65 guest + 57.60
+interpolated), p95 15.583 ms, worst 28.400 ms, none over 33.33 ms. Captures
+were enabled; these are host presents, not a stable-120 or display-scanout claim.
+
+Build evidence: `logs/native-fog-build.out` / `.err`; source `3231c8c` plus
+this branch's six renderer/test source changes, pinned upstream and verified XBE.
+Tested executable SHA-256: `a8776bf117fe7f59a497c7e2d1cdf4899802b0409b35ec3e26518946d50d3e0b`.
+Runtime evidence: `logs/native-fog-khallos-60-*`,
+`logs/native-fog-first-mission-120-*` and corresponding `.err` files.
+Selected images: `private/captures/native-mac/khallos-fog-60-after.png`,
+`fog-first-mission-before.png` and `fog-first-mission-after.png` in that directory.
+Canonical Test Lab signatures/checksums still match; disposable test disks were
+recycled. Personal settings/saves and unrelated duplicate files were preserved.
+The interactive launcher's read-only prerequisite check passes.
+
+## Native Khallos Express effects check (2026-10-17)
+
+`codex/mac-framebuffer-effects` depends on channel-clear validation `63b3177`.
+Built that exact source revision with the shared upstream/XBE pins on macOS
+27.0.1 arm64, Clang 21, SDL 3.4.16, OpenGL 4.1 Metal 91.7. The isolated Test Lab
+runner completed 180 seconds at target 60 and 120 seconds at target 120.
+Synthetic SDL events selected Khallos Express, skipped opening scenes, moved
+into the engine cab, turned and fired (ammo 8 to 7). Reviewed captures show
+solid train sides/interior panels and weapon, with separately transparent window
+glass. Exterior sky has dark/stretched areas; this is an unresolved renderer
+fidelity gap, not evidence that all effects or the whole level are correct.
+Native shader review found that the PC fog register is not populated on Mac;
+its sky/particle path needs adaptation and a separate GPU/scene check.
+
+At 60, the 95–115 second gameplay sample had 1,200 guest/host presents,
+60.00 presents/sec, p95 17.572 ms and worst 30.571 ms. At 120, the 85–105 second
+sample had 2,171 host presents, 108.55/sec (58.75 guest + 49.80 interpolated),
+p95 17.060 ms and worst 24.625 ms. Neither sample had intervals over 33.33 ms.
+These are host-present intervals with rotating captures enabled, not scanout
+measurements or proof of stable 120 FPS. One bounded draw trace was collected
+outside the 120 timing sample. Logs report no GL error or guest fault.
+
+Evidence: `logs/native-khallos-{60,120}-summary.json`, corresponding `.err`,
+`-frames.csv` and `-run.log`; selected captures
+`private/captures/native-mac/khallos-{60,120}-{before,after}.png`.
+Four shared channel/capture/framebuffer-cache checks and the native screen-copy
+GPU suite pass. Earlier first-mission effects evidence remains separately scoped.
+MAC-019 stays Awaiting validation until the remaining glow/exterior fidelity is
+reviewed; neither Windows results nor these cab views establish full parity.
+Personal saves/settings were not used; disposable partition images were recycled.
+
+## Native channel-clear GPU validation (2026-10-17)
+
+Branch `codex/mac-channel-clears` depends on the published native branch stack
+ending at `22169d9`. Added `src/native/channel_clear_selftest.inc` to the
+bounded renderer self-test. All 192 combinations of 16 channel masks (including
+no color clear) and four depth/stencil flag combinations pass on Original,
+1920x1080 and 16x16 offscreen targets. Direct GPU readback checks RGBA, depth
+and stencil, inherited empty drawing scissors, write-mask restoration, clipped
+clear rectangles, invalid rectangle pointers and preservation of the main scene
+while clearing an offscreen target. No production clear-path change was needed.
+
+Host: macOS 27.0.1 arm64, Clang 21, SDL 3.4.16, OpenGL 4.1 Metal 91.7.
+Built from `22169d9` plus the two self-test source changes, using the pinned
+upstream and verified US XBE. The complete native suite passed (three CTests,
+GPU, SDL input, Cocoa settings/debug); four portable channel-mapping/capture
+and framebuffer-cache tests also passed. Evidence: `logs/native-channel-clears-build.out`
+and `.err`, with source hashes/provenance in the local `build/macos/BUILD.json`.
+Test partition images were recycled; personal settings/saves were not used.
+Windows execution is unavailable. Lobby page cycling and title-effect fidelity
+remain pending; MAC-007 stays In progress.
+
+All eight preceding focused branches were published and their exact remote
+commit hashes verified on 2026-10-17. No merge into main was performed. The
+other computer has not been inspected, so its synchronization remains unverified.
+
+## Alpha.6 branch-stack refresh (2026-10-17)
+
+During local validation, a separate pull advanced `main` from `0dc9fea` to
+`d9c145f`. Its only changes are VERSION `0.2.0-alpha.6` and the issue-form
+release choice; AGENTS.md and runtime source are unchanged. Rebased the eight
+local focused branches onto `d9c145f` with dependent branch refs updated.
+`git range-diff` confirms all eight implementation commits are identical.
+The original commit IDs in earlier evidence below describe the binaries tested
+before that rebase, rather than claiming they were built from alpha.6.
+
+Rebuilt and reran the full native suite from rebased `941d065`: all three
+CTest suites, GPU, SDL input, Cocoa settings and debug checks pass. Reviewed
+`private/captures/native-mac/build-watermark-alpha6.png`, which reads
+`TSFP PC v0.2.0-alpha.6  40b4e7d1`, matching the generated build manifest.
+Executable SHA-256:
+`b1d932fa3f1a7d7de8607f4dae481c63dd87ee5bcfe4bff48844d57628c96526`.
+Evidence: `logs/native-alpha6-build.out` / `.err`. Host and dependency versions
+are unchanged from the tests below. The earlier bounded gameplay evidence is
+retained with its original alpha.5 provenance; it was not relabeled alpha.6.
+
+Canonical Test Lab checksums/signature verified after gameplay tests. All known
+native disposable partition images and run locks were cleaned up. Personal
+saves/settings and unrelated untracked duplicate files were preserved. The branch
+stack is committed locally, not pushed or merged into main; other-device
+synchronization is unverified. The native launcher prerequisite check passes.
+
+## Native build watermark (2026-10-17)
+
+`codex/mac-build-watermark` depends on unmerged native exit `83b50b4`. The
+host OpenGL overlay draws the shared version/build identity at the lower right,
+independently of the optional upper-left FPS line. CoreText measures its width
+and ellipsizes labels exceeding the 1024-pixel cache; narrow drawables fit the
+complete cached line. Separate fixed-size caches are released on normal SDL
+shutdown. The same existing scene-presentation function is used for ordinary
+and interpolated presents; guest scene/readback/history remains separate.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+the full native suite passed: three CTests plus GPU, SDL input and Cocoa
+settings/debug. New GPU coverage checks independent visibility with FPS off,
+text pixels and placement, narrow/long labels, resource destruction/recreation,
+and FBO/texture/scissor/pixel-unpack/PBO restoration. Existing screen-copy and
+interpolation regressions also passed. The initial test sampled the text cache
+instead of the destination FBO after a direct helper call; correcting the test's
+read target made that new assertion pass. The production draw restores both
+read/draw targets. No Windows-specific implementation changed; Windows host
+execution is unavailable here.
+
+Reviewed `private/captures/native-mac/build-watermark.png`: text reads
+`TSFP PC v0.2.0-alpha.5  6296ca9d`, matching VERSION and
+`build/macos/BUILD.json`. That manifest records source `83b50b4` plus the
+uncommitted overlay changes; executable SHA-256:
+`f7e6028db973b1a8a2879c6a9745f91881eef29a8822155a21d2ae3dfe2dcb23`.
+Evidence: `logs/native-watermark-build.out` / `.err` and the small GPU bitmap.
+Live fullscreen/window interaction and actual host-present capture review at
+60/120 remain pending; MAC-034 stays Awaiting validation. This does not verify
+native networking.
+
+## Native Quit to Desktop (2026-10-17)
+
+`codex/mac-quit-desktop` depends on unmerged native menu input `db11ff7`.
+The shared guest finalizer and confirmation callbacks now run on Mac. Confirm
+queues SDL_QUIT for the existing main-thread exit path; Cancel and Back use the
+guest's existing return callback. Other players, original Quit behavior and
+Windows WM_CLOSE behavior are preserved.
+
+The full native build/test suite passed on macOS 27.0.1 arm64 / Clang 21 /
+SDL 3.4.16 / OpenGL 4.1 Metal 91.7: three CTests plus GPU, input and Cocoa
+settings/debug checks. The SDL test verifies an actual queued quit event.
+Five portable menu/quit tests passed, including both host dispatch variants,
+safe default, Cancel/Back, failed-post retry and repeated-confirm protection.
+Evidence: `logs/native-quit-build.out`, `.err`, `logs/native-quit-shared.log`.
+
+A bounded main-menu test using synthetic SDL keys verified the visible Cancel
+default, Cancel, reopening and Back, then reopening and confirming desktop exit.
+The process exited normally after 61.21 seconds with code 0; the log contains
+three confirmation opens, two cancellations and one confirmed desktop exit,
+followed by the native window-close path. The runner reports `process_exit`
+(and its startup-smoke command returns 1 because this was deliberately early),
+not a timeout or fault. Its summary has no native fault or sampled GL errors.
+Evidence: `logs/native-quit-main-summary.json`, `logs/native-quit-main.err`,
+`logs/native-quit-main.log`, and
+`private/captures/native-mac/native-quit-cancel-default.png`.
+Saves, input, both display configs and XDG roots were runner-isolated; known test
+images were recycled after exit. Source/build provenance is `db11ff7` plus the
+uncommitted quit changes. Pause and mouse-confirm tests remain pending, so
+MAC-031 remains Awaiting validation.
+
+A subsequent 180.17-second isolated run at 1280×720, 75° FOV and the
+120-present target reached first-mission gameplay. Reviewed before/after captures
+show movement, changed camera direction and ammo dropping from 16 to 14 after
+firing. Escape pause/resume restored capture, with the world still visible.
+Pause includes Quit to Desktop. The attempted right-click/quit route supplied
+a synthetic button before its queued pointer motion had been dispatched; it
+did not establish right-click return or Pause exit and is not counted as such.
+The saved test display file was restored after the run.
+
+During seconds 110–130, 2,310 presents averaged 115.52/sec: 59.36 guest plus
+56.16 interpolated. Median host interval was 11.093 ms, p95 16.408 ms and
+p99 17.692 ms, with one 107.238 ms hitch. Across the entire run including
+loading/opening/menus, average was 93.00 host / 54.03 guest presents per second;
+it is not locked 120 FPS. At least 9,600 guest frames / 16,489 host presents
+were logged, with no sampled GL errors or native fault. These are CPU present
+intervals, not display scanout. Evidence: `logs/native-first-mission-120-*`,
+`private/captures/native-mac/native-wide-before-input.png`,
+`native-wide-after-input.png`, and `native-wide-pause.png`. Raw guest captures
+retain 640×480 storage while the actual scene is 1280×720; the presentation fits
+that wide aspect to the window. No full-level or complete visual-fidelity claim.
+
+## Native menu pointer adapter (2026-10-17)
+
+`codex/mac-menu-mouse` depends on unmerged display adaptation `e9545de` and
+its native build/renderer/Test Lab prerequisites. Enabled shared guest menu
+hit testing, footer/tab policy and button-edge handling on native builds. The
+SDL adapter publishes point coordinates, buttons and bounded/fractional wheel
+input under a mutex. Main-thread capture requests release the pointer in menus
+and restore it when returning to focused gameplay. Focus loss clears held input
+and pending wheel packets; held menu clicks remain blocked until release.
+The separate `native-menu-mode` patch enables the existing per-frame context
+hook on Mac, with regeneration through the supported builder.
+
+On the same macOS 27.0.1 arm64 / Clang 21 / SDL 3.4.16 / OpenGL 4.1 Metal 91.7
+host, the actual SDL-window test checks pointer coordinates, wheel accumulation,
+flipped direction, clamping and expiry, non-consuming hover reads, capture
+transitions, held-click suppression and focus recovery. Native GPU/settings/
+input/debug suites and three CTests passed again after regenerating and rebuilding
+with the final context-hook patch (`logs/native-menu-build.out` / `.err`).
+14 shared menu/quit/camera/UI tests passed; the Windows FOV fixture was skipped.
+Patch migration initially exposed the new dependent patch being included in a
+historical pre-display fixture. Excluded it from that historical subset; the
+upgrade scenario then passed. Remaining patch scenarios passed (26 passed,
+2 Windows-only skips on the initial run; the failing scenario passed on rerun).
+
+A 90.13-second isolated run at the 120-present target used only synthetic SDL
+pointer/button/wheel events to select 1 Player, Test Lab, Story, scroll two
+levels, return with right-click, and open Settings. Reviewed screenshots show
+the correct selected level (The Russian Connection). It logged at least 5,100
+guest frames and 5,456 successful host presents, no sampled GL errors and no
+native fault; this is not a claim of sustained 120 FPS. Evidence:
+`logs/native-menu-pointer-summary.json`, `logs/native-menu-pointer.log`,
+`private/captures/native-mac/native-menu-mouse-wheel.png`,
+`logs/native-menu-shared.log`, `logs/native-menu-patches.log` and
+`logs/native-menu-patch-recheck.log`. This binary records `e9545de` plus the
+uncommitted adapter, before the additional per-frame context patch.
+Physical input, pause/Objectives tabs/footers and the wide-ratio acceptance
+matrix remain unverified; MAC-030 stays Awaiting validation.
+
+The preceding 120.12-second 60-present baseline run reached visible first-mission
+gameplay with the canyon, weapon, HUD and tutorial panel. Across loading, menus,
+opening sequence and gameplay, 7,161 host presents averaged 59.80/sec, median
+16.644 ms, p95 18.792 ms and p99 22.701 ms; six intervals exceeded 33.33 ms.
+These are CPU intervals between successful host presents, not display scanout.
+Logged at least 6,900 guest/host frames, no sampled GL errors or native fault.
+Evidence: `logs/native-first-mission-60-summary.json`,
+`logs/native-first-mission-60-frames.csv`, `logs/native-first-mission-60.log` and
+`private/captures/native-mac/main-restored-first-mission.png`. That binary was
+built from `16a6a10` plus the display changes subsequently committed as
+`e9545de`; Git branch naming changed during the run. This establishes visible
+first-mission startup, not level completion or complete rendering fidelity.
+
+## Native display settings parity (2026-10-17)
+
+`codex/mac-display-parity` depends on unmerged Test Lab runner `16a6a10` and
+its native build/renderer prerequisites. Cocoa Graphics now exposes the shared
+aspect groups and 40–100° vertical FOV control. The guest and Cocoa menus use one
+nearest-mode helper, including an exact-match tie fix for Original versus explicit
+640×480. Custom resolutions survive opening the panel. Defaults and Cancel are
+drafts; failed persistence restores both resolution and FOV.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+`tools/build-native-mac.py --test` passed all three CTests and native GPU,
+SDL input, Cocoa settings and debug checks. The new actual Cocoa-modal test
+checks all aspect groups, custom 1000×600, FOV bounds/default, Cancel, Save
+1280×720 at 90°, reopen and a read-only destination failure. It restores the
+disposable file and graphics state. The same Original/640×480 regression was
+added to the Windows FOV fixture; Windows execution is unavailable on this host.
+83 shared native-compiler/runtime/UI/CI checks passed. Evidence:
+`logs/native-display-build.out`, `.err` and `logs/native-display-shared.log`.
+Build provenance records `16a6a10` plus the uncommitted source changes.
+
+These are functional Cocoa/GPU checks, not physical input or complete visual
+acceptance. The computer-control tool could not select the unbundled native
+executable, and a cached AppKit-view capture did not capture the rendered panel;
+that capture is not used as visual evidence. Live panel layout, the full ratio
+matrix, zoom, ledge/landing and authored cinematic/terminal lenses remain pending.
+MAC-022 and MAC-024 remain Awaiting validation.
+
+## Native Test Lab runner (2026-10-17)
+
+`codex/mac-test-lab` is based on unmerged renderer integration `14a0717`, which
+in turn depends on native build restoration `bab79f0`. The bounded native runner
+now accepts `--unlocked-profile` and calls shared `testing_profile.prepare_run`
+inside `private/test-saves/native-mac/unlocked`. Saves, controls, both display
+configs and both XDG roots are isolated; startup movies are skipped. Its root
+lock prevents concurrent native sessions, and its nested lock prevents resetting
+an active fixture copy. Known partition cleanup runs after child shutdown and
+on exceptional exits. Symlink redirects, unowned directories and missing/corrupt
+fixtures fail before game launch. Ordinary native test saves remain unchanged.
+
+On macOS 27.0.1 arm64 / Python 3.13.16, 60 combined routing, native-tool,
+launcher and shared-profile tests passed. Added native-specific coverage for
+fixture immutability, fresh reset, saved test-setting preservation, inherited XDG
+overrides, concurrent preparation, missing fixtures, linked destinations/XDG
+roots and cleanup-before-unlock on startup failure. Windows execution is unrun;
+shared profile implementation is unchanged. Native fixture checks are now in CI.
+
+Created a fresh seed through native menus using synthetic SDL input in the
+ordinary isolated save directory. After that 90-second run exited, the shared
+creator validated the supported XBE and signed save and made the canonical
+local Test Lab fixture. The subsequent 120.20-second unlocked-profile run at
+60 host presents reached the native Test Lab picker, Story level list and a late
+level's difficulty screen (You Take the High Road). Logged at least
+6,900 guest frames and 6,900 host presents,
+no sampled GL errors and no native fault. This is menu/navigation evidence,
+not physical-input or later-level gameplay validation.
+
+After exit, fixture checksums and runtime HMAC still matched and collectible
+flags remained zero. Run locks were released. Cleanup recycled
+6 known images (5,243,406,848 logical bytes,
+135,168 allocated bytes), preserving profiles/configs.
+Evidence: `logs/native-test-lab-driver.log`, `logs/native-test-lab-summary.json`,
+`private/captures/native-mac/test-lab-late-story.png` and
+`test-lab-unlocked-difficulty.png`. Canonical data remains ignored in
+`private/test-fixtures/unlocked`; personal saves/settings were not used.
+MAC-025 is Awaiting validation: live Arcade character/challenge availability
+and scene-specific gameplay still need checks. No full playthrough is required.
+
+## Native dependent-texture integration (2026-10-17)
+
+Focused branch `codex/mac-dependent-textures` depends on unmerged native build
+fix `bab79f0`. Reapplied only the renderer and GPU-test changes from `5cba184`:
+`gl_fragment.inc`, `renderer_gl.c`, `multitexture_selftest.inc` and
+`dependent_texture_selftest.inc` under `src/native`. Retained all current-main
+channel clears, proportional layout and viewport/scissor changes. No older
+packaging scripts, unrelated settings tests or wholesale branch merge included.
+
+On the same macOS arm64 / Clang 21 / SDL 3.4.16 / OpenGL 4.1 Metal 91.7 host,
+`tools/build-native-mac.py --test` passed: three CTests, real-GPU renderer tests,
+SDL input, Cocoa settings and debug tests. The restored 36 dependent-texture
+cases cover AR/GB chaining, input selection, signed dot mappings, linear DOT_ST
+and invalid-stage behavior through fixed FVF, GPU programs and interpreted
+vertices. Build executable SHA-256: `15f4eca72fb0f75598f0ed1781763eaf05b29e8b0f3040b481f898694a13a374`.
+This binary records `bab79f0` plus uncommitted renderer changes in BUILD.json.
+Evidence: `logs/native-dependent-build.out` and `.err`; generated identity and
+BUILD.json stay local. Native game render fidelity and remaining Xbox texture
+modes are not established by these fixtures; MAC-005 remains In progress.
+
+The preceding bounded baseline boot completed 90.14 seconds at the 120-present
+target, logging at least 5,100 guest frames and 10,104 host presents, no sampled
+GL errors and no native fault. Those are counters, not a sustained-FPS claim.
+Six disposable disk images were recycled (5.24 GB logical, 132 KiB allocated);
+menu captures and isolated metadata were retained.
+
+## Native build restoration (2026-10-17)
+
+Implemented locally on `codex/mac-native-build`, based on audit commit
+`b884c68` (unmerged documentation dependency) and main `0dc9fea`. Removed the
+obsolete platform-branch restriction while retaining Apple Silicon, XBE and
+upstream pin checks. Missing game data now has an explicit error. The build
+generates the shared content/source identity under `build/macos/generated`;
+a new final runtime patch supplies native include/version wiring. `BUILD.json`
+records that identity and uncommitted source state. This does not add multiplayer.
+Cocoa debug Save now preserves options outside its four exposed controls,
+including `show_latency`. Native tool checks are included in affected CI routing.
+
+Located the user's existing archive in Downloads, extracted one `private/game`
+with the pinned XISO tool and verified the supported US SHA-256. Kept the archive,
+recorded ignored import provenance, and removed only the temporary extracted ISO.
+Disk had about 203 GiB free before setup; the game allocates about 3.8 GiB.
+Restored Python 3.13.16, the unchanged requirements pins, upstream `d90c929` and
+its pinned SDL/XbSymbolDatabase submodules. The first Homebrew Python install
+stopped on an already-linked certificate dependency; installing Python against
+existing dependencies succeeded without replacing the existing OpenSSL.
+
+Validation: macOS 27.0.1 arm64, Apple Clang 21.0.0, SDL 3.4.16,
+OpenGL 4.1 Metal 91.7 / GLSL 4.10. Fresh setup/generation and native compilation
+succeeded. The first GPU suite exposed a stale upload-test assumption: shared
+main now applies proportional menu scaling without a camera frame. The upload
+fixture explicitly requests STRETCH; additional pixel assertions verify AUTO
+still applies the intended 16:9 proportions. No production rendering rule was
+disabled to pass the test.
+
+The corrected `tools/build-native-mac.py --test` passed all three CTests and
+renderer, input, settings and debug self-tests, including real GPU readback,
+screen copies/scissors, vertex GPU/CPU agreement, four texture stages,
+resolution/offscreen/interpolation, Cocoa save/cancel, true-latency preservation
+and atomic-write failure behavior. Test metadata/profiles were retained and
+only known test partition images recycled (10.49 GB logical capacity, 8 KiB
+allocated in that pass). The read-only launcher check passed.
+
+Source regressions: initial patch/launcher/tool suite 43 passed, two skipped;
+build-input/identity/generation suite 12 passed, one skipped; all 78 shared
+runtime/graphics/input CI regressions passed on this Mac. After CI routing
+changes, 45 routing/native-tool/launcher checks passed. Skips remain scoped to
+their existing host-specific conditions, not ignored failures. Windows build
+and hosted CI execution remain unrun here.
+
+Build evidence: `logs/native-build.out`, `.err`, `native-shared-tests.log` and
+`build/macos/BUILD.json`. Executable SHA-256 at this validation point:
+`cf3e1461975578a0a444e562d960f039f37f0fac50e647ad7c15db6988588938`.
+It contains local source changes over `b884c68`; it is not an unchanged main
+binary. An isolated 120-present-target boot visibly reached the player-count,
+profile and name-entry/storage menus using synthetic SDL keys; selected capture
+`private/captures/native-mac/build-baseline-menu.png`. These observations do not
+verify physical input, sustained 120 FPS or current-revision gameplay fidelity.
+MAC-033 remains Awaiting validation for its remaining gameplay/60–120 scope;
+MAC-003 retains its remaining physical shortcut/fullscreen checks.
+
+## Mac current-main backlog audit (2026-10-17)
+
+Source: fetched `main` and `origin/main` both resolved to
+`0dc9fea49041bdca985d372a8e5513d6cac514ac`; no pull was needed. Compared
+`d83ca5e..0dc9fea`: 133 commits (82 non-merge), 134 changed tracked files.
+Game VERSION is `0.2.0-alpha.5`; launcher source is v1.2.12. Reviewed the
+commit/change inventory, full Mac backlog, shared feature/native adapter
+boundaries and build/test wiring. This is a parity and readiness review, not
+an exhaustive correctness review of every Windows launcher line.
+
+Documentation changes are local and uncommitted on `codex/mac-backlog-audit`,
+created from that main revision under the updated focused-branch rules. Main,
+mac-port and remote branches were not modified. Eleven pre-existing untracked
+files with ` 2` in their names were preserved. Other-device checkout/build/data
+synchronization is unverified; fetching Git does not transfer ignored assets.
+
+The backlog now has 33 unique feature entries, a complete queue, explicit
+MAC-022 status and an implementation sequence. The duplicate spirit-rendering
+MAC-026 became MAC-032; the character/weapon MAC-026 and its history remain.
+Existing PC feature handoffs were retained, including all launcher follow-ups.
+New MAC-033 records native build readiness, and MAC-034 records the missing
+build-identity watermark. MAC-003 now records Cocoa debug-setting preservation.
+Documentation checks passed: unique IDs, one status per entry, exact queue
+coverage/status agreement, unchanged unrelated feature descriptions, corrected
+spirit reference and `git diff --check` with CRLF handling. Counts are 20
+Awaiting validation, 10 Queued, two In progress and one historically Verified.
+See [audit coverage and priorities](MAC_PORT_BACKLOG.md#audit-scope-and-next-work).
+
+Current integration findings:
+
+- `python3 tools/build-native-mac.py` exits with the obsolete requirement to
+  switch to `mac-port`, before setup/build writes. This conflicts with the
+  current focused-branch policy (MAC-033).
+- Shared `src/pc_debug.c` includes generated `pc_network_build.h`, but generation,
+  include-directory and version wiring are Windows-only. Clean native compilation
+  is expected to fail without this input; a full compiler reproduction was not
+  possible with the local prerequisites absent (MAC-033).
+- Cocoa debug Save initializes four of the five `PcDebugOptions` fields. The
+  shared saver writes the fifth, `show_latency`, so Save clears an existing true
+  preference. This is source-confirmed behavior, not a live UI test (MAC-003).
+- Menu mouse and desktop-exit guest implementations remain gated to Windows
+  or portable fixtures; passing the fixtures does not enable SDL/Cocoa adapters
+  (MAC-030/031). Native build-identity overlay drawing is absent (MAC-034).
+- `git log main..mac-port` retains `5cba184`, merge `b8857ba` and `1a8f4dd`.
+  The first commit's diff contains dependent-texture rendering/fixtures absent
+  from main, despite its debug-oriented title. Review that work separately from
+  the older branch's packaging/settings-test changes; no integration was made
+  during this audit (MAC-005).
+
+Local validation host: Apple Silicon arm64, macOS 27.0.1, Apple Clang 21.0.0
+(`clang-2100.3.34.2`), system Python 3.9.6. Compiled and executed five existing
+portable C fixtures directly using the POSIX commands from their Python test
+wrappers: `menu_mouse`, `quit_menu`, `terminal_mouse` (with `src/pc_input.c`),
+`ui_layout` and `tutorial_layout`. All five passed. Commands used `cc -std=c11
+-O2 -I<checkout>/src`, `-lm`, and `-Wall -Wextra -Werror` for the first three.
+Temporary executables were removed automatically. These cover pointer policy,
+guest confirmation with a mocked close callback, terminal bounds/ownership,
+placement rules and tutorial layout. They do not cover pytest mutation variants,
+generated-wrapper integration, native window-event delivery or real GPU draws.
+
+The read-only launcher prerequisite check reports missing `private/game`.
+Also absent: `.venv`, `external/ts3FPrecomp`, `build/macos`, and the unlocked
+test-profile fixture. Python 3.12+ and pinned build dependencies must be restored
+before building; no dependencies or game files were downloaded during review.
+No supported XBE was available to hash, no game executable was launched, and no
+graphics backend was exercised. Full patch/generation, native build/GPU/audio,
+physical-input, texture-pack and gameplay checks remain pending, as do current
+Windows checks. No backlog feature was newly marked Verified.
 
 ## Issue #86 frontend mouse menus (2026-10-17)
 
@@ -2747,7 +3937,7 @@ reference; it is not used as a fidelity pass.
 Remaining validation: original-Xbox fidelity, later ghost-girl/What Lies Below
 encounters, and native macOS GPU/interpreted-vertex paths. This is evidence for
 the Mansion entrance-hall spirits, not a claim that every encounter in #17 is
-verified. See [MAC-026](MAC_PORT_BACKLOG.md#mac-026--spirit-skull-and-eye-rendering-17).
+verified. See [MAC-032](MAC_PORT_BACKLOG.md#mac-032--spirit-skull-and-eye-rendering-17).
 
 ## Arcade RANK widget placement (2026-10-17)
 
@@ -6621,6 +7811,60 @@ The combined game executable and native Mac runtime were not rebuilt/retested
 for this merge; earlier build/live-game evidence remains scoped to its recorded
 revision. Personal files and the primary checkout were preserved.
 
+
+## Launcher compatibility automation (2026-10-19)
+
+Source: `codex/launcher-compatibility-automation`, based on shared launcher UI
+`725b27ca906d8af37d10925e54980e9908e36453` / PR #189, which depends on #187/#186.
+Local host: macOS 27.0.1 ARM64, Python 3.13.16. No game renderer/runtime or personal data changes.
+The workflow uses a pinned Codex Action (`bdf19a4a223ec2549a3e2274a0cf61556bc07675`)
+and CLI/proxy 0.163.0. Linux reviews source; Windows and Mac run actual launcher
+checks through the same reusable workflow as release builds. Proposed repairs are
+separate PRs; automatic merging and release publication are not enabled.
+
+Local validation: 23 offline compatibility tests, 16 publication/recovery tests,
+and 52 CI-scope/backlog checks passed. Actual temporary Git repositories exercise
+patch add/modify/delete, protected paths, symlink rejection and sanitized source
+snapshots. Other cases cover both directions, incomplete file lists, credentials,
+trust, stale revisions, failed host builds, bounded output, idempotent PR creation,
+and explicit bot-PR test dispatch without recursive fix generation. Verified
+`actionlint` 1.7.12 passes all four changed workflow files.
+
+Real OpenAI execution, live automatic repair PR creation and enforcement on main
+remain unrun until the dedicated API key is provisioned, the workflow stack is
+merged, and the activation steps are completed. No API key has been created or
+written by this work. Credential provisioning is pending. Existing MAC-021 delivery,
+notarization and visual acceptance limits remain unchanged.
+
+The first Windows CI run caught OS-default newline expansion in the new disposable
+fixtures. Explicit LF fixture writes fix that test-harness issue; an additional
+Git regression verifies that accepted PowerShell patches retain CRLF working-tree
+files and normalized Git blobs. The actual PR source snapshot passed locally
+(78 source files, 1.6 MB); the existing native launcher's read-only prerequisite
+check also passed. No launcher runtime change was needed.
+
+A stale-run failure handler also rechecks head/base/target before changing the
+commit status, so cancellation cannot overwrite a newer review after retargeting.
+
+Both-host CI at `ef78a7d43f0a1da66d7b592fdd757f1c257ad53b` passed in
+[launcher run 39329419109](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39329419109):
+Windows Server 2025 x64 job 118323542609, macOS 15.7.9 ARM64 job 118324130993,
+and combined package verification job 118324619505. Both real launcher builds,
+seven shared UI groups, host regressions and the Mac packaged repair/restart test
+passed. The automation contracts passed on both hosts (22 at that revision;
+Windows skips its symlink fixture, which Mac exercises). Publication was skipped.
+`b0f3ddb` adds the 23rd contract for stale failure status handling; final-head CI
+results are linked from PR #190. Actions is already allowed to create PRs and
+retains read-only default token permissions; OPENAI_API_KEY is absent. No repository
+permission or required-check setting was changed before service activation.
+
+The complete implementation at `b0f3ddb01bd8b79f282ea66852647e19d0bb6bba`
+also passed both host builds and combined verification in
+[launcher run 39329520086](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39329520086).
+This includes all 23 compatibility contracts (the Windows symlink case remains an
+explicit skip). Later edits only update this validation record and remove a blank
+line at the end of the reusable workflow; the launcher source is unchanged.
+
 ## Issue #167 - Experimental smoother presentation (2026-10-19)
 
 Windows implementation is local and uncommitted on `feature/167-144-fps`, based
@@ -7131,3 +8375,71 @@ multiple simultaneously loaded profiles, actual save-error/retry UI and native
 Mac gameplay remain unverified. CI source/compiler checks do not establish
 physical monitor or native game behavior. This is a review candidate, not a
 published release or a change to main.
+
+## API-free launcher integration (2026-10-19)
+
+PR #186 now includes merged PRs #190, #189 and #187 (feature branches only),
+then integrates main `4d5b3f0` into `codex/mac-launcher-visual-polish`.
+The final integration is uncommitted at this record. macOS 27.0.1 ARM64,
+Python 3.13.16, .NET SDK 8.0.426 and Avalonia 11.3.22; no game execution in
+this pass. The primary scene-development checkout and personal data are untouched.
+
+The user rejected API-credit billing. The former Codex/API proposal workflow
+has been replaced with an API-free `pull_request` build/test gate, with only
+read permission, standard hosted runners, and no secrets or AI actions. The
+repository's OPENAI_API_KEY secret and LAUNCHER_COMPATIBILITY_ENABLED variable
+were removed. The ignored local key remains unused. This does not automatically
+write OS adapters; failed builds/tests require a source fix, which can be done in
+Codex using the user's existing chat. The prior HTTP 429 credit-balance failure
+is no longer an activation dependency.
+
+Main's newer Windows 120/144 FPS controls introduced WPF-only tooltips/events and
+Windows display enumeration into the newly shared page. The integration routes
+those operations through host adapters, retains native default interpolation,
+and preserves unsupported saved presentation/refresh values. Shared tests verify
+that editing FOV/interpolation never resets those options. Native fixed targets
+and monitor switching remain MAC-054. Controls Accept persistence is MAC-055;
+these IDs reconcile collisions with older native backlog entries. Both runtime
+CI test selections and all historical validation records are retained.
+
+Local validation: seven API-free scope/completion tests, 16 release/recovery
+contracts, 55 CI-scope/backlog/layout checks, 18 native launcher groups and eight
+shared UI groups pass. All four changed workflows pass actionlint 1.7.12; the
+rebuilt launcher passes its read-only prerequisite check. The native
+launcher was rebuilt from this integration's uncommitted source; its build receipt
+records that state. Fresh Windows/Mac CI and the final main merge are pending. No release was published and these checks
+do not certify native gameplay or complete visual parity.
+
+
+## Launcher main patch integration follow-up (2026-10-19)
+
+At `02acfe0`, GitHub run [39340698617](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39340698617)
+passed the API-free scope gate, Windows launcher build/regressions, native Mac
+build/regressions and packaged repair/restart, and complete dual-platform asset
+verification. Required runtime CI exposed the independently developed main
+presentation patches overlapping shared event pumping, replay depth and present
+outcome code. This follow-up adapts the in-progress presentation rebase from the
+concurrent `codex/renderer-main-integration` checkout to this earlier baseline;
+that checkout and its scene/capture work remain untouched and excluded.
+
+The original three PC presentation payloads remain under `patches/legacy`.
+Their integrated forms apply after the shared renderer stack, retain its replay
+depth cache and successful-present counters, and keep bounded failure retries.
+A small subsequent patch guards the Windows refresh adapter include. Historical
+stack fixtures at `4d5b3f0` and `efbcc4e` exercise upgrade/downgrade/re-upgrade
+while retaining unrelated edits. GPU depth fixtures now cover prediction as well
+as gate replay; the Windows interpolation fixture uses the shared present result.
+
+Host: macOS 27.0.1 ARM64, Python 3.13.16, Apple Clang. Source: uncommitted
+follow-up to `02acfe0`. The patch suite passed 28 tests with two Windows-only
+skips. Another 71 renderer/frame-clock/CI-scope checks passed against a disposable
+source-only archive of pinned upstream `d90c929`; the active runtime checkout was
+not patched. Fresh Windows/macOS CI and the real-GPU contract are pending.
+No game execution, new game build or release publication occurred in this pass.
+
+
+CI follow-up at `ba5aaa7`: both launcher/package jobs passed again in run
+39341464578. Windows runtime migration assertions exposed a test-only mixed
+LF/CRLF append. The fixture now follows the source file's existing line ending
+and compares byte-exact hashes to keep failure logs bounded. Both historical
+migration cases pass locally after this correction; fresh Windows CI is pending.

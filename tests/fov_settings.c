@@ -114,6 +114,11 @@ int main(int argc,char **argv)
     {FILE *f=fopen(runtime_path,"wb");CHECK(f);fputs("# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n",f);fclose(f);}
     void *mem=VirtualAlloc(NULL,0x800000,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);CHECK(mem);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)mem;
+    { /* Original and explicit 640x480 share dimensions but not saved identity. */
+        PcDisplayMode choices[]={{0,0},{640,480}},filtered[2];int selected;
+        CHECK(pc_display_filter_modes(choices,2,0,choices[0],filtered,2,&selected)==2 && selected==0);
+        CHECK(pc_display_filter_modes(choices,2,0,choices[1],filtered,2,&selected)==2 && selected==1);
+    }
     pc_display_current();reload("TSFP_DISPLAY_V1 1280 720\n");
     CHECK(pc_display_fov()==55 && pc_display_fov_scale()==1.f);
     CHECK(!pc_display_set_fov(39) && !pc_display_set_fov(101));

@@ -1,7 +1,9 @@
 """Exercise real runtime patches on small source-only checkout fixtures."""
 from pathlib import Path
 import importlib.util
+import hashlib
 import io
+import json
 import shutil
 import subprocess
 import sys
@@ -58,12 +60,43 @@ def test_fresh_checkout_and_repeated_build(checkout):
     assert snapshot(checkout) == complete
 
 
+@pytest.mark.parametrize('history', ['pc-presentation', 'native-launcher'])
+def test_integrate_independent_presentation_stacks(checkout, tmp_path, history):
+    """Existing Windows/native stacks migrate both ways without losing edits."""
+    histories = json.loads((ROOT / 'tests/fixtures/launcher-patch-stacks.json').read_text())
+    prior = tmp_path / 'prior-patches'
+    prior.mkdir()
+    for name in histories[history]['patches']:
+        source = PATCHES / name
+        if name.endswith(('-144-fps.patch', '-presentation-timing.patch',
+                          '-interpolation-recovery.patch')):
+            source = PATCHES / 'legacy' / name
+        shutil.copyfile(source, prior / name)
+    installer.apply_patches(checkout, prior)
+    installer.apply_patches(checkout, PATCHES)
+    integrated = snapshot(checkout)
+    manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
+    newline = b'\r\n' if manual.read_bytes().endswith(b'\r\n') else b'\n'
+    local_edit = newline + b'/* integration-local edit */' + newline
+    manual.write_bytes(manual.read_bytes() + local_edit)
+    installer.apply_patches(checkout, prior)
+    installer.apply_patches(checkout, PATCHES)
+    key = Path('titles/futureperfect/src/recomp_manual.c')
+    integrated[key] += local_edit
+    # Hash comparison is byte-exact without dumping megabytes of source into
+    # CI logs if a transition changes one file unexpectedly.
+    digest = lambda files: {name: hashlib.sha256(data).hexdigest()
+                            for name, data in files.items()}
+    assert digest(snapshot(checkout)) == digest(integrated)
+    assert installer.apply_patches(checkout, PATCHES) == []
+
+
 def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
-        if patch.name.endswith('-discord-presence.patch'):
-            continue  # Discord's build wiring depends on the later native/display CMake blocks.
+        if patch.name.endswith(('-discord-presence.patch', '-shared-renderer-host.patch', '-shared-vulkan-mac.patch', '-shared-native-renderer.patch', '-shared-interpolation-depth.patch', '-shared-present-metrics.patch', '-native-launcher-services.patch')):
+            continue  # These build changes depend on the later native/display CMake blocks.
         if patch.name in ('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-white-flash-overlay.patch',
                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-title-screen-matte.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-character-mouse.patch',
@@ -72,6 +105,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-choice-arrows.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-setting-sliders.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-audio-menu-mouse.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-build-identity.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-menu-mode.patch',
                           'zzzzzzzzzz-decal-projection.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch',
                           'zzzzzzzzzzz-model-projection.patch',
@@ -98,7 +133,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-special-weapon-overlays.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-transition-overlay.patch'):
             continue  # Requires the display wrapper, absent in this historical state.
-        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch')):
+        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-launcher-presentation-integration.patch')):
             continue  # Depends on native/shared renderer context added by the full migration below.
         if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
             apply(checkout, patch.name)

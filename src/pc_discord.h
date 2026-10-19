@@ -20,9 +20,7 @@ int pc_discord_parse_config(const char *text, PcDiscordConfig *out);
 void pc_discord_activity(const PcDiscordSnapshot *snapshot, PcDiscordActivity *out);
 size_t pc_discord_payload(char *out, size_t size, const PcDiscordActivity *activity,
     uint32_t pid, int64_t started, unsigned nonce);
-#ifdef _WIN32
 void pc_discord_start(void);
 void pc_discord_submit(const PcDiscordSnapshot *snapshot);
 void pc_discord_stop(void);
-#endif
 #endif

@@ -74,16 +74,20 @@ BOOL xbox_D3D8InterpBegin(void) {
     }
     native_interp_on=complete;return complete;
 }
-void xbox_D3D8InterpPresent(void) {
+BOOL xbox_D3D8InterpPresent(void) {
     NATIVE_GL_SCOPE;
-    if(!native_interp_on)return;
+    if(!native_interp_on)return FALSE;
     if(native_capture_pair)native_interp_capture("midpoint");
     native_scene_present();
     Uint64 start=SDL_GetTicksNS();
     if(native_swap_window()) {
         native_present_count++;native_interpolated_count++;
         native_frame_timing(start,SDL_GetTicksNS());
-    } else fprintf(stderr,"[native-gl] interpolated present failed: %s\n",SDL_GetError());
+        return TRUE;
+    }
+    tsfp_present_record(&native_metrics,"gl",RHI_PRESENT_INTERPOLATED,-1,start,SDL_GetTicksNS());
+    fprintf(stderr,"[native-gl] interpolated present failed: %s\n",SDL_GetError());
+    return FALSE;
 }
 void xbox_D3D8InterpEnd(void) {
     NATIVE_GL_SCOPE;

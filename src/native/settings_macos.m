@@ -7,9 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "binding_capture.inc"
 static SDL_Window *game_window;
+static char *settings_test_error;
 static void alert_text(const char *text) {
+    if(settings_test_error){snprintf(settings_test_error,512,"%s",text);return;}
     NSAlert *alert=[NSAlert new];alert.messageText=@"TimeSplitters Settings";
     alert.informativeText=[NSString stringWithUTF8String:text];[alert runModal];
 }
@@ -23,8 +26,11 @@ static NSTextField *label(NSView *view,NSString *text,NSRect frame) {
     NSPopUpButton *bindings[PC_ACTION_COUNT][PC_BINDING_SLOTS];
     NSTextField *sensitivity;
     NSButton *enabled,*invert,*fullscreen;
-    NSPopUpButton *resolution;
-    PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY];int mode_count;
+    NSPopUpButton *resolution,*aspect;
+    NSSlider *fov;
+    NSTextField *fov_value;
+    PcDisplayMode all_modes[PC_DISPLAY_MODE_CAPACITY],modes[PC_DISPLAY_MODE_CAPACITY];
+    int all_mode_count,mode_count;
     PcSettings original;
     int keys[256],key_count;
 }
@@ -33,9 +39,13 @@ static NSTextField *label(NSView *view,NSString *text,NSRect frame) {
 - (void)cancel:(id)sender;
 - (void)defaults:(id)sender;
 - (void)record:(id)sender;
+- (void)aspectChanged:(id)sender;
+- (void)fovChanged:(id)sender;
+- (void)fillModes:(PcDisplayMode)staged;
 - (PcSettings)bindingValues;
 @end
 static TSFPSettings *settings;
+static void (^graphics_test_ready)(TSFPSettings *,NSTabView *,NSPopUpButton *,NSPopUpButton *,NSSlider *);
 @implementation TSFPSettings
 - (NSButton *)button:(NSString *)title action:(SEL)action frame:(NSRect)frame view:(NSView *)view {
     NSButton *b=[NSButton buttonWithTitle:title target:self action:action];b.frame=frame;[view addSubview:b];return b;
@@ -99,20 +109,49 @@ static TSFPSettings *settings;
     [self fill:&original];
     NSTabViewItem *graphics=[[NSTabViewItem alloc] initWithIdentifier:@"graphics"];graphics.label=@"Graphics";
     NSView *gv=[[NSView alloc] initWithFrame:cv.frame];graphics.view=gv;[tabs addTabViewItem:graphics];
-    label(gv,@"Render resolution",NSMakeRect(25,450,180,25));
-    resolution=[[NSPopUpButton alloc] initWithFrame:NSMakeRect(220,447,340,30) pullsDown:NO];[gv addSubview:resolution];
-    mode_count=pc_display_modes(game_window,modes,PC_DISPLAY_MODE_CAPACITY);
+    label(gv,@"Aspect ratio",NSMakeRect(25,470,180,25));
+    aspect=[[NSPopUpButton alloc] initWithFrame:NSMakeRect(220,467,340,30) pullsDown:NO];[gv addSubview:aspect];
+    for(int i=0;i<PC_DISPLAY_ASPECT_COUNT;i++)[aspect addItemWithTitle:[NSString stringWithUTF8String:pc_display_aspect_name(i)]];
+    aspect.target=self;aspect.action=@selector(aspectChanged:);[aspect setAccessibilityLabel:@"Aspect ratio"];
+    label(gv,@"Render resolution",NSMakeRect(25,420,180,25));
+    resolution=[[NSPopUpButton alloc] initWithFrame:NSMakeRect(220,417,340,30) pullsDown:NO];[gv addSubview:resolution];
+    [resolution setAccessibilityLabel:@"Render resolution"];
+    all_mode_count=pc_display_modes(game_window,all_modes,PC_DISPLAY_MODE_CAPACITY);
     PcDisplayMode current=pc_display_current();
-    for(int i=0;i<mode_count;i++){[resolution addItemWithTitle:i?[NSString stringWithFormat:@"%u × %u",modes[i].width,modes[i].height]:@"Original (640 × 480)"];if(modes[i].width==current.width&&modes[i].height==current.height)[resolution selectItemAtIndex:i];}
-    fullscreen=[NSButton checkboxWithTitle:@"Fullscreen" target:nil action:NULL];fullscreen.frame=NSMakeRect(25,390,300,30);fullscreen.state=!!(SDL_GetWindowFlags(game_window)&SDL_WINDOW_FULLSCREEN);[gv addSubview:fullscreen];
-    label(gv,@"Higher resolutions increase GPU load. The 60 Hz game clock stays unchanged.\nResolution changes preserve the original menus and widen the gameplay camera.\n\nUse the game's Display settings entry for a timed resolution preview.\nTexture packs can be selected with the launcher’s --texture-pack option.",NSMakeRect(25,180,740,160));
+    [aspect selectItemAtIndex:0];[self fillModes:current];
+    label(gv,@"Vertical field of view",NSMakeRect(25,365,180,25));
+    fov=[NSSlider sliderWithValue:pc_display_fov() minValue:PC_FOV_MIN maxValue:PC_FOV_MAX target:self action:@selector(fovChanged:)];
+    fov.frame=NSMakeRect(220,365,300,25);fov.continuous=YES;[fov setAccessibilityLabel:@"Vertical field of view"];[gv addSubview:fov];
+    fov_value=label(gv,@"",NSMakeRect(535,365,80,25));[self fovChanged:nil];
+    fullscreen=[NSButton checkboxWithTitle:@"Fullscreen" target:nil action:NULL];fullscreen.frame=NSMakeRect(25,310,300,30);fullscreen.state=!!(SDL_GetWindowFlags(game_window)&SDL_WINDOW_FULLSCREEN);[gv addSubview:fullscreen];
+    label(gv,@"FOV changes gameplay view and keeps weapon zoom relative. Default: 55°.\nHigher resolutions increase GPU load; the game clock stays at 60 Hz.\n\nUse the game's Display settings entry for a timed preview.\nSelect texture packs through the launcher’s --texture-pack option.",NSMakeRect(25,100,740,160));
     [self button:@"Defaults" action:@selector(defaults:) frame:NSMakeRect(20,15,110,32) view:view];
     [self button:@"Cancel" action:@selector(cancel:) frame:NSMakeRect(610,15,100,32) view:view];
     NSButton *save=[self button:@"Save this tab" action:@selector(save:) frame:NSMakeRect(720,15,120,32) view:view];save.keyEquivalent=@"\r";
     [panel center];[panel makeKeyAndOrderFront:nil];
-    [NSApp runModalForWindow:panel];[panel orderOut:nil];panel=nil;
+    NSTimer *testTimer=nil;
+    if(graphics_test_ready){testTimer=[NSTimer timerWithTimeInterval:.05 repeats:NO block:^(NSTimer *timer){graphics_test_ready(self,tabs,aspect,resolution,fov);}];
+        [[NSRunLoop mainRunLoop] addTimer:testTimer forMode:NSModalPanelRunLoopMode];}
+    [NSApp runModalForWindow:panel];[testTimer invalidate];[panel orderOut:nil];panel=nil;
     SDL_RaiseWindow(game_window);
     tsfp_native_settings_release_input(game_window);
+}
+- (void)fillModes:(PcDisplayMode)staged {
+    int selected=0;
+    mode_count=pc_display_filter_modes(all_modes,all_mode_count,(int)aspect.indexOfSelectedItem,
+        staged,modes,PC_DISPLAY_MODE_CAPACITY,&selected);
+    [resolution removeAllItems];
+    for(int i=0;i<mode_count;i++)[resolution addItemWithTitle:modes[i].width?
+        [NSString stringWithFormat:@"%u × %u",modes[i].width,modes[i].height]:@"Original (640 × 480)"];
+    if(mode_count)[resolution selectItemAtIndex:selected];
+}
+- (void)aspectChanged:(id)sender {
+    NSInteger index=resolution.indexOfSelectedItem;
+    [self fillModes:index>=0 && index<mode_count?modes[index]:pc_display_current()];
+}
+- (void)fovChanged:(id)sender {
+    fov.intValue=(int)lround(fov.doubleValue);
+    fov_value.stringValue=[NSString stringWithFormat:@"%d°",fov.intValue];
 }
 - (PcSettings)bindingValues {
     PcSettings next=original;
@@ -146,9 +185,14 @@ static TSFPSettings *settings;
         next.sensitivity=sensitivity.doubleValue;next.enabled=enabled.state==NSControlStateValueOn;next.invert_y=invert.state==NSControlStateValueOn;
         if(!pc_settings_save(&next,error,sizeof error)){alert_text(error);return;}
     } else {
-        PcDisplayMode before=pc_display_current(),next=modes[resolution.indexOfSelectedItem];
+        NSInteger index=resolution.indexOfSelectedItem;
+        if(index<0 || index>=mode_count){alert_text("Select an available render resolution.");return;}
+        PcDisplayMode before=pc_display_current(),next=modes[index];int before_fov=pc_display_fov();
         if(!pc_display_apply(next)){alert_text("The selected render resolution could not be allocated. Your previous resolution is unchanged.");return;}
-        if(!pc_display_save()){pc_display_apply(before);alert_text("Could not save the display settings. The previous resolution was restored.");return;}
+        if(!pc_display_set_fov(fov.intValue) || !pc_display_save()){
+            pc_display_apply(before);pc_display_set_fov(before_fov);
+            alert_text("Could not save the display settings. The previous resolution and FOV were restored.");return;
+        }
         if(!SDL_SetWindowFullscreen(game_window,fullscreen.state==NSControlStateValueOn))alert_text(SDL_GetError());
     }
     [NSApp stopModal];
@@ -157,9 +201,10 @@ static TSFPSettings *settings;
 - (BOOL)windowShouldClose:(NSWindow *)sender {[NSApp stopModal];return NO;}
 - (void)defaults:(id)sender {
     if([tabs.selectedTabViewItem.identifier isEqual:@"controls"]){PcSettings value;pc_settings_defaults(&value);[self fill:&value];}
-    else {[resolution selectItemAtIndex:0];fullscreen.state=NSControlStateValueOff;}
+    else {[aspect selectItemAtIndex:0];[self fillModes:(PcDisplayMode){0,0}];fov.intValue=PC_FOV_DEFAULT;[self fovChanged:nil];fullscreen.state=NSControlStateValueOff;}
 }
 @end
+#include "graphics_settings_selftest.inc"
 @interface TSFPMenu : NSObject
 - (void)settings:(id)sender;
 - (void)fullscreen:(id)sender;

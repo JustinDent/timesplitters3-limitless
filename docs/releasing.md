@@ -56,16 +56,16 @@ versions, use `--latest=false` during draft creation and final publication.
 
 Use short release titles with the product and version first: **TSFP v0.2.0-alpha.5**
 and **Launcher v1.2.7**. The game publisher sets this title automatically. For a
-manual launcher release, use `--title "Launcher vX.Y.Z"`. Keep the existing
+launcher release, the [Windows and Mac workflow](launcher-releases.md) sets
+`Launcher vX.Y.Z` automatically. Keep the existing
 `vX.Y.Z` and `launcher-vX.Y.Z` tag formats; titles do not change download URLs.
 
 The README download button uses GitHub's permanent `/releases/latest` URL.
-Reserve the repository's **Latest** designation for the newest stable Windows
-launcher. When publishing a new stable `launcher-vX.Y.Z` release, attach the
-complete launcher ZIP and its verification assets, then select **Set as the
-latest release** (or use `gh release create/edit --latest`). Do not mark test
-launcher prereleases Latest. This moves the README destination automatically;
-no README version edit is needed.
+Reserve the repository's **Latest** designation for the newest stable launcher
+release containing both Windows and native Mac packages. The shared workflow
+uploads and verifies both before publishing, then assigns Latest for stable
+versions only. This moves the README destination automatically; no README
+version edit is needed.
 
 Game releases published through this script retain the launcher destination.
 If publishing a game release manually, also leave **Set as the latest release**
@@ -96,9 +96,9 @@ it never pushes directly to the protected default branch or force-pushes.
 Approve workflows to run if GitHub requests it on the bot-created PR, then let
 the required checks pass before merging. Auto-merge can be enabled for that PR.
 See [CI and branch protection](ci.md) for repository settings and check names.
-The current publisher uses the maintainer's GitHub CLI authentication. A future
-publisher using `GITHUB_TOKEN` must explicitly dispatch **Issue form versions** because
-token-created release events do not start another workflow.
+The game publisher uses the maintainer's GitHub CLI authentication. The launcher
+workflow uses `GITHUB_TOKEN` and explicitly dispatches **Issue form versions**
+because token-created release events do not start another workflow.
 
 Form submissions receive `bug` or `enhancement` immediately. On issue creation,
 editing or reopening, the separate **Automatic issue labels** workflow synchronizes that type plus

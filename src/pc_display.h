@@ -20,6 +20,27 @@ int pc_display_valid(PcDisplayMode mode);
 #define PC_DISPLAY_ASPECT_COUNT 7 /* All, then the six shared catalog groups. */
 const char *pc_display_aspect_name(int aspect);
 int pc_display_aspect(PcDisplayMode mode);
+/* Same nearest-mode rule for the guest menu and native settings adapters.
+ * Keep an exact staged/custom mode in All; otherwise prefer matching height. */
+static inline int pc_display_filter_modes(const PcDisplayMode *all,int count,int aspect,
+        PcDisplayMode staged,PcDisplayMode *out,int capacity,int *selected)
+{
+    unsigned long long best=~0ull;int n=0;
+    if(selected)*selected=0;
+    if(!all || !out || !selected || capacity<=0 || aspect<0 || aspect>=PC_DISPLAY_ASPECT_COUNT)return 0;
+    for(int i=0;i<count && n<capacity;i++) {
+        PcDisplayMode m=all[i];
+        if(aspect && pc_display_aspect(m)!=aspect)continue;
+        unsigned mw=m.width?m.width:640,mh=m.height?m.height:480;
+        unsigned sw=staged.width?staged.width:640,sh=staged.height?staged.height:480;
+        unsigned long long score=(unsigned long long)(mh>sh?mh-sh:sh-mh)*10000+(mw>sw?mw-sw:sw-mw);
+        score=score*2+1;
+        if(m.width==staged.width && m.height==staged.height)score=0;
+        if(score<best){best=score;*selected=n;}
+        out[n++]=m;
+    }
+    return n;
+}
 int pc_display_modes(HWND window, PcDisplayMode *out, int capacity);
 int pc_display_apply(PcDisplayMode mode);
 int pc_display_preview(PcDisplayMode mode);

@@ -21,6 +21,22 @@ discarded on the next preparation. Never prepare the same directory while a
 game is using it. An interrupted runner can leave `run.lock`; check that its game
 has stopped before removing that marker.
 
+On Apple Silicon, use the bounded native runner:
+
+```sh
+.venv/bin/python tools/test-native-mac.py --unlocked-profile --seconds 120 --capture
+```
+
+This verifies the same local fixture and resets a disposable copy under
+`private/test-saves/native-mac/unlocked/saves`. Controls, both display configs
+and XDG directories stay inside the unlocked test directory; startup movies
+are skipped. Select **Test Lab** in the profile picker. The canonical fixture
+and the ordinary native test profile remain unchanged. Without
+`--unlocked-profile`, the native runner retains its existing test profile and
+startup behavior, suitable for fresh-profile/unlock tests. The native runner
+locks its test root and the active fixture copy, bounds runtime/logs, and recycles
+only known partition images after the child exits, including on exceptions.
+
 A separate Test Lab copy is also installed in this PC's personal save location,
 `private/saves/UserData/45410066/544553544C41`, for manual testing through the
 normal launcher. Select **Test Lab** in the profile picker. Progress made there
@@ -55,5 +71,7 @@ verifies the supported US XBE hash, save version and runtime HMAC signature,
 applies the US game's unlock masks/grades, and re-signs the save. All other
 profile bytes, including collectible/pickup data, remain unchanged. The fixture
 manifest detects accidental edits; creation refuses to replace an existing
-fixture. Saves and original game assets are never committed. Mac runtime
-validation and runner integration remain queued in MAC-025.
+fixture. For a seed created with the ordinary Mac runner, use
+`--seed private/test-saves/native-mac` after that game has exited. Saves and
+original game assets are never committed. MAC-025 and STATUS.md record native
+validation scope; a prepared fixture alone does not verify unlocked gameplay.

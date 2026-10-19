@@ -103,6 +103,10 @@ the console default, and provide left/right arrows. Saved custom modes are retai
 Launcher v1.2.11 adds **What's new** for game/launcher release notes,
 installed and available versions, and published known issues inside the main window.
 
+Windows and native Mac compile the same launcher pages and shared theme sources.
+Changes to those shared buttons, labels, layouts and page behavior reach both builds;
+OS integrations use host adapters. See [launcher development](docs/shared-platform.md#launcher-changes-that-reach-both-builds).
+
 | Controls | Display | Launcher |
 | --- | --- | --- |
 | **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects aspect-ratio groups, resolution and vertical FOV (40–100°, default 55°). Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Repair / Verify → Open game folder** opens the installation folder. Its **Diagnostics** tab provides system reports and GitHub reporting in launcher v1.2.12. **Saves**, **View logs** and **Support** open the save folder, logs and issue tracker. |
@@ -218,7 +222,7 @@ the saved bot set. The host sees how many are waiting.
 | --- | --- |
 | Modern materials and surfaces, with **up to 4K** on major surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit keep storage and memory bounded. | A native **ARM64** build with SDL/Cocoa and OpenGL, shared PC controls, native settings and an experimental **up-to-120 FPS** presentation target. |
 | **Partial local preview.** Much of the game still uses original art. Development artwork is not bundled with the public release; 4K output does not imply native 4K source detail. | **Experimental.** Visible first-level gameplay and basic combat checks have been reached. Interpolation keeps the game simulation at **60 Hz**; movies, advanced rendering, multiplayer and packaging still need work. |
-| [Texture guide →](docs/textures.md) | [Mac setup →](docs/macos.md) · [Feature backlog →](MAC_PORT_BACKLOG.md) |
+| [Texture guide →](docs/textures.md) | [Mac setup →](docs/macos.md) · [Native Mac launcher →](docs/mac-launcher.md) · [Feature backlog →](MAC_PORT_BACKLOG.md) |
 
 > [!NOTE]
 > This is an experimental port. A full campaign playthrough and complete
@@ -235,6 +239,7 @@ the saved bot set. The host sees how many are waiting.
 | [Controls & display](docs/windows-settings.md) — bindings, resolution and diagnostics | [Release publishing](docs/releasing.md) — package, validate and publish |
 | [Multiplayer](docs/multiplayer.md) — Online, invitations and LAN | [Measured progress](STATUS.md) — evidence and remaining work |
 | [Native Mac](docs/macos.md) — Apple Silicon setup and controls | [Project rules](AGENTS.md) — reproducibility and data preservation |
+| [Mac renderer development](docs/macos.md#common-renderer-development-probe) — asset-free checks and opt-in common game renderer | [Shared PC/Mac architecture](docs/shared-platform.md) — common code and adapters |
 
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
 or **[request an enhancement](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)**.
@@ -306,3 +311,7 @@ The launcher also records unfinished game sessions. After a nonzero exit or a
 restart with an abandoned session, Diagnostics can flag an unexpected exit even
 when no dump was captured. These reports can be exported locally; an unobserved
 exit has an unknown cause and can also follow a reboot or interrupted launcher.
+
+Launcher maintenance: [automatic Windows/Mac compatibility checks](docs/launcher-compatibility.md)
+checks both directions and proposes separate fix PRs, with shared build/package
+validation. Activation requires the dedicated API credential and repository setup.

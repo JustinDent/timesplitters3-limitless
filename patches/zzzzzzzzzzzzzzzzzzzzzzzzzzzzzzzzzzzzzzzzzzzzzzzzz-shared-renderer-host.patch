@@ -1,0 +1,273 @@
+--- a/src/d3d/rhi.h
++++ b/src/d3d/rhi.h
+@@ -307,6 +307,20 @@
+     uint32_t debug;             /* ask for the debug / validation layer */
+ } RhiDeviceDesc;
+ 
++/* Optional OS adapter, installed before rendering starts and cleared only
++ * after rendering stops. The adapter owns its context; the interface copies
++ * callbacks, not window ownership. NULL restores the native Win32 defaults.
++ * A pump may run on a guest thread: adapters enforce their event-thread rules.
++ * Drawable size is physical pixels; failure leaves the caller's values alone. */
++typedef struct RhiHost {
++    void *context;
++    void (*pump_events)(void *context);
++    int (*drawable_size)(void *context, void *window, uint32_t *width, uint32_t *height);
++} RhiHost;
++void rhi_set_host(const RhiHost *host);
++void rhi_pump_events(void);
++int rhi_drawable_size(void *window, uint32_t *width, uint32_t *height);
++
+ /* Chooses the backend before the device is created. NULL or "" means
+  * RECOMP_D3D8_BACKEND, and that unset means d3d11. Returns 0 when the
+  * named backend exists; otherwise it says so and keeps d3d11. */
+--- a/src/d3d/rhi.c
++++ b/src/d3d/rhi.c
+@@ -1,9 +1,10 @@
+ /**
+  * rhi.c -- forwards rhi.h to the backend in use (rhi_backend.h).
+  *
+- * Deliberately nothing but forwarding: the one place a call from the
++ * GPU calls are forwarding only: the one place a call from the
+  * renderer meets the backend table, so a breakpoint here sees every GPU
+- * call either backend makes.
++ * call either backend makes. The small host boundary keeps OS window/events
++ * outside the common Xbox device implementation.
+  */
+ 
+ #include "rhi_backend.h"
+@@ -11,6 +12,46 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++
++#if defined(_WIN32)
++#include <windows.h>
++#endif
++
++static RhiHost g_host;
++void rhi_set_host(const RhiHost *host)
++{
++    if(host)g_host=*host;
++    else memset(&g_host,0,sizeof g_host);
++}
++void rhi_pump_events(void)
++{
++    if(g_host.pump_events) {g_host.pump_events(g_host.context);return;}
++#if defined(_WIN32)
++    MSG msg;
++    while(PeekMessageA(&msg,NULL,0,0,PM_REMOVE)) {
++        if(msg.message==WM_QUIT)ExitProcess(0);
++        TranslateMessage(&msg);DispatchMessageA(&msg);
++    }
++#endif
++}
++int rhi_drawable_size(void *window,uint32_t *width,uint32_t *height)
++{
++    uint32_t w=0,h=0;
++    if(!width || !height)return 0;
++    if(g_host.drawable_size) {
++        if(!g_host.drawable_size(g_host.context,window,&w,&h) || !w || !h)return 0;
++    } else {
++#if defined(_WIN32)
++        RECT rect;
++        if(!window || !GetClientRect((HWND)window,&rect) ||
++           rect.right<=rect.left || rect.bottom<=rect.top)return 0;
++        w=(uint32_t)(rect.right-rect.left);h=(uint32_t)(rect.bottom-rect.top);
++#else
++        (void)window;return 0;
++#endif
++    }
++    *width=w;*height=h;return 1;
++}
+ 
+ #if defined(_WIN32)
+ const RhiBackend *g_rhi = &rhi_d3d11_backend;
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -167,13 +167,7 @@
+  * ================================================================ */
+ void d3d8_PresentFrame(void)
+ {
+-    /* Pump Windows messages */
+-    MSG msg;
+-    while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE)) {
+-        if (msg.message == WM_QUIT) ExitProcess(0);
+-        TranslateMessage(&msg);
+-        DispatchMessageA(&msg);
+-    }
++    rhi_pump_events();
+ 
+     /* Present the backbuffer (VSync = 1) */
+     if (rhi_device_ready()) {
+@@ -385,7 +379,7 @@
+ {
+     D3D8DeviceState *s = &g_device_state;
+     D3D8DisplayFit fit;
+-    RECT rc;
++    uint32_t drawable_w,drawable_h;
+ 
+     if (!rhi_swapchain_view() || !s->rhi_scene_srv)
+         return;
+@@ -395,8 +389,8 @@
+      * right all the way through still reaches the screen distorted. Keep
+      * the buffer the size of the window and the stretch is the identity;
+      * the fit below then puts bars around the picture instead. */
+-    if (s->hwnd && GetClientRect(s->hwnd, &rc)) {
+-        UINT w = (UINT)(rc.right - rc.left), h = (UINT)(rc.bottom - rc.top);
++    if (rhi_drawable_size(s->hwnd, &drawable_w, &drawable_h)) {
++        UINT w = drawable_w, h = drawable_h;
+ 
+         if (w && h && (w != s->swap_width || h != s->swap_height)) {
+             if (rhi_swapchain_resize(w, h) == 0) {
+@@ -804,17 +798,7 @@
+         last_tick = now;
+     }
+ 
+-    /* Pump Windows messages: the game's internal main loop drives rendering,
+-     * so our external message pump never runs. Process messages here to keep
+-     * the window responsive and handle input. */
+-    MSG msg;
+-    while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE)) {
+-        if (msg.message == WM_QUIT) {
+-            ExitProcess(0);
+-        }
+-        TranslateMessage(&msg);
+-        DispatchMessageA(&msg);
+-    }
++    rhi_pump_events();
+ 
+     present_resolve();
+     return (HRESULT)rhi_present(1);
+@@ -2311,15 +2295,7 @@
+ {
+     (void)self; (void)Flags;
+ 
+-    /* Pump Windows messages (same as dev_Present) */
+-    MSG msg;
+-    while (PeekMessageA(&msg, NULL, 0, 0, PM_REMOVE)) {
+-        if (msg.message == WM_QUIT) {
+-            ExitProcess(0);
+-        }
+-        TranslateMessage(&msg);
+-        DispatchMessageA(&msg);
+-    }
++    rhi_pump_events();
+ 
+     present_resolve();
+     return (HRESULT)rhi_present(g_present_interval);
+--- a/src/d3d/d3d8_display.h
++++ b/src/d3d/d3d8_display.h
+@@ -18,7 +18,7 @@
+ 
+ #include "d3d8_internal.h"
+ 
+-#if defined(_WIN32)
++#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
+ 
+ /* Read once, from the environment, before the first device is created.
+  *
+@@ -87,6 +87,6 @@
+ 
+ void d3d8_display_shutdown(void);
+ 
+-#endif /* _WIN32 */
++#endif /* shared RHI renderer */
+ 
+ #endif /* XBOXRECOMP_D3D8_DISPLAY_H */
+--- a/src/d3d/d3d8_display.c
++++ b/src/d3d/d3d8_display.c
+@@ -16,7 +16,7 @@
+ #include "pc_display.h"
+ #endif
+ 
+-#if defined(_WIN32)
++#if defined(_WIN32) || defined(TSFP_RHI_RENDERER)
+ 
+ #include <stdint.h>
+ #include <stdio.h>
+@@ -431,4 +431,4 @@
+     g.failed = 0;
+ }
+ 
+-#endif /* _WIN32 */
++#endif /* shared RHI renderer */
+--- a/src/d3d/d3d8_compile.c
++++ b/src/d3d/d3d8_compile.c
+@@ -25,6 +25,9 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#ifndef _WIN32
++#include <sys/stat.h>
++#endif
+ 
+ /* FNV-1a over the source, the macros, the entry point and the target: the
+  * same text under a different target is a different shader. */
+@@ -79,7 +82,11 @@
+         const char *v = getenv("RECOMP_D3D8_HLSL_DIR");
+         dir = (v && *v) ? v : NULL;
+         if (dir) {
++#ifdef _WIN32
+             CreateDirectoryA(dir, NULL);
++#else
++            mkdir(dir,0700);
++#endif
+             fprintf(stderr, "[D3D8] writing every compiled HLSL source to %s\n", dir);
+         }
+         checked = 1;
+@@ -100,7 +107,7 @@
+     hash = hlsl_hash(src, len, macros, entry, target);
+     if (!hlsl_first_sighting(hash))
+         return;
+-    snprintf(path, sizeof path, "%s\\%s-%s-%s-%08X.hlsl",
++    snprintf(path, sizeof path, "%s/%s-%s-%s-%08X.hlsl",
+              dir, name ? name : "shader", entry, target, hash);
+     f = fopen(path, "wb");
+     if (!f)
+@@ -138,14 +145,18 @@
+         g_compile_last_report = now.QuadPart;
+     }
+     InterlockedIncrement(&g_compiles[kind]);
++#ifdef _WIN32
+     InterlockedAdd64(&g_compile_ticks[kind], now.QuadPart - started);
++#else
++    __atomic_add_fetch(&g_compile_ticks[kind],now.QuadPart-started,__ATOMIC_SEQ_CST);
++#endif
+     if (now.QuadPart - g_compile_last_report >= 5 * g_compile_qpf) {
+         g_compile_last_report = now.QuadPart;
+         fprintf(stderr, "[D3D8] runtime shader compiles so far: combiner %ld (%.0f ms), "
+                 "fixed-function %ld (%.0f ms), vertex program %ld (%.0f ms)\n",
+-                g_compiles[0], g_compile_ticks[0] * 1000.0 / g_compile_qpf,
+-                g_compiles[1], g_compile_ticks[1] * 1000.0 / g_compile_qpf,
+-                g_compiles[2], g_compile_ticks[2] * 1000.0 / g_compile_qpf);
++                (long)g_compiles[0], g_compile_ticks[0] * 1000.0 / g_compile_qpf,
++                (long)g_compiles[1], g_compile_ticks[1] * 1000.0 / g_compile_qpf,
++                (long)g_compiles[2], g_compile_ticks[2] * 1000.0 / g_compile_qpf);
+         fflush(stderr);
+     }
+ }
+--- a/src/d3d/rhi_shader_cache.c
++++ b/src/d3d/rhi_shader_cache.c
+@@ -32,6 +32,9 @@
+ 
+ #if defined(_WIN32)
+ #  include <windows.h>
++#else
++#  include <strings.h>
++#  define _stricmp strcasecmp
+ #endif
+ 
+ #define CACHE_MAGIC   0x43535258u   /* "XRSC" */
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -75,7 +75,8 @@
+                      ${CMAKE_CURRENT_BINARY_DIR}/d3d8_smoke)
+ else()
+     if(APPLE AND TSFP_NATIVE_DIR)
+-        add_library(xbox_d3d8 STATIC "${TSFP_NATIVE_DIR}/renderer_gl.c")
++        add_library(xbox_d3d8 STATIC "${TSFP_NATIVE_DIR}/renderer_gl.c"
++            "${TSFP_NATIVE_DIR}/renderer_host_sdl.c" rhi.c)
+     else()
+         add_library(xbox_d3d8 STATIC d3d8_gl.c)
+     endif()

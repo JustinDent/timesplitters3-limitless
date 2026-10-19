@@ -14,13 +14,17 @@ def affected(paths, *, full=False):
         if (path in ('.github/workflows/runtime-patches.yml', 'requirements.txt', 'tsfp.ps1',
                      'tools/ci-runtime-scope.py', 'tests/test_ci_runtime_scope.py',
                      'tools/apply-patches.py', 'tests/test_patch_tracking.py',
-                     'tests/test_patch_updates.py') or path.startswith('patches/')):
+                     'tests/test_patch_updates.py', 'tests/fixtures/launcher-patch-stacks.json') or path.startswith('patches/')):
             selected.update(SUITES)
         elif (path.startswith('tools/launcher/') or path in (
-                'tools/build-launcher.ps1', 'tools/playable-launch.ps1',
+                '.github/workflows/launcher-release.yml', '.github/workflows/launcher-build.yml',
+                '.github/workflows/launcher-compatibility.yml', 'tools/launcher-compatibility.py',
+                'tests/test_launcher_compatibility.py', 'tools/launcher-release.py',
+                'tools/fetch-launcher-art.ps1', 'config/launcher-artwork.json', 'tests/test_launcher_release.py',
+                'tools/build-launcher.ps1', 'tools/build-mac-launcher.py', 'tools/test-mac-launcher.py', 'config/mac-launcher-sdk.json', 'tools/playable-launch.ps1',
                 'tools/build-game-icon.ps1', 'tests/test_game_icon.py',
                 'tests/launcher_updates.cs', 'tests/launcher_settings.cs', 'tests/launcher_maintenance.cs', 'tests/launcher_downloads.cs', 'tests/launcher_news.cs', 'tests/launcher_startup.cs',
-                'tests/launcher_crashes.cs', 'tests/launcher_sessions.cs',
+                'tests/launcher_crashes.cs', 'tests/launcher_sessions.cs', 'tests/launcher_shared_ui.cs', 'tests/test_launcher_shared_ui.py',
                 'tests/test_launcher_startup.py', 'tests/package_launcher.py',
                 'tools/release/ImportGame.cs', 'config/pc-controls.default.json',
                 'config/pc-discord.default.ini')):
@@ -31,8 +35,11 @@ def affected(paths, *, full=False):
             selected.add('release')
         elif path.startswith(('src/', 'tests/')) or path in (
                 'tools/recomp-generation.py', 'tools/online.py', 'tools/online_theme.py',
-                'tools/crash_helper.c',
-                'tools/bundle_online.py', 'tools/network-identity.py'):
+                'tools/crash_helper.c', 'tools/bundle_online.py', 'tools/network-identity.py',
+                'tools/build-native-mac.py', 'tools/play-native-mac.py',
+                'tools/test-native-mac.py', 'tools/native_mac_common.py',
+                'tools/testing_profile.py', 'tools/vulkan_sdk.py', 'tools/test-rhi-mac.py',
+                'config/vulkan-sdk.json'):
             # Other paths admitted by the workflow are native/runtime inputs.
             selected.add('native')
         if path == 'src/pc_display_modes.inc':
