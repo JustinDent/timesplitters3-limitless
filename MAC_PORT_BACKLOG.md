@@ -1,5 +1,23 @@
 # PC features awaiting Mac adaptation
 
+### MAC-045 - Update transaction rename contention
+
+- **Status:** Queued
+- **PC behavior:** Retry Windows access/sharing/lock failures when promoting a
+  completed game, repair or launcher transaction to rollback storage. Retries
+  only the rename, bounded to five seconds; permanent failures still restore
+  previous files. Recovery failures retain both original and recovery errors.
+- **Source:** `tools/launcher/Core.cs`, `tests/launcher_updates.cs`; commit titled
+  `Retry blocked launcher transaction commits` on `fix/launcher-transaction-lock`.
+- **Mac support:** Native Mac does not use this Windows C# updater. No existing
+  Mac behavior changes; release-updater parity remains queued under MAC-021.
+- **Remaining:** When implementing a native updater, use native filesystem error
+  handling and bounded contention recovery with preserved transaction journals.
+- **Acceptance:** A transient lock completes without replaying writes; a
+  persistent lock fails with recovery instructions; unrelated errors fail
+  immediately; recovery remains possible after unlocking and personal files
+  remain untouched. Windows checks do not establish Mac execution. See STATUS.md.
+
 ### MAC-044 - Game crash capture and launcher reports
 
 - **Status:** Queued

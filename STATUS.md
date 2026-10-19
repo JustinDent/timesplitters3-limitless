@@ -1,5 +1,38 @@
 # Measured progress
 
+## Launcher update transaction lock recovery (2026-10-19)
+
+Local Windows x64 fix based on main `c006c24`, branch
+`fix/launcher-transaction-lock`. A reported v1.2.16 game update failed at
+`Directory.Move(transaction, rollback)` after installing its payload. The log
+identifies a denied rename, not the process responsible; a sync/scanner lock
+is a possible cause, not a confirmed diagnosis. The installed game subsequently
+reported v0.3.0-alpha.2. No personal installation files were changed by this work.
+
+The shared game/repair/self-update transaction code retries only access/sharing/
+lock errors at commit, every 250 ms for five seconds. Other failures propagate
+immediately. Persistent failures retain restoration behavior and actionable
+instructions. If restoration fails too, both errors survive in the logged inner
+exception rather than losing the original update error. See MAC-045.
+
+.NET Framework x64 build with required private artwork passed. All 104 isolated
+updater checks passed, including four new regressions: a real Win32 directory
+handle blocks the old rename and then releases for successful install/rollback;
+a persistent lock times out with its journal intact; missing sources/existing
+destinations fail promptly; a locked restoration target retains both errors and
+recovers after unlocking. Synthetic saves/settings/data were preserved.
+Download (27), version selection (11), startup (10) and release news (19) checks
+also passed. Settings passed all 30 checks from a short temporary test path;
+the initial longer checkout path exceeded the crash log fixture's path limit.
+The subsequent crash-report suite stopped at its game-running guard after the
+real game was relaunched; remaining crash/session/maintenance suites were not
+completed in this run. No real game was started or stopped by these checks.
+
+Evidence: ignored `build/launcher-lock-validation.log` and build output in
+`build/launcher-lock-validation`; settings rerun used `%TEMP%/tsfp-lock-tests`.
+No native Mac execution, release publication or exact public ZIP upgrade is
+claimed for this change.
+
 ## Launcher v1.2.16 release preparation (2026-10-19)
 
 Prepared from main `4a489af`, which includes the reviewed crash/session changes
