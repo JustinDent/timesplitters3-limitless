@@ -104,6 +104,12 @@ reproducibility, and validation requirements.
   `requirements.txt`, and the verified FFmpeg download in `tools/fetch-video.ps1`.
   Do not independently upgrade dependencies on one device. Intentional version
   changes must update the shared scripts/documentation and relevant checks.
+- The opt-in common-RHI Mac probe uses the SDK pinned in
+  `config/vulkan-sdk.json` through `tools/test-rhi-mac.py`. Preserve its archive
+  checksum, installed-file receipt, licenses and version manifest; install only
+  inside ignored `external/vulkan-sdk`. This new adapter dependency does not
+  replace existing upstream/Python pins or change the default GL game renderer.
+  Keep GPU contract results distinct from common-renderer gameplay validation.
 - Apply the complete local patch stack with `tools/apply-patches.py` before
   generation/build. Preserve existing patches and add subsequent runtime
   changes as separate patches. Never hand-edit generated game C; keep changes

@@ -34,7 +34,8 @@ def affected(paths, *, full=False):
                 'tools/crash_helper.c', 'tools/bundle_online.py', 'tools/network-identity.py',
                 'tools/build-native-mac.py', 'tools/play-native-mac.py',
                 'tools/test-native-mac.py', 'tools/native_mac_common.py',
-                'tools/testing_profile.py'):
+                'tools/testing_profile.py', 'tools/vulkan_sdk.py', 'tools/test-rhi-mac.py',
+                'config/vulkan-sdk.json'):
             # Other paths admitted by the workflow are native/runtime inputs.
             selected.add('native')
         if path == 'src/pc_display_modes.inc':

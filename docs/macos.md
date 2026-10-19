@@ -244,3 +244,35 @@ Portable patch, launcher and test-isolation checks:
 ```sh
 .venv/bin/python -m pytest tests/test_patch_updates.py tests/test_patch_tracking.py tests/test_native_mac_tools.py tests/test_native_mac_launcher.py -q
 ```
+
+## Common renderer development probe
+
+The normal game launcher still uses the validated OpenGL path. Development of
+its common PC/Mac renderer uses the existing Vulkan backend and PC HLSL through
+DXC; it is not yet a game-renderer switch. No game data or save fixture is needed
+for this probe. Use the checkout's pinned Python/CMake/Ninja environment:
+
+```sh
+.venv/bin/python tools/test-rhi-mac.py --setup-sdk
+.venv/bin/python tools/test-rhi-mac.py --driver moltenvk
+.venv/bin/python tools/test-rhi-mac.py --driver kosmickrisp
+```
+
+The current SDK requires Apple Silicon macOS 26+ for this validation route.
+`config/vulkan-sdk.json` pins SDK 1.4.363.0, its URL, byte size and publisher
+SHA-256. The setup needs 5 GiB free for download/extraction, installs inside
+ignored `external/vulkan-sdk`, uses `copy_only=1` and makes no system-wide SDK
+installation. It preserves licenses/version manifests and records hashes of the
+installed libraries and compiler headers. Unknown or changed installations fail
+verification instead of being overwritten. The installed core takes about
+2.5 GiB on the tested device; the verified installer/archive are disposable.
+See the [SDK installation documentation](https://vulkan.lunarg.com/doc/view/latest/mac/getting_started.html).
+
+The runner validates the runtime pin, applies the complete patch stack, initializes
+only pinned SDL/Vulkan header/loader/allocator submodules, and builds a small test
+under `build/macos/rhi-tests`. It bounds the executable to 60 seconds, isolates
+cache/config paths and writes `logs/rhi-<driver>.log` and `.json`. A missing
+validation layer or reported validation error fails the check. The shared shader
+pixel checks also run through Windows D3D11 WARP in CI; Mac additionally checks
+swapchain channel order and presentation. These checks are not gameplay or full
+rendering certification. See [measured scope](../STATUS.md#common-vulkan-backend-on-mac-2026-10-19).

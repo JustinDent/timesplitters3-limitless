@@ -1,5 +1,71 @@
 # Measured progress
 
+## Common Vulkan backend on Mac (2026-10-19)
+
+- **Source/dependency:** `codex/shared-vulkan-mac` starts at local unmerged
+  host-interface commit `e382e50`. Validation used this task's working changes.
+  Main advanced independently from `5131d29` to `ade3763` (known-issues workflow
+  and README preview changes); comparison found no renderer overlap. This task
+  did not change main or the other device. The focused stack is not pushed.
+- **Backend:** The existing production `rhi_vulkan.c` now obtains SDL's surface
+  extensions, creates its surface through SDL and initializes volk with SDL's
+  exact loader entry point. The initial probe exposed a crash when SDL and volk
+  independently selected different loader/driver dispatch tables. Sharing the
+  loader fixes that instance-handle mismatch. Portability instance/device
+  extensions are enabled when advertised. DXC loads its macOS dylib; POSIX
+  pipeline-cache file operations use temporary-file/rename semantics. The
+  existing POSIX shader-cache stub still disables persistent caching.
+- **Reproducibility:** New optional SDK pin `config/vulkan-sdk.json` records
+  version 1.4.363.0, 396,088,200-byte archive and publisher SHA-256
+  `163431e0203c8215286a17cf393643ce6b951f77d1b4f74ab30821a1f0beb09b`.
+  The archive was verified before running the installer with `copy_only=1`;
+  no system-wide SDK installation. Installed-file hashes, licenses and version
+  manifests remain under ignored `external/vulkan-sdk`. The verified temporary
+  installer/archive were removed (about 812 MiB reclaimed); installed core uses
+  2.5 GiB physical, standalone test build 19 MiB, no game-data duplication.
+  Existing upstream, SDL, Vulkan-header/volk/VMA submodule and Python pins were
+  retained. The new validation SDK requires macOS 26+; the GL game path's
+  requirement/default is unchanged. Official provenance:
+  [SDK catalog](https://vulkan.lunarg.com/sdk/files.json) and
+  [installation guide](https://vulkan.lunarg.com/doc/view/latest/mac/getting_started.html).
+- **Real GPU contract:** `tools/test-rhi-mac.py` configures a standalone test
+  using no game data or generated game C. The production common RHI compiles
+  the shared PC HLSL through DXC, draws the same menu reconstruction fixture,
+  checks magnification/alpha/flat-color/minification expectations, and checks
+  swapchain channel order/readback/presentation. It uses pinned loader/driver
+  paths, validation layers, isolated cache/config paths and a 60-second bound.
+  Both MoltenVK and KosmicKrisp passed, exit 0, with validation enabled and no
+  validation errors. MoltenVK reports a warning that Metal cannot disable
+  primitive restart; this triangle-only contract does not establish indexed
+  strip/restart fidelity. KosmicKrisp produced no validation warnings here.
+  Logs/JSON receipts: `logs/rhi-moltenvk.*`, `logs/rhi-kosmickrisp.*`.
+- **Host/evidence:** Apple M5 Pro, macOS 27.0.1 arm64, Clang 21, SDL 3.4.16;
+  RHI reports Vulkan 1.3 through MoltenVK and 1.4 through KosmicKrisp. Probe
+  executable SHA-256:
+  `31848a34cc984d8f05761de06712d6e5bdc7a2cd3336823880bed74a8ae34131`.
+  This is an asset-free GPU result, not common-frontend gameplay or an FPS test.
+- **Checks/CI:** Initial integrity, CI scope and complete patch migration/tracking
+  selection: 75 passed, 2 host skips. Final helper/core/native-tool/backlog
+  selection: 78 passed, 1 Windows skip. Documentation/scope rerun: 53 passed,
+  1 Windows skip. The same RHI pixel fixture is registered on Windows through
+  D3D11 WARP (no swapchain on that route); Mac CI additionally installs the pinned
+  SDK and runs the standalone Vulkan contract. Remote CI and Windows execution
+  remain pending. The check fails if validation is unavailable or reports an
+  error; it does not treat a successful compile as a GPU pass.
+- **Existing game path:** Full native builder `--test` still passes all 3 CTests
+  and real-GL renderer, SDL input and Cocoa settings/debug regressions. Verified
+  supported XBE and isolated settings/saves; personal/canonical data preserved
+  and disposable partitions recycled. GL game executable SHA-256:
+  `796398454eff5ac155ac6ea00962dbc691bc2f0156a790256e16cc387fd8fa1c`.
+  No new gameplay run was needed for this opt-in backend/probe addition; the
+  earlier gameplay run remains tied to its recorded host-interface binary.
+- **Remaining integration:** The game still uses `renderer_gl.c`. Connect the
+  common Xbox frontend to the new native backend, adapt window creation and
+  overlay/font services, then validate resources, shaders, gameplay and pacing.
+  Keep missing texture/movie modes, scene fidelity, persistent cache behavior,
+  Windows execution and the MoltenVK restart warning explicit. This milestone
+  does not complete the shared-architecture goal or promise automatic parity.
+
 ## Shared renderer host interface (2026-10-19)
 
 - **Source/dependency:** `codex/shared-renderer-host` depends on unmerged local

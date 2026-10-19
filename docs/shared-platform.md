@@ -73,12 +73,28 @@ uses the same interface through `renderer_host_sdl.c`; callback registration is
 outside the render-thread lifetime and drawable sizes are physical pixels.
 This does not select a Mac GPU backend or establish common-renderer gameplay.
 
-The next renderer milestone is to route native Mac through that common frontend
-and graphics interface, retaining the validated GL path while the new adapter is
-tested. Evaluate the existing RHI backends and shader compilation boundary before
-choosing a Mac backend or adding dependencies. Any dependency change needs shared
-pins, provenance, disk-use review and reproducible host setup. Do not silently
-upgrade one device or replace a working renderer before its checks pass.
+The existing Vulkan backend now has an SDL surface adapter and uses the same
+loader as SDL. It compiles the PC HLSL through DXC and passes the shared menu
+pixel contract, swapchain readback and presentation on this Mac. Portability
+extensions are enabled only when advertised. This is the selected integration
+route; the normal game still uses GL until its Xbox frontend and host services
+are connected and validated.
+
+The asset-free probe uses `tools/test-rhi-mac.py` and the SDK pinned in
+`config/vulkan-sdk.json`. Setup verifies the publisher's archive checksum and
+installs only inside ignored `external/vulkan-sdk`; receipts verify the relevant
+installed files on later runs. Licenses and version manifests remain with it.
+The probe needs macOS 26+ with this SDK; this does not raise the current GL game's
+requirement. Run `--setup-sdk` once, then `--driver moltenvk` or
+`--driver kosmickrisp`. See [Mac guide](macos.md#common-renderer-development-probe).
+The same `tests/rhi_menu_sampling.c` pixel test is registered for Windows D3D11
+WARP, without a swapchain there. Remote Windows/CI execution is still pending.
+
+Next, connect the common Xbox device/resources/shader frontend to this native
+backend, replace its remaining Win32 overlay/window services with host adapters,
+and run bounded isolated scenes. Keep the validated GL path until those checks
+pass. Shared build pins remain authoritative; do not independently upgrade the
+SDK or copy another OS's build tree.
 
 Then migrate remaining shader/resource behavior incrementally, using shared
 asset-free contracts plus bounded scene checks. Cube/volume textures, movie
@@ -96,7 +112,8 @@ integration work, tracked in the backlog.
 | `codex/shared-menu-rendering` | `bee4ed9` | `dde016d`: one menu shader algorithm and GPU contract for both APIs |
 | `codex/shared-debug-settings` | `dde016d` | `780346f`: one debug setting definition list, UI/persistence consumers and capability checks |
 | `codex/shared-feature-contract` | `780346f` | `1a650b5`: shared-by-default rules and this handoff |
-| `codex/shared-renderer-host` | `1a650b5` | Common host interface, SDL adapter and both-host core compile contract |
+| `codex/shared-renderer-host` | `1a650b5` | `e382e50`: common host interface, SDL adapter and both-host core compile contract |
+| `codex/shared-vulkan-mac` | `e382e50` | Native common Vulkan backend, pinned SDK and asset-free RHI GPU contract |
 
 These are local branches; they have not been merged into main or verified on the
 other computer. Measured scope and unavailable checks are recorded in `STATUS.md`.

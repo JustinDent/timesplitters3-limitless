@@ -789,6 +789,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   a new Mac GPU backend. Windows execution and common-RHI gameplay remain
   pending. [Evidence](STATUS.md#shared-renderer-host-interface-2026-10-19).
 
+- **Common Vulkan backend (2026-10-19):** The commit carrying this entry on
+  `codex/shared-vulkan-mac` depends on `e382e50`. The production RHI now creates
+  SDL/Metal surfaces and compiles the same PC HLSL on Mac. The shared menu pixel
+  contract and swapchain checks pass on the pinned SDK's two Mac drivers; the
+  standalone probe needs no game files. This supplies a backend for the common
+  frontend rather than a second shader implementation. The native game still
+  uses GL; connect its common Xbox frontend, window creation and overlay host
+  services next. Missing modes and scene acceptance remain open, and Windows
+  RHI/WARP execution is pending. [Evidence](STATUS.md#common-vulkan-backend-on-mac-2026-10-19).
+
 ### MAC-006 — Cube and volume texture resources
 
 - **Status:** Queued
