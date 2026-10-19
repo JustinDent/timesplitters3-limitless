@@ -1923,7 +1923,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   The original Controls save-delay finding is addressed by MAC-050 below.
   Native equivalents and physical high-refresh monitor tests
   remain unverified; see the latest STATUS.md transition evidence.
-- **Source:** Uncommitted on `feature/167-144-fps`; the additive `144-fps.patch`,
+- **Source:** `ae4775c` on `feature/167-144-fps`; the additive `144-fps.patch`,
   `src/pc_frame_clock.h`, `pc_refresh.c`, `pc_refresh_guard.h`, `tools/crash_helper.c`,
   launcher `GameSettings.cs` / `SettingsPage.cs` / `DisplayModes.cs`,
   `tests/frame_interpolation.c`, `prediction_targets.c`, `frame_clock.c`,
@@ -1957,7 +1957,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   workflow. Cancel retains the prior saved controls. The all-profile save pass
   preserves pending accepted edits because the guest's dirty flag is global.
   Pause-menu controls retain their existing behavior.
-- **Source:** Uncommitted on `feature/167-144-fps`, continuing the stability
+- **Source:** `903e33a` on `feature/167-144-fps`, continuing the stability
   investigation there: additive `controls-accept-save.patch`,
   `src/pc_profile_accept.inc`, `src/pc_display_menu.c` / `.h`,
   `tests/profile_accept.c`, `tests/test_profile_accept.py`, and the Windows

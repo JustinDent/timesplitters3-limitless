@@ -599,7 +599,7 @@ static void labels(void)
     } else if(page==1) { row(0,"Keep resolution"); row(1,"Revert"); }
 #ifdef _WIN32
     else if(page==3) {
-        const char *fps_labels[]={"Keep current", "60 FPS (original)","120 FPS (smooth)","144 FPS (smooth)"};
+        const char *fps_labels[]={"Keep current", "60 FPS (original)","120 FPS (experimental)","144 FPS (experimental)"};
         const char *hz_labels[]={"Desktop rate","120 Hz if supported","144 Hz if supported"};
         motion_fps_row=guest_call(sub_00079D60_gen,6,text_at(7,"Smooth motion"),0u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
