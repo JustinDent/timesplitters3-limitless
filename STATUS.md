@@ -9096,3 +9096,69 @@ this is not a 120 FPS benchmark. Six disposable partitions were recycled
 (5,243,406,848 apparent bytes; 135,168 allocated bytes). Captures allocate
 179,600 KiB, below 256 MiB. Protected settings and controls-fixture hashes
 match the pre-existing baseline. Windows and hosted CI remain pending.
+
+### Integrated renderer pacing and spirit observation (2026-10-19)
+
+Focused documentation branch `codex/integrated-renderer-acceptance` depends on
+unmerged `codex/renderer-main-integration` at `9940dba19f1d17fc3d0ca7b58740f9b532a4b84e`.
+No runtime change or new build was needed. The existing executable SHA-256 is
+`f3e85f5cdc4d5b38cc2e3728f349b797c699e2f80a94940b8b4ea0caaa5e86b3`;
+all recorded runtime-input hashes still match. Its manifest retains the honest
+pre-commit provenance (`a0a89f5` plus integration changes), rather than being
+relabeled. Host: Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, pinned Vulkan SDK
+1.4.363.0 with manifest-selected MoltenVK. The supported US XBE hash was checked
+by the isolated runner.
+
+Two 120-second runs used the disposable unlocked profile and synthetic SDL
+navigation to Khallos. Performance runs disabled Vulkan validation explicitly.
+The preselected 80–95-second measurement window excluded loading/navigation and
+capture readback; the one diagnostic capture occurred at guest frame 6000,
+after the window. Both later captures were reviewed and show train stairs,
+railings, weapon, HUD, moving scenery and muted sky. Streaks remain; this is
+neither a sky correction nor a matched original-Xbox/Windows fidelity check.
+
+| Mode | API presents/s | Guest/s | Interpolated/s | Median | p95 | Worst |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 60 | 60.001 | 60.001 | 0 | 16.691 ms | 17.599 ms | 18.737 ms |
+| 120 | 119.998 | 59.999 | 59.999 | 8.521 ms | 9.515 ms | 13.083 ms |
+
+The selected windows contain 900 and 1,800 successful API presents respectively,
+with no interval above 33.33 ms. These are CPU-observed presentation intervals,
+not GPU completion, display scanout or sustained campaign certification. The
+whole runs, including startup/loading and one capture, averaged 59.865 and
+113.278 presents/s with worst intervals 133.162 and 135.402 ms. Both exited 0
+at their limits (120.18 and 120.12 seconds). The 60 Hz guest clock is unchanged.
+
+Evidence: `logs/shared-khallos-integrated-{60,120}-{summary.json,frames.csv,err}`,
+`logs/integrated-khallos-pacing-results.json`, and
+`private/captures/native-mac/integrated-pacing-{60,120}.png`.
+
+A separate **155.19-second** Mansion run kept Vulkan validation enabled and
+completed with exit 0, no reported validation errors/shader failures/native
+fault, and five fresh paired captures. Synthetic navigation reached the hall;
+frames 4978/5369/5986/6723/7339 show the exterior transition, hall characters,
+falling/burning chandelier, then attacking spirits. All ten PNGs were reviewed.
+Pair 3 (frame 6723, blend 0.671622794) visibly contains skull geometry, glowing
+red eyes and dark trailing shapes in both guest and intermediate images. The
+near spirit is partially clipped by the top edge. Pair 4 includes a synthetic
+horizontal turn and a partly off-screen trail; it is not complete multi-angle
+face-culling evidence. Hall geometry, fire and damage indicators remain visible.
+No runtime fix was needed for this observation.
+
+MAC-049 remains Awaiting validation: controlled wall occlusion, full skull
+views from multiple angles, interpreted-vertex execution and the other affected
+ghost encounters were not checked. These frames establish actual spirit
+visibility in this encounter, not every acceptance criterion or original-console
+parity. The runner's automated `rendered_game_verified: false` remains separate
+from this explicit image review.
+
+Evidence: `logs/shared-mansion-spirit-{summary.json,err,captures.json}` and
+`private/captures/native-mac/mansion-spirit-{0,1,2,3,4}-{guest,midpoint}.png`.
+Last sampled counters: 9,108 guest plus 8,292 interpolated successful presents,
+zero skipped/failed; loading, validation and paired readback make these counts
+unsuitable for FPS claims. All three runs recycled their six known disposable
+partition images (5,243,406,848 apparent bytes and 135,168 allocated bytes per
+run). Ten protected personal configuration/fixture paths match their baseline
+hashes. Capture storage allocates 206,792 KiB, below 256 MiB. Windows runtime,
+hosted CI, matched Khallos reference and other-device synchronization remain
+unverified. No full playthrough was performed.

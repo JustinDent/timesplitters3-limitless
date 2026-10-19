@@ -760,6 +760,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-005 — Multiple texture stages and shader fidelity
 
 - **Status:** In progress
+- **Integrated-build acceptance (2026-10-19):** The documentation branch
+  `codex/integrated-renderer-acceptance` depends on unmerged `9940dba`.
+  Separate 15-second Khallos windows measured 60.001 and 119.998 successful
+  API presents/s (120 mode: 59.999 guest + 59.999 interpolated), with no
+  interval above 33.33 ms. These exclude loading/capture readback and do not
+  certify display scanout or campaign stability. Reviewed frames retain the
+  sky/train/scenery; intentional-motion versus matched-reference fidelity
+  remains open. A 155-second validation-enabled Mansion run now shows actual
+  spirits, red eyes and trails alongside hall geometry/fire in paired images.
+  MAC-049 retains its remaining acceptance checks. No new runtime fix or
+  Windows validation is claimed.
+  [Evidence](STATUS.md#integrated-renderer-pacing-and-spirit-observation-2026-10-19).
 - **Representative common-renderer scenes (2026-10-19):** The documentation
   commit on `codex/shared-scene-acceptance` depends on `0ded9e0`; the unchanged
   runtime is `5271401`. Short native MoltenVK Mansion exterior and entrance-hall
@@ -2144,6 +2156,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 ### MAC-049 — Spirit skull and eye rendering (#17)
 
 - **Status:** Awaiting validation
+- **Integrated native observation (2026-10-19):** Unchanged runtime `9940dba`
+  completed a 155-second isolated MoltenVK run with validation enabled and no
+  reported GPU errors. Five guest/intermediate pairs were reviewed; the later
+  hall frames show skull geometry, glowing red eyes and dark trailing shapes.
+  The closest skull is partly off-screen. This establishes visibility in this
+  encounter, while controlled wall occlusion, complete multi-angle skull views,
+  interpreted-vertex behavior and other encounters remain pending.
+  [Evidence](STATUS.md#integrated-renderer-pacing-and-spirit-observation-2026-10-19).
 - **Native check (2026-10-19):** Shared wrappers are present in the verified
   `5271401` Mac Vulkan build, and the spirit/cache-restoration tests pass within
   a 25-check focused suite. A 120-second Mansion run reached the entrance hall
