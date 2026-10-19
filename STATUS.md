@@ -1,5 +1,23 @@
 # Measured progress
 
+## Dual-platform launcher release automation (2026-10-19)
+
+Source: uncommitted on `codex/launcher-dual-platform-release`, based on `60c3aea`
+and dependent on the native launcher in PR #186. The primary checkout and its
+concurrent renderer work are preserved. No game runtime or personal settings
+are changed. Local host: macOS 27.0.1 ARM64.
+
+The shared publisher validates both Windows x64 and native Mac ARM64 packages,
+update manifests, permanent download aliases and source receipts. Publication
+starts with a draft and exposes neither platform until all 12 release assets
+match GitHub's digests. Sixteen offline tests pass for missing/corrupt/mixed-source
+packages, unsafe paths, permissions, version/tag/default-branch gates, failed
+uploads, retry/repair, published-asset immutability and preview/Latest policy.
+These tests use disposable fixtures and no GitHub writes. Both host builds and
+Mac packaged repair/restart are required by the new workflow; their live CI
+results are pending. No existing release has been modified or new release
+published. Developer ID/notarization and clean-machine acceptance remain open.
+
 ## Native launcher visual spacing follow-up (2026-10-19)
 
 Source: `1a24135` on `codex/mac-launcher-visual-polish`, based on the unmerged

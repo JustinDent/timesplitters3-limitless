@@ -1,0 +1,178 @@
+name: Launcher release (Windows + Mac)
+
+on:
+  push:
+    tags: ['launcher-v*']
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish the version in LauncherVersion.cs (default branch only)
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - .github/workflows/launcher-release.yml
+      - tools/launcher/**
+      - tools/build-launcher.ps1
+      - tools/build-mac-launcher.py
+      - tools/fetch-launcher-art.ps1
+      - tools/launcher-release.py
+      - config/launcher-artwork.json
+      - config/mac-launcher-sdk.json
+      - tests/launcher_*.cs
+      - tests/test_launcher_release.py
+      - src/pc_display_modes.inc
+
+permissions:
+  contents: read
+
+# Never cancel a publication halfway through uploading its draft.
+concurrency:
+  group: launcher-release-${{ github.event_name == 'pull_request' && github.ref || 'publication' }}
+  cancel-in-progress: false
+
+jobs:
+  windows:
+    name: Build and test Windows launcher
+    runs-on: windows-latest
+    timeout-minutes: 20
+    outputs:
+      publish: ${{ steps.plan.outputs.publish }}
+      version: ${{ steps.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Validate release version and source
+        id: plan
+        run: python tools/launcher-release.py plan
+      - name: Test publication and recovery policy
+        run: python -m unittest discover -s tests -p test_launcher_release.py -v
+      - name: Recover checksum-pinned original artwork
+        shell: powershell
+        run: ./tools/fetch-launcher-art.ps1
+      - name: Build release package and run Windows launcher regressions
+        shell: powershell
+        run: |
+          ./tools/build-launcher.ps1 -Test -RequireArtwork -BannerPath build/launcher-art/launcher-banner.png -LogoPath build/launcher-art/launcher-logo.png -BackdropPath build/launcher-art/launcher-backdrop.png
+          Copy-Item build/launcher/launcher.ico build/launcher-art/launcher.ico
+      - name: Verify Windows update package and record its source
+        run: python tools/launcher-release.py stamp --directory build/launcher --platform windows-x64
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: launcher-windows
+          path: |
+            build/launcher/TimeSplitters-Launcher-*.zip*
+            build/launcher/launcher-update.json
+            build/launcher/launcher-build-windows-x64.json
+          if-no-files-found: error
+          retention-days: 7
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: launcher-build-inputs
+          path: |
+            build/launcher-release-plan.json
+            build/launcher-art/*.png
+            build/launcher-art/launcher.ico
+          if-no-files-found: error
+          retention-days: 7
+
+  mac:
+    name: Build and test native Mac launcher
+    needs: windows
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: launcher-build-inputs
+          path: build
+      - name: Test publication and recovery policy on Mac
+        run: python -m unittest discover -s tests -p test_launcher_release.py -v
+      - name: Build release package and run native launcher regressions
+        run: |
+          test "$(uname -m)" = arm64
+          python tools/build-mac-launcher.py --install-sdk --test --require-artwork --artwork-dir build/launcher-art --package
+      - name: Test packaged Mac update, repair and restart
+        env:
+          LAUNCHER_VERSION: ${{ needs.windows.outputs.version }}
+        run: >-
+          "build/macos-launcher/TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher"
+          --verify-package "build/macos-launcher/TimeSplitters-Launcher-v${LAUNCHER_VERSION}-macos-arm64.zip" "$LAUNCHER_VERSION"
+      - name: Verify Mac update package and record its source
+        run: python tools/launcher-release.py stamp --directory build/macos-launcher --platform macos-arm64
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: launcher-macos
+          path: |
+            build/macos-launcher/TimeSplitters-Launcher-*.zip*
+            build/macos-launcher/launcher-update-macos-arm64.json
+            build/macos-launcher/launcher-build-macos-arm64.json
+          if-no-files-found: error
+          retention-days: 7
+
+  verify:
+    name: Verify complete dual-platform release
+    needs: [windows, mac]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: launcher-build-inputs
+          path: build
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: launcher-*
+          path: build/launcher-release
+          merge-multiple: true
+      - run: python tools/launcher-release.py verify
+
+  publish:
+    name: Publish both platform updates together
+    needs: [windows, mac, verify]
+    if: >-
+      needs.windows.outputs.publish == 'true' &&
+      github.repository == 'TheDoffman/timesplitters-future-perfect-pc' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: launcher-build-inputs
+          path: build
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: launcher-*
+          path: build/launcher-release
+          merge-multiple: true
+      - name: Upload verified assets to draft, then publish and refresh issue-form versions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/launcher-release.py publish

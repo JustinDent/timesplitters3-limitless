@@ -1255,6 +1255,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Awaiting validation
+- **Unified release automation (2026-10-19, uncommitted on `codex/launcher-dual-platform-release`):**
+  `.github/workflows/launcher-release.yml` and `tools/launcher-release.py` build
+  Windows x64 and native Mac ARM64 from one version/revision. Both host regressions,
+  original artwork, manifests, checksums and source receipts must pass before
+  publication; the release remains a draft until both uploads are verified.
+  Existing shared release selection uses each host's manifest. No game adapter
+  is needed. Acceptance includes real Windows/Mac CI builds, Mac packaged
+  repair/restart, interrupted publication recovery and immutable published assets.
+  Developer ID/notarization, clean-machine delivery and native game publication
+  remain separate. See [STATUS](STATUS.md#dual-platform-launcher-release-automation-2026-10-19).
 - **Visual follow-up (2026-10-19, `1a24135`):** `NativeHomeStyles.axaml` maps the
   Windows `PageTheme.cs` game-data expander and `Launcher.xaml` rollback face to
   native controls. `NativeNews.cs` now matches `WhatsNewPage.cs`'s 10-unit button

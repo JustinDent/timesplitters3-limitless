@@ -75,6 +75,8 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
 @pytest.mark.parametrize('paths, expected', [
     (['tools/launcher/MainWindow.cs'], {'launcher'}),
     (['tools/build-mac-launcher.py'], {'launcher'}),
+    (['.github/workflows/launcher-release.yml', 'tools/launcher-release.py',
+      'tools/fetch-launcher-art.ps1', 'config/launcher-artwork.json', 'tests/test_launcher_release.py'], {'launcher'}),
     (['config/mac-launcher-sdk.json'], {'launcher'}),
     (['config/pc-discord.default.ini'], {'launcher'}),
     (['tests/launcher_maintenance.cs'], {'launcher'}),
