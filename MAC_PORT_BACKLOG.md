@@ -2160,8 +2160,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   completed a 155-second isolated MoltenVK run with validation enabled and no
   reported GPU errors. Five guest/intermediate pairs were reviewed; the later
   hall frames show skull geometry, glowing red eyes and dark trailing shapes.
-  The closest skull is partly off-screen. This establishes visibility in this
-  encounter, while controlled wall occlusion, complete multi-angle skull views,
+  The closest skull in that run is partly off-screen. A separate 145-second
+  follow-up retains unclipped distant spirits and a closer side view in three
+  reviewed pairs, without validation errors. This establishes visibility in
+  this encounter; controlled wall occlusion, complete multi-angle face fidelity,
   interpreted-vertex behavior and other encounters remain pending.
   [Evidence](STATUS.md#integrated-renderer-pacing-and-spirit-observation-2026-10-19).
 - **Native check (2026-10-19):** Shared wrappers are present in the verified

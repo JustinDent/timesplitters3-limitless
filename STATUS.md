@@ -9162,3 +9162,25 @@ run). Ten protected personal configuration/fixture paths match their baseline
 hashes. Capture storage allocates 206,792 KiB, below 256 MiB. Windows runtime,
 hosted CI, matched Khallos reference and other-device synchronization remain
 unverified. No full playthrough was performed.
+
+A follow-up **145.15-second** isolated run on the same verified executable
+used a step back, an upward-look request and a short left strafe near the hall
+pillar. It exited 0 with validation enabled, no reported validation/shader
+errors or native fault. Six fresh pairs were produced; pairs 3–5 were reviewed
+and retained (guest frames 6421/6802/7060, blends 0.579280611/0.575864582/
+0.623379742). The first retained pair shows several unclipped distant spirits
+with red eyes, and the next shows a closer side view with skull surface and
+trails. Hall geometry, the nearby pillar and fire remain visible in both guest
+and intermediate images. No new rendering defect was established. The final
+pair does not show the same spirit in the same position, so it cannot establish
+wall occlusion. Controlled occlusion and full-angle face fidelity remain open.
+
+Receipts/logs: `logs/shared-mansion-spirit-angle-{captures.json,summary.json,err}`;
+selected PNGs: `private/captures/native-mac/mansion-spirit-angle-{3,4,5}-{guest,midpoint}.png`.
+Six redundant setup PNGs were recycled; the receipt lists retained indices.
+Capture allocation is 218,992 KiB. Six known disposable partition images were
+recycled (5,243,406,848 apparent / 135,168 allocated bytes), and all ten protected
+configuration/fixture paths still match their baseline hashes. No executable,
+shader, personal setting or fixture was changed. The latest counters record
+8,486 guest and 7,714 interpolated successful presents, zero skips/failures;
+this validation/readback run is not a pacing benchmark.
