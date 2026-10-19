@@ -1,6 +1,6 @@
 # PC features awaiting Mac adaptation
 
-### MAC-046 - Companion vehicle zero-flag joins (#100)
+### MAC-047 - Companion vehicle zero-flag joins (#100)
 
 - **Status:** Awaiting validation
 - **Behavior:** Correct the reversed stay/dismount decision that makes Captain
@@ -17,6 +17,44 @@
 - **Acceptance:** Ash remains seated with a player driving away from enemies,
   still fights and can dismount appropriately. Check Harry Tipper separately
   before claiming that encounter verified. See `STATUS.md` for Windows evidence.
+
+### MAC-045 - Terminal camera depth clears (issue #47)
+
+- **Status:** Implemented, pending native validation
+- **PC behavior:** The terminal camera's smaller depth attachment receives clears
+  issued to the same guest depth image on the main target. This addresses the
+  blank What Lies Below camera feed without clearing on every target switch.
+- **Source:** `47-what-lies-below-camera-visual-bug` branch; `terminal-depth-clear` additive runtime patch,
+  `tests/terminal_depth.c`, `tests/test_terminal_depth.py`, and build/CI wiring.
+- **Mac support:** The fix uses shared HLE clear/cache logic and existing
+  `host_Clear` / depth-surface APIs; no new OS or D3D11-only call is introduced.
+  The native GL renderer already provides those APIs. Windows regression/build
+  evidence is recorded in STATUS.md; native execution remains unverified.
+- **Remaining:** Run the native compiler regression and exercise the terminal
+  cameras on Apple Silicon. No separate implementation is currently expected.
+- **Acceptance:** Containment Area A and Laboratory Entrance feeds show their
+  rooms over multiple frames; changing cameras, opening doors and leaving the
+  terminal work. Colour-only clears and repeated target binds preserve depth;
+  independent guest images do not share cached depth. Recheck humanoid ghosts
+  and ordinary scene occlusion on the existing shared-depth path.
+
+### MAC-046 - Update transaction rename contention
+
+- **Status:** Queued
+- **PC behavior:** Retry Windows access/sharing/lock failures when promoting a
+  completed game, repair or launcher transaction to rollback storage. Retries
+  only the rename, bounded to five seconds; permanent failures still restore
+  previous files. Recovery failures retain both original and recovery errors.
+- **Source:** `tools/launcher/Core.cs`, `tests/launcher_updates.cs`; commit titled
+  `Retry blocked launcher transaction commits` on `fix/launcher-transaction-lock`.
+- **Mac support:** Native Mac does not use this Windows C# updater. No existing
+  Mac behavior changes; release-updater parity remains queued under MAC-021.
+- **Remaining:** When implementing a native updater, use native filesystem error
+  handling and bounded contention recovery with preserved transaction journals.
+- **Acceptance:** A transient lock completes without replaying writes; a
+  persistent lock fails with recovery instructions; unrelated errors fail
+  immediately; recovery remains possible after unlocking and personal files
+  remain untouched. Windows checks do not establish Mac execution. See STATUS.md.
 
 ### MAC-044 - Game crash capture and launcher reports
 
@@ -1225,6 +1263,53 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
+
+- **Launcher v1.2.17 build (2026-10-19):** Prepared locally on
+  `release/launcher-v1.2.17` from main `8fe6b48`. This version packages the
+  existing Windows visual and lifecycle work below plus MAC-046 recovery;
+  it adds no new native Mac behavior. Adaptation remains queued. Versioned
+  Windows build validation is in STATUS.md; Mac execution is unverified.
+
+- **Visual polish (2026-10-19, `feature/launcher-visual-polish`):**
+  `Launcher.xaml`, `Launcher.cs`, `PageTheme.cs` and `SettingsPage.cs` add a
+  compact verified-data disclosure, matching native control styles, distinct
+  aligned vector navigation icons, clearer labels, tighter settings and an
+  uncropped original-art banner frame. Home scrolls when expanded content
+  exceeds its viewport; existing incomplete data remains protected from import.
+  Native Mac does not use this WPF UI; adaptation remains queued with this
+  entry. Reuse the information hierarchy in the native UI rather than Windows
+  templates. Acceptance: missing/verified/incomplete data actions, keyboard
+  access, maintained drafts, readable minimum-size layouts, original art
+  preservation and platform-appropriate icon/control rendering. Windows checks
+  are recorded in STATUS.md; no Mac execution is verified.
+  The same branch's follow-up groups version/readiness/Play/data management,
+  chooses one emphasized Home action, and adds labeled vector update states with
+  local progress and reserved layout space. The banner contracts at smaller
+  heights. Adapt these state semantics and action priorities to native controls
+  with MAC-021; preserve pause/error progress reset and clean update completion.
+  `tests/launcher_downloads.cs` covers pause/error/retry feedback. Mac behavior
+  remains unverified and no native adapter was changed.
+  A subsequent banner redesign on the same branch (based on `40b83a3`) replaces
+  the inset photo with an edge-to-edge generated environment, larger original
+  wordmark and uncropped original Cortez photo with a narrow background-edge
+  transparency blend. `tools/build-launcher.ps1` embeds the private companion
+  backdrop separately and requires it for release builds. For native adaptation,
+  preserve both original image sources, uniform photo scaling, responsive action
+  visibility and a fallback when private artwork is unavailable. Generated art
+  and full provenance must be transferred privately, not through Git. Windows
+  preview/package validation is recorded in STATUS.md; Mac remains unverified.
+
+- **Minimize on process start (2026-10-19, `fix/launcher-minimize-on-start`):**
+  `tools/launcher/Launcher.cs` minimizes the Windows launcher immediately after
+  a successful game process start, keeps its taskbar button and restores the
+  previous window state when the game exits. Failed process creation stays
+  visible; update cleanup still requires an observed window and clean exit.
+  `tests/launcher_lifecycle` covers delayed windows, early exits, taskbar
+  availability and restoration. Mac does not use this WPF window lifecycle;
+  native Dock/minimization parity remains queued with this entry. Acceptance:
+  native process start minimizes the launcher without hiding its Dock entry,
+  early failure restores it, and UI visibility never authorizes update cleanup.
+  Windows results are in STATUS.md; native Mac execution remains unverified.
 
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**

@@ -60,6 +60,8 @@ on:
       - src/pc_display.c
       - tests/test_native_compiler.py
       - tests/test_framebuffer_sampling.py
+      - tests/test_terminal_depth.py
+      - tests/terminal_depth.c
       - tests/test_xmv_stop.py
       - tests/xmv_stop.c
       - tests/test_ghost_rendering.py
@@ -197,7 +199,7 @@ jobs:
           tests=(
             tests/test_native_compiler.py tests/test_audio_timing.py
             tests/test_recomp_float_joins.py tests/test_recomp_vehicle_joins.py
-            tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
+            tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_terminal_depth.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
             tests/test_xmv_stop.py
             tests/test_crash_capture.py
             tests/test_cutscene_letterbox.py tests/test_decal_projection.py

@@ -48,9 +48,19 @@ absent, the build retains the blue/silver vector header. Generated source
 artwork and its provenance stay ignored under `private/launcher-art`.
 The current private banner is the supplied 1600 x 1200 Future Perfect key art,
 embedded unchanged. The full photo fits proportionally inside the right side
-of the header, with no cropping or redraw. The original game wordmark and a
-blue/silver panel fill the remaining width. Its source hash and the previous
-generated banner's recovery copy are recorded in `banner-provenance.json`.
+of the header, with no cropping or redraw. A narrow transparency blend along
+the photo's left background edge joins it to a generated blue/silver time-fracture
+environment; Cortez, both weapons and the boot remain visible. The larger original
+game wordmark sits over a darker area of that environment. Source hashes and the
+previous generated banner's recovery copy are recorded in `banner-provenance.json`.
+
+The companion environment is `private/launcher-art/future-perfect-backdrop-v1.png`
+(2172 x 724), embedded separately as `launcher-backdrop.png`. Use
+`-BackdropPath <image.png>` to override it (maximum 8 MiB). Its generation prompt,
+source and dimensions are recorded privately in `backdrop-provenance.json`.
+Source builds without it use the existing gradient. Release builds with
+`-RequireArtwork` require the banner, logo and backdrop so artwork is not silently
+omitted. No external image files are needed after installation.
 
 The optional `private/launcher-art/timesplitters-future-perfect-logo.png`
 supplies the original title wordmark and subtitle lettering in the sidebar.
@@ -137,13 +147,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
-in `build/launcher`; for version 1.2.16, publish all three together:
+in `build/launcher`; for version 1.2.17, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.16-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.16-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.17-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.17-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.16`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.17`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -297,14 +307,49 @@ launcher and its sidebar, at 1152 × 772, using the same embedded settings page.
 
 ## Installation and recovery
 
-Starting with v1.1.2, Play keeps the launcher visible during startup and
-minimizes it once the installed game's window appears. It restores the previous
-normal/maximized launcher state when the launch script finishes. Startup failures
-before a game window appears leave the launcher visible with status/log access.
-Window detection matches this installation's executable path.
+### Home and settings layout
+
+Home uses matching vector sidebar icons, readable blue/silver controls and a
+themed update-channel picker. The banner displays the complete original artwork
+with uniform scaling inside a softly lit frame; the source image is unchanged.
+After game data is verified, setup actions collapse into **Manage game data**.
+Expand it to open the installed Data folder. Missing data shows the ISO/folder
+import actions; existing incomplete data shows an inspection action instead of
+offering to overwrite it. A routine refresh preserves the expanded/collapsed
+state unless verification status changes. Home cards scroll when expanded
+content exceeds the available window height.
+
+Settings use tighter section spacing and adjacent FOV/window controls while
+retaining the fixed Save/Cancel footer, key bindings and draft behavior. These
+layout changes do not modify saved preferences or the install/update process.
+
+The game card groups the installed version, readiness, Play and data management.
+Home highlights one next action: Play for a ready game, install/import/inspection
+during setup, or Retry/Resume during recovery. Secondary actions use the same
+quieter style as embedded-page controls. The banner contracts in shorter windows
+to preserve space for these actions while keeping the complete artwork visible.
+
+The update card identifies checking, up-to-date, available, downloading,
+verifying, paused, attention-needed and no-release states with both text and
+vector icons. It shows local progress during checks/downloads/preparation and
+stops that indicator on pause, failure or completion. Reserved message/progress/
+action space keeps routine transitions steady; unusually long messages and
+expanded data details can still scroll rather than being truncated. These cues
+describe existing update operations and do not change their safety checks.
+
+
+Play minimizes the launcher to the Windows taskbar as soon as the game process
+starts, including while its window is still loading. The taskbar button remains
+available. When the process exits, the launcher restores its previous normal or
+maximized state. If the process cannot start, the launcher stays visible with
+status/log access. Early game exits restore it immediately. Successful-session
+cleanup still requires an observed game window and a zero exit code; minimizing
+alone never confirms an update. Window detection matches this installation's
+executable path.
 `tools/test-launcher-lifecycle.ps1 -LauncherRoot build/launcher-v1.1.2`
-checks normal/maximized minimize-and-restore and failed startup using a bounded
-synthetic executable/window. It uses no game data or personal files. The broader
+checks immediate normal/maximized minimize-and-restore, taskbar availability,
+early exits, cleanup eligibility and failed startup using a bounded synthetic
+executable/window. It uses no game data or personal files. The broader
 updater suite requires real game processes to be closed before its install tests.
 
 The installation directory is the folder containing the launcher. The updater
@@ -332,6 +377,15 @@ evidence. Successful updates retain one `.launcher/rollback` snapshot until the
 new game opens a window and exits normally. Until then, Restore previous swaps
 releases without replacing user settings. The downloaded ZIP is
 discarded after successful extraction, and staging is discarded after install.
+
+When Windows temporarily blocks renaming the completed transaction into the
+rollback folder, the updater retries that rename every 250 ms for up to five
+seconds. This applies to game installs, repairs and launcher updates; file writes
+are not replayed. A persistent access/sharing/lock error still fails the update
+and attempts restoration, with instructions to close programs using the install
+folder and retry. Other filesystem errors fail immediately. If recovery also
+fails, the log retains both errors and the message tells users to preserve
+`.launcher` and reopen the launcher after releasing the lock.
 
 ### Automatic game cleanup (launcher v1.2.5)
 
@@ -392,7 +446,7 @@ is newer, or when an equal installed version fails its manifest checks. A valid
 equal/newer launcher keeps its binaries and manifest together, including embedded
 banner/logo artwork. Explicit launcher updates use their separate transaction.
 
-Public game packaging requires the private banner and title logo via
+Public game packaging requires the private banner, backdrop and title logo via
 `tools/build-launcher.ps1 -RequireArtwork`; missing artwork stops packaging.
 Developer/CI builds may still omit the switch to use the fallback interface.
 For an installation already affected by an older updater, close the launcher
