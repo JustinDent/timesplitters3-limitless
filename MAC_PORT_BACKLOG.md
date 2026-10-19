@@ -1260,7 +1260,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   launcher changes in both directions, proposes bounded separate adapter-fix PRs,
   and reuses the Windows/Mac release build/package checks. No game adapter is
   required: this is host-neutral repository automation. Offline orchestration
-  tests pass; real AI execution/repair publication and required-check activation
+  tests and both real launcher CI builds/package checks pass; real AI execution/repair publication and required-check activation
   await the dedicated API key and default-branch installation. Windows/Mac CI
   evidence and these limits are recorded in
   [STATUS](STATUS.md#launcher-compatibility-automation-2026-10-19).

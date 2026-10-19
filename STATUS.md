@@ -7828,8 +7828,7 @@ patch add/modify/delete, protected paths, symlink rejection and sanitized source
 snapshots. Other cases cover both directions, incomplete file lists, credentials,
 trust, stale revisions, failed host builds, bounded output, idempotent PR creation,
 and explicit bot-PR test dispatch without recursive fix generation. Verified
-`actionlint` 1.7.12 passes all four changed workflow files. Both-host CI results will
-be appended after publication of this branch.
+`actionlint` 1.7.12 passes all four changed workflow files.
 
 Real OpenAI execution, live automatic repair PR creation and enforcement on main
 remain unrun until the dedicated API key is provisioned, the workflow stack is
@@ -7846,3 +7845,15 @@ check also passed. No launcher runtime change was needed.
 
 A stale-run failure handler also rechecks head/base/target before changing the
 commit status, so cancellation cannot overwrite a newer review after retargeting.
+
+Both-host CI at `ef78a7d43f0a1da66d7b592fdd757f1c257ad53b` passed in
+[launcher run 39329419109](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39329419109):
+Windows Server 2025 x64 job 118323542609, macOS 15.7.9 ARM64 job 118324130993,
+and combined package verification job 118324619505. Both real launcher builds,
+seven shared UI groups, host regressions and the Mac packaged repair/restart test
+passed. The automation contracts passed on both hosts (22 at that revision;
+Windows skips its symlink fixture, which Mac exercises). Publication was skipped.
+`b0f3ddb` adds the 23rd contract for stale failure status handling; final-head CI
+results are linked from PR #190. Actions is already allowed to create PRs and
+retains read-only default token permissions; OPENAI_API_KEY is absent. No repository
+permission or required-check setting was changed before service activation.
