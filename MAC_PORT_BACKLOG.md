@@ -839,7 +839,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   compile checks and WARP GPU contract, with two test-harness failures. Native
   path comparison and explicit interpolation fixture hooks fix those failures;
   the published rerun at `083e57c` passes Mac source/release checks and the actual
-  hosted MoltenVK RHI GPU contract. Windows rerun remains pending. This does not close
+  hosted MoltenVK RHI GPU contract. The Windows rerun also passes its complete
+  workflow, including 198 runtime checks and WARP GPU validation. This does not close
   renderer fidelity or scene acceptance. [Evidence](STATUS.md#shared-platform-ci-validation-2026-10-19).
 
 - **Common settings acceptance (2026-10-19):**

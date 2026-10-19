@@ -83,8 +83,8 @@
   HLE interpolation fixture now explicitly supplies its out-of-scope hooks
   instead of relying on Clang's dead stripping to hide unresolved symbols.
   Those hooks abort if called; both hosts link the full fixture without dead
-  stripping and retain the existing redraw/gate/failure assertions. A hosted
-  rerun must confirm MSVC acceptance.
+  stripping and retain the existing redraw/gate/failure assertions. The hosted
+  rerun below confirms MSVC acceptance.
 - **Published rerun:** Both fixes are published at `083e57c` on
   `codex/shared-platform-validation`.
   [Run 39304039727](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39304039727)
@@ -95,7 +95,13 @@
   contracts pass on the hosted Apple Paravirtual device through MoltenVK
   Vulkan 1.3, validation enabled. No validation errors; five known primitive
   restart capability warnings. This is asset-free GPU validation, not campaign
-  or the user's other computer. Windows rerun remains in progress.
+  or the user's other computer. The Windows job also completes successfully:
+  47 CI/backlog, 28 patch, 198 runtime (12 skips), 52 release/cleanup,
+  six startup/packaging (two subtests) and five icon checks pass. The release
+  launcher build and its isolated regression suites pass, including download,
+  recovery, settings, news, maintenance, crashes and unfinished sessions. Thus
+  the complete two-host workflow is green at `083e57c`; it does not contain the
+  later native window fixture or cube/volume contract and does not run gameplay.
 - **Download cause/fix:** Local HEAD and four-byte range requests reproduce
   HTTP 403 / CDN error 1010 with urllib's generic client header. Identifying the
   downloader as `TSFP-SDK-Setup/1.0` returns HTTP 200 / 206 and ZIP magic from
@@ -108,8 +114,8 @@
   the downloader fix; 76 combined renderer/SDK/CI/backlog checks pass after
   the Windows harness fixes. The preceding full hosted-suite selection also passed locally
   (173 passed, 11 skipped; `logs/shared-platform-full-host.out`). No game rebuild
-  is needed for this downloader-only change. Hosted rerun and remaining common
-  renderer settings/fullscreen/scene acceptance are still required.
+  is needed for these downloader/test-harness changes. Remaining native GL
+  repetition, physical interaction and broader scene acceptance are still required.
 
 ## Shared presentation outcomes and timing (2026-10-19)
 
