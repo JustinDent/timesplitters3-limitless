@@ -16,6 +16,9 @@ separate workflows, so open PRs do not list skipped `labels`, `versions` or
   changes, relevant pushes to `main`, or a manual dispatch.
 - **Issue resolution notes** comments on linked issues only after a PR into
   `main` is merged, using trusted default-branch code.
+- **Known issues Discussion** keeps the pinned known-issues post synchronized
+  with open bug reports and maintainer workaround notes. It also runs after
+  automatic labeling. See [maintainer instructions](known-issues.md).
 
 Required job names and their GitHub Actions source stay the same; no branch
 ruleset changes are needed when moving the automation.

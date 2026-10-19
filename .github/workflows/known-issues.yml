@@ -1,0 +1,47 @@
+name: Known issues Discussion
+
+on:
+  issues:
+    types: [opened, edited, labeled, unlabeled, closed, reopened, deleted, transferred]
+  issue_comment:
+    types: [created, edited, deleted]
+  label:
+    types: [edited, deleted]
+  push:
+    branches: [main]
+    paths:
+      - .github/known-issues.json
+      - .github/workflows/known-issues.yml
+      - tools/known-issues.py
+  schedule:
+    - cron: '23 8 * * *'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+  issues: read
+  discussions: write
+
+jobs:
+  sync:
+    if: >-
+      github.repository == 'TheDoffman/timesplitters-future-perfect-pc' &&
+      (github.event_name != 'issue_comment' || !github.event.issue.pull_request)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency:
+      group: known-issues-discussion
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Refresh the pinned known-issues post
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python tools/known-issues.py
