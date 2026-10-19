@@ -109,6 +109,22 @@ dimensions and range, and requires color channels with DXT5 or RGBA8. Defaults
 are unchanged. Do not apply it to an intentional new cutout shape or alpha-only
 artwork. Review both channels and their alignment after compilation.
 
+For a color-only cutout rework, an opaque color plate can avoid revealing bad
+RGB hidden beneath generated transparency. Author natural material colors just
+beyond the original cutout edges, keeping visible features registered, and use
+the verified original mask for the final texture. This padding is source artwork;
+the compiled texture still has the original transparency. Retain the source,
+prompt and mask provenance. Do not fill missing color automatically or use the
+mask to conceal a changed silhouette, atlas layout or gameplay marking.
+
+Inspect the compiled result over a checkerboard and compare the full-size edges,
+not only the transparent source preview. Very low-opacity source pixels can have
+strong red/yellow RGB that becomes visible under a different mask. Batch 122
+found that opacity-aware resizing alone did not remove this defect. A reviewed
+opaque color plate resolved one wood cutout; this does not establish suitability
+for other materials or approve their UV alignment. See the batch 122 entry in
+`STATUS.md` for measured alpha error and the pending scene checks.
+
 DXT5 alpha is lossy. Compare decoded alpha with the resampled original; use
 RGBA8 at a suitable size when compression damages an important mask. Preserving
 original alpha does not prove new color details align with it or establish how
