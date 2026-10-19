@@ -101,7 +101,7 @@ public static class LauncherVersionChecks
         });
         Test("remote notes are bounded inert native text",()=>{
             var record=Record("v1.0.0");record["body"]="<Window><Button>Injected</Button></Window> ![Image](https://invalid.example/remote.png)"+new string('x',25000);
-            var page=new GameVersionsPage();page.SetReleases(Page(record),true);var text=All<TextBox>(page.View).Single().Text;
+            var page=new GameVersionsPage();page.SetReleases(Page(record),true);var document=All<ReleaseNotesMarkdown>(page.View).Single().Document;var text=new System.Windows.Documents.TextRange(document.ContentStart,document.ContentEnd).Text;
             Need(text.Contains("<Window>") && text.Contains("Image: view on GitHub") && text.Contains("Notes shortened") && text.Length<24500 && !All<WebBrowser>(page.View).Any() && !All<Image>(page.View).Any());
         });
         Test("normal updates refuse an older game while explicit download and retry retain the chosen older tag",()=>{
