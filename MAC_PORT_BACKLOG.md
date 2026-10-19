@@ -750,6 +750,17 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-005 — Multiple texture stages and shader fidelity
 
 - **Status:** In progress
+- **Khallos investigation (2026-10-19):** The commit carrying this update on
+  `codex/khallos-sky`, based on unmerged `codex/shared-renderer-default` at
+  `d30b652`, adds the Mac SDL adapter for the shared frame-replay tool and a
+  one-frame GPU readback contract. The dark/stretched Khallos sky reproduces
+  at 60 guest presents with no interpolation and in isolated sky draws on
+  both pinned Vulkan drivers. Sky root cause and visual correction remain
+  open; Windows scene comparison is pending. Do not mark this entry verified
+  from the new replay contract. Next acceptance: reproduce the cause in a
+  shared regression, review a corrected matched sky capture, then check a
+  short control scene on each available host.
+  [Evidence and limits](STATUS.md#khallos-sky-isolation-and-native-frame-replay-2026-10-19).
 - **PC behavior:** The Windows renderer evaluates multiple texture inputs and Xbox texture/combiner modes for layered materials and effects.
 - **PC source:** Audited revision above; `external/ts3FPrecomp/src/d3d/d3d8_combiners.c`; native counterparts `src/native/gl_fragment.inc`, `src/native/gl_vertex.inc`, `src/native/gl_bridge.inc`.
 - **PC validation:** Windows shader implementation exists; scene-by-scene material fidelity is not established by this audit.

@@ -4,6 +4,35 @@ Ordinary features should be implemented once and built for both hosts. This
 requires common behavior plus small adapters for each operating system or GPU
 API. Git synchronization, a shared account and a backlog do not translate code.
 
+## Short captured-frame checks on Mac
+
+The shared `d3d8_replay` capture reader and Xbox renderer now build on native
+Mac Vulkan through a thin SDL window adapter. No guest execution or game files
+are required to build it or run its synthetic triangle/readback contract:
+
+```sh
+.venv/bin/python tools/test-rhi-mac.py --driver kosmickrisp
+```
+
+Use `--driver moltenvk` to check the other pinned driver. CI runs the asset-free
+Mac contract alongside the existing RHI checks. It verifies red-triangle and
+blue-clear pixels; a passing fixture does not establish mission fidelity.
+
+For an existing local capture, the bounded wrapper replays one frame in at most
+30 seconds using isolated runtime, display, input and save paths:
+
+```sh
+.venv/bin/python tools/replay-native-mac.py private/captures/native-mac/khallos-sky-probe.d3dcap --draws 3 --skip-draw 0
+```
+
+The example capture is local evidence, not a repository fixture. The output
+reuses `private/captures/native-mac/replay/frame-000.bmp`; retain selected frames
+before rerunning. Logs and source/capture/executable hashes are in
+`logs/native-frame-replay.log` and `.json`. `--draws` limits the draw prefix and
+`--skip-draw` omits a zero-based draw. These are diagnostic exclusions, not fixes.
+Captured game assets stay ignored and local. Windows retains its existing
+replay frontend; the new SDL adapter is only selected on Mac.
+
 ## Current boundaries
 
 | Area | Common implementation | Host-specific work |

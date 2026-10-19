@@ -35,6 +35,7 @@ def affected(paths, *, full=False):
                 'tools/build-native-mac.py', 'tools/play-native-mac.py',
                 'tools/test-native-mac.py', 'tools/native_mac_common.py',
                 'tools/testing_profile.py', 'tools/vulkan_sdk.py', 'tools/test-rhi-mac.py',
+                'tools/frame_replay_contract.py', 'tools/replay-native-mac.py',
                 'config/vulkan-sdk.json'):
             # Other paths admitted by the workflow are native/runtime inputs.
             selected.add('native')

@@ -9,6 +9,7 @@ import subprocess
 import sys
 import time
 import vulkan_sdk
+import frame_replay_contract
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,7 +40,7 @@ def main():
     subprocess.run([str(cmake),'-S',str(ROOT/'tests/rhi'),'-B',str(build),'-G','Ninja',
         '-DCMAKE_BUILD_TYPE=Release','-DCMAKE_OSX_ARCHITECTURES=arm64',
         '-DCMAKE_MAKE_PROGRAM='+str(ninja),'-DTSFP_VULKAN_SDK='+str(sdk)],check=True)
-    subprocess.run([str(cmake),'--build',str(build),'--target','tsfp_rhi_vulkan_test','--parallel','4'],check=True)
+    subprocess.run([str(cmake),'--build',str(build),'--target','tsfp_rhi_vulkan_test','d3d8_replay','--parallel','4'],check=True)
     exe=build/'tsfp_rhi_vulkan_test'
     env=vulkan_sdk.probe_environment(sdk,args.driver)
     started=time.monotonic()
@@ -61,6 +62,18 @@ def main():
     (logs/('rhi-'+args.driver+'.json')).write_text(json.dumps(summary,indent=2)+'\n')
     print(output)
     if not passed:raise SystemExit('Common RHI validation failed; see logs/rhi-'+args.driver+'.log')
+    replay_executable = build/'replay/d3d8_replay'
+    summary['replay_executable_sha256'] = vulkan_sdk.sha256(replay_executable)
+    summary['replay_passed'] = False
+    try:
+        replay_output = frame_replay_contract.run(replay_executable,
+                                                  build/'replay-contract', env)
+        vulkan_sdk.require_clean_validation(replay_output)
+        summary['replay_passed'] = True
+    finally:
+        summary['passed'] = passed and summary['replay_passed']
+        (logs/('rhi-'+args.driver+'.json')).write_text(json.dumps(summary,indent=2)+'\n')
+    print('PASS: production frame replay red triangle / blue clear (one frame)')
 
 
 if __name__=='__main__':

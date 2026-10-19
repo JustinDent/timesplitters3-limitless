@@ -9,6 +9,9 @@ on:
       - tools/build-native-mac.py
       - tools/vulkan_sdk.py
       - tools/test-rhi-mac.py
+      - tools/frame_replay_contract.py
+      - tools/replay-native-mac.py
+      - tests/test_frame_replay.py
       - config/vulkan-sdk.json
       - tools/play-native-mac.py
       - tools/test-native-mac.py
@@ -258,6 +261,7 @@ jobs:
             tests/test_fov_settings.py
             tests/test_menu_sampling.py
             tests/test_renderer_host.py tests/test_vulkan_sdk.py tests/test_rhi_menu_sampling.py
+            tests/test_frame_replay.py
             tests/test_debug_settings_model.py
             tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_quit_menu.py tests/test_ui_layout.py
           )

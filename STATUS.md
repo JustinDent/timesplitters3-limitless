@@ -8059,3 +8059,85 @@ MAC-048. No conflict markers remain and `git diff --check` passed.
 The combined game executable and native Mac runtime were not rebuilt/retested
 for this merge; earlier build/live-game evidence remains scoped to its recorded
 revision. Personal files and the primary checkout were preserved.
+
+## Khallos sky isolation and native frame replay (2026-10-19)
+
+Work is on `codex/khallos-sky`, based on `d30b652` from the published but
+unmerged `codex/shared-renderer-default` stack. It requires that shared-renderer
+work; main was not changed. The implementation is the commit carrying this
+entry. The sky is **not fixed** and MAC-005 remains in progress.
+
+Host: Apple M5 Pro, ARM64, macOS 27.0.1, Apple Clang 21, pinned Vulkan SDK
+1.4.363.0. Runtime pin `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845` and supported
+US XBE SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`
+were retained. No dependency upgrades or personal save/settings changes.
+
+Short Khallos runs used `tools/test-native-mac.py --unlocked-profile` with
+isolated save/input/runtime/display paths, synthetic SDL menu navigation,
+rotating captures and a 120-second limit. There was no full playthrough.
+The final diagnostic run ended normally at 120.14 seconds, recorded at least
+6,300 guest presents, zero interpolated presents, zero counted failed presents,
+zero shader compile failures and zero Vulkan validation errors. These are
+presentation API counts, not GPU completion or a sustained-FPS claim. The sky
+was visibly distorted despite those clean diagnostics. Disposable partition
+images were recycled by the runner; the canonical fixture was not replaced.
+
+Retained local evidence includes `private/captures/native-mac/khallos-sky-probe.d3dcap`
+(SHA-256 `cb17ac5f394db91b72db9c455a73616a822e95fa7fa14d3b6bb6b28331ec7a81`),
+`khallos-scene_05400.d3dcap`, `sky-scotland-control.d3dcap`, selected PNGs and
+`logs/native-boot-summary.json`. Capture/asset data stays ignored. Earlier
+captures that only reached menus/loading were discarded.
+
+The production Windows frame-replay parser/frontend now builds on native Mac
+with `src/native/replay_host_sdl.h` and the `native-frame-replay` patch. SDL only
+supplies window/events/drawable dimensions; the Xbox draws, shaders, textures,
+parser and readback remain shared. `tools/replay-native-mac.py` runs a single
+capture for at most 30 seconds with explicit isolated configuration paths,
+verified SDK loading, rotating output and provenance logs. The retained
+Khallos sky draw prefix (`--draws 3 --skip-draw 0`) reproduced the artifact in
+0.862 seconds with no failed host calls, malformed chunks, unmapped handles or
+unknown chunks. Both KosmicKrisp and MoltenVK reproduced the distorted sky.
+
+Findings so far:
+
+- The artifact survives at 60 guest presents with no interpolation, before
+  later screen effects, and with the first non-sky draw excluded.
+- The two Khallos sky textures contain intact cloud/sun artwork after correct
+  unswizzling. Raw swizzled memory is not an interpretable linear screenshot.
+- Khallos and the working Scotland sky use the same nine-instruction vertex
+  program. It explicitly writes fog; the unwritten-fog fallback is not the
+  explanation for these draws.
+- A sampled triangle's CPU perspective-correct UV calculation agrees with
+  GPU diagnostic output. The first sampled UV triples also occur byte-for-byte
+  in the original game PAK. This does not prove all attributes or state correct.
+- Texture-coordinate seam handling and original Xbox state semantics remain
+  investigation candidates. No coordinate remapping, fog override or
+  title-specific sky workaround has been added without evidence of the cause.
+
+`tools/test-rhi-mac.py` now builds the actual production replay tool without
+requiring game assets and checks a one-frame synthetic red triangle over a
+blue clear. Both pinned Mac drivers passed the existing RHI contracts plus
+this readback test. The Python readback checks reject incorrect pixels,
+truncation and stale images, and support top-down/bottom-up 24/32-bit BMPs.
+The selected local pytest run passed 98 checks with two host-specific skips,
+covering replay readback, CI routing, backlog integrity, patch transitions and
+tracking, and renderer host contracts. `git diff --check` passed.
+The tests and GPU contract are registered in runtime CI; this branch's GitHub
+CI and Windows replay/scene validation have not run yet. Windows keeps its
+existing window adapter.
+
+Temporary guest-address/call-stack probes were removed from the patch stack;
+the supported builder regenerated and rebuilt the game successfully. The
+clean native binary SHA-256 is
+`61777088bf8c16b72fe4a9df74b0bdfb2808c99159e283f1a4cd82d4246955ea`.
+The earlier live captures were made with diagnostic instrumentation and must
+not be described as a live test of this rebuilt binary. The production replay
+contracts were run after probe removal. Personal configuration presence and
+the tracked controls fixture hash were checked unchanged. Free disk space was
+221 GiB at the final build check.
+
+Next: establish the incorrect state/coordinate behavior against a known-good
+reference, add the smallest shared regression and fix, review matched corrected
+sky captures and a short control scene, then proceed to the remaining shared
+renderer reliability work. The goal remains active; no sky-fidelity or
+cross-host visual-parity certification is claimed.
