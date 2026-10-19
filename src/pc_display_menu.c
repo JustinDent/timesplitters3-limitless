@@ -601,7 +601,7 @@ static void labels(void)
     else if(page==3) {
         const char *fps_labels[]={"Keep current", "60 FPS (original)","120 FPS (experimental)","144 FPS (experimental)"};
         const char *hz_labels[]={"Desktop rate","120 Hz if supported","144 Hz if supported"};
-        motion_fps_row=guest_call(sub_00079D60_gen,6,text_at(7,"Smooth motion"),0u,0u,0u,0u,0u);
+        motion_fps_row=guest_call(sub_00079D60_gen,6,text_at(7,"Motion"),0u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
         for(int i=0;i<4;i++)guest_call(sub_000717D0,1,text_at(12+i,"%s",fps_labels[i]));
         for(int i=0;i<4;i++)if(motion_fps_values[i]==staged_motion.fps)guest_call(sub_00075430,2,motion_fps_row,(uint32_t)i);

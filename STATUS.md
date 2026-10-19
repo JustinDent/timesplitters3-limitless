@@ -7084,3 +7084,50 @@ multiple simultaneously loaded profiles, and checkpoint-progress saves were not
 exercised here; error routing and the global dirty-flag behavior were reviewed
 against the supported executable. This follow-up establishes frontend Controls
 persistence, not broader save-system or gameplay validation.
+
+
+### Issue 167 PR integration validation (2026-10-19)
+
+[PR #188](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/188)
+contains opt-in presentation/settings work in `ae4775c` and the separate
+Controls Accept fix in `903e33a`. Merge `f973ae9` incorporates main `ade3763`;
+the CI conflict retains both frame/profile and vehicle-generation regressions.
+High-refresh choices remain experimental, existing defaults stay intact, and
+issue #167 remains open pending physical high-refresh smoothness evidence.
+
+Windows 11 x64, MSVC 14.44.35207, D3D11 RTX 4070 SUPER driver 32.0.16.1742,
+pinned runtime `d90c929` and the supported US XBE were used again. At source
+`5626c3d`, the standard Build and its bundled tests passed
+(`logs/issue167-pr-build.log`); EXE SHA256:
+`c3c51f361417a650ee5f8bf7de0359815e26f5fc71a6f1efd5bf447b88dd459d`.
+The launcher Build -Test suite passed (`logs/issue167-pr-launcher.log`).
+Forty-eight targeted patch-transition, clock, interpolation/recovery, prediction,
+config, refresh, motion, profile, FOV and vehicle-generation tests passed in
+254.32 seconds (`logs/issue167-pr-tests.log`).
+
+The isolated in-game settings runner passed save/reopen of 120 FPS/Hz,
+Back/discard and preservation of unrelated settings
+(`logs/issue167-pr-motion-menu.log`). The Controls runner passed again on that
+binary: Accept saved a valid signed profile before quitting directly from
+Settings, relaunch loaded the accepted OFF value, and Cancel preserved the
+same bytes and OFF value across another relaunch
+(`logs/issue167-pr-save-game.log`, `private/test-saves/controls-accept/verification.json`).
+Accepted save SHA256 remains
+`95fdcc0f058e2789dadc9f4f5f41bd570a2eb3b94b1d3ff890e5baae8dd985fc`.
+Canonical fixtures and personal settings/saves were preserved. The user's
+untracked graphics capture remains excluded and unchanged.
+
+The final UI review found that the longer experimental label crowded the
+Motion row. Shortening its title from Smooth motion to Motion is a text-only
+follow-up to `5626c3d`; usage documentation now matches. The standard Build
+and bundled tests passed again (`logs/issue167-pr-label-build.log`), producing
+EXE SHA256 `27ed8177063a608824eb6252ad5b4152124b86cf660ca45aee6af695f223544b`.
+The isolated motion-menu regression passed again on that executable
+(`logs/issue167-pr-label-menu.log`); the reviewed reopened-menu capture shows
+the complete experimental label without overlap.
+
+Physical 120/144 Hz switching and scanout, long Arcade/online coverage,
+multiple simultaneously loaded profiles, actual save-error/retry UI and native
+Mac gameplay remain unverified. CI source/compiler checks do not establish
+physical monitor or native game behavior. This is a review candidate, not a
+published release or a change to main.

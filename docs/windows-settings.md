@@ -39,7 +39,7 @@ For FPS and monitor refresh, open **Settings → Display settings → Smoothness
 refresh** from the main menu, or the same Display settings page under paused
 **Options**. Use left/right on each row:
 
-- **Smooth motion:** 60 FPS (original), 120 FPS (smooth), or 144 FPS (smooth).
+- **Motion:** 60 FPS (original), 120 FPS (experimental), or 144 FPS (experimental).
   **Keep current** preserves a custom/legacy pacing setup. Selecting 120/144
   also enables fullscreen and VRR and keeps the game simulation at 60 Hz.
 - **Monitor refresh:** Desktop rate, 120 Hz if supported, or 144 Hz if supported.
