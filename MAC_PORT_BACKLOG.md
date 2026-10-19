@@ -263,6 +263,16 @@
   gauges use explicit edge anchors, and full-view crosshairs/borders stretch.
   Lock-on box halves and orbiting pieces share their target anchor. Special
   scope rings stay fitted while their gradients/composite cover the output.
+  Issue #152 also extends the title reveal's two outer black 3D panels with
+  the display aspect ratio, preserving the proportional logo and animated wipe.
+  The related white-flash correction on the #152 branch scopes the gameplay white
+  wash and additive flash to the full output, preserving intensity and timing.
+  It uses `pc_display_flash_overlay`, `white-flash-overlay.patch`, and the
+  shared transition hook; coverage is in `tests/flash_overlay.c` and
+  `tests/transition_overlay.c`. The wrapper also enables `TSFP_NATIVE_DISPLAY`.
+  Check explosion flashes at 4:3, widescreen, ultrawide and portrait on Mac;
+  confirm partial/split views and later HUD elements retain their placement.
+  Windows unit/build evidence does not establish Mac visual correctness.
 - **Source:** [Feature branch](https://github.com/TheDoffman/timesplitters-future-perfect-pc/tree/fix/responsive-menu-footer);
   `src/pc_display_ui.inc`, `src/pc_display_menu.h`,
   `menu-footer-background.patch`, `menu-backdrop.patch`,
@@ -273,6 +283,10 @@
   compiled for `TSFP_NATIVE_DISPLAY`; the native renderer already supports this
   placement. The blue sheet uses the shared guest projection setter and restores
   it before subsequent layers. No new operating-system adapter is needed.
+  The #152 title-matte hook also uses `TSFP_NATIVE_DISPLAY`; it adjusts guest
+  vertices directly, without adding renderer placement state or an OS adapter.
+  Its shared coverage is in `tests/title_matte.c` and `test_ui_layout.py`;
+  native startup-animation visual validation remains required.
 - **Remaining:** Run shared regression tests and native visual validation.
   Windows evidence is in the responsive frontend backgrounds and Objectives
   bars/scope masks entries in `STATUS.md`, including the live 3440x1440
@@ -1554,6 +1568,21 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   the bot helpers linked through the menu translation unit; no production
   change or Mac adaptation is needed for this test-only fix. The full Windows
   native CI test selection passed locally (81 tests; see STATUS.md).
+- **Online visibility follow-up (issue #118, uncommitted):**
+  `src/pc_network.c` now retains the locally created and registered session ID
+  for bot snapshots. Online hosts do not receive their own discovery broadcasts,
+  so looking up the host in the XNADDR conversion cache prevented all bot sends.
+  Registration of foreign sessions cannot replace the local ID; unregister,
+  key replacement and disconnect stop use of the preceding session. Guest
+  host/session/match checks and the shared snapshot format remain unchanged.
+  `tests/pc_network.c` covers Online send/receive without self-discovery,
+  rejection and session lifetime. This is the existing Windows transport;
+  no additional Mac adapter is needed now. When MAC-013 is implemented,
+  preserve explicit session ownership rather than relying on self-discovery.
+  Acceptance includes an Online host with an empty address-conversion cache,
+  visible/animated guest bots, combat, respawns and reconnects. See
+  [issue #118 validation](STATUS.md#issue-118-online-bot-session-ownership-2026-10-18).
+  Native Mac execution and other-device synchronization remain unverified.
 - **Merge integration:** PR #108 preserves main's menu-mouse/quit adapters
   alongside network bots. The input harness accepts either absolute cursor
   coordinates or sequenced gameplay motion. Renumbered this entry from MAC-028

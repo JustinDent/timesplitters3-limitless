@@ -27,6 +27,11 @@ static SRWLOCK network_lock = SRWLOCK_INIT;
 static uint32_t local_ip;
 static int bind_specific;
 static unsigned char local_address[36];
+/* The title creates one local session ID, then registers it before hosting.
+   Online does not echo discovery to the host, so its XNADDR conversion cache
+   need never contain the host itself. Keep this lifetime separate from peers. */
+static unsigned char local_session_id[8];
+static int local_session_created,local_session_registered;
 static const unsigned char compatibility[32] = TSFP_NETWORK_COMPATIBILITY;
 static unsigned rejected;
 static void bot_reset(void);
@@ -172,6 +177,8 @@ static void shutdown_locked(void)
 {
     unsigned i;
     bot_reset();
+    memset(local_session_id,0,sizeof local_session_id);
+    local_session_created=local_session_registered=0;
     memset(latency_peers,0,sizeof latency_peers);
     online_latency=-1; online_latency_peers=0; online_latency_updated=0;
     if(!initialized) return;
@@ -284,14 +291,12 @@ void pc_network_bots_send(const PcNetworkBotState *state)
 {
     unsigned i,j;unsigned char data[20+sizeof *state];
     AcquireSRWLockExclusive(&network_lock);
-    if(!initialized || bot_context.role!=1 ||
+    if(!initialized || !local_session_registered || bot_context.role!=1 ||
        !pc_network_bot_state_valid(state,bot_context.humans,bot_context.bots)) goto done;
     memcpy(data,"TSFBAI1",8);memcpy(data+16,&bot_context.match,4);memcpy(data+20,state,sizeof *state);
-    /* The host only resolves its own XNADDR. Connected guests are in the
-       title's sockaddr table, not necessarily in the XNet conversion cache. */
-    for(i=0;i<peer_count;i++) if(peers[i].ip==local_ip) break;
-    if(i==peer_count) goto done;
-    memcpy(data+8,peers[i].key,8);
+    /* Use the registered local session, even before any self-discovery.
+       Guests still validate this ID against the host they actually joined. */
+    memcpy(data+8,local_session_id,8);
     for(i=0;i<bot_target_count;i++) {
         struct sockaddr_in address={0};
         if(bot_targets[i]==local_ip || !bot_targets[i]) continue;
@@ -397,10 +402,19 @@ static uint32_t call_locked(uint32_t va,const uint32_t *a,ptrdiff_t offset)
         p=pointer(a[0],8,offset,1); q=pointer(a[1],16,offset,1); if(!p || !q) return WSAEFAULT;
         if(BCryptGenRandom(NULL,p,8,BCRYPT_USE_SYSTEM_PREFERRED_RNG)<0 ||
            BCryptGenRandom(NULL,q,16,BCRYPT_USE_SYSTEM_PREFERRED_RNG)<0) return WSASYSCALLFAILURE;
-        ((unsigned char *)p)[0]&=0x1f; return 0;
+        ((unsigned char *)p)[0]&=0x1f;
+        memcpy(local_session_id,p,sizeof local_session_id);
+        local_session_created=1;local_session_registered=0;
+        return 0;
     case 0x431716: /* Native PC transport does not use Xbox session encryption. */
-        return pointer(a[0],8,offset,0) && pointer(a[1],16,offset,0) ? 0 : WSAEFAULT;
-    case 0x431721: return 0;
+        p=pointer(a[0],8,offset,0);q=pointer(a[1],16,offset,0);
+        if(!p || !q) return WSAEFAULT;
+        if(local_session_created && !memcmp(p,local_session_id,8)) local_session_registered=1;
+        return 0;
+    case 0x431721:
+        p=pointer(a[0],8,offset,0);if(!p) return WSAEFAULT;
+        if(local_session_created && !memcmp(p,local_session_id,8)) local_session_registered=0;
+        return 0;
     case 0x4317a6:
         p=pointer(a[0],36,offset,1); if(!p) return 0;
         memcpy(p,local_address,36); return 4; /* static address, ready */

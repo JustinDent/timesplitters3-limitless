@@ -93,6 +93,7 @@ int pc_display_transition_overlay(void (*original)(void))
     switch(caller) {
     case 0x0006F227u: case 0x0006F264u: case 0x0006F2F0u:
     case 0x0006F381u: case 0x0006F3ABu: /* Story fades/tints and blackout. */
+    case 0x000FEA07u: /* Additive gameplay white flash (sub_000FE990). */
     case 0x00070755u: /* Loading/startup blackout. */
     case 0x001CF429u: case 0x001CF5E5u: /* Game transition fade out/in. */
     case 0x002BF803u: /* Frontend transition. */
@@ -130,6 +131,24 @@ int pc_display_transition_overlay(void (*original)(void))
     return 1;
 }
 
+/* sub_000F90D0 is the shared white wash used by gameplay flashes. It emits
+ * a viewport-sized textured quad via sub_0001FB40, independently of the solid
+ * fade helper above. Keep its colour, UVs, blend mode and intensity unchanged;
+ * only the completed draw group must escape proportional HUD placement. */
+void pc_display_flash_overlay(void (*original)(void))
+{
+    uint32_t view=WORD_AT(0x007E71C8u);
+    if(!pc_display_wide_now() || !guest_writable(view,0x24) ||
+       WORD_AT(view)!=0 || (WORD_AT(view+4u)!=639 && WORD_AT(view+4u)!=640) ||
+       WORD_AT(view+0x14u)!=0 || (WORD_AT(view+0x18u)!=479 && WORD_AT(view+0x18u)!=480)) {
+        original();return;
+    }
+    int old=ui_placement;uint32_t old_tag=ui_tag;
+    ui_place(1,0x000F90D0u);
+    original();
+    ui_place(old,old_tag);
+}
+
 /* Frontend and Objectives bars mix a black rectangle, two half-width decorative
  * strips and proportional labels. Only its background primitives stretch.
  * Exact US call sites exclude other uses of these common drawing helpers. */
@@ -155,6 +174,32 @@ void pc_display_footer_background(void (*original)(void))
 }
 
 extern void sub_0001C5D0(void);
+/* US title reveal: sub_002BDA00 surrounds the logo with four black 3D
+ * quads. Hor+ exposes the outer edges of the left/right pair. Widen only
+ * their two outer vertices about the camera centre; inner edges still meet
+ * the unchanged logo, and its wipe, depth, colours and timing stay intact.
+ * These are vertex writes inside an open primitive: do not flush or change
+ * renderer placement here. Restore the caller's stack after emission. */
+void pc_display_title_matte(void (*original)(void))
+{
+    uint32_t frame=g_esp,caller=WORD_AT(frame),view=WORD_AT(0x007E71C8u);
+    float scale=pc_display_hud_scale();
+    if((caller!=0x002BDDB4u && caller!=0x002BDE0Au) ||
+       (int32_t)WORD_AT(0x0079094Cu)<=100 || !pc_display_wide_now() ||
+       !(scale>0.f && scale<1.f) || !guest_writable(view,0x24) ||
+       WORD_AT(view)!=0 || (WORD_AT(view+4u)!=639 && WORD_AT(view+4u)!=640) ||
+       WORD_AT(view+0x14u)!=0 || (WORD_AT(view+0x18u)!=479 && WORD_AT(view+0x18u)!=480)) {
+        original();return;
+    }
+    uint32_t saved[2]={WORD_AT(frame+4u),WORD_AT(frame+20u)};
+    float outer[2];memcpy(outer,saved,sizeof outer);
+    outer[0]/=scale;outer[1]/=scale;
+    memcpy(&WORD_AT(frame+4u),&outer[0],4);
+    memcpy(&WORD_AT(frame+20u),&outer[1],4);
+    original();
+    WORD_AT(frame+4u)=saved[0];WORD_AT(frame+20u)=saved[1];
+}
+
 void pc_display_menu_backdrop(void (*original)(void))
 {
     const uint32_t projection=0x0055FA40u;

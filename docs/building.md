@@ -172,6 +172,14 @@ The Windows runtime and Future Perfect target come from
 MIT, third-party license and attribution files; retain them when distributing
 any relevant runtime code. No game data is supplied by this repository.
 
+This project's original work is licensed under GPL-3.0-only; see the
+[README license section](../README.md#license), [LICENSE](../LICENSE) and
+[NOTICE](../NOTICE). Verbatim license, attribution and contributor files for
+the pinned upstream revision are preserved in [LICENSES](../LICENSES/README.md).
+Retain the dependency notices and provide corresponding source and build
+instructions when distributing GPL-covered binaries. The project license does
+not grant rights to the original game or its translated code and assets.
+
 `patches/save-routing.patch` fixes the runtime's device paths for Xbox profile
 storage: Partition1's TDATA and UDATA now use the configured save directory.
 Setup and Build apply it idempotently. Build also runs the native
