@@ -8503,3 +8503,596 @@ recycled six disposable partition images (5,243,406,848 apparent bytes versus
 untracked files are preserved. Changes remain local; other-device sync is
 unverified. Remaining goal work includes matched Khallos fidelity, spirit
 scene acceptance and Windows validation of the unmerged shared changes.
+
+## Issue #167 - Experimental smoother presentation (2026-10-19)
+
+Windows implementation is local and uncommitted on `feature/167-144-fps`, based
+on `d63a156`, with the complete patch stack on pinned upstream `d90c929` and
+the supported US XBE hash checked before each build/test. This adds 120/144 FPS
+host targets while retaining the 60 Hz guest clock and normal game speed.
+Input and simulation still update at the game's rate; this does not establish
+native 120/144 Hz input response.
+
+The Windows renderer previously configured only the fixed c60 projection, so
+extra presents could repeat the same pose. It now configures TSFP's c64-c75
+camera/object transforms. A rational clock keeps the fractional 144/60 phase,
+drops expired deadlines, and omits replaced guest endpoints from Shown. Gate
+interpolation alone reached the target in menus but often fell back to 60 during
+gameplay. The final implementation also predicts from the two completed poses
+during guest CPU work, bounded to one guest interval. Three frame histories plus
+a transient state-only snapshot, separate prediction color/depth buffers, and
+held real-frame feedback images preserve the partial guest frame. During CPU
+prediction, clears/draws into shared effect textures or custom depth targets
+are skipped while the main scene continues; failed/unknown targets still
+disable prediction. Cuts, failed
+matches, movies and slow frames retain a guest fallback. Prediction can produce
+corrections; CPU-deformed effects and screen-space UI retain their original rate.
+
+The launcher exposes experimental Smooth motion targets and a separate supported
+fullscreen monitor refresh selector. Existing interpolation and desktop-rate
+preferences remain the defaults. `Play-Smooth.cmd` provides a temporary 144 FPS
+override (`120` selects 120 FPS) without saving settings. Supported monitor modes
+retain desktop dimensions and are restored on focus loss/exit. The existing crash
+helper also provides independent process-death restoration. Mock adapter tests
+cover supported/unsupported modes, focus/normal/abrupt exits, failed recovery and
+preservation of independent user mode changes. The opt-in physical test skipped
+cleanly: this session exposes a virtual 1920x1080@60 display with no supported
+120/144 Hz mode, despite the GPU's physical-monitor WMI report. Its desktop mode
+remained unchanged. Physical high-refresh scanout/restoration and subjective
+smoothness require testing on the user's local display.
+
+Validation host: Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207 / MSBuild
+17.14.40, Windows SDK 10.0.26100.0, SDL 3.4.16, D3D11 on NVIDIA RTX 4070 SUPER,
+driver 32.0.16.1742. The supported Release build and its native GPU/input/settings
+checks passed. Full launcher regressions passed, including all 35 settings checks.
+The initial selected Python/native suite passed all 76 checks, covering patch
+transitions/tracking, CI routing, interpolation/timing/config/refresh behavior,
+framebuffer sampling and terminal depth. These tests are wired into CI and the
+local Test action; physical mode-switch tests remain explicit opt-in checks.
+The actual interpolation fixture exercises c64 midpoint/predicted poses, camera
+cuts, 2D holds, history selection, and CPU prediction during a partial frame with
+state restoration and no replay of guest geometry. Portable clock tests cover ten
+minutes at each rate and stalled-deadline recovery. A deterministic concurrent
+config test also verifies the renderer waits until settings parsing finishes;
+the old lazy-load race could cache fallback pacing/fullscreen values.
+
+Initial isolated 90-second Test Lab Story runs at 120 and 144 targets reached
+Time to Split, replayed camera input, paused and resumed. Stable gameplay report
+windows submitted about 600 and 720 replays per five seconds respectively while
+guest swaps/vblank remained about 60 Hz. Some scene/phase transitions still
+fall below the target. Capturing BMPs itself introduced stalls, so capture-run
+timing is not used as a steady-rate claim. Reviewed same-guest-frame captures
+show distinct poses and intact scene rendering; this is not a physical display
+or every-effect fidelity test. The test runner isolates saves, controls, both
+display configurations and Discord, checks the canonical fixture, bounds logs
+and captures, and recycles only its own virtual disks. Selected PNG evidence and
+CPU submission CSVs remain in ignored `private/test-saves/high-refresh`.
+Across guest frames 3000-4099, the uncaptured runs measured 119.94 and 144.00
+submissions/second. Median intervals were 8.34 and 6.93 ms, with 99th percentiles
+9.00 and 7.69 ms respectively (`timing-summary.json`). Captures `motion144-a.png`
+and `motion144-b.png` came from the immediately preceding rendering build
+`5494bb66f2ea06e2918c8fdabeca5cc6e5fc53a3b204e77f829236945de6f80e`;
+the initial build added initial-state/offscreen guards and was timed without dumps.
+
+Consistency follow-up: those guards disabled all CPU prediction whenever a
+recorded frame contained an offscreen effect. The original 144 run fell to
+481 and then 306 replays per five seconds around 70-80 seconds, despite the
+guest continuing at 60 Hz. The revised recorder holds only the offscreen
+clears/draws and feedback copies during prediction. Main-scene prediction
+continues with isolated color/depth, and normal guest/legacy effect writes
+remain enabled. Lost targets retain the conservative fallback.
+
+Two uncaptured 120-second isolated runs now cover the previously failing region
+and later gameplay. The 120 run also replays repeated turning, WASD and firing
+from 85-115 seconds. Both observed Story gameplay and pause/resume without an
+early exit or crash. Across guest frames 3000-6799 (about 63 seconds, including
+pause/resume), the measured CPU submission results are:
+
+| Target | Submissions/s | Median interval | 95th percentile | 99th percentile | Longest interval |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 120 | 119.64 | 8.33 ms | 8.82 ms | 9.07 ms | 25.41 ms |
+| 144 | 143.21 | 6.94 ms | 7.50 ms | 7.78 ms | 21.97 ms |
+
+The formerly failing region (guest frames 4200-4699) averaged 119.76/143.64
+submissions per second. The 144 five-second reports now contain 717 and 720
+replays around 70-80 seconds, with about 60 guest swaps/vblank per second.
+These numbers describe CPU submissions, not display scanout or measured input
+latency. Occasional missed slots, loading/cutscene slowdowns and prediction
+corrections remain; constant 144 FPS across every scene is not established.
+Evidence: `logs/issue167-consistency120.log`, `issue167-consistency144.log`, and
+ignored `private/test-saves/high-refresh/consistency-timing.json`; the uncaptured
+144 trace is retained as `144-consistency.csv`.
+
+The new production replay-operation regression checks main-scene continuation,
+preserved effect textures/custom depth, both screen-copy paths and normal
+legacy writes. Mutations removing the clear, ordinary draw, indexed draw or
+screen-copy protection each fail the regression as intended. It is wired into
+the Windows CI suite and local Test action.
+
+Follow-up validation passed 81 checks with one native-Mac-only check skipped
+on Windows (`logs/issue167-consistency-tests.log`). The standard Windows Build
+and its bundled tests passed (`logs/issue167-consistency-build.log`). A third
+120-second run used the 144 target with movement/turning/firing input and
+bounded late captures. Reviewed `consistency144-late-a.png` and
+`consistency144-late-b.png` show terrain, the equipped weapon, stable HUD and
+changing firing/impact effects around guest frames 6000-6031. This is a limited
+visual check, not proof of every effect or high-refresh monitor smoothness.
+Capture timing is excluded from the table above. The 24 temporary BMPs were
+recycled after retaining those two PNGs, and all three runners recycled their
+own disposable disks without changing the Test Lab fixture or personal data.
+
+Current game SHA-256:
+`21decd39f02e6d842609df0bad8686ec8af3555eb45c004a5c9067577a9a6045`.
+Monitor recovery helper:
+`b12740b91189f342d2e131dc0ba34404bfbd83a695cb5bcc743ed57f99d23d41`.
+Launcher app:
+`7a95e8f9029db6bd346ad768e8bccbc87857ac06c2887d66edbfadae2d8bf93a`.
+These are local development binaries, not a published release. Native Mac GPU
+validation is unavailable on this host; existing 2x/default and saved 1x paths
+remain unchanged. New native target/monitor adapters are queued in
+[MAC-049](MAC_PORT_BACKLOG.md#mac-049--fractional-presentation-targets-and-windows-transform-setup-issue-167).
+
+### Performance settings audit and user adjustments (2026-10-19)
+
+Still local/uncommitted on `feature/167-144-fps` at base `d63a156`. Runtime
+source and the tested game binary above are unchanged in this follow-up; no
+additional measured engine FPS gain is claimed. The audit found three setup
+gaps: selecting a target could leave VRR disabled, users could subsequently
+select incompatible game pacing, and the scale UI implied supersampling still
+applied with an explicit output resolution. In fact, `pc_display_scene_size`
+overrides the scaled console dimensions with the chosen output size.
+
+The Windows launcher now has draft-only 60/120/144 setup buttons, coordinating
+game pacing, fullscreen/VRR, 1× console scale, FPS overlay and a supported
+matching refresh request. Output resolution/filtering remain selected by the
+user. Choosing a target enables fullscreen/VRR and disables conflicting pacing
+and legacy multiplier controls. Console scale is inactive with explicit output
+resolution; its existing preference is retained. Current primary-monitor Hz
+and live guidance explain the effective settings, unsupported/mismatched refresh,
+fullscreen/VRR changes, quality reductions and Save/restart. No user settings
+are changed simply by opening the page or cancelling a draft. Mode enumeration
+is a snapshot of the primary display; runtime validation remains on the actual
+game monitor. It does not detect or enable the monitor's VRR feature.
+
+The existing runtime disk shader cache is already enabled by default. The
+uncaptured trace from the previous pass reports 21 vertex programs compiled in
+9 ms total, alongside 4 ms of combiner compilation by the gameplay section;
+that trace does not establish shader compilation as the cause of sustained
+late-game FPS drops. GPU execution/presentation-queue and physical scanout
+measurements remain useful follow-up work. CPU submission counters cannot prove
+that a higher target improves input latency or displayed pacing. Changing the
+60 Hz game clock is not used as a performance adjustment.
+
+Validation on the same Windows/MSVC host: `tools/build-launcher.ps1 -Test`
+passed all launcher suites, including 37 isolated settings checks. New cases
+exercise each preset, draft/Cancel behavior, saved graphics preservation,
+restoring 60 FPS, refresh capability filtering, active/inactive console scale,
+and guidance reacting to VRR/fullscreen. A rendered settings-page preview was
+visually checked at 1000×900 (`build/issue167/performance-settings.png`).
+Additional CI-routing and Windows display-model checks passed (see
+`logs/issue167-performance-settings-tests.log`). No automated gameplay run
+or runtime rebuild was required for these launcher-only changes. Mac UI/GPU
+adaptation remains queued in MAC-049.
+
+Updated launcher app SHA-256:
+`c9a6f7bc848a36ac5d620a4bd76695bf4faa2552743f16728effee259269250b`.
+Build evidence: `logs/issue167-performance-settings-build.log`; rendered UI
+check: `logs/issue167-performance-preview.log`. The source usage guide now
+explains the recommended adjustment order and the limits of the FPS counters.
+
+### In-game smoothness controls and GPU investigation (2026-10-19)
+
+Local/uncommitted on `feature/167-144-fps`, base `d63a156`. Windows Display
+settings now includes a Smoothness / refresh page with original 60 FPS and
+experimental 120/144 FPS, plus Desktop/120/144 Hz. Changes are staged, saved
+atomically to the launcher's runtime configuration and applied on next launch.
+Back discards edits. Reopening reads the saved preferences; resolution/FOV,
+comments and unknown runtime settings survive a save. The high-FPS choices
+coordinate fullscreen, VRR and 60 Hz guest pacing. Read/write errors receive
+explicit feedback. Native Mac UI/file/renderer adaptation remains MAC-049.
+
+The next investigation separated CPU redraw, GPU elapsed redraw and Present
+call time. Official Intel PresentMon 2.6.0, filtered to the isolated game PID,
+completed a bounded 120-second capture but returned no events/CSV in this
+session (`logs/issue167-presentmon144.log`). Its downloaded console binary
+has a valid Intel signature and SHA-256
+`b2a706bc6ad475749e3b7e3409263aa1e6906d45bdcf993f6dbc0f660188f1af`.
+This result provides no ETW/display timing evidence.
+
+The additive presentation-timing patch and `src/pc_gpu_timing.inc` therefore
+add an opt-in D3D11 probe (`TSFP_GPU_TRACE`). Sixteen timestamp/disjoint query
+slots are polled without flushing or waiting, with at most 20,000 samples.
+No queries/files are allocated when disabled. Timestamps bracket interpolated
+redraw plus resolve, excluding the guest frame and simulation. These are
+elapsed GPU spans, potentially including idle bubbles, not GPU busy time.
+
+Two isolated 120-second Test Lab first-mission runs used pause/resume and
+movement/turning/firing input, without screenshots or concurrent builds.
+Hardware: Windows 11 x64, MSVC 14.44.35207, D3D11 on RTX 4070 SUPER,
+driver 32.0.16.1742, 1280×720 rendering. The active virtual display still
+offers 1920×1080 at 60 Hz rather than supported 120/144 Hz modes.
+The table covers guest frames 3000–6799, matching submission timestamps
+within 4 ms and rejecting incomplete CSV rows:
+
+| Target | Samples | CPU redraw median / p99 | GPU span median / p99 / max | Present median / p99 |
+| --- | ---: | --- | --- | --- |
+| 120 FPS | 7,575 | 0.402 / 0.679 ms | 1.403 / 2.496 / 4.697 ms | 0.053 / 0.123 ms |
+| 144 FPS | 9,127 | 0.398 / 0.670 ms | 1.406 / 2.503 / 5.020 ms | 0.052 / 0.110 ms |
+
+There were no invalid GPU timestamps, Present errors or skipped probe slots
+in these windows. Redraw cost has headroom relative to the 8.33/6.94 ms target
+intervals in this tested scene, and Present does not show substantial CPU
+blocking. This does not rule out heavier scenes, original guest-frame GPU
+work, queueing or display pacing. DXGI frame statistics contained no useful
+nonzero display counts/QPC, so physical scanout and latency remain unmeasured.
+The next useful hardware check is on a real 120/144 Hz VRR display with
+working presentation/display telemetry, comparing the same scene at both
+targets. No additional FPS gain is claimed from adding this diagnostic.
+
+Evidence: `logs/issue167-gpu120.log`, `issue167-gpu144.log` and ignored
+`private/test-saves/high-refresh/{120,144}-gpu.csv`, corresponding CPU traces
+and `gpu-summary.json`. The runners isolated saves, both display configurations,
+controls and Discord, bounded logs/duration, recycled only their disposable
+disks and preserved the canonical Test Lab fixture.
+
+The standard Windows Build and bundled tests passed
+(`logs/issue167-ingame-build.log`). Patch transitions/tracking, CI routing,
+clock/interpolation/prediction, initialization, refresh and menu regressions
+passed 86 checks (`logs/issue167-ingame-final-tests.log`). The actual menu
+check exposed native restoration of old row IDs overwriting motion choices;
+the adapter now reapplies saved choices after that restoration, and the
+fixture reproduces it. Long feedback is displayed inside the menu because
+the original header region cannot fit it. After these fixes, the affected
+menu/FOV/persistence/layout suite passed 17 checks
+(`logs/issue167-menu-final-tests.log`) and the standard Build passed again.
+
+`tests/motion_settings_game.py` passed a bounded 64-second actual frontend
+check: Display → Smoothness, save 120 FPS/120 Hz, reopen, then change and
+discard. Reviewed `private/test-saves/motion-menu/{display,smoothness,saved,
+reopened}.png` show readable labels, a visible restart message and restored
+120 FPS/120 Hz choices. Both shared frontend/paused entry points use this
+same page; the new live check exercised the frontend entry. The isolated
+configuration retained its comment/unknown key and the PC display file was
+unchanged. Its temporary BMPs and disposable disks were removed/recycled;
+the canonical fixture and personal files were preserved.
+
+GPU runs used game SHA-256
+`40409b503b8ad607afd33c1136e1c6fe13077c69d3ff6174c1720aa8345efc67`.
+The final menu-only fixes were built and live-tested with game SHA-256
+`afffbd870e1c3f8d9991ee2f2df68d22139076d988aacb67b3730e974e6adfba`.
+The timing probe and renderer are unchanged between these binaries. Helper
+and launcher hashes remain as recorded above. No release was published and
+native Mac GPU validation remains unavailable.
+
+### Stability and recovery audit (2026-10-19)
+
+Local/uncommitted on `feature/167-144-fps`, base `d63a156`. The audit found two
+recoverable failures in the current high-refresh work:
+
+- Refresh restoration treated a failed `EnumDisplaySettingsW` query as if the
+  user had independently changed the display. It cleared pending restoration
+  and disarmed the crash watchdog. `src/pc_refresh.c` now retains both until
+  the mode can be inspected, restored, or confirmed to have changed separately.
+  The failure-injection test failed before the fix and passes after it; it also
+  verifies failed restoration, subsequent success and watchdog event state.
+- A single failed extra render-target acquisition permanently disabled
+  interpolation. Its callers then calculated redraw costs from the previous
+  successful present timestamp. The additive `interpolation-recovery.patch`
+  returns an explicit success result, keeps failed draws out of timing/counters,
+  and restores prediction state before returning. Windows 120/144 targets use
+  normal guest frames and retry at most once per second, allowing recovery
+  without restarting. Legacy/native disable-on-failure behavior is preserved.
+  Tests exercise failure and recovery in the real interpolation implementation,
+  all three scheduling paths, cooldown allocation throttling, guest-present
+  fallback, unchanged timing/slot counters and preserved guest recording/state.
+
+The standard Windows Build and bundled tests passed
+(`logs/issue167-recovery-build.log`); the initial five targeted recovery/clock
+checks passed (`logs/issue167-recovery-tests.log`). Monitor failure evidence:
+`logs/issue167-refresh-failure-before.log`. These injected renderer/monitor
+failures are deterministic fixtures, not physical device-loss or cable tests.
+Native GPU validation is unavailable and adaptation is recorded in MAC-049.
+
+Built game SHA-256:
+`3fa073aa5c8bbe6577a0da84ebdd6b6708a8184f86afd0c6db57e1c429ba1e56`.
+Host remains Windows 11 x64, MSVC 14.44.35207, D3D11/RTX 4070 SUPER,
+driver 32.0.16.1742, verified US XBE and pinned runtime `d90c929` plus the
+complete additive patch stack. The active virtual monitor is still 60 Hz.
+
+Full affected patch-transition/tracking, interpolation/prediction, clock and
+monitor recovery checks passed 38 tests
+(`logs/issue167-recovery-final-tests.log`). The new failure cases are part of
+the existing CI/local Test fixtures. `tests/high_refresh_game.py --resources`
+adds bounded five-second samples of the owned child process's private commit,
+working set and handle count; it supports isolated runs up to ten minutes.
+The API/structure follows Microsoft's
+[process memory counters](https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-process_memory_counters_ex).
+These process metrics do not measure dedicated GPU memory.
+
+A 300-second isolated 144-target Story run passed with initial movement,
+turning/firing and verified pause/resume, followed by continued gameplay.
+There were no logged crashes, unresolved calls or interpolation-target
+failures. In the 36 resource samples from 120–295 seconds, private commit
+ranged from 346,218,496 to 352,382,976 bytes (330.2–336.1 MiB); handles ranged
+from 730 to 741 and ended at 732. The last sample was the minimum private
+commit, so this window shows no sustained growth trend. The last logged
+five-second interval submitted 719 interpolation redraws while guest swaps
+remained at 60 FPS. This is host submission evidence, not physical scanout.
+The initial part overlapped the regression process, so this run is a
+stability observation rather than a controlled performance benchmark.
+
+Evidence: `logs/issue167-stability144.log`, ignored
+`private/test-saves/high-refresh/144-stability-resources.json`,
+`144-stability-states.json` and bounded stdout/stderr/CPU submission trace.
+No screenshots or GPU trace were requested. Both configurations, saves,
+controls and Discord were isolated; only this child was terminated after
+300 seconds. Its disposable disks were recycled and the canonical Test Lab
+fixture check passed. Existing GPU investigation traces were preserved under
+their original tags.
+
+Remaining coverage: repeated level/menu transitions and save/load loops,
+multiple Arcade/online maps, longer sessions and real-monitor Alt-Tab,
+resolution changes and disconnect/reconnect. This short first-mission run
+does not establish leak-free behavior or physical GPU/device-loss recovery.
+
+### Transition, profile reload and window checks (2026-10-19)
+
+Completed an approximately ten-minute operator-steered session using the same
+Windows build `3fa073aa5c8bbe6577a0da84ebdd6b6708a8184f86afd0c6db57e1c429ba1e56`
+and verified US XBE. Source remains local/uncommitted at base `d63a156` on
+`feature/167-144-fps`; Windows 11 x64, MSVC 14.44.35207, pinned runtime
+`d90c929`, D3D11/RTX 4070 SUPER driver 32.0.16.1742. This follow-up changes
+test tooling and usage documentation, not the game binary.
+
+`tests/stability_transitions_game.py` uses only a disposable Test Lab copy,
+isolated controls/both display configs/Discord, bounded per-process logs and
+renderer captures. Its recorded command sequence and state snapshots are in
+`private/test-saves/stability-transitions`. Reviewed captures and read-only
+scene observations verify:
+
+- Time to Split loaded (scene 2), restarted through the original Restart Level
+  confirmation and returned to level selection. Scotland the Brave then loaded
+  (scene 4) and returned to level selection. These are short scene/transition
+  checks, not mission completion or checkpoint-progress validation.
+- The owned game changed windowed → fullscreen → windowed. Minimize/restore
+  produced actual foreground loss and reacquisition, with rendering continuing.
+  Fullscreen used the game's Alt+Enter message path; this was not physical
+  keyboard Alt-Tab testing. Captures are renderer output, not desktop scanout.
+- Paused Display settings applied and kept 1280×540 from 1280×720. A subsequent
+  1280×720 preview timed out and restored the saved 1280×540. Rendering resumed,
+  and 1280×540 persisted across relaunches.
+- Three process relaunches returned exit code 0. After a committed profile
+  change, Inverse look OFF was visible on two successive relaunches. Both
+  local profile files retain valid runtime HMAC signatures; the canonical
+  fixture remains unchanged. Final child shutdown and disposable-disk/BMP
+  cleanup completed. No logged crashes, unresolved calls, Direct3D errors or
+  unavailable interpolation-target failures occurred in these runs.
+
+The save check found a usage trap: choosing Accept in original Controls applies
+the draft but does not immediately persist it. Closing the game while still
+in Settings lost the change in the first check. Accept followed by Back out of
+Settings to the main menu wrote the profile, and subsequent reloads retained
+it. The Windows usage guide now spells out this sequence. No guest autosave
+behavior was changed. This finding does not apply to F2 Save & Close or the
+explicit PC Display save/confirmation paths.
+
+The disposable seed was also written by the game into a second slot with the
+same Test Lab label. The test explicitly selected the game-written slot for
+reload checks. The original exploration logger tracked only the seed file, so
+its `Profile changed: False` refers to that preserved seed, not the active
+saved profile. The harness now inventories all signed profile files. Separate
+post-run verification confirms active slot `1AD19156651F` hash
+`0beb845a9f298483202468e85c651934c526a06b00d798874d311bf24b6027a3`, while seed
+slot `16D15BD8D404` retains the canonical hash. Neither the canonical fixture
+nor personal saves were edited.
+
+Evidence: `logs/issue167-transitions.log`,
+`logs/issue167-transition-evidence.log`; the owned run's `report.json`,
+`states.json`, `saved-profiles.json`, bounded `run*.err` and selected PNGs
+including `level-reloaded`, `scotland-active`, `resolution-kept`,
+`resolution-timeout`, `saved-off-reloaded` and `saved-off-second-reload`.
+Nine fixture-isolation tests passed (`logs/issue167-transition-fixture-tests.log`)
+and the final harness passes Python syntax checking. This operator-steered
+exploration is not an unattended regression that proves every scenario by itself.
+
+The physical refresh runner attempted 120 Hz, found it unavailable at the
+active virtual monitor's current resolution, and left 1920×1080 at 60 Hz
+unchanged (`logs/issue167-refresh-transition-live.log`). Real 120/144 Hz
+switching/restoration, cable reconnects, physical Alt-Tab, dedicated GPU-memory
+growth, checkpoint saves, longer sessions and broader Arcade/online map coverage
+remain unverified. Native Mac equivalents remain pending in MAC-049.
+
+
+### Controls Accept save follow-up (2026-10-19)
+
+Fixed the frontend Controls persistence caveat found in the transition run.
+US `sub_002CBD20` copies the accepted draft into the selected profile and sets
+`0x78AD24 & 0x10000`, but originally waits until leaving Settings to write it.
+The new additive `controls-accept-save.patch` wraps that commit, and shared
+`src/pc_profile_accept.inc` calls the original `sub_001922D0` save workflow
+immediately afterward, returning to Settings on success. It retains the guest
+signature validation, save-error/retry UI and all-profile save pass. The dirty
+flag is global, so restricting that pass to one profile would incorrectly clear
+other pending commits. Cancel never enters this hook; draft edits remain outside
+the committed profile data. Existing pause-menu Controls behavior is unchanged.
+
+Source remains local/uncommitted on `feature/167-144-fps` at base `d63a156`,
+continuing its stability investigation. The complete additive stack was applied
+and guest sources regenerated by the standard Windows Build action. Final EXE:
+`build/windows/Release/futureperfect_recomp.exe`, SHA256
+`d29331d18cd967e9c9d2142f7350b66bf86ff9b50c93c3ade5f06732d40275d9`.
+Host: Windows 11 x64, MSVC 14.44.35207, pinned runtime `d90c929`, D3D11 on
+RTX 4070 SUPER (driver 32.0.16.1742), supported US XBE SHA256
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+
+Validation:
+
+- Standard Build and bundled controls/display/network/debug tests passed;
+  `logs/controls-accept-build.log`.
+- Fourteen patch-transition tests plus profile routing and Auto Lookahead
+  regressions passed (16 total), `logs/controls-accept-tests.log`. After the
+  final all-profile adjustment, profile routing, Auto Lookahead and full
+  display-settings regressions passed again (3),
+  `logs/controls-accept-final-tests.log`. The routing fixture checks commit-before-
+  save order, the all-profile sentinel, frontend/dirty/reentrancy/profile/menu
+  guards, and leaving save-result handling with the original workflow.
+- `python tests/profile_accept_game.py` passed against the final executable.
+  It drives the bounded isolated `stability_transitions_game.py` runner with
+  `--run-name controls-accept`; saves, controls, both display configs, Discord
+  and input are isolated under `private/test-saves/controls-accept`.
+  Inverse Look ON → OFF → Accept wrote a signed profile before process exit.
+  Only body byte 6 changed (`FF` → `FE`), plus its signature. The game was
+  closed directly from Settings; after relaunch the loaded Controls draft and
+  reviewed renderer capture both showed OFF. Changing it back to ON and choosing
+  Cancel left all saved bytes unchanged; another relaunch again showed OFF.
+- Both relaunch exits and the final close returned zero. No crash, unresolved
+  indirect call or RHI error appeared in bounded logs. Temporary disk images and
+  BMPs were recycled; selected PNGs and `verification.json` remain. Canonical
+  Test Lab fixture and the user's `frame000.d3dcap` hash remain unchanged.
+  No personal save or settings file was used.
+
+Evidence: `logs/controls-accept-evidence.log`, `logs/controls-accept-game.log`,
+the owned run's `report.json`, `verification.json`, `saved-profiles.json`, and
+`accepted-settings.png`, `accepted-reloaded.png`, `cancel-selected.png`,
+`cancel-reloaded.png`. The accepted save SHA256 is
+`95fdcc0f058e2789dadc9f4f5f41bd570a2eb3b94b1d3ff890e5baae8dd985fc`.
+The renamed fixture's game-written slot is explicitly selected on relaunch;
+the repeatable driver recycles only that known disposable slot before a new
+run, because general fixture preparation intentionally retains extra slots.
+
+Usage is updated in `docs/windows-settings.md`: Accept is sufficient before
+quitting from frontend Settings. Native shared code is implemented but Mac
+execution remains unverified (MAC-050). Actual disk-full/save-error/retry UI,
+multiple simultaneously loaded profiles, and checkpoint-progress saves were not
+exercised here; error routing and the global dirty-flag behavior were reviewed
+against the supported executable. This follow-up establishes frontend Controls
+persistence, not broader save-system or gameplay validation.
+
+
+### Issue 167 PR integration validation (2026-10-19)
+
+[PR #188](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/188)
+contains opt-in presentation/settings work in `ae4775c` and the separate
+Controls Accept fix in `903e33a`. Merge `f973ae9` incorporates main `ade3763`;
+the CI conflict retains both frame/profile and vehicle-generation regressions.
+High-refresh choices remain experimental, existing defaults stay intact, and
+issue #167 remains open pending physical high-refresh smoothness evidence.
+
+Windows 11 x64, MSVC 14.44.35207, D3D11 RTX 4070 SUPER driver 32.0.16.1742,
+pinned runtime `d90c929` and the supported US XBE were used again. At source
+`5626c3d`, the standard Build and its bundled tests passed
+(`logs/issue167-pr-build.log`); EXE SHA256:
+`c3c51f361417a650ee5f8bf7de0359815e26f5fc71a6f1efd5bf447b88dd459d`.
+The launcher Build -Test suite passed (`logs/issue167-pr-launcher.log`).
+Forty-eight targeted patch-transition, clock, interpolation/recovery, prediction,
+config, refresh, motion, profile, FOV and vehicle-generation tests passed in
+254.32 seconds (`logs/issue167-pr-tests.log`).
+
+The isolated in-game settings runner passed save/reopen of 120 FPS/Hz,
+Back/discard and preservation of unrelated settings
+(`logs/issue167-pr-motion-menu.log`). The Controls runner passed again on that
+binary: Accept saved a valid signed profile before quitting directly from
+Settings, relaunch loaded the accepted OFF value, and Cancel preserved the
+same bytes and OFF value across another relaunch
+(`logs/issue167-pr-save-game.log`, `private/test-saves/controls-accept/verification.json`).
+Accepted save SHA256 remains
+`95fdcc0f058e2789dadc9f4f5f41bd570a2eb3b94b1d3ff890e5baae8dd985fc`.
+Canonical fixtures and personal settings/saves were preserved. The user's
+untracked graphics capture remains excluded and unchanged.
+
+The final UI review found that the longer experimental label crowded the
+Motion row. Shortening its title from Smooth motion to Motion is a text-only
+follow-up to `5626c3d`; usage documentation now matches. The standard Build
+and bundled tests passed again (`logs/issue167-pr-label-build.log`), producing
+EXE SHA256 `27ed8177063a608824eb6252ad5b4152124b86cf660ca45aee6af695f223544b`.
+The isolated motion-menu regression passed again on that executable
+(`logs/issue167-pr-label-menu.log`); the reviewed reopened-menu capture shows
+the complete experimental label without overlap.
+
+Physical 120/144 Hz switching and scanout, long Arcade/online coverage,
+multiple simultaneously loaded profiles, actual save-error/retry UI and native
+Mac gameplay remain unverified. CI source/compiler checks do not establish
+physical monitor or native game behavior. This is a review candidate, not a
+published release or a change to main.
+
+### Renderer and PC presentation integration (2026-10-19)
+
+Focused branch `codex/renderer-main-integration` depends on the unmerged
+renderer/scene stack at `a0a89f5` and merges main `4d5b3f0` (PR #188) into that
+branch only. Main is not changed by this work. The integration is recorded
+on this focused branch; prior scene results apply to their original builds,
+not this one.
+
+The independent PC timing patches assumed the old replay implementation.
+Their integrated forms now apply after the common renderer stack, preserve
+successful-present return values/counts and use the shared per-subresource
+replay-depth cache for CPU prediction as well as gate replay. They do not
+replace guest depth views with a second platform-specific mechanism. Paired
+capture requests stay pending during CPU prediction, whose guest image is
+incomplete. Both title entry and interpolation setup use the shared register
+layout helper. Windows monitor API includes/enumeration remain host adapters.
+
+The launcher retains Mac's 2x default and saved 1x preferences. Saved PC target
+and monitor-rate fields survive unrelated native settings edits even though
+Mac does not activate those fields. The native capability remains unavailable;
+Mac keeps its existing 60/up-to-120 presentation path and 60 Hz guest clock.
+Backlog IDs MAC-054/055 distinguish PR #188's additions from existing spirit
+and build-restoration records. CI retains both sets of behavioral checks.
+
+Validation so far on Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, pinned Vulkan
+SDK 1.4.363.0/MoltenVK and .NET 8.0.426:
+
+- Clean patch application and repeated application passed. The recorded old
+  PC and native renderer stacks each upgrade, downgrade and re-upgrade while
+  retaining an unrelated source edit (two regression cases).
+- Native launcher builds; 19 regression groups pass, including a new PC-field
+  preservation/default-capability case. No personal settings were used.
+- Shared renderer/frame-clock/profile-save checks: 23 passed. The retry test
+  covers failed begins, cooldown, failed presents and accepted-present counts;
+  the capture test rejects partial-frame prediction evidence.
+- Asset-free MoltenVK resource/shader/presentation/replay checks passed. Their
+  injected device-loss result is expected test coverage, not a gameplay fault.
+  Existing unsupported primitive-restart warnings remain. These tests alone
+  do not establish the actual Xbox device prediction-depth behavior.
+- The first native rebuild exposed a Windows monitor header included through
+  the shared-controls define. The include is now restricted to its Windows
+  adapter. The rebuilt native executable passes all three platform/MMIO/path
+  CTests and renderer/input/settings/debug self-tests. The actual Xbox device
+  contract also passes prediction color/depth/stencil preservation and unsafe
+  custom-target rejection. The final 150-case Python run had 147 passes, two
+  host skips and one historical-fixture dependency failure; after correcting
+  that fixture, the targeted migration/backlog/CI rerun passed all 50 cases.
+  Thus all 148 applicable cases passed across the run and targeted rerun.
+  The read-only launcher prerequisite check passed. Windows compilation/runtime
+  and hosted CI remain pending.
+
+Validation executable SHA-256:
+`f3e85f5cdc4d5b38cc2e3728f349b797c699e2f80a94940b8b4ea0caaa5e86b3`.
+BUILD.json records `a0a89f5` plus the integration working tree; all runtime-input
+hashes and the executable hash match. Native test cleanup recycled twelve known
+partition images (10,486,813,696 apparent bytes, 8,192 allocated bytes), preserving
+profiles and metadata.
+
+Logs use `logs/renderer-integration-*`. A 4.9 MiB source-only patch fixture and
+604 KiB patch inputs were used; no duplicate game extract or build tree.
+Pre-build free space was 220 GiB. Personal saves/settings and the other chat's
+launcher worktree are preserved. Khallos matched-reference fidelity, spirits,
+full scene coverage and other-device synchronization remain unverified.
+
+The integrated build also completed a **95.17-second** isolated Khallos run,
+exit 0, with no Vulkan validation errors, shader failures or native fault.
+Synthetic navigation reached the mission and produced a complete pair before
+guest frame 4556 at blend 0.659900094. Both retained PNGs were reviewed: train
+stairs/railings, weapon, HUD, trees and sky remain visible. Muted sky and moving
+scenery streaks remain; no matched PC/Xbox fidelity claim or sky fix is made.
+The summary's `rendered_game_verified: false` is an automated placeholder;
+this paragraph records the separate human-readable image review.
+
+Images: `private/captures/native-mac/integration-khallos-{guest,midpoint}.png`;
+receipt/logs: `logs/shared-khallos-integration-120-*`. The final counter sample
+records at least 5,481 guest and 4,719 interpolated successful presents, zero
+skips/failures. Loading, validation and diagnostic readback are included, so
+this is not a 120 FPS benchmark. Six disposable partitions were recycled
+(5,243,406,848 apparent bytes; 135,168 allocated bytes). Captures allocate
+179,600 KiB, below 256 MiB. Protected settings and controls-fixture hashes
+match the pre-existing baseline. Windows and hosted CI remain pending.

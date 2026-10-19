@@ -2,6 +2,7 @@
 from pathlib import Path
 import importlib.util
 import io
+import json
 import shutil
 import subprocess
 import sys
@@ -58,6 +59,33 @@ def test_fresh_checkout_and_repeated_build(checkout):
     assert snapshot(checkout) == complete
 
 
+@pytest.mark.parametrize('history', ['pc-presentation', 'native-renderer'])
+def test_integrate_independent_presentation_stacks(checkout, tmp_path, history):
+    """Both recorded pre-integration builds migrate to identical shared code."""
+    histories = json.loads((ROOT / 'tests/fixtures/renderer-patch-stacks.json').read_text())
+    prior = tmp_path / 'prior-patches'
+    prior.mkdir()
+    for name in histories[history]['patches']:
+        source = PATCHES / name
+        if name.endswith(('-144-fps.patch', '-presentation-timing.patch',
+                          '-interpolation-recovery.patch')):
+            source = PATCHES / 'legacy' / name
+        shutil.copyfile(source, prior / name)
+    installer.apply_patches(checkout, prior)
+    installer.apply_patches(checkout, PATCHES)
+    integrated = snapshot(checkout)
+    # Downgrade and re-upgrade through recorded bytes, retaining unrelated edits.
+    manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
+    manual.write_bytes(manual.read_bytes() + b'\n/* integration-local edit */\n')
+    installer.apply_patches(checkout, prior)
+    installer.apply_patches(checkout, PATCHES)
+    expected = integrated[Path('titles/futureperfect/src/recomp_manual.c')] + b'\n/* integration-local edit */\n'
+    assert manual.read_bytes() == expected
+    integrated[Path('titles/futureperfect/src/recomp_manual.c')] = expected
+    assert snapshot(checkout) == integrated
+    assert installer.apply_patches(checkout, PATCHES) == []
+
+
 def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
@@ -100,6 +128,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-special-weapon-overlays.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-transition-overlay.patch'):
             continue  # Requires the display wrapper, absent in this historical state.
+        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch')):
+            continue  # Depends on native/shared renderer context added by the full migration below.
         if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
             apply(checkout, patch.name)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'

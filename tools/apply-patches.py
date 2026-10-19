@@ -56,6 +56,16 @@ def patch_records(paths):
     if identity and discord:
         paths.remove(identity)
         paths.insert(paths.index(discord) + 1, identity)
+    # The independently developed PC presentation series extends replay and
+    # present handling. Apply its integrated form after the shared renderer
+    # stack; recorded prior bytes/order still unwind older Windows/Mac builds.
+    for suffix in ('-144-fps.patch', '-presentation-timing.patch',
+                   '-interpolation-recovery.patch', '-controls-accept-save.patch',
+                   '-shared-presentation-integration.patch'):
+        patch = next((p for p in paths if p.name.endswith(suffix)), None)
+        if patch:
+            paths.remove(patch)
+            paths.append(patch)
     records = []
     for patch in paths:
         # Native boot wraps the SDK library block; networking adds a separate

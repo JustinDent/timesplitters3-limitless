@@ -37,7 +37,18 @@ static int interpolation_depth_device_test(IDirect3DDevice8 *dev) {
         IDirect3DSurface8 *ds=target?custom:automatic;
         DEPTH_CHECK(SUCCEEDED(dev->lpVtbl->SetRenderTarget(dev,NULL,ds)));
         DEPTH_CHECK(SUCCEEDED(dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL,0xFF0000FF,.25f,7)));
-        for(int replay=0;replay<2;replay++) {
+        if (target) {
+            DEPTH_CHECK(!xbox_D3D8InterpCanPredict());
+            xbox_D3D8InterpPredict(TRUE);
+            DEPTH_CHECK(!xbox_D3D8InterpBegin());
+            xbox_D3D8InterpPredict(FALSE);
+            DEPTH_CHECK(depth_pixel(dev,0,0,255));
+        }
+        for(int replay=0;replay<(target?2:3);replay++) {
+            if (replay==2) {
+                DEPTH_CHECK(xbox_D3D8InterpCanPredict());
+                xbox_D3D8InterpPredict(TRUE);
+            }
             DEPTH_CHECK(xbox_D3D8InterpBegin());
             DEPTH_CHECK(!xbox_D3D8InterpBegin()); /* nested begin must preserve the active replay */
             dev->lpVtbl->SetRenderState(dev,D3DRS_STENCILENABLE,TRUE);
@@ -55,6 +66,7 @@ static int interpolation_depth_device_test(IDirect3DDevice8 *dev) {
             /* End must restore the original binding even if replay leaves no depth. */
             DEPTH_CHECK(SUCCEEDED(dev->lpVtbl->SetRenderTarget(dev,NULL,NULL)));
             xbox_D3D8InterpEnd();xbox_D3D8InterpEnd();
+            xbox_D3D8InterpPredict(FALSE);
             DEPTH_CHECK(SUCCEEDED(dev->lpVtbl->GetDepthStencilSurface(dev,&restored)) && restored==ds);
             restored->lpVtbl->Release(restored);restored=NULL;
             DEPTH_CHECK(depth_pixel(dev,0,0,255)); /* guest color survived */

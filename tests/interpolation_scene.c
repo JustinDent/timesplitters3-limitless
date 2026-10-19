@@ -1,5 +1,6 @@
 /* Real HLE matrix preparation and per-draw upload, without game assets. */
 #define main present_contract_main
+#define TSFP_TEST_TITLE_REGISTERS 1
 #include "interpolation_present.c"
 #undef main
 #include "graphics/tsfp_interpolation.h"

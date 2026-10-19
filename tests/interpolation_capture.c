@@ -16,6 +16,12 @@ int main(void){
     environment("RECOMP_INTERP_CAPTURE_PREFIX","pair");
     g_on=1;hle_d3d8_interp_rec=1;g_swaps=41;dump_result=0;
     request("0");assert(redraw(.5));assert(!strcmp(operations,"BOPE"));
+    /* CPU prediction starts from a partial guest image: defer the request
+     * until a complete guest/intermediate pair is available. */
+    hle_d3d8_interp_predicting=1;
+    request("1");assert(redraw(1.1));assert(!strcmp(operations,"BOPE"));
+    FILE *pending=fopen("request.txt","r");assert(pending && fgetc(pending)=='1');fclose(pending);
+    hle_d3d8_interp_predicting=0;
     request("1");assert(redraw(.5));assert(!strcmp(operations,"GBMOPE"));
     metadata("\"complete\":true");metadata("\"guest_frame\":42");metadata("\"blend\":0.500000000");
     FILE *f=fopen("request.txt","r");assert(f && fgetc(f)=='0');fclose(f);

@@ -23,6 +23,13 @@ int recomp_config_int(const char *env_name,const char *key,int fallback){
     (void)env_name;(void)key;(void)fallback;unexpected_hook("configuration");return 0;
 }
 void xbox_Nv2aFlipGateSetIdle(xbox_FlipGateIdleFn fn){(void)fn;unexpected_hook("gate installation");}
+#ifndef TSFP_TEST_TITLE_REGISTERS
+void xbox_D3D8SetInterpRegisters(int p,int a,int n){(void)p;(void)a;(void)n;unexpected_hook("title registers");}
+#endif
+void xbox_SetRecompIdle(void (*fn)(void)){(void)fn;unexpected_hook("CPU prediction installation");}
+const char *xbox_Nv2aFlipGateModeName(void){unexpected_hook("gate mode");return "60";}
+BOOL xbox_D3D8InterpCanPredict(void){unexpected_hook("CPU prediction target");return FALSE;}
+void xbox_D3D8InterpPredict(BOOL on){(void)on;unexpected_hook("CPU prediction state");}
 static int begin_ok=1,present_ok=1,begins,presents,ends,overlays;
 static char operations[256];static unsigned operation_count;
 static void operation(char value){assert(operation_count+1<sizeof operations);operations[operation_count++]=value;operations[operation_count]=0;}
@@ -65,6 +72,20 @@ int main(void) {
         assert(g_slot==2 && g_redraw_est==100 && g_redraws==0);
         assert(g_presents_total==1 && hle_d3d8_interp_rec==1);
     }
-    puts("PASS: HLE present outcome counts, restore on failure and stale-timestamp rejection");
+    /* The PC target clock must keep the same failure/counting contract,
+     * while retrying unavailable targets at most once per second. */
+    g_target=144;g_replayed=0;g_on=1;g_frame_ok=1;g_retry_after=0;
+    begin_ok=0;present_ok=1;
+    int before=begins;
+    assert(!redraw(.5) && g_on && begins==before+1 && !g_frame_ok);
+    assert(!hle_d3d8_interp_skip_guest() && g_replayed==0);
+    assert(!redraw(.5) && begins==before+1);
+    clock_ticks+=g_qpf;begin_ok=1;present_ok=0;g_frame_ok=1;
+    assert(!redraw(.5) && begins==before+2 && g_replayed==0);
+    assert(!hle_d3d8_interp_skip_guest() && g_presents_total==1);
+    present_ok=1;assert(redraw(.5) && g_replayed==1 && g_presents_total==2);
+    assert(hle_d3d8_interp_skip_guest());
+    g_target=0;
+    puts("PASS: HLE present outcome counts, bounded retry, restore on failure and stale-timestamp rejection");
     return 0;
 }

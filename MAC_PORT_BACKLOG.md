@@ -30,6 +30,14 @@ historical STATUS records retain their original identifiers and dates.
 | Native build watermark | MAC-034 on native stack | MAC-051 |
 | Network bots | MAC-028, then MAC-033 on main | MAC-052 |
 | Discord Rich Presence | MAC-048 on main | MAC-053 |
+| Fractional presentation / monitor refresh | MAC-049 in PR #188 | MAC-054 |
+| Frontend Controls Accept persistence | MAC-050 in PR #188 | MAC-055 |
+
+`codex/renderer-main-integration` depends on the unmerged native renderer stack
+at `a0a89f5` and integrates main `4d5b3f0` (PR #188). The two new IDs above
+preserve the existing spirit and native-build entries. Historical PC validation
+records keep their original IDs. Combined-host acceptance is recorded separately
+in [STATUS](STATUS.md#renderer-and-pc-presentation-integration-2026-10-19).
 
 Main's MAC-032 menu backgrounds, MAC-033 transition fades, MAC-034 issue-form
 handoff and MAC-048 vehicle joins retain their IDs. MAC-026 remains proportions.
@@ -180,6 +188,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-051 | Version and build-identity watermark | Awaiting validation |
 | MAC-052 | Experimental network bot setup (issue #25) | Queued |
 | MAC-053 | Discord Rich Presence (issue #63) | Awaiting validation |
+| MAC-054 | Fractional presentation targets and Windows transform setup (issue #167) | Queued |
+| MAC-055 | Persist accepted frontend Controls before quitting Settings | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -2402,6 +2412,118 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   infer native support from the Windows results below.
 - **PC evidence:** See [issue #63 validation](STATUS.md#issue-63---discord-rich-presence-2026-10-19)
   and [detailed activity validation](STATUS.md#issue-63---detailed-discord-activity-2026-10-19).
+
+### MAC-054 — Fractional presentation targets and Windows transform setup (issue #167)
+
+- **Status:** Queued
+- **Integration boundary (2026-10-19, `codex/renderer-main-integration`):** The PC timing patches
+  now apply after the shared renderer series and reuse its replay-depth helper
+  and successful-present accounting. CPU prediction cannot consume a capture
+  request for a complete guest/intermediate pair. Native builds retain 1x/2x
+  rendering with a 60 Hz guest clock; the requested Mac maximum remains 120.
+  The launcher preserves saved PC `frame_target`/`refresh_rate` values during
+  unrelated native edits without advertising their activation. Windows monitor
+  enumeration stays in its host adapter; Mac reports desktop-only/unknown until
+  a real native monitor adapter is implemented. No 144 FPS Mac mode is added.
+  See [integration validation](STATUS.md#renderer-and-pc-presentation-integration-2026-10-19).
+- **PC behavior:** Experimental fixed host clocks for 120/144 FPS, independent
+  of the 60 Hz console clock. TSFP's c64–c75 camera/object matrices are now
+  configured for Windows replay; projecting alone did not interpolate motion.
+  A rational timer preserves the fractional 144/60 phase, drops expired slots,
+  omits replaced guest endpoints from Shown, and predicts transforms for no more
+  than one guest interval during CPU work. Three history lists keep both
+  completed poses and the partial guest frame; a fourth transient list saves
+  host state. Separate prediction color/depth buffers preserve partial geometry;
+  feedback copies retain the latest real-frame image. During CPU prediction,
+  clears and draws to shared effect textures/custom depth are held while the
+  main scene continues. This avoids the earlier collapse toward 60 presents
+  when a frame included an offscreen effect. Failed/unknown targets still
+  disable prediction. This write guard is Windows-only; legacy/native replay
+  keeps its normal effect writes.
+  Unsafe matches/cuts and movies use
+  guest fallback. This is a target, not a guarantee for every scene or machine.
+  Fullscreen monitor refresh can separately select supported 120/144 Hz modes
+  without changing desktop resolution. Window focus/exit restores the prior
+  rate, with a sleeping helper for process-death recovery.
+- **Settings follow-up:** Windows launcher provides explicit 60/120/144 setups
+  that coordinate pacing, fullscreen, VRR, console scale, the FPS overlay and
+  supported monitor requests. Live guidance identifies refresh/fullscreen/VRR
+  mismatches. Explicit output resolution overrides console scale in the shared
+  display model, so the UI disables that inactive control without losing its
+  preference. Current primary-monitor Hz is visible. Buttons edit a draft;
+  Save/restart applies it. Mac adaptation should present the equivalent native
+  controls and validate its actual scene-size behavior before copying this UI.
+- **In-game controls and diagnostics:** Windows Display settings now includes
+  Smoothness / refresh with 60/120/144 FPS and Desktop/120/144 Hz choices,
+  atomic save for next launch, restart feedback and Back/discard. The Windows
+  file writer preserves unknown runtime settings; a native file adapter and
+  native presentation-target support are still needed before exposing this
+  submenu on Mac. The optional D3D11 GPU timestamp probe is Windows-only;
+  native GPU timing needs the corresponding renderer API and real hardware.
+- **Recovery follow-up:** Windows 120/144 targets now fall back to guest
+  frames after an unavailable interpolation target and retry at most once
+  per second. Failed redraws do not update timing from a stale present stamp;
+  prediction restores guest state before returning. The shared legacy/native
+  path retains its disable-on-target-failure policy and saved 1x/default 2x
+  behavior. Native adoption of retry needs real-GPU resource-failure tests.
+  Windows refresh restoration retains its pending state and crash guard if
+  monitor enumeration temporarily fails. Mac needs its own mode-restore
+  lifecycle adapter. Source: additive `interpolation-recovery.patch`,
+  `src/pc_refresh.c`, `tests/frame_interpolation.c`, `tests/pc_refresh.c`.
+- **Transition evidence:** Windows `tests/stability_transitions_game.py` has
+  exercised two Story scenes, level restart/menu return, paused resolution
+  keep/timeout, window/focus changes and profile persistence over relaunches.
+  The original Controls save-delay finding is addressed by MAC-055 below.
+  Native equivalents and physical high-refresh monitor tests
+  remain unverified; see the latest STATUS.md transition evidence.
+- **Source:** `ae4775c` on `feature/167-144-fps`, [PR #188](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/188); the additive `144-fps.patch`,
+  `src/pc_frame_clock.h`, `pc_refresh.c`, `pc_refresh_guard.h`, `tools/crash_helper.c`,
+  launcher `GameSettings.cs` / `SettingsPage.cs` / `DisplayModes.cs`,
+  `tests/frame_interpolation.c`, `prediction_targets.c`, `frame_clock.c`,
+  `high_refresh_game.py`, `motion_settings_game.py`, `src/pc_display_menu.c`,
+  `pc_motion_settings.inc`, `pc_gpu_timing.inc`, `presentation-timing.patch` and
+  [Windows settings usage](docs/windows-launcher.md).
+- **Existing Mac support:** Native defaults still use 2x interpolation, with
+  saved `frame_interp = 1` preserved. Its bridge already sets c60/c64–c75.
+  Shared config read/write retains `frame_target` and `refresh_rate`, but target activation,
+  endpoint prediction/waiting, skipped guest presents and launcher UI are
+  Windows-only. Shared timing math has a portable native-compiler regression;
+  native renderer/GPU validation has not been run on this Windows host.
+- **Remaining adaptation:** Decide the native presentation targets supported
+  by the attached monitor, integrate its host presentation clock and bounded
+  boundary prediction, expose native preferences and separate guest/shown
+  counters. Adapt monitor-mode enumeration and temporary switching/restoration
+  to macOS APIs. Preserve existing 60/120 behavior while evaluating the new mode.
+- **Acceptance:** Run existing native real-GPU/declaration/screen-copy tests,
+  portable clock/config tests, isolated Story and Arcade camera pans, pause,
+  menu/movie transitions and a slow-frame recovery check. Confirm distinct
+  midpoint poses, stable HUD, retained preferences and a 60 Hz guest clock.
+  Record CPU submission statistics separately from measured monitor scanout;
+  do not infer Mac support or constant 144 FPS from Windows results.
+- **PC evidence:** [Implementation and validation](STATUS.md#issue-167---experimental-smoother-presentation-2026-10-19).
+
+### MAC-055 — Persist accepted frontend Controls before quitting Settings
+
+- **Status:** Awaiting validation
+- **Behavior:** Accept in main-menu Settings → Controls commits the draft,
+  then immediately invokes the original signed-profile save and error-dialog
+  workflow. Cancel retains the prior saved controls. The all-profile save pass
+  preserves pending accepted edits because the guest's dirty flag is global.
+  Pause-menu controls retain their existing behavior.
+- **Source:** `903e33a` on `feature/167-144-fps`, [PR #188](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/188), continuing the stability
+  investigation there: additive `controls-accept-save.patch`,
+  `src/pc_profile_accept.inc`, `src/pc_display_menu.c` / `.h`,
+  `tests/profile_accept.c`, `tests/test_profile_accept.py`, and the Windows
+  isolated integration runner `tests/profile_accept_game.py`.
+- **Existing Mac support:** Hook and guest save routing use shared source under
+  `TSFP_NATIVE_DISPLAY`; no new OS adapter is needed. Windows compilation and
+  execution do not establish native Mac save/menu behavior.
+- **Acceptance:** Build the complete stack on Mac, run the portable routing
+  regression, then use isolated profiles to change Inverse Look, Accept, close
+  directly from Settings, and reload. Repeat with Cancel and verify unchanged
+  signed bytes. Validate save-error/retry UI and multiple loaded profiles;
+  ensure no draft is committed by Cancel. Preserve personal saves and configs.
+- **PC evidence:** See the Controls Accept save follow-up in STATUS.md.
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 

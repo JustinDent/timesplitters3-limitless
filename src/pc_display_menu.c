@@ -285,6 +285,13 @@ static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static uint32_t resolution_row, aspect_row;
 static ULONGLONG deadline;
 static char status[192];
+#ifdef _WIN32
+#include "pc_motion_settings.inc"
+static PcMotionSettings staged_motion;
+static uint32_t motion_fps_row,motion_refresh_row;
+static const int motion_fps_values[]={0,60,120,144};
+static const int motion_refresh_values[]={0,120,144};
+#endif
 /* Fixed backing storage survives transitions and renderer references. */
 #define TEXT_BYTES 192
 #define TEXT_ADDRESS(i) (storage+64u+(uint32_t)(i)*TEXT_BYTES)
@@ -308,6 +315,8 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     restore_registers(&r);
     return result;
 }
+#include "pc_profile_accept.inc"
+
 /* Recreate only a missing guest body using the same constructor as the
  * original Arcade initializer. Keep the existing actor-list entry and scores;
  * never run guest AI decisions or add a duplicate entry to 0x7A3580. */
@@ -577,9 +586,34 @@ static void labels(void)
         fov_label();
         guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),2u,0x400u,0u,0u,FOV_DRAW_CB);
         guest_call(sub_00079710,1,1u);
-        row(3,"Apply settings"); row(4,"Reset FOV to 55"); row(5,"Back");
+        row(3,"Apply settings"); row(4,"Reset FOV to 55");
+#ifdef _WIN32
+        guest_call(sub_00079D60_gen,6,text_at(9,"Smoothness / refresh"),6u,0u,0u,SELECT_CB,0u);
+#endif
+        row(5,"Back");
     } else if(page==1) { row(0,"Keep resolution"); row(1,"Revert"); }
-    else row(0,"Back");
+#ifdef _WIN32
+    else if(page==3) {
+        const char *fps_labels[]={"Keep current", "60 FPS (original)","120 FPS (experimental)","144 FPS (experimental)"};
+        const char *hz_labels[]={"Desktop rate","120 Hz if supported","144 Hz if supported"};
+        motion_fps_row=guest_call(sub_00079D60_gen,6,text_at(7,"Motion"),0u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        for(int i=0;i<4;i++)guest_call(sub_000717D0,1,text_at(12+i,"%s",fps_labels[i]));
+        for(int i=0;i<4;i++)if(motion_fps_values[i]==staged_motion.fps)guest_call(sub_00075430,2,motion_fps_row,(uint32_t)i);
+        motion_refresh_row=guest_call(sub_00079D60_gen,6,text_at(8,"Monitor refresh"),1u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        for(int i=0;i<3;i++)guest_call(sub_000717D0,1,text_at(16+i,"%s",hz_labels[i]));
+        for(int i=0;i<3;i++)if(motion_refresh_values[i]==staged_motion.refresh)guest_call(sub_00075430,2,motion_refresh_row,(uint32_t)i);
+        row(2,"Save for next launch");row(3,"Back (discard changes)");
+    }
+#endif
+    else {
+#ifdef _WIN32
+        /* Long feedback does not fit the original narrow page-header region. */
+        guest_call(sub_00079D60_gen,6,text_at(10,"%s",status),1u,0u,0u,SELECT_CB,0u);
+#endif
+        row(0,"Back");
+    }
 }
 static void read_resolution(void)
 {
@@ -595,8 +629,14 @@ static void build_menu(void)
     /* The builder uses a 0..100 percentage canvas (sub_000771D0 centres
        at (100-width)/2), not the painter's 640-unit coordinates. Reserve
        75% for label + longest resolution + arrows without clipping rows.
-       Confirmation/error pages keep their original 55% width. */
-    guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",page?status:"Display settings"),bits(page?55.f:75.f),0u,BACK_CB);
+       Resolution confirmation keeps its original 55% width. */
+    const char *title=page?status:"Display settings";
+    float width=page==0 || page==3?75.f:55.f;
+#ifdef _WIN32
+    if(page==3)title="Smoothness";
+    if(page==2){title="Display settings";width=75.f;}
+#endif
+    guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",title),bits(width),0u,BACK_CB);
     guest_call(sub_00071B10,4,1u,bits(2.f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
     labels(); guest_call(sub_000771D0,1,menu);
@@ -614,6 +654,16 @@ static void refresh(int next,int selected)
         guest_call(sub_00075430,2,aspect_row,(uint32_t)selected_aspect);
         guest_call(sub_00075430,2,resolution_row,(uint32_t)selected_mode);
     }
+#ifdef _WIN32
+    if(page==3 && motion_fps_row && motion_refresh_row) {
+        /* These IDs also belonged to aspect/resolution on the previous page.
+           Restore the saved motion choices after the guest restores old IDs. */
+        for(int i=0;i<4;i++)if(motion_fps_values[i]==staged_motion.fps)
+            guest_call(sub_00075430,2,motion_fps_row,(uint32_t)i);
+        for(int i=0;i<3;i++)if(motion_refresh_values[i]==staged_motion.refresh)
+            guest_call(sub_00075430,2,motion_refresh_row,(uint32_t)i);
+    }
+#endif
     guest_call(sub_000770E0,2,current_menu,(uint32_t)selected);
 }
 static void leave(void)
@@ -665,13 +715,36 @@ static void select_callback(void)
                 snprintf(status,sizeof status,"Cannot apply"); refresh(2,0);
             }
         } else if(selected==4) { staged_fov=PC_FOV_DEFAULT; fov_label(); }
+#ifdef _WIN32
+        else if(selected==6) {
+            if(pc_motion_load(&staged_motion)) { snprintf(status,sizeof status,"Smoothness - restart required");refresh(3,0); }
+            else { snprintf(status,sizeof status,"Cannot read performance settings");refresh(2,0); }
+        }
+#endif
         else if(selected==5) leave();
     } else if(page==1) {
         if(selected==0) {
             if(pc_display_save()) { deadline=0; refresh(0,0); }
             else { revert(); if(!deadline) { snprintf(status,sizeof status,"Save failed"); refresh(2,0); } }
         } else revert();
-    } else refresh(0,0);
+    }
+#ifdef _WIN32
+    else if(page==3) {
+        if(selected==2) {
+            unsigned f=WORD_AT(motion_fps_row+0xc8),h=WORD_AT(motion_refresh_row+0xc8);
+            if(f<4 && h<3) {
+                staged_motion.fps=motion_fps_values[f];staged_motion.refresh=motion_refresh_values[h];
+                int saved=pc_motion_save(staged_motion);
+                const char *override=getenv("RECOMP_FRAME_TARGET");
+                snprintf(status,sizeof status,saved?
+                    (override && *override?"Saved - restart without FPS override":"Saved - restart game to apply"):
+                    "Save failed - settings unchanged");
+                refresh(2,0);
+            }
+        } else if(selected==3)refresh(0,0);
+    }
+#endif
+    else refresh(0,0);
     restore_registers(&r); g_esp+=4;
 }
 static void tick_menu(void)
