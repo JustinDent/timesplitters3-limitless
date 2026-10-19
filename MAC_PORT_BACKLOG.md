@@ -1070,6 +1070,18 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Windows title-bar theme experiment (2026-10-18, branch
+  `feature/system-theme-title-bars`):** `tools/launcher/WindowTheme.cs` attaches
+  to the main WPF and startup windows; `src/pc_window_theme.h` and
+  `src/pc_controls.c` apply Windows app mode to the game caption at startup and
+  on settings/theme notifications. Interior colors and window styles are
+  preserved; unsupported DWM attributes fall back to the standard title bar.
+  No Mac adapter is needed for this Windows-specific DWM feature; existing
+  Cocoa title bars are unchanged and their appearance is not validated here.
+  Acceptance: light/dark preference changes while both Windows apps are open,
+  high-contrast fallback, windowed/fullscreen transitions and clean shutdown.
+  [Validation](STATUS.md#windows-title-bar-theme-experiment).
+
 - **Status:** Queued
 - **Repair / Verify and Diagnostics tabs (2026-10-17, commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98)):** Merged as `860dccd`, prepared for launcher v1.2.12. `MaintenancePage.cs`, `Launcher.cs`/XAML
   and the shared `PageTheme.cs` tab styling group both pages behind one Repair /
