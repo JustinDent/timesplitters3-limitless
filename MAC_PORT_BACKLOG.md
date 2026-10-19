@@ -1275,6 +1275,18 @@ Copy this template into the queue for each new entry. Replace all placeholders.
   and full provenance must be transferred privately, not through Git. Windows
   preview/package validation is recorded in STATUS.md; Mac remains unverified.
 
+- **Minimize on process start (2026-10-19, `fix/launcher-minimize-on-start`):**
+  `tools/launcher/Launcher.cs` minimizes the Windows launcher immediately after
+  a successful game process start, keeps its taskbar button and restores the
+  previous window state when the game exits. Failed process creation stays
+  visible; update cleanup still requires an observed window and clean exit.
+  `tests/launcher_lifecycle` covers delayed windows, early exits, taskbar
+  availability and restoration. Mac does not use this WPF window lifecycle;
+  native Dock/minimization parity remains queued with this entry. Acceptance:
+  native process start minimizes the launcher without hiding its Dock entry,
+  early failure restores it, and UI visibility never authorizes update cleanup.
+  Windows results are in STATUS.md; native Mac execution remains unverified.
+
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**
   `src/pc_menu_theme.h`, `src/pc_dialog_theme.h`, `src/pc_settings.c` and

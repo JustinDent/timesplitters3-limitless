@@ -157,6 +157,28 @@ Evidence: ignored `build/launcher-lock-validation.log` and build output in
 No native Mac execution, release publication or exact public ZIP upgrade is
 claimed for this change.
 
+## Launcher minimizes when the game process starts (2026-10-19)
+
+Windows x64 change on `fix/launcher-minimize-on-start`, based on main `c006c24`.
+The launcher now minimizes to the taskbar once its launched game process is
+running, instead of waiting for executable-path/window detection. It restores
+the previous normal/maximized state when that process exits. Failed process
+creation leaves it visible. Window detection is retained independently for
+successful-session cleanup, so a windowless clean exit cannot discard recovery
+files. This branch is independent of `fix/launcher-transaction-lock`.
+
+.NET Framework x64 compilation with required private artwork passed. Five
+isolated WPF lifecycle checks passed: normal and maximized initial states with
+delayed game windows, early nonzero exit, clean windowless exit and missing-game
+start failure. They assert immediate minimization, retained taskbar availability,
+state restoration and cleanup eligibility using synthetic files/processes.
+The lifecycle harness's reflection call now supplies the report argument added
+to MonitorGame by crash reporting. Evidence is in ignored
+`build/launcher-minimize-validation.log` and `build/launcher-minimize-lifecycle.log`.
+No real game or personal files were used; no actual gameplay, native Mac
+execution, publication or installed-launcher replacement is claimed. MAC-021
+records the native lifecycle adaptation still needed.
+
 ## Launcher v1.2.16 release preparation (2026-10-19)
 
 Prepared from main `4a489af`, which includes the reviewed crash/session changes
