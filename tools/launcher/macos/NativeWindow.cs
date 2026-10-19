@@ -183,7 +183,8 @@ namespace TimeSplitters.Launcher
             string mode=args.First(a=>a.StartsWith("--render-"));int at=Array.IndexOf(args,mode);string output=args[at+1];
             if(mode.Contains("settings")){ShowSettings();if(mode.Contains("graphics"))settings.SelectTab(1);if(mode.Contains("discord"))settings.SelectTab(2);}
             if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance(mode.Contains("diagnostics"));
-            if(mode.Contains("news")){var panel=Heading("RELEASE CENTER","What’s new","Published changes for your game and launcher, all in one place.");NativeMarkdown.Render(panel,"# Native Mac launcher\n\n**Discord Rich Presence**, *native crash reports* and `local diagnostics` now share Windows behavior.\n\n- Keeps your saves and settings\n- Supports [release details](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases)\n\n> Nothing is uploaded automatically.\n\n1. Install the launcher\n2. Import your game\n3. Play\n\n```text\nNative Mac • Apple Silicon\n```\n\n---");Find<ContentControl>("NewsHost").Content=Scroll(panel);Page("NewsHost");}
+            if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}
+            if(mode.Contains("game-data"))Find<Expander>("GameDataExpander").IsExpanded=true;
             await Task.Delay(350);var visual=(Control)Content;visual.Measure(new Size(1152,772));visual.Arrange(new Rect(0,0,1152,772));using(var bitmap=new RenderTargetBitmap(new PixelSize(1152,772),new Vector(96,96))){bitmap.Render(visual);bitmap.Save(output);}Close();
         }
     }

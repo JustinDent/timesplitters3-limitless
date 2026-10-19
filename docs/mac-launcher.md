@@ -108,11 +108,13 @@ app. It never starts the game or uses personal saves/settings. The workflow runs
 these checks on an ARM64 Mac runner alongside existing Windows launcher checks.
 
 The executable also supports `--render-preview output.png`,
+`--render-game-data-preview output.png` (expanded Home game-data section),
 `--render-settings-preview output.png`, `--render-settings-graphics output.png`,
 `--render-settings-discord output.png`, `--render-news-preview output.png`,
 `--render-diagnostics-preview output.png`, and `--render-repair-preview output.png`.
 Pass an explicitly disposable `--root` when rendering settings. Preview mode
-performs no network requests, startup cleanup or saves. Run actual game tests
+performs no network requests, startup cleanup or saves. The news preview renders
+the actual page controls, including its toolbars and release selector. Run actual game tests
 through `tools/test-native-mac.py` with its isolated paths and bounded duration;
 do not automate Play against personal saves.
 

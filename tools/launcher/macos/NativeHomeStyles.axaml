@@ -1,0 +1,81 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <!-- Host template for PageTheme's compact, unboxed Windows expander. -->
+    <ControlTheme x:Key="GameDataHeaderTheme" TargetType="ToggleButton">
+      <Setter Property="HorizontalAlignment" Value="Stretch"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border x:Name="HeaderFace" Background="Transparent" BorderBrush="Transparent"
+                  BorderThickness="1" Padding="0,3">
+            <Grid ColumnDefinitions="22,*">
+              <Path x:Name="Chevron" Data="M0,0 L4,4 L0,8" Stroke="#A7D9FA"
+                    StrokeThickness="1.5" HorizontalAlignment="Left" VerticalAlignment="Center"
+                    RenderTransformOrigin="50%,50%"/>
+              <ContentPresenter Grid.Column="1" Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}"
+                                Foreground="{TemplateBinding Foreground}"
+                                RecognizesAccessKey="True"/>
+            </Grid>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+      <Style Selector="^:checked /template/ Path#Chevron">
+        <Setter Property="RenderTransform"><RotateTransform Angle="90"/></Setter>
+      </Style>
+      <Style Selector="^:focus-visible /template/ Border#HeaderFace">
+        <Setter Property="BorderBrush" Value="#A7D9FA"/>
+      </Style>
+      <Style Selector="^:pointerover /template/ Border#HeaderFace">
+        <Setter Property="Background" Value="#1D354A"/>
+      </Style>
+    </ControlTheme>
+  </Styles.Resources>
+  <Style Selector="Expander#GameDataExpander">
+    <Setter Property="MinHeight" Value="0"/>
+    <Setter Property="MinWidth" Value="0"/>
+    <Setter Property="Padding" Value="0"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="VerticalAlignment" Value="Top"/>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <StackPanel>
+          <ToggleButton x:Name="GameDataHeader" Theme="{StaticResource GameDataHeaderTheme}"
+                        Content="{TemplateBinding Header}" ContentTemplate="{TemplateBinding HeaderTemplate}"
+                        Foreground="{TemplateBinding Foreground}" FontSize="{TemplateBinding FontSize}"
+                        IsChecked="{TemplateBinding IsExpanded, Mode=TwoWay}"/>
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            IsVisible="{TemplateBinding IsExpanded}"/>
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <!-- Preserve the Windows transparent link face even when rollback is disabled. -->
+  <Style Selector="Button#RollbackButton">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border x:Name="RollbackFace" Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="3" Padding="{TemplateBinding Padding}">
+          <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}"
+                            Foreground="{TemplateBinding Foreground}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"/>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button#RollbackButton:pointerover /template/ Border#RollbackFace">
+    <Setter Property="Opacity" Value="0.8"/>
+  </Style>
+  <Style Selector="Button#RollbackButton:focus-visible /template/ Border#RollbackFace">
+    <Setter Property="BorderBrush" Value="#FFFFFF"/>
+  </Style>
+  <Style Selector="Button#RollbackButton:pressed /template/ Border#RollbackFace">
+    <Setter Property="Opacity" Value="0.6"/>
+  </Style>
+  <Style Selector="Button#RollbackButton:disabled /template/ Border#RollbackFace">
+    <Setter Property="Opacity" Value="0.38"/>
+  </Style>
+</Styles>

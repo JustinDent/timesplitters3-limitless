@@ -29,6 +29,7 @@ def generate(source,destination):
  for selector,values in [('TabItem',{'FontSize':'13','Padding':'16,12'}),('Button',{'HorizontalAlignment':'Stretch','CornerRadius':'3'}),('Expander',{'HorizontalAlignment':'Stretch','Background':'Transparent'}),('ComboBox',{'Background':'#102031','BorderBrush':'#416685','Foreground':'#E4EDF5'})]:
   style=ET.SubElement(styles,'{'+A+'}Style',{'Selector':selector})
   for key,value in values.items():ET.SubElement(style,'{'+A+'}Setter',{'Property':key,'Value':value})
+ ET.SubElement(styles,'{'+A+'}StyleInclude',{'Source':'/NativeHomeStyles.axaml'})
  root.insert(1,styles)
  root.find('{'+W+'}Grid').set('Background','#0B1420')
  for element in root.iter():

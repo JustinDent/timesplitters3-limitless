@@ -11,19 +11,22 @@ namespace TimeSplitters.Launcher
     {
         public readonly Control View;readonly ReleaseClient client;readonly string root;readonly Func<bool> preview;
         readonly StackPanel body=new StackPanel(),issues=new StackPanel();readonly TextBlock status,issueStatus;
-        bool launcher;readonly Button gameTab,launcherTab;readonly Button releaseLink;readonly ComboBox edition=new ComboBox{ItemsSource=new[]{"Available release","Installed release"},SelectedIndex=0};
+        bool launcher;readonly Button gameTab,launcherTab;readonly Button releaseLink;readonly ComboBox edition=new ComboBox{ItemsSource=new[]{"Available release","Installed release"},SelectedIndex=0,MinWidth=190,MinHeight=38,Margin=new Thickness(0,0,0,10)};
         readonly CancellationTokenSource lifetime=new CancellationTokenSource();ReleaseNews news;KnownIssues known;bool loading,issuesLoading;
         public NativeNews(string root,ReleaseClient client,Func<bool> preview)
         {
             this.root=root;this.client=client;this.preview=preview;
             var layout=new Grid{RowDefinitions=new RowDefinitions("Auto,*,Auto"),Margin=new Thickness(30,24,30,20)};
             var heading=NativeWindow.Heading("RELEASE CENTER","What's new","Published changes for your game and launcher, all in one place.");heading.Margin=new Thickness(0);layout.Children.Add(heading);
-            var tabs=new WrapPanel{Margin=new Thickness(0,10,0,6)};gameTab=NativeWindow.Button("Game releases",()=>Select(false));launcherTab=NativeWindow.Button("Launcher releases",()=>Select(true));tabs.Children.Add(gameTab);tabs.Children.Add(launcherTab);tabs.Children.Add(edition);heading.Children.Add(tabs);edition.SelectionChanged+=(s,e)=>Render();
+            var tabs=new WrapPanel{Margin=new Thickness(0,10,0,6)};gameTab=Button("Game releases",()=>Select(false));launcherTab=Button("Launcher releases",()=>Select(true));tabs.Children.Add(gameTab);tabs.Children.Add(launcherTab);tabs.Children.Add(edition);heading.Children.Add(tabs);edition.SelectionChanged+=(s,e)=>Render();
             var panel=new StackPanel();panel.Children.Add(body);var knownPanel=Section(panel,"Known issues");knownPanel.Children.Add(NativeWindow.Text("Current open GitHub reports labeled bug, across all versions."));knownPanel.Children.Add(issues);
-            issueStatus=NativeWindow.Text("Open this page to check the bug tracker.",12);knownPanel.Children.Add(issueStatus);var issueActions=new WrapPanel();issueActions.Children.Add(NativeWindow.Button("Refresh issues",async()=>await RefreshIssues()));issueActions.Children.Add(NativeWindow.Button("View bug tracker ↗",()=>NativeHost.Open(KnownIssues.TrackerUrl)));knownPanel.Children.Add(issueActions);
+            issueStatus=NativeWindow.Text("Open this page to check the bug tracker.",12);knownPanel.Children.Add(issueStatus);var issueActions=new WrapPanel();issueActions.Children.Add(Button("Refresh issues",async()=>await RefreshIssues()));issueActions.Children.Add(Button("View bug tracker ↗",()=>NativeHost.Open(KnownIssues.TrackerUrl)));knownPanel.Children.Add(issueActions);
             var scroll=NativeWindow.Scroll(panel);Grid.SetRow(scroll,1);layout.Children.Add(scroll);
-            var footer=new StackPanel{Margin=new Thickness(0,12,0,0)};var actions=new WrapPanel();actions.Children.Add(NativeWindow.Button("Refresh notes",async()=>await Refresh()));releaseLink=NativeWindow.Button("View release on GitHub ↗",()=>{var r=Selected();if(r!=null)NativeHost.Open(r.Url);});actions.Children.Add(releaseLink);footer.Children.Add(actions);status=NativeWindow.Text("Refresh to load published release notes.",12);footer.Children.Add(status);Grid.SetRow(footer,2);layout.Children.Add(footer);View=layout;Render();
+            var footer=new StackPanel{Margin=new Thickness(0,12,0,0)};var actions=new WrapPanel();actions.Children.Add(Button("Refresh notes",async()=>await Refresh()));releaseLink=Button("View release on GitHub ↗",()=>{var r=Selected();if(r!=null)NativeHost.Open(r.Url);});actions.Children.Add(releaseLink);footer.Children.Add(actions);status=NativeWindow.Text("Refresh to load published release notes.",12);footer.Children.Add(status);Grid.SetRow(footer,2);layout.Children.Add(footer);View=layout;Render();
         }
+        // Match WhatsNewPage toolbar gaps, including when the row wraps.
+        static Button Button(string label,Action action)
+        {var button=NativeWindow.Button(label,action);button.Margin=new Thickness(0,0,10,10);button.Padding=new Thickness(14,9);button.MinHeight=38;return button;}
         static StackPanel Section(StackPanel parent,string title){var p=new StackPanel{Spacing=6};p.Children.Add(NativeWindow.Text(title,20));parent.Children.Add(new Border{Child=p,Padding=new Thickness(20),Margin=new Thickness(0,0,0,16),CornerRadius=new CornerRadius(6),Background=Brush.Parse("#14283B"),BorderBrush=Brush.Parse("#2D455C"),BorderThickness=new Thickness(1)});return p;}
         void Select(bool value){launcher=value;edition.SelectedIndex=news!=null&&(launcher?news.Launcher:news.Game)==null&&(launcher?news.InstalledLauncher:news.InstalledGame)!=null?1:0;Render();}
         Release Selected(){return news==null?null:edition.SelectedIndex==0?(launcher?news.Launcher:news.Game):(launcher?news.InstalledLauncher:news.InstalledGame);}
@@ -42,7 +45,7 @@ namespace TimeSplitters.Launcher
             if(issuesLoading||lifetime.IsCancellationRequested)return;issuesLoading=true;
             try{using(var timeout=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)){timeout.CancelAfter(TimeSpan.FromSeconds(25));var next=await client.ReadKnownIssues(timeout.Token);if(lifetime.IsCancellationRequested)return;known=next;issues.Children.Clear();
                 if(known.Items.Length==0)issues.Children.Add(NativeWindow.Text("No open issues labeled bug were returned. This does not mean every version is bug-free."));
-                foreach(var issue in known.Items){var button=NativeWindow.Button("",()=>NativeHost.Open(issue.Url));var text=NativeWindow.Text("#"+issue.Number+"  "+issue.Title,13);text.Margin=new Thickness(0);button.Content=text;button.HorizontalAlignment=HorizontalAlignment.Stretch;button.HorizontalContentAlignment=HorizontalAlignment.Left;issues.Children.Add(button);}
+                foreach(var issue in known.Items){var button=Button("",()=>NativeHost.Open(issue.Url));var text=NativeWindow.Text("#"+issue.Number+"  "+issue.Title,13);text.Margin=new Thickness(0);button.Content=text;button.HorizontalAlignment=HorizontalAlignment.Stretch;button.HorizontalContentAlignment=HorizontalAlignment.Left;issues.Children.Add(button);}
                 issueStatus.Text=known.Items.Length+" open bug reports · Checked "+known.CheckedUtc.ToLocalTime().ToString("g");}}
             catch(Exception){if(!lifetime.IsCancellationRequested)issueStatus.Text=known==null?"Could not check GitHub. Refresh or open the bug tracker.":"Could not refresh. Showing issues checked "+known.CheckedUtc.ToLocalTime().ToString("g")+"; reports may have changed.";}
             finally{issuesLoading=false;}
