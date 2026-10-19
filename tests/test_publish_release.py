@@ -335,7 +335,23 @@ def test_failed_build_prevents_packaging_and_publication(publisher, monkeypatch)
     monkeypatch.setattr(publisher, 'run', fail_build)
     with pytest.raises(RuntimeError, match='build failed'):
         module.Publisher.build_package(publisher)
-    assert len(commands) == 2 and not publication_calls(publisher)
+    assert commands[0] == [publisher.python, '-m', 'pip', 'install', '-r',
+                           publisher.root/'requirements.txt']
+    assert len(commands) == 3 and not publication_calls(publisher)
+
+
+def test_dependency_install_failure_stops_before_build_or_tests(publisher, monkeypatch):
+    publisher.preflight()
+    commands = []
+    def fail_install(arguments, **kwargs):
+        commands.append(arguments)
+        raise RuntimeError('dependency installation failed')
+    monkeypatch.setattr(publisher, 'run', fail_install)
+    with pytest.raises(RuntimeError, match='dependency installation failed'):
+        module.Publisher.build_package(publisher)
+    assert commands == [[publisher.python, '-m', 'pip', 'install', '-r',
+                         publisher.root/'requirements.txt']]
+    assert not publication_calls(publisher)
 
 
 def test_failed_cleanup_preserves_original_test_error(publisher, monkeypatch, capsys):
