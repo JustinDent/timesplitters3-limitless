@@ -61,6 +61,10 @@ Python, Git and Visual Studio are not required to play.
 
 ## PC features
 
+Optional Windows [Discord Rich Presence](docs/discord-presence.md) shows the
+current game mode and session timer. Enable it in **Game settings → Discord**
+with the Discord desktop app running. Fresh installs leave it off.
+
 <table>
 <tr>
 <td width="50%" valign="top"><strong>Mouse aiming</strong><br>Direct camera control, zoom-aware sensitivity and normalized WASD movement. Rebind actions and adjust sensitivity with <strong>F2</strong>.</td>

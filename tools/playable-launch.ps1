@@ -25,6 +25,7 @@ $info.EnvironmentVariables['RECOMP_INPUT_CONFIG'] = $settingsPath
 $info.EnvironmentVariables['RECOMP_FFMPEG_DIR'] = Join-Path $gameRoot 'Bin'
 $info.EnvironmentVariables['TSFP_DISPLAY_CONFIG'] = Join-Path $gameRoot 'Settings\pc-display.ini'
 $info.EnvironmentVariables['TSFP_ONLINE_SETTINGS'] = Join-Path $gameRoot 'Settings\pc-online.json'
+$info.EnvironmentVariables['TSFP_DISCORD_CONFIG'] = Join-Path $gameRoot 'Settings\pc-discord.ini'
 $info.EnvironmentVariables['RECOMP_TRACE_BUDGET'] = '0'
 $skipSplashes = $controls.launcher -and $controls.launcher.skip_startup_splashes -eq $true
 $info.EnvironmentVariables['RECOMP_XMV_PLAY'] = if ($skipSplashes) { '0' } else { '1' }
