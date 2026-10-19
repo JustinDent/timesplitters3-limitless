@@ -11,14 +11,25 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[1]
 MARKER = '<!-- tsfp-known-issues:v1 -->'
 TRUSTED = {'OWNER', 'MEMBER', 'COLLABORATOR'}
-QUERY = '''query($owner: String!, $name: String!, $number: Int!) {
+QUERY = '''query($owner: String!, $name: String!, $number: Int!, $after: String) {
   repository(owner: $owner, name: $name) {
-    discussion(number: $number) { id title body url }
+    discussion(number: $number) {
+      id title body url
+      comments(first: 100, after: $after) {
+        nodes { id body url author { login __typename } }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
   }
 }'''
 UPDATE = '''mutation($id: ID!, $body: String!) {
-  updateDiscussion(input: {discussionId: $id, body: $body}) {
-    discussion { url }
+  updateDiscussionComment(input: {commentId: $id, body: $body}) {
+    comment { url }
+  }
+}'''
+CREATE = '''mutation($id: ID!, $body: String!) {
+  addDiscussionComment(input: {discussionId: $id, body: $body}) {
+    comment { url }
   }
 }'''
 
@@ -144,14 +155,27 @@ def render(api, repository, labels):
 
 def discussion(api, repository, number):
     owner, name = repository.split('/')
-    result = api.request('POST', 'graphql', {'query': QUERY, 'variables': {
-        'owner': owner, 'name': name, 'number': number}})
-    if result.get('errors'):
-        raise RuntimeError('GitHub could not read the configured Discussion.')
-    target = ((result.get('data') or {}).get('repository') or {}).get('discussion')
-    if not target:
-        raise ValueError('Configured Discussion is missing; refusing to create a duplicate.')
-    return target
+    after, seen, comments, target = None, set(), [], None
+    for _ in range(100):
+        result = api.request('POST', 'graphql', {'query': QUERY, 'variables': {
+            'owner': owner, 'name': name, 'number': number, 'after': after}})
+        if result.get('errors'):
+            raise RuntimeError('GitHub could not read the configured Discussion.')
+        current = ((result.get('data') or {}).get('repository') or {}).get('discussion')
+        if not current:
+            raise ValueError('Configured Discussion is missing; refusing to create a duplicate.')
+        target = target or current
+        connection = current['comments']
+        comments.extend(connection['nodes'])
+        page = connection['pageInfo']
+        if not page['hasNextPage']:
+            target['comments'] = comments
+            return target
+        after = page['endCursor']
+        if not after or after in seen:
+            raise ValueError('Discussion comment pagination did not advance; nothing was written.')
+        seen.add(after)
+    raise ValueError('Too many Discussion comment pages; nothing was written.')
 
 
 def publish(api, repository, config, dry_run=False):
@@ -167,18 +191,27 @@ def publish(api, repository, config, dry_run=False):
     target = discussion(api, repository, number)
     if target['title'] != config['title']:
         raise ValueError('Discussion title differs from configuration; refusing to edit another post.')
-    if target['body'] == body:
+    owned = [comment for comment in target['comments']
+             if (comment.get('author') or {}).get('login') == 'github-actions[bot]'
+             and (comment.get('author') or {}).get('__typename') == 'Bot'
+             and comment['body'].startswith(MARKER + '\n')]
+    if len(owned) > 1:
+        raise ValueError('Multiple managed bot comments found; refusing to edit the wrong one.')
+    previous = owned[0] if owned else None
+    if previous and previous['body'] == body:
         print('Known-issues Discussion already up to date: ' + target['url'])
         return False
-    result = api.request('POST', 'graphql', {'query': UPDATE,
-                                           'variables': {'id': target['id'], 'body': body}})
+    mutation = UPDATE if previous else CREATE
+    field = 'updateDiscussionComment' if previous else 'addDiscussionComment'
+    result = api.request('POST', 'graphql', {'query': mutation,
+        'variables': {'id': previous['id'] if previous else target['id'], 'body': body}})
     if result.get('errors'):
         errors = '; '.join(f'{error.get("type", "GraphQL")}: {error.get("message", "Unknown error")}'
                            for error in result['errors'])
         raise RuntimeError('GitHub rejected the known-issues Discussion update: ' + errors)
-    if not (result.get('data') or {}).get('updateDiscussion'):
+    if not ((result.get('data') or {}).get(field) or {}).get('comment'):
         raise RuntimeError('GitHub could not update the known-issues Discussion.')
-    print('Known-issues Discussion updated: ' + target['url'])
+    print('Known-issues bot comment updated: ' + result['data'][field]['comment']['url'])
     return True
 
 
