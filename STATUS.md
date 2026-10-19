@@ -1,5 +1,27 @@
 # Measured progress
 
+## Ghost replay fixture access violation (2026-10-19)
+
+Implemented in this revision on `fix/ghost-replay-crash`, based on main
+`511c686`. Reproduced the
+publishing build's intermittent 0xC0000005 without game data. A temporary native
+exception probe located the fault in `d3d8_upload_mip_level`, called by texture
+UnlockRect; the faulting instruction reads a swizzled texel. The synthetic
+64x48 A8R8G8B8 texture violated the unswizzler's power-of-two requirement,
+allowing Morton addresses beyond its 12 KiB allocation. The fixture now uses
+64x64 storage while retaining swizzled format, occlusion, feedback-refresh and
+supersampling assertions. No production renderer behavior changed and the
+temporary exception probe was removed from the replay source before validation.
+
+Windows x64 / Python 3.14.2 / MSVC x64 / D3D11: 28 fixture, ghost-wrapper and
+CI-scope tests passed. Thirty complete GPU test passes (120 replay processes)
+passed all pixel assertions across 128x96, 160x90, 344x144 and 2x supersampling.
+`tsfp.ps1 Build` verified the supported US XBE and full patch stack, completed
+native build checks and executable sealing, and recycled disposable test disks.
+Actionlint and diff checks passed. The fixture contract test is included in source CI and
+publishing's full pytest suite. Windows-only GPU evidence does not establish
+native Mac rendering support; see MAC-036. No release was published.
+
 ## Release Python dependency refresh (2026-10-19)
 
 The Windows publisher now installs the pinned `requirements.txt` with its own

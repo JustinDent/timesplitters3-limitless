@@ -49,6 +49,8 @@ on:
       - tests/test_xmv_stop.py
       - tests/xmv_stop.c
       - tests/test_ghost_rendering.py
+      - tests/ghost_targets.py
+      - tests/test_ghost_targets.py
       - tests/ghost_rendering.c
       - src/pc_ghost_render_guest.inc
       - tests/test_cutscene_letterbox.py
@@ -146,6 +148,8 @@ on:
       - tests/test_native_compiler.py
       - tests/test_framebuffer_sampling.py
       - tests/test_ghost_rendering.py
+      - tests/ghost_targets.py
+      - tests/test_ghost_targets.py
       - tests/ghost_rendering.c
       - src/pc_ghost_render_guest.inc
       - tests/test_cutscene_letterbox.py
@@ -265,7 +269,7 @@ jobs:
           tests=(
             tests/test_ci_runtime_scope.py
             tests/test_native_compiler.py tests/test_audio_timing.py
-            tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_ghost_rendering.py
+            tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
             tests/test_xmv_stop.py
             tests/test_cutscene_letterbox.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py
