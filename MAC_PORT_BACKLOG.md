@@ -1271,6 +1271,12 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Launcher v1.2.17 build (2026-10-19):** Prepared locally on
+  `release/launcher-v1.2.17` from main `8fe6b48`. This version packages the
+  existing Windows visual and lifecycle work below plus MAC-046 recovery;
+  it adds no new native Mac behavior. Adaptation remains queued. Versioned
+  Windows build validation is in STATUS.md; Mac execution is unverified.
+
 - **Visual polish (2026-10-19, `feature/launcher-visual-polish`):**
   `Launcher.xaml`, `Launcher.cs`, `PageTheme.cs` and `SettingsPage.cs` add a
   compact verified-data disclosure, matching native control styles, distinct

@@ -1,5 +1,24 @@
 # Measured progress
 
+## Launcher v1.2.17 local build (2026-10-19)
+
+Prepared on `release/launcher-v1.2.17` from main `8fe6b48` (PR #170), with
+matching launcher, assembly and file versions. Includes the approved panoramic
+banner, Home/settings/sidebar improvements, clearer update feedback, transaction
+lock recovery and immediate minimize-on-launch behavior. No game build is included.
+
+The Windows x64 .NET Framework build with `-RequireArtwork -Test` passed the
+complete launcher test run, including 104 updater, 28 download, 11 version,
+10 startup, 19 news, 30 settings and 20 maintenance checks, plus crash-report
+and 14 unfinished-session checks. Tests used the existing short temporary staging
+directory and synthetic files. Both packaged executable versions are 1.2.17.0;
+banner, logo and backdrop resource hashes match their private source files.
+The release ZIP, checksum and update metadata are retained locally under
+`build/launcher-release-1.2.17`, alongside build provenance and release notes.
+The ZIP contains only the two launch executables and launcher manifest.
+No installation, game, personal data, GitHub release or published tag was changed.
+Native Mac support remains queued in MAC-021 and MAC-046.
+
 ## Windows main-menu image fidelity (2026-10-19)
 
 Main integration: rebased onto `8fe6b48`, preserving the terminal-camera depth
@@ -11,6 +30,8 @@ its matching symbol archive was verified by the build. Evidence is retained in
 `logs/menu-fidelity-main-integration-{build,tests}.log`. The menu's Mac follow-up
 is MAC-047; MAC-046 belongs to launcher transaction recovery. The earlier
 source revision and executable hash below describe the initial visual checks.
+The subsequent main integration at `b236c16` retains launcher v1.2.17 and its
+release notes; that incoming change contains no game-rendering source changes.
 
 Local, uncommitted on `fix/main-menu-image-fidelity`, based on updated main
 `3d0b687`. The Windows frontend now uses clamped Catmull-Rom reconstruction
