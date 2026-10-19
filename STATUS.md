@@ -21,6 +21,11 @@ are retained in ignored `build/launcher-release-1.2.18`. Its only contents are
 the two launch executables and launcher manifest. Native Mac execution remains
 unverified and the Known Issues adaptation is queued under MAC-021.
 
+Subsequently integrated main `ae9f86d` (vehicle-runtime fix and issue-form
+versions), preserving both progress records. Launcher source, assets and build
+script inputs are unchanged from the tested candidate; no game rebuild is
+claimed by this launcher package.
+
 ## Live known issues in the launcher (2026-10-19)
 
 Implemented on `feature/launcher-live-known-issues`, based on main `a8fc545`.
@@ -48,6 +53,49 @@ pages. Live unauthenticated access returned eight open bug reports; preview
 screenshots used that read-only snapshot. No game, saves, personal settings,
 GitHub issues or release was modified. Full updater/gameplay checks were not
 needed for this display/network change. Native Mac remains queued in MAC-021.
+
+## Issue #100 - companion jeep dismount loop (2026-10-19)
+
+Local branch `100-captain-ash-buggin-out-in-the-car`, based on main `3d0b687`;
+Validated on Windows x64, MSVC Release, pinned runtime and supported
+US XBE SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+
+Read-only sampling in Scotland the Brave reproduced Ash cycling through seated
+state 9, dismount state 13, detached state 14 and re-entry, while Cortez's player
+entity remained in the same jeep and Ash had no target. The original JNE at
+`0x002A0C4D` joins a 32-bit driver-player check and an 8-bit vehicle flag check.
+The recompiler saved each predecessor's zero flag but consumed it without
+negation, reversing the stay-mounted decision for a player driver.
+
+`recomp-zf-join-polarity.patch` gives joins with recoverable ZF on every edge an
+explicit ZF-only state, snapshots before control transfer, and uses the proper
+condition polarity for branches, SETcc, CMOVcc and LOOPcc. Unknown predecessors
+remain unknown; no carry/sign/overflow information is inferred from ZF. The
+shared original AI routine remains responsible for combat and dismounting.
+
+Executable regressions cover both incoming paths, zero/nonzero values, mixed
+comparison operations and widths, and flag-preserving blocks. An integration
+fixture recompiles the supported US mounted-AI routine in disposable RAM:
+600 player-driver decisions stay mounted; missing/non-player drivers can still
+trigger dismount, enemy acquisition still changes to combat, and vehicle flags
+retain their original effect. A separate pre-fix run reproduces state 9 -> 13.
+The upstream recompiler suite passes 352 tests plus 87 subtests (41 skips);
+36 vehicle/float-join checks and an additional no-consumer declaration check
+pass. Patch tracking/transitions, generation and CI-scope checks pass 66 tests.
+The Windows Release rebuild and built-in native tests pass. The user confirmed
+the corrected Scotland the Brave jeep encounter works: Ash stays aboard away
+from enemies and follows normally when leaving the jeep and returning.
+Harry Tipper's encounter and native macOS gameplay have not been validated.
+Before submission, integrated main `b236c16`, preserving the terminal-camera
+regression and both validation records. Patch application and 76 combined
+vehicle/float-join, terminal-depth and CI-selection tests pass after integration.
+The user gameplay confirmation above was on the pre-integration build.
+PR #174 CI follow-up: macOS checks passed at `5f6ef81`; Windows runtime
+regressions passed while release checks were still running. Integrated main
+`a8fc545` to resolve a documentation conflict; patch application and 57
+vehicle/CI-selection regressions pass. Assigned this handoff MAC-048
+to preserve the newly merged menu-fidelity entry MAC-047.
+See MAC-048 for the shared-source Mac handoff.
 
 ## Launcher v1.2.17 local build (2026-10-19)
 
