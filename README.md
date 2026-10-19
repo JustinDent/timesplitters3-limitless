@@ -12,9 +12,9 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
 
 </div>
 
-![TimeSplitters launcher with Play Game, game import, update channel and release controls](docs/assets/launcher-preview.png)
+![TimeSplitters launcher v1.2.18 with the updated banner, aligned sidebar, Play Game, game versions and update controls](docs/assets/launcher-preview.png)
 
-<p align="center"><sub>Launcher interface preview from the current source. Version and channel shown are sample state; choose <strong>Preview</strong> to install current game prereleases.</sub></p>
+<p align="center"><sub>Launcher v1.2.18 interface preview. The game version and channel shown are sample data; choose <strong>Preview</strong> to install current game prereleases.</sub></p>
 
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it
@@ -209,7 +209,7 @@ the saved bot set. The host sees how many are waiting.
 | --- | --- |
 | Modern materials and surfaces, with **up to 4K** on major surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit keep storage and memory bounded. | A native **ARM64** build with SDL/Cocoa and OpenGL, shared PC controls, native settings and an experimental **up-to-120 FPS** presentation target. |
 | **Partial local preview.** Much of the game still uses original art. Development artwork is not bundled with the public release; 4K output does not imply native 4K source detail. | **Experimental.** Visible first-level gameplay and basic combat checks have been reached. Interpolation keeps the game simulation at **60 Hz**; movies, advanced rendering, multiplayer and packaging still need work. |
-| [Texture guide →](docs/textures.md) | [Mac setup →](docs/macos.md) · [Feature backlog →](MAC_PORT_BACKLOG.md) |
+| [Texture guide →](docs/textures.md) | [Mac setup →](docs/macos.md) · [Native Mac launcher →](docs/mac-launcher.md) · [Feature backlog →](MAC_PORT_BACKLOG.md) |
 
 > [!NOTE]
 > This is an experimental port. A full campaign playthrough and complete

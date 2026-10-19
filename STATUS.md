@@ -1,5 +1,22 @@
 # Measured progress
 
+## Shared native runtime and launcher integration (2026-10-19)
+
+- **Dependencies:** `codex/shared-native-integration` combines published renderer
+  and acceptance stack `f2c2261` with completed launcher work `da926fc` (runtime
+  implementation `356e5a3`). The latter also brings main through `ade3763`.
+  Both source branches and the launcher worktree are preserved; main is unchanged.
+- **Build ownership:** The launcher worktree is clean, its final validation is
+  committed, and no game/build process remains. Local integrated validation can
+  resume after that completed work. The existing binary still has launcher
+  revision `356e5a3` provenance until rebuilt from this integration branch.
+- **Merge scope:** Source files merge cleanly. The STATUS conflict contains
+  independent evidence sections; both are retained below. Combined CI/backlog,
+  Discord model/Unix IPC, native crash-helper, launcher routing and SDK checks
+  pass locally: 92 passed, six Windows-only skips in 45.40 seconds, with
+  disposable data. Native GPU, packaged launcher and isolated gameplay checks
+  are pending. Log: `logs/shared-integration-source-tests.out`.
+
 ## Shared cube and volume resource contract (2026-10-19)
 
 - **Source/dependency:** `codex/shared-texture-contract` depends on unmerged
@@ -144,6 +161,138 @@
   is needed for these downloader/test-harness changes. Remaining native GL
   repetition, physical interaction and broader scene acceptance are still required.
 
+## Native launcher parity completion (2026-10-19)
+
+Source: `356e5a3` on `codex/mac-launcher-parity`, depending on native runtime
+baseline `a0c8a1a` through integration `8012f22`. The primary checkout's branch
+and source edits were preserved. Both final app and game manifests record
+`356e5a34263cfeed6f9419517f9c406621379e59` with a clean source tree. The single
+ignored native build uses `--runtime-root`; its executable SHA-256 is
+`d755ff5765abbe53de5baf24a791bdf453f9f9229a712a2424010db89d87bb6c`, with matching
+dSYM UUID `88DC189B-64F2-30DF-B440-ECD35810FC4E`. No main merge, push, release
+publication or other-device execution is claimed.
+
+Host: macOS 27.0.1 (26A434), Apple Silicon ARM64; .NET SDK 8.0.426, Avalonia
+11.3.22; native game uses the existing pinned Vulkan SDK/KosmicKrisp backend.
+The supported US XBE checksum was verified before building and each game run.
+
+Implemented:
+
+- Shared Discord protocol, configuration, activity model and guest decoder with
+  Windows named-pipe and native Unix-socket host adapters. Native settings are
+  editable; missing/disabled/malformed preferences do not block the game.
+- External native fatal/hang reporter with preallocated signal notification,
+  native/Xbox registers, executable hash, PC/LR symbolication, bounded stack
+  sample and log tail. Shared hang policy handles startup, suppression, sleep
+  gaps and rearming. Native build retains matching dSYM/UUID/hash provenance.
+  Launcher discovers, opens and exports reports, restores on crash/hang, and
+  shares unfinished-session recovery and conservative successful-run cleanup.
+- Shared bounded rich Markdown parsing for WPF/Avalonia (headings, emphasis,
+  numbered/bullet lists, quotes, code, rules and safe links). Remote images and
+  markup stay inert. Native release, version-selection and maintenance pages
+  follow the Windows structure and use the shared release/repair transactions.
+
+Measured validation:
+
+- 16 native launcher regression groups pass, including corrupt package rejection,
+  transactional rollback, personal settings preservation, rich Markdown safety,
+  native crash export bounds and actual nonzero process/session log handling.
+- Eight isolated Unix-socket scenarios and the portable Discord policy test pass.
+  Ten native crash-helper tests pass: fatal capture/symbols/log tail; hang,
+  recovery/rearm and later crash; startup, unarmed, responsive, background/modal
+  suppression; and linked-root refusal. Tests never connect to real Discord.
+- Separately, the installed Discord desktop client acknowledged Rich Presence
+  during a 75-second isolated real native game session. Observed updates covered
+  Main menu, Story menu, Time to Split / Normal / Single player, Watching a
+  cutscene, In game and Paused. This is an IPC acknowledgement, not a screenshot
+  of another account's profile or certification of all multiplayer modes.
+- The real launcher/game completed both normal quit (exit 0) and intentional
+  native fatal signal (exit 134), with minimize/restore and local report export.
+  Both final-build runs observed the OS game window through CoreGraphics.
+  Reviewed captures show rendered native menus and the first mission canyon.
+  Saves came from a disposable Test Lab copy; both display configurations, controls, Discord and crash paths
+  were isolated. Personal control/display/Discord/runtime files were unchanged.
+  Virtual disks were recycled after child shutdown. The launcher and interactive
+  entry point also passed their read-only prerequisite checks. Evidence is in
+  ignored `logs/mac-launcher-e2e-{quit,crash}.json`, with the source revision and
+  executable hash. No campaign certification.
+- The actual packaged app was extracted/installed, deliberately modified, repaired
+  by its copied self-update helper after a test parent exited, restarted and
+  rendered. Manifest verification and personal/game fixtures survived the cycle.
+  This tests local delivery; no public native release was published.
+- Native runtime build, three CTests and renderer/input/settings/debug GPU/SDL
+  checks pass. Windows launcher source compiles for .NET Framework 4.8 with zero
+  warnings/errors; Windows WPF and named-pipe execution remain unavailable here.
+- Focused Python regressions: 105 passed, 9 host-specific skips, including the
+  patch suite after registering the new patch dependency in its historical-stack
+  fixture. No dependency upgrade or game-data duplication.
+- macOS UI events rejected reserved F2, captured K into a disposable binding
+  draft, and saved enabled Discord settings to the disposable installation.
+  This is OS event automation, not physical keyboard/controller playtesting.
+  Release, repair, Discord and rich-note layout captures were reviewed.
+
+Remaining release acceptance: Developer ID signing/notarization, clean-machine
+installation, published native runtime packages (MAC-012), Windows-host execution
+and broader live mode/profile checks. Native context files intentionally use a
+Mac report format; Windows minidumps are OS-specific. The renderer's broader
+campaign/visual/performance limits remain separate from launcher acceptance.
+
+## Native Mac launcher port (2026-10-19)
+
+Implemented in `c252956` on `codex/mac-launcher-parity`, based on main `ade3763`, in
+an isolated source worktree because the primary checkout had active native
+renderer edits. Those edits and its branch were preserved. The native game is
+still the primary checkout's separately built binary; the launcher is not a new
+game build and does not claim that binary matches main.
+
+Host: macOS 27.0.1 (26A434), Apple Silicon ARM64. Launcher: shared Windows
+v1.2.18 source, pinned .NET SDK 8.0.426 and Avalonia 11.3.22. The home interface
+is generated from the Windows XAML; the original released banner, backdrop,
+logo and seven-size icon were recovered unchanged from the SHA-256-verified
+public launcher-v1.2.18 ZIP. Artwork/provenance remain local under ignored
+`private/launcher-art`. Native self-contained `.app`, build provenance, license
+notices and file-hash manifest are under ignored `build/macos-launcher`.
+
+Validation:
+
+- 13 native regression groups passed: host release filtering, JSON/journal
+  compatibility, settings drafts/backups/unknown-field preservation, failed-save
+  rollback, checkout launch routing, shared binding conflicts/reserved keys/wheel
+  codes, native update/failure recovery/rollback, corrupted archives and unsafe
+  paths, symlink refusal, independent launcher updates, read-only prerequisite
+  rejection, verified/cached downloads and known-issue filtering. Fixtures were
+  disposable; no game was executed by these tests.
+- The generated Mac launcher ZIP passed extraction, transactional installation
+  and full manifest verification in a disposable installation while preserving
+  synthetic game metadata and saves. This is a local package check, not a
+  published-release upgrade.
+- The complete existing Windows launcher sources compile for .NET Framework
+  4.8 with the shared changes: zero errors/warnings. Compilation on Mac does not
+  replace the Windows WPF/runtime tests; those remain unrun on this host.
+- Existing native command-launcher tests: 12 passed. CI suite routing: 40 passed.
+  The new native tests are registered for ARM64 Mac CI; Windows retains its
+  existing runtime/launcher checks. Python compilation and `git diff --check`
+  passed.
+- Read-only native `.app --check --root <checkout>` passed, including supported
+  XBE, ARM64 executable hash and the active Vulkan SDK receipt. The existing
+  `tools/play-native-mac.py --check` also passed. The active native binary was
+  concurrently rebuilt on another focused branch; these are prerequisite
+  observations, not a stable source/build synchronization claim.
+- The built app opened through Finder/LaunchServices. Native accessibility
+  inspection confirmed the Home and settings interfaces, detected the local
+  native build and game data, and displayed that no compatible Mac release was
+  available. Native rendered Home/settings images were reviewed. No personal
+  settings were saved and no personal game session was started by this task.
+
+This is a working native launcher development port, not full one-to-one parity
+certification. Physical key/mouse capture, actual minimize/restore around an
+isolated game process, every page's layout/accessibility, clean-machine delivery,
+real published native update/repair/rollback, Developer ID/notarization and
+native crash dumps remain unverified. Rich release-note document formatting is
+simpler than WPF. Discord preferences are preserved but disabled for editing
+until native game IPC support exists. Public native runtime packages still need
+MAC-012; none were published here. See [Mac launcher usage](docs/mac-launcher.md)
+and MAC-021. Other-device execution and synchronization remain unverified.
 ## Shared presentation outcomes and timing (2026-10-19)
 
 - **Source/dependency:** `codex/shared-present-metrics` depends on local unmerged

@@ -17,11 +17,12 @@ on:
     - cron: '23 8 * * *'
   workflow_dispatch:
   workflow_call:
+    secrets:
+      KNOWN_ISSUES_TOKEN:
+        required: true
 
 permissions:
   contents: read
-  issues: read
-  discussions: write
 
 jobs:
   sync:
@@ -45,5 +46,5 @@ jobs:
           python-version: '3.12'
       - name: Refresh the pinned known-issues post
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          KNOWN_ISSUES_TOKEN: ${{ secrets.KNOWN_ISSUES_TOKEN }}
         run: python tools/known-issues.py

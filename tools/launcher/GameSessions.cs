@@ -160,7 +160,7 @@ namespace TimeSplitters.Launcher
             // Only this launch's stderr; never a path supplied by the record.
             if(!Regex.IsMatch(tag,@"^\d{8}-\d{6}-\d{3}$"))return;
             try {
-                using(var input=new FileStream(Core.PathIn(root,"Logs/"+tag+".err"),FileMode.Open,FileAccess.Read,FileShare.ReadWrite)) {
+                using(var input=new FileStream(Core.PathIn(root,LauncherPlatform.SessionLog(tag)),FileMode.Open,FileAccess.Read,FileShare.ReadWrite)) {
                     input.Position=Math.Max(0,input.Length-65536);
                     using(var output=new FileStream(Core.PathIn(root,"Logs/Crashes/"+name+"/game-log-tail.txt"),FileMode.Create,FileAccess.Write,FileShare.None)) {
                         byte[] bytes=new byte[65536];int count=input.Read(bytes,0,bytes.Length);output.Write(bytes,0,count);

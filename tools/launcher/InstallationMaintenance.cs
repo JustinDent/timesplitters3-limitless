@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+#if !MACOS
 using System.Management;
+#endif
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
@@ -33,7 +35,7 @@ namespace TimeSplitters.Launcher
         {
             try {
                 string path=Core.PathIn(root,launcher?Core.SelfManifest:"BUILD.json");
-                Core.Require(new FileInfo(path).Length <= (launcher?16384:1024*1024),"Manifest too large.");
+                Core.Require(new FileInfo(path).Length <= (launcher?LauncherPlatform.LauncherManifestLimit:1024*1024),"Manifest too large.");
                 string version=Json.String(Json.Object(File.ReadAllText(path)),"version");
                 GameVersion.Parse(version); return version;
             } catch { return ""; }
@@ -57,7 +59,7 @@ namespace TimeSplitters.Launcher
             var result=new VerificationResult { Component=launcher?"Launcher":"Game" };
             try {
                 string manifest=Core.PathIn(root,launcher?Core.SelfManifest:"BUILD.json");
-                Core.Require(new FileInfo(manifest).Length <= (launcher?16384:1024*1024),"Manifest too large.");
+                Core.Require(new FileInfo(manifest).Length <= (launcher?LauncherPlatform.LauncherManifestLimit:1024*1024),"Manifest too large.");
                 result.ManifestHash=Hash(manifest,token);
                 result.Version=Version(root,launcher);
                 Core.Require(result.Version.Length>0,"Invalid version.");
@@ -126,6 +128,9 @@ namespace TimeSplitters.Launcher
         }
         public static string Graphics()
         {
+#if MACOS
+            return NativeHost.Graphics();
+#else
             try {
                 var options=new EnumerationOptions { Timeout=TimeSpan.FromSeconds(3),ReturnImmediately=false };
                 using(var search=new ManagementObjectSearcher("root\\CIMV2","SELECT Name,DriverVersion FROM Win32_VideoController",options))
@@ -135,6 +140,7 @@ namespace TimeSplitters.Launcher
                     return entries.Count==0?"Unavailable":String.Join("; ",entries);
                 }
             } catch { return "Unavailable (graphics query did not complete)"; }
+#endif
         }
         public static string RecentErrors(string root)
         {
@@ -162,7 +168,7 @@ namespace TimeSplitters.Launcher
             text.AppendLine("Running launcher: "+LauncherVersion.Value);
             text.AppendLine("Installed launcher: "+Empty(Version(root,true)));
             text.AppendLine("Installed game: "+Empty(Version(root,false)));
-            text.AppendLine("Windows: "+Environment.OSVersion.Version+" / "+(Environment.Is64BitOperatingSystem?"64-bit":"32-bit"));
+            text.AppendLine("Host: "+Environment.OSVersion.Version+" / "+(Environment.Is64BitOperatingSystem?"64-bit":"32-bit"));
             text.AppendLine(".NET CLR: "+Environment.Version+" / process "+(Environment.Is64BitProcess?"64-bit":"32-bit"));
             text.AppendLine("Graphics: "+graphics);
             var resources=Assembly.GetExecutingAssembly().GetManifestResourceNames();

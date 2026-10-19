@@ -1,0 +1,25 @@
+diff --git a/src/input/CMakeLists.txt b/src/input/CMakeLists.txt
+--- a/src/input/CMakeLists.txt
++++ b/src/input/CMakeLists.txt
+@@ -76,3 +76,10 @@
+     target_sources(xbox_input PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_discord.c"
+                                       "${TSFP_PC_CONTROLS_DIR}/pc_discord_model.c")
+ endif()
++
++if(APPLE AND TSFP_NATIVE_DIR)
++    target_sources(xbox_input PRIVATE "${TSFP_NATIVE_DIR}/../pc_discord.c"
++        "${TSFP_NATIVE_DIR}/../pc_discord_model.c" "${TSFP_NATIVE_DIR}/crash_posix.c")
++    target_link_libraries(xbox_input PUBLIC "-framework CoreGraphics" "-framework CoreFoundation")
++endif()
++
+diff --git a/titles/futureperfect/CMakeLists.txt b/titles/futureperfect/CMakeLists.txt
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -275,2 +275,7 @@
+     target_include_directories(tsfp_pc_discord_test PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+ endif()
++
++if(APPLE AND TSFP_NATIVE_DIR)
++    set_property(SOURCE "${TSFP_NATIVE_DIR}/../pc_display_menu.c" APPEND PROPERTY
++        COMPILE_DEFINITIONS TSFP_PC_DISCORD)
++endif()

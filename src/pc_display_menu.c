@@ -5,7 +5,9 @@
 #ifdef TSFP_PC_DISCORD
 #include "pc_discord_guest.h"
 #include "pc_guest_memory.h"
+#ifdef _WIN32
 #include "pc_network.h"
+#endif
 #endif
 #include "pc_display.h"
 #include "pc_cutscene.h"
@@ -138,8 +140,11 @@ void pc_display_camera(void (*original)(void))
     ULONGLONG now=GetTickCount64();
     if(now-discord_sampled>=1000) {
         PcDiscordSnapshot sample;
+        int network=0;
+#ifdef _WIN32
         double latency;unsigned peers;
-        int network=pc_network_latency(&latency,&peers);
+        network=pc_network_latency(&latency,&peers);
+#endif
         pc_discord_sample(&sample,discord_guest_read,NULL,&discord_cache,network);
         pc_discord_submit(&sample);discord_sampled=now;
     }

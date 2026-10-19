@@ -77,12 +77,12 @@ namespace TimeSplitters.Launcher
             foreach (var pair in (Dictionary<string, object>)hashes)
             {
                 Core.Name(pair.Key);
-                Core.Require((pair.Key == Core.LauncherName || pair.Key == Core.AppPath) && !result.ContainsKey(pair.Key), "Unexpected launcher package file.");
+                Core.Require((pair.Key == Core.LauncherName || pair.Key == Core.AppPath || LauncherPlatform.LauncherResource(pair.Key)) && !result.ContainsKey(pair.Key), "Unexpected launcher package file.");
                 string hash = Convert.ToString(pair.Value);
                 Core.Require(Regex.IsMatch(hash, "^[0-9a-fA-F]{64}$"), "Invalid launcher file checksum.");
                 result.Add(pair.Key, hash);
             }
-            Core.Require(result.Count == 2 && result.ContainsKey(Core.LauncherName) && result.ContainsKey(Core.AppPath), "Launcher package is incomplete.");
+            Core.Require(result.Count >= 2 && result.Count <= LauncherPlatform.LauncherFileLimit && result.ContainsKey(Core.LauncherName) && result.ContainsKey(Core.AppPath), "Launcher package is incomplete.");
             return result;
         }
         public static bool Complete(string root)
@@ -147,9 +147,9 @@ namespace TimeSplitters.Launcher
             Core.Require(!Directory.Exists(destination), "Launcher staging already exists.");
             using (var zip = ZipFile.OpenRead(archive))
             {
-                Core.Require(zip.Entries.Count > 0 && zip.Entries.Count <= 12, "Unexpected launcher archive layout.");
+                Core.Require(zip.Entries.Count > 0 && zip.Entries.Count <= LauncherPlatform.LauncherFileLimit, "Unexpected launcher archive layout.");
                 var manifestEntries = zip.Entries.Where(e => e.FullName == Core.SelfManifest).ToArray();
-                Core.Require(manifestEntries.Length == 1 && manifestEntries[0].Length <= 16384, "Launcher manifest is missing or too large.");
+                Core.Require(manifestEntries.Length == 1 && manifestEntries[0].Length <= LauncherPlatform.LauncherManifestLimit, "Launcher manifest is missing or too large.");
                 string text;
                 using (var reader = new StreamReader(manifestEntries[0].Open())) text = reader.ReadToEnd();
                 var hashes = Manifest(text, expected);
@@ -162,9 +162,9 @@ namespace TimeSplitters.Launcher
                     if (entry.FullName.EndsWith("/", StringComparison.Ordinal)) continue;
                     Core.Require(Core.LauncherFile(entry.FullName) && names.Add(entry.FullName), "Unexpected or duplicate launcher archive file.");
                     total += entry.Length;
-                    Core.Require(entry.Length <= 16 * 1024 * 1024 && total <= 32 * 1024 * 1024, "Expanded launcher package is too large.");
+                    Core.Require(entry.Length <= LauncherPlatform.LauncherExpandedLimit && total <= LauncherPlatform.LauncherExpandedLimit, "Expanded launcher package is too large.");
                 }
-                Core.Require(names.Count == 3, "Launcher package files are missing.");
+                Core.Require(names.Count == hashes.Count + 1, "Launcher package files are missing.");
                 Core.CheckSpace(Path.GetDirectoryName(archive), total * 2 + 16 * 1024 * 1024);
                 Directory.CreateDirectory(destination);
                 foreach (var entry in zip.Entries.Where(e => !e.FullName.EndsWith("/", StringComparison.Ordinal)))

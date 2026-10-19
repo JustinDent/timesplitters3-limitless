@@ -79,6 +79,9 @@ namespace TimeSplitters.Launcher
         public static List<DisplayMode> Primary(int savedWidth,int savedHeight)
         {
             var reported=new List<DisplayMode>();
+            #if MACOS
+            reported.AddRange(NativeHost.DisplayModes());
+#else
             var screen=System.Windows.Forms.Screen.PrimaryScreen;
             if(screen!=null) for(uint index=0;;index++)
             {
@@ -86,6 +89,7 @@ namespace TimeSplitters.Launcher
                 if(!EnumDisplaySettingsW(screen.DeviceName,index,ref mode)) break;
                 if(mode.Bits>=24) reported.Add(new DisplayMode(mode.Width,mode.Height));
             }
+            #endif
             return Choices(reported,savedWidth,savedHeight);
         }
     }
