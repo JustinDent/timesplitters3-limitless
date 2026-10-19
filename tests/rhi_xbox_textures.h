@@ -1,14 +1,11 @@
 /* Exercise the production Xbox factories on each real RHI backend, not mock
- * resource implementations. Palette, device queries and feedback are outside
+ * resource implementations. Palette and device queries are outside
  * this fixture and must fail loudly if accidentally reached. */
 #ifndef TSFP_RHI_XBOX_TEXTURES_H
 #define TSFP_RHI_XBOX_TEXTURES_H
 #include "d3d8_internal.h"
 const DWORD *d3d8_GetPalette(DWORD stage) {(void)stage;abort();}
 IDirect3DDevice8 *xbox_GetD3DDevice(void) {abort();}
-HRESULT d3d8_CopyTextureView(IDirect3DTexture8 *dst,RhiView *src) {
-    (void)dst;(void)src;abort();
-}
 
 static void xbox_texture_color(unsigned x,unsigned y,unsigned z,BYTE color[4]) {
     color[0]=(BYTE)(32*(z+1));color[1]=(BYTE)(32*(y+1));

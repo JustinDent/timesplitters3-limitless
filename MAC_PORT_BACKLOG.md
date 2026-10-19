@@ -894,6 +894,17 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-007 — Screen-copy effects and image surfaces
 
 - **Status:** In progress
+- **Shared clipping/acceptance (2026-10-19, commit carrying this entry):**
+  `codex/shared-screen-copy-contract`, based on unmerged `c553f9a`, replaces
+  separate rectangle clipping with `src/graphics/screen_copy_rect.h` for PC,
+  common Vulkan and native GL. A reproduced negative-destination copy selected
+  incorrect pixels in the common renderer; paired source/destination clipping
+  fixes it and safely rejects empty/extreme rectangles. The real production
+  copy/shader/resource fixture is registered for both hosted GPU backends.
+  Local MoltenVK contract and complete GL tests pass; Windows GPU execution
+  and title-effect scene acceptance remain pending.
+  [Evidence](STATUS.md#shared-screen-copy-clipping-and-gpu-contract-2026-10-19).
+
 - **PC behavior:** Windows can copy the full backbuffer or a rectangle into a texture for later draws.
 - **Issue #21 channel-clear follow-up (this revision):** The lobby uses destination
   alpha as a temporary text mask. `src/pc_clear_rhi.inc` and
@@ -1305,7 +1316,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   manifest uses different filename casing. Shared `Core.PreserveGameFile` now
   restores case-insensitive protection while retaining native app resources.
   The existing Windows reproduction and a new native transaction/rollback
-  check cover the fix; 17 native groups pass, Windows rerun pending. Integrated
+  check cover the fix; both jobs pass at `c553f9a` in run 39311742707, including
+  104 Windows launcher regressions and 17 native groups. Integrated
   native game launch/quit and synthetic crash/report checks also pass.
   [Evidence](STATUS.md#integrated-host-validation-and-launcher-cleanup-fix-2026-10-19).
 

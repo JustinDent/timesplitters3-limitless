@@ -1,5 +1,55 @@
 # Measured progress
 
+## Shared screen-copy clipping and GPU contract (2026-10-19)
+
+- **Dependency:** `codex/shared-screen-copy-contract` starts from unmerged
+  integration `c553f9a`, which includes the shared renderer and launcher fixes.
+  Latest fetched main remains `ade3763`; no main merge. Existing untracked
+  files and the separate launcher worktree are preserved.
+- **Reproduction:** The production Xbox screen-copy pass copied the wrong source
+  pixels when a rectangle landed at a negative destination offset. Its clipping
+  moved the destination edge without advancing the source edge. A new real-GPU
+  test failed at pixel (0,0), blue channel 50 versus expected 56, on Apple M5 Pro
+  / macOS 27.0.1 arm64 / SDK 1.4.363.0 MoltenVK.
+- **Shared fix:** `src/graphics/screen_copy_rect.h` now supplies paired clipping
+  for Windows/common Vulkan and legacy native GL. It clips both surfaces,
+  preserves alignment and uses 64-bit intermediates for 32-bit guest inputs.
+  The runtime change is a separate reproducible patch; generated game C is
+  unchanged. Empty/fully clipped copies avoid invalid or negative viewports.
+- **GPU acceptance:** The common fixture now links production
+  `d3d8_screencopy.c` instead of an aborting feedback stub. Identical Windows
+  WARP/Mac Vulkan tests cover full copies, ten rectangle/boundary cases at 1x
+  and 2x source scales, RGBA-to-BGRA channel order, unchanged surrounding pixels,
+  restored output target/viewport and a distinct 4x2 offscreen source. Only
+  device scene discovery is supplied by the fixture. All cases pass locally
+  on MoltenVK with no validation errors (11 known primitive-restart warnings).
+  Executable SHA-256
+  `aff31947b3e1b761ff23128d9b1502ca67ed0a23e2762c35b0efadbeb432f4ec`.
+  Logs: `logs/shared-screen-copy-rhi.out`, `logs/rhi-moltenvk.json` / `.log`.
+- **Fallback/native checks:** The complete GL build and suite pass: three
+  CTests plus renderer/input/settings/debug, including existing real-GPU
+  screen-copy/scissor checks. Executable SHA-256
+  `bc3055b2c9484392619a048c3768ba8ae7ea8cd586850b94bce33b531338aa0f`.
+  Twelve test images recycled (10,486,813,696 logical bytes, 8,192 allocated).
+  Source/patch checks: 74 passed, two host skips; the one historical upgrade
+  fixture initially attempted the new patch before its deliberately excluded
+  feedback dependency. Correcting that historical subset makes the affected
+  test pass (one additional pass). Fresh complete-stack and repeat application
+  already passed. Logs: `logs/shared-screen-copy-gl-build.out`,
+  `logs/shared-screen-copy-source-tests.out`, `logs/shared-screen-copy-historical-test.out`.
+- **Integrated Vulkan suite:** The complete native common-renderer build also
+  passes all three CTests and renderer/input/settings/debug checks using pinned
+  KosmicKrisp. Current executable SHA-256
+  `be38a156a0e3acfe385f6dcfe9ea73f37ef936786fa2304e88ef0d9713d6c8b1`.
+  No validation errors; 12 known disposable images recycled (8,192 allocated
+  bytes). Log: `logs/shared-screen-copy-vulkan-build.out`.
+- **Scope limits:** These are pixel/resource contracts, not proof of every
+  title post-processing effect. Windows GPU execution for these additions,
+  larger physical destination targets, other formats and matched scene fidelity
+  remain pending. Local source was based on `c553f9a` with this commit's changes;
+  the earlier integration gameplay evidence is not a test of this new fix.
+
+
 ## Shared native runtime and launcher integration (2026-10-19)
 
 - **Dependencies:** `codex/shared-native-integration` combines published renderer
@@ -89,6 +139,14 @@
   test reproduces the failure; a new native test verifies casing protection,
   preservation of app resources, retired-game-file removal and rollback. All
   17 native launcher groups pass locally. Windows rerun remains pending.
+- **Hosted fix revalidation:** [Run 39311742707](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39311742707)
+  at `c553f9a` completes successfully on both hosts. Windows passes the original
+  pruning reproduction and all 104 isolated launcher regressions, plus 202
+  runtime tests (30 skips), 52 release checks, session/report/startup/icon
+  suites. Mac passes 189 runtime tests (18 skips), production RHI/Xbox GPU
+  cases and all 17 native launcher groups, including the new cleanup/rollback
+  coverage. This supersedes the pending Windows rerun above; it does not cover
+  the subsequent screen-copy branch.
 - **Remaining:** Common Vulkan remains opt-in. Broader scene fidelity, movies,
   advanced framebuffer effects, clean-machine delivery and stable 120 presents
   remain open; no main merge or synchronization of the other physical device.

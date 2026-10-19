@@ -10,6 +10,7 @@ API. Git synchronization, a shared account and a backlog do not translate code.
 | --- | --- | --- |
 | Guest execution and gameplay fixes | Pinned runtime, complete patch stack, generated guest code | Build/compiler and process entry |
 | Menu, camera and display policy | `pc_display*`, `pc_menu_*`, `pc_cutscene.h`, `pc_ui_layout.h` | OS pointer events, window/resolution application |
+| Screen-copy rectangle policy | `graphics/screen_copy_rect.h` clips paired source/destination rectangles once | RHI shader draw or legacy GL blit |
 | Controls and configuration | `pc_input*`, `pc_bindings.inc`, shared validation | Win32/SDL events and atomic file writes |
 | Debug settings | `pc_debug_options.def` generates fields, keys, labels and capability metadata | Win32/Cocoa controls, layout, log-folder opening |
 | Menu reconstruction shader | `graphics/menu_sampling_shader.h` and `pc_menu_sampling.h` eligibility | HLSL/GLSL intrinsic/resource syntax and uniform/constant binding |
@@ -119,7 +120,7 @@ GPU loader from the build manifest. Combined GL/Vulkan suites, native launcher
 lifecycle and a bounded first-mission check pass at `ad9cb0f`; see
 [integration evidence and limits](../STATUS.md#integrated-host-validation-and-launcher-cleanup-fix-2026-10-19).
 Windows CI found a launcher cleanup casing regression, fixed in shared code
-with hosted revalidation pending. Wider scene acceptance remains required
+at `c553f9a`; [hosted revalidation](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39311742707) passes on both hosts. Wider scene acceptance remains required
 before changing defaults.
 Keep shared build pins; do not copy another OS's build tree.
 
@@ -146,7 +147,8 @@ integration work, tracked in the backlog.
 | `codex/shared-present-metrics` | `3e78f7c` | Shared API-acceptance counts, frame timing and interpolation failure handling |
 | `codex/shared-platform-validation` | `a0c8a1a` | `083e57c`: pinned SDK download and Windows test-harness fixes; both hosted jobs and GPU contracts pass |
 | `codex/shared-native-window-acceptance` | `37b4af9` plus validation fixes `083e57c` | One native settings/host fixture for both renderers; common Vulkan settings and window transitions pass |
-| `codex/shared-texture-contract` | `296f970` | `e864831`: both hosted cube/volume contracts pass. `4419205`: Xbox factory acceptance added, GPU run pending |
+| `codex/shared-screen-copy-contract` | `c553f9a` | Common rectangle clipping and production screen-copy GPU contract; local Mac passes, Windows pending |
+| `codex/shared-texture-contract` | `296f970` | `f2c2261`: both hosted lower-level and Xbox-factory cube/volume contracts pass |
 
 The complete ancestor stack through `a0c8a1a` is published on
 `codex/shared-present-metrics`, with `codex/shared-platform-validation` also
