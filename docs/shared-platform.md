@@ -134,5 +134,9 @@ integration work, tracked in the backlog.
 | `codex/shared-interpolation-depth` | `2c63fbf` | `3e78f7c`: Shared replay depth/stencil isolation, target restoration and GPU/fault-injection contracts |
 | `codex/shared-present-metrics` | `3e78f7c` | Shared API-acceptance counts, frame timing and interpolation failure handling |
 
-These are local branches; they have not been merged into main or verified on the
-other computer. Measured scope and unavailable checks are recorded in `STATUS.md`.
+The complete ancestor stack through `a0c8a1a` is published on
+`codex/shared-present-metrics`; the other milestone branch refs remain local.
+`codex/shared-platform-validation` depends on that tip and repairs the pinned
+SDK download's client identification for hosted validation. Nothing has been
+merged into main or verified on the other physical computer. Hosted CI results,
+measured scope and unavailable checks are recorded in `STATUS.md`.

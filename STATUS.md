@@ -1,5 +1,32 @@
 # Measured progress
 
+## Shared platform CI validation (2026-10-19)
+
+- **Source/publication:** `codex/shared-present-metrics` at `a0c8a1a` is now
+  published, including its complete ancestor stack. The focused
+  `codex/shared-platform-validation` branch depends on that unmerged revision.
+  Main remains unchanged; the other physical computer's checkout is unverified.
+  The 19 untracked duplicate files and personal settings/saves remain untouched.
+- **First remote run:** [Run 39302357087](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39302357087)
+  manually exercises Windows and Mac at `a0c8a1a`. Mac hosted image
+  `macos-26-arm64/20261013.0424` (macOS 26.6.2, Python 3.12.10) passes 47
+  CI/backlog checks, 26 patch checks (two skips), and 166 runtime checks
+  (18 skips). Its GPU prerequisite fails downloading the pinned SDK with HTTP
+  403; no hosted GPU success is claimed. Windows results remain pending.
+- **Download cause/fix:** Local HEAD and four-byte range requests reproduce
+  HTTP 403 / CDN error 1010 with urllib's generic client header. Identifying the
+  downloader as `TSFP-SDK-Setup/1.0` returns HTTP 200 / 206 and ZIP magic from
+  the same URL. Setup now sends that header, preserving version 1.4.363.0,
+  exact archive size/SHA-256 checks, installation receipt and license checks.
+  The official [SDK index](https://vulkan.lunarg.com/sdk/files.json) still lists
+  the pinned archive and checksum. The regression verifies the request and
+  rejects unpinned response bytes before any extraction or installer execution.
+- **Local checks:** On macOS 27.0.1 arm64, 59 SDK/CI/backlog checks pass after
+  the fix. The preceding full hosted-suite selection also passed locally
+  (173 passed, 11 skipped; `logs/shared-platform-full-host.out`). No game rebuild
+  is needed for this downloader-only change. Hosted rerun and remaining common
+  renderer settings/fullscreen/scene acceptance are still required.
+
 ## Shared presentation outcomes and timing (2026-10-19)
 
 - **Source/dependency:** `codex/shared-present-metrics` depends on local unmerged

@@ -830,6 +830,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   source/fault contracts in CI; its execution and stable-120 gameplay remain
   pending. [Evidence](STATUS.md#shared-presentation-outcomes-and-timing-2026-10-19).
 
+- **Hosted validation setup (2026-10-19):** The shared stack through `a0c8a1a`
+  is published. Mac CI passes its source contracts but cannot yet reach GPU
+  validation because the SDK CDN rejects urllib's default client. The dependent
+  `codex/shared-platform-validation` change identifies the downloader and keeps
+  the existing archive/version/checksum pins. Local regression checks pass;
+  hosted GPU rerun and Windows results remain pending. This does not close
+  renderer fidelity or scene acceptance. [Evidence](STATUS.md#shared-platform-ci-validation-2026-10-19).
+
 ### MAC-006 — Cube and volume texture resources
 
 - **Status:** Queued
