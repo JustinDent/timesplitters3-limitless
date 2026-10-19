@@ -373,6 +373,15 @@ new game opens a window and exits normally. Until then, Restore previous swaps
 releases without replacing user settings. The downloaded ZIP is
 discarded after successful extraction, and staging is discarded after install.
 
+When Windows temporarily blocks renaming the completed transaction into the
+rollback folder, the updater retries that rename every 250 ms for up to five
+seconds. This applies to game installs, repairs and launcher updates; file writes
+are not replayed. A persistent access/sharing/lock error still fails the update
+and attempts restoration, with instructions to close programs using the install
+folder and retry. Other filesystem errors fail immediately. If recovery also
+fails, the log retains both errors and the message tells users to preserve
+`.launcher` and reopen the launcher after releasing the lock.
+
 ### Automatic game cleanup (launcher v1.2.5)
 
 After a game session opens a window and exits with code zero, the launcher checks
