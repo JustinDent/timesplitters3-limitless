@@ -202,6 +202,9 @@ void pc_display_title_matte(void (*original)(void))
 
 void pc_display_menu_backdrop(void (*original)(void))
 {
+    /* Backdrop precedes the frontend's artwork and glyph batches. Present
+       clears this host-only flag, so gameplay never inherits menu filtering. */
+    pc_display_menu_filter_begin((int32_t)WORD_AT(0x0079094Cu)>100);
     const uint32_t projection=0x0055FA40u;
     uint32_t view=WORD_AT(0x007E71C8u),saved;
     float horizontal,scale=pc_display_hud_scale();
@@ -248,8 +251,10 @@ void pc_display_main_menu_font(void (*original)(void),int building)
     x*=.75f;y*=.75f;
     memcpy(&WORD_AT(0x007E7270u),&x,4);memcpy(&WORD_AT(0x007E7280u),&y,4);
     guest_call(sub_0003F8D0,0);
+    int previous_font_filter=pc_display_menu_font_filter(!building);
     original();
     guest_call(sub_00022FF0,0);
+    pc_display_menu_font_filter(previous_font_filter);
     WORD_AT(0x007E7270u)=saved_x;WORD_AT(0x007E7280u)=saved_y;
     guest_call(sub_0003F8D0,0);
 }

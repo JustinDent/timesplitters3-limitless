@@ -1,5 +1,30 @@
 # PC features awaiting Mac adaptation
 
+### MAC-047 — Main-menu image and lettering fidelity
+
+- **Status:** Queued
+- **PC behavior:** Windows frontend textures use clamped Catmull-Rom
+  reconstruction during magnification. Verified main-menu row draws additionally
+  reconstruct A8 glyph coverage without changing glyph placement or measurement.
+  Native-size/minified samples, point filtering, framebuffer copies, render
+  targets and gameplay retain their existing paths. `TSFP_MENU_FILTER=linear`
+  restores previous sampling for an individual process.
+- **Source:** Commit titled `Improve main-menu image and lettering fidelity` on
+  `fix/main-menu-image-fidelity`;
+  `src/pc_menu_sampling.h`, `src/pc_display.c`, `src/pc_display_ui.inc`,
+  the `menu-sampling.patch`, and `tests/menu_sampling_gpu.c`.
+- **Mac support:** The frontend/glyph scope and per-present reset are shared.
+  The native OpenGL renderer does not use the Windows HLSL helper, so its
+  current sampling is retained. Native execution is unverified.
+- **Remaining:** Adapt reconstruction and glyph coverage to the native GLSL
+  sampling paths, retaining wrap/clamp, alpha, texture dimensions and minification.
+  Reuse the shared frontend/row scope; exclude framebuffer and depth effects.
+- **Acceptance:** GPU comparison at native size and during minification is
+  unchanged; magnified menu background, logo, glyphs and icons sharpen without
+  ringing, atlas bleed, opacity drift or changes to gameplay. Check 1080p and
+  ultrawide captures, font measurements, fades and menu/gameplay transitions.
+  Windows evidence is recorded in `STATUS.md`; it is not native Mac validation.
+
 ### MAC-045 - Terminal camera depth clears (issue #47)
 
 - **Status:** Implemented, pending native validation
