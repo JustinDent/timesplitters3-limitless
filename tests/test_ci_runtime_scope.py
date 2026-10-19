@@ -1,6 +1,7 @@
 """Keep heavyweight patch upgrades scoped without missing combined changes."""
 import importlib.util
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -8,6 +9,23 @@ import pytest
 spec = importlib.util.spec_from_file_location('ci_runtime_scope', Path(__file__).resolve().parents[1] / 'tools/ci-runtime-scope.py')
 scope = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(scope)
+
+
+@pytest.mark.parametrize('filename', ['issue-forms.yml', 'issue-resolution.yml', 'runtime-patches.yml'])
+def test_required_workflows_report_on_every_pull_request(filename):
+    workflow = (Path(__file__).resolve().parents[1] / '.github/workflows' / filename).read_text()
+    trigger = re.search(r'^  pull_request:\n(.*?)(?=^  [a-z_]+:|^[^ \n]|\Z)', workflow, re.M | re.S)
+    assert trigger, 'Required checks need a pull_request trigger.'
+    assert not trigger[1].strip(), 'Required workflows must not skip PRs by path, branch or event type.'
+
+
+def test_version_refresh_cannot_push_directly_to_protected_main():
+    workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/issue-forms.yml').read_text()
+    versions = workflow.split('\n  versions:\n', 1)[1].split('\n  labels:\n', 1)[0]
+    assert '--pull-request' in versions
+    assert 'pull-requests: write' in versions
+    assert 'git push' not in versions
+    assert 'persist-credentials: false' in versions
 
 
 @pytest.mark.parametrize('paths, expected', [

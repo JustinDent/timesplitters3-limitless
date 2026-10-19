@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import re
+import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -27,6 +28,7 @@ class GitHub:
         if not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository):
             raise ValueError('Use a repository in owner/name form.')
         self.base = 'https://api.github.com/repos/' + repository + '/'
+        self.repository = repository
         self.token = token
 
     def request(self, method, path, payload=None):
@@ -114,6 +116,70 @@ def refresh_versions(root, releases, check=False):
     return list(updates)
 
 
+def publish_version_pr(client, root, changed, base_branch, base_sha):
+    """Update one bot-owned PR without pushing to main or rewriting history."""
+    if not changed:
+        return None
+    relatives = [path.relative_to(root).as_posix() for path in changed]
+    if any(relative not in FORMS for relative in relatives):
+        raise ValueError('Only generated issue-form references may be proposed.')
+    base_ref = 'git/ref/heads/' + urllib.parse.quote(base_branch, safe='/')
+    if client.request('GET', base_ref)['object']['sha'] != base_sha:
+        raise ValueError('The default branch advanced; rerun the version refresh.')
+
+    branch = 'automation/issue-form-versions'
+    branch_ref = 'git/ref/heads/' + branch
+    previous = None
+    try:
+        previous = client.request('GET', branch_ref)['object']['sha']
+    except urllib.error.HTTPError as error:
+        if error.code != 404:
+            raise
+    if previous and previous != base_sha:
+        comparison = client.request('GET', f'compare/{base_sha}...{previous}')
+        if any(file['filename'] not in FORMS or
+               file.get('previous_filename', file['filename']) not in FORMS
+               for file in comparison['files']):
+            raise ValueError('The automation branch has other edits; refusing to replace them.')
+
+    base_tree = client.request('GET', 'git/commits/' + base_sha)['tree']['sha']
+    tree = client.request('POST', 'git/trees', {
+        'base_tree': base_tree,
+        'tree': [dict(path=relative, mode='100644', type='blob',
+                      content=(root / relative).read_text(encoding='utf-8'))
+                 for relative in relatives],
+    })['sha']
+    # Both the latest main and the previous bot tip remain ancestors. Building
+    # the tree from main preserves unrelated changes and avoids force-pushes.
+    parents = [base_sha] + ([previous] if previous and previous != base_sha else [])
+    commit = client.request('POST', 'git/commits', {
+        'message': 'Refresh issue form release references', 'tree': tree, 'parents': parents,
+    })['sha']
+    if previous:
+        client.request('PATCH', 'git/refs/heads/' + branch, {'sha': commit, 'force': False})
+    else:
+        client.request('POST', 'git/refs', {'ref': 'refs/heads/' + branch, 'sha': commit})
+
+    query = urllib.parse.urlencode(dict(state='open', base=base_branch,
+                                       head=client.repository.split('/')[0] + ':' + branch))
+    existing = client.request('GET', 'pulls?' + query)
+    if existing:
+        return existing[0]['html_url']
+    created = client.request('POST', 'pulls', {
+        'title': 'Refresh published version references in the bug form',
+        'head': branch, 'base': base_branch,
+        'body': '## Change\n\nRefresh the published game and launcher version references.\n\n'
+                '## Cause and fix\n\nPublished releases changed. Regenerate only the bug '
+                'form reference lists; required inputs remain empty and the improvement '
+                'form is unchanged. This PR follows main branch protection.\n\n'
+                '## Validation\n\nApprove workflows to run if GitHub requests approval, '
+                'then wait for the required checks. Enable auto-merge if desired.\n\n'
+                '## Mac port backlog\n\nNot applicable: issue-form reference data only; '
+                'no game or launcher behavior changes.\n',
+    })
+    return created['html_url']
+
+
 def report_labels(body):
     fields = {name.strip(): value.strip() for name, value in re.findall(
         r'^### ([^\r\n]+)\r?\n(.*?)(?=^### |\Z)', body or '', re.M | re.S)}
@@ -168,13 +234,21 @@ def main():
     parser.add_argument('action', choices=('versions', 'labels'))
     parser.add_argument('--repository', default=os.environ.get('GITHUB_REPOSITORY'))
     parser.add_argument('--check', action='store_true', help='Report stale versions without writing.')
+    parser.add_argument('--pull-request', action='store_true', help='Propose refreshed versions through a PR.')
+    parser.add_argument('--base-branch', default=os.environ.get('TARGET_BRANCH', 'main'))
     args = parser.parse_args()
     if not args.repository:
         parser.error('Set GITHUB_REPOSITORY or pass --repository owner/name.')
+    if args.pull_request and (args.check or args.action != 'versions'):
+        parser.error('--pull-request requires versions and cannot be combined with --check.')
     client = GitHub(args.repository, os.environ.get('GITHUB_TOKEN'))
     if args.action == 'versions':
         changed = refresh_versions(ROOT, client.releases(), check=args.check)
         print(f'{len(changed)} issue form(s) ' + ('need updates.' if args.check else 'updated.'))
+        if args.pull_request:
+            base_sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
+            url = publish_version_pr(client, ROOT, changed, args.base_branch, base_sha)
+            print(url or 'References already match published releases; no PR needed.')
         if args.check and changed:
             raise SystemExit(1)
     else:
