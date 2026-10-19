@@ -2,9 +2,9 @@
 import contextlib
 import importlib.util
 import io
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,36 +43,23 @@ class FakeGitHub:
                        if '/comments?' in path else self.issues)
             return records[(page-1)*100:page*100]
         if payload['query'] == known.QUERY:
-            target = self.target.copy() if self.target else None
-            if target:
-                page = int(payload['variables'].get('after') or 0)
-                target['comments'] = {
-                    'nodes': self.discussion_comments[page*100:(page+1)*100],
-                    'pageInfo': {'hasNextPage': len(self.discussion_comments) > (page+1)*100,
-                                 'endCursor': str(page+1)}}
             return ({'errors': [{'message': 'Unavailable'}]} if self.read_error else
-                    {'data': {'repository': {'discussion': target}}})
+                    {'data': {'repository': {'discussion': self.target.copy() if self.target else None}}})
         if self.write_error:
             return {'errors': [{'message': 'Access denied'}]}
-        if payload['query'] == known.CREATE:
+        if payload['query'] == known.UPDATE:
             assert payload['variables']['id'] == 'discussion-id'
-            stamp = datetime(2026, 10, 19, tzinfo=timezone.utc) + timedelta(seconds=len(self.discussion_comments))
-            self.discussion_comments.append({'id': 'comment-' + str(len(self.discussion_comments)),
-                'createdAt': stamp.isoformat(), 'body': payload['variables']['body'],
-                'url': self.target['url'] + '#discussioncomment-123',
-                'author': {'login': 'github-actions[bot]', '__typename': 'Bot'}})
+            self.target['body'] = payload['variables']['body']
         else:
-            raise AssertionError('Unexpected mutation; workflow token must never attempt edits.')
-        return {'data': {'addDiscussionComment': {'comment': {'url': self.target['url'] + '#discussioncomment-123'}}}}
+            raise AssertionError('Unexpected mutation; never create Discussions or snapshot comments.')
+        return {'data': {'updateDiscussion': {'discussion': {'url': self.target['url']}}}}
 
     @property
     def generated_body(self):
-        return max((c for c in self.discussion_comments
-                    if c['author']['login'].removesuffix('[bot]') == 'github-actions'),
-                   key=lambda c: c['createdAt'])['body']
+        return self.target['body']
 
     def writes(self):
-        return [r for r in self.requests if r[2] and r[2].get('query') == known.CREATE]
+        return [r for r in self.requests if r[2] and r[2].get('query') == known.UPDATE]
 
 
 class KnownIssuesTests(unittest.TestCase):
@@ -112,7 +99,7 @@ class KnownIssuesTests(unittest.TestCase):
         self.assertEqual(len(api.writes()), 2)
         self.assertIn('Updated mouse report', api.generated_body)
 
-    def test_discussion_body_and_other_authors_comments_are_preserved(self):
+    def test_edits_only_original_post_and_preserves_all_comments(self):
         api = FakeGitHub()
         human = {'id': 'human', 'body': known.MARKER + '\nMaintainer notes.',
                  'author': {'login': 'owner', '__typename': 'User'}}
@@ -120,39 +107,43 @@ class KnownIssuesTests(unittest.TestCase):
                      'author': {'login': 'another[bot]', '__typename': 'Bot'}}
         api.discussion_comments = [human.copy(), other_bot.copy()]
         self.publish(api)
-        self.assertEqual(api.target['body'], 'Previous manual post.')
+        self.assertTrue(api.target['body'].startswith(known.MARKER))
         self.assertEqual(api.discussion_comments[:2], [human, other_bot])
-        self.assertEqual(len(api.discussion_comments), 3)
+        self.assertEqual(len(api.discussion_comments), 2)
         api.issues = []; self.publish(api)
-        self.assertEqual(len(api.discussion_comments), 4)
+        self.assertEqual(len(api.discussion_comments), 2)
         self.assertEqual(api.discussion_comments[:2], [human, other_bot])
-        self.assertEqual(api.target['body'], 'Previous manual post.')
+        self.assertIn('No open issues', api.target['body'])
 
-    def test_latest_snapshot_on_later_page_is_found_and_unchanged_run_skips(self):
-        api = FakeGitHub(); self.publish(api)
-        api.discussion_comments[:0] = [{'id': str(n), 'body': 'Conversation.',
-            'author': {'login': 'human', '__typename': 'User'}} for n in range(100)]
-        self.assertFalse(self.publish(api))
-        api.issues = []; self.publish(api)
-        self.assertEqual(len(api.discussion_comments), 102)
-        self.assertEqual(api.writes()[-1][2]['query'], known.CREATE)
-        self.assertIn('No open issues', api.generated_body)
+    def test_missing_edit_token_does_not_fall_back_to_default_token(self):
+        with patch.dict(known.os.environ, {'GITHUB_TOKEN': 'default-test-token'}, clear=True), \
+                patch('sys.argv', ['known-issues.py', '--repository', REPO]), \
+                patch.object(known, 'GitHub') as client, contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as error:
+                known.main()
+            self.assertEqual(error.exception.code, 2)
+            client.assert_not_called()
 
-    def test_graphql_bot_login_without_rest_suffix_is_reused(self):
-        api = FakeGitHub(); self.publish(api)
-        api.discussion_comments[0]['author']['login'] = 'github-actions'
-        self.assertFalse(self.publish(api))
-        self.assertEqual(len(api.discussion_comments), 1)
-        self.assertEqual(api.writes()[-1][2]['query'], known.CREATE)
+    def test_edit_token_is_used_without_printing_credentials(self):
+        api, output = FakeGitHub(), io.StringIO()
+        with patch.dict(known.os.environ, {'KNOWN_ISSUES_TOKEN': 'editing-test-token',
+                                         'GITHUB_TOKEN': 'default-test-token'}, clear=True), \
+                patch('sys.argv', ['known-issues.py', '--repository', REPO]), \
+                patch.object(known, 'GitHub', return_value=api) as client, contextlib.redirect_stdout(output):
+            known.main()
+            client.assert_called_once_with('editing-test-token')
+        self.assertNotIn('test-token', output.getvalue())
+        self.assertEqual(len(api.writes()), 1)
 
-    def test_newest_snapshot_wins_even_if_comments_arrive_out_of_order(self):
-        api = FakeGitHub(); self.publish(api)
-        original = api.discussion_comments[0].copy()
-        api.issues = []; self.publish(api)
-        api.discussion_comments.reverse()
-        self.assertFalse(self.publish(api))
-        self.assertEqual(len(api.writes()), 2)
-        self.assertEqual(api.discussion_comments[-1], original)
+    def test_repeated_updates_never_create_posts_or_comments(self):
+        api = FakeGitHub()
+        for title in ('First title', 'Second title', 'Third title'):
+            api.issues[0]['title'] = title
+            self.publish(api)
+        self.assertEqual(len(api.writes()), 3)
+        self.assertEqual(api.discussion_comments, [])
+        self.assertEqual({r[2]['variables']['id'] for r in api.writes()}, {'discussion-id'})
+        self.assertFalse(hasattr(known, 'CREATE'))
 
     def test_existing_comment_update_rejection_is_reported(self):
         api = FakeGitHub(); self.publish(api)
@@ -263,7 +254,9 @@ class KnownIssuesTests(unittest.TestCase):
         self.assertIn("ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.repository.default_branch }}", workflow)
         self.assertIn('persist-credentials: false', workflow)
         self.assertIn('group: known-issues-discussion', workflow)
-        self.assertIn('discussions: write', workflow)
+        self.assertIn('KNOWN_ISSUES_TOKEN: ${{ secrets.KNOWN_ISSUES_TOKEN }}', workflow)
+        self.assertIn('      KNOWN_ISSUES_TOKEN:\n        required: true', workflow)
+        self.assertNotIn('discussions: write', workflow)
         self.assertNotIn('issues: write', workflow)
         self.assertNotIn('contents: write', workflow)
         self.assertIn("github.repository == 'TheDoffman/timesplitters-future-perfect-pc'", workflow)
@@ -273,7 +266,8 @@ class KnownIssuesTests(unittest.TestCase):
         sync = workflow.split('\n  known-issues:\n')[1]
         self.assertIn('needs: labels', sync)
         self.assertIn('uses: ./.github/workflows/known-issues.yml', sync)
-        self.assertIn('discussions: write', sync)
+        self.assertIn('KNOWN_ISSUES_TOKEN: ${{ secrets.KNOWN_ISSUES_TOKEN }}', sync)
+        self.assertNotIn('discussions: write', sync)
         tests = (ROOT / '.github/workflows/issue-forms.yml').read_text()
         self.assertIn('python -m unittest discover -s tests -p test_known_issues.py -v', tests)
         self.assertNotIn('discussions: write', tests)
