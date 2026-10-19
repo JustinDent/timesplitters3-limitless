@@ -75,7 +75,7 @@ list, so game releases do not need the Latest badge. See GitHub's
 
 ### Issue-form versions and labels
 
-The **Issue forms** workflow refreshes the bug report's reference lists from published GitHub
+The **Issue form versions** workflow refreshes the bug report's reference lists from published GitHub
 releases after publication, editing, deletion or unpublishing. Game tags use
 `v...`; launcher tags use `launcher-v...`. Draft releases and unreleased source
 version bumps are not offered as installed versions. Both stable and preview
@@ -97,11 +97,11 @@ Approve workflows to run if GitHub requests it on the bot-created PR, then let
 the required checks pass before merging. Auto-merge can be enabled for that PR.
 See [CI and branch protection](ci.md) for repository settings and check names.
 The current publisher uses the maintainer's GitHub CLI authentication. A future
-publisher using `GITHUB_TOKEN` must explicitly dispatch **Issue forms** because
+publisher using `GITHUB_TOKEN` must explicitly dispatch **Issue form versions** because
 token-created release events do not start another workflow.
 
 Form submissions receive `bug` or `enhancement` immediately. On issue creation,
-editing or reopening, the workflow synchronizes that type plus
+editing or reopening, the separate **Automatic issue labels** workflow synchronizes that type plus
 `platform: windows` or `platform: macos` when a platform answer is present. New
 improvement suggestions receive only `enhancement`. It creates
 missing platform labels, removes outdated managed labels after edits, and keeps
