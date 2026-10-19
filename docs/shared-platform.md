@@ -87,8 +87,11 @@ installed files on later runs. Licenses and version manifests remain with it.
 The probe needs macOS 26+ with this SDK; this does not raise the current GL game's
 requirement. Run `--setup-sdk` once, then `--driver moltenvk` or
 `--driver kosmickrisp`. See [Mac guide](macos.md#common-renderer-development-probe).
-The same `tests/rhi_menu_sampling.c` pixel test is registered for Windows D3D11
-WARP, without a swapchain there. Remote Windows/CI execution is still pending.
+The same `tests/rhi_menu_sampling.c` pixel test runs on Windows D3D11 WARP,
+without a swapchain there. Hosted Windows and Mac validation passed at
+`083e57c`; see [the CI results](../STATUS.md#shared-platform-ci-validation-2026-10-19).
+New cube/volume resource cases are published at `e864831` and have a separate
+hosted run pending; the earlier green result does not cover those additions.
 
 The game can now be built with `tools/build-native-mac.py --renderer vulkan`.
 Its SDL adapter creates the window and supplies physical dimensions/events;
@@ -108,8 +111,9 @@ only accepted API presentations, separating guest/interpolated/other kinds and
 retaining skipped/failed counts. Failed replay does not advance HLE present totals
 or feed stale timing into its scheduler. These are CPU API-call timings, not
 scanout measurements.
-Next, verify fullscreen and settings application,
-and compare targeted scenes before changing defaults.
+The common Vulkan game passes programmed native settings, resize and fullscreen
+acceptance. Repetition on fallback GL awaits completion of the launcher chat,
+which owns the local build directory. Compare targeted scenes before changing defaults.
 Keep shared build pins; do not copy another OS's build tree.
 
 Then migrate remaining shader/resource behavior incrementally, using shared
@@ -133,13 +137,15 @@ integration work, tracked in the backlog.
 | `codex/shared-native-renderer` | `4d23a6d` | `2c63fbf`: common Xbox frontend in an opt-in native game, text/window adapters and shader compatibility fixes |
 | `codex/shared-interpolation-depth` | `2c63fbf` | `3e78f7c`: Shared replay depth/stencil isolation, target restoration and GPU/fault-injection contracts |
 | `codex/shared-present-metrics` | `3e78f7c` | Shared API-acceptance counts, frame timing and interpolation failure handling |
-| `codex/shared-platform-validation` | `a0c8a1a` | `083e57c`: pinned SDK download and Windows test-harness fixes; hosted Mac GPU contract passes |
+| `codex/shared-platform-validation` | `a0c8a1a` | `083e57c`: pinned SDK download and Windows test-harness fixes; both hosted jobs and GPU contracts pass |
 | `codex/shared-native-window-acceptance` | `37b4af9` plus validation fixes `083e57c` | One native settings/host fixture for both renderers; common Vulkan settings and window transitions pass |
+| `codex/shared-texture-contract` | `296f970` | `e864831`: shared cube/volume sampling and resource acceptance; hosted GPU execution pending |
 
 The complete ancestor stack through `a0c8a1a` is published on
 `codex/shared-present-metrics`, with `codex/shared-platform-validation` also
 published at `083e57c`, and `codex/shared-native-window-acceptance` published
-through `24b5403`; the other milestone branch refs remain local.
+through `296f970`, and `codex/shared-texture-contract` published at `e864831`;
+the other milestone branch refs remain local.
 The native window acceptance work depends on these validation fixes. Nothing has been
 merged into main or verified on the other physical computer. Hosted CI results,
 measured scope and unavailable checks are recorded in `STATUS.md`.

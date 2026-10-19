@@ -873,6 +873,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   and CI/backlog checks pass; hosted GPU execution is pending. The Xbox factories
   and title scenes remain separate acceptance work.
   [Evidence](STATUS.md#shared-cube-and-volume-resource-contract-2026-10-19).
+- **Xbox factory follow-up (commit carrying this entry, same branch):** Adds the production
+  resource implementation to both GPU fixtures. It covers automatic mip counts,
+  linear/swizzled Lock/Unlock uploads, face/voxel sampling and child lifetime
+  after parent release. Source checks pass; GPU execution remains pending.
+  Palette/compressed formats, other texture modes and actual title usage are
+  outside this fixture and remain unverified.
 
 ### MAC-007 — Screen-copy effects and image surfaces
 

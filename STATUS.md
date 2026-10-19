@@ -17,6 +17,20 @@
   check without modifying the shared runtime/build. All 47 CI selection/backlog
   checks pass. GPU execution is pending a published hosted run; this does not
   yet prove cube/volume support, Xbox resource-factory behavior or any game scene.
+- **Publication:** Commits through `e864831` are published on the focused branch.
+  [Run 39306301875](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39306301875)
+  is executing both host jobs at that revision. Main remains unchanged. The
+  latest fetched main is `ade3763`; its remaining changes concern repository
+  maintenance and launcher documentation, not the renderer contract.
+- **Xbox factory follow-up (commit carrying this entry):** The same fixture now links the
+  production `d3d8_resources.c`. It creates Xbox cube and non-cubic volume
+  resources, requests automatic mip chains, writes through Lock/Unlock in both
+  linear and swizzled ARGB layouts, samples every face/mip and volume voxel,
+  and checks that child cube surfaces/volume levels survive parent release.
+  Palette, feedback and device-query hooks abort if reached; those paths are
+  outside this test's scope. Clang syntax and 47 CI/backlog checks pass. Actual
+  factory GPU execution is pending a subsequent run; run 39306301875 covers
+  only the lower-level RHI cases. No local runtime/build files were modified.
 
 ## Common renderer Mac settings acceptance (2026-10-19)
 

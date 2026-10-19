@@ -84,6 +84,7 @@ on:
       - tests/text_bitmap_macos.c
       - tests/rhi_depth_replay.h
       - tests/rhi_texture_resources.h
+      - tests/rhi_xbox_textures.h
       - tests/interpolation_depth_device.h
       - tests/interpolation_depth_cache.c
       - tests/test_debug_settings_model.py
