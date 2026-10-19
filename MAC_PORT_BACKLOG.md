@@ -43,6 +43,13 @@
 ### MAC-040 — Dedicated game icon
 
 - **Status:** Queued
+- **Publisher dependency follow-up (2026-10-19, this revision on
+  `fix/release-python-dependencies`):**
+  `tools/publish-release.py` refreshes pinned Python requirements before Windows
+  builds/tests so older environments include Pillow for icon validation.
+  `tests/test_publish_release.py` checks ordering and installation failure.
+  No Mac adapter is applicable to this Windows publishing orchestration;
+  native Mac packaging and icon validation remain unverified and queued above.
 - **PC behavior:** New Windows game executables embed a seven-size transparent
   ICO. Large sizes use the official TSFP title in a blue/silver temporal frame,
   with the original Future Perfect lettering enlarged on a separate line.

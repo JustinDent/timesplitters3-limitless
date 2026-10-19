@@ -311,6 +311,10 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         for path in (self.stage, self.archive, self.checksum, self.metadata):
             if path.exists():
                 raise ValueError(f'Existing release output: {path.name}. Preserve/recycle the old output or use a new VERSION; nothing was overwritten.')
+        # An existing setup environment can predate newly pinned dependencies.
+        # Prepare the same interpreter that runs the release tests and tools.
+        self.run([self.python, '-m', 'pip', 'install', '-r',
+                  self.root/'requirements.txt'], live=True)
         tests = self.root/'build/release-tests'
         clean_pytest_current_links(self.root, tests)
         check_directory(self.root, tests)

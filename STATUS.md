@@ -1,5 +1,24 @@
 # Measured progress
 
+## Release Python dependency refresh (2026-10-19)
+
+The Windows publisher now installs the pinned `requirements.txt` with its own
+Python interpreter before building and testing a new package. Existing virtual
+environments could otherwise omit newly added Pillow and fail the icon tests
+late in release preparation. Installation failure stops before the build,
+packaging or publication; existing output protections remain unchanged.
+Windows x64 / Python 3.14.2: publisher and icon regressions passed together
+(52 passed, 4 skipped), including the real MSVC/CMake resource build in a
+Unicode path. All four previously failing icon tests passed. A restricted-run
+CMake configuration timed out; the normal build-tool-access rerun passed in
+5.92 seconds. `pip check` and diff checks passed.
+After transient approval-service failures, the retry created focused branch
+`fix/release-python-dependencies` from main `3c8439d` and installed the pinned
+Pillow 12.2.0 into the existing project environment. Implementation and
+validation are included in this branch revision.
+No release was prepared or published for this validation. Native Mac packaging
+is unchanged and unverified; this Windows publisher fix needs no Mac adapter.
+
 ## Automatic mouse Auto Lookahead (2026-10-19)
 
 Implemented locally on `fix/mouse-auto-look-ahead`, based on main `6ad7767`.
