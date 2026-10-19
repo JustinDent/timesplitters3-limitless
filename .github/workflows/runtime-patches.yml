@@ -42,6 +42,18 @@ on:
       - tools/launcher/**
       - tools/build-launcher.ps1
       - tools/build-mac-launcher.py
+      - .github/workflows/launcher-release.yml
+      - tools/launcher-release.py
+      - tools/fetch-launcher-art.ps1
+      - config/launcher-artwork.json
+      - tests/test_launcher_release.py
+      - tests/test_launcher_shared_ui.py
+      - tests/test_launcher_compatibility.py
+      - tools/launcher-compatibility.py
+      - .github/workflows/launcher-build.yml
+      - .github/workflows/launcher-compatibility.yml
+      - .github/prompts/launcher-compatibility*
+      - tests/launcher_shared_ui.cs
       - config/mac-launcher-sdk.json
       - tools/build-game-icon.ps1
       - tests/test_game_icon.py
@@ -280,6 +292,15 @@ jobs:
         if: runner.os == 'Windows' && steps.scope.outputs.launcher == 'true'
         shell: powershell
         run: ./tools/build-launcher.ps1 -Test
+      - name: Test dual-platform launcher publication and recovery
+        if: steps.scope.outputs.launcher == 'true'
+        run: python -m unittest discover -s tests -p test_launcher_release.py -v
+      - name: Test launcher compatibility automation policy
+        if: steps.scope.outputs.launcher == 'true'
+        run: python -m unittest discover -s tests -p test_launcher_compatibility.py -v
+      - name: Test shared launcher layout and theme propagation
+        if: steps.scope.outputs.launcher == 'true'
+        run: python -m unittest discover -s tests -p test_launcher_shared_ui.py -v
       - name: Test portable startup preference and launcher packaging
         if: runner.os == 'Windows' && steps.scope.outputs.launcher == 'true'
         run: python -m pytest tests/test_launcher_startup.py tests/package_launcher.py -q --tb=short

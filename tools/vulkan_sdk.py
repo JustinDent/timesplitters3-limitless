@@ -91,7 +91,10 @@ def setup(root=ROOT):
         partial = archive.with_suffix('.partial')
         if partial.is_symlink():
             raise RuntimeError('Refusing symlinked SDK partial download')
-        with urllib.request.urlopen(spec['url'], timeout=60) as response, partial.open('wb') as output:
+        # LunarG's CDN rejects urllib's generic Python client (403/1010).
+        # Identify this downloader; retain the exact URL and archive integrity pins.
+        request = urllib.request.Request(spec['url'], headers={'User-Agent': 'TSFP-SDK-Setup/1.0'})
+        with urllib.request.urlopen(request, timeout=60) as response, partial.open('wb') as output:
             shutil.copyfileobj(response, output)
         partial.replace(archive)
     verify_archive(archive, spec)

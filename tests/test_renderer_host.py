@@ -103,9 +103,9 @@ def test_interpolation_present_outcomes(tmp_path):
     includes=[ROOT/'src',RUNTIME,*[RUNTIME/name for name in ('d3d','config','hle','kernel','platform')]]
     source=str(ROOT/'tests/interpolation_present.c')
     if os.name=='nt':
-        args=[compiler,'/nologo','/std:c11','/O1','/Gy',*['/I'+str(p) for p in includes],source,'/Fe:'+str(exe),'/link','/OPT:REF']
+        args=[compiler,'/nologo','/std:c11',*['/I'+str(p) for p in includes],source,'/Fe:'+str(exe)]
     else:
-        args=[compiler,'-std=gnu11','-O1','-Wl,-dead_strip',*['-I'+str(p) for p in includes],source,'-o',str(exe)]
+        args=[compiler,'-std=gnu11',*['-I'+str(p) for p in includes],source,'-o',str(exe)]
     result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
     assert result.returncode==0,result.stdout+result.stderr
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)

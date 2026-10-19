@@ -5,7 +5,9 @@ Avalonia. Its home layout is generated directly from `tools/launcher/Launcher.xa
 artwork, placement, colors and labels come from that Windows source. The native
 settings, release notes, version browser, maintenance and startup windows use
 Mac controls. The local build includes native Discord, crash/hang capture, rich release notes,
-and isolated end-to-end tests. Published Mac delivery remains separate.
+and isolated end-to-end tests. [One release workflow](launcher-releases.md) builds
+and publishes Windows and Mac launcher updates together; native game delivery
+and Developer ID/notarization remain separate.
 
 ## Build and run
 

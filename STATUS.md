@@ -1,5 +1,98 @@
 # Measured progress
 
+## Shared launcher interface (2026-10-19)
+
+Source: `2ac286d`, `ee495e6` and `a0c4e14` on `codex/shared-launcher-interface`, based on `306d6dd`
+and dependent on PR #187 / #186. The concurrent primary renderer checkout is
+untouched. Local host: macOS 27.0.1 ARM64, .NET SDK 8.0.426, Avalonia 11.3.22.
+
+Both builds now compile the same settings, news, versions and maintenance pages;
+Home remains generated from the shared XAML. Shared theme values, button states
+and expander geometry feed the Mac syntax adapter, including Home; its separate
+Mac button/expander override file is removed. Mac-only duplicate page
+construction is removed. Native OS integrations and rich-text/control rendering
+remain adapters; this does not make Windows-specific OS code portable.
+
+Local checks pass: 18 native launcher regression groups, seven shared UI groups
+(settings drafts/cancel/FOV/save, binding conflicts/cancel/reassign/clear, Discord
+preservation, news selection/stale status
+and spacing, installed notes/issues, version pagination/locking, maintenance
+navigation/cancellation/repair gating), three source-mutation/compilation contracts
+and the read-only native prerequisite check. Actual Mac screenshots were reviewed
+for news, graphics, Discord, input, repair, diagnostics and Home. Initial framework
+field-width/expander/disabled-button differences were corrected by shared-theme
+translation. Evidence is retained in ignored `private/captures/launcher-shared`.
+These checks do not run the game or alter personal settings.
+
+Both real host builds and all seven shared UI groups passed in
+[release run 39324010569](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39324010569)
+on `ee495e6`: Windows Server 2025 x64 / .NET Framework 4.8 and macOS 15.7.9
+ARM64 / pinned SDK and Avalonia. Windows also passed 105 updater, 28 download,
+11 version, 10 startup, 30 news, 32 settings and 20 maintenance checks, plus
+session/crash checks. Mac passed its 18 native regression groups and actual
+packaged install, deliberate corruption, copied-helper repair, restart and render,
+preserving fixture saves/game metadata. Combined verification accepted all 12
+release assets; publication was skipped on the PR. The initial Windows run exposed
+locale-dependent layout output; explicit UTF-8 fixed it. The final Home theme
+consolidation also passes local Mac tests and collapsed/expanded visual review.
+Diagnostics retain each host's monospace font through the framework adapter.
+
+62 native-launcher/CI-selection Python checks, three source propagation contracts,
+16 release-policy cases and backlog integrity pass locally. The
+Windows package format and updater limits are unchanged; existing published
+launchers do not need a special bridge release. Developer ID/notarization and
+clean-machine delivery remain the existing MAC-021 acceptance gaps.
+
+## Dual-platform launcher release automation (2026-10-19)
+
+Source: `55d3141` and `d58bcf2` on `codex/launcher-dual-platform-release`, based on `60c3aea`
+and dependent on the native launcher in PR #186. The primary checkout and its
+concurrent renderer work are preserved. No game runtime or personal settings
+are changed. Local host: macOS 27.0.1 ARM64, Python 3.13.16.
+
+The shared publisher validates both Windows x64 and native Mac ARM64 packages,
+update manifests, permanent download aliases and source receipts. Publication
+starts with a draft and exposes neither platform until all 12 release assets
+match GitHub's digests. Sixteen offline tests pass for missing/corrupt/mixed-source
+packages, unsafe paths, permissions, version/tag/default-branch gates, failed
+uploads, retry/repair, published-asset immutability and preview/Latest policy.
+These tests use disposable fixtures and no GitHub writes. In
+[run 39319648658](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39319648658)
+both actual host builds, Mac packaged repair/restart/render and the combined
+12-asset verification passed. Publication was correctly skipped on the PR;
+no existing release was modified or new release published. Developer
+ID/notarization and clean-machine acceptance remain open.
+
+Windows Server 2025 x64 / .NET Framework 4.8: 105 updater regressions, 28 download,
+11 version-picker, 10 startup, 30 release-news, 32 settings, 14 session and 20
+maintenance checks, plus crash report discovery/export checks passed. Hosted
+macOS 15.7.9 ARM64 / pinned .NET SDK 8.0.426 / Avalonia 11.3.22: 18 native regression
+groups passed, including combined-release selection, case-independent launcher
+preservation, settings and crash export. The actual packaged app was installed,
+altered, repaired through its copied helper, restarted and rendered while
+preserving fixture saves/game metadata. Both jobs received the identical pinned
+PNG artwork and shared icon. This is launcher validation, not game-play testing.
+
+The first Windows CI run exposed a port regression in `PreserveGameFile`: legacy
+game manifests with lowercase launcher filenames bypassed the new strict package
+path predicate and removed the installed launcher during game upgrades. `d58bcf2`
+restores case-insensitive preservation while keeping package-path validation
+strict. The existing Windows upgrade/rollback regression now passes; native tests
+cover preservation, and both hosts test platform selection from one combined
+release. The Windows build, complete launcher regressions and package validation
+passed in [run 39319648658](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39319648658).
+
+The broader required CI inherited two failures from PR #186. Reused only the
+existing harness/downloader fixes from `37b4af9` and `083e57c`: identify the pinned
+SDK downloader to avoid the CDN's generic-client 403; provide fail-loud hooks for
+the full interpolation test translation unit on MSVC; compare driver paths through
+`Path`. SDK versions/checksums and game behavior are unchanged. The affected
+interpolation test, SDK tests, release policy and handoff checks pass locally:
+79 checks plus 10 subtests. A broader exploratory run gave
+94 passes and one unrelated screen-copy compile failure because the shared ignored
+upstream tree already contains the other chat's newer renderer patch; this branch's
+matching clean upstream is validated in CI, without rewinding that shared tree.
+
 ## Native launcher visual spacing follow-up (2026-10-19)
 
 Source: `1a24135` on `codex/mac-launcher-visual-polish`, based on the unmerged
@@ -7717,3 +7810,57 @@ MAC-048. No conflict markers remain and `git diff --check` passed.
 The combined game executable and native Mac runtime were not rebuilt/retested
 for this merge; earlier build/live-game evidence remains scoped to its recorded
 revision. Personal files and the primary checkout were preserved.
+
+
+## Launcher compatibility automation (2026-10-19)
+
+Source: `codex/launcher-compatibility-automation`, based on shared launcher UI
+`725b27ca906d8af37d10925e54980e9908e36453` / PR #189, which depends on #187/#186.
+Local host: macOS 27.0.1 ARM64, Python 3.13.16. No game renderer/runtime or personal data changes.
+The workflow uses a pinned Codex Action (`bdf19a4a223ec2549a3e2274a0cf61556bc07675`)
+and CLI/proxy 0.163.0. Linux reviews source; Windows and Mac run actual launcher
+checks through the same reusable workflow as release builds. Proposed repairs are
+separate PRs; automatic merging and release publication are not enabled.
+
+Local validation: 23 offline compatibility tests, 16 publication/recovery tests,
+and 52 CI-scope/backlog checks passed. Actual temporary Git repositories exercise
+patch add/modify/delete, protected paths, symlink rejection and sanitized source
+snapshots. Other cases cover both directions, incomplete file lists, credentials,
+trust, stale revisions, failed host builds, bounded output, idempotent PR creation,
+and explicit bot-PR test dispatch without recursive fix generation. Verified
+`actionlint` 1.7.12 passes all four changed workflow files.
+
+Real OpenAI execution, live automatic repair PR creation and enforcement on main
+remain unrun until the dedicated API key is provisioned, the workflow stack is
+merged, and the activation steps are completed. No API key has been created or
+written by this work. Credential provisioning is pending. Existing MAC-021 delivery,
+notarization and visual acceptance limits remain unchanged.
+
+The first Windows CI run caught OS-default newline expansion in the new disposable
+fixtures. Explicit LF fixture writes fix that test-harness issue; an additional
+Git regression verifies that accepted PowerShell patches retain CRLF working-tree
+files and normalized Git blobs. The actual PR source snapshot passed locally
+(78 source files, 1.6 MB); the existing native launcher's read-only prerequisite
+check also passed. No launcher runtime change was needed.
+
+A stale-run failure handler also rechecks head/base/target before changing the
+commit status, so cancellation cannot overwrite a newer review after retargeting.
+
+Both-host CI at `ef78a7d43f0a1da66d7b592fdd757f1c257ad53b` passed in
+[launcher run 39329419109](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39329419109):
+Windows Server 2025 x64 job 118323542609, macOS 15.7.9 ARM64 job 118324130993,
+and combined package verification job 118324619505. Both real launcher builds,
+seven shared UI groups, host regressions and the Mac packaged repair/restart test
+passed. The automation contracts passed on both hosts (22 at that revision;
+Windows skips its symlink fixture, which Mac exercises). Publication was skipped.
+`b0f3ddb` adds the 23rd contract for stale failure status handling; final-head CI
+results are linked from PR #190. Actions is already allowed to create PRs and
+retains read-only default token permissions; OPENAI_API_KEY is absent. No repository
+permission or required-check setting was changed before service activation.
+
+The complete implementation at `b0f3ddb01bd8b79f282ea66852647e19d0bb6bba`
+also passed both host builds and combined verification in
+[launcher run 39329520086](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39329520086).
+This includes all 23 compatibility contracts (the Windows symlink case remains an
+explicit skip). Later edits only update this validation record and remove a blank
+line at the end of the reusable workflow; the launcher source is unchanged.

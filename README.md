@@ -94,6 +94,10 @@ the console default, and provide left/right arrows. Saved custom modes are retai
 Launcher v1.2.11 adds **What's new** for game/launcher release notes,
 installed and available versions, and published known issues inside the main window.
 
+Windows and native Mac compile the same launcher pages and shared theme sources.
+Changes to those shared buttons, labels, layouts and page behavior reach both builds;
+OS integrations use host adapters. See [launcher development](docs/shared-platform.md#launcher-changes-that-reach-both-builds).
+
 | Controls | Display | Launcher |
 | --- | --- | --- |
 | **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects aspect-ratio groups, resolution and vertical FOV (40–100°, default 55°). Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Repair / Verify → Open game folder** opens the installation folder. Its **Diagnostics** tab provides system reports and GitHub reporting in launcher v1.2.12. **Saves**, **View logs** and **Support** open the save folder, logs and issue tracker. |
@@ -298,3 +302,7 @@ The launcher also records unfinished game sessions. After a nonzero exit or a
 restart with an abandoned session, Diagnostics can flag an unexpected exit even
 when no dump was captured. These reports can be exported locally; an unobserved
 exit has an unknown cause and can also follow a reboot or interrupted launcher.
+
+Launcher maintenance: [automatic Windows/Mac compatibility review](docs/launcher-compatibility.md)
+checks both directions and proposes separate fix PRs, with shared build/package
+validation. Activation requires the dedicated API credential and repository setup.

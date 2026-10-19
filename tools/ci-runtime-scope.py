@@ -17,10 +17,15 @@ def affected(paths, *, full=False):
                      'tests/test_patch_updates.py') or path.startswith('patches/')):
             selected.update(SUITES)
         elif (path.startswith('tools/launcher/') or path in (
+                '.github/workflows/launcher-release.yml', '.github/workflows/launcher-build.yml',
+                '.github/workflows/launcher-compatibility.yml', 'tools/launcher-compatibility.py',
+                '.github/prompts/launcher-compatibility.md', '.github/prompts/launcher-compatibility.schema.json',
+                'tests/test_launcher_compatibility.py', 'tools/launcher-release.py',
+                'tools/fetch-launcher-art.ps1', 'config/launcher-artwork.json', 'tests/test_launcher_release.py',
                 'tools/build-launcher.ps1', 'tools/build-mac-launcher.py', 'tools/test-mac-launcher.py', 'config/mac-launcher-sdk.json', 'tools/playable-launch.ps1',
                 'tools/build-game-icon.ps1', 'tests/test_game_icon.py',
                 'tests/launcher_updates.cs', 'tests/launcher_settings.cs', 'tests/launcher_maintenance.cs', 'tests/launcher_downloads.cs', 'tests/launcher_news.cs', 'tests/launcher_startup.cs',
-                'tests/launcher_crashes.cs', 'tests/launcher_sessions.cs',
+                'tests/launcher_crashes.cs', 'tests/launcher_sessions.cs', 'tests/launcher_shared_ui.cs', 'tests/test_launcher_shared_ui.py',
                 'tests/test_launcher_startup.py', 'tests/package_launcher.py',
                 'tools/release/ImportGame.cs', 'config/pc-controls.default.json',
                 'config/pc-discord.default.ini')):

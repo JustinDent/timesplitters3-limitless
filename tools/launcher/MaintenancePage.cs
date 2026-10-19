@@ -1,7 +1,21 @@
 using System;
+
+#if MACOS
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Automation;
+using UIElement = Avalonia.Controls.Control;
+using Brush = Avalonia.Media.IBrush;
+using FontWeights = Avalonia.Media.FontWeight;
+#else
+using System.Windows.Automation;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+#endif
 
 namespace TimeSplitters.Launcher
 {
@@ -15,19 +29,19 @@ namespace TimeSplitters.Launcher
         public MaintenanceArea(MaintenancePage repair,MaintenancePage diagnostics)
         {
             View.Margin=new Thickness(30,24,30,20);
-            View.Resources.MergedDictionaries.Add(PageTheme.Resources());View.Resources.MergedDictionaries.Add(PageTheme.Tabs());
+            Ui.Theme(View);Ui.Tabs(View);
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});View.RowDefinitions.Add(new RowDefinition {Height=new GridLength(1,GridUnitType.Star)});
             var heading=new StackPanel {Margin=new Thickness(0,0,0,12)};
             var eyebrow=PageTheme.Text("INSTALLATION CARE",10,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;heading.Children.Add(eyebrow);
             var title=PageTheme.Text("Repair / Verify",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
             heading.Children.Add(PageTheme.Text("Check your installation, restore release files and collect diagnostics for support.",12,"#9EB4C8"));View.Children.Add(heading);
             Tabs.Name="MaintenanceTabs";
-            System.Windows.Automation.AutomationProperties.SetName(Tabs,"Repair and diagnostics");
+            AutomationProperties.SetName(Tabs,"Repair and diagnostics");
             Tabs.Items.Add(new TabItem {Header=new TextBlock {Text="Repair / Verify"},Name="RepairTab",Content=repair.View});
             Tabs.Items.Add(new TabItem {Header=new TextBlock {Text="Diagnostics"},Name="DiagnosticsTab",Content=diagnostics.View});
             Tabs.SelectedIndex=0;Grid.SetRow(Tabs,1);View.Children.Add(Tabs);
             Tabs.SelectionChanged+=(s,e)=> {
-                if(e.OriginalSource!=Tabs || restoringSelection)return;
+                if(!Ui.From(e,Tabs) || restoringSelection)return;
                 if(busy) {restoringSelection=true;Tabs.SelectedIndex=selectedIndex;restoringSelection=false;return;}
                 selectedIndex=Tabs.SelectedIndex;if(Selected!=null)Selected(selectedIndex==1);
             };
@@ -38,7 +52,7 @@ namespace TimeSplitters.Launcher
             // Lock navigation without disabling the selected content's Cancel and View logs controls.
             foreach(TabItem tab in Tabs.Items) {
                 tab.Focusable=!value;((TextBlock)tab.Header).Opacity=value?0.45:1;
-                tab.ToolTip=value?"Finish or cancel the current operation before switching tabs.":null;
+                Ui.Tip(tab,value?"Finish or cancel the current operation before switching tabs.":null);
             }
         }
     }
@@ -59,7 +73,7 @@ namespace TimeSplitters.Launcher
         { return new Button { Content=text,Name=name,Margin=new Thickness(0,0,10,0) }; }
         public MaintenancePage(bool diagnostics,bool embedded=false)
         {
-            View.Margin=embedded?new Thickness(0):new Thickness(30,24,30,20);View.Resources.MergedDictionaries.Add(PageTheme.Resources());
+            View.Margin=embedded?new Thickness(0):new Thickness(30,24,30,20);Ui.Theme(View);
             View.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
             View.RowDefinitions.Add(new RowDefinition { Height=new GridLength(1,GridUnitType.Star) });
             View.RowDefinitions.Add(new RowDefinition { Height=GridLength.Auto });
@@ -68,20 +82,20 @@ namespace TimeSplitters.Launcher
             var title=Text(diagnostics?"Diagnostics":"Repair / Verify",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
             heading.Children.Add(PageTheme.Text(diagnostics?"Review your system report and prepare a GitHub issue.":"Check your installation. Restore release files when something needs attention.",12,"#9EB4C8"));if(!embedded)View.Children.Add(heading);
             Report=new TextBox { Name=diagnostics?"DiagnosticsReport":"VerificationReport",IsReadOnly=true,AcceptsReturn=true,TextWrapping=TextWrapping.Wrap,VerticalContentAlignment=VerticalAlignment.Top,
-                VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled,
-                Background=Brush("#0B1826"),BorderThickness=new Thickness(0),FontFamily=new FontFamily("Consolas"),FontSize=12,Padding=new Thickness(12) };
+                Background=Brush("#0B1826"),BorderThickness=new Thickness(0),FontFamily=Ui.Monospace,FontSize=12,Padding=new Thickness(12) };
+            Ui.ScrollBars(Report);
             Report.Text=diagnostics?"Collecting diagnostics…":"No verification results yet. Choose Verify files to check the game or launcher.";
             if(diagnostics) {
                 var body=new DockPanel();Grid.SetRow(body,1);View.Children.Add(body);
                 var buttons=new WrapPanel { Margin=new Thickness(0,0,0,16) };DockPanel.SetDock(buttons,Dock.Top);body.Children.Add(buttons);
                 Refresh=Button("Refresh diagnostics","RefreshDiagnostics");Copy=Button("Copy report","CopyDiagnostics");
                 ReportBug=Button("Report a bug ↗","ReportDiagnosticBug");RequestEnhancement=Button("Request enhancement ↗","RequestDiagnosticEnhancement");
-                ReportBug.ToolTip="Copies this report and opens the GitHub bug form. You review and submit it there.";
-                RequestEnhancement.ToolTip="Copies this report and opens the GitHub enhancement form. You review and submit it there.";
+                Ui.Tip(ReportBug,"Copies this report and opens the GitHub bug form. You review and submit it there.");
+                Ui.Tip(RequestEnhancement,"Copies this report and opens the GitHub enhancement form. You review and submit it there.");
                 buttons.Children.Add(Refresh);buttons.Children.Add(Copy);buttons.Children.Add(ReportBug);buttons.Children.Add(RequestEnhancement);
                 var crashes=new WrapPanel { Margin=new Thickness(0,0,0,16) };DockPanel.SetDock(crashes,Dock.Top);body.Children.Add(crashes);
                 OpenCrash=Button("Open latest game report","OpenCrashReport");ExportCrash=Button("Export game report...","ExportCrashReport");
-                ExportCrash.ToolTip="Saves a local ZIP with the dump and recent log excerpt. Review it before sharing; nothing is uploaded.";
+                Ui.Tip(ExportCrash,"Saves a local ZIP with the dump and recent log excerpt. Review it before sharing; nothing is uploaded.");
                 crashes.Children.Add(OpenCrash);crashes.Children.Add(ExportCrash);
                 var report=PageTheme.Card(Report);report.Padding=new Thickness(8);body.Children.Add(report);
             } else {
@@ -101,13 +115,13 @@ namespace TimeSplitters.Launcher
                     var summary=PageTheme.Text("Ready for a file check",12,"#A9BDD0");summary.Margin=new Thickness(0,8,0,0);summary.MinHeight=36;content.Children.Add(summary);
                     var help=PageTheme.Text(i==0?"Checks the installed game runtime. Repair restores its exact release.":"Checks the launcher and its artwork. Repair reinstalls this version.",12,"#9EB4C8");help.Margin=new Thickness(0,8,0,20);help.MinHeight=34;content.Children.Add(help);
                     var buttons=new WrapPanel();var verify=Button("Verify files",i==0?"VerifyGameFiles":"VerifyLauncherFiles");PageTheme.Primary(verify);
-                    var repair=Button("Repair files",i==0?"RepairGameFiles":"RepairLauncherFiles");repair.IsEnabled=false;repair.ToolTip="Verify first. Repair requires a published copy of this version and a closed game.";
+                    var repair=Button("Repair files",i==0?"RepairGameFiles":"RepairLauncherFiles");repair.IsEnabled=false;Ui.Tip(repair,"Verify first. Repair requires a published copy of this version and a closed game.");
                     buttons.Children.Add(verify);buttons.Children.Add(repair);content.Children.Add(buttons);
                     var card=PageTheme.Card(content);card.Padding=new Thickness(22);card.Margin=i==0?new Thickness(0,0,8,0):new Thickness(8,0,0,0);Grid.SetColumn(card,i);cards.Children.Add(card);
                     if(i==0){VerifyGame=verify;RepairGame=repair;gameStatus=summary;gameBadge=badge;}else{VerifyLauncher=verify;RepairLauncher=repair;launcherStatus=summary;launcherBadge=badge;}
                 }
                 var safety=new DockPanel();OpenFiles=Button("Open game folder ↗","OpenGameFiles");OpenFiles.Margin=new Thickness(18,0,0,0);OpenFiles.VerticalAlignment=VerticalAlignment.Center;
-                OpenFiles.ToolTip="Open the installation folder to inspect game files.";DockPanel.SetDock(OpenFiles,Dock.Right);safety.Children.Add(OpenFiles);
+                Ui.Tip(OpenFiles,"Open the installation folder to inspect game files.");DockPanel.SetDock(OpenFiles,Dock.Right);safety.Children.Add(OpenFiles);
                 var note=new StackPanel();var noteTitle=Text("Saves, settings and game data stay safe",13);noteTitle.FontWeight=FontWeights.SemiBold;note.Children.Add(noteTitle);
                 var noteText=PageTheme.Text("Repair replaces release-owned files. Your ISO, texture packs and personal files are kept.",12,"#9EB4C8");noteText.Margin=new Thickness(0,5,0,0);note.Children.Add(noteText);safety.Children.Add(note);
                 var safetyCard=PageTheme.Card(safety);safetyCard.Margin=new Thickness(0,0,0,16);body.Children.Add(safetyCard);
@@ -117,15 +131,15 @@ namespace TimeSplitters.Launcher
                 var hint=PageTheme.Text("Start with Verify files. If a check finds a problem, review the details before choosing Repair files.",12,"#8FA8BD");hint.Margin=new Thickness(2,16,2,16);body.Children.Add(hint);
             }
             var footer=new StackPanel { Margin=new Thickness(0,16,0,0) };Grid.SetRow(footer,2);View.Children.Add(footer);
-            recoveryActions=new WrapPanel { Visibility=Visibility.Collapsed,Margin=new Thickness(0,0,0,12) };
-            Retry=Button("Retry","RetryMaintenance");recoveryActions.Children.Add(Retry);footer.Children.Add(recoveryActions);
-            var bottom=new DockPanel();Cancel=Button("Cancel operation","CancelMaintenance");Cancel.Visibility=Visibility.Collapsed;Cancel.Margin=new Thickness(14,0,0,0);
+            recoveryActions=new WrapPanel { Margin=new Thickness(0,0,0,12) };
+            Retry=Button("Retry","RetryMaintenance");recoveryActions.Children.Add(Retry);footer.Children.Add(recoveryActions);Ui.Show(recoveryActions,false);
+            var bottom=new DockPanel();Cancel=Button("Cancel operation","CancelMaintenance");Ui.Show(Cancel,false);Cancel.Margin=new Thickness(14,0,0,0);
             DockPanel.SetDock(Cancel,Dock.Right);bottom.Children.Add(Cancel);
-            ViewLogs=Button("View logs ↗","MaintenanceLogs");ViewLogs.Margin=new Thickness(14,0,0,0);ViewLogs.ToolTip="Open the local launcher log folder.";
+            ViewLogs=Button("View logs ↗","MaintenanceLogs");ViewLogs.Margin=new Thickness(14,0,0,0);Ui.Tip(ViewLogs,"Open the local launcher log folder.");
             DockPanel.SetDock(ViewLogs,Dock.Right);bottom.Children.Add(ViewLogs);
             status=PageTheme.Text(diagnostics?"Filtered report only. Review the details before submitting on GitHub.":"Verification works offline · Repair requires internet and a closed game",11,"#9EB4C8");status.VerticalAlignment=VerticalAlignment.Center;bottom.Children.Add(status);footer.Children.Add(bottom);
-            progress=new ProgressBar { Minimum=0,Maximum=100,Height=3,Margin=new Thickness(0,12,0,0),Foreground=Brush("#86CDFF"),Background=Brush("#253D54"),BorderThickness=new Thickness(0),Visibility=Visibility.Collapsed };
-            footer.Children.Add(progress);
+            progress=new ProgressBar { Minimum=0,Maximum=100,Height=3,Margin=new Thickness(0,12,0,0),Foreground=Brush("#86CDFF"),Background=Brush("#253D54"),BorderThickness=new Thickness(0) };
+            footer.Children.Add(progress);Ui.Show(progress,false);
         }
         static void Result(TextBlock summary,TextBlock badge,VerificationResult result)
         {
@@ -146,11 +160,11 @@ namespace TimeSplitters.Launcher
             foreach(var button in new[]{VerifyGame,VerifyLauncher,Refresh,Copy,ReportBug,RequestEnhancement,OpenFiles,Retry,OpenCrash,ExportCrash})if(button!=null)button.IsEnabled=!busy;
             if(RepairGame!=null)RepairGame.IsEnabled=!busy && !gameRunning && gameRepairable;
             if(RepairLauncher!=null)RepairLauncher.IsEnabled=!busy && !gameRunning && launcherRepairable;
-            Cancel.Visibility=busy?Visibility.Visible:Visibility.Collapsed;
-            progress.Visibility=busy?Visibility.Visible:Visibility.Collapsed;progress.IsIndeterminate=busy; if(!busy)progress.Value=0;
+            Ui.Show(Cancel,busy);
+            Ui.Show(progress,busy);progress.IsIndeterminate=busy; if(!busy)progress.Value=0;
         }
-        public void ClearRecovery() { recoveryActions.Visibility=Visibility.Collapsed; }
-        public void ShowRecovery(RecoveryInfo info) { Retry.Content=info.RetryLabel;status.Text=info.Title+". "+info.Message;recoveryActions.Visibility=Visibility.Visible; }
+        public void ClearRecovery() { Ui.Show(recoveryActions,false); }
+        public void ShowRecovery(RecoveryInfo info) { Retry.Content=info.RetryLabel;status.Text=info.Title+". "+info.Message;Ui.Show(recoveryActions,true); }
         public void Status(string text) { status.Text=text; }
         public void Progress(double value) { progress.IsIndeterminate=false;progress.Value=value; }
     }

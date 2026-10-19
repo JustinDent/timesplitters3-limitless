@@ -1,0 +1,131 @@
+name: Launcher compatibility review
+
+# Always report for PRs, including unrelated changes, so this context can be required.
+# Only trusted default-branch policy is executed with credentials.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  workflow_dispatch:
+    inputs:
+      pull_request:
+        description: Open repository PR to review (also used for bot-created fix PRs)
+        type: string
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: launcher-compatibility-${{ github.event.number || inputs.pull_request }}
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    if: >-
+      github.repository == 'TheDoffman/timesplitters-future-perfect-pc' &&
+      (github.event.action != 'edited' || github.event.changes.base != null) &&
+      (github.event_name == 'pull_request_target' ||
+       github.ref == format('refs/heads/{0}', github.event.repository.default_branch))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: write
+    outputs:
+      run: ${{ steps.plan.outputs.run }}
+      head: ${{ steps.plan.outputs.head }}
+      context: ${{ steps.plan.outputs.context }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: policy
+          persist-credentials: false
+      - name: Check scope, contributor, exact revisions and activation
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMPATIBILITY_ENABLED: ${{ vars.LAUNCHER_COMPATIBILITY_ENABLED }}
+          HAS_OPENAI_KEY: ${{ secrets.OPENAI_API_KEY != '' }}
+        run: python policy/tools/launcher-compatibility.py prepare
+
+  review:
+    needs: prepare
+    if: needs.prepare.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      report: ${{ steps.codex.outputs.final-message }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: policy
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.prepare.outputs.head }}
+          path: candidate
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare source-only review snapshot with trusted instructions
+        env:
+          REVIEW_CONTEXT: ${{ needs.prepare.outputs.context }}
+        run: python policy/tools/launcher-compatibility.py snapshot
+      # Keep Codex last. No repository write token or subsequent privileged step.
+      - name: Review both directions and propose a bounded adaptation
+        id: codex
+        uses: openai/codex-action@bdf19a4a223ec2549a3e2274a0cf61556bc07675 # v1, 2026-10-19
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          codex-version: '0.163.0'
+          prompt-file: ${{ github.workspace }}/policy/.github/prompts/launcher-compatibility.md
+          output-schema-file: ${{ github.workspace }}/policy/.github/prompts/launcher-compatibility.schema.json
+          working-directory: ${{ github.workspace }}/review-input/source
+          codex-home: ${{ runner.temp }}/launcher-codex-home
+          permission-profile: ':workspace'
+          safety-strategy: drop-sudo
+          allow-bots: true
+
+  build:
+    needs: prepare
+    if: needs.prepare.outputs.run == 'true'
+    uses: ./.github/workflows/launcher-build.yml
+    permissions:
+      contents: read
+    with:
+      source_ref: ${{ needs.prepare.outputs.head }}
+
+  report:
+    needs: [prepare, review, build]
+    if: always() && needs.prepare.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      statuses: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: policy
+          persist-credentials: false
+      - name: Validate proposal, open fix PR and report exact-head results
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEW_CONTEXT: ${{ needs.prepare.outputs.context }}
+          REVIEW_JSON: ${{ needs.review.outputs.report }}
+          REVIEW_RESULT: ${{ needs.review.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+        run: python policy/tools/launcher-compatibility.py finalize
+      - name: Fail the status if the report could not be processed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REVIEW_CONTEXT: ${{ needs.prepare.outputs.context }}
+        run: python policy/tools/launcher-compatibility.py fail

@@ -333,8 +333,12 @@ namespace TimeSplitters.Launcher
         }
         internal static bool PreserveGameFile(string name)
         {
+            // Legacy game manifests may use different filename casing. Keep
+            // installed launchers protected on case-insensitive filesystems,
+            // while LauncherFile still requires canonical package paths.
             return name.StartsWith("Settings/", StringComparison.OrdinalIgnoreCase) ||
-                LauncherFile(name);
+                new[] { LauncherName, AppPath, SelfManifest }.Contains(name, StringComparer.OrdinalIgnoreCase) ||
+                LauncherPlatform.LauncherResource(name);
         }
         public static string GameBuildHash(string root)
         {

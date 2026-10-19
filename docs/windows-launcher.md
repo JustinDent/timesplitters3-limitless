@@ -150,17 +150,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 ## Publishing launcher-only updates
 
-Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
-assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
-in `build/launcher`; for version 1.2.18, publish all three together:
-
-- `TimeSplitters-Launcher-v1.2.18-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.18-windows-x64.zip.sha256`
-- `launcher-update.json`
-
-Use a GitHub Release such as `launcher-v1.2.18`. Mark test builds as prereleases;
-stable launcher versions must also have no semver prerelease suffix. Releases
-may contain a game ZIP too; launcher versions and game tags are independent.
+Use the [shared Windows and Mac release workflow](launcher-releases.md). Bump
+`LauncherVersion.Value` and its assembly/file attributes, merge the update to
+`main`, then run **Launcher release (Windows + Mac)** with **publish** enabled.
+The workflow builds/tests both platforms and publishes their ZIPs, checksums,
+platform manifests and permanent download aliases together under `launcher-vX.Y.Z`.
+Preview version suffixes produce prereleases; stable releases become Latest.
+Launcher versions and game tags remain independent.
 The main application lists/filter releases so a launcher-only release cannot
 hide a game release. Nothing is read from a branch or an unpublished draft.
 

@@ -1,9 +1,22 @@
 using System;
 using System.Globalization;
+
+#if MACOS
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Automation;
+using UIElement = Avalonia.Controls.Control;
+using Brush = Avalonia.Media.IBrush;
+using FontWeights = Avalonia.Media.FontWeight;
+#else
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Documents;
+#endif
 
 namespace TimeSplitters.Launcher
 {
@@ -29,7 +42,7 @@ namespace TimeSplitters.Launcher
         public WhatsNewPage(Action<string> openLink=null)
         {
             this.openLink=openLink;
-            View.Margin=new Thickness(30,24,30,20);View.Resources.MergedDictionaries.Add(PageTheme.Resources());
+            View.Margin=new Thickness(30,24,30,20);Ui.Theme(View);
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});
             View.RowDefinitions.Add(new RowDefinition {Height=new GridLength(1,GridUnitType.Star)});
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});
@@ -60,12 +73,12 @@ namespace TimeSplitters.Launcher
             var issueActions=new WrapPanel();known.Children.Add(issueActions);
             RefreshIssues=Button("Refresh issues","RefreshKnownIssues");BugTracker=Button("View bug tracker ↗","KnownIssuesOnGitHub");
             issueActions.Children.Add(RefreshIssues);issueActions.Children.Add(BugTracker);
-            BugTracker.ToolTip=KnownIssues.TrackerUrl;BugTracker.Click+=(s,e)=>{if(this.openLink!=null)this.openLink(KnownIssues.TrackerUrl);};
+            Ui.Tip(BugTracker,KnownIssues.TrackerUrl);BugTracker.Click+=(s,e)=>{if(this.openLink!=null)this.openLink(KnownIssues.TrackerUrl);};
             var footer=new StackPanel {Margin=new Thickness(0,12,0,0)};Grid.SetRow(footer,2);View.Children.Add(footer);
             var actions=new WrapPanel();footer.Children.Add(actions);
             Refresh=Button("Refresh notes","RefreshReleaseNotes");OnGitHub=Button("View release on GitHub ↗","NewsOnGitHub");
             actions.Children.Add(Refresh);actions.Children.Add(OnGitHub);
-            OnGitHub.ToolTip="Opens this published release in your browser.";
+            Ui.Tip(OnGitHub,"Opens this published release in your browser.");
             status=PageTheme.Text("Refresh to load published release notes.",12,"#9EB4C8");footer.Children.Add(status);
             Render();
         }
@@ -73,7 +86,7 @@ namespace TimeSplitters.Launcher
         {
             launcher=value;
             Edition.SelectedIndex=news!=null && (launcher?news.Launcher:news.Game)==null && (launcher?news.InstalledLauncher:news.InstalledGame)!=null?1:0;
-            Render();scroll.ScrollToHome();
+            Render();Ui.ScrollHome(scroll);
         }
         public void SetVersions(string game,string currentLauncher,bool preview)
         { installedGame=game??"";installedLauncher=currentLauncher;channel.Text=preview?"PREVIEW CHANNEL · includes published test builds":"STABLE CHANNEL · published stable releases";Render(); }
@@ -103,9 +116,7 @@ namespace TimeSplitters.Launcher
                 var row=PageTheme.Text("",13);row.Margin=new Thickness(0,0,0,10);
                 // Titles are literal text, not Markdown/HTML. Ignore remote URLs;
                 // links always target this repository's numbered issue page.
-                string url=issue.Url;var link=new Hyperlink(new Run("#"+issue.Number+"  "+issue.Title)) {NavigateUri=new Uri(url),ToolTip=url,Foreground=PageTheme.Brush("#A7D9FA")};
-                link.RequestNavigate+=(s,e)=>{e.Handled=true;if(openLink!=null)openLink(url);};
-                row.Inlines.Add(link);issues.Children.Add(row);
+                string url=issue.Url;Ui.Link(row,"#"+issue.Number+"  "+issue.Title,url,openLink);issues.Children.Add(row);
             }
             issuesStatus.Text="Checked "+value.CheckedUtc.ToLocalTime().ToString("g",CultureInfo.CurrentCulture)+" · Automatically checks every 5 minutes while this page is visible.";
         }
@@ -142,10 +153,7 @@ namespace TimeSplitters.Launcher
         {
             panel.Children.Clear();if(String.IsNullOrWhiteSpace(text)){panel.Children.Add(PageTheme.Text(empty,12,"#9EB4C8"));return;}
             var notes=new ReleaseNotesMarkdown(openLink) {VerticalScrollBarVisibility=ScrollBarVisibility.Disabled};
-            notes.PreviewMouseWheel+=(s,e)=>{
-                double step=SystemParameters.WheelScrollLines<0?scroll.ViewportHeight:SystemParameters.WheelScrollLines*20;
-                scroll.ScrollToVerticalOffset(scroll.VerticalOffset-e.Delta/120.0*step);e.Handled=true;
-            };
+            Ui.ForwardWheel(notes,scroll);
             notes.SetMarkdown(text);panel.Children.Add(notes);
         }
     }
