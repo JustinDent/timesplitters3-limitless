@@ -83,6 +83,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tests/launcher_downloads.cs'], {'launcher'}),
     (['tests/launcher_startup.cs'], {'launcher'}),
     (['tests/launcher_news.cs'], {'launcher'}),
+    (['tests/launcher_shared_ui.cs', 'tests/test_launcher_shared_ui.py'], {'launcher'}),
     (['tests/launcher_crashes.cs', 'tests/launcher_sessions.cs'], {'launcher'}),
     (['tools/crash_helper.c', 'src/pc_crash.c', 'tests/test_crash_capture.py'], {'native'}),
     (['tools/crash-symbols.py', 'tests/test_crash_symbols.py'], {'release'}),

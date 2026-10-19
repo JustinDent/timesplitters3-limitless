@@ -21,6 +21,7 @@ on:
       - config/mac-launcher-sdk.json
       - tests/launcher_*.cs
       - tests/test_launcher_release.py
+      - tests/test_launcher_shared_ui.py
       - src/pc_display_modes.inc
 
 permissions:
@@ -52,6 +53,8 @@ jobs:
         run: python tools/launcher-release.py plan
       - name: Test publication and recovery policy
         run: python -m unittest discover -s tests -p test_launcher_release.py -v
+      - name: Test shared launcher layout and theme propagation
+        run: python -m unittest discover -s tests -p test_launcher_shared_ui.py -v
       - name: Recover checksum-pinned original artwork
         shell: powershell
         run: ./tools/fetch-launcher-art.ps1
@@ -99,6 +102,8 @@ jobs:
           path: build
       - name: Test publication and recovery policy on Mac
         run: python -m unittest discover -s tests -p test_launcher_release.py -v
+      - name: Test shared launcher layout and theme propagation
+        run: python -m unittest discover -s tests -p test_launcher_shared_ui.py -v
       - name: Build release package and run native launcher regressions
         run: |
           test "$(uname -m)" = arm64

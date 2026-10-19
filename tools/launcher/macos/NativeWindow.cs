@@ -19,7 +19,7 @@ namespace TimeSplitters.Launcher
     {
         readonly string root;readonly bool render;readonly string[] args;
         readonly ReleaseClient client=new ReleaseClient();
-        CancellationTokenSource operation;Release latest;bool busy,gameRunning;int checkRevision;NativeSettings settings;
+        CancellationTokenSource operation;Release latest;bool busy,gameRunning;int checkRevision;SettingsPage settings;
         FileStream installationLock;DispatcherTimer issuesTimer;NativeNews newsPage;
         public NativeWindow():this(Program.Root??AppContext.BaseDirectory,Program.Arguments??Array.Empty<string>()) { }
         public NativeWindow(string root,string[] args)
@@ -52,8 +52,10 @@ namespace TimeSplitters.Launcher
         void Click(string name,Action action){Find<Button>(name).Click+=(s,e)=>{try{action();}catch(Exception ex){Status(ex.Message);}};}
         void Label(string name,string value){Find<TextBlock>(name).Text=value;}
         void Status(string message){Label("StatusText",message);if(!render)LauncherLog.Write(root,message);}
+        internal bool GameRunning { get { return gameRunning; } }
         bool Preview=>Find<ComboBox>("ChannelPicker").SelectedIndex==1;
         void Page(string name){
+            if(name!="SettingsHost"&&settings!=null)settings.DismissPrompt();
             foreach(var pair in new[]{("HomeNav","CommandCenter"),("NewsNav","NewsHost"),("SettingsNav","SettingsHost"),("RepairNav","MaintenanceHost")}){var nav=Find<Button>(pair.Item1);nav.Background=Brush.Parse(name==pair.Item2?"#1D3A55":"Transparent");nav.Foreground=Brush.Parse(name==pair.Item2?"#86CDFF":"#DFE9F2");}
             foreach(var p in new[]{"CommandCenter","NewsHost","SettingsHost","MaintenanceHost","VersionsHost"})Find<Control>(p).IsVisible=p==name;}
         void OpenFolder(string name){var path=Core.PathIn(root,name);if(!Directory.Exists(path)){Status("This folder has not been created yet.");return;}NativeHost.Open(path);}
@@ -142,7 +144,7 @@ namespace TimeSplitters.Launcher
             }finally{busy=false;operation.Dispose();operation=null;Find<Control>("PauseDownloadButton").IsVisible=false;Find<Control>("TransferDetails").IsVisible=false;Find<Control>("UpdateProgress").IsVisible=false;Refresh();}
         }
         async Task Rollback(){if(busy||gameRunning)return;if(await Confirm("Restore previous game?","Your saves and settings stay unchanged.")){if(busy||gameRunning)return;busy=true;Refresh();try{await Task.Run(()=>Core.Rollback(root));Status("Previous game restored.");}finally{busy=false;Refresh();}}}
-        void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new NativeSettings(root,()=>{settings=null;Page("CommandCenter");Refresh();},()=>{settings=null;Page("CommandCenter");});Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");}
+        void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");}
         async Task News()
         {
             if(newsPage==null){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;}
@@ -183,6 +185,7 @@ namespace TimeSplitters.Launcher
             string mode=args.First(a=>a.StartsWith("--render-"));int at=Array.IndexOf(args,mode);string output=args[at+1];
             if(mode.Contains("settings")){ShowSettings();if(mode.Contains("graphics"))settings.SelectTab(1);if(mode.Contains("discord"))settings.SelectTab(2);}
             if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance(mode.Contains("diagnostics"));
+            if(mode.Contains("versions")){versionsPage=new NativeVersions(root,client,()=>false,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;Page("VersionsHost");}
             if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}
             if(mode.Contains("game-data"))Find<Expander>("GameDataExpander").IsExpanded=true;
             await Task.Delay(350);var visual=(Control)Content;visual.Measure(new Size(1152,772));visual.Arrange(new Rect(0,0,1152,772));using(var bitmap=new RenderTargetBitmap(new PixelSize(1152,772),new Vector(96,96))){bitmap.Render(visual);bitmap.Save(output);}Close();

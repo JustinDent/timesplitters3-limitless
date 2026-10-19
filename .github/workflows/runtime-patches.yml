@@ -47,6 +47,8 @@ on:
       - tools/fetch-launcher-art.ps1
       - config/launcher-artwork.json
       - tests/test_launcher_release.py
+      - tests/test_launcher_shared_ui.py
+      - tests/launcher_shared_ui.cs
       - config/mac-launcher-sdk.json
       - tools/build-game-icon.ps1
       - tests/test_game_icon.py
@@ -288,6 +290,9 @@ jobs:
       - name: Test dual-platform launcher publication and recovery
         if: steps.scope.outputs.launcher == 'true'
         run: python -m unittest discover -s tests -p test_launcher_release.py -v
+      - name: Test shared launcher layout and theme propagation
+        if: steps.scope.outputs.launcher == 'true'
+        run: python -m unittest discover -s tests -p test_launcher_shared_ui.py -v
       - name: Test portable startup preference and launcher packaging
         if: runner.os == 'Windows' && steps.scope.outputs.launcher == 'true'
         run: python -m pytest tests/test_launcher_startup.py tests/package_launcher.py -q --tb=short

@@ -2,10 +2,24 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+
+#if MACOS
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Automation;
+using UIElement = Avalonia.Controls.Control;
+using Brush = Avalonia.Media.IBrush;
+using FontWeights = Avalonia.Media.FontWeight;
+#else
+using System.Windows.Automation;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+#endif
 
 namespace TimeSplitters.Launcher
 {
@@ -24,7 +38,7 @@ namespace TimeSplitters.Launcher
         readonly ComboBox device, resolution, aspect, scale, filtering, pacing, interpolation;
         readonly Button[,] bindingButtons = new Button[24,4];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
-        static Brush ColorBrush(byte r,byte g,byte b) { var brush=new SolidColorBrush(Color.FromRgb(r,g,b));brush.Freeze();return brush; }
+        static Brush ColorBrush(byte r,byte g,byte b) { var brush=new SolidColorBrush(Color.FromRgb(r,g,b));Ui.Freeze(brush);return brush; }
         static readonly Brush Ink = ColorBrush(228,237,245);
         static readonly Brush Muted = ColorBrush(180,199,216);
         static readonly Brush Accent = ColorBrush(134,205,255);
@@ -44,7 +58,7 @@ namespace TimeSplitters.Launcher
         {
             var stack=new StackPanel { Margin=new Thickness(0,0,0,10) };var caption=Text(label,13);caption.Foreground=Muted;
             stack.Children.Add(caption);stack.Children.Add(input);parent.Children.Add(stack);
-            System.Windows.Automation.AutomationProperties.SetLabeledBy(input,caption);
+            AutomationProperties.SetLabeledBy(input,caption);
         }
         static Grid Columns(Panel parent)
         {
@@ -55,15 +69,15 @@ namespace TimeSplitters.Launcher
         static ScrollViewer Scroll(UIElement content) { return new ScrollViewer { VerticalScrollBarVisibility=ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled, Content=content, Padding=new Thickness(0,0,12,0) }; }
         public SettingsPage(ResourceDictionary resources, string root, bool preview)
         {
-            string inherited = preview ? null : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "xboxrecomp", "titles", "45410066.conf");
+            string inherited = Ui.InheritedSettings(preview);
             model=GameSettings.Load(root, inherited);
             View=new Grid { Background=PageTheme.Brush("#0B1420"), Margin=new Thickness(30,24,30,18) };
-            View.Resources.MergedDictionaries.Add(resources);
-            View.Resources.MergedDictionaries.Add(PageTheme.Resources());
-            View.Resources.MergedDictionaries.Add(PageTheme.Tabs());
+            Ui.Resources(View,resources);
+            Ui.Theme(View);
+            Ui.Tabs(View);
             layout=new DockPanel(); View.Children.Add(layout);
-            overlay=new Border { Visibility=Visibility.Collapsed, Background=new SolidColorBrush(Color.FromArgb(248,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(7), Padding=new Thickness(28) };
-            View.Children.Add(overlay);
+            overlay=new Border { Background=new SolidColorBrush(Color.FromArgb(248,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(7), Padding=new Thickness(28) };
+            Ui.Show(overlay,false);View.Children.Add(overlay);
             var heading=new StackPanel(); DockPanel.SetDock(heading,Dock.Top); layout.Children.Add(heading);
             var eyebrow=PageTheme.Text("GAME PREFERENCES",11,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;heading.Children.Add(eyebrow);
             var title=Text("Game settings",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
@@ -96,7 +110,7 @@ namespace TimeSplitters.Launcher
                 for (int j=0;j<4;j++)
                 {
                     row.ColumnDefinitions.Add(new ColumnDefinition());
-                    int action=i,slot=j;var button=Button("");button.FontSize=11;button.MinHeight=32;button.Padding=new Thickness(5,7,5,7);button.Margin=new Thickness(3);button.Background=PageTheme.Brush("#122233");button.BorderBrush=PageTheme.Brush("#365069");button.ToolTip=GameSettings.Labels[i]+", binding "+(j+1);
+                    int action=i,slot=j;var button=Button("");button.FontSize=11;button.MinHeight=32;button.Padding=new Thickness(5,7,5,7);button.Margin=new Thickness(3);button.Background=PageTheme.Brush("#122233");button.BorderBrush=PageTheme.Brush("#365069");Ui.Tip(button,GameSettings.Labels[i]+", binding "+(j+1));
                     button.Click+=(s,e)=>Capture(action,slot);Grid.SetColumn(button,j+1);row.Children.Add(button);bindingButtons[i,j]=button;
                 }
                 bindings.Children.Add(row);
@@ -115,10 +129,10 @@ namespace TimeSplitters.Launcher
             foreach(var mode in sizes) resolution.Items.Add(mode);
             resolution.SelectedItem=sizes.FirstOrDefault(m=>m.Width==model.Width && m.Height==model.Height);
             var selector=new DockPanel();
-            var previous=Button("‹");previous.Width=32;previous.Padding=new Thickness(0);previous.Margin=new Thickness(0,0,6,0);previous.ToolTip="Previous resolution";
-            System.Windows.Automation.AutomationProperties.SetName(previous,"Previous resolution");
-            var next=Button("›");next.Width=32;next.Padding=new Thickness(0);next.Margin=new Thickness(6,0,0,0);next.ToolTip="Next resolution";
-            System.Windows.Automation.AutomationProperties.SetName(next,"Next resolution");
+            var previous=Button("‹");previous.Width=32;previous.Padding=new Thickness(0);previous.Margin=new Thickness(0,0,6,0);Ui.Tip(previous,"Previous resolution");
+            AutomationProperties.SetName(previous,"Previous resolution");
+            var next=Button("›");next.Width=32;next.Padding=new Thickness(0);next.Margin=new Thickness(6,0,0,0);Ui.Tip(next,"Next resolution");
+            AutomationProperties.SetName(next,"Next resolution");
             previous.Click+=(s,e)=>resolution.SelectedIndex=(resolution.SelectedIndex+resolution.Items.Count-1)%resolution.Items.Count;
             next.Click+=(s,e)=>resolution.SelectedIndex=(resolution.SelectedIndex+1)%resolution.Items.Count;
             DockPanel.SetDock(previous,Dock.Left); selector.Children.Add(previous);
@@ -130,10 +144,10 @@ namespace TimeSplitters.Launcher
             var customSize=new Expander { Header="Custom resolution",Foreground=Ink,FontSize=12,Content=custom,Margin=new Thickness(0,2,0,12) };display.Children.Add(customSize);
             resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); } };
             var ratioValue=Text("Current ratio: "+DisplayModes.RatioLabel(model.Width,model.Height),12);ratioValue.Name="CurrentAspectRatio";ratioValue.Foreground=Accent;display.Children.Add(ratioValue);
-            TextChangedEventHandler updateRatio=(s,e)=> {
+            Action updateRatio=()=> {
                 int w,h;ratioValue.Text=Int32.TryParse(width.Text,out w)&&Int32.TryParse(height.Text,out h)?"Current ratio: "+DisplayModes.RatioLabel(w,h):"Enter a valid size";
             };
-            width.TextChanged+=updateRatio;height.TextChanged+=updateRatio;
+            Ui.TextChanged(width,updateRatio);Ui.TextChanged(height,updateRatio);
             aspect.SelectionChanged+=(s,e)=> {
                 if(aspect.SelectedIndex<0)return;
                 int w,h;if(!Int32.TryParse(width.Text,out w)||!Int32.TryParse(height.Text,out h)){w=model.Width;h=model.Height;}
@@ -149,8 +163,8 @@ namespace TimeSplitters.Launcher
             fov=new Slider { Name="VerticalFovSlider", Minimum=GameSettings.FovMin, Maximum=GameSettings.FovMax,
                 Value=model.VerticalFov, TickFrequency=1, IsSnapToTickEnabled=true, SmallChange=1, LargeChange=5,
                 MinWidth=140, MaxWidth=360, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
-            System.Windows.Automation.AutomationProperties.SetName(fov,"Vertical field of view in degrees");
-            fov.ValueChanged+=(s,e)=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°";
+            AutomationProperties.SetName(fov,"Vertical field of view in degrees");
+            Ui.ValueChanged(fov,()=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°");
             fov.IsEnabled=model.CanAdjustFov;
             fieldOfView.Children.Add(fov);
             var camera=PageTheme.Section(graphics,"Camera & window","Adjust your view and choose how the game fills your display.");
@@ -169,7 +183,7 @@ namespace TimeSplitters.Launcher
             filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());Field(qualityRight,"Anisotropic filtering",filtering);
             pacing=Choices(new[]{"adaptive","60","30","0"},model.FrameCap);Field(qualityLeft,"Frame pacing · 0 = uncapped",pacing);
             interpolation=Choices(new[]{"1","2","3","4"},model.Interpolation.ToString());Field(qualityRight,"Frame interpolation · 1 = off",interpolation);
-            vrr=Check("Variable refresh rate",model.Vrr);vrr.ToolTip="Requires display and driver support.";fps=Check("Show FPS overlay",model.FpsOverlay);
+            vrr=Check("Variable refresh rate",model.Vrr);Ui.Tip(vrr,"Requires display and driver support.");fps=Check("Show FPS overlay",model.FpsOverlay);
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
             var interpolationHint=Text("Interpolation adds displayed frames while keeping the game clock unchanged. It can produce visual artifacts.",12);interpolationHint.Foreground=Muted;interpolationHint.Margin=new Thickness(0,8,0,0);quality.Children.Add(interpolationHint);
             var startup=PageTheme.Section(graphics,"Startup","Choose how the game opens.");
@@ -188,25 +202,18 @@ namespace TimeSplitters.Launcher
             presence.Children.Add(Text("Keep the Discord desktop app open and allow activity sharing in Discord. Changes apply on your next game launch. Requires a game build with Rich Presence support.",12));
             tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
         }
-        static string KeyName(string token)
-        {
-            if (token=="none" || token=="") return "Unbound";
-            int key=GameSettings.KeyCode(token);
-            if(key>=48 && key<=57)return ((char)key).ToString();
-            switch(key) { case 1:return "Mouse 1";case 2:return "Mouse 2";case 4:return "Mouse 3";case 5:return "Mouse 4";case 6:return "Mouse 5";case 8:return "Backspace";case 13:return "Enter";case 16:return "Shift";case 17:return "Ctrl";case 18:return "Alt";case GameSettings.WheelUpKey:return "Wheel up";case GameSettings.WheelDownKey:return "Wheel down"; }
-            return key==0?token:((System.Windows.Forms.Keys)key).ToString();
-        }
+        static string KeyName(string token) { return GameSettings.BindingLabel(token); }
         void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
         public void DismissPrompt()
         {
-            overlay.Visibility=Visibility.Collapsed; overlay.Child=null; layout.IsEnabled=true;
+            Ui.Show(overlay,false); overlay.Child=null; layout.IsEnabled=true;
         }
         StackPanel Prompt(string title, string description)
         {
             var content=new StackPanel { VerticalAlignment=VerticalAlignment.Center, MaxWidth=560 };
             content.Children.Add(Text(title,22)); content.Children.Add(Text(description,14));
-            layout.IsEnabled=false; overlay.Child=content; overlay.Visibility=Visibility.Visible;
+            layout.IsEnabled=false; overlay.Child=content; Ui.Show(overlay,true);
             return content;
         }
         void Confirm(string title,string description,string label,Action accepted)
@@ -230,14 +237,12 @@ namespace TimeSplitters.Launcher
                 if(conflict>=0) Confirm("Move binding?","This key is assigned to "+GameSettings.Labels[conflict]+". Move it to "+GameSettings.Labels[action]+"?","Move binding",assign);
                 else assign();
             };
-            area.PreviewKeyDown+=(s,e)=> { if(e.Key==Key.Escape) { DismissPrompt(); bindingButtons[action,slot].Focus(); e.Handled=true; return; } Key key=e.Key==Key.System?e.SystemKey:e.Key; int vk=KeyInterop.VirtualKeyFromKey(key); vk=GameSettings.CaptureKey(vk); if(vk>0){e.Handled=true;accept(vk);} };
-            area.PreviewMouseDown+=(s,e)=> { e.Handled=true; accept(e.ChangedButton==MouseButton.Left?1:e.ChangedButton==MouseButton.Right?2:e.ChangedButton==MouseButton.Middle?4:e.ChangedButton==MouseButton.XButton1?5:6); };
-            area.PreviewMouseWheel+=(s,e)=> {e.Handled=true;accept(e.Delta>0?GameSettings.WheelUpKey:GameSettings.WheelDownKey);};
+            Ui.Capture(area,accept,()=> { DismissPrompt(); bindingButtons[action,slot].Focus(); });
             var buttons=new WrapPanel { Margin=new Thickness(0,12,0,0) }; content.Children.Add(buttons);
             var escape=Button("Bind Escape"); escape.Click+=(s,e)=>accept(27); buttons.Children.Add(escape);
             var clear=Button("Clear binding"); clear.Click+=(s,e)=>accept(0); buttons.Children.Add(clear);
             var cancel=Button("Cancel"); cancel.Click+=(s,e)=> { DismissPrompt(); bindingButtons[action,slot].Focus(); }; buttons.Children.Add(cancel);
-            area.Loaded+=(s,e)=>area.Focus(); area.Focus();
+            Ui.FocusWhenReady(area);
         }
         void Save()
         {

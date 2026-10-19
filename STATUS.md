@@ -1,5 +1,32 @@
 # Measured progress
 
+## Shared launcher interface (2026-10-19)
+
+Source: uncommitted on `codex/shared-launcher-interface`, based on `306d6dd`
+and dependent on PR #187 / #186. The concurrent primary renderer checkout is
+untouched. Local host: macOS 27.0.1 ARM64, .NET SDK 8.0.426, Avalonia 11.3.22.
+
+Both builds now compile the same settings, news, versions and maintenance pages;
+Home remains generated from the shared XAML. Shared theme values, button states
+and expander geometry feed the Mac syntax adapter. Mac-only duplicate page
+construction is removed. Native OS integrations and rich-text/control rendering
+remain adapters; this does not make Windows-specific OS code portable.
+
+Local checks pass: 18 native launcher regression groups, six shared UI groups
+(settings drafts/cancel/FOV/save, Discord preservation, news selection/stale status
+and spacing, installed notes/issues, version pagination/locking, maintenance
+navigation/cancellation/repair gating), three source-mutation/compilation contracts
+and the read-only native prerequisite check. Actual Mac screenshots were reviewed
+for news, graphics, Discord, input, repair, diagnostics and Home. Initial framework
+field-width/expander/disabled-button differences were corrected by shared-theme
+translation. Evidence is retained in ignored `private/captures/launcher-shared`.
+These checks do not run the game or alter personal settings.
+
+Windows execution and final packaged update/repair/restart are pending. The
+Windows package format and updater limits are unchanged; existing published
+launchers do not need a special bridge release. Developer ID/notarization and
+clean-machine delivery remain the existing MAC-021 acceptance gaps.
+
 ## Dual-platform launcher release automation (2026-10-19)
 
 Source: `55d3141` and `d58bcf2` on `codex/launcher-dual-platform-release`, based on `60c3aea`

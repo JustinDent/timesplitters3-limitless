@@ -1255,6 +1255,17 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Awaiting validation
+- **Shared interface (2026-10-19, uncommitted on `codex/shared-launcher-interface`):**
+  Windows and Mac compile the same `*Page.cs` sources for settings, news, game
+  versions, repair and diagnostics, plus shared `PageTheme.cs` and theme XAML.
+  Home stays generated from `Launcher.xaml`. `Ui.cs` maps framework operations;
+  native controllers retain OS/lifetime integration without separate layouts.
+  Six identical UI groups pass on Mac, alongside existing native regressions and
+  source-mutation checks. Windows host checks and final package validation are
+  pending. No game adapter is required; OS integrations and document/control
+  rendering remain adapters. This supersedes the separate page implementations
+  described below. See [STATUS](STATUS.md#shared-launcher-interface-2026-10-19).
+
 - **Unified release automation (2026-10-19, `55d3141`, `d58bcf2` on `codex/launcher-dual-platform-release`):**
   `.github/workflows/launcher-release.yml` and `tools/launcher-release.py` build
   Windows x64 and native Mac ARM64 from one version/revision. Both host regressions,
