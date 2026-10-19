@@ -137,13 +137,13 @@ Production code signing and Windows SmartScreen reputation are not included.
 
 Bump `LauncherVersion.Value` in `tools/launcher/LauncherVersion.cs` and its
 assembly/file version attributes, then build with `-RequireArtwork`. The build produces these assets
-in `build/launcher`; for version 1.2.15, publish all three together:
+in `build/launcher`; for version 1.2.16, publish all three together:
 
-- `TimeSplitters-Launcher-v1.2.15-windows-x64.zip`
-- `TimeSplitters-Launcher-v1.2.15-windows-x64.zip.sha256`
+- `TimeSplitters-Launcher-v1.2.16-windows-x64.zip`
+- `TimeSplitters-Launcher-v1.2.16-windows-x64.zip.sha256`
 - `launcher-update.json`
 
-Use a GitHub Release such as `launcher-v1.2.15`. Mark test builds as prereleases;
+Use a GitHub Release such as `launcher-v1.2.16`. Mark test builds as prereleases;
 stable launcher versions must also have no semver prerelease suffix. Releases
 may contain a game ZIP too; launcher versions and game tags are independent.
 The main application lists/filter releases so a launcher-only release cannot
@@ -616,7 +616,12 @@ They show sample UI state without network requests, repairs or hardware queries.
 interactive game must remain running. The normal `build-launcher.ps1 -Test`
 includes the full maintenance suite and retains the production game-running guard.
 
-## Game crash reports
+## Game crash reports (launcher v1.2.16)
+
+Launcher v1.2.16 adds report viewing/export and unfinished-session tracking.
+Unexpected-exit summaries work with existing game builds. Native minidumps and
+frame-progress freeze detection require a game build containing the Windows
+crash helper; installing this launcher alone does not add them to an older game.
 
 New game crash reports restore the launcher and open Diagnostics. The page offers
 Open latest crash report and Export crash report actions. Export creates a local
