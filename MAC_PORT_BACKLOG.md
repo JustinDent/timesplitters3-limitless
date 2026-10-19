@@ -1227,6 +1227,15 @@ Copy this template into the queue for each new entry. Replace all placeholders.
   with MAC-021; preserve pause/error progress reset and clean update completion.
   `tests/launcher_downloads.cs` covers pause/error/retry feedback. Mac behavior
   remains unverified and no native adapter was changed.
+  A subsequent banner redesign on the same branch (based on `40b83a3`) replaces
+  the inset photo with an edge-to-edge generated environment, larger original
+  wordmark and uncropped original Cortez photo with a narrow background-edge
+  transparency blend. `tools/build-launcher.ps1` embeds the private companion
+  backdrop separately and requires it for release builds. For native adaptation,
+  preserve both original image sources, uniform photo scaling, responsive action
+  visibility and a fallback when private artwork is unavailable. Generated art
+  and full provenance must be transferred privately, not through Git. Windows
+  preview/package validation is recorded in STATUS.md; Mac remains unverified.
 
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**

@@ -48,9 +48,19 @@ absent, the build retains the blue/silver vector header. Generated source
 artwork and its provenance stay ignored under `private/launcher-art`.
 The current private banner is the supplied 1600 x 1200 Future Perfect key art,
 embedded unchanged. The full photo fits proportionally inside the right side
-of the header, with no cropping or redraw. The original game wordmark and a
-blue/silver panel fill the remaining width. Its source hash and the previous
-generated banner's recovery copy are recorded in `banner-provenance.json`.
+of the header, with no cropping or redraw. A narrow transparency blend along
+the photo's left background edge joins it to a generated blue/silver time-fracture
+environment; Cortez, both weapons and the boot remain visible. The larger original
+game wordmark sits over a darker area of that environment. Source hashes and the
+previous generated banner's recovery copy are recorded in `banner-provenance.json`.
+
+The companion environment is `private/launcher-art/future-perfect-backdrop-v1.png`
+(2172 x 724), embedded separately as `launcher-backdrop.png`. Use
+`-BackdropPath <image.png>` to override it (maximum 8 MiB). Its generation prompt,
+source and dimensions are recorded privately in `backdrop-provenance.json`.
+Source builds without it use the existing gradient. Release builds with
+`-RequireArtwork` require the banner, logo and backdrop so artwork is not silently
+omitted. No external image files are needed after installation.
 
 The optional `private/launcher-art/timesplitters-future-perfect-logo.png`
 supplies the original title wordmark and subtitle lettering in the sidebar.
@@ -422,7 +432,7 @@ is newer, or when an equal installed version fails its manifest checks. A valid
 equal/newer launcher keeps its binaries and manifest together, including embedded
 banner/logo artwork. Explicit launcher updates use their separate transaction.
 
-Public game packaging requires the private banner and title logo via
+Public game packaging requires the private banner, backdrop and title logo via
 `tools/build-launcher.ps1 -RequireArtwork`; missing artwork stops packaging.
 Developer/CI builds may still omit the switch to use the fallback interface.
 For an installation already affected by an older updater, close the launcher

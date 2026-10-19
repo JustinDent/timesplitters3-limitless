@@ -1,5 +1,31 @@
 # Measured progress
 
+## Launcher banner composition (2026-10-19)
+
+Local follow-up on `feature/launcher-visual-polish`, based on `40b83a3` and
+dependent on its Home layout. Replaced the inset thumbnail treatment with an
+edge-to-edge composition: an original, larger title lockup over a generated
+blue/silver time-fracture background, joined to the supplied Cortez photo with
+a narrow left-edge transparency blend. The complete photo still uses uniform
+scaling without cropping; its source hash and the logo hash are unchanged.
+The original adaptive banner height is retained so Home controls stay visible.
+
+The generated 2172x724 companion backdrop and its full prompt/provenance remain
+ignored in `private/launcher-art`. `tools/build-launcher.ps1` embeds it separately
+and accepts `-BackdropPath`; required-artwork builds now reject a missing backdrop.
+Source builds may fall back to the existing gradient. All three embedded image
+streams were checked against their source SHA-256 hashes; the packaged app needs
+no external art files. Public publication has not been performed.
+
+Windows x64 .NET Framework build passed, as did 36 page/state layout previews
+at 1152x772 and 984x681, three package checks, and the missing-backdrop release
+gate. Home was visually inspected at both sizes. Broader existing suites passed
+28 download, 30 settings, 19 news and 14 read-only maintenance checks, including
+the source-build UI without the optional backdrop resource. The game-version
+suite passed its first nine checks, then the running game blocked the synthetic
+download/retry case; that suite is not claimed as passing. No personal data or
+running game was changed. Native Mac validation remains queued in MAC-021.
+
 ## Launcher Home hierarchy and update states (2026-10-19)
 
 Follow-up on `feature/launcher-visual-polish`, building on local `e763ec2` rather

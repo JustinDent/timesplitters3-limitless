@@ -210,6 +210,15 @@ namespace TimeSplitters.Launcher
                     Find<Grid>("HeroFallback").Visibility = Visibility.Collapsed;
                 }
             }
+            using (var backdrop = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher-backdrop.png"))
+            {
+                if (backdrop != null)
+                {
+                    var bitmap = BitmapFrame.Create(backdrop, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                    bitmap.Freeze();
+                    Find<Image>("HeroBackdrop").Source = bitmap;
+                }
+            }
             Refresh();
             Button("SettingsNav").Click += (s,e)=>ShowSettings();
             Button("HomeNav").Click += (s,e)=>ShowHome();
