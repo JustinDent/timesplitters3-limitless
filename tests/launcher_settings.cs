@@ -135,6 +135,7 @@ public static class LauncherSettingsChecks
             new[]{"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"}})
             Require(output.Contains(pair[0]+"="+Core.PathIn(root,pair[1])));
         Require(output.Contains("RECOMP_LOG_FILE="+errors) && File.ReadAllText(errors).Contains("synthetic game diagnostic"));
+        if(exitCode!=0)Require(File.ReadAllText(Path.Combine(CrashReports.Folder(root,CrashReports.Latest(root)),"game-log-tail.txt")).Contains("synthetic game diagnostic"),"Unexpected-exit report must include a short buffered stderr diagnostic.");
         Require(output.Contains("RECOMP_MOUSE_SENSITIVITY=0.37") && output.Contains("RECOMP_MOUSE_INVERT_Y=1") &&
             output.Contains("RECOMP_PC_MOUSE=0") && output.Contains("RECOMP_XMV_PLAY=0"));
         Require(output.Contains("RECOMP_UNWANTED=\r\n") && output.Contains("TSFP_UNWANTED=\r\n"));

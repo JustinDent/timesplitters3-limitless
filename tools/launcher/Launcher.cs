@@ -859,6 +859,9 @@ namespace TimeSplitters.Launcher
                         var stdout = process.StandardOutput.BaseStream.CopyToAsync(output);
                         var stderr = process.StandardError.BaseStream.CopyToAsync(errors);
                         await MonitorGame(process,previousCrash); await Task.WhenAll(stdout, stderr);
+                        // Publish even a short buffered diagnostic before the
+                        // fallback reporter reads this session's log tail.
+                        errors.Flush();
                     } finally {
                         try {if(session!=null && process.HasExited)GameSessions.Complete(root,session,process);}
                         catch(Exception ex) {Program.Log(root,"Session completion deferred: "+ex.GetType().Name);}

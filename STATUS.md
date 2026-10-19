@@ -23,6 +23,8 @@ Validated on the existing Windows 11 x64 host through Windows PowerShell:
   startup Diagnostics, clean/failed launches, uncertain outcomes, bounded export,
   native-report precedence, hang then exit, storage retry, malformed records,
   protected retention, and stale completion.
+  Both fresh/configured nonzero-exit launch probes verify a short buffered stderr
+  diagnostic reaches the fallback report; the launcher flushes it before capture.
 - Actual isolated game/launcher integrations passed for missing helper, external
   process kill, deliberate native crash, and live hang. Fallback exports contain
   readable/JSON summaries and a bounded log tail without `crash.dmp`; native
