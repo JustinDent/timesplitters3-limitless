@@ -1,0 +1,44 @@
+TimeSplitters: Future Perfect PC
+Copyright (C) 2026 TheDoffman and contributors
+
+Except where a file carries different licensing terms, this project's original
+port code, launcher, tools, tests, configuration and documentation are licensed
+under the GNU General Public License, version 3 only (GPL-3.0-only). The full
+license is in LICENSE. Existing copyright and attribution notices remain valid.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See LICENSE for the full terms.
+
+Upstream code and credits
+-------------------------
+The runtime and Future Perfect target are based on nemonicicon/ts3FPrecomp at
+d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845:
+https://github.com/nemonicicon/ts3FPrecomp/tree/d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845
+
+Its GPL-3.0 license, original xboxrecomp MIT notice, third-party attribution,
+LGPL-2.1 text and contributor credits are preserved in LICENSES/ts3FPrecomp.
+Those components retain their original notices and licenses; this project does
+not replace them or claim their authorship. See LICENSES/README.md for details.
+
+Launcher/game icon lettering attribution remains in
+tools/launcher/GameMonogram.NOTICE.txt. External dependencies, including SDL,
+FFmpeg, Python/Tcl/Tk and bundled Online dependencies, retain their own terms.
+Keep the applicable license and attribution files with redistributed code and
+builds. Public game packages include them in Licenses and Support.
+
+Original game material
+----------------------
+This license does not grant rights to the original TimeSplitters executable,
+game logic translated from it, artwork, music, dialogue, levels, branding or
+other game assets. Their rights remain with their respective rights holders.
+Supplying your own supported game files is still required. Generated game code
+is not made GPL merely by being generated with this project's tools. No
+original game data, generated game code or personal saves belong in this repo.
+
+Source and build instructions
+-----------------------------
+https://github.com/TheDoffman/timesplitters-future-perfect-pc
+See README.md, docs/building.md and docs/windows-launcher.md. When distributing
+GPL-covered binaries, provide the corresponding source and build instructions
+as required by GPLv3; a license file alone does not satisfy that requirement.
