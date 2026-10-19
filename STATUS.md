@@ -6202,3 +6202,6 @@ The final PR-preparation pytest run passed 76 checks covering CI suite routing,
 patch transitions/tracking, Discord policy and private IPC, and launcher startup
 configuration routing. `git diff --check` passed. The game runtime sources and
 patch stack are unchanged from the live-tested executable recorded above.
+
+Feature implementation and validation committed as `ff8d6c0240bdeccf85a49034dca121071a0adfec`
+on `feature/63-discord-rich-presence`; MAC-045 links that source revision.

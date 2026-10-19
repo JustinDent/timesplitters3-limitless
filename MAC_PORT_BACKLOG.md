@@ -12,8 +12,8 @@
   Discord restarts,
   and disconnects on game-window destruction. Default off; missing or invalid
   runtime configuration disables the integration without blocking play.
-- **Source:** Uncommitted on `feature/63-discord-rich-presence`, based on main
-  `c006c24`; `src/pc_discord.h`, `pc_discord_model.c`,
+- **Source:** [Implementation `ff8d6c0`](https://github.com/TheDoffman/timesplitters-future-perfect-pc/commit/ff8d6c0240bdeccf85a49034dca121071a0adfec)
+  on `feature/63-discord-rich-presence`, based on main `c006c24`;  `src/pc_discord.h`, `pc_discord_model.c`,
   `pc_discord_guest.h`, `pc_discord.c`,
   the camera sampling hook in `src/pc_display_menu.c`, lifecycle calls in
   `src/pc_controls.c`, the `discord-presence` patch, launcher `GameSettings.cs`,
