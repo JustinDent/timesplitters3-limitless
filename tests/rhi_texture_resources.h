@@ -8,7 +8,8 @@ static void texture_expect(RhiBuffer *query_buffer,const float query[4],const fl
     rhi_buffer_update(query_buffer,query);rhi_draw(3,0);
     CHECK(rhi_image_readback(target,0,pixels,64*4*sizeof(float))==0);
     for(unsigned i=0;i<64*64;i++)for(unsigned c=0;c<4;c++) {
-        if(fabsf(pixels[i*4+c]-expected[c])>.0001f) {
+        /* Negated success also rejects NaNs from a broken shader/readback. */
+        if(!(fabsf(pixels[i*4+c]-expected[c])<=.0001f)) {
             fprintf(stderr,"Texture query %.3f,%.3f,%.3f lod %.1f pixel %u channel %u: %.5f expected %.5f\n",
                 query[0],query[1],query[2],query[3],i,c,pixels[i*4+c],expected[c]);
             CHECK(0);

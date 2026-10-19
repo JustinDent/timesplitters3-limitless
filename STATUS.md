@@ -12,6 +12,7 @@
   neighbors, restricted-mip views, retained image references, and explicit
   rejection of an unknown format. Sampling uses the same HLSL and expected
   texels on both backends; cube uploads also receive direct subresource readback.
+  Pixel comparisons reject non-finite output as well as out-of-tolerance values.
 - **Validation state:** The complete Vulkan fixture passes a local Clang syntax
   check without modifying the shared runtime/build. All 47 CI selection/backlog
   checks pass. GPU execution is pending a published hosted run; this does not
