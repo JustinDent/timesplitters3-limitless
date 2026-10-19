@@ -8,7 +8,7 @@ included in supported Windows 10/11 installations. -Test runs isolated updater
 regressions, without downloading a game or accessing personal saves/settings.
 #>
 [CmdletBinding()]
-param([string]$Output, [switch]$Test, [string]$BannerPath, [string]$LogoPath, [switch]$RequireArtwork)
+param([string]$Output, [switch]$Test, [string]$BannerPath, [string]$LogoPath, [switch]$RequireArtwork, [string]$BackdropPath)
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
 if (!$Output) { $Output = Join-Path $project 'build\launcher' }
@@ -45,6 +45,16 @@ if (Test-Path -LiteralPath $LogoPath -PathType Leaf) {
 } else {
     if ($RequireArtwork) { throw 'Release launcher artwork is required: logo missing. Supply -LogoPath or restore private/launcher-art.' }
     Write-Host 'Private title logo not present; using the sidebar text fallback.'
+}
+# The generated environment is separate from the untouched original key art.
+if (!$BackdropPath) { $BackdropPath = Join-Path $project 'private\launcher-art\future-perfect-backdrop-v1.png' }
+if (Test-Path -LiteralPath $BackdropPath -PathType Leaf) {
+    $BackdropPath = (Resolve-Path -LiteralPath $BackdropPath).ProviderPath
+    if ((Get-Item -LiteralPath $BackdropPath).Length -gt 8MB) { throw 'Launcher backdrop must be no larger than 8 MiB.' }
+    $bannerArguments += '/resource:' + $BackdropPath + ',launcher-backdrop.png'
+} else {
+    if ($RequireArtwork) { throw 'Release launcher artwork is required: backdrop missing. Supply -BackdropPath or restore private/launcher-art.' }
+    Write-Host 'Private launcher backdrop not present; using the built-in gradient behind the original artwork.'
 }
 if (!('LauncherIconBuilder' -as [type])) {
     Add-Type -Path @((Join-Path $source 'IconBuilder.cs'), (Join-Path $source 'GameMonogram.cs')) -ReferencedAssemblies System.Drawing
