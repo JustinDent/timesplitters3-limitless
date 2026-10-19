@@ -1271,6 +1271,12 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Launcher v1.2.18 candidate (2026-10-19):** The local Windows candidate
+  includes live Known Issues commit `2f5ca68` and main `d63a156`. Full launcher,
+  layout, packaging and published-v1.2.17 upgrade/rollback checks passed as
+  recorded in STATUS.md. No new native Mac implementation is included;
+  adaptation below remains queued and Mac execution remains unverified.
+
 - **Live known issues (2026-10-19, `feature/launcher-live-known-issues`):**
   `ReleaseClient.cs` and `ReleaseNews.cs` fetch all bounded pages of open GitHub
   issues labeled bug, exclude PRs, and return a complete replacement snapshot.
