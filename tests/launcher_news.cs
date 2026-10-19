@@ -8,6 +8,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Navigation;
 using TimeSplitters.Launcher;
 
 public static class LauncherNewsChecks
@@ -97,6 +99,40 @@ public static class LauncherNewsChecks
             Need(ReleaseNews.Availability("v1.0.0",news.Game,false).Contains("newer game"));Need(ReleaseNews.Availability("1.1.0",news.Launcher,true).Contains("up to date"));
             Need(ReleaseNews.Availability("v9.0.0",news.Game,false).Contains("No downgrade"));Need(ReleaseNews.Availability("",news.Game,false).Contains("Available to install"));Need(ReleaseNews.Availability("dev",news.Game,false).Contains("cannot be compared"));Need(ReleaseNews.Availability("v1.0.0",null,false).Contains("No compatible"));
         });
+        Test("native Markdown formats headings, emphasis, lists, quotes and literal code",()=>{
+            var view=new ReleaseNotesMarkdown();
+            view.SetMarkdown("# Release **highlights**\n\nA **bold** fix and *italic* note with `file_name.exe`.\n\n- First\n- Second\n\n1. Install\n2. Play\n\n> Keep saves.\n\n```text\n[not a link](https://example.com) **literal**\n```\n");
+            var doc=view.Document;string text=new TextRange(doc.ContentStart,doc.ContentEnd).Text;
+            Need(doc.Blocks.FirstBlock.FontSize==20 && All<Bold>(doc).Any() && All<Italic>(doc).Any());
+            Need(doc.Blocks.OfType<System.Windows.Documents.List>().Count()==2 && All<Hyperlink>(doc).Count()==0);
+            Need(text.Contains("file_name.exe") && text.Contains("**literal**") && text.Contains("Keep saves.") && !text.Contains("# Release"));
+            Need(view.IsReadOnly && view.IsDocumentEnabled);
+        });
+        Test("Markdown links show labels and navigate only after an explicit activation",()=>{
+            string opened=null;var view=new ReleaseNotesMarkdown(url=>opened=url);
+            view.SetMarkdown("Fix ([#106](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/106)).\n\nhttps://example.com/notes\n\n[With parentheses](https://example.com/a_(b))");
+            var links=All<Hyperlink>(view.Document).ToArray();Need(links.Length==3 && opened==null);
+            Need(new TextRange(links[0].ContentStart,links[0].ContentEnd).Text=="#106");
+            Need(links[2].NavigateUri.AbsoluteUri.EndsWith("/a_(b)"));
+            links[0].RaiseEvent(new RequestNavigateEventArgs(links[0].NavigateUri,null){RoutedEvent=Hyperlink.RequestNavigateEvent});
+            Need(opened=="https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/106");
+        });
+        Test("Markdown rejects executable links and keeps remote images and markup inert",()=>{
+            foreach(string url in new[]{"file:///C:/Windows/notepad.exe","javascript:alert(1)","data:text/html,hello","ms-settings:display","https://user:password@example.com","https://example.com\nattack"}){Uri parsed;Need(!ReleaseNotesMarkdown.TryLink(url,out parsed));}
+            var view=new ReleaseNotesMarkdown(url=>{throw new Exception("Unexpected navigation");});
+            view.SetMarkdown("[File](file:///C:/test.exe) [JS](javascript:alert(1)) ![image](https://example.com/remote.png)\n\n<Window><Button>inert</Button></Window>\n\n"+new string('x',65000));
+            string text=new TextRange(view.Document.ContentStart,view.Document.ContentEnd).Text;
+            Need(!All<Hyperlink>(view.Document).Any() && !All<Image>(view.Document).Any() && text.Contains("Image: view on GitHub") && text.Contains("<Window>") && text.Contains("Notes shortened"));
+        });
+        Test("game versions and both news sections use the same selectable Markdown links",()=>{
+            string body="## Changes\nFix ([#106](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/106)).\n\n## Known issues\nSee [workaround](https://example.com/help).";
+            var release=new Release {Tag="v1.0.0",Notes=body};
+            var versions=new GameVersionsPage();versions.SetReleases(new GameReleaseList {Releases=new[]{release}},true);
+            var notes=All<ReleaseNotesMarkdown>(versions.View).Single();Need(All<Hyperlink>(notes.Document).Count()==2);
+            var page=new WhatsNewPage();page.SetNews(new ReleaseNews {Game=release,CheckedUtc=DateTime.UtcNow});
+            var sections=All<ReleaseNotesMarkdown>(page.View).ToArray();Need(sections.Length==2 && sections.All(section=>All<Hyperlink>(section.Document).Count()==1));
+            page.SelectComponent(true);page.SelectComponent(false);Need(All<ReleaseNotesMarkdown>(page.View).Count()==2);
+        });
         Test("native news page switches versions and keeps previous notes on refresh failure",()=>{
             var page=new WhatsNewPage();page.SetVersions("v1.0.0","1.0.0",false);page.SetNews(news);Need(page.SelectedUrl.EndsWith("/v1.1.0"));
             page.Edition.SelectedIndex=1;Need(page.SelectedUrl.EndsWith("/v1.0.0"));page.SelectComponent(true);Need(page.SelectedUrl.EndsWith("launcher-v1.1.0"));
@@ -107,7 +143,7 @@ public static class LauncherNewsChecks
             var page=new WhatsNewPage();page.SetVersions("v1.0.0","1.0.0",false);
             page.SetNews(new ReleaseNews {CheckedUtc=DateTime.UtcNow,Game=new Release {Tag="v1.0.0",Url=ReleaseClient.ReleasesPage,
                 Notes="<script>alert('test')</script>\n<Window><Button>Injected</Button></Window>\n![Remote](https://invalid.example/image.png)"}});
-            string text=String.Join("\n",All<TextBlock>(page.View).Select(t=>t.Text));
+            string text=String.Join("\n",All<ReleaseNotesMarkdown>(page.View).Select(t=>new TextRange(t.Document.ContentStart,t.Document.ContentEnd).Text));
             Need(text.Contains("<script>") && text.Contains("<Window>") && text.Contains("Image: view on GitHub"));
             Need(!All<WebBrowser>(page.View).Any() && !All<Image>(page.View).Any() && All<Button>(page.View).Count()==4);
         });

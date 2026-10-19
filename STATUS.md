@@ -53,6 +53,12 @@ see [MAC-021](MAC_PORT_BACKLOG.md#mac-021--published-release-launcher-and-pre-ga
 
 ## Windows title-bar theme experiment
 
+PR #149 integration: merged main `0545ebe`, preserving both validation histories
+and the new launcher Markdown renderer/version. On Windows x64, the merged
+launcher build and all isolated launcher checks passed; the native DWM
+regression and diff check also passed. No game runtime behavior changed in
+this merge, and no additional gameplay session was performed.
+
 2026-10-18, branch `feature/system-theme-title-bars`, base `a5d61ea`.
 The main launcher, bootstrap startup window and windowed game caption read
 Windows' app light/dark preference at creation and on settings/theme messages.
@@ -81,6 +87,60 @@ Windows fallback validation remain pending. No gameplay completion claim is
 made. Native Mac behavior and other-device synchronization are unverified;
 no Mac adapter is needed for this Windows-specific DWM feature. See
 [MAC-021](MAC_PORT_BACKLOG.md#mac-021--published-release-launcher-and-pre-game-settings).
+
+## Launcher v1.2.15 release preparation (2026-10-18)
+
+Prepared from main `836aec7` after merging PR #147 with passing Windows and
+macOS source CI. The shared launcher version and assembly/file versions are
+1.2.15 so existing installations can discover the formatted release notes and
+clickable links. Game versions and What's new use the same selectable native
+Markdown view, including the known-issues section. No game version, runtime,
+installer, dependency pin or personal configuration is changed by this release.
+
+On Windows x64 / PowerShell 5.1 / .NET Framework 4.8 compiler / Python 3.12.14,
+the required-art v1.2.15 build and all 216 isolated launcher checks passed
+(100 updater, 27 downloads, 11 versions, 10 startup, 19 news, 29 settings,
+20 maintenance). All 27 Python CI-scope/packaging checks and two packaging
+subtests passed. The final clean-main ZIP upgrade/rollback, public downloads
+and discovery checks are separate publication steps, with ignored evidence in
+`build/launcher-v1.2.15-publication`. No actual game was launched or terminated;
+no personal saves/settings/ISO were used. MAC-042 remains queued for the future
+native UI; this Windows version bump needs no additional Mac adapter and does
+not establish native Mac UI or browser activation on another PC.
+
+## Formatted launcher release notes (2026-10-18)
+
+Implemented in `fef30c9` on `fix/launcher-markdown-notes`, based on main `a5d61ea`.
+Game versions previously called `ReleaseNotesText.Plain` and displayed a TextBox;
+What's new removed inline formatting and flattened links into label/URL strings.
+Both now use a shared read-only, selectable WPF FlowDocument renderer. Common
+Markdown headings, emphasis, lists, quotes and code are formatted; labeled and
+bare HTTP(S) links use native Hyperlinks and the existing browser/error action.
+No HTML/XAML parsing, remote-image loading or automatic navigation is added.
+Unsupported URI schemes and credential-bearing links stay non-navigable.
+Existing 24,000/64,000-character limits, 512-line cap, known-issue split,
+version selection, failed-refresh behavior and sidebar layout are preserved.
+Advanced GitHub Markdown extensions remain plain text; no web renderer or new
+runtime dependency is bundled. Launcher version remains 1.2.14; this does not
+publish an update or merge source into main. MAC-042 queues future native UI work.
+
+Windows x64 / PowerShell 5.1 / .NET Framework 4.8 compiler / Python 3.12.14:
+required-art launcher compilation passed. All 19 isolated news checks passed,
+including formatting, original PR link labels and explicit navigation through a
+fake browser callback, inert remote content and links on both pages/known issues.
+All 27 Python CI-scope/launcher-packaging checks and two packaging subtests passed.
+Headless WPF renders using the actual published v0.3.0-alpha.1 notes were visually
+inspected for both pages: headings, bold text, numbered/bullet lists and blue #106
+and #108 links fit, with the sidebar and scrolling retained. Logs and two renders
+remain ignored under `build/markdown-validation`.
+
+The first full local updater run correctly stopped while a real game process
+was running in another checkout. After the user closed it, the required-art build
+and all 216 launcher checks passed (100 updater, 27 downloads, 11 versions,
+10 startup, 19 news, 29 settings, 20 maintenance). No game process was terminated,
+and no personal ISO, data, saves or settings were used. The new focused formatting
+checks do not launch a browser. Physical browser activation and native Mac UI
+remain unverified.
 
 ## Audio-menu mouse sliders (issue #115, 2026-10-18)
 
