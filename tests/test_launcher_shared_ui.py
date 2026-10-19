@@ -37,15 +37,15 @@ class SharedLauncherUi(unittest.TestCase):
             disabled.set('Value','0.25')
             tree.write(source)
             layout.generate_theme(source,target)
-            result = target.read_text()
+            result = target.read_text(encoding='utf-8')
             self.assertIn('Property="Padding" Value="21,13"', result)
             self.assertIn('CornerRadius="9"', result)
             self.assertIn('Button:disabled /template/ Border#Face', result)
             self.assertIn('Property="Opacity" Value="0.25"', result)
 
     def test_both_builds_compile_all_shared_pages_and_ui_tests(self):
-        windows = (ROOT/'tools/build-launcher.ps1').read_text()
-        mac = (SOURCE/'macos/NativeLauncher.csproj').read_text()
+        windows = (ROOT/'tools/build-launcher.ps1').read_text(encoding='utf-8')
+        mac = (SOURCE/'macos/NativeLauncher.csproj').read_text(encoding='utf-8')
         self.assertIn("-Filter '*Page.cs'",windows)
         self.assertIn('../*Page.cs',mac)
         self.assertIn('launcher_shared_ui.cs',windows)

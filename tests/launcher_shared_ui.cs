@@ -41,6 +41,14 @@ public static class LauncherSharedUiChecks
         Need(thread.Join(60000),"Shared UI tests timed out");if(failure!=null)throw failure;return 0;
 #endif
     }
+    static string Tip(Button button)
+    {
+#if MACOS
+        return Convert.ToString(ToolTip.GetTip(button));
+#else
+        return Convert.ToString(button.ToolTip);
+#endif
+    }
     static string TestBase()
     {
 #if MACOS
@@ -62,6 +70,17 @@ public static class LauncherSharedUiChecks
                 Need(cancelled&&!Directory.Exists(Path.Combine(root,"Settings")),"Cancel saved a draft");
                 Click(Find<Button>(page.View,"ResetFovButton"));Need(fov.Value==55,"FOV reset differs");
                 fov.Value=75;Click(Find<Button>(page.View,"SettingsSaveButton"));Need(GameSettings.Load(root,null).VerticalFov==75,"Shared page did not save FOV");
+            });
+            Test("binding capture, conflict cancel, reassignment and clear",()=>{
+                var page=new SettingsPage(new ResourceDictionary(),root,true);
+                var binding=All(page.View).OfType<Button>().First(b=>Tip(b)==GameSettings.Labels[0]+", binding 1");
+                Func<string,Button> action=label=>All(page.View).OfType<Button>().Single(b=>b.Name!="SettingsCancelButton"&&Convert.ToString(b.Content)==label);
+                string original=Convert.ToString(binding.Content);Click(binding);Need(Find<Border>(page.View,"BindingCaptureArea")!=null,"No capture prompt");
+                Click(action("Bind Escape"));Click(action("Cancel"));Need(Convert.ToString(binding.Content)==original,"Cancelled conflict changed binding");
+                Click(binding);Click(action("Bind Escape"));Click(action("Move binding"));Need(Convert.ToString(binding.Content)=="Escape","Conflict move failed");
+                Click(Find<Button>(page.View,"SettingsSaveButton"));var saved=GameSettings.Load(root,null);
+                Need(GameSettings.KeyCode(saved.Binding(0)[0])==27&&saved.Binding(6).All(t=>GameSettings.KeyCode(t)!=27),"Conflict was not removed from previous action");
+                Click(binding);Click(action("Clear binding"));Need(Convert.ToString(binding.Content)=="Unbound","Clear did not update draft");
             });
             Test("Discord uses the same settings model and preserves other settings",()=>{
                 var page=new SettingsPage(new ResourceDictionary(),root,true);page.SelectTab(2);

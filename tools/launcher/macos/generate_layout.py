@@ -47,7 +47,7 @@ def generate(source,destination):
    elif value=='WINDOWS x64':element.set(key,'macOS ARM64')
    elif value=='NATIVE PC PORT':element.set(key,'NATIVE MAC PORT')
  ET.indent(root)
- Path(destination).write_text(ET.tostring(root,encoding='unicode')+'\n')
+ Path(destination).write_text(ET.tostring(root,encoding='unicode')+'\n',encoding='utf-8')
 def simple_theme(source,destination):
  root=ET.parse(source).getroot();styles=ET.Element('{'+A+'}Styles')
  for resource in root:
@@ -56,7 +56,7 @@ def simple_theme(source,destination):
   for setter in resource:
    if 'Value' not in setter.attrib or setter.attrib.get('Property') in ('Template','ScrollViewer.HorizontalScrollBarVisibility','ScrollViewer.VerticalScrollBarVisibility'):continue
    ET.SubElement(style,'{'+A+'}Setter',dict(setter.attrib))
- ET.indent(styles);Path(destination).write_text(ET.tostring(styles,encoding='unicode')+'\n')
+ ET.indent(styles);Path(destination).write_text(ET.tostring(styles,encoding='unicode')+'\n',encoding='utf-8')
 
 # Control templates translate framework syntax, retaining the shared source's
 # geometry, colors, padding, hover/pressed/focus/disabled values.
@@ -117,6 +117,6 @@ def generate_theme(source,destination):
    template=ET.SubElement(setter,'{'+A+'}ControlTemplate');panel=ET.SubElement(template,'{'+A+'}StackPanel')
    ET.SubElement(panel,'{'+A+'}ToggleButton',{'Theme':'{StaticResource SharedExpanderHeader}','HorizontalContentAlignment':'Stretch','HorizontalAlignment':'Stretch','Content':'{TemplateBinding Header}','ContentTemplate':'{TemplateBinding HeaderTemplate}','Foreground':'{TemplateBinding Foreground}','FontSize':'{TemplateBinding FontSize}','IsChecked':'{TemplateBinding IsExpanded, Mode=TwoWay}'})
    ET.SubElement(panel,'{'+A+'}ContentPresenter',{'Content':'{TemplateBinding Content}','ContentTemplate':'{TemplateBinding ContentTemplate}','IsVisible':'{TemplateBinding IsExpanded}'})
- ET.indent(styles);Path(destination).write_text(ET.tostring(styles,encoding='unicode')+'\n')
+ ET.indent(styles);Path(destination).write_text(ET.tostring(styles,encoding='unicode')+'\n',encoding='utf-8')
 
 if __name__=="__main__":generate(sys.argv[1],sys.argv[2])
