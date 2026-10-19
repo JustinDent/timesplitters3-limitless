@@ -261,6 +261,37 @@ namespace TimeSplitters.Launcher
             if (candidate == null) return null;
             return VerifyLauncherMetadata(candidate, await Text(candidate.ManifestUrl, 16384, token).ConfigureAwait(false));
         }
+        public Task<KnownIssues> ReadKnownIssues(CancellationToken token)
+        { return ReadKnownIssuesWithTimeout(TimeSpan.FromSeconds(25),token); }
+        internal async Task<KnownIssues> ReadKnownIssuesWithTimeout(TimeSpan limit,CancellationToken token)
+        {
+            using(var request=CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                request.CancelAfter(limit);
+                try {
+                    var pending=ReadKnownIssuesCore(request.Token);
+                    if(await Task.WhenAny(pending,Task.Delay(Timeout.Infinite,request.Token)).ConfigureAwait(false)!=pending) {
+                        ObserveNewsFailure(pending);
+                        token.ThrowIfCancellationRequested();throw new TimeoutException("Known issues check timed out.");
+                    }
+                    return await pending.ConfigureAwait(false);
+                }finally{request.Cancel();}
+            }
+        }
+        async Task<KnownIssues> ReadKnownIssuesCore(CancellationToken token)
+        {
+            var issues=new Dictionary<long,KnownIssue>();
+            for(int page=1;page<=10;page++) {
+                token.ThrowIfCancellationRequested();
+                string json=await Text("https://api.github.com/repos/"+Repository+"/issues?state=open&labels=bug&sort=created&direction=desc&per_page=100&page="+page.ToString(CultureInfo.InvariantCulture),4*1024*1024,token).ConfigureAwait(false);
+                Core.Require(!String.IsNullOrWhiteSpace(json),"GitHub returned no issue information. Open the bug tracker or try again later.");
+                bool more;
+                foreach(var issue in KnownIssues.ParsePage(json,out more))issues[issue.Number]=issue;
+                if(!more)return new KnownIssues {Items=issues.Values.OrderByDescending(issue=>issue.Number).ToArray(),CheckedUtc=DateTime.UtcNow};
+            }
+            // Never replace a good snapshot with a partial list after an error,
+            // request cap or failure on a later page.
+            throw new InvalidDataException("Too many issue pages. View the complete bug tracker on GitHub.");
+        }
         public Task<ReleaseNews> ReadNews(bool preview,string installedGame,string installedLauncher,CancellationToken token)
         { return ReadNewsWithTimeout(preview,installedGame,installedLauncher,TimeSpan.FromSeconds(25),token); }
         internal async Task<ReleaseNews> ReadNewsWithTimeout(bool preview,string installedGame,string installedLauncher,TimeSpan limit,CancellationToken token)

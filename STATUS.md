@@ -1,5 +1,33 @@
 # Measured progress
 
+## Live known issues in the launcher (2026-10-19)
+
+Implemented on `feature/launcher-live-known-issues`, based on main `a8fc545`.
+Known issues previously came only from release descriptions. It now fetches
+current open GitHub issues labeled bug, excluding PRs and other labels/states,
+and replaces its list after a complete successful refresh. The selected
+release's published limitations remain separately identified in its notes.
+Issue titles are literal text and links are constructed from validated issue
+numbers in this repository; remote HTML, URLs and issue bodies are not rendered.
+
+Requests use independent five-minute polling while What's new is visible and
+the launcher is not minimized/busy, with entry/activation checks when due and
+an immediate manual refresh. No overlapping requests; close stops the timer,
+cancels outstanding work and prevents late repaint. Pagination is bounded to
+ten 100-record pages, responses to 4 MiB, and the entire check to 25 seconds,
+including a transport that ignores cancellation. Errors or incomplete results
+retain the old list with a checked-time warning; a successful empty result is
+distinct from unavailable GitHub data. No sign-in or saved cache is required.
+
+Windows x64 .NET Framework required-artwork build passed. Thirty release-news
+checks (including eleven new issue-feed/UI/scheduling cases) and 28 existing
+download/recovery checks passed. Forty-two page/state previews at 1152x772 and
+984x681 covered live, empty and stale issue lists as well as existing launcher
+pages. Live unauthenticated access returned eight open bug reports; preview
+screenshots used that read-only snapshot. No game, saves, personal settings,
+GitHub issues or release was modified. Full updater/gameplay checks were not
+needed for this display/network change. Native Mac remains queued in MAC-021.
+
 ## Launcher v1.2.17 local build (2026-10-19)
 
 Prepared on `release/launcher-v1.2.17` from main `8fe6b48` (PR #170), with

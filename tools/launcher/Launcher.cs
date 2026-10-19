@@ -137,6 +137,9 @@ namespace TimeSplitters.Launcher
         CancellationTokenSource versionsStop;
         int nextVersionsPage = 1;
         CancellationTokenSource newsStop;
+        CancellationTokenSource issuesStop;
+        DateTime issuesNextCheckUtc;
+        System.Windows.Threading.DispatcherTimer issuesTimer;
         string newsContext="";
         bool newsReady;
         VerificationResult gameVerification, launcherVerification;
@@ -232,7 +235,8 @@ namespace TimeSplitters.Launcher
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
             Button("RecoveryLogsButton").Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
             Button("OpenDataButton").Click+=(s,e)=> {if(!previewMode)OpenFolder("Data");};
-            Window.Closed += (s,e)=> { if(sessionTimer!=null)sessionTimer.Stop();lifetime.Cancel(); client.Dispose(); };
+            Window.Closed += (s,e)=> { if(sessionTimer!=null)sessionTimer.Stop();if(issuesTimer!=null)issuesTimer.Stop();lifetime.Cancel(); client.Dispose(); };
+            Window.Activated+=async(s,e)=>{if(KnownIssuesVisible())await RefreshKnownIssues(false);};
             if (previewMode)
             {
                 Text("InstalledLabel", "v0.1.0-alpha.1");
@@ -391,7 +395,13 @@ namespace TimeSplitters.Launcher
             if(newsPage==null) {
                 newsPage=new WhatsNewPage(url=>{if(!previewMode)Open(url);});Find<ContentControl>("NewsHost").Content=newsPage.View;
                 newsPage.Refresh.Click+=async(s,e)=>await RefreshNews();
+                newsPage.RefreshIssues.Click+=async(s,e)=>await RefreshKnownIssues(true);
                 newsPage.OnGitHub.Click+=(s,e)=> {if(!previewMode && newsPage.SelectedUrl!=null)Open(newsPage.SelectedUrl);};
+                if(!previewMode) {
+                    issuesTimer=new System.Windows.Threading.DispatcherTimer {Interval=TimeSpan.FromMinutes(5)};
+                    issuesTimer.Tick+=async(s,e)=>{if(KnownIssuesVisible())await RefreshKnownIssues(false);};
+                    issuesTimer.Start();
+                }
             }
             Find<Grid>("CommandCenter").Visibility=Visibility.Collapsed;
             Find<ContentControl>("SettingsHost").Visibility=Visibility.Collapsed;
@@ -408,9 +418,28 @@ namespace TimeSplitters.Launcher
                     InstalledGame=new Release {Tag="v1.0.0",Notes="Initial release notes (interface sample).",Url=ReleaseClient.ReleasesPage},
                     Launcher=new Release {Tag=LauncherVersion.Value,Name="Launcher update (interface sample)",Url=ReleaseClient.ReleasesPage,Notes="## Improvements\n- Resumable downloads with speed and time remaining.\n- Clearer recovery actions."},
                     InstalledLauncher=new Release {Tag=LauncherVersion.Value,Notes="Installed launcher notes (interface sample).",Url=ReleaseClient.ReleasesPage}});
+                newsPage.SetIssues(new KnownIssues {CheckedUtc=DateTime.UtcNow,Items=new[]{
+                    new KnownIssue {Number=101,Title="Sample report: an effect needs investigation (preview only)"},
+                    new KnownIssue {Number=102,Title="Sample report: a menu layout needs adjustment (preview only)"}}});
                 return;
             }
-            if(!newsReady && newsStop==null)await RefreshNews();
+            await Task.WhenAll(RefreshKnownIssues(false),!newsReady && newsStop==null?RefreshNews():Task.FromResult(0));
+        }
+        bool KnownIssuesVisible()
+        { return !previewMode && !busy && newsPage!=null && Window.IsVisible && Window.WindowState!=WindowState.Minimized && Find<ContentControl>("NewsHost").Visibility==Visibility.Visible; }
+        internal async Task RefreshKnownIssues(bool force)
+        {
+            if(previewMode || newsPage==null || lifetime.IsCancellationRequested || issuesStop!=null || (!force && DateTime.UtcNow<issuesNextCheckUtc))return;
+            using(var cancel=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)) {
+                issuesStop=cancel;issuesNextCheckUtc=DateTime.UtcNow.AddMinutes(5);newsPage.SetIssuesLoading();
+                if(issuesTimer!=null){issuesTimer.Stop();issuesTimer.Start();}
+                try {
+                    var result=await client.ReadKnownIssues(cancel.Token);
+                    if(!lifetime.IsCancellationRequested)newsPage.SetIssues(result);
+                }catch(Exception ex) {
+                    if(!lifetime.IsCancellationRequested){newsPage.IssuesFailed();Program.Log(root,"Known issues: "+ex.GetType().Name);}
+                }finally {issuesStop=null;}
+            }
         }
         async Task RefreshNews()
         {

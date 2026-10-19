@@ -555,10 +555,34 @@ than rendered as web content. Images are omitted, and scripts/embedded XAML are
 never interpreted. File, script and other non-HTTP(S) links are not navigable.
 Descriptions are limited to 64,000 characters / 512 lines, with an explicit link
 to read the complete release if shortened. **View release on GitHub** opens the
-selected release only when clicked. **Known issues** displays a published heading
-such as `## Known issues` or `## Known limitations`; if none exists, the page says
-so rather than claiming there are no issues. Other sections remain in the change
-notes. Open GitHub for the complete original release and unsupported formatting.
+selected release only when clicked. Headings such as `## Known issues` or
+`## Known limitations` in the selected release remain under **Limitations
+published with this release**. They are historical release notes, separate from
+the current bug tracker. Open GitHub for the complete original release and
+unsupported formatting.
+
+**Known issues** now reads the repository's current open issues labeled `bug`,
+across all versions, using GitHub's public [repository issues endpoint](https://docs.github.com/en/rest/issues/issues#list-repository-issues).
+Pull requests, closed issues and reports without that label are excluded.
+Each report shows its number and literal title, with a clickable link to its
+GitHub issue. **View bug tracker** opens the equivalent filtered GitHub list.
+Issue bodies, images and remote markup are not loaded into the UI.
+
+The first visit to What's new checks issues independently of release notes;
+returning to the page checks again when its five-minute cache is due. While
+the page is visible and the launcher is not minimized or busy, a five-minute
+timer refreshes the list. Restoring/activating the launcher also checks if due.
+**Refresh issues** checks immediately. Newly opened, reopened or newly labeled
+bugs appear on the next successful check; closed, deleted or relabeled reports
+disappear. This is polling, not an instant GitHub push notification, and requires
+no sign-in or token.
+
+Requests have a 25-second overall deadline and fetch pages of 100 records, up
+to ten pages, with 4 MiB response limits. A failed, oversized or incomplete
+refresh retains the previous complete list and its checked time with a warning.
+A first offline/error load stays **Not checked**, distinct from a successful
+empty list. Lists remain in memory for this launcher session only. Requests
+never overlap; the timer stops and outstanding requests are cancelled on close.
 
 **Refresh notes** has a 25-second cancellation deadline. A failed refresh retains
 previously loaded notes for the same version/channel for this session and marks
@@ -571,7 +595,8 @@ startup updater; reading notes does not install anything or change settings.
 Developer preview: `--render-news-preview output.png` works through the bootstrap
 or app, with labeled sample releases and no network/filesystem maintenance.
 `launcher-tests.exe --news` exercises synthetic release selection, exact-version
-lookup, failures, safe text handling and embedded navigation without real game
+lookup, paginated bug tracking, refresh scheduling, failures, safe text handling
+and embedded navigation without real game
 files. The standard `build-launcher.ps1 -Test` includes these checks.
 
 ## Repair / Verify tabs (launcher v1.2.12)

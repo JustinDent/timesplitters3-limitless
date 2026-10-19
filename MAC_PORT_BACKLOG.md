@@ -1271,6 +1271,20 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Live known issues (2026-10-19, `feature/launcher-live-known-issues`):**
+  `ReleaseClient.cs` and `ReleaseNews.cs` fetch all bounded pages of open GitHub
+  issues labeled bug, exclude PRs, and return a complete replacement snapshot.
+  `WhatsNewPage.cs` shows literal linked titles, counts, checked times, manual
+  refresh and stale/offline feedback independently of historical release notes.
+  `Launcher.cs` checks on entry/activation when due and every five minutes while
+  the page is visible; it suppresses overlapping requests and stops on close.
+  Native Mac has no corresponding UI; adaptation remains queued. Reuse the
+  filter/pagination/deadline semantics in a native client, including preservation
+  of old results on later-page failure, empty-vs-offline distinction, safe links,
+  and removal after closure or relabeling. Verify timer lifecycle, keyboard
+  navigation and narrow layouts on Mac; Windows checks in STATUS.md do not
+  establish Mac execution. No personal data or GitHub mutation is involved.
+
 - **Launcher v1.2.17 build (2026-10-19):** Prepared locally on
   `release/launcher-v1.2.17` from main `8fe6b48`. This version packages the
   existing Windows visual and lifecycle work below plus MAC-046 recovery;
