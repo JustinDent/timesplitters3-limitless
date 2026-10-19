@@ -297,6 +297,22 @@ launcher and its sidebar, at 1152 × 772, using the same embedded settings page.
 
 ## Installation and recovery
 
+### Home and settings layout
+
+Home uses matching vector sidebar icons, readable blue/silver controls and a
+themed update-channel picker. The banner displays the complete original artwork
+with uniform scaling inside a softly lit frame; the source image is unchanged.
+After game data is verified, setup actions collapse into **Manage game data**.
+Expand it to open the installed Data folder. Missing data shows the ISO/folder
+import actions; existing incomplete data shows an inspection action instead of
+offering to overwrite it. A routine refresh preserves the expanded/collapsed
+state unless verification status changes. Home cards scroll when expanded
+content exceeds the available window height.
+
+Settings use tighter section spacing and adjacent FOV/window controls while
+retaining the fixed Save/Cancel footer, key bindings and draft behavior. These
+layout changes do not modify saved preferences or the install/update process.
+
 Starting with v1.1.2, Play keeps the launcher visible during startup and
 minimizes it once the installed game's window appears. It restores the previous
 normal/maximized launcher state when the launch script finishes. Startup failures

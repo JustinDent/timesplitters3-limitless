@@ -1,5 +1,39 @@
 # Measured progress
 
+## Launcher visual polish (2026-10-19)
+
+Windows x64 work on `feature/launcher-visual-polish`, based on main `c006c24`.
+Implemented all six requested visual improvements: collapsed verified game-data
+management, matching Home dropdown/softer Play button, six distinct vector
+sidebar icons, larger small labels with clearer muted-text contrast, compact
+settings rows, and a softer banner frame. Source artwork remains untouched and
+uses uniform scaling. Existing incomplete data offers inspection rather than
+import; verification changes update the default disclosure state while routine
+refreshes preserve the user's expansion choice. Home cards scroll as necessary.
+
+The .NET Framework x64 build with required original banner/logo passed.
+Twenty local preview/layout checks passed across Home (ready, expanded, missing
+and incomplete data), both Settings tabs, Repair, Diagnostics, What's new and
+Game versions at 1152x772 and 984x681 content sizes (the latter allows for the
+frame of a minimum-size 1000x720 window). The initial small-window pass caught
+clipped data actions; the scrollable Home cards fix was rebuilt and rechecked.
+Rendered pages were visually inspected; data actions were checked for reachability
+after scrolling, and verified-data expansion was checked across refreshes.
+
+Current-source regression results: 30 settings, 19 release-news, 11 game-version
+and 14 read-only maintenance checks passed. Six transaction maintenance checks
+were intentionally skipped in read-only mode while real game processes remained
+running; no updater/runtime changes require those checks for this visual work.
+No personal files or real game processes were modified. Native Mac execution,
+physical high-DPI testing and publication are not claimed. MAC-021 records the
+native UI follow-up. Prior local transaction-lock and minimize-on-start fixes
+remain on their separate branches and are not included in this branch.
+
+Ignored evidence: `build/launcher-visual-validation` contains the build, preview
+images, harness and suite logs; `build/launcher-visual-layout.log` records the
+layout pass. Test binaries used the short `%TEMP%/tsfp-visual-tests` path to avoid
+the pre-existing long-path crash-report fixture limit.
+
 ## Launcher v1.2.16 release preparation (2026-10-19)
 
 Prepared from main `4a489af`, which includes the reviewed crash/session changes

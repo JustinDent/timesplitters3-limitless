@@ -149,6 +149,7 @@ namespace TimeSplitters.Launcher
         bool busy, checking, handingOff;
         bool validData, gameInstalled;
         string installed = "";
+        bool? displayedDataVerified;
         T Find<T>(string name) where T : class { return Window.FindName(name) as T; }
         Button Button(string name) { return Find<Button>(name); }
         void Text(string name, string value) { Find<TextBlock>(name).Text = value; }
@@ -164,6 +165,7 @@ namespace TimeSplitters.Launcher
             root = path; previewMode = preview; client = releases;
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Launcher.xaml"))
                 Window = (Window)XamlReader.Load(stream);
+            Window.Resources.MergedDictionaries.Add(PageTheme.Resources());
             WindowTheme.Attach(Window);
             using (var icon = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher.ico"))
                 Window.Icon = BitmapFrame.Create(icon, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
@@ -213,6 +215,7 @@ namespace TimeSplitters.Launcher
             Button("RetryButton").Click+=async(s,e)=> {if(!busy && !checking && retryOperation!=null)await retryOperation();};
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
             Button("RecoveryLogsButton").Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
+            Button("OpenDataButton").Click+=(s,e)=> {if(!previewMode)OpenFolder("Data");};
             Window.Closed += (s,e)=> { if(sessionTimer!=null)sessionTimer.Stop();lifetime.Cancel(); client.Dispose(); };
             if (previewMode)
             {
@@ -220,6 +223,7 @@ namespace TimeSplitters.Launcher
                 Text("ReadyTitle", "Ready to play");
                 Text("ReadyDescription", "Your game is installed and ready to launch.");
                 Text("DataLabel", "●  Verified US Xbox data");
+                SetGameDataPresentation(true,true);
                 Text("ReleaseTitle", "You're on the latest release.");
                 Text("ReleaseDescription", "The installed game is up to date. New releases appear here when published.");
                 SetStatus("Ready.");
@@ -600,6 +604,18 @@ namespace TimeSplitters.Launcher
             Find<StackPanel>("UpdateChannelSection").Visibility=Visibility.Collapsed;Find<TextBlock>("TransferDetails").Visibility=Visibility.Collapsed;
             SetStatus(download?"The installed release is unchanged. Retry when ready.":"You can retry or inspect the installed files.");
         }
+        internal void SetGameDataPresentation(bool verified, bool exists)
+        {
+            var expander=Find<Expander>("GameDataExpander");
+            expander.Header=verified?"Manage game data":exists?"Inspect game data":"Set up game data";
+            if(displayedDataVerified!=verified)expander.IsExpanded=!verified;
+            displayedDataVerified=verified;
+            Text("GameDataHint",verified?"Your game data is ready. You only need to import it once.":exists?
+                "Existing data needs attention. Open the folder to inspect it; your files have been kept.":
+                "Import your supported US Xbox ISO or an extracted game folder.");
+            Find<Grid>("ImportActions").Visibility=exists?Visibility.Collapsed:Visibility.Visible;
+            Button("OpenDataButton").Visibility=exists?Visibility.Visible:Visibility.Collapsed;
+        }
         void Refresh()
         {
             try { installed = Core.InstalledVersion(root); }
@@ -617,6 +633,7 @@ namespace TimeSplitters.Launcher
                 Text("ReadyDescription", "Existing Data is incomplete or unsupported. Choose Repair / Verify → Open game folder to inspect it; your files were kept.");
             }
             Text("DataLabel", validData ? "●  Verified US Xbox data" : dataExists ? "○  Data needs attention" : "○  ISO required");
+            SetGameDataPresentation(validData,dataExists);
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());

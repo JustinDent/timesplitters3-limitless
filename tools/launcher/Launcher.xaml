@@ -4,17 +4,16 @@
         WindowStartupLocation="CenterScreen" Background="#0B1420" Foreground="#E4EDF5" FontFamily="Segoe UI"
         UseLayoutRounding="True" SnapsToDevicePixels="True">
   <Window.Resources>
-    <SolidColorBrush x:Key="Muted" Color="#9EAFBF"/>
+    <SolidColorBrush x:Key="Muted" Color="#B4C7D8"/>
     <SolidColorBrush x:Key="Accent" Color="#86CDFF"/>
     <LinearGradientBrush x:Key="PlayChrome" StartPoint="0,0" EndPoint="0,1">
-      <GradientStop Color="#DCEFFF" Offset="0"/><GradientStop Color="#9AD6FF" Offset="0.48"/>
-      <GradientStop Color="#70B8EC" Offset="0.52"/><GradientStop Color="#A5DCFF" Offset="1"/>
+      <GradientStop Color="#C3E5FC" Offset="0"/><GradientStop Color="#96CFF2" Offset="1"/>
     </LinearGradientBrush>
     <Style TargetType="Button">
       <Setter Property="Background" Value="#1B2C3E"/><Setter Property="Foreground" Value="#DFE9F2"/>
       <Setter Property="BorderBrush" Value="#3B5268"/><Setter Property="BorderThickness" Value="1"/>
       <Setter Property="Padding" Value="16,11"/><Setter Property="Cursor" Value="Hand"/>
-      <Setter Property="FontWeight" Value="SemiBold"/><Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="SemiBold"/><Setter Property="FontSize" Value="13"/>
       <Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/>
       <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
         <Border x:Name="Face" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="3" Padding="{TemplateBinding Padding}">
@@ -29,10 +28,15 @@
       </ControlTemplate></Setter.Value></Setter>
     </Style>
     <Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap"/></Style>
-    <Style x:Key="Label" TargetType="TextBlock"><Setter Property="Foreground" Value="#9EAFBF"/><Setter Property="FontSize" Value="10"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
+    <Style x:Key="Label" TargetType="TextBlock"><Setter Property="Foreground" Value="#B4C7D8"/><Setter Property="FontSize" Value="11"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
     <Style x:Key="Nav" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
       <Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Background" Value="Transparent"/>
       <Setter Property="BorderThickness" Value="0"/><Setter Property="Margin" Value="0,3"/><Setter Property="Padding" Value="12,14"/>
+    </Style>
+    <Style x:Key="NavGlyph" TargetType="Path">
+      <Setter Property="Stroke" Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"/>
+      <Setter Property="StrokeThickness" Value="1.7"/><Setter Property="StrokeLineJoin" Value="Round"/>
+      <Setter Property="StrokeStartLineCap" Value="Round"/><Setter Property="StrokeEndLineCap" Value="Round"/>
     </Style>
   </Window.Resources>
   <Grid>
@@ -58,7 +62,7 @@
           </StackPanel>
           <StackPanel x:Name="SidebarBrandFallback">
             <TextBlock Text="TIMESPLITTERS" FontFamily="Bahnschrift" FontWeight="Bold" FontSize="16"/>
-            <TextBlock Text="FUTURE PERFECT" FontSize="10" Foreground="#86CDFF" Margin="0,4,0,0"/>
+            <TextBlock Text="FUTURE PERFECT" FontSize="11" Foreground="#86CDFF" Margin="0,4,0,0"/>
           </StackPanel>
         </StackPanel>
         <StackPanel Grid.Row="2">
@@ -66,42 +70,42 @@
           <Button x:Name="HomeNav" Style="{StaticResource Nav}" Background="#1D3A55" Foreground="#86CDFF" ToolTip="Game, release updates and setup" AutomationProperties.Name="Home">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-              <TextBlock Text="◈" FontSize="14" TextAlignment="Center" VerticalAlignment="Center"/>
+              <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"><Canvas Width="24" Height="24"><Path Style="{StaticResource NavGlyph}" Data="M3,11 L12,3 L21,11 M5,10 L5,21 L10,21 L10,15 L14,15 L14,21 L19,21 L19,10"/></Canvas></Viewbox>
               <TextBlock Grid.Column="1" Text="Home" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
           <Button x:Name="NewsNav" Style="{StaticResource Nav}" ToolTip="Published release notes and known issues" AutomationProperties.Name="What's new">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-              <TextBlock Text="▧" FontSize="14" TextAlignment="Center" VerticalAlignment="Center"/>
+              <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"><Canvas Width="24" Height="24"><Path Style="{StaticResource NavGlyph}" Data="M4,3 L20,3 L20,21 L4,21 Z M8,7 L16,7 M8,11 L16,11 M8,15 L11,15 M8,18 L16,18"/></Canvas></Viewbox>
               <TextBlock Grid.Column="1" Text="What's new" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
           <Button x:Name="SettingsNav" Style="{StaticResource Nav}" ToolTip="Keybinds, mouse, graphics and resolution" AutomationProperties.Name="Game settings">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-              <TextBlock Text="⚙" FontSize="14" TextAlignment="Center" VerticalAlignment="Center"/>
+              <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"><Canvas Width="24" Height="24"><Path Style="{StaticResource NavGlyph}" Data="M4,5 L10,5 M14,5 L20,5 M4,12 L14,12 M18,12 L20,12 M4,19 L6,19 M10,19 L20,19 M10,2 L14,2 L14,8 L10,8 Z M14,9 L18,9 L18,15 L14,15 Z M6,16 L10,16 L10,22 L6,22 Z"/></Canvas></Viewbox>
               <TextBlock Grid.Column="1" Text="Game settings" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
           <Button x:Name="RepairNav" Style="{StaticResource Nav}" ToolTip="Verify and repair files, review diagnostics and open logs" AutomationProperties.Name="Repair / Verify">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-              <TextBlock Text="◇" FontSize="14" TextAlignment="Center" VerticalAlignment="Center"/>
+              <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"><Canvas Width="24" Height="24"><Path Style="{StaticResource NavGlyph}" Data="M14,3 C18,1 22,5 20,9 L17,6 L14,9 L17,12 C16,13 14,13 12,12 L5,20 C3,22 1,19 3,17 L11,10 C9,7 10,4 14,3 Z"/></Canvas></Viewbox>
               <TextBlock Grid.Column="1" Text="Repair / Verify" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
           <Button x:Name="SavesNav" Style="{StaticResource Nav}" ToolTip="Open your local saves folder" AutomationProperties.Name="Saves">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-              <TextBlock Text="◇" FontSize="14" TextAlignment="Center" VerticalAlignment="Center"/>
+              <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"><Canvas Width="24" Height="24"><Path Style="{StaticResource NavGlyph}" Data="M4,3 L17,3 L21,7 L21,21 L3,21 L3,3 Z M7,3 L7,9 L16,9 L16,3 M7,21 L7,14 L17,14 L17,21"/></Canvas></Viewbox>
               <TextBlock Grid.Column="1" Text="Saves" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
           <Button x:Name="SupportNav" Style="{StaticResource Nav}" ToolTip="Open the project's GitHub issues" AutomationProperties.Name="Support">
             <Grid>
               <Grid.ColumnDefinitions><ColumnDefinition Width="24"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-              <TextBlock Text="↗" FontSize="14" TextAlignment="Center" VerticalAlignment="Center"/>
+              <Viewbox Width="18" Height="18" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False"><Canvas Width="24" Height="24"><Path Style="{StaticResource NavGlyph}" Data="M9,9 C9,5 16,5 16,9 C16,12 12,11 12,15 M12,18 L12,18.3 M21,11 C21,5 17,2 12,2 C6,2 2,6 2,12 C2,18 6,22 12,22 C18,22 22,18 22,12"/></Canvas></Viewbox>
               <TextBlock Grid.Column="1" Text="Support" Margin="10,0,0,0" VerticalAlignment="Center"/>
             </Grid>
           </Button>
@@ -109,7 +113,7 @@
         <StackPanel Grid.Row="3">
           <Border BorderBrush="#2D445A" BorderThickness="0,1,0,0" Padding="0,17,0,0">
             <StackPanel>
-              <TextBlock Text="PC RECOMPILATION" FontSize="10" FontWeight="SemiBold" Foreground="#B7C8D8"/>
+              <TextBlock Text="PC RECOMPILATION" FontSize="11" FontWeight="SemiBold" Foreground="#B7C8D8"/>
             </StackPanel>
           </Border>
         </StackPanel>
@@ -117,11 +121,11 @@
     </Border>
     <Grid Grid.Column="1">
     <Grid x:Name="CommandCenter" Margin="30,24,30,18">
-      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="20"/><RowDefinition Height="264"/><RowDefinition Height="18"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+      <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="18"/><RowDefinition Height="228"/><RowDefinition Height="18"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
       <DockPanel LastChildFill="False">
-        <TextBlock DockPanel.Dock="Left" Text="LAUNCHER" FontSize="11" FontWeight="SemiBold" Foreground="#C0D1E1" VerticalAlignment="Center"/>
+        <TextBlock DockPanel.Dock="Left" Text="LAUNCHER" FontSize="12" FontWeight="SemiBold" Foreground="#C0D1E1" VerticalAlignment="Center"/>
         <Border DockPanel.Dock="Right" BorderBrush="#416685" BorderThickness="1" Background="#162F45" Padding="10,6" CornerRadius="3" VerticalAlignment="Center">
-          <TextBlock x:Name="ChannelBadge" Text="●  STABLE CHANNEL" FontSize="10" Foreground="#A8D8FF"/>
+          <TextBlock x:Name="ChannelBadge" Text="●  STABLE CHANNEL" FontSize="11" Foreground="#A8D8FF"/>
         </Border>
       </DockPanel>
       <Border Grid.Row="2" BorderBrush="#476580" BorderThickness="1" CornerRadius="5" ClipToBounds="True">
@@ -147,8 +151,8 @@
             </TextBlock>
             <TextBlock Text="F U T U R E   P E R F E C T" FontFamily="Bahnschrift" FontWeight="Bold" FontSize="20" Foreground="#86CDFF" Margin="0,-1,0,0"/>
             <StackPanel Orientation="Horizontal" Margin="0,19,0,0">
-              <Border BorderBrush="#46637D" BorderThickness="1" Padding="8,4" CornerRadius="2"><TextBlock Text="WINDOWS x64" FontSize="9" Foreground="#CAD9E6"/></Border>
-              <Border BorderBrush="#46637D" BorderThickness="1" Padding="8,4" CornerRadius="2" Margin="7,0,0,0"><TextBlock Text="NATIVE PC PORT" FontSize="9" Foreground="#CAD9E6"/></Border>
+              <Border BorderBrush="#46637D" BorderThickness="1" Padding="8,4" CornerRadius="2"><TextBlock Text="WINDOWS x64" FontSize="10" Foreground="#CAD9E6"/></Border>
+              <Border BorderBrush="#46637D" BorderThickness="1" Padding="8,4" CornerRadius="2" Margin="7,0,0,0"><TextBlock Text="NATIVE PC PORT" FontSize="10" Foreground="#CAD9E6"/></Border>
             </StackPanel>
           </StackPanel>
         </Grid>
@@ -170,7 +174,8 @@
                 <TextBlock Text="FUTURE PERFECT" FontFamily="Bahnschrift" FontSize="18" Foreground="#A7D9FA" Margin="0,7,0,0"/>
               </StackPanel>
             </Grid>
-            <Border Grid.Column="1" HorizontalAlignment="Right" BorderBrush="#7792A8" BorderThickness="1,0,0,0" Background="#122233">
+            <Border Grid.Column="1" HorizontalAlignment="Right" Margin="8,12,12,12" Background="Transparent">
+              <Border.Effect><DropShadowEffect Color="#8BC2E5" BlurRadius="22" ShadowDepth="0" Opacity="0.2"/></Border.Effect>
               <Image x:Name="HeroPhoto" Stretch="Uniform" HorizontalAlignment="Right" VerticalAlignment="Center"
                      AutomationProperties.Name="Complete supplied artwork, including Cortez, both weapons and his boot"/>
             </Border>
@@ -178,42 +183,50 @@
         </Border>
         </Grid>
       </Border>
-      <Grid Grid.Row="4">
+      <ScrollViewer x:Name="HomeCardsScroll" Grid.Row="4" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="False">
+      <Grid MinHeight="{Binding ViewportHeight, ElementName=HomeCardsScroll}">
         <Grid.ColumnDefinitions><ColumnDefinition Width="1.15*"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
         <Border Background="#152435" BorderBrush="#30485F" BorderThickness="1" CornerRadius="4" Padding="20,17">
           <Grid>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-            <DockPanel><TextBlock Text="GAME" Style="{StaticResource Label}"/><TextBlock x:Name="InstalledLabel" Text="NOT INSTALLED" Foreground="#86CDFF" FontFamily="Consolas" FontSize="10" HorizontalAlignment="Right"/></DockPanel>
+            <DockPanel><TextBlock Text="GAME" Style="{StaticResource Label}"/><TextBlock x:Name="InstalledLabel" Text="NOT INSTALLED" Foreground="#86CDFF" FontFamily="Consolas" FontSize="11" HorizontalAlignment="Right"/></DockPanel>
             <TextBlock x:Name="ReadyTitle" Grid.Row="1" Text="Install game" FontSize="21" FontWeight="SemiBold" Margin="0,12,0,0"/>
-            <TextBlock x:Name="ReadyDescription" Grid.Row="2" Text="Install a release, then import your US Xbox ISO." Foreground="#A4B8CA" FontSize="12" Margin="0,6,0,13"/>
+            <TextBlock x:Name="ReadyDescription" Grid.Row="2" Text="Install a release, then import your US Xbox ISO." Foreground="#B4C7D8" FontSize="13" Margin="0,6,0,13"/>
             <Button x:Name="PlayButton" Grid.Row="3" Background="{StaticResource PlayChrome}" Foreground="#091C2C" BorderBrush="#D6EDFF" FontSize="16" Padding="20,13" Content="▶    PLAY GAME" ToolTip="Launch your installed game" IsEnabled="False"/>
             <StackPanel Grid.Row="5" Margin="0,13,0,0">
-              <DockPanel><TextBlock Text="GAME DATA" Style="{StaticResource Label}"/><TextBlock x:Name="DataLabel" Text="○  ISO required" Foreground="#B4CCDF" FontSize="10" HorizontalAlignment="Right"/></DockPanel>
-              <Grid Margin="0,8,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/></Grid.ColumnDefinitions>
-                <Button x:Name="ImportButton" Content="Locate ISO" Padding="8,9" ToolTip="Import your supported US Xbox ISO once"/>
-                <Button x:Name="FolderButton" Grid.Column="2" Content="Use extracted files" Padding="8,9" ToolTip="Import a folder containing default.xbe, pak and xmv"/>
-              </Grid>
+              <TextBlock x:Name="DataLabel" Text="○  ISO required" Foreground="#B4CCDF" FontSize="13" Margin="0,0,0,8"/>
+              <Expander x:Name="GameDataExpander" Header="Set up game data" Foreground="#B5DEFA" FontSize="13" IsExpanded="True">
+                <StackPanel Margin="0,8,0,0">
+                  <TextBlock x:Name="GameDataHint" FontSize="13" Foreground="#B4C7D8" Margin="0,0,0,10"/>
+                  <Grid x:Name="ImportActions"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/></Grid.ColumnDefinitions>
+                    <Button x:Name="ImportButton" Content="Locate ISO" Padding="8,9" ToolTip="Import your supported US Xbox ISO once"/>
+                    <Button x:Name="FolderButton" Grid.Column="2" Content="Use extracted files" Padding="8,9" ToolTip="Import a folder containing default.xbe, pak and xmv"/>
+                  </Grid>
+                  <Button x:Name="OpenDataButton" Content="Open data folder" HorizontalAlignment="Left" Visibility="Collapsed" ToolTip="Open your installed game data in File Explorer"/>
+                </StackPanel>
+              </Expander>
             </StackPanel>
           </Grid>
         </Border>
         <Border Grid.Column="2" Background="#152435" BorderBrush="#30485F" BorderThickness="1" CornerRadius="4" Padding="20,17">
           <Grid>
             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-            <DockPanel><TextBlock Text="UPDATES" Style="{StaticResource Label}"/>
-              <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                <Button x:Name="GameVersionsButton" Content="Game versions" Margin="0,0,14,0" Padding="0" BorderThickness="0" Background="Transparent" Foreground="#86CDFF" FontSize="10" ToolTip="Install a specific published game release for comparisons and bug reproduction"/>
-                <Button x:Name="ReleaseNotesButton" Content="Release notes ↗" Padding="0" Background="Transparent" BorderThickness="0" Foreground="#86CDFF" FontSize="10"/>
-              </StackPanel>
-            </DockPanel>
+            <TextBlock Text="UPDATES" Style="{StaticResource Label}"/>
             <TextBlock x:Name="ReleaseTitle" Grid.Row="1" Text="Checking for updates…" FontSize="19" FontWeight="SemiBold" Margin="0,13,0,0"/>
-            <TextBlock x:Name="ReleaseDescription" Grid.Row="2" Text="Game releases from GitHub." FontSize="12" Foreground="#A4B8CA" Margin="0,7,0,12"/>
+            <StackPanel Grid.Row="2" Margin="0,7,0,14">
+              <TextBlock x:Name="ReleaseDescription" Text="Game releases from GitHub." FontSize="13" Foreground="#B4C7D8"/>
+              <WrapPanel Margin="0,10,0,0">
+                <Button x:Name="GameVersionsButton" Content="Game versions" Margin="0,0,18,0" Padding="0,4" BorderThickness="0" Background="Transparent" Foreground="#A7D9FA" FontSize="13" ToolTip="Install a specific published game release for comparisons and bug reproduction"/>
+                <Button x:Name="ReleaseNotesButton" Content="What's new" Padding="0,4" Background="Transparent" BorderThickness="0" Foreground="#A7D9FA" FontSize="13"/>
+              </WrapPanel>
+            </StackPanel>
             <StackPanel x:Name="UpdateChannelSection" Grid.Row="3">
               <DockPanel Margin="0,0,0,8"><TextBlock Text="UPDATE CHANNEL" Style="{StaticResource Label}" VerticalAlignment="Center"/>
-                <ComboBox x:Name="ChannelPicker" SelectedIndex="0" Width="104" HorizontalAlignment="Right" FontSize="11" Foreground="#101E2D" ToolTip="Stable excludes prereleases. Preview includes published test releases."><ComboBoxItem Content="Stable"/><ComboBoxItem Content="Preview"/></ComboBox>
+                <ComboBox x:Name="ChannelPicker" SelectedIndex="0" Width="120" HorizontalAlignment="Right" FontSize="13" AutomationProperties.Name="Update channel" ToolTip="Stable excludes prereleases. Preview includes published test releases."><ComboBoxItem Content="Stable"/><ComboBoxItem Content="Preview"/></ComboBox>
               </DockPanel>
-              <TextBlock Text="Updates preserve saves and settings." Foreground="#8CA6BE" FontSize="10"/>
+              <TextBlock Text="Updates preserve saves and settings." Foreground="#B4C7D8" FontSize="11"/>
             </StackPanel>
-            <TextBlock x:Name="TransferDetails" Grid.Row="3" Visibility="Collapsed" FontSize="12" Foreground="#A7D9FA" Margin="0,6,0,0"/>
+            <TextBlock x:Name="TransferDetails" Grid.Row="3" Visibility="Collapsed" FontSize="13" Foreground="#A7D9FA" Margin="0,6,0,0"/>
             <Grid x:Name="UpdateActions" Grid.Row="4" Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="8"/><ColumnDefinition/></Grid.ColumnDefinitions>
               <Button x:Name="UpdateButton" Content="Install release" IsEnabled="False" Padding="8,10"/>
               <Button x:Name="CheckButton" Grid.Column="2" Content="Check updates" Padding="8,10"/>
@@ -227,14 +240,15 @@
           </Grid>
         </Border>
       </Grid>
+      </ScrollViewer>
       <Grid Grid.Row="5" Margin="0,14,0,0">
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="5"/></Grid.RowDefinitions>
         <Grid Margin="0,0,0,7"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-          <TextBlock x:Name="StatusText" Text="Checking for updates…" FontSize="11" Foreground="#B4C7D8" VerticalAlignment="Center"/>
+          <TextBlock x:Name="StatusText" Text="Checking for updates…" FontSize="12" Foreground="#B4C7D8" VerticalAlignment="Center"/>
           <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="12,0,0,0">
-            <Button x:Name="RollbackButton" Content="Restore previous" FontSize="10" Foreground="#A5BDD1" Padding="0" BorderThickness="0" Background="Transparent" IsEnabled="False"
+            <Button x:Name="RollbackButton" Content="Restore previous" FontSize="11" Foreground="#A5BDD1" Padding="0" BorderThickness="0" Background="Transparent" IsEnabled="False"
                     ToolTip="Kept until this game version opens and exits normally. Older game files are then cleaned automatically." ToolTipService.ShowOnDisabled="True"/>
-            <Button x:Name="LogsButton" Content="View logs ↗" FontSize="10" Foreground="#A5BDD1" Margin="14,0,0,0" Padding="0" BorderThickness="0" Background="Transparent"/>
+            <Button x:Name="LogsButton" Content="View logs ↗" FontSize="11" Foreground="#A5BDD1" Margin="14,0,0,0" Padding="0" BorderThickness="0" Background="Transparent"/>
           </StackPanel>
         </Grid>
         <ProgressBar x:Name="OperationProgress" Grid.Row="1" Minimum="0" Maximum="100" Value="0" Background="#253D54" Foreground="#86CDFF" BorderThickness="0" Height="3"/>
@@ -246,7 +260,7 @@
     <ContentControl x:Name="SettingsHost" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
     </Grid>
     <Border Grid.Row="1" Grid.ColumnSpan="2" BorderBrush="#2C435A" BorderThickness="0,1,0,0" Background="#0D1926" Padding="20,0">
-      <DockPanel><TextBlock x:Name="LauncherVersionLabel" Text="TSFP  /  COMMUNITY PC PROJECT" FontFamily="Consolas" FontSize="9" Foreground="#809BB2" VerticalAlignment="Center"/><TextBlock Text="EXPERIMENTAL PORT     ·     US XBOX GAME DATA REQUIRED" FontSize="9" Foreground="#809BB2" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>
+      <DockPanel><TextBlock x:Name="LauncherVersionLabel" Text="TSFP  /  COMMUNITY PC PROJECT" FontFamily="Consolas" FontSize="10" Foreground="#A9BDD0" VerticalAlignment="Center"/><TextBlock Text="EXPERIMENTAL PORT     ·     US XBOX GAME DATA REQUIRED" FontSize="10" Foreground="#A9BDD0" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>
     </Border>
   </Grid>
 </Window>
