@@ -42,7 +42,9 @@ def capture(path, width, height):
     viewport(width, height)
     clear(7)
     quad(width / 2, .25, 0xffff0000)  # wall in front of the left half
-    tw, th = 64, 48
+    # Swizzled A8R8G8B8 requires power-of-two dimensions. A 64x48 allocation
+    # lets UnlockRect's Morton addressing read beyond the texture storage.
+    tw, th = 64, 64
     payload = struct.pack('<9I', 1, 0x06, tw, th, 1, 1, tw * 4, th, tw * th * 4)
     chunk(11, payload + bytes(tw * th * 4))
     words(21, 1, 0, 0, 0xffffffff)  # retain the SAME scene depth
