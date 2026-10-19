@@ -118,7 +118,7 @@ public static class LauncherSettingsChecks
                     task.ContinueWith(done=>dispatcher.BeginInvoke(new Action(()=>frame.Continue=false)));
                     System.Windows.Threading.Dispatcher.PushFrame(frame);
                     Require(!timedOut,"Play did not finish within 15 seconds.");task.GetAwaiter().GetResult();
-                    string expected=exitCode==0?"Game closed.":"The game closed unexpectedly. View logs for details.";
+                    string expected=exitCode==0?"Game closed.":"The game closed unexpectedly. No crash dump was captured; session report saved - see Diagnostics.";
                     Require(((System.Windows.Controls.TextBlock)ui.Window.FindName("StatusText")).Text==expected,"Unexpected game exit status.");
                 } finally {timer.Stop();System.Threading.SynchronizationContext.SetSynchronizationContext(previous);ui.Window.Close();}
             });

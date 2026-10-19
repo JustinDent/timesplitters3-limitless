@@ -7,16 +7,16 @@ using TimeSplitters.Launcher;
 public static class LauncherCrashChecks
 {
     static void Require(bool value,string message) { if(!value)throw new Exception(message); }
-    public static int Integration(string executable,bool hang=false)
+    public static int Integration(string executable,bool hang=false,string fallback=null)
     {
         Exception failure=null;
-        var thread=new System.Threading.Thread(()=>{try{IntegrationSTA(executable,hang);}catch(Exception ex){failure=ex;}});
+        var thread=new System.Threading.Thread(()=>{try{IntegrationSTA(executable,hang,fallback);}catch(Exception ex){failure=ex;}});
         thread.SetApartmentState(System.Threading.ApartmentState.STA);thread.Start();
         if(!thread.Join(45000))throw new Exception("Launcher crash integration timed out.");
         if(failure!=null)throw failure;
         return 0;
     }
-    static void IntegrationSTA(string executable,bool hang)
+    static void IntegrationSTA(string executable,bool hang,string fallback)
     {
         string parent=Path.GetDirectoryName(typeof(LauncherCrashChecks).Assembly.Location);
         string root=Path.Combine(parent,"crash-report-tests-"+Guid.NewGuid().ToString("N"));
@@ -25,7 +25,7 @@ public static class LauncherCrashChecks
         try {
             string bin=Path.GetDirectoryName(Path.GetFullPath(executable));
             File.Copy(executable,Path.Combine(root,"Bin/futureperfect_recomp.exe"));
-            File.Copy(Path.Combine(bin,"tsfp_crash_helper.exe"),Path.Combine(root,"Bin/tsfp_crash_helper.exe"));
+            if(fallback!="missing-helper")File.Copy(Path.Combine(bin,"tsfp_crash_helper.exe"),Path.Combine(root,"Bin/tsfp_crash_helper.exe"));
             string repository=Directory.GetParent(Directory.GetParent(Directory.GetParent(bin).FullName).FullName).FullName;
             Environment.SetEnvironmentVariable("PATH",Path.Combine(repository,"external/ts3FPrecomp/third_party/ffmpeg/bin")+";"+oldPath);
             GameSettings.Load(root,null).Save();
@@ -37,14 +37,21 @@ public static class LauncherCrashChecks
             var previous=System.Threading.SynchronizationContext.Current;
             var timer=new System.Windows.Threading.DispatcherTimer {Interval=TimeSpan.FromMilliseconds(100)};
             var clock=System.Diagnostics.Stopwatch.StartNew();
-            var frame=new System.Windows.Threading.DispatcherFrame();bool timedOut=false,exportedWhileRunning=false;
+            var frame=new System.Windows.Threading.DispatcherFrame();bool timedOut=false,exportedWhileRunning=false,killed=false;
             Exception pollFailure=null;
             try {
                 System.Threading.SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(dispatcher));
-                var task=ui.LaunchGame(hang?"hang-recover":"main");
+                var task=ui.LaunchGame(fallback=="kill"?"hang-unarmed":hang?"hang-recover":"main");
                 timer.Tick+=(s,e)=>{
                     try {
                         if(clock.ElapsedMilliseconds>25000){timedOut=true;frame.Continue=false;return;}
+                        if(fallback=="kill" && !killed && clock.ElapsedMilliseconds>500) {
+                            var marker=Json.Object(File.ReadAllText(Core.PathIn(root,".launcher/game-session.json")));
+                            using(var game=System.Diagnostics.Process.GetProcessById(Convert.ToInt32(marker["game_pid"]))) {
+                                Require(Path.GetFullPath(game.MainModule.FileName)==Path.GetFullPath(Path.Combine(root,"Bin/futureperfect_recomp.exe")),"Only the isolated integration game's process may be terminated.");
+                                game.Kill();killed=true;
+                            }
+                        }
                         if(hang && !exportedWhileRunning && ((System.Windows.Controls.TextBlock)ui.Window.FindName("StatusText")).Text.Contains("Hang report saved; the game is still running")) {
                             Require(!task.IsCompleted,"Notification must arrive before the hung game exits.");
                             Require(((System.Windows.Controls.ContentControl)ui.Window.FindName("MaintenanceHost")).Visibility==System.Windows.Visibility.Visible,"Hang opens Diagnostics while game runs.");
@@ -60,13 +67,14 @@ public static class LauncherCrashChecks
                 System.Windows.Threading.Dispatcher.PushFrame(frame);
                 if(pollFailure!=null)throw pollFailure;
                 Require(!timedOut,"Launcher did not finish the deliberate crash.");task.GetAwaiter().GetResult();
-                Require(((System.Windows.Controls.TextBlock)ui.Window.FindName("StatusText")).Text.Contains(hang?"Hang report saved":"Crash report saved"),"Launcher must announce the newly captured native report.");
+                Require(((System.Windows.Controls.TextBlock)ui.Window.FindName("StatusText")).Text.Contains(fallback!=null?"No crash dump was captured; session report saved":hang?"Hang report saved":"Crash report saved"),"Launcher must announce the newly captured report.");
                 if(hang)Require(exportedWhileRunning,"The launcher must allow inspecting and exporting a hang before the game exits.");
                 string latest=CrashReports.Latest(root);Require(latest!=null,"Launcher discovers real native report.");
-                Require(CrashReports.Summary(root).Contains(hang?"Suspected hang":"0xC0000005"),"Native metadata is readable by the launcher.");
+                Require(CrashReports.Summary(root).Contains(fallback!=null?"Unexpected exit":hang?"Suspected hang":"0xC0000005"),"Incident metadata is readable by the launcher.");
                 string zip=Path.Combine(root,"native-crash-export.zip");CrashReports.Export(root,latest,zip);
-                using(var archive=ZipFile.OpenRead(zip))Require(archive.GetEntry("crash.dmp")!=null,"Export contains the actual native dump.");
-                Console.WriteLine(hang?"PASS launcher detects native hang while game runs, opens Diagnostics, exports the dump before exit and preserves recovery.":"PASS launcher launches actual deliberate crash, announces new report, reads native metadata and exports its dump.");
+                using(var archive=ZipFile.OpenRead(zip))Require(fallback!=null?archive.GetEntry("crash.dmp")==null && archive.GetEntry("report.json")!=null:archive.GetEntry("crash.dmp")!=null,"Export must represent whether a native dump was captured.");
+                Require(GameSessions.Recover(root)==null,"Observed exit must not produce a second startup incident.");
+                Console.WriteLine(fallback!=null?"PASS actual launcher/game "+fallback+" produces an exportable unexpected-exit report without a dump.":hang?"PASS launcher detects native hang while game runs, opens Diagnostics, exports the dump before exit and preserves recovery.":"PASS launcher launches actual deliberate crash, announces new report, reads native metadata and exports its dump.");
             } finally { timer.Stop();System.Threading.SynchronizationContext.SetSynchronizationContext(previous);ui.Window.Close(); }
         } finally {
             Environment.SetEnvironmentVariable("PATH",oldPath);

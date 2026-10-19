@@ -143,8 +143,14 @@ static class LauncherTests
         if (args.Length == 1 && args[0] == "--settings-child") return LauncherSettingsChecks.Child();
         if (args.Length == 1 && args[0] == "--maintenance-readonly") return LauncherMaintenanceChecks.Run(true);
         if (args.Length == 1 && args[0] == "--crashes") return LauncherCrashChecks.Run();
+        if (args.Length == 1 && args[0] == "--sessions") return LauncherSessionChecks.Run();
+        if (args.Length == 2 && args[0] == "--session-owner") return LauncherSessionChecks.Owner(args[1]);
+        if (args.Length == 1 && args[0] == "--session-sleeper") {System.Threading.Thread.Sleep(30000);return 0;}
+        if (args.Length == 2 && args[0] == "--session-exit") return Int32.Parse(args[1]);
         if (args.Length == 2 && args[0] == "--crash-integration") return LauncherCrashChecks.Integration(args[1]);
         if (args.Length == 2 && args[0] == "--hang-integration") return LauncherCrashChecks.Integration(args[1],true);
+        if (args.Length == 2 && args[0] == "--exit-integration") return LauncherCrashChecks.Integration(args[1],false,"missing-helper");
+        if (args.Length == 2 && args[0] == "--kill-integration") return LauncherCrashChecks.Integration(args[1],false,"kill");
         if (args.Length == 1 && args[0] == "--maintenance") return LauncherMaintenanceChecks.Run();
         if (args.Length == 1 && args[0] == "--downloads-live") return LauncherDownloadChecks.VerifyPublicDownload();
         if (args.Length == 1 && args[0] == "--downloads") return LauncherDownloadChecks.Run();

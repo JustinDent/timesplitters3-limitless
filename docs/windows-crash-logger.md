@@ -81,6 +81,40 @@ that keeps producing frames can escape detection. Hangs before guest execution
 is armed, while intentionally suppressed, or after shutdown begins are outside
 this initial detector's scope. Inspect the thread dump to diagnose the cause.
 
+## Unfinished sessions and exits without a dump
+
+For games started through the Windows launcher, `.launcher/game-session.json`
+records the launch before process creation using an atomic, flushed write. It
+stores a session ID, UTC start time, launcher/game PID and process start time,
+build-manifest hash, and the current launch's log ID. An observed zero exit marks
+the session clean; a failed process launch is cancelled. A nonzero exit creates
+an `unexpected_exit` report if no matching native fatal report already exists.
+A previous hang report does not hide a subsequent unexpected exit.
+
+On launcher startup, unfinished sessions are checked against the recorded game
+process identity. A surviving game is left alone; checks continue while the
+launcher is idle and only flag the session after that process ends. Matching
+both PID and process start time avoids confusing a reused PID with the old game.
+If no game identity was saved before interruption, recovery defers while the
+original launcher or any game process is still running. Inaccessible process
+identities also defer inference.
+
+The launcher opens Diagnostics and distinguishes a known nonzero exit code from
+an unobserved exit whose cause and exit code are unknown. Fallback reports use
+the existing report folders, local open/export actions, five-incident retention,
+and at most 64 KiB of this launch's stderr. They contain readable/JSON summaries
+and an optional log tail, with `dump_saved=false` and no invented exception or
+dump file. Recovery is idempotent; interrupted report creation is retried under
+the same incident ID when storage becomes available. Unknown/linked files and
+unreadable session records are preserved.
+
+An unfinished record is evidence that normal completion was not observed. It
+cannot establish whether the game crashed, was forcibly closed, ended normally
+after the launcher was terminated, or was interrupted by a reboot/power loss.
+This only tracks launcher-started games. An observed zero exit is treated as
+clean, and storage failures can prevent either the record or its report. Session
+tracking failure is logged without preventing game launch. Nothing uploads.
+
 ## Reproduce and verify
 
 Use Windows PowerShell and the supported build workflow:
@@ -91,6 +125,23 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File tsfp.ps1 Build
 .\.venv\Scripts\python.exe tools/test-windows-hang.py
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/build-launcher.ps1 -Test
 ```
+
+The launcher build includes `launcher-tests.exe --sessions`: observed clean and
+nonzero exits, failed launch, PID reuse, actual launcher-owner termination with
+a surviving child, later child termination/recovery, native-report precedence,
+hang followed by exit, startup Diagnostics, storage retries, malformed records,
+bounded retention and stale completion. For the real isolated game executable:
+
+```powershell
+& build/launcher/launcher-tests.exe --exit-integration `
+    "$PWD/build/windows/Release/futureperfect_recomp.exe"
+& build/launcher/launcher-tests.exe --kill-integration `
+    "$PWD/build/windows/Release/futureperfect_recomp.exe"
+```
+
+These checks exercise missing-helper and externally terminated game sessions,
+assert that the launcher announces an unexpected exit, and export summaries
+without a dump. The kill check targets only its own isolated diagnostic process.
 
 The crash test executes the real game binary with exact diagnostic commands
 before any game data, settings or saves are opened. It checks normal exit,
@@ -148,8 +199,9 @@ a later rebuild's PDB is not interchangeable. This task does not publish release
 
 This captures ordinary unhandled Windows exceptions. Forced termination, power
 loss, fail-fast exits that bypass exception filters, an attached debugger, or
-another library replacing the unhandled filter can prevent capture. There is no
-unfinished-session inference yet. Freeze detection has the limits described
+another library replacing the unhandled filter can prevent capture. The launcher
+can flag unfinished sessions without capturing a dump, with the limits above.
+Freeze detection has the limits described
 above. Native stacks may expose
 translated function names, but this is not a reconstructed Xbox call stack.
 The initial version uses the bounded existing log tail, not a new gameplay

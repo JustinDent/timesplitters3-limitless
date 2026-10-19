@@ -629,3 +629,11 @@ remains running. Open latest game report / Export game report work without
 closing a hung game. Game updates and repair remain blocked during play.
 Frame-progress, grace-period and false-positive limits are documented in
 [Windows crash logging](windows-crash-logger.md#freeze-detection).
+
+Games started through the launcher also have a persistent session record. A
+nonzero exit without a native fatal report produces an exportable unexpected-exit
+summary. On reopening, the launcher flags an unfinished session after confirming
+its recorded game process is gone; a surviving game is left running. Diagnostics
+states when no dump or exit code was captured. An unfinished record cannot prove
+a crash cause: forced closure, reboot, and interrupted launcher monitoring can
+also leave one. See [session recovery and limits](windows-crash-logger.md#unfinished-sessions-and-exits-without-a-dump).

@@ -142,6 +142,7 @@ namespace TimeSplitters.Launcher
         bool diagnosticsReady;
         bool pendingCrash;
         bool gameMonitoring;
+        System.Windows.Threading.DispatcherTimer sessionTimer;
         CancellationTokenSource maintenanceStop, updateStop;
         Func<Task> retryOperation;
         bool closeAfterTransfer;
@@ -212,7 +213,7 @@ namespace TimeSplitters.Launcher
             Button("RetryButton").Click+=async(s,e)=> {if(!busy && !checking && retryOperation!=null)await retryOperation();};
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
             Button("RecoveryLogsButton").Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
-            Window.Closed += (s,e)=> { lifetime.Cancel(); client.Dispose(); };
+            Window.Closed += (s,e)=> { if(sessionTimer!=null)sessionTimer.Stop();lifetime.Cancel(); client.Dispose(); };
             if (previewMode)
             {
                 Text("InstalledLabel", "v0.1.0-alpha.1");
@@ -260,6 +261,11 @@ namespace TimeSplitters.Launcher
                 if (File.Exists(result)) { SetStatus(File.ReadAllText(result)); File.Delete(result); }
                 string selfResult = Core.PathIn(root, ".launcher/self-last-result.txt");
                 if (File.Exists(selfResult)) { SetStatus(File.ReadAllText(selfResult)); File.Delete(selfResult); }
+                RecoverGameSession();
+                // An earlier launch can outlive a terminated launcher. Defer
+                // inference while its exact process identity is still alive.
+                sessionTimer=new System.Windows.Threading.DispatcherTimer {Interval=TimeSpan.FromSeconds(2)};
+                sessionTimer.Tick+=(sender,args)=> {if(!busy && !checking && !gameMonitoring)RecoverGameSession();};sessionTimer.Start();
             };
             Window.Closing += (s, e) =>
             {
@@ -825,11 +831,12 @@ namespace TimeSplitters.Launcher
             {
                 // Fresh installs use the same native launch path as configured
                 // ones. A PowerShell fallback fails under ConstrainedLanguage.
+                try {GameSessions.Recover(root);}catch(Exception ex){Program.Log(root,"Session recovery deferred: "+ex.GetType().Name);}
                 string previousCrash = CrashReports.Latest(root);
                 process.StartInfo = GameSettings.StartInfo(root);
                 if(crashTestMode!=null) {
-                    Core.Require(crashTestMode=="main" || crashTestMode=="worker" || crashTestMode=="normal" || crashTestMode=="handled" || crashTestMode=="hang-recover", "Unknown crash test mode.");
-                    process.StartInfo.Arguments=crashTestMode=="hang-recover"?"--tsfp-hang-test=recover":"--tsfp-crash-test="+crashTestMode;
+                    Core.Require(crashTestMode=="main" || crashTestMode=="worker" || crashTestMode=="normal" || crashTestMode=="handled" || crashTestMode=="hang-recover" || crashTestMode=="hang-unarmed", "Unknown crash test mode.");
+                    process.StartInfo.Arguments=crashTestMode=="hang-recover"?"--tsfp-hang-test=recover":crashTestMode=="hang-unarmed"?"--tsfp-hang-test=unarmed":"--tsfp-crash-test="+crashTestMode;
                 }
                 string logs = Core.PathIn(root, "Logs"); Directory.CreateDirectory(logs);
                 string tag = DateTime.Now.ToString("yyyyMMdd-HHmmss-fff", System.Globalization.CultureInfo.InvariantCulture);
@@ -838,16 +845,38 @@ namespace TimeSplitters.Launcher
                 using (var output = File.Create(Path.Combine(logs, tag + ".out")))
                 using (var errors = new FileStream(errorPath, FileMode.Create, FileAccess.Write, FileShare.ReadWrite))
                 {
-                    process.Start();
-                    var stdout = process.StandardOutput.BaseStream.CopyToAsync(output);
-                    var stderr = process.StandardError.BaseStream.CopyToAsync(errors);
-                    await MonitorGame(process,previousCrash); await Task.WhenAll(stdout, stderr);
+                    string session=null;
+                    try {session=GameSessions.Begin(root,tag);}
+                    catch(Exception ex) {Program.Log(root,"Session tracking unavailable: "+ex.GetType().Name);}
+                    try {process.Start();}
+                    catch {
+                        try {if(session!=null)GameSessions.CancelLaunch(root,session);}catch(Exception ex){Program.Log(root,"Session launch cancellation: "+ex.GetType().Name);}
+                        throw;
+                    }
+                    try {if(session!=null)GameSessions.Started(root,session,process);}
+                    catch(Exception ex) {Program.Log(root,"Session process identity unavailable: "+ex.GetType().Name);}
+                    try {
+                        var stdout = process.StandardOutput.BaseStream.CopyToAsync(output);
+                        var stderr = process.StandardError.BaseStream.CopyToAsync(errors);
+                        await MonitorGame(process,previousCrash); await Task.WhenAll(stdout, stderr);
+                    } finally {
+                        try {if(session!=null && process.HasExited)GameSessions.Complete(root,session,process);}
+                        catch(Exception ex) {Program.Log(root,"Session completion deferred: "+ex.GetType().Name);}
+                    }
                 }
                 string latestCrash = CrashReports.Latest(root);
-                pendingCrash = latestCrash != null && latestCrash != previousCrash;
+                pendingCrash = (latestCrash != null && latestCrash != previousCrash) || process.ExitCode!=0;
                 diagnosticsReady = false;
-                SetStatus(pendingCrash ? CrashReports.IsHang(root,latestCrash)?"Game closed. Hang report saved - see Diagnostics.":"The game closed unexpectedly. Crash report saved - see Diagnostics." : process.ExitCode == 0 ? "Game closed." : "The game closed unexpectedly. View logs for details.");
+                SetStatus(latestCrash!=null && latestCrash!=previousCrash ? CrashReports.IsUnexpectedExit(root,latestCrash)?"The game closed unexpectedly. No crash dump was captured; session report saved - see Diagnostics.":CrashReports.IsHang(root,latestCrash)?"Game closed. Hang report saved - see Diagnostics.":"The game closed unexpectedly. Crash report saved - see Diagnostics." : process.ExitCode == 0 ? "Game closed." : "The game closed unexpectedly. No crash report is available - see Diagnostics and logs.");
             }
+        }
+        internal void RecoverGameSession()
+        {
+            try {
+                string report=GameSessions.Recover(root);if(report==null)return;
+                diagnosticsReady=false;ShowMaintenance(true);
+                SetStatus(CrashReports.IsUnexpectedExit(root,report)?"The previous game session ended unexpectedly. No crash dump was captured; see Diagnostics.":"The previous game session ended unexpectedly. Crash report saved - see Diagnostics.");
+            } catch(Exception ex) {Program.Log(root,"Session recovery deferred: "+ex.GetType().Name);}
         }
         async Task Play()
         {

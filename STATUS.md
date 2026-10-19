@@ -1,5 +1,48 @@
 # Measured progress
 
+## Windows unfinished-session recovery (2026-10-19)
+
+Follow-up on `feature/windows-crash-logger` in
+[PR #160](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/160).
+The Windows launcher atomically writes and flushes a session record before
+process creation, records PID/start-time identity after launch, and distinguishes
+observed clean exits, failed launches, nonzero exits, and unobserved completion.
+Startup/idle recovery defers while the recorded game remains alive. An abandoned
+session or observed nonzero exit without a matching native fatal report creates
+one bounded `unexpected_exit` report, opens Diagnostics, and supports local
+open/export without inventing a dump, exception or unknown exit code. Existing
+native fatal reports take precedence; a preceding hang does not hide an exit.
+Storage failures retain the pending incident for retry. No uploads occur.
+
+Validated on the existing Windows 11 x64 host through Windows PowerShell:
+
+- `tools/build-launcher.ps1 -Test`: full build and 100 updater, 27 transfer/recovery,
+  11 version, 10 startup, 19 news, 30 settings, 20 maintenance, and report checks
+  passed, plus **13 unfinished-session checks**. These include actual owner
+  termination with a surviving child, later child termination, PID reuse,
+  startup Diagnostics, clean/failed launches, uncertain outcomes, bounded export,
+  native-report precedence, hang then exit, storage retry, malformed records,
+  protected retention, and stale completion.
+- Actual isolated game/launcher integrations passed for missing helper, external
+  process kill, deliberate native crash, and live hang. Fallback exports contain
+  readable/JSON summaries and a bounded log tail without `crash.dmp`; native
+  crash/hang exports continue to contain their real dumps.
+- Packaging and publisher regressions: **54 passed, 2 subtests passed**.
+- No native runtime source changed. Integration used the previously verified
+  executable SHA-256
+  `d748c090e88ff2ce04223a766f3f50d043174f56189a5f58c35e0cc7811f270a`;
+  this launcher-only follow-up did not rebuild or relabel that executable.
+
+Evidence is local/ignored: `logs/session-launcher-build.log`,
+`logs/session-package-tests.log`, and `logs/session-{exit,kill,crash,hang}-integration.log`.
+Tests use disposable installations/settings and preserve personal saves. A
+physical power-loss test was not run; interrupted ownership is tested by killing
+the isolated session owner. An unfinished record establishes lost observation,
+not a crash cause: a reboot, forced close, or normal exit after launcher
+termination can leave the same record. Only launcher-started games are tracked;
+an observed zero exit is clean, and unavailable storage can prevent tracking.
+Native Mac adaptation remains queued in MAC-044. No merge or release was made.
+
 ## Windows freeze detection and live launcher reports (2026-10-19)
 
 [PR #160](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/160)
