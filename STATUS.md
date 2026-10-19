@@ -8394,3 +8394,49 @@ Khallos sky fidelity and the cause of the earlier streak remain unresolved;
 no brightness, fog or wrapping workaround was introduced. Main, personal
 settings, the canonical fixture and concurrent duplicate files were preserved.
 Known disposable partitions were recycled; captures remain below 256 MiB.
+
+### Khallos motion-blur reference and overlay isolation (2026-10-19)
+
+`codex/khallos-sky-replay` depends on the unmerged shared paired-capture commit
+`5271401`; main remains unchanged. The user's observation that moving-train
+streaks may be intentional changes the acceptance criterion: preserve the
+effect until a matched reference demonstrates incorrect rendering. The author's
+[Xbox compatibility gameplay screenshots](https://superadventuresingaming.blogspot.com/2026/07/timesplitters-future-perfect-xbox-part-2.html)
+in the Khallos section show a muted grey sky, streaked passing scenery and
+directional streaks in the helicopter scene. These support the motion-blur
+hypothesis qualitatively; they are not matched camera/frame evidence and do
+not establish that our interpolated frame is correct. Brighter pre-release
+promotional screenshots are not an appropriate fidelity target.
+
+A temporary diagnostic patch captured three guest/intermediate pairs plus
+the same intermediate image immediately after host overlays. The isolated
+95.19-second run exited 0 with zero Vulkan validation errors, shader failures
+or native faults. Frames 4537/4780/5023 used blends 0.680246143/0.688135938/
+0.693967514. For each before/after-overlay comparison, all 17,388 changed pixels
+were confined to the top/bottom 45 rows; none changed the sky outside those
+overlay areas. This rules out direct overlay drawing for these captures,
+not every synchronization hazard. Pair 1's intermediate sky streak is stronger
+than its guest image, but that alone does not distinguish intended effects
+from replay differences. Sky draws matched their corresponding previous draws
+with small transform changes. Attempted synthetic mouse motion occurred while
+capture was released and is not a successful camera-look check.
+
+Host/toolchain/pins: Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, Vulkan SDK
+1.4.363.0, manifest-selected MoltenVK, supported XBE/upstream unchanged.
+Diagnostic executable SHA-256:
+`21e66d01bf897615f2781907b7189a50b4fc1c99d9bd5aabe2c90f733ade79ba`;
+source `5271401` plus the temporary overlay-readback patch. Logs/receipts:
+`logs/shared-khallos-overlay-probe-120-*`, `logs/sky-overlay-comparison.json`;
+selected PNGs and pair receipts remain under
+`private/captures/native-mac/sky-overlay-*`. Readback affects timing; these
+counts are not a new FPS benchmark. No full playthrough or physical input test.
+
+The diagnostic patch was removed from the active stack and the supported
+builder successfully restored the production build at `5271401`, SHA-256
+`a38a4dfbf76119aa564084a2e52a1cbc1de94c7623d9b17a88c1215865fcc1ad`.
+Ten redundant diagnostic BMPs were recycled with hashes recorded in
+`logs/sky-overlay-recycled.json`; retained captures allocate 125,656 KiB.
+No sky brightness, fog, wrapping or motion-blur workaround was introduced.
+MAC-005 remains in progress; matched reference and Windows runtime acceptance
+remain pending. This focused investigation and its dependency commits are local,
+not newly pushed or verified on the other computer.

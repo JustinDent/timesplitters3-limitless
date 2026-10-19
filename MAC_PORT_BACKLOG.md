@@ -918,6 +918,17 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   acceptance remain pending.
   [Evidence](STATUS.md#common-renderer-mac-settings-acceptance-2026-10-19).
 
+- **Khallos motion-blur investigation (2026-10-19):** The documentation commit
+  on `codex/khallos-sky-replay` depends on shared paired capture `5271401`.
+  Xbox reference screenshots also show muted sky and moving-train streaks;
+  preserve intentional effects rather than treating darkness/streaking alone
+  as a defect. Three controlled before/after-overlay pairs show no sky changes
+  outside the overlay rows. The temporary diagnostic was removed and the
+  production Mac build restored successfully. A matched reference is still
+  needed to distinguish replay errors from intentional blur; no sky fix or
+  Windows scene parity is claimed. Status remains In progress.
+  [Evidence](STATUS.md#khallos-motion-blur-reference-and-overlay-isolation-2026-10-19).
+
 ### MAC-006 — Cube and volume texture resources
 
 - **Status:** In progress
