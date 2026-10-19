@@ -172,7 +172,7 @@ class KnownIssuesTests(unittest.TestCase):
 
     def test_write_permission_errors_are_not_reported_as_success(self):
         api = FakeGitHub(); api.write_error = True
-        with self.assertRaisesRegex(RuntimeError, 'could not update'):
+        with self.assertRaisesRegex(RuntimeError, 'GraphQL: Access denied'):
             self.publish(api)
 
     def test_oversized_output_fails_before_discussion_write(self):
@@ -189,7 +189,7 @@ class KnownIssuesTests(unittest.TestCase):
         self.assertNotIn('pull_request_target:', triggers)
         for event in ('issues:', 'issue_comment:', 'label:', 'workflow_dispatch:', 'workflow_call:', 'schedule:'):
             self.assertIn('  ' + event, triggers)
-        self.assertIn('ref: ${{ github.event.repository.default_branch }}', workflow)
+        self.assertIn("ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.repository.default_branch }}", workflow)
         self.assertIn('persist-credentials: false', workflow)
         self.assertIn('group: known-issues-discussion', workflow)
         self.assertIn('discussions: write', workflow)

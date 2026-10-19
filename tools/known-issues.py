@@ -172,7 +172,11 @@ def publish(api, repository, config, dry_run=False):
         return False
     result = api.request('POST', 'graphql', {'query': UPDATE,
                                            'variables': {'id': target['id'], 'body': body}})
-    if result.get('errors') or not (result.get('data') or {}).get('updateDiscussion'):
+    if result.get('errors'):
+        errors = '; '.join(f'{error.get("type", "GraphQL")}: {error.get("message", "Unknown error")}'
+                           for error in result['errors'])
+        raise RuntimeError('GitHub rejected the known-issues Discussion update: ' + errors)
+    if not (result.get('data') or {}).get('updateDiscussion'):
         raise RuntimeError('GitHub could not update the known-issues Discussion.')
     print('Known-issues Discussion updated: ' + target['url'])
     return True
