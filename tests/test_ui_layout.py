@@ -14,7 +14,8 @@ def test_ui_layout(tmp_path,fixture):
         command=[compiler,'/nologo','/std:c11','/O2','/I'+str(ROOT/'src'),source,'/Fe:'+str(exe),'/Fo:'+str(tmp_path/'ui.obj')]
     else:
         command=[compiler,'-std=c11','-O2','-I'+str(ROOT/'src'),source,'-lm','-o',str(exe)]
-    subprocess.run(command,cwd=tmp_path,env=environment,check=True,capture_output=True,text=True)
+    compiled=subprocess.run(command,cwd=tmp_path,env=environment,capture_output=True,text=True)
+    assert compiled.returncode==0,compiled.stdout+compiled.stderr
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
 
@@ -70,6 +71,7 @@ def test_production_viewport_and_scissor(tmp_path, fixture_name):
     if os.name=='nt':
         command=[compiler,'/nologo','/std:c11','/O2','/I'+str(ROOT/'src'),str(path),'/Fe:'+str(exe),'/Fo:'+str(tmp_path/'viewport.obj')]
     else:command=[compiler,'-std=c11','-O2','-I'+str(ROOT/'src'),str(path),'-lm','-o',str(exe)]
-    subprocess.run(command,cwd=tmp_path,env=environment,check=True,capture_output=True,text=True)
+    compiled=subprocess.run(command,cwd=tmp_path,env=environment,capture_output=True,text=True)
+    assert compiled.returncode==0,compiled.stdout+compiled.stderr
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr

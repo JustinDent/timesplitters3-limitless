@@ -17,7 +17,7 @@ static PcMenuMouse menu_mouse;
  * the mouse's player-1 Confirm edge to this original menu dispatch, including
  * its callbacks, so it cannot leak into another menu or gameplay. */
 typedef struct MenuMouseDispatch {
-    uint32_t menu, pressed, injected;
+    uint32_t menu, pressed, injected, pressed_address;
     PcMenuPointer pointer;
     unsigned actions;
     int sampled;
@@ -25,7 +25,22 @@ typedef struct MenuMouseDispatch {
 } MenuMouseDispatch;
 static MenuMouseDispatch *menu_mouse_dispatch;
 
-#include "pc_menu_audio.inc"
+/* sub_000427B0 reads logical network input in LAN/Online menus, rather
+ * than the physical controller edge used by profile selection. Remember the
+ * exact destination: callbacks may change network mode before we restore it. */
+static void menu_mouse_press(MenuMouseDispatch *s,uint32_t buttons)
+{
+    if(!s->injected) {
+        s->pressed_address=WORD_AT(0x0076B0FCu)?0x006B94D8u:0x006B93E0u;
+        s->pressed=WORD_AT(s->pressed_address);
+    }
+    s->injected|=buttons;
+    WORD_AT(s->pressed_address)|=buttons;
+}
+
+#include "pc_menu_sliders.inc"
+static void menu_team_arrow(unsigned direction);
+#include "pc_menu_choices.inc"
 
 /* The player-1 pause/status flags cover both Start and Back/Tab menus.
  * Scene alone cannot distinguish them from gameplay. */
@@ -54,7 +69,7 @@ void pc_display_menu_mouse_mode(void)
     pc_controls_menu_mode(enabled);
     if(!enabled) {
         memset(&menu_mouse,0,sizeof menu_mouse);
-        menu_audio_drag=0;
+        menu_slider_drag=0;
     }
 }
 
@@ -332,6 +347,9 @@ static int menu_mouse_footer_hit(uint32_t menu,float x,float y,unsigned sw,unsig
     return -1;
 }
 
+#include "pc_menu_team.inc"
+#include "pc_menu_characters.inc"
+
 /* Footer shortcuts are handled by the menu's tick callback BEFORE row
  * navigation. Supply their edges just after original pad input is gathered. */
 void pc_display_menu_mouse_input(void (*original)(void))
@@ -342,7 +360,7 @@ void pc_display_menu_mouse_input(void (*original)(void))
     float x,y,gw,gh;
     unsigned sw,sh;
     original();
-    if(!s || s->menu!=menu || !menu_mouse_context() || !guest_writable(menu,0x23c) ||
+    if(!s || s->sampled || s->menu!=menu || !menu_mouse_context() || !guest_writable(menu,0x23c) ||
        WORD_AT(menu+0x38)!=0 || WORD_AT(menu+0x1b0)!=3) return;
     save_registers(&r);
     if(!guest_call(sub_00074760,1,menu)) {restore_registers(&r);return;}
@@ -369,8 +387,7 @@ void pc_display_menu_mouse_input(void (*original)(void))
         if(button>=0) {
             static const uint32_t raw[]={0x80u,0x120u,0x10u,0x40u};
             uint32_t action=0x10u<<(unsigned)button;
-            s->pressed=WORD_AT(0x006B93E0u);s->injected=raw[button];
-            WORD_AT(0x006B93E0u)|=s->injected;
+            menu_mouse_press(s,raw[button]);
             WORD_AT(menu+0xc4)=(WORD_AT(menu+0xc4)&~0x000F000Fu)|action|(action<<16);
             WORD_AT(menu+0xc8)|=action;
             s->actions=0; /* a footer click must never also select a row */
@@ -387,9 +404,10 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
     pc_display_menu_mouse_mode();
     MenuMouseDispatch *previous=menu_mouse_dispatch;
     menu_mouse_dispatch=&state;
+    menu_character_input(&state);
     original();
     if(state.injected)
-        WORD_AT(0x006B93E0u)=(WORD_AT(0x006B93E0u)&~state.injected)|(state.pressed&state.injected);
+        WORD_AT(state.pressed_address)=(WORD_AT(state.pressed_address)&~state.injected)|(state.pressed&state.injected);
     menu_mouse_dispatch=previous;
     /* Wait until the original dispatcher and its callbacks have returned.
      * Closing it during row processing would invalidate its current menu. */
@@ -412,14 +430,20 @@ void pc_display_menu_mouse(void (*original)(void))
 {
     uint32_t menu=WORD_AT(g_esp+4),item,hit=0;
     float x,y,gw,gh;
-    unsigned actions,sw,sh;
+    unsigned actions,sw,sh,choice_direction;
     GuestRegisters r;
     PcMenuPointer pointer;
     original();
     if(!menu_mouse_context() || !guest_writable(menu,0x23c) ||
-       WORD_AT(menu+0x38)!=0 || WORD_AT(menu+0x1b0)!=3) return;
+       WORD_AT(menu+0x38)!=0 || WORD_AT(menu+0x1b0)!=3) {
+        if(menu_slider_owner.menu==menu) menu_slider_drag=0;
+        return;
+    }
     save_registers(&r);
-    if(!guest_call(sub_00074760,1,menu)) { restore_registers(&r); return; }
+    if(!guest_call(sub_00074760,1,menu)) {
+        if(menu_slider_owner.menu==menu) menu_slider_drag=0;
+        restore_registers(&r); return;
+    }
     pc_controls_menu_mode(1);
     if(menu_mouse_dispatch && menu_mouse_dispatch->menu==menu && menu_mouse_dispatch->sampled) {
         pointer=menu_mouse_dispatch->pointer;actions=menu_mouse_dispatch->actions;
@@ -435,10 +459,10 @@ void pc_display_menu_mouse(void (*original)(void))
     d3d8_display_output_shape((unsigned)gw,(unsigned)gh,&sw,&sh);
     if(!sh || !pc_menu_mouse_position(pointer,(float)sw/sh,gw,gh,&x,&y)) {
         menu_mouse.wheel_pending=0;
-        menu_audio_drag=0;
+        menu_slider_drag=0;
         restore_registers(&r); return;
     }
-    if(menu_audio_pointer(menu,pointer,actions,x,y,sw,sh)) {
+    if(menu_slider_pointer(menu,pointer,actions,x,y,sw,sh)) {
         restore_registers(&r);return;
     }
     /* Use final screen rectangles, including scroll offsets and submenu
@@ -453,6 +477,7 @@ void pc_display_menu_mouse(void (*original)(void))
                y>=FLOAT_AT(item+0x7c) && y<FLOAT_AT(item+0x84)) { hit=item; break; }
         }
     }
+    choice_direction=menu_choice_hit(menu,x,y,sw,sh,&hit);
     /* The original dispatcher applies directional repeats after this hook.
      * Do not let a previously held direction fight an actively chosen mouse
      * row. A fresh keyboard/controller direction immediately takes ownership
@@ -469,11 +494,18 @@ void pc_display_menu_mouse(void (*original)(void))
     if(hit && (actions&3)) {
         if(WORD_AT(menu+0x198)!=hit) guest_call(sub_00076EF0,2,menu,hit);
         if(actions&2) {
+            if(choice_direction) {
+                /* Exactly one native Previous/Next edge, not Confirm. Native
+                 * callbacks retain wrapping, disabled choices and saving. */
+                WORD_AT(menu+0xc4)=(WORD_AT(menu+0xc4)&~0x000F001Fu)|
+                    (choice_direction<<16);
+                WORD_AT(menu+0xc8)&=~0x1Fu;
+                menu_mouse.wheel_pending=0;
+                restore_registers(&r);return;
+            }
             if(menu_mouse_dispatch && menu_mouse_dispatch->menu==menu &&
                !menu_mouse_dispatch->injected) {
-                menu_mouse_dispatch->pressed=WORD_AT(0x006B93E0u);
-                menu_mouse_dispatch->injected=0x80u;
-                WORD_AT(0x006B93E0u)|=0x80u; /* physical port 0 Confirm edge */
+                menu_mouse_press(menu_mouse_dispatch,0x80u);
             }
             WORD_AT(menu+0xc4)|=0x100010u; /* confirm press + repeat edge */
             WORD_AT(menu+0xc8)|=0x10u;
@@ -487,7 +519,15 @@ void pc_display_menu_mouse(void (*original)(void))
     restore_registers(&r);
 }
 #else
+void pc_display_menu_character_draw(void (*original)(void)) { original(); }
+static void menu_character_quad(void) {}
+void pc_display_menu_choice_draw(void (*original)(void)) { original(); }
+void pc_display_menu_team_draw(void (*original)(void)) { original(); }
+void pc_display_menu_team_tick(void (*original)(void)) { original(); }
+void pc_display_menu_choice_arrow(void (*original)(void),unsigned direction) { (void)direction;original(); }
 void pc_display_menu_audio_draw(void (*original)(void),int compact) { (void)compact;original(); }
+void pc_display_menu_sensitivity_draw(void (*original)(void)) { original(); }
+void pc_display_menu_slider_bar(void (*original)(void)) { original(); }
 static int menu_mouse_profile_text(void (*original)(void)) { (void)original;return 0; }
 void pc_display_menu_mouse_mode(void) {}
 static int menu_mouse_footer_text(void) { return 0; }

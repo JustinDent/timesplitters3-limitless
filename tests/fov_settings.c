@@ -16,6 +16,7 @@ RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 RECOMP_TLS uint16_t g_fp_cc,g_fp_control_word;
 static int available=1,returned;
+static int slider_capture_enabled;
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x); exit(1); } } while(0)
 HWND xbox_D3D8Window(void) { return NULL; }
 int xbox_D3D8ChangeResolution(unsigned w,unsigned h) { (void)w;(void)h;return available; }
@@ -37,13 +38,15 @@ void pc_controls_menu_mode(int active) { (void)active; CHECK(0); }
 PcMenuPointer pc_controls_menu_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
 PcMenuPointer pc_controls_menu_hover_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
 void d3d8_display_output_shape(unsigned w,unsigned h,unsigned *ow,unsigned *oh)
-{ (void)w;(void)h;(void)ow;(void)oh; CHECK(0); }
+{ (void)w;(void)h;CHECK(slider_capture_enabled);*ow=1920;*oh=1080; }
 #define MOUSE_STUB(name) void name(void) { CHECK(0); }
 MOUSE_STUB(sub_00074760) MOUSE_STUB(sub_00076EF0) MOUSE_STUB(sub_00076510)
 MOUSE_STUB(sub_002E6D40) MOUSE_STUB(sub_00079860)
+MOUSE_STUB(sub_002C4310)
 MOUSE_STUB(sub_002E49F0) MOUSE_STUB(sub_002E4A30)
 /* Audio-slider preview calls are covered by menu_mouse.c, not this fixture. */
 MOUSE_STUB(sub_00045C60) MOUSE_STUB(sub_00021780)
+MOUSE_STUB(sub_00045390) MOUSE_STUB(sub_00045820)
 #undef MOUSE_STUB
 /* Bot helpers share the menu translation unit, but must never execute in
  * this isolated FOV fixture. Bot behavior has its own network regressions. */
@@ -54,7 +57,15 @@ BOT_STUB(sub_000CF440) BOT_STUB(sub_001BB5C0)
 BOT_STUB(sub_002C2C20) BOT_STUB(sub_002C0490) BOT_STUB(sub_002C19F0)
 BOT_STUB(sub_002C1570) BOT_STUB(sub_002C1490)
 #undef BOT_STUB
-STUB(sub_00075B70) STUB(sub_00071B10) STUB(sub_00071C50)
+/* Native builder/centring contract: width is a percentage, not pixels.
+ * An out-of-range width renders a panel with its rows outside the canvas. */
+void sub_00075B70(void) {
+    uint32_t word=WORD_AT(g_esp+12);float width;memcpy(&width,&word,4);
+    float left=(100.f-width)*.5f;
+    CHECK(isfinite(width) && width>0 && left>=0 && left+width<=100.f);
+    g_esp+=4;
+}
+STUB(sub_00071B10) STUB(sub_00071C50)
 STUB(sub_000771D0) STUB(sub_000770E0)
 void sub_00078980(void) {
     unsigned old=WORD_AT(0x200200+0xc8);build_menu();
@@ -124,6 +135,24 @@ int main(int argc,char **argv)
     { float rectangle[4]={0,0,400,20};memcpy((void *)(g_xbox_mem_offset+0x400000),rectangle,sizeof rectangle); }
     call(FOV_DRAW_CB,1,0);CHECK(drawn==0.f);
     staged_fov=100;call(FOV_DRAW_CB,1,0);CHECK(drawn==1.f);
+    /* The production FOV painter registers its final bar; dragging changes
+     * only the draft and label. Back discards it; Apply below saves it. */
+    slider_capture_enabled=1;
+    WORD_AT(0x700008)=0x200400;WORD_AT(0x200414)=2;WORD_AT(0x200488)=0x300000;
+    WORD_AT(0x300198)=0x200400;
+    FLOAT_AT(0x3000e4)=0;FLOAT_AT(0x3000e8)=0;
+    FLOAT_AT(0x3000ec)=640;FLOAT_AT(0x3000f0)=480;
+    call(FOV_DRAW_CB,2,0);CHECK(drawn==1.f);
+    MenuSliderTrack *fov_track=&menu_slider_tracks[MENU_FOV];
+    CHECK(fov_track->x==298 && fov_track->y==6 && fov_track->w==100 && fov_track->h==8);
+    PcMenuPointer p={0,0,1920,1080,1,1,0,0};
+    memset(&menu_mouse,0,sizeof menu_mouse);
+    CHECK(menu_slider_pointer(0x300000,p,2,348,8,1920,1080));
+    CHECK(staged_fov==70 && pc_display_fov()==55);
+    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(8)),"Vertical FOV: 70"));
+    content("TSFP_DISPLAY_V1 1280 720\n");
+    p.left=0;CHECK(!menu_slider_pointer(0x300000,p,0,348,8,1920,1080));
+    slider_capture_enabled=0;
     /* Leaving discards the draft. No write on slider movement. */
     call(BACK_CB,1,0);content("TSFP_DISPLAY_V1 1280 720\n");
     call(PC_DISPLAY_MENU_CALLBACK,0,0);CHECK(staged_fov==55);

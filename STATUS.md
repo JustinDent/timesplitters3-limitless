@@ -1,5 +1,160 @@
 # Measured progress
 
+## PR #151 CI fixture correction (2026-10-18)
+
+Both Windows and macOS jobs in run 39188642901 failed to compile the shared
+UI-layout fixture and its weapon-effects/transition variants. The new
+`pc_display_aim_primitive` character-capture call had no implementation in
+these isolated placement harnesses. Added an explicit inactive-carousel stub
+in their shared fixture; the real adapter remains exercised by `menu_mouse.c`.
+The test runner now includes compiler stdout/stderr in assertion failures,
+so a missing symbol is visible instead of only a subprocess exit code.
+No production behavior or Mac adapter changed; MAC-030 remains queued.
+
+Windows x64/MSVC reproduced the three unresolved-symbol failures, then passed
+all 12 UI-layout/menu checks. The full native CI selection passed 111 checks;
+two Online theme checks could not initialize this local Python installation's
+Tcl/Tk (`init.tcl`/`tcl_findLibrary` errors). Those passed in the original Windows
+hosted run. Hosted reruns are required for final Windows/macOS CI confirmation.
+
+## Menu mouse controls and layout (issue #114, 2026-10-18)
+
+Implemented on
+`114-bug-mouse-pointer-cannot-select-some-menu-footer-elements`, based on main
+`a5d61ea`. All recent slider, resolution-label and choice-arrow follow-ups are
+tracked under [issue #114](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/114).
+The original audio-slider fix remains recorded under #115 below. The Windows audit now covers the reported lobby footer and team-selection
+paths. The eventual PR must explain the causes and fixes and distinguish
+local System Link verification from untested Internet sessions.
+The user confirmed main's Music/Sound bars work in both frontend and Pause.
+The US runtime audit found four original calls to the shared bar primitive
+`sub_000814B0`: the two audio layouts, Controls sensitivity (`sub_002EA250`),
+and the noninteractive MapMaker capacity display (`sub_0030C210`). The added
+PC Display settings FOV painter also uses that primitive. The launcher already
+uses a native WPF FOV slider; PC mouse sensitivity is a numeric settings field.
+
+Generalized the audio fix into `src/pc_menu_sliders.inc`. Sensitivity captures
+its final bar arguments inside its own painter, including translated label
+widths, and edits only the active player's original 0..1 value in 0.05 steps.
+It retains the original preview and Accept/Cancel behavior. FOV registers its
+actual 100x8 bar and edits the existing 40..100 draft/label; Apply and Back
+retain their native save/discard behavior. Shared capture keeps a drag on its
+starting bar and invalidates it for changed player/menu, resize, disabled/stale
+controls or focus loss. Other callers of the primitive remain noninteractive.
+The two new wrappers live in `menu-setting-sliders.patch`; generated C is not
+hand-edited. Mac wrappers retain pass-through drawing pending MAC-030.
+
+Validation so far: seven targeted menu, FOV/settings and display-mode tests
+passed on Windows x64/MSVC. The shared pointer cases cover four aspect ratios,
+main/Pause contexts, all four player slots, exact variable-width sensitivity
+geometry, boundaries, stable drag ownership, focus/resize/stale/disabled
+cancellation and preview calls. A mutation removing setting updates must fail.
+Production FOV capture, draft label and Back persistence are tested directly.
+The patch tracking/upgrade, generation and CI-scope suite passed 53 tests;
+the broader native renderer/input/settings suite passed 63 tests. The supported
+Windows build and its build tests passed (MSVC 14.44.35207, SDL 3.4.16, D3D11,
+supported US XBE). The user confirmed both sensitivity and FOV dragging work
+in the isolated Test Lab session (slider build watermark `683d3e5c`). Physical
+controller and native Mac validation remain pending.
+
+A subsequent screenshot exposed overlap between Resolution and long values
+such as 3440 x 1440. The first spacing attempt incorrectly supplied 440 painter
+units to a builder that expects a 0..100 percentage, hiding its row contents.
+Corrected the Display settings width from its original 55% to 75%, leaving
+confirmation/error pages at 55%. The guest constructor regression now checks
+that the centred panel stays inside the percentage canvas. This shared sizing
+scales with the existing proportional UI transform across resolutions.
+Seven focused tests and the supported Windows build/tests passed after the
+correction. A Computer Use screenshot of the rebuilt game at the isolated
+3440 x 1440 setting confirms all six rows are visible, with a clear gap between
+Resolution and 3440 x 1440. Other resolutions have not been visually checked
+for this spacing change. Personal saves and settings were preserved;
+sessions use the bounded isolated test runner.
+
+Standard type-1 choice arrows capture the native renderer's final triangle
+positions and inject one original Previous/Next action per click instead of
+Confirm (which does not change this control type). The constructor audit found
+113 callers of the shared type-1 setup, plus two custom painters (0019E970 and
+00360710) that retain the same native dispatch. Those custom painters now scope
+the owning row because their ESI register is reused during drawing. Hit tests
+cover both directions, alignment, variable-width values, disabled/hidden rows,
+held clicks, stale draws, resizing, scrolling and focus loss across four ratios.
+The eight direct arrow-primitive callers were inspected; this is not a claim
+that every decorative arrow or every screen was individually playtested.
+
+For #114, LAN/Online callbacks read logical network pad edges at 006B94D8,
+while the original mouse adapter only injected into physical pad 006B93E0.
+Clicks now use the buffer selected by the original input reader and restore
+that exact buffer after dispatch, even if a callback changes network mode.
+A local System Link session confirmed Options opens match setup and Select
+Character opens the character screen. In Capture the Bag setup, clicking the
+Friendly Fire arrow changed Off to On.
+
+The post-load team chooser has no selectable choice rows. Its parent callback
+002EDDC0 consumes raw direction/confirm edges before the child gets input.
+`src/pc_menu_team.inc` captures player one's actual team-arrow draws in
+002E4E90 and scopes clicks to that parent callback. Native code still owns team
+wrapping, readiness and network updates. Its Select/Back footer is handled at
+the same point, preventing late or double activation. No broadening of gameplay
+menu detection was needed. Menu-only WASD aliases supply the existing D-pad
+keys without changing gameplay bindings.
+
+Verification: the supported Windows build and full build tests passed twice
+with the lobby/custom-row and team wrappers. This includes the earlier flaky
+four-case ghost-target replay. Five focused pointer tests passed with the new
+team cases (physical/network input, four ratios, both directions, readiness,
+Select/Back, focus/stale/resize/changed-player guards). A live local Capture the
+Bag game on Vietnam confirmed Red -> Blue -> Red (native team values 1 -> 2
+-> 1), Select ready=1 and Back ready=0. WASD aliases are covered by the Windows
+input regression; short automated desktop key taps were not a reliable live
+keyboard check. The final menu/FOV, patch tracking/upgrade and generation run passed 35 tests;
+an additional 24 CI-scope tests passed. After a capture fast-path cleanup, the
+final rebuild encountered the known intermittent graphics replay access
+violation at 344x144 (scale 1). A full supported Build rerun passed every check,
+including all four graphics replays and strengthened WASD-to-D-pad assertions.
+The failed log is retained as `build/menu-final-build.log`, the passing rerun
+as `build/menu-final-recheck.log`; the flake was not suppressed or changed here.
+Real remote Internet sessions, additional local players,
+physical controllers and Mac adaptation remain unverified. Personal saves and
+settings remain untouched; bounded sessions use the isolated Test Lab profile.
+
+Character-selection follow-up: a live System Link test reproduced portrait
+clicks leaving Cortez selected, despite the working lobby footer. The custom
+carousel has no ordinary rows and its child fails the standard row-active test.
+`src/pc_menu_characters.inc` captures the real clipped portrait/variant quads
+inside `sub_002C4D20`, validates the current container/player-one relationship,
+and changes the native carousel selection through `sub_002C4310`. Wheel input
+browses groups without hover fighting the animation. Select/Back edges stay
+alive for the entire container dispatch so native nested callbacks retain
+preview loading, readiness, lobby updates and cancellation. The runtime wrapper
+is in `menu-character-mouse.patch`; diagnostics were removed before the final
+live test. Generated C remains untouched and native Mac handling passes through.
+
+Live verification at 3440x1440 in the isolated Test Lab System Link lobby:
+Cortez -> Harry Tipper by portrait click, Swinging Tipper by adjacent variant
+click; wheel down/up selected Jo-Beth Casey and returned to the retained variant.
+Select reached Ready, a second Select returned the new portrait to the lobby,
+and reopening retained Swinging Tipper. Previewing Jo-Beth then Back discarded
+the preview; reopening again retained Swinging Tipper. Right-click also returned
+to the lobby. The proof capture is `build/issue-114-character-lobby.jpg`.
+Regression cases cover four ratios and physical/network input destinations,
+variants/wrapping, one-shot clicks, raw footer edges, register preservation and
+stale/focus/resize/modal/player/changed-roster rejection. Additional local
+players, physical controllers and Internet sessions remain unverified.
+Validation: 59 focused menu/FOV, patch tracking/upgrade/generation and CI-scope
+checks passed. The final supported Build and every native build check passed
+(`build/menu-character-verified-build.log`). Earlier attempts encountered the
+already-recorded graphics-replay access violation, then a stuck debug-dialog
+test; that owned test process was stopped before the clean final rerun. No
+failure was suppressed. The final playable rebuild also passed all build tests
+(`build/menu-playable-build.log`), and the user confirmed the menu fixes work
+before requesting commit and push to the #114 branch.
+
+Published as PR #151, menu fix commit `067812a`. Integrating main `6d351c4`
+retained both progress records and the new Windows theme changes. The 31
+menu/FOV/CI-scope checks and the full supported Windows Build/tests passed
+after integration (`build/menu-pr-integration-build.log`).
+
 ## Windows game UI theme follow-up
 
 2026-10-18, `feature/system-theme-game-ui` (implementation and validation in

@@ -479,6 +479,16 @@ static void row(int id,const char *label)
     guest_call(sub_00079D60_gen,6,text_at(id+1,"%s",label),(uint32_t)id,0u,0u,SELECT_CB,0u);
 }
 static void fov_label(void) { text_at(8,"Vertical FOV: %d",staged_fov); }
+#ifdef _WIN32
+static void menu_slider_fov_pointer(float x,float left,float width)
+{
+    unsigned value=pc_menu_slider_value(x,left,width,PC_FOV_MAX-PC_FOV_MIN);
+    if(page==0) {
+        staged_fov=PC_FOV_MIN+(int)value;
+        fov_label();
+    }
+}
+#endif
 static void fov_draw(void)
 {
     GuestRegisters r;
@@ -489,6 +499,11 @@ static void fov_draw(void)
         memcpy(bounds,(void *)((uintptr_t)rect+g_xbox_mem_offset),sizeof bounds);
         dark=guest_call(sub_00154FE0,2,0x11193c7fu,WORD_AT(menu+0xf4));
         light=guest_call(sub_00154FE0,2,0x69737f7fu,WORD_AT(menu+0xf4));
+#ifdef _WIN32
+        if(page==0)
+            menu_slider_capture(MENU_FOV,menu,WORD_AT(g_esp+8),
+                (float)(int)(bounds[2]-102.f),(float)(int)((bounds[1]+bounds[3]-8.f)*.5f),100.f,8.f);
+#endif
         /* Original sensitivity-slider painter, in the menu's logical units. */
         guest_call(sub_000814B0,9,bits((float)(staged_fov-PC_FOV_MIN)/(PC_FOV_MAX-PC_FOV_MIN)),
             (uint32_t)(int)(bounds[2]-102.f),(uint32_t)(int)((bounds[1]+bounds[3]-8.f)*.5f),
@@ -554,7 +569,11 @@ static void build_menu(void)
 {
     GuestRegisters r; uint32_t menu=WORD_AT(g_esp+4);
     save_registers(&r); current_menu=menu;
-    guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",page?status:"Display settings"),bits(55.f),0u,BACK_CB);
+    /* The builder uses a 0..100 percentage canvas (sub_000771D0 centres
+       at (100-width)/2), not the painter's 640-unit coordinates. Reserve
+       75% for label + longest resolution + arrows without clipping rows.
+       Confirmation/error pages keep their original 55% width. */
+    guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",page?status:"Display settings"),bits(page?55.f:75.f),0u,BACK_CB);
     guest_call(sub_00071B10,4,1u,bits(2.f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
     labels(); guest_call(sub_000771D0,1,menu);

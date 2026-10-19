@@ -167,6 +167,20 @@ int main(int argc, char **argv)
     CHECK(recomp_bindings_sample(0, &pad));
     CHECK(pad.bAnalogButtons[XBOX_BUTTON_A] == 0);
     CHECK(pad.bAnalogButtons[XBOX_BUTTON_RTRIGGER] == 255);
+    /* Team/custom selectors read D-pad bits: WASD aliases are menu-only. */
+    for(unsigned j=0;j<4;j++) {
+        const unsigned keys[]={'A','D','W','S'},arrows[]={VK_LEFT,VK_RIGHT,VK_UP,VK_DOWN};
+        f=fopen(state_file,"w");CHECK(f);fprintf(f,"%u 1",keys[j]);fclose(f);Sleep(50);
+        const unsigned masks[]={XBOX_GAMEPAD_DPAD_LEFT,XBOX_GAMEPAD_DPAD_RIGHT,
+            XBOX_GAMEPAD_DPAD_UP,XBOX_GAMEPAD_DPAD_DOWN};
+        pc_controls_menu_mode(1);CHECK(pc_controls_key_down(arrows[j]));
+        CHECK(recomp_bindings_sample(0,&pad) && (pad.wButtons&masks[j]));
+        pc_controls_menu_mode(0);CHECK(!pc_controls_key_down(arrows[j]));
+        CHECK(pc_controls_key_down(keys[j]));
+        f=fopen(state_file,"w");CHECK(f);fprintf(f,"%u 0",keys[j]);fclose(f);Sleep(50);
+        pc_controls_menu_mode(1);CHECK(!pc_controls_key_down(arrows[j]));
+    }
+    f=fopen(state_file,"w");CHECK(f);fputs("1 1",f);fclose(f);Sleep(50);
     /* A menu click must neither fire nor leak across the gameplay transition. */
     pc_controls_menu_mode(1);
     CHECK(recomp_bindings_sample(0, &pad));
