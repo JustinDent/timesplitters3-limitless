@@ -121,6 +121,25 @@ static class LauncherDownloadChecks
         Test("cache cleanup is bounded and preserves ISO and settings siblings",()=>{using(var f=new Fixture()){f.Partial();File.WriteAllText(Path.Combine(f.Root,"original.iso"),"keep");File.WriteAllText(Path.Combine(f.Root,"settings.ini"),"keep");DownloadTransfer.Forget(f.Prefix);Need(!File.Exists(f.Prefix+".part")&&!File.Exists(f.Prefix+".json")&&File.ReadAllText(Path.Combine(f.Root,"original.iso"))=="keep"&&File.Exists(Path.Combine(f.Root,"settings.ini")));}});
         Test("rate and ETA use remaining bytes with explicit unknown estimate",()=>{var state=new TransferSnapshot{Bytes=75*1048576,Total=100*1048576,BytesPerSecond=5*1048576,Phase="Resuming"};Need(state.Percent==75&&state.Remaining.Value.TotalSeconds==5&&state.Summary.Contains("5.0 MiB/s")&&state.Summary.Contains("~5s"));state.BytesPerSecond=0;Need(!state.Remaining.HasValue&&state.Summary.Contains("Estimating"));});
         Test("recovery messages distinguish pause, network and corrupt downloads",()=>{Need(RecoveryInfo.From(new OperationCanceledException(),true).RetryLabel=="Resume download");Need(RecoveryInfo.From(new TimeoutException("private URL"),true).Title=="Connection interrupted");Need(!RecoveryInfo.From(new HttpRequestException("private URL"),true).Message.Contains("private URL"));Need(RecoveryInfo.From(new InvalidDataException("Checksum mismatch"),true).Message.Contains("fresh"));});
+        Test("update feedback stops progress on pause and error and resets on retry",()=>STA(()=>{using(var f=new Fixture()){
+            var ui=new LauncherWindow(f.Root,true);
+            try {
+                var bar=(System.Windows.Controls.ProgressBar)ui.Window.FindName("UpdateProgress");
+                var label=(System.Windows.Controls.TextBlock)ui.Window.FindName("UpdateStateLabel");
+                var recover=typeof(LauncherWindow).GetMethod("ShowRecovery",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);
+                ui.ShowUpdateState(UpdatePresentationState.Downloading);bar.Value=42;
+                Need(bar.Visibility==System.Windows.Visibility.Visible && !bar.IsIndeterminate);
+                ui.ShowUpdateState(UpdatePresentationState.Verifying);Need(bar.IsIndeterminate);
+                recover.Invoke(ui,new object[]{new OperationCanceledException(),new Func<Task>(()=>Task.FromResult(0)),true});
+                Need(label.Text=="PAUSED" && !bar.IsIndeterminate && bar.Visibility==System.Windows.Visibility.Hidden && bar.Value==0);
+                Need((string)((System.Windows.Controls.Button)ui.Window.FindName("RetryButton")).Content=="Resume download");
+                ui.ShowUpdateState(UpdatePresentationState.Checking);Need(bar.IsIndeterminate && bar.Visibility==System.Windows.Visibility.Visible);
+                recover.Invoke(ui,new object[]{new TimeoutException(),new Func<Task>(()=>Task.FromResult(0)),false});
+                Need(label.Text=="NEEDS ATTENTION" && !bar.IsIndeterminate && bar.Visibility==System.Windows.Visibility.Hidden);
+                ui.ShowUpdateState(UpdatePresentationState.Ready);Need(label.Text=="UP TO DATE" && bar.Visibility==System.Windows.Visibility.Hidden);
+                Need(!Directory.Exists(Path.Combine(f.Root,".launcher/pending")));
+            }finally{ui.Window.Close();}
+        }}));
         Test("recovery actions retry and open embedded repair while busy state disables retry",()=>STA(()=>{using(var f=new Fixture()){var ui=new LauncherWindow(f.Root,true);try{int retried=0;var show=typeof(LauncherWindow).GetMethod("ShowRecovery",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance);show.Invoke(ui,new object[]{new IOException("network"),new Func<Task>(()=>{retried++;return Task.FromResult(0);}),true});var retry=(System.Windows.Controls.Button)ui.Window.FindName("RetryButton");retry.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Need(retried==1);((System.Windows.Controls.Button)ui.Window.FindName("RecoveryRepairButton")).RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Need(((System.Windows.Controls.ContentControl)ui.Window.FindName("MaintenanceHost")).Visibility==System.Windows.Visibility.Visible);typeof(LauncherWindow).GetField("busy",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(ui,true);typeof(LauncherWindow).GetMethod("Refresh",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).Invoke(ui,null);Need(!retry.IsEnabled);}finally{typeof(LauncherWindow).GetField("busy",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance).SetValue(ui,false);ui.Window.Close();}}}));
         Console.WriteLine("PASS: "+count+" isolated download and recovery checks.");return 0;
     }finally{Need(Path.GetDirectoryName(temp)==Path.GetDirectoryName(typeof(LauncherDownloadChecks).Assembly.Location));Directory.Delete(temp,true);}}

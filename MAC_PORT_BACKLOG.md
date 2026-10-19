@@ -1220,6 +1220,13 @@ Copy this template into the queue for each new entry. Replace all placeholders.
   access, maintained drafts, readable minimum-size layouts, original art
   preservation and platform-appropriate icon/control rendering. Windows checks
   are recorded in STATUS.md; no Mac execution is verified.
+  The same branch's follow-up groups version/readiness/Play/data management,
+  chooses one emphasized Home action, and adds labeled vector update states with
+  local progress and reserved layout space. The banner contracts at smaller
+  heights. Adapt these state semantics and action priorities to native controls
+  with MAC-021; preserve pause/error progress reset and clean update completion.
+  `tests/launcher_downloads.cs` covers pause/error/retry feedback. Mac behavior
+  remains unverified and no native adapter was changed.
 
 - **Windows menu/dialog appearance follow-up (2026-10-18, implementation in this revision on branch
   `feature/system-theme-game-ui`, depends on local title-bar commit `7219fec`):**

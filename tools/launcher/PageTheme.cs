@@ -21,6 +21,8 @@ namespace TimeSplitters.Launcher
         }
         public static void Primary(Button button)
         { button.Background=Brush("#A7D9FA");button.Foreground=Brush("#0B2337");button.BorderBrush=Brush("#D6EBFA"); }
+        public static void Secondary(Button button)
+        { button.Background=Brush("#1C3349");button.Foreground=Brush("#DFEAF4");button.BorderBrush=Brush("#405D76"); }
         public static ResourceDictionary Tabs()
         {
             // Native TabItem selection and keyboard navigation, with a compact accent underline.

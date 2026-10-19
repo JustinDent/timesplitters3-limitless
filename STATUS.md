@@ -1,5 +1,35 @@
 # Measured progress
 
+## Launcher Home hierarchy and update states (2026-10-19)
+
+Follow-up on `feature/launcher-visual-polish`, building on local `e763ec2` rather
+than replacing its six visual improvements. Home now groups installed version,
+readiness, Play and game data in the stronger card, with a quieter update card.
+One next action uses the shared primary style: Play, install, ISO import, data
+inspection, or Retry/Resume depending on the workflow. Embedded Save/Verify
+actions retain the same primary treatment. A shorter window contracts the banner
+without cropping or modifying the original artwork.
+
+Update checks, ready/available results, download, verification, pause, failure
+and no-release states have distinct text/icon feedback. A local progress strip
+tracks downloading and is indeterminate during checks/preparation. It stops and
+resets after pause/error/result states; existing download/update guards remain.
+Reserved message/progress/action slots kept the measured normal action row fixed
+at y=586 (1152x772) and y=499 (984x681) for checking, ready, available, downloading,
+verifying and empty-release previews. Recovery uses a full-width primary action
+plus quieter repair/log links; longer exceptional messages remain scrollable.
+
+Windows x64 .NET Framework build with required artwork passed. Thirty-six
+preview/layout checks covered the original ten page/data states plus eight
+update states at both sizes. Minimum-size Home and download/pause/error renders
+were visually inspected. Current-source suites passed: 28 download/recovery,
+30 settings, 19 release-news, 11 game-version and 14 read-only maintenance checks.
+The new regression verifies progress shutdown/reset through pause, error and
+retry without starting an installation. Six transaction-maintenance checks are
+outside the read-only suite; no actual game was started/stopped or personal
+files changed. Native Mac, physical high-DPI testing and publication are not
+claimed. See MAC-021 and the ignored `build/launcher-visual-validation` evidence.
+
 ## Launcher visual polish (2026-10-19)
 
 Windows x64 work on `feature/launcher-visual-polish`, based on main `c006c24`.

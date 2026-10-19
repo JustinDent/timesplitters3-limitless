@@ -313,6 +313,20 @@ Settings use tighter section spacing and adjacent FOV/window controls while
 retaining the fixed Save/Cancel footer, key bindings and draft behavior. These
 layout changes do not modify saved preferences or the install/update process.
 
+The game card groups the installed version, readiness, Play and data management.
+Home highlights one next action: Play for a ready game, install/import/inspection
+during setup, or Retry/Resume during recovery. Secondary actions use the same
+quieter style as embedded-page controls. The banner contracts in shorter windows
+to preserve space for these actions while keeping the complete artwork visible.
+
+The update card identifies checking, up-to-date, available, downloading,
+verifying, paused, attention-needed and no-release states with both text and
+vector icons. It shows local progress during checks/downloads/preparation and
+stops that indicator on pause, failure or completion. Reserved message/progress/
+action space keeps routine transitions steady; unusually long messages and
+expanded data details can still scroll rather than being truncated. These cues
+describe existing update operations and do not change their safety checks.
+
 Starting with v1.1.2, Play keeps the launcher visible during startup and
 minimizes it once the installed game's window appears. It restores the previous
 normal/maximized launcher state when the launch script finishes. Startup failures
