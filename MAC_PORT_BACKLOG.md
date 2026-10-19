@@ -3,6 +3,10 @@
 ### MAC-044 - Game crash capture and launcher reports
 
 - **Status:** Queued
+- **Launcher release preparation:** v1.2.16 packages the Windows report UI and
+  unfinished-session recovery from merged PR #160. Native crash/hang capture
+  still requires a separate game update. The version bump adds no Mac adapter;
+  the remaining work and acceptance checks below are unchanged.
 - **PC behavior:** Windows unhandled-exception capture through a prestarted helper;
   bounded minidump, cached Xbox registers, executable hash and log tail. Launcher
   detects new reports, opens Diagnostics and offers local open/export actions.

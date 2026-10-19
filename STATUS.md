@@ -1,5 +1,30 @@
 # Measured progress
 
+## Launcher v1.2.16 release preparation (2026-10-19)
+
+Prepared from main `4a489af`, which includes the reviewed crash/session changes
+from PR #160 and Windows title-bar theming. The launcher assembly, file and
+update versions are now 1.2.16. This package contains only the launcher;
+unexpected-exit summaries work with existing games, while native crash dumps
+and freeze detection require the corresponding game executable/helper update.
+
+Windows x64 release compilation with required private banner/logo succeeded.
+All launcher suites passed: 100 updater, 27 download/recovery, 11 game-version,
+10 startup, 19 release-news, 30 settings, report checks, 14 session checks and
+20 maintenance checks. The first maintenance run encountered the game-running
+guard; its isolated rerun passed. Packaging, startup, window-theme and CI scope
+checks passed (45 tests plus two subtests).
+
+The exact ZIP's size, SHA-256, three-file allowlist, version and executable hashes
+were verified. The public v1.2.15 updater installed that ZIP into a disposable
+ordinary local folder, preserved save/settings/data sentinels and completed
+startup cleanup. Its existing linked-path guard rejected the initial OneDrive
+test location; no guard was bypassed. Evidence is retained locally in
+`logs/launcher-v1.2.16-*.log` and `build/launcher-publication-v1.2.16`.
+
+Publication is pending; preparation does not establish availability. Native Mac
+adaptation remains queued under MAC-044; this version bump adds no Mac adapter.
+
 ## Crash logger PR review and corrections (2026-10-19)
 
 Review of PR #160 found and corrected three issues:
