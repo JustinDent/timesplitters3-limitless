@@ -73,6 +73,13 @@ These settings change the native
 **Alt+Enter** for fullscreen. Desktop resolution and refresh rate are unchanged.
 Menu backgrounds fill the selected canvas, while text, buttons and panels fit
 proportionally. Narrower layouts fit widgets vertically instead of cropping them.
+Windows frontend menus reconstruct magnified background, logo and icon textures
+with a bounded cubic filter. Main-menu row lettering also reconstructs glyph
+coverage for crisper edges. These use the original artwork; they do not add
+new high-resolution assets. Native-size/minified textures and gameplay keep
+their existing sampling. For comparison or troubleshooting, launch with
+`TSFP_MENU_FILTER=linear` to restore the previous menu filtering for that run.
+
 In single-player widescreen, ammo counters, corner radar, status indicators and
 scope zoom controls move toward their screen edges with consistent proportions.
 World target markers and the central aiming graphics retain their own placement.

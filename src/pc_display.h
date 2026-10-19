@@ -30,6 +30,9 @@ float pc_display_camera_factor(void);
 float pc_display_hud_scale(void);
 int pc_display_wide_now(void);
 void pc_display_frame_done(void);
+void pc_display_menu_filter_begin(int frontend);
+int pc_display_menu_filter(void);
+int pc_display_menu_font_filter(int active);
 HWND xbox_D3D8Window(void);
 int xbox_D3D8ChangeResolution(unsigned width, unsigned height);
 #endif

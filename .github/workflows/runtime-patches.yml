@@ -52,6 +52,9 @@ on:
       - src/pc_display_ui.inc
       - src/pc_ui_layout.h
       - tests/test_ui_layout.py
+      - tests/test_menu_sampling.py
+      - tests/menu_sampling_gpu.c
+      - src/pc_menu_sampling.h
       - tests/ui_layout.c
       - tests/ui_viewport.c
       - tests/ui_screen_effects.c
@@ -207,7 +210,7 @@ jobs:
             tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_quit_menu.py tests/test_ui_layout.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            tests+=(tests/test_pc_display_modes.py tests/test_fov_settings.py tests/test_window_theme.py tests/test_online_theme.py tests/test_online.py tests/test_online_host.py tests/test_network_identity.py)
+            tests+=(tests/test_pc_display_modes.py tests/test_fov_settings.py tests/test_menu_sampling.py tests/test_window_theme.py tests/test_online_theme.py tests/test_online.py tests/test_online_host.py tests/test_network_identity.py)
           fi
           python -m pytest "${tests[@]}" -q --tb=short
       - name: Test release validation and disposable fixture cleanup
