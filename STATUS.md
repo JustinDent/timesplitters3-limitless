@@ -1,5 +1,39 @@
 # Measured progress
 
+## Terminal camera depth clears (issue #47, 2026-10-19)
+
+Implemented on `47-what-lies-below-camera-visual-bug`, based on main `c006c24`.
+The user's What Lies Below / Containment Area A capture reproduces a blank
+camera feed. The captured 256x256 camera target contains 142 geometry draws,
+but replays entirely black. Injecting only a depth/stencil clear before that
+pass restores the room, door and character; this established the cause in a
+diagnostic replay before testing the rebuilt fix live.
+
+The HLE allocates a smaller host depth image when a guest depth attachment
+cannot fit a camera target. Previously these fallback images were cached only
+by dimensions and missed clears issued while the main image was bound. The
+additive `terminal-depth-clear` patch keys them by guest storage/layout plus
+host size, records independent depth/stencil clear generations, and delivers
+pending clears through `host_Clear` after binding. Repeated binds and
+colour-only clears retain occlusion; separate guest depth images stay separate.
+The existing full-frame shared-depth/ghost path is preserved. Unsupported
+texture-to-texture CopyRects were also seen in the log, but did not explain
+this camera pass and are not changed here.
+
+Windows x64 / MSVC 19.44 / D3D11: supported US XBE SHA-256 checked; complete
+patch stack applied; `tsfp.ps1 Build` succeeded including its GPU and native
+build checks. The production clear/cache regression and its deliberate
+lost-clear mutation both passed. CI and `tsfp.ps1 Test` now include that test.
+Capture and replay evidence stays ignored under `private/captures/issue-47`.
+The user tested the isolated unlocked Test Lab build and reported the camera
+feeds and controls appear to work. The new live capture at
+`private/captures/issue-47/fixed/frame000.bmp` visibly shows the Operation Room
+feed rendering its room. Its matching capture replays 546 draws with zero
+failed host calls, malformed chunks, unmapped handles or unknown chunks.
+The relevant terminal-depth, framebuffer, ghost, channel-clear, patch-tracking,
+patch-update and CI-scope suites passed: 74 tests in 130.67 seconds. Native
+macOS execution remains unverified (MAC-045).
+
 ## Launcher v1.2.16 release preparation (2026-10-19)
 
 Prepared from main `4a489af`, which includes the reviewed crash/session changes
@@ -6098,7 +6132,7 @@ each isolated game run. Final Release executable SHA-256:
 Actual LAN/Online/Arcade/Challenge activity cards, a second user's Discord card
 rendering, and native Mac integration were not manually verified. Their policy
 cases are covered by native tests. Mission/map names, party size and join
-invites are outside this first version. MAC-045 records the queued Mac transport,
+invites are outside this first version. MAC-046 records the queued Mac transport,
 preferences and lifecycle adaptation. Other-device synchronization is unverified.
 
 ## Issue #63 - Detailed Discord activity (2026-10-19)
@@ -6172,7 +6206,7 @@ All gameplay validation uses `private/test-saves/discord-presence` and the
 canonical unlocked Test Lab fixture with isolated controls, save and both display
 paths. Logs are bounded to 4 MiB each; runs are limited to 95 seconds and owned
 virtual disks are recycled. Existing user game processes and personal files are
-preserved. MAC-045 records the shared decoder and remaining native adaptation.
+preserved. MAC-046 records the shared decoder and remaining native adaptation.
 Actual two-peer Online/Internet activity and live Challenge/co-op cards were
 not exercised in this follow-up; their shared decoding/formatting paths have
 regression coverage. No commit, push or release publication was performed;
@@ -6204,4 +6238,24 @@ configuration routing. `git diff --check` passed. The game runtime sources and
 patch stack are unchanged from the live-tested executable recorded above.
 
 Feature implementation and validation committed as `ff8d6c0240bdeccf85a49034dca121071a0adfec`
-on `feature/63-discord-rich-presence`; MAC-045 links that source revision.
+on `feature/63-discord-rich-presence`; MAC-046 links that source revision.
+
+## Issue #63 - Merge conflict resolution (2026-10-19)
+
+Merged main `5e89eaa` (terminal-camera depth clears, PR #168) into the Discord
+feature branch for PR #169. Kept both terminal-depth and Discord tests in the
+runtime CI list, and retained both Mac backlog entries. Main already allocated
+MAC-045 to the terminal-camera fix, so Discord is now MAC-046 and its references
+are updated. Both `tsfp.ps1` test entries and validation records are retained.
+Resolution was performed in a temporary source-only worktree because the shared
+checkout had unrelated uncommitted menu-image work. No personal settings,
+shared build, game data or that in-progress work was changed.
+
+The complete merged patch stack applied successfully to a separate sparse
+checkout of the pinned upstream runtime (51 runtime files updated). All 75
+selected Windows checks passed: CI scope, patch transitions/tracking,
+terminal-depth production-code and missed-clear mutation tests, and Discord
+policy/private IPC. Backlog IDs are unique, both test suites are in CI, and
+`git diff --check` passed. The combined game executable was not rebuilt and
+native Mac execution was not rerun for this conflict-resolution update; prior
+feature builds/live tests and main's terminal-fix evidence remain recorded above.
