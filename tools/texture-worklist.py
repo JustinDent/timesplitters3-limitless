@@ -14,6 +14,34 @@ import shutil
 import struct
 
 
+TEMPORARY_BUDGET_BYTES = 256 * 1024 * 1024
+
+
+def temporary_storage(root, files):
+    """Count every output directory except authoritative art and the active pack.
+
+    Root-level catalogs/provenance are retained records. Unknown subdirectories
+    count conservatively so a new comparison or staging folder cannot disappear
+    from the temporary budget merely because it has a different name.
+    """
+    folders = {}
+    for path in files:
+        parts = path.relative_to(root).parts
+        if len(parts) < 2 or parts[0] in ('authored', 'pack'):
+            continue
+        row = folders.setdefault(parts[0], dict(files=0, logical_bytes=0, allocated_bytes=0))
+        row['files'] += 1
+        row['logical_bytes'] += path.stat().st_size
+        row['allocated_bytes'] += allocation(path)
+    total = sum(row['logical_bytes'] for row in folders.values())
+    return dict(temporary_budget_bytes=TEMPORARY_BUDGET_BYTES,
+                temporary_logical_bytes=total,
+                temporary_allocated_bytes=sum(row['allocated_bytes'] for row in folders.values()),
+                temporary_headroom_bytes=TEMPORARY_BUDGET_BYTES-total,
+                temporary_budget_compliant=total < TEMPORARY_BUDGET_BYTES,
+                temporary_directories=dict(sorted(folders.items())))
+
+
 def dds_size(width, height, block):
     total, levels = 128, 0
     while True:
@@ -129,6 +157,7 @@ def build(root):
                   disk_free_bytes=shutil.disk_usage(root).free,
                   status_note='Installed is not the same as visually validated in every level.',
                   textures=rows)
+    report.update(temporary_storage(root, files))
     return report
 
 
@@ -139,6 +168,8 @@ def main():
     report = build(args.root)
     (args.root / 'worklist.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     print(json.dumps({k: v for k, v in report.items() if k != 'textures'}, indent=2))
+    if not report['temporary_budget_compliant']:
+        parser.exit(2, 'Temporary texture output is at or above 256 MiB; recycle verified disposable outputs before production.\n')
 
 
 if __name__ == '__main__':

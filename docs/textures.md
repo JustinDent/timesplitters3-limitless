@@ -57,6 +57,14 @@ Retain one active pack and one game extraction. Keep temporary texture outputs
 below 256 MiB, and preserve selected source art, review evidence, saves and
 settings. See [project storage rules](../AGENTS.md#project-storage-and-texture-work).
 
+The worklist reports temporary logical and allocated bytes by directory. It
+counts comparison reports and any new output subdirectory conservatively;
+only `authored/`, the active `pack/`, and root-level catalog/provenance files
+are excluded. At or above 256 MiB it writes its diagnostic report and exits
+with status 2. Restore headroom before further production. A cleanup must
+preserve selected visual evidence and verify any compressed or reproducible
+replacement before recycling the redundant files.
+
 ## Hybrid artwork production
 
 Issue #74 uses individual redesigns for prominent assets and faithful enhancement

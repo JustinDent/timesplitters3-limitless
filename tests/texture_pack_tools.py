@@ -62,6 +62,44 @@ def test_worklist_deduplicates_keys_but_keeps_unsupported(tmp_path):
     assert row['archives']==['pak/a.pak','pak/b.pak']
 
 
+def test_temporary_storage_includes_comparison_and_unknown_output_directories(tmp_path, monkeypatch):
+    monkeypatch.setattr(worklist, 'TEMPORARY_BUDGET_BYTES', 32)
+    contents = {'review/evidence.json': 5, 'comparison/packs/test/file.dds': 11,
+                'new-staging/output.bin': 16, 'authored/source.png': 40,
+                'pack/active.dds': 40, 'catalog.json': 40}
+    for name, size in contents.items():
+        path = tmp_path/name; path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b'x'*size)
+    files = [p for p in tmp_path.rglob('*') if p.is_file()]
+    report = worklist.temporary_storage(tmp_path, files)
+    assert report['temporary_logical_bytes'] == 32
+    assert report['temporary_headroom_bytes'] == 0
+    assert not report['temporary_budget_compliant']
+    assert set(report['temporary_directories']) == {'review', 'comparison', 'new-staging'}
+    assert report['temporary_allocated_bytes'] == sum(worklist.allocation(tmp_path/n)
+        for n in contents if n.startswith(('review/', 'comparison/', 'new-staging/')))
+    (tmp_path/'new-staging/output.bin').write_bytes(b'x'*15)
+    assert worklist.temporary_storage(tmp_path, files)['temporary_budget_compliant']
+
+
+def test_worklist_cli_reports_overbudget_before_returning_failure(tmp_path):
+    import json
+    (tmp_path/'catalog.json').write_text(json.dumps(dict(scope='test', textures=[])))
+    (tmp_path/'comparison').mkdir()
+    # Tiny fixture: override only the threshold in the child, not its accounting.
+    (tmp_path/'comparison/sample.bin').write_bytes(b'x'*32)
+    code = ("import importlib.util; from pathlib import Path; "
+            f"s=importlib.util.spec_from_file_location('worklist', {str(ROOT/'tools/texture-worklist.py')!r}); "
+            "m=importlib.util.module_from_spec(s); s.loader.exec_module(m); "
+            "m.TEMPORARY_BUDGET_BYTES=32; m.main()")
+    result = subprocess.run([sys.executable, '-c', code, '--root', str(tmp_path)],
+                            capture_output=True, text=True)
+    assert result.returncode == 2 and 'before production' in result.stderr
+    report = json.loads((tmp_path/'worklist.json').read_text())
+    assert report['temporary_logical_bytes'] == 32
+    assert not report['temporary_budget_compliant']
+
+
 def test_worklist_rejects_stale_metadata_and_alpha_loss(tmp_path):
     import hashlib
     data,mips=pack.encode(Image.new('RGBA',(8,8),(80,90,100,255)), 'DXT1')

@@ -237,6 +237,17 @@ runtime readiness. No full campaign playthrough is required.
   Mac and actual artwork scene coverage remain unverified. The planner never
   installs art or counts unreviewed candidates as completed textures.
 - **PC behavior:** Windows loads compiled DDS replacements with matching keys/mips and bounded residency.
+- **Temporary storage accounting (issue #74, batch 172):**
+  `tools/texture-worklist.py` now counts comparison and unknown output
+  subdirectories in the 256 MiB temporary limit, reports logical/allocated
+  bytes, and exits 2 after writing diagnostics when at or above the limit.
+  Shared Python code needs no Mac adapter; Windows tests in
+  `tests/texture_pack_tools.py` cover nested comparison files, unknown folders,
+  excluded authoritative art/pack files, the boundary and CLI failure.
+  Source is included with the batch172 commit; Mac execution remains
+  unverified. Acceptance on Mac: run that test file and verify the report on
+  the local texture workspace before production. This changes no runtime or
+  gameplay behavior; scene validation remains pending.
 - **Windows build fix (2026-10-15):** Uncommitted on `mac-port`,
   `src/texture_pack.c` restores the local `FILE *f` declaration used by
   `dump_original`. MSVC syntax compilation passes; no Mac adapter change is
