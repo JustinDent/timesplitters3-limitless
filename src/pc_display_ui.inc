@@ -309,6 +309,7 @@ void pc_display_aim_primitive(void (*original)(void),unsigned kind)
 {
     uint32_t frame=g_esp,caller=WORD_AT(frame),offset=4,points=2;
     int anchor=1,matched=0;
+    if(kind==2) menu_character_quad();
     if(kind==0) {
         matched=caller==0x0014CC10u || caller==0x001481E9u ||
             caller==0x001482F7u || caller==0x00136FFCu;

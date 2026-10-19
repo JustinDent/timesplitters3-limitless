@@ -102,6 +102,18 @@ remain immediate.
 In Windows **Audio/Video Options**, click either Music Volume or Sound Volume bar
 to set its level, or hold left-click and drag. This works from Settings and Pause.
 **Accept** saves the changes; **Cancel** restores the previous levels.
+Click either arrow beside a menu choice to change its value. In multiplayer
+lobbies, the **Options** and **Select Character** footer prompts are clickable.
+In character selection, click a portrait (including adjacent variants) to preview
+it, use the wheel to browse, then **Select** to confirm. **Back** or right-click
+cancels without replacing the previously confirmed character.
+The team chooser supports its left/right arrows and **Select/Back** footer;
+**WASD** also supplies directional-pad input while menus are open.
+
+The **Controls** sensitivity bar and **Display settings** FOV bar also support
+clicking and dragging. Sensitivity changes the selected player's controller
+setting; mouse sensitivity remains in PC Settings. FOV changes stay pending
+until **Apply settings**; **Back** discards them.
 Visible, enabled prompts along the bottom (Select, Back, Player Progress and
 other shortcuts) turn light blue on hover and accept left-click. This also applies
 to the profile picker's Select, Back and Delete Profile prompts. Disabled prompts

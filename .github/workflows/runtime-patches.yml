@@ -69,7 +69,10 @@ on:
       - src/native/input_sdl.c
       - src/pc_menu_mouse.h
       - src/pc_menu_mouse_guest.inc
-      - src/pc_menu_audio.inc
+      - src/pc_menu_sliders.inc
+      - src/pc_menu_choices.inc
+      - src/pc_menu_team.inc
+      - src/pc_menu_characters.inc
       - src/pc_controls.h
       - tests/test_menu_mouse.py
       - tests/menu_mouse.c
@@ -152,7 +155,10 @@ on:
       - src/native/input_sdl.c
       - src/pc_menu_mouse.h
       - src/pc_menu_mouse_guest.inc
-      - src/pc_menu_audio.inc
+      - src/pc_menu_sliders.inc
+      - src/pc_menu_choices.inc
+      - src/pc_menu_team.inc
+      - src/pc_menu_characters.inc
       - src/pc_controls.h
       - tests/test_menu_mouse.py
       - tests/menu_mouse.c

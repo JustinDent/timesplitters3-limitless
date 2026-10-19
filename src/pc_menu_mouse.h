@@ -16,7 +16,7 @@ typedef struct PcMenuMouse {
     uint64_t wheel_at, pointer_at;
 } PcMenuMouse;
 
-/* Snap pointer position to the game's inclusive discrete volume range. */
+/* Snap pointer position to the setting's inclusive discrete range. */
 static inline unsigned pc_menu_slider_value(float x,float left,float width,unsigned maximum)
 {
     if(!isfinite(x) || !isfinite(left) || !isfinite(width) || !(width>0)) return 0;

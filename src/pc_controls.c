@@ -376,8 +376,14 @@ int pc_controls_key_down(int key)
     if (InterlockedCompareExchange(&editing, 0, 0)) return 0;
     AcquireSRWLockExclusive(&lock);
     replay_tick();
-    down = (replaying || GetForegroundWindow() == window_handle) &&
-           pc_input_down(&input, (unsigned)key, GetTickCount64());
+    down = pc_input_down(&input, (unsigned)key, GetTickCount64());
+    /* Custom menus may read D-pad edges instead of the WASD analogue stick. */
+    if(menu_mode) {
+        unsigned alias=key==VK_LEFT?'A':key==VK_RIGHT?'D':
+                       key==VK_UP?'W':key==VK_DOWN?'S':0;
+        if(alias) down|=pc_input_down(&input,alias,GetTickCount64());
+    }
+    down=down && (replaying || GetForegroundWindow()==window_handle);
     if(!input.keys[VK_LBUTTON]) menu_button_block &= ~1;
     if(!input.keys[VK_RBUTTON]) menu_button_block &= ~2;
     if((key==VK_LBUTTON && (menu_mode || (menu_button_block&1))) ||

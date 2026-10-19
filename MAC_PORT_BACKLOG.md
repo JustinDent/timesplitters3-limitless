@@ -296,9 +296,46 @@
 ### MAC-030 — Menu mouse selection (#86)
 
 - **Status:** Queued
+- **Issue #114 menu follow-up** (implemented on
+  `114-bug-mouse-pointer-cannot-select-some-menu-footer-elements`):
+  Tracks the recent slider, resolution-label and choice-arrow changes under
+  [#114](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/114).
+  The same captured-bar pointer policy now handles Controls sensitivity and
+  Display settings FOV. Sensitivity uses the selected player's original 0..1
+  value in 0.05 steps and original preview, leaving Accept/Cancel unchanged.
+  FOV edits only the 40..100 draft, with Apply/Back retaining save/discard rules.
+  `menu-setting-sliders.patch` wraps the sensitivity painter and scopes capture
+  of its actual bar rectangle; progress/capacity meters remain noninteractive.
+  Source: `src/pc_menu_sliders.inc`, `src/pc_display_menu.c/.h` and the existing
+  menu pointer adapter. Mac wrappers pass through pending SDL integration.
+  The shared Display settings builder also reserves width for long resolution
+  values beside their label; native Mac visual validation remains pending.
+  Add both settings, per-player isolation, translated bar widths, focus/resize
+  cancellation and Apply/Back checks to the native Mac acceptance work.
+  `src/pc_menu_choices.inc` and `menu-choice-arrows.patch` capture the standard
+  type-1 choice arrows and emit one native Previous/Next edge per mouse click.
+  Mac currently retains original drawing through pass-through wrappers; adapt
+  pointer input and check both arrow directions, variable-width choices,
+  disabled rows, held clicks and stale/resize/focus invalidation. The two custom
+  type-1 painters also scope their row owner (`menu-custom-choice-arrows.patch`).
+  Windows lobby clicks now select the logical network pad buffer used by native
+  callbacks. `src/pc_menu_team.inc` and `menu-team-mouse.patch` capture the local
+  player's team arrows and inject directions/Select/Back before the parent tick;
+  native wrapping/readiness/network callbacks remain authoritative. PC menu-only
+  WASD aliases use D-pad input. Port these input adapters to SDL; verify lobby
+  Options/Select Character, team colour changes and ready/cancel with mouse and
+  A/D, plus immediate gameplay recapture. These paths passed local Windows
+  System Link checks; Mac and remote Internet sessions remain unverified.
+  Character-selection portraits use a separate custom carousel. The Windows
+  adapter (`src/pc_menu_characters.inc`, `menu-character-mouse.patch`) captures
+  actual player-one portrait/variant quads, validates their container ownership,
+  and uses native preview and confirmation callbacks. Port click-preview, wheel
+  browsing and Select/Back/right-click cancellation; cover clipped/invisible
+  portraits, focus loss, resize, stale draws and other players. Local Windows
+  System Link portrait/variant selection and confirm/cancel were verified.
 - **Issue #115 follow-up** (`115-bug-audio-menu-sliders-cannot-be-adjusted-with-mouse-pointer`): Windows Music/Sound volume bars now
   accept click-to-set and held dragging in main and paused Audio/Video Options.
-  `src/pc_menu_audio.inc` captures both original painter layouts, reuses the
+  `src/pc_menu_sliders.inc` captures both original painter layouts, reuses the
   shared proportional pointer mapping, and updates the game's staged 0..16
   volumes through its existing preview functions. Accept/Cancel remain native.
   `audio-menu-mouse.patch` adds two painter wrappers; Mac calls the original
