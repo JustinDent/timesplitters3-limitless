@@ -7,6 +7,19 @@ Every pull request runs these checks, without file-path or target-branch filters
 - **Patch transitions (windows-latest)**
 - **Patch transitions (macos-latest)**
 
+The issue-test workflows contain only their tests. Event automation runs in
+separate workflows, so open PRs do not list skipped `labels`, `versions` or
+`comment` jobs:
+
+- **Automatic issue labels** runs when issues are opened, edited or reopened.
+- **Issue form versions** validates and proposes reference updates after release
+  changes, relevant pushes to `main`, or a manual dispatch.
+- **Issue resolution notes** comments on linked issues only after a PR into
+  `main` is merged, using trusted default-branch code.
+
+Required job names and their GitHub Actions source stay the same; no branch
+ruleset changes are needed when moving the automation.
+
 The runtime jobs always test suite selection. They run the affected patch,
 native, release and launcher tests when relevant files change. A documentation
 edit therefore still gets completed checks without a full game build. No

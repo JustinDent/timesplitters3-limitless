@@ -20,12 +20,56 @@ def test_required_workflows_report_on_every_pull_request(filename):
 
 
 def test_version_refresh_cannot_push_directly_to_protected_main():
-    workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/issue-forms.yml').read_text()
-    versions = workflow.split('\n  versions:\n', 1)[1].split('\n  labels:\n', 1)[0]
+    workflow = (Path(__file__).resolve().parents[1] / '.github/workflows/issue-form-versions.yml').read_text()
+    versions = workflow.split('\n  versions:\n', 1)[1]
     assert '--pull-request' in versions
     assert 'pull-requests: write' in versions
     assert 'git push' not in versions
     assert 'persist-credentials: false' in versions
+
+
+@pytest.mark.parametrize('filename, job, check', [
+    ('issue-forms.yml', 'validate', 'Issue form tests'),
+    ('issue-resolution.yml', 'test', 'Issue resolution tests'),
+])
+def test_pr_issue_checks_contain_tests_only_and_keep_required_names(filename, job, check):
+    workflow = (Path(__file__).resolve().parents[1] / '.github/workflows' / filename).read_text()
+    triggers = workflow.split('\non:\n', 1)[1].split('\npermissions:\n', 1)[0]
+    assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == {'pull_request', 'push'}
+    jobs = workflow.split('\njobs:\n', 1)[1]
+    assert re.findall(r'^  ([a-z_-]+):', jobs, re.M) == [job]
+    assert f'    name: {check}\n' in jobs
+    assert ': write' not in workflow
+    assert 'GITHUB_TOKEN' not in workflow
+
+
+@pytest.mark.parametrize('filename, events', [
+    ('issue-labels.yml', {'issues'}),
+    ('issue-form-versions.yml', {'push', 'release', 'workflow_dispatch'}),
+    ('issue-resolution-comments.yml', {'pull_request_target'}),
+])
+def test_automation_is_not_scheduled_for_open_prs(filename, events):
+    workflow = (Path(__file__).resolve().parents[1] / '.github/workflows' / filename).read_text()
+    triggers = workflow.split('\non:\n', 1)[1].split('\npermissions:\n', 1)[0]
+    assert set(re.findall(r'^  ([a-z_]+):', triggers, re.M)) == events
+    if filename == 'issue-labels.yml':
+        assert 'types: [opened, edited, reopened]' in triggers
+        assert 'issues: write' in workflow and 'contents: write' not in workflow
+        assert 'python tools/issue-forms.py labels' in workflow
+    elif filename == 'issue-form-versions.yml':
+        assert 'types: [published, edited, deleted, unpublished]' in triggers
+        assert 'branches: [main]' in triggers
+        assert 'needs: validate' in workflow
+        assert 'python -m unittest discover -s tests -p test_issue_forms.py -v' in workflow
+        # Release tags (including old/deleted ones) must not choose the code
+        # used either to validate the references or to propose the update.
+        assert workflow.count('ref: ${{ github.event.repository.default_branch }}') == 2
+    else:
+        assert 'types: [closed]' in triggers and 'branches: [main]' in triggers
+        assert 'github.event.pull_request.merged == true' in workflow
+        assert 'ref: ${{ github.event.repository.default_branch }}' in workflow
+        assert 'persist-credentials: false' in workflow
+        assert 'python tools/issue-resolution.py' in workflow
 
 
 @pytest.mark.parametrize('paths, expected', [
