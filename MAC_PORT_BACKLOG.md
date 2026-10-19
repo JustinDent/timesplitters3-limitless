@@ -1255,6 +1255,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Awaiting validation
+- **Visual follow-up (2026-10-19, `1a24135`):** `NativeHomeStyles.axaml` maps the
+  Windows `PageTheme.cs` game-data expander and `Launcher.xaml` rollback face to
+  native controls. `NativeNews.cs` now matches `WhatsNewPage.cs`'s 10-unit button
+  spacing and selector alignment. The generated home layout includes the host
+  styles, and preview mode renders the real news toolbar. Native visual review,
+  expand/collapse and selector interaction, launcher checks and packaged
+  repair/restart passed; see [STATUS](STATUS.md#native-launcher-visual-spacing-follow-up-2026-10-19).
+  Windows source is unchanged; live Windows comparison remains unverified.
 - **Parity completion (2026-10-19, `356e5a3` on `codex/mac-launcher-parity`):**
   Native Discord editing/IPC, native fatal/hang report open/export, shared rich
   Markdown, matching release/version/maintenance page structure, safe successful

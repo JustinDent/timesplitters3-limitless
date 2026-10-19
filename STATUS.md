@@ -1,5 +1,34 @@
 # Measured progress
 
+## Native launcher visual spacing follow-up (2026-10-19)
+
+Source: `1a24135` on `codex/mac-launcher-visual-polish`, based on the unmerged
+native launcher port at `da926fc`. The primary checkout and its concurrent work
+were preserved. The updated app and ZIP were built from a clean source tree;
+these commits are local, with no push, main merge or other-device validation.
+
+Host: macOS 27.0.1 / ARM64, pinned .NET SDK 8.0.426 and Avalonia 11.3.22.
+This is launcher UI work; the native game remains the `356e5a3` build below.
+
+- Matched `WhatsNewPage.cs`'s 10-unit horizontal/bottom button margins and aligned
+  the release selector with both component buttons. The footer and issue actions
+  use the same spacing.
+- Adapted the transparent Windows Restore previous button face and disabled
+  opacity, removing Avalonia's gray disabled background for that control.
+- Matched `PageTheme.cs`'s compact game-data header: left chevron, transparent
+  header/body, 22-unit label column and content without the default theme box.
+- Reviewed collapsed/expanded Home and the actual What's New page captures.
+  macOS UI interaction confirmed expand/collapse, component switching and opening
+  the available/installed release selector; the disabled rollback stays disabled.
+  Captures remain under ignored `private/launcher-art/mac-*-polish.png`.
+- 16 native launcher regression groups and 12 Python launcher checks passed.
+  The read-only prerequisite check passed. The rebuilt ZIP installed, repaired
+  through the copied helper, restarted and rendered with fixtures preserved.
+  Evidence: ignored `logs/mac-launcher-visual-{build,package}.log`.
+
+Windows source and game behavior are unchanged. Comparison used the Windows
+layout/templates; a live Windows screenshot comparison was unavailable here.
+
 ## Native launcher parity completion (2026-10-19)
 
 Source: `356e5a3` on `codex/mac-launcher-parity`, depending on native runtime
