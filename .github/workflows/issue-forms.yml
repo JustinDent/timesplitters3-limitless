@@ -9,8 +9,12 @@ on:
       - .github/workflows/issue-forms.yml
       - .github/workflows/issue-labels.yml
       - .github/workflows/issue-form-versions.yml
+      - .github/workflows/known-issues.yml
+      - .github/known-issues.json
       - tools/issue-forms.py
+      - tools/known-issues.py
       - tests/test_issue_forms.py
+      - tests/test_known_issues.py
       - VERSION
       - tools/launcher/LauncherVersion.cs
 
@@ -30,3 +34,4 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m unittest discover -s tests -p test_issue_forms.py -v
+      - run: python -m unittest discover -s tests -p test_known_issues.py -v
