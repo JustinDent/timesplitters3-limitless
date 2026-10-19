@@ -1,0 +1,46 @@
+"""Compile the real common renderer and exercise its OS adapter contract."""
+import os
+from pathlib import Path
+import subprocess
+import pytest
+from native_compiler import native_compiler
+
+ROOT = Path(__file__).resolve().parents[1]
+RUNTIME = ROOT / 'external/ts3FPrecomp/src'
+D3D = RUNTIME / 'd3d'
+
+
+def test_host_contract(tmp_path):
+    compiler, env = native_compiler(tmp_path)
+    exe = tmp_path / ('host.exe' if os.name == 'nt' else 'host')
+    sources = [str(ROOT / 'tests/rhi_host.c'), str(D3D / 'rhi.c')]
+    if os.name == 'nt':
+        args = [compiler, '/nologo', '/std:c11', '/I'+str(D3D), *sources,
+                '/Fe:'+str(exe), '/link', 'user32.lib']
+    else:
+        args = [compiler, '-std=c11', '-Wall', '-Wextra', '-Werror',
+                '-I'+str(D3D), *sources, '-o', str(exe)]
+    result = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr
+    result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
+    assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize('source', [
+    'd3d8_device.c', 'd3d8_resources.c', 'd3d8_shaders.c', 'd3d8_states.c',
+    'd3d8_combiners.c', 'd3d8_vsh.c', 'd3d8_screencopy.c', 'd3d8_movie.c',
+    'd3d8_display.c', 'd3d8_compile.c', 'rhi_shader_cache.c', 'rhi.c'])
+def test_common_renderer_compiles(tmp_path, source):
+    compiler, env = native_compiler(tmp_path)
+    includes = [ROOT / 'src', RUNTIME, D3D, RUNTIME / 'config']
+    if os.name == 'nt':
+        args = [compiler, '/nologo', '/std:c11', '/Zs', '/DTSFP_PC_DISPLAY',
+                '/DTSFP_TEXTURE_PACK', '/DTSFP_RHI_RENDERER']
+        args += ['/I'+str(path) for path in includes]
+    else:
+        args = [compiler, '-std=c11', '-fsyntax-only', '-Werror=implicit-function-declaration',
+                '-DTSFP_PC_DISPLAY', '-DTSFP_TEXTURE_PACK', '-DTSFP_RHI_RENDERER']
+        args += ['-I'+str(path) for path in includes]
+    result = subprocess.run([*args, str(D3D / source)], cwd=tmp_path, env=env,
+                            capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout + result.stderr

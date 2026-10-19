@@ -779,6 +779,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   and stretched. Remaining shader inputs/modes and matched scene fidelity are
   still open; this is not a sky fix. [Evidence and limits](STATUS.md#native-fog-combiner-input-2026-10-17).
 
+- **Shared renderer preparation (2026-10-19):** The commit carrying this entry
+  on `codex/shared-renderer-host`, dependent on `1a650b5`, introduces `RhiHost`
+  for event pumping and physical drawable dimensions. Windows common device
+  code and the native GL renderer consume that interface; SDL/Cocoa owns its
+  main-thread events and cached worker dimensions. Twelve common core files
+  compile on Mac; CI registers the same contract for both hosts. This prepares
+  common graphics integration but does not add missing texture modes or select
+  a new Mac GPU backend. Windows execution and common-RHI gameplay remain
+  pending. [Evidence](STATUS.md#shared-renderer-host-interface-2026-10-19).
+
 ### MAC-006 — Cube and volume texture resources
 
 - **Status:** Queued

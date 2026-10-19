@@ -19,6 +19,8 @@
 
 #include <SDL3/SDL.h>
 #include "input_sdl.h"
+#include "renderer_host_sdl.h"
+#include "rhi.h"
 #include "settings_macos.h"
 #include "pc_display.h"
 #include "pc_menu_sampling.h"
@@ -715,18 +717,7 @@ static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const
         if(f){fscanf(f,"%d",&requested);fclose(f);}
         if(requested){f=fopen(trace_path,"w");if(f)fclose(f);trace_draw=1;fprintf(stderr,"[native-draw] begin frame %u\n",native_present_count);}
     }
-    /* Cocoa event pumping stays on the main thread. The guest has no host
-     * close-window loop, so quit ends the native process directly. */
-    if(SDL_IsMainThread())tsfp_native_input_frame(g.window);
-    SDL_Event ev;
-    while (SDL_IsMainThread() && SDL_PollEvent(&ev)) {
-        tsfp_native_input_event(&ev,g.window);
-        if (ev.type == SDL_EVENT_QUIT || ev.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
-            fprintf(stderr, "[native-input] window close requested\n");
-            native_debug_release();
-            exit(0);
-        }
-    }
+    rhi_pump_events();
     return D3D_OK;
 }
 
@@ -1332,6 +1323,7 @@ static HRESULT __stdcall d3d_CreateDevice(IDirect3D8 *s, UINT adapter, DWORD dev
         g.window = NULL;
         return D3DERR_INVALIDCALL;
     }
+    tsfp_renderer_host_bind(g.window, native_debug_release);
     SDL_GL_MakeCurrent(g.window, g.glctx);
     SDL_GL_SetSwapInterval(g_present_interval);
 

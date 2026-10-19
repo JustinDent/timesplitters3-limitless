@@ -1,5 +1,53 @@
 # Measured progress
 
+## Shared renderer host interface (2026-10-19)
+
+- **Source/dependency:** `codex/shared-renderer-host` depends on unmerged local
+  `1a650b5` and its earlier integration/shader/settings stack. Checks used that
+  revision plus this task's working changes; no main merge or publication.
+- **Cause and fix:** The common Xbox device implementation directly pumped
+  Win32 events and queried client rectangles, and portable display policy was
+  hidden behind a Windows guard. An additive `shared-renderer-host.patch`
+  introduces `RhiHost` callbacks with physical-pixel dimensions, explicit
+  registration lifetime and unchanged outputs on failure. Win32 retains its
+  default message pump and window query. Both the common device and current
+  native GL renderer use that interface. `renderer_host_sdl.c` owns SDL events
+  on the main thread and supplies a mutex-protected dimension snapshot to
+  workers. Portable display/compile helpers now compile on Mac; the POSIX shader
+  cache is still the existing no-cache stub. Dependency pins are unchanged.
+- **Asset-free validation:** 26 passed, 2 host-specific skips for patch migration,
+  backlog integrity and new host/core contracts; another 60 passed, 2 Windows
+  skips for CI scope, patch tracking, menu sampling and debug definitions.
+  Twelve actual common renderer translation units compile on Mac, rather than
+  replacing them with mocks. Callback tests cover copied registration, context,
+  dispatch, failed/zero-size queries and output preservation. CI registers the
+  same contracts on Windows/macOS; Windows execution remains pending.
+- **Native validation:** Full builder `--test` passed all 3 CTests and real-GPU,
+  SDL input and Cocoa settings/debug suites. The installed production SDL host
+  regression verifies physical dimensions, worker snapshot access, worker event
+  non-consumption, main-thread event consumption, unbind and rebind. Host:
+  macOS 27.0.1 arm64, Clang 21.0.0, SDL 3.4.16, OpenGL 4.1 Metal 91.7.
+  Supported XBE verified; executable SHA-256:
+  `dac2541da2193a26d89e65d72d763651d2366818bbd1400db47da07534bab872`.
+- **Bounded gameplay:** Isolated unlocked Test Lab, 120.16 seconds, time-limit
+  exit 0, `--capture --test-keys --profile-frames --fps 120`. Reviewed menu,
+  mission intro and playable first-mission terrain/weapon/HUD. Synthetic SDL
+  movement/look/fire input changed the viewpoint and magazine from 16 to 13;
+  world geometry remained visible in reviewed captures. This is not physical
+  input, complete-level or campaign certification. Retained ignored capture:
+  `private/captures/native-mac/shared-renderer-host-gameplay.png`.
+- **Timing:** The 110–119 second gameplay sample measured 119.77 host presents/s
+  (60.00 guest + 59.78 interpolated), p95 12.564 ms, worst 14.334 ms, none over
+  33.33 ms. Whole run including loading/intro averaged 105.54 host presents/s,
+  worst 421.503 ms with 10 intervals over 33.33 ms. These CPU present intervals
+  do not certify scanout or stable 120 FPS across the game. Guest clock remains
+  60 Hz. Both display configs, controls and saves were isolated; canonical
+  fixture and personal files preserved, disposable partition images recycled.
+- **Remaining work:** This is the host boundary and compile preparation, not a
+  native common-RHI GPU implementation. Mac still renders through its GL Xbox
+  frontend. Common GPU/backend selection, shader/resource integration, missing
+  texture/movie capabilities, Windows execution and scene parity remain open.
+
 ## Shared feature contract (2026-10-19)
 
 `codex/shared-feature-contract` depends on local `780346f`. Root `AGENTS.md`

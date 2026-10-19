@@ -13,6 +13,7 @@ API. Git synchronization, a shared account and a backlog do not translate code.
 | Controls and configuration | `pc_input*`, `pc_bindings.inc`, shared validation | Win32/SDL events and atomic file writes |
 | Debug settings | `pc_debug_options.def` generates fields, keys, labels and capability metadata | Win32/Cocoa controls, layout, log-folder opening |
 | Menu reconstruction shader | `graphics/menu_sampling_shader.h` and `pc_menu_sampling.h` eligibility | HLSL/GLSL intrinsic/resource syntax and uniform/constant binding |
+| Renderer window/events | `RhiHost` callbacks and drawable-size contract | Default Win32 host and SDL/Cocoa host; worker threads use cached physical dimensions |
 | Xbox graphics semantics | Shared HLE, format helpers and vertex decoder/interpreter | Still substantially duplicated between Windows `d3d8_*` and native `renderer_gl.c` |
 
 The shared debug definition automatically exposes a new boolean setting in both
@@ -65,6 +66,13 @@ HLSL shader source. The Mac GL renderer still implements much of the Xbox-facing
 device/resource/shader behavior separately. Sharing a small shader library does
 not make every future Windows renderer feature work on Mac automatically.
 
+The common frontend now compiles on Mac in the asset-free contract, including
+device, resources, state, shader compilation and display policy. `RhiHost` removes
+Win32 event pumping and window sizing from that frontend. The current GL renderer
+uses the same interface through `renderer_host_sdl.c`; callback registration is
+outside the render-thread lifetime and drawable sizes are physical pixels.
+This does not select a Mac GPU backend or establish common-renderer gameplay.
+
 The next renderer milestone is to route native Mac through that common frontend
 and graphics interface, retaining the validated GL path while the new adapter is
 tested. Evaluate the existing RHI backends and shader compilation boundary before
@@ -87,7 +95,8 @@ integration work, tracked in the backlog.
 | `codex/shared-platform-baseline` | main `5131d29` plus native stack `f562e14` | `bee4ed9`: merged native build/regression baseline and backlog reconciliation |
 | `codex/shared-menu-rendering` | `bee4ed9` | `dde016d`: one menu shader algorithm and GPU contract for both APIs |
 | `codex/shared-debug-settings` | `dde016d` | `780346f`: one debug setting definition list, UI/persistence consumers and capability checks |
-| `codex/shared-feature-contract` | `780346f` | Shared-by-default rules and this handoff |
+| `codex/shared-feature-contract` | `780346f` | `1a650b5`: shared-by-default rules and this handoff |
+| `codex/shared-renderer-host` | `1a650b5` | Common host interface, SDL adapter and both-host core compile contract |
 
 These are local branches; they have not been merged into main or verified on the
 other computer. Measured scope and unavailable checks are recorded in `STATUS.md`.
