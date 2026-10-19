@@ -1255,6 +1255,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Awaiting validation
+- **Automatic compatibility review (2026-10-19, `f96d1be`, PR #190 on
+  `codex/launcher-compatibility-automation`):** The GitHub workflow inspects
+  launcher changes in both directions, proposes bounded separate adapter-fix PRs,
+  and reuses the Windows/Mac release build/package checks. No game adapter is
+  required: this is host-neutral repository automation. Offline orchestration
+  tests and both real launcher CI builds/package checks pass; real AI execution/repair publication and required-check activation
+  await the dedicated API key and default-branch installation. Windows/Mac CI
+  evidence and these limits are recorded in
+  [STATUS](STATUS.md#launcher-compatibility-automation-2026-10-19).
 - **Shared interface (2026-10-19, `2ac286d`, `ee495e6`, `a0c4e14`, PR #189):**
   Windows and Mac compile the same `*Page.cs` sources for settings, news, game
   versions, repair and diagnostics, plus shared `PageTheme.cs` and theme XAML.

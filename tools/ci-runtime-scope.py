@@ -17,7 +17,10 @@ def affected(paths, *, full=False):
                      'tests/test_patch_updates.py') or path.startswith('patches/')):
             selected.update(SUITES)
         elif (path.startswith('tools/launcher/') or path in (
-                '.github/workflows/launcher-release.yml', 'tools/launcher-release.py',
+                '.github/workflows/launcher-release.yml', '.github/workflows/launcher-build.yml',
+                '.github/workflows/launcher-compatibility.yml', 'tools/launcher-compatibility.py',
+                '.github/prompts/launcher-compatibility.md', '.github/prompts/launcher-compatibility.schema.json',
+                'tests/test_launcher_compatibility.py', 'tools/launcher-release.py',
                 'tools/fetch-launcher-art.ps1', 'config/launcher-artwork.json', 'tests/test_launcher_release.py',
                 'tools/build-launcher.ps1', 'tools/build-mac-launcher.py', 'tools/test-mac-launcher.py', 'config/mac-launcher-sdk.json', 'tools/playable-launch.ps1',
                 'tools/build-game-icon.ps1', 'tests/test_game_icon.py',
