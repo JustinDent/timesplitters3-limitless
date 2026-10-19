@@ -57,7 +57,7 @@ def main():
         working_tree_changes=subprocess.check_output(['git','status','--porcelain'],text=True),
         runtime_revision=revision,host=platform.platform(),sdk_version=vulkan_sdk.pin()['version'],
         driver=args.driver,executable_sha256=vulkan_sdk.sha256(exe),seconds=round(time.monotonic()-started,3),
-        returncode=result.returncode,passed=passed,validation_error=validation_error,scope='Asset-free common RHI shader/pixel/presentation contract; not gameplay')
+        returncode=result.returncode,passed=passed,validation_error=validation_error,scope='Asset-free common RHI shader/pixel/resource/presentation contract; not gameplay')
     (logs/('rhi-'+args.driver+'.json')).write_text(json.dumps(summary,indent=2)+'\n')
     print(output)
     if not passed:raise SystemExit('Common RHI validation failed; see logs/rhi-'+args.driver+'.log')

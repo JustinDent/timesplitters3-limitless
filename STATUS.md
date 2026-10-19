@@ -1,5 +1,22 @@
 # Measured progress
 
+## Shared cube and volume resource contract (2026-10-19)
+
+- **Source/dependency:** `codex/shared-texture-contract` depends on unmerged
+  `296f970`, including the common renderer and hosted-validation fixes. The
+  launcher chat retains exclusive use of the local native build/runtime.
+- **Shared acceptance work:** `tests/rhi_texture_resources.h` runs through the
+  production RHI on both Windows D3D11 WARP and Mac Vulkan. It tests six cube
+  faces and three mip levels, every voxel of a 4x4x4 volume and its mip chain,
+  padded row/slice uploads, single-face/mip and boxed-slice updates with unchanged
+  neighbors, restricted-mip views, retained image references, and explicit
+  rejection of an unknown format. Sampling uses the same HLSL and expected
+  texels on both backends; cube uploads also receive direct subresource readback.
+- **Validation state:** The complete Vulkan fixture passes a local Clang syntax
+  check without modifying the shared runtime/build. All 47 CI selection/backlog
+  checks pass. GPU execution is pending a published hosted run; this does not
+  yet prove cube/volume support, Xbox resource-factory behavior or any game scene.
+
 ## Common renderer Mac settings acceptance (2026-10-19)
 
 - **Source/dependency:** `codex/shared-native-window-acceptance` depends on

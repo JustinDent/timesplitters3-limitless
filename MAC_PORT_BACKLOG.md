@@ -134,7 +134,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-003 | Debug settings and on-screen performance information | Awaiting validation |
 | MAC-004 | Capture-to-bind and conflict reassignment | Awaiting validation |
 | MAC-005 | Multiple texture stages and shader fidelity | In progress |
-| MAC-006 | Cube and volume texture resources | Queued |
+| MAC-006 | Cube and volume texture resources | In progress |
 | MAC-007 | Screen-copy effects and image surfaces | In progress |
 | MAC-008 | Scissor clipping | Verified |
 | MAC-009 | Intro and in-game movie playback | Queued |
@@ -855,7 +855,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-006 — Cube and volume texture resources
 
-- **Status:** Queued
+- **Status:** In progress
 - **PC behavior:** Windows has resource factories and sampling paths for cube/volume textures.
 - **PC source:** Audited revision above; `external/ts3FPrecomp/src/d3d/d3d8_device.c`, `external/ts3FPrecomp/src/d3d/d3d8_combiners.c`; `src/native/renderer_gl.c`, `src/native/gl_bridge.inc`.
 - **PC validation:** Factories are implemented on the Windows path; usage and fidelity in particular game scenes need targeted evidence.
@@ -864,6 +864,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Mac acceptance checks:** Synthetic face/slice/mip checks and resource release pass on the GPU; validate a game scene if one uses these resources. Unsupported formats must fail explicitly.
 - **Mac implementation and evidence:** Remaining work pending. Existing coverage:
   [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
+- **Shared acceptance contract (2026-10-19):** The commit carrying this entry on
+  `codex/shared-texture-contract`, dependent on `296f970`, adds one asset-free
+  RHI GPU fixture for Windows and Mac. It checks cube faces, volume voxels,
+  mip chains, pitched uploads, isolated updates, restricted views, retain/release
+  and unknown-format rejection using common shaders/expectations. Local syntax
+  and CI/backlog checks pass; hosted GPU execution is pending. The Xbox factories
+  and title scenes remain separate acceptance work.
+  [Evidence](STATUS.md#shared-cube-and-volume-resource-contract-2026-10-19).
 
 ### MAC-007 — Screen-copy effects and image surfaces
 
