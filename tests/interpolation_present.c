@@ -1,6 +1,23 @@
 /* Exercise the real HLE redraw/gate with renderer outcomes, no game assets. */
 #include "hle/hle_d3d8_interp.c"
 #include <assert.h>
+#include <stdlib.h>
+/* Keep the full production translation unit linkable on MSVC as well as Clang.
+ * These hooks are outside the redraw/gate cases tested here. Fail loudly if a
+ * change makes a case depend on recording, configuration or shader discovery. */
+static void unexpected_hook(const char *name){fprintf(stderr,"Unexpected interpolation test hook: %s\n",name);abort();}
+void d3d8_vsh_interp_registers(int *projection,int *first,int *count){
+    (void)projection;(void)first;(void)count;unexpected_hook("register discovery");
+}
+uint32_t d3d8_vsh_bound_reads(int first,int count){
+    (void)first;(void)count;unexpected_hook("shader reads");return 0;
+}
+int hle_d3d8_defer_on(void){unexpected_hook("deferred recording");return 0;}
+void hle_d3d8_interp_snapshot(void){unexpected_hook("snapshot");}
+int recomp_config_int(const char *env_name,const char *key,int fallback){
+    (void)env_name;(void)key;(void)fallback;unexpected_hook("configuration");return 0;
+}
+void xbox_Nv2aFlipGateSetIdle(xbox_FlipGateIdleFn fn){(void)fn;unexpected_hook("gate installation");}
 static int begin_ok=1,present_ok=1,begins,presents,ends,overlays;
 int hle_d3d8_interp_rec;
 BOOL xbox_D3D8InterpBegin(void){begins++;return begin_ok;}
@@ -14,6 +31,7 @@ int hle_d3d8_capture_active(void){return 0;}
 int hle_d3d8_movie_layer_shown(void){return 0;}
 #ifdef __APPLE__
 BOOL QueryPerformanceCounter(LARGE_INTEGER *value){static LONGLONG t=100;value->QuadPart=++t;return TRUE;}
+BOOL QueryPerformanceFrequency(LARGE_INTEGER *value){(void)value;unexpected_hook("clock initialization");return FALSE;}
 #endif
 int main(void) {
     g_on=1;hle_d3d8_interp_rec=1;

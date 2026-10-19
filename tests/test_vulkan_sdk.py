@@ -93,7 +93,7 @@ def test_gpu_overlay_preserves_runner_isolation(tmp_path,monkeypatch):
     env=sdk.with_probe_gpu_environment(existing,tmp_path/'sdk','kosmickrisp',tmp_path)
     for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','TSFP_DISPLAY_CONFIG','RECOMP_DISPLAY_CONFIG','XDG_CONFIG_HOME','XDG_CACHE_HOME'):
         assert env[key]==existing[key]
-    assert env['VK_DRIVER_FILES'].endswith('/libkosmickrisp_icd.json')
+    assert Path(env['VK_DRIVER_FILES'])==tmp_path/'sdk/share/vulkan/icd.d/libkosmickrisp_icd.json'
     assert 'DYLD_INSERT_LIBRARIES' not in env
     assert env['RECOMP_SHADER_CACHE']=='0'
     assert existing['VK_DRIVER_FILES']=='/wrong/driver'
