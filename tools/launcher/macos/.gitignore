@@ -1,0 +1,4 @@
+# Derived from the shared Windows layout at build time.
+NativeWindow.axaml
+bin/
+obj/

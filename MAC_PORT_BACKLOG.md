@@ -718,7 +718,7 @@ runtime readiness. No full campaign playthrough is required.
 | MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
 | MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
 | MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
-| MAC-021 | Published-release launcher and pre-game settings | Queued |
+| MAC-021 | Published-release launcher and pre-game settings | In progress |
 | MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
 | MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
 | MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
@@ -1288,6 +1288,29 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
+
+- **Native launcher port (2026-10-19, `codex/mac-launcher-parity`, uncommitted):**
+  A standalone ARM64 Avalonia `.app` now shares the Windows v1.2.18 home layout,
+  original art, settings/config models, release client, downloader, import,
+  update/rollback transactions and diagnostic filtering. Host adapters are in
+  `tools/launcher/LauncherPlatform.cs` and `tools/launcher/macos`; build and SDK
+  pins are in `tools/build-mac-launcher.py` and `config/mac-launcher-sdk.json`.
+  Native dialogs, primary display modes, binding capture, pre-game settings,
+  local build launch, startup self-update and Finder actions are implemented.
+  Windows remains WPF/.NET Framework and compiles with the shared changes.
+- **Evidence:** 13 native regression groups, native app/render checks, shared
+  Windows compilation and existing Mac launcher tests are recorded in
+  [STATUS.md](STATUS.md#native-mac-launcher-port-2026-10-19). Personal configs and
+  saves were not used for automated gameplay. Local Vulkan prerequisites use
+  the existing verified SDK helper; this does not certify game rendering.
+- **Remaining acceptance:** Exact visual/behavioral comparison of every page,
+  physical input capture and minimize/restore during an isolated game run;
+  real native release install/self-update/repair and clean-machine validation;
+  Developer ID signing/notarization. MAC-012 must supply native runtime packages.
+  Discord IPC and native crash dumps remain game/host dependencies rather than
+  being silently advertised as supported. Native notes use safe text/basic
+  headings; rich WPF document formatting is not fully reproduced. Read
+  [the Mac launcher guide](docs/mac-launcher.md) for current scope and commands.
 
 - **Launcher v1.2.18 candidate (2026-10-19):** The local Windows candidate
   includes live Known Issues commit `2f5ca68` and main `d63a156`. Full launcher,

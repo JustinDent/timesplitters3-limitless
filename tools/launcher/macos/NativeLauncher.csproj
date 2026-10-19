@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType><TargetFramework>net8.0</TargetFramework><RuntimeIdentifier>osx-arm64</RuntimeIdentifier>
+    <AssemblyName>TimeSplitters.Launcher</AssemblyName><DefineConstants>$(DefineConstants);MACOS</DefineConstants>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo><PublishSingleFile>true</PublishSingleFile><SelfContained>true</SelfContained><EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile><AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.22" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.22" />
+    <Compile Include="*.cs" />
+    <Compile Include="../Core.cs;../LauncherPlatform.cs;../ReleaseClient.cs;../ReleaseNews.cs;../DownloadTransfer.cs;../SelfUpdate.cs;../GameSettings.cs;../DisplayModes.cs;../LauncherVersion.cs;../GameSessions.cs;../CrashReports.cs;../InstallationMaintenance.cs;../DiagnosticIssueDraft.cs;../../release/ImportGame.cs" />
+    <EmbeddedResource Include="../../../config/pc-controls.default.json" LogicalName="launcher-controls-default.json" />
+    <EmbeddedResource Include="../../../src/pc_display_modes.inc" LogicalName="display-modes.inc" />
+    <EmbeddedResource Include="$(ArtworkDir)/launcher-*.png" Condition="'$(ArtworkDir)' != ''"><LogicalName>%(Filename)%(Extension)</LogicalName></EmbeddedResource>
+  </ItemGroup>
+</Project>

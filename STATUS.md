@@ -1,5 +1,62 @@
 # Measured progress
 
+## Native Mac launcher port (2026-10-19)
+
+Implemented on `codex/mac-launcher-parity`, based on current main `ade3763`, in
+an isolated source worktree because the primary checkout had active native
+renderer edits. Those edits and its branch were preserved. The native game is
+still the primary checkout's separately built binary; the launcher is not a new
+game build and does not claim that binary matches main.
+
+Host: macOS 27.0.1 (26A434), Apple Silicon ARM64. Launcher: shared Windows
+v1.2.18 source, pinned .NET SDK 8.0.426 and Avalonia 11.3.22. The home interface
+is generated from the Windows XAML; the original released banner, backdrop,
+logo and seven-size icon were recovered unchanged from the SHA-256-verified
+public launcher-v1.2.18 ZIP. Artwork/provenance remain local under ignored
+`private/launcher-art`. Native self-contained `.app`, build provenance, license
+notices and file-hash manifest are under ignored `build/macos-launcher`.
+
+Validation:
+
+- 13 native regression groups passed: host release filtering, JSON/journal
+  compatibility, settings drafts/backups/unknown-field preservation, failed-save
+  rollback, checkout launch routing, shared binding conflicts/reserved keys/wheel
+  codes, native update/failure recovery/rollback, corrupted archives and unsafe
+  paths, symlink refusal, independent launcher updates, read-only prerequisite
+  rejection, verified/cached downloads and known-issue filtering. Fixtures were
+  disposable; no game was executed by these tests.
+- The generated Mac launcher ZIP passed extraction, transactional installation
+  and full manifest verification in a disposable installation while preserving
+  synthetic game metadata and saves. This is a local package check, not a
+  published-release upgrade.
+- The complete existing Windows launcher sources compile for .NET Framework
+  4.8 with the shared changes: zero errors/warnings. Compilation on Mac does not
+  replace the Windows WPF/runtime tests; those remain unrun on this host.
+- Existing native command-launcher tests: 12 passed. CI suite routing: 40 passed.
+  The new native tests are registered for ARM64 Mac CI; Windows retains its
+  existing runtime/launcher checks. Python compilation and `git diff --check`
+  passed.
+- Read-only native `.app --check --root <checkout>` passed, including supported
+  XBE, ARM64 executable hash and the active Vulkan SDK receipt. The existing
+  `tools/play-native-mac.py --check` also passed. The active native binary was
+  concurrently rebuilt on another focused branch; these are prerequisite
+  observations, not a stable source/build synchronization claim.
+- The built app opened through Finder/LaunchServices. Native accessibility
+  inspection confirmed the Home and settings interfaces, detected the local
+  native build and game data, and displayed that no compatible Mac release was
+  available. Native rendered Home/settings images were reviewed. No personal
+  settings were saved and no personal game session was started by this task.
+
+This is a working native launcher development port, not full one-to-one parity
+certification. Physical key/mouse capture, actual minimize/restore around an
+isolated game process, every page's layout/accessibility, clean-machine delivery,
+real published native update/repair/rollback, Developer ID/notarization and
+native crash dumps remain unverified. Rich release-note document formatting is
+simpler than WPF. Discord preferences are preserved but disabled for editing
+until native game IPC support exists. Public native runtime packages still need
+MAC-012; none were published here. See [Mac launcher usage](docs/mac-launcher.md)
+and MAC-021. Other-device execution and synchronization remain unverified.
+
 ## Launcher v1.2.18 release candidate (2026-10-19)
 
 Prepared on `feature/launcher-live-known-issues`, integrating main `d63a156`

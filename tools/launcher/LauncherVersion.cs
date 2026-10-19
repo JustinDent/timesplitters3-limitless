@@ -1,4 +1,6 @@
+#if !MACOS
 [assembly: System.Runtime.Versioning.TargetFramework(".NETFramework,Version=v4.8", FrameworkDisplayName = ".NET Framework 4.8")]
+#endif
 [assembly: System.Reflection.AssemblyVersion("1.2.18.0")]
 [assembly: System.Reflection.AssemblyFileVersion("1.2.18.0")]
 [assembly: System.Reflection.AssemblyInformationalVersion(TimeSplitters.Launcher.LauncherVersion.Value)]

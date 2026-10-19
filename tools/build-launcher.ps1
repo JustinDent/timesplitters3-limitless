@@ -73,7 +73,7 @@ foreach ($reference in $references) { $commonArguments += '/reference:' + (Join-
 foreach ($reference in @('PresentationCore.dll','PresentationFramework.dll','WindowsBase.dll')) {
     $commonArguments += '/reference:' + (Join-Path $framework "WPF\$reference")
 }
-$commonSources = @((Join-Path $source 'Core.cs'), (Join-Path $source 'DownloadTransfer.cs'), (Join-Path $source 'ReleaseNews.cs'), (Join-Path $source 'ReleaseClient.cs'),
+$commonSources = @((Join-Path $source 'Core.cs'), (Join-Path $source 'LauncherPlatform.cs'), (Join-Path $source 'DownloadTransfer.cs'), (Join-Path $source 'ReleaseNews.cs'), (Join-Path $source 'ReleaseClient.cs'),
     (Join-Path $source 'SelfUpdate.cs'), (Join-Path $source 'LauncherVersion.cs'), (Join-Path $source 'WindowTheme.cs'))
 $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Bootstrap',
     ('/out:' + (Join-Path $Output 'TimeSplitters Launcher.exe'))) + $commonSources + @((Join-Path $source 'Bootstrap.cs'))

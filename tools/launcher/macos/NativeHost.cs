@@ -1,0 +1,105 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
+namespace TimeSplitters.Launcher
+{
+    public static class NativeHost
+    {
+        public const string XbeHash="3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc";
+        const string CG="/System/Library/Frameworks/CoreGraphics.framework/CoreGraphics";
+        const string CF="/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation";
+        [DllImport(CG)]static extern uint CGMainDisplayID();
+        [DllImport(CG)]static extern IntPtr CGDisplayCopyAllDisplayModes(uint display,IntPtr options);
+        [DllImport(CG)]static extern nuint CGDisplayModeGetPixelWidth(IntPtr mode);
+        [DllImport(CG)]static extern nuint CGDisplayModeGetPixelHeight(IntPtr mode);
+        [DllImport(CF)]static extern nint CFArrayGetCount(IntPtr array);
+        [DllImport(CF)]static extern IntPtr CFArrayGetValueAtIndex(IntPtr array,nint index);
+        [DllImport(CF)]static extern void CFRelease(IntPtr value);
+        public static IEnumerable<DisplayMode> DisplayModes()
+        {
+            var modes=new List<DisplayMode>();var array=CGDisplayCopyAllDisplayModes(CGMainDisplayID(),IntPtr.Zero);
+            if(array==IntPtr.Zero)return modes;
+            try { for(nint i=0;i<CFArrayGetCount(array);i++){var m=CFArrayGetValueAtIndex(array,i);modes.Add(new DisplayMode((int)CGDisplayModeGetPixelWidth(m),(int)CGDisplayModeGetPixelHeight(m)));} }
+            finally{CFRelease(array);}return modes;
+        }
+        public static string Graphics() { return "Apple Silicon / native " + RuntimeInformation.OSDescription; }
+        public static string Version(string root)
+        {
+            string value=Core.InstalledVersion(root);if(!String.IsNullOrEmpty(value))return value;
+            var path=Core.PathIn(root,LauncherPlatform.ManifestPath(root));
+            if(!File.Exists(path))return "Not installed";
+            var m=Json.Object(File.ReadAllText(path));var revision=Json.String(m,"source_revision");
+            return "Local build "+revision.Substring(0,Math.Min(7,revision.Length));
+        }
+        public static void CheckData(string root)
+        {
+            string data=Core.PathIn(root,LauncherPlatform.Data(root));var xbe=Core.PathIn(data,"default.xbe");
+            Core.Require(File.Exists(xbe),"Import your supported US Xbox game data first.");
+            Core.Require(Core.Hash(xbe)==XbeHash,"default.xbe does not match the supported US Xbox release.");
+            foreach(var name in new[]{"pak","xmv"}) { var path=Core.PathIn(data,name);Core.Require(Directory.Exists(path)&&Directory.EnumerateFileSystemEntries(path).Any(),"Missing or empty game assets: "+name); }
+        }
+        public static Dictionary<string,object> CheckBuild(string root)
+        {
+            var manifest=Core.PathIn(root,LauncherPlatform.ManifestPath(root));Core.Require(File.Exists(manifest),"Native Mac build manifest is missing. Build the native runtime first.");
+            var m=Json.Object(File.ReadAllText(manifest));var exe=Core.PathIn(root,LauncherPlatform.GamePath(root));Core.Require(File.Exists(exe),"Native Mac game executable is missing.");
+            string expected=Json.String(m,"executable_sha256");
+            if(expected.Length==0 && m.TryGetValue("files",out var files) && files is Dictionary<string,object> map)expected=Json.String(map,LauncherPlatform.GameBinary);
+            Core.Require(expected.Length==64 && Core.Hash(exe)==expected,"Native executable differs from its build manifest. Rebuild or repair before playing.");
+            using(var stream=File.OpenRead(exe)){var header=new byte[8];Core.Require(stream.Read(header,0,8)==8 && BitConverter.ToUInt32(header,0)==0xfeedfacf && BitConverter.ToUInt32(header,4)==0x0100000c,"This launcher requires a native Apple Silicon game executable.");}
+            if(Json.String(m,"renderer")=="vulkan")GpuSdk(root);
+            return m;
+        }
+        static string GpuSdk(string root)
+        {
+            string python=Path.Combine(root,".venv/bin/python");
+            Core.Require(LauncherPlatform.Checkout(root) && File.Exists(python) && File.Exists(Core.PathIn(root,"tools/vulkan_sdk.py")),"This Vulkan build needs its pinned checkout SDK and verification helper.");
+            var info=new ProcessStartInfo(python){UseShellExecute=false,RedirectStandardOutput=true,RedirectStandardError=true,WorkingDirectory=root};
+            info.ArgumentList.Add("-c");info.ArgumentList.Add("import pathlib,sys; sys.path.insert(0,str(pathlib.Path(sys.argv[1])/'tools')); import vulkan_sdk; print(vulkan_sdk.verify_install(pathlib.Path(sys.argv[1])))");info.ArgumentList.Add(root);
+            using(var process=Process.Start(info)){var output=process.StandardOutput.ReadToEndAsync();var error=process.StandardError.ReadToEndAsync();
+                if(!process.WaitForExit(30000)){process.Kill();throw new IOException("Pinned Vulkan SDK verification timed out.");}
+                Core.Require(process.ExitCode==0,"Pinned Vulkan SDK verification failed: "+error.GetAwaiter().GetResult());string sdk=output.GetAwaiter().GetResult().Trim();Core.Require(Directory.Exists(sdk),"Pinned Vulkan SDK directory is missing.");return sdk;}
+        }
+        public static void Configure(ProcessStartInfo info,string root)
+        {
+            info.WorkingDirectory=root;
+            foreach(var key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())if(key.StartsWith("VK_")||key.StartsWith("SDL_VULKAN")||key.StartsWith("DYLD_"))info.EnvironmentVariables.Remove(key);
+            string manifest=Core.PathIn(root,LauncherPlatform.ManifestPath(root));
+            if(File.Exists(manifest) && Json.String(Json.Object(File.ReadAllText(manifest)),"renderer")=="vulkan"){
+                string sdk=GpuSdk(root);info.EnvironmentVariables["DYLD_LIBRARY_PATH"]=Path.Combine(sdk,"lib");info.EnvironmentVariables["SDL_VULKAN_LIBRARY"]=Path.Combine(sdk,"lib/libvulkan.1.dylib");
+                info.EnvironmentVariables["VK_DRIVER_FILES"]=Path.Combine(sdk,"share/vulkan/icd.d/libkosmickrisp_icd.json");info.EnvironmentVariables["VK_LAYER_PATH"]=Path.Combine(sdk,"share/vulkan/explicit_layer.d");info.EnvironmentVariables["RECOMP_SHADER_CACHE"]="0";
+            }
+            string settings=LauncherPlatform.Checkout(root)?"private/native-settings":"Settings";
+            info.EnvironmentVariables["XDG_CONFIG_HOME"]=Core.PathIn(root,settings+"/xdg-config");
+            info.EnvironmentVariables["XDG_DATA_HOME"]=Core.PathIn(root,settings+"/xdg-data");
+            info.EnvironmentVariables["TSFP_ONLINE_SETTINGS"]=Core.PathIn(root,LauncherPlatform.Checkout(root)?"config/pc-online.json":"Settings/pc-online.json");
+            info.EnvironmentVariables.Remove("RECOMP_FFMPEG_DIR");
+            info.EnvironmentVariables["RECOMP_LOG_FILE"]=Core.PathIn(root,"logs/native-play.err");
+        }
+        public static void Prepare(string root)
+        {
+            var files=LauncherPlatform.Settings(root);
+            foreach(var path in new[]{LauncherPlatform.Saves(root),Path.GetDirectoryName(files[2]),"logs"})Directory.CreateDirectory(Core.PathIn(root,path));
+            string controls=Core.PathIn(root,files[0]);Directory.CreateDirectory(Path.GetDirectoryName(controls));
+            if(!File.Exists(controls))using(var src=typeof(NativeHost).Assembly.GetManifestResourceStream("launcher-controls-default.json"))using(var dst=new FileStream(controls,FileMode.CreateNew))src.CopyTo(dst);
+            string runtime=Core.PathIn(root,files[2]);if(!File.Exists(runtime))using(var writer=new StreamWriter(new FileStream(runtime,FileMode.CreateNew)))writer.WriteLine("# Native runtime settings\nframe_interp = 2");
+        }
+        public static async Task Drain(Stream input,string path)
+        {
+            using(var output=new FileStream(path,FileMode.Create,FileAccess.Write,FileShare.Read)){var buffer=new byte[65536];long budget=4*1024*1024;int count;
+                while((count=await input.ReadAsync(buffer,0,buffer.Length))>0){int keep=(int)Math.Min(budget,count);if(keep>0)await output.WriteAsync(buffer,0,keep);budget-=keep;}}
+        }
+        public static VerificationResult Verify(string root,CancellationToken token)
+        {
+            if(!LauncherPlatform.Checkout(root))return InstallationMaintenance.Verify(root,false,null,token);
+            var result=new VerificationResult{Component="Native game",Version=Version(root)};
+            try { token.ThrowIfCancellationRequested();CheckBuild(root);result.Checked=1;result.ManifestHash=Core.Hash(Core.PathIn(root,LauncherPlatform.ManifestPath(root))); }
+            catch(Exception ex){result.Issues.Add(ex.Message);}return result;
+        }
+        public static void Open(string target) { var info=new ProcessStartInfo("/usr/bin/open"){UseShellExecute=false};info.ArgumentList.Add(target);Process.Start(info); }
+    }
+}

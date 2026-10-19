@@ -114,7 +114,7 @@ namespace TimeSplitters.Launcher
                 GameVersion version;
                 try { version = GameVersion.Parse(tag); } catch (InvalidDataException) { continue; }
                 if (!preview && version.Pre.Length != 0) continue;
-                string expected = "TimeSplitters-Future-Perfect-PC-" + tag + "-windows-x64.zip";
+                string expected = "TimeSplitters-Future-Perfect-PC-" + tag + "-" + LauncherPlatform.AssetSuffix + ".zip";
                 object assets;
                 if (!r.TryGetValue("assets", out assets)) continue;
                 var files = ((object[])assets).Cast<Dictionary<string, object>>().ToList();
@@ -215,19 +215,19 @@ namespace TimeSplitters.Launcher
                 object entries;
                 if (!record.TryGetValue("assets", out entries)) continue;
                 var files = ((object[])entries).Cast<Dictionary<string, object>>().Where(a => Json.String(a, "state") == "uploaded").ToList();
-                var manifest = files.FirstOrDefault(a => Json.String(a, "name") == "launcher-update.json");
+                var manifest = files.FirstOrDefault(a => Json.String(a, "name") == LauncherPlatform.UpdateManifest);
                 if (manifest == null) continue;
                 foreach (var asset in files)
                 {
                     string name = Json.String(asset, "name");
-                    var match = Regex.Match(name, @"^TimeSplitters-Launcher-v(.+)-windows-x64\.zip$");
+                    var match = Regex.Match(name, @"^TimeSplitters-Launcher-v(.+)-" + LauncherPlatform.AssetSuffix + @"\.zip$");
                     if (!match.Success) continue;
                     string version = match.Groups[1].Value;
                     GameVersion parsed;
                     try { parsed = GameVersion.Parse(version); } catch (InvalidDataException) { continue; }
                     if ((!preview && parsed.Pre.Length != 0) || (best != null && parsed.CompareTo(GameVersion.Parse(best.Package.Tag)) <= 0)) continue;
                     long size;
-                    if (!long.TryParse(Json.String(asset, "size"), out size) || size <= 0 || size > 16 * 1024 * 1024) continue;
+                    if (!long.TryParse(Json.String(asset, "size"), out size) || size <= 0 || size > LauncherPlatform.LauncherArchiveLimit) continue;
                     string url = Json.String(asset, "browser_download_url"), manifestUrl = Json.String(manifest, "browser_download_url");
                     ValidateDownloadUrl(url); ValidateDownloadUrl(manifestUrl);
                     best = new LauncherRelease { ManifestUrl = manifestUrl, Package = new Release { Tag = version, AssetName = name,

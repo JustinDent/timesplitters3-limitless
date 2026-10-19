@@ -32,3 +32,6 @@ xbox_kernel.log
 *.obj
 .env
 .env.*
+
+# Native launcher state in a development checkout.
+/.launcher/
