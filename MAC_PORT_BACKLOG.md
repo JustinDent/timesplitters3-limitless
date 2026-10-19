@@ -721,6 +721,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   preservation checks pass in the native build-restoration run. See MAC-050 for the generated-header build dependency
   and MAC-051 for the separate build-identity overlay.
 
+- **Shared definitions (2026-10-19):** `codex/shared-debug-settings` makes
+  `src/pc_debug_options.def` the single list for fields, keys, labels and native
+  debug controls. Both dialogs and shared JSON persistence iterate it. Cocoa
+  Save/Cancel, hidden latency preservation, generated labels, capability
+  visibility and failed-write behavior pass. Definition-extension tests run
+  on each host in CI; Windows dialog execution remains pending. This does not
+  supply the missing native network provider or complete every overlay check.
+  [Evidence](STATUS.md#shared-debug-setting-definitions-2026-10-19).
+
 ### MAC-004 — Capture-to-bind and conflict reassignment
 
 - **Status:** Awaiting validation

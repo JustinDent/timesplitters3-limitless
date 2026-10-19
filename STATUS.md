@@ -1,5 +1,37 @@
 # Measured progress
 
+## Shared debug setting definitions (2026-10-19)
+
+- **Source/dependency:** `codex/shared-debug-settings` starts at unmerged shared
+  shader commit `dde016d`, itself dependent on integration `bee4ed9`. Validation
+  used working changes; no changes were merged into main or pushed.
+- **Cause and fix:** Windows and Cocoa repeated debug labels, field lists and
+  save assignments. A new field could silently be omitted on Mac or reset when
+  saving. `src/pc_debug_options.def` now supplies the struct fields, persisted
+  keys, labels, capability requirements and both native dialogs. The shared JSON
+  reader/writer iterates that definition. OS controls, layout and atomic file
+  writes remain adapters. Existing keys/defaults and Windows control IDs remain
+  stable. Mac hides latency until a network provider exists and preserves its
+  saved value while editing available options.
+- **Checks:** Shared model tests include appending a new option only to a
+  disposable copy of the definition and verifying its registration, field
+  access, capabilities and unchanged unrelated values. Together with CI scope:
+  45 passed, 1 Windows-only skip. CI now includes these model checks on both
+  hosts plus a Win32 settings translation-unit compile. Windows execution and
+  a live Win32 dialog remain pending on this Mac.
+- **Native validation:** Full builder `--test` passed all 3 CTests and GPU,
+  SDL input, Cocoa settings/debug checks. Cocoa checks verify generated labels
+  and capability visibility, Cancel, Save, hidden latency preservation, backup
+  and unrelated configuration preservation, and failed-write rollback. The
+  definition change does not implement behavior for a future option; that still
+  belongs in the shared runtime or an explicit capability adapter.
+- **Host/provenance:** macOS 27.0.1 arm64, Clang 21.0.0, SDL 3.4.16,
+  OpenGL 4.1 Metal 91.7; upstream/XBE/dependency pins unchanged. Executable hash:
+  `fe8b92bf291db091c7cb54b3457a93f9bf4dbcf38a62519250826396a1312ecd`.
+  Disposable settings/save paths and cleanup used by the builder; no personal
+  settings or canonical profile writes. Existing source CRLF bytes were retained.
+  No additional gameplay run was needed for this settings-definition change.
+
 ## Shared menu shader (2026-10-19)
 
 - **Source/dependency:** `codex/shared-menu-rendering` starts at unmerged
