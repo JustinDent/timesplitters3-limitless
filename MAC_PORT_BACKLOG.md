@@ -803,6 +803,17 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   services next. Missing modes and scene acceptance remain open, and Windows
   RHI/WARP execution is pending. [Evidence](STATUS.md#common-vulkan-backend-on-mac-2026-10-19).
 
+- **Normal shared builds (2026-10-19, commit carrying this entry):**
+  `codex/shared-renderer-default` depends on `42462f0`. Normal Mac builds now
+  choose the common Xbox/Vulkan frontend where the pinned SDK supports the OS
+  (currently macOS 26+). Older hosts and explicit `--renderer gl` keep the legacy
+  adapter; its missing features remain compatibility exceptions. SDK failure
+  stops before patching/generation, and only `--setup` installs the pinned SDK.
+  Local normal build, full native suite, launcher check, 101 portable checks
+  and bounded startup pass. Hosted validation of this build-policy change is
+  pending; full visual parity, Khallos sky and movie support remain open.
+  [Evidence](STATUS.md#common-renderer-selected-by-normal-mac-builds-2026-10-19).
+
 - **Common native frontend (2026-10-19):** The commit carrying this entry on
   `codex/shared-native-renderer` depends on `4d23a6d`. Opt-in Vulkan builds compile
   the same PC Xbox device, resources, shaders, combiners and display code. SDL
@@ -901,8 +912,10 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   incorrect pixels in the common renderer; paired source/destination clipping
   fixes it and safely rejects empty/extreme rectangles. The real production
   copy/shader/resource fixture is registered for both hosted GPU backends.
-  Local MoltenVK contract and complete GL tests pass; Windows GPU execution
-  and title-effect scene acceptance remain pending.
+  Local MoltenVK contract and complete GL tests pass; hosted Windows WARP and
+  Mac Vulkan contracts pass at `42462f0` (run 39313104097). A bounded Khallos
+  run retains visible exterior/weapon but stretched sky; matched title-effect
+  scene fidelity remains pending.
   [Evidence](STATUS.md#shared-screen-copy-clipping-and-gpu-contract-2026-10-19).
 
 - **PC behavior:** Windows can copy the full backbuffer or a rectangle into a texture for later draws.

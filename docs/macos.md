@@ -6,7 +6,7 @@ The Mac build produces an ARM64 Mach-O executable
 from the verified game data and the same pinned runtime and Python dependencies
 used on Windows. It executes the translated Xbox entry point, initializes the
 kernel and graphics device, loads assets, and displays the game's **1–4 player
-selection menu in a native SDL/Cocoa OpenGL window**. This is an experimental
+selection menu in a native SDL/Cocoa window**. This is an experimental
 port: keyboard-driven menus now reach visible first-level gameplay. Basic
 movement, mouse aiming, firing and pause/resume have been checked. Full-level
 completion and rendering fidelity are not yet validated.
@@ -27,6 +27,15 @@ SDL installation is used. The script does not upgrade system dependencies.
 Use a focused branch based on current main (or an explicitly documented
 unmerged dependency); the native builder does not require a branch named
 `mac-port`. Host, game hash and upstream revision checks still apply.
+
+Normal builds use the shared PC Xbox frontend through Vulkan on macOS 26+.
+`--renderer auto` selects this route based on the pinned SDK's host requirement;
+older Macs retain legacy OpenGL. `--renderer gl` explicitly selects the fallback.
+`--setup` installs the verified checkout-local SDK when Vulkan is selected.
+Without `--setup`, a missing or modified SDK stops before patching/generation;
+it does not silently change renderer or overwrite an unknown installation.
+Existing binaries keep their renderer until rebuilt. Both launchers use the
+resolved renderer in `BUILD.json` and preserve personal settings.
 
 ```sh
 # First native setup and generation; reuses the existing private/game.
@@ -56,8 +65,8 @@ enable native multiplayer. Native changes to the upstream runtime are reproduced
 `patches/zzzz-mac-input.patch`, `patches/zzzzz-mac-high-refresh.patch`,
 `patches/zzzzzz-interpolation-layouts.patch` and
 `patches/zzzzzzz-shared-input-model.patch`, applied
-after the shared feature patches. Mac renderer source stays in `src/native`;
-Windows and the inherited Linux graphics backends retain their own sources.
+after the shared feature patches. Thin Mac adapters stay in `src/native`; common Xbox rendering uses the same
+patched runtime source as Windows. Legacy GL remains a compatibility exception.
 Never edit generated game C. Regenerate when wrapper declarations change.
 
 The native probe requires an ARM64 binary and the supported XBE hash. It strips
@@ -250,9 +259,9 @@ Portable patch, launcher and test-isolation checks:
 
 ## Common renderer development probe
 
-The normal game launcher still uses the validated OpenGL path. Development of
-its common PC/Mac renderer uses the existing Vulkan backend and PC HLSL through
-DXC. No game data or save fixture is needed
+The common PC/Mac renderer uses the existing Vulkan backend and PC HLSL through
+DXC. This is the normal build route on macOS 26+; the launcher follows the build
+manifest and also supports explicit legacy GL builds. No game data or save fixture is needed
 for this probe. Use the checkout's pinned Python/CMake/Ninja environment:
 
 ```sh
@@ -281,7 +290,9 @@ swapchain channel order and presentation. These checks are not gameplay or full
 rendering certification. See [measured scope](../STATUS.md#common-vulkan-backend-on-mac-2026-10-19).
 
 
-### Opt-in common game renderer
+### Common game renderer
+
+<a id="opt-in-common-game-renderer"></a>
 
 With verified local game data/generated sources and the pinned SDK installed:
 
@@ -304,6 +315,9 @@ Use the isolated runner for automated checks. For interactive use, both the
 native app and `Play-Native-Mac.command` read the renderer from `BUILD.json`,
 verify the pinned SDK receipt, and configure the KosmicKrisp loader without
 changing saved graphics preferences. `--check` remains read-only and now catches
-missing or modified Vulkan dependencies before launch. Default builds still use
-GL; rebuild with `--renderer gl --test` to select that fallback explicitly.
+missing or modified Vulkan dependencies before launch. Rebuild with
+`--renderer gl --test` to select the fallback explicitly. Khallos sky distortion,
+movie playback, full campaign fidelity and sustained 120-present performance
+remain separate acceptance gaps; selecting a shared implementation does not
+certify them.
 See [results and remaining work](../STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).

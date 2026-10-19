@@ -1,5 +1,46 @@
 # Measured progress
 
+## Common renderer selected by normal Mac builds (2026-10-19)
+
+- **Dependency:** `codex/shared-renderer-default` starts from unmerged `42462f0`;
+  it requires the common frontend, native launcher and GPU-contract stack.
+  Main and the separate launcher worktree are unchanged.
+- **Behavior:** `tools/build-native-mac.py` defaults to `--renderer auto`.
+  macOS versions supported by the pinned SDK (currently 26+) select Vulkan,
+  compiling the same Xbox rendering frontend as PC. Older hosts keep GL and
+  `--renderer gl` remains explicit. Unknown host versions fail with guidance.
+  This removes the need to opt in for ordinary shared renderer changes while
+  retaining a documented older-host/diagnostic compatibility exception.
+- **Dependencies:** Explicit `--setup` installs the existing pinned SDK when
+  selected. Normal builds verify its receipt before patching/generation; missing
+  or changed files fail rather than silently changing renderer. Unknown existing
+  installs are preserved. No SDK/upstream/Python version changed. The manifest
+  records both requested and resolved renderer; existing binaries do not change
+  until rebuilt. Personal settings and the 60 Hz/up-to-120 policy are unchanged.
+- **Local checks:** 101 tooling, SDK, launcher and CI/backlog checks pass.
+  Normal builder invocation with `--test` selected Vulkan and passed all three
+  CTests plus real-GPU renderer/window/fullscreen, input, settings and debug
+  checks. The read-only command launcher prerequisite check passes. Host:
+  Apple M5 Pro, macOS 27.0.1 arm64, Apple Clang 21.0.0, SDK 1.4.363.0 KosmicKrisp.
+  Build provenance is `42462f0` plus this uncommitted builder change; executable
+  SHA-256 `be38a156a0e3acfe385f6dcfe9ea73f37ef936786fa2304e88ef0d9713d6c8b1`
+  matches the preceding runtime (the change selects it, not a new runtime).
+  Logs: `logs/shared-renderer-default-build.out`, `shared-renderer-default-tools.out`,
+  `shared-renderer-default-launch-check.out`.
+- **Bounded startup:** 20.14 seconds, exit 0, at least 900 guest frames and 1,800
+  accepted API presents (968 guest / 832 interpolated), zero sampled skips,
+  failures, shader compile errors, Vulkan validation errors or native faults.
+  This is startup evidence, not another gameplay or performance certification.
+  Isolated saves/controls/both display paths were used; six images recycled
+  (5,243,406,848 logical / 135,168 allocated bytes), after the native suite
+  recycled 12 images (8,192 allocated bytes). Free space before build: 223 GiB.
+- **Limits:** Hosted checks for this build-policy change are pending. Older-host
+  selection is covered by portable tests, not a physical older Mac. Legacy GL
+  retains its preceding complete GPU/native pass. Khallos sky distortion, movie
+  playback, some GL-only tracing hooks, full campaign/texture-pack fidelity and
+  sustained 120-present performance remain explicit gaps. The other physical
+  computer has not been synchronized or tested.
+
 ## Shared screen-copy clipping and GPU contract (2026-10-19)
 
 - **Dependency:** `codex/shared-screen-copy-contract` starts from unmerged
@@ -43,10 +84,29 @@
   `be38a156a0e3acfe385f6dcfe9ea73f37ef936786fa2304e88ef0d9713d6c8b1`.
   No validation errors; 12 known disposable images recycled (8,192 allocated
   bytes). Log: `logs/shared-screen-copy-vulkan-build.out`.
-- **Scope limits:** These are pixel/resource contracts, not proof of every
-  title post-processing effect. Windows GPU execution for these additions,
-  larger physical destination targets, other formats and matched scene fidelity
-  remain pending. Local source was based on `c553f9a` with this commit's changes;
+- **Hosted acceptance at `42462f0`:** Both jobs pass in
+  [run 39313104097](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39313104097).
+  Windows: 49 CI/backlog, 28 patch, 202 runtime passes including the real
+  WARP screen-copy contract (30 skips), 52 release, launcher/startup/icon suites.
+  Mac: 49 CI/backlog, 26 patch (two skips), 189 runtime (18 skips), actual
+  MoltenVK GPU contract, 49 release (three skips) and 17 native launcher groups.
+- **Bounded Khallos scene:** Same Vulkan executable above, source based on
+  `c553f9a` plus the screen-copy changes now committed as `42462f0`; macOS
+  27.0.1 arm64 / Apple M5 Pro / pinned KosmicKrisp. Isolated Test Lab run ended
+  at 150.21 seconds with exit 0, at least 7,800 guest frames and 13,200 accepted
+  API presents (7,724 guest / 5,476 interpolated, no skips/failures). No native
+  fault, shader compile failure or Vulkan validation error. Reviewed opening
+  train exterior, first-person weapon/objective and pause/resume. The exterior
+  sky remains stretched/radial; it is not certified fixed. Movement commands
+  were submitted after timeout and were not consumed, so this run does not
+  add movement/firing evidence. Selected captures:
+  `private/captures/native-mac/shared-khallos-opening.png` and
+  `shared-khallos-exterior.png`; receipt `logs/shared-screen-copy-khallos-summary.json`.
+  Six disposable images recycled (5,243,406,848 logical bytes / 135,168 allocated).
+  Recorded personal settings and controls fixture hashes remained unchanged.
+- **Scope limits:** These are pixel/resource contracts plus a bounded scene,
+  not proof of every title post-processing effect. Larger physical destination
+  targets, other formats and matched scene fidelity remain pending. Local source was based on `c553f9a` with this commit's changes;
   the earlier integration gameplay evidence is not a test of this new fix.
 
 

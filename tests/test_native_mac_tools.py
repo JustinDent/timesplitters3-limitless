@@ -1,5 +1,7 @@
 """Regressions for isolation and bounded cleanup, without launching the game."""
 import importlib.util
+import hashlib
+import json
 import os
 from pathlib import Path
 import sys
@@ -37,6 +39,54 @@ def test_native_build_accepts_focused_branches_but_validates_game(tmp_path, monk
     message = 'Missing private/game/default.xbe' if game is None else 'Unsupported XBE'
     with pytest.raises(SystemExit, match=message):
         builder.main()
+    assert not (tmp_path / '.venv').exists()
+    assert not (tmp_path / 'build').exists()
+
+
+@pytest.mark.parametrize('requested,version,expected', [
+    ('auto', '26.0', 'vulkan'), ('auto', '27.0.1', 'vulkan'),
+    ('auto', '15.7', 'gl'), ('vulkan', '26.3', 'vulkan'),
+    ('gl', '27.0.1', 'gl'), ('gl', '', 'gl'),
+])
+def test_native_renderer_uses_shared_frontend_on_supported_hosts(requested, version, expected):
+    assert builder.select_renderer(requested, version, 26) == expected
+
+
+@pytest.mark.parametrize('requested,version', [('auto', ''), ('auto', 'unknown'), ('vulkan', '15.7')])
+def test_native_renderer_rejects_unknown_or_unsupported_sdk_hosts(requested, version):
+    with pytest.raises(RuntimeError, match='--renderer gl'):
+        builder.select_renderer(requested, version, 26)
+
+
+@pytest.mark.parametrize('setup', [False, True])
+def test_native_builder_rejects_unverified_sdk_before_build_mutations(tmp_path, monkeypatch, setup):
+    import vulkan_sdk
+    # A synthetic game pin exercises preflight sequencing without private assets.
+    game = tmp_path / 'private/game/default.xbe'
+    game.parent.mkdir(parents=True)
+    game.write_bytes(b'test preflight input')
+    (tmp_path / 'tsfp.ps1').write_text("$revision = '" + 'a' * 40 + "'\n$expectedHash = '" +
+                                     hashlib.sha256(game.read_bytes()).hexdigest().upper() + "'\n")
+    (tmp_path / 'config').mkdir()
+    (tmp_path / 'config/vulkan-sdk.json').write_text(json.dumps(dict(minimum_macos=26)))
+    monkeypatch.setattr(builder, 'ROOT', tmp_path)
+    monkeypatch.setattr(builder.platform, 'system', lambda: 'Darwin')
+    monkeypatch.setattr(builder.platform, 'machine', lambda: 'arm64')
+    monkeypatch.setattr(builder.platform, 'mac_ver', lambda: ('27.0.1', (), 'arm64'))
+    monkeypatch.setattr(sys, 'argv', ['build-native-mac.py'] + (['--setup'] if setup else []))
+    calls = []
+    def reject(root):
+        calls.append(root)
+        raise RuntimeError('SDK receipt invalid')
+    def unexpected(*args, **kwargs):
+        pytest.fail('Mutated build or used wrong SDK operation before verification')
+    monkeypatch.setattr(vulkan_sdk, 'setup' if setup else 'verify_install', reject)
+    monkeypatch.setattr(vulkan_sdk, 'verify_install' if setup else 'setup', unexpected)
+    monkeypatch.setattr(builder, 'run', unexpected)
+    monkeypatch.setattr(builder.subprocess, 'check_output', unexpected)
+    with pytest.raises(SystemExit, match='SDK receipt invalid'):
+        builder.main()
+    assert calls == [tmp_path]
     assert not (tmp_path / '.venv').exists()
     assert not (tmp_path / 'build').exists()
 
