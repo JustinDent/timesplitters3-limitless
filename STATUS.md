@@ -3,7 +3,8 @@
 ## Common renderer Mac settings acceptance (2026-10-19)
 
 - **Source/dependency:** `codex/shared-native-window-acceptance` depends on
-  unmerged `37b4af9`; local working changes were tested. No main merge.
+  unmerged `37b4af9`, with validation fixes `083e57c` integrated by `8b3866b`;
+  local working changes were tested. No main merge.
 - **Coverage gap closed:** The existing Cocoa graphics-settings fixture now
   exercises the actual common Xbox/Vulkan device as well as GL. The SDL host
   fixture takes its window and quit callback as parameters, so both renderers
@@ -22,8 +23,21 @@
   recycled its 12 known disposable disk images (8,192 allocated bytes versus
   10,486,813,696 logical bytes). Logs:
   `logs/shared-window-vulkan-build.out` / `.err`. These are programmed Cocoa
-  control tests, not physical F2 input or gameplay/fullscreen verification.
-  Fullscreen transitions and broader scene acceptance remain pending.
+  control tests, not physical F2 input or gameplay verification.
+- **Window transitions:** The common device passes the same SDL fixture's
+  resize/present at a 1280x720 drawable, fullscreen/present at 3024x1898, and
+  restored-window/present. The fixture waits for OS transitions, checks actual
+  flags and physical dimensions, and restores its disposable window. This is
+  API/pixel-contract evidence, not reviewed fullscreen gameplay. Final Vulkan
+  executable SHA-256:
+  `08c3244aa2fbc4fbb853bd55bd8528086c17de0ea85046bbcc5a3328d2f2f6ab`.
+- **Concurrent build limitation:** The subsequent GL restore did not complete.
+  A separate `codex/mac-launcher-parity` worktree reconfigured the shared
+  `build/macos` to its Vulkan sources during the GL build, causing mixed GL/C++
+  link inputs. Its source and new binary were preserved. Exclusive build
+  ownership must be coordinated before rerunning GL or changing that output;
+  the current binary is not certified as this branch's build. Broader scene
+  acceptance remains pending.
 
 ## Shared platform CI validation (2026-10-19)
 
@@ -50,6 +64,17 @@
   Those hooks abort if called; both hosts link the full fixture without dead
   stripping and retain the existing redraw/gate/failure assertions. A hosted
   rerun must confirm MSVC acceptance.
+- **Published rerun:** Both fixes are published at `083e57c` on
+  `codex/shared-platform-validation`.
+  [Run 39304039727](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39304039727)
+  completes the Mac job successfully: 47 CI/backlog, 26 patch (two skips),
+  167 runtime (18 skips) and 49 release/cleanup (three skips) checks pass.
+  Fresh SDK download/install succeeds, and the actual common RHI shader/menu
+  pixel, depth/stencil replay, injected presentation outcomes and swapchain
+  contracts pass on the hosted Apple Paravirtual device through MoltenVK
+  Vulkan 1.3, validation enabled. No validation errors; five known primitive
+  restart capability warnings. This is asset-free GPU validation, not campaign
+  or the user's other computer. Windows rerun remains in progress.
 - **Download cause/fix:** Local HEAD and four-byte range requests reproduce
   HTTP 403 / CDN error 1010 with urllib's generic client header. Identifying the
   downloader as `TSFP-SDK-Setup/1.0` returns HTTP 200 / 206 and ZIP magic from

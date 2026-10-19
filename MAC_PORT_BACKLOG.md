@@ -838,15 +838,19 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   Windows subsequently passed 195 runtime checks, including the common renderer
   compile checks and WARP GPU contract, with two test-harness failures. Native
   path comparison and explicit interpolation fixture hooks fix those failures;
-  hosted reruns remain pending. This does not close
+  the published rerun at `083e57c` passes Mac source/release checks and the actual
+  hosted MoltenVK RHI GPU contract. Windows rerun remains pending. This does not close
   renderer fidelity or scene acceptance. [Evidence](STATUS.md#shared-platform-ci-validation-2026-10-19).
 
 - **Common settings acceptance (2026-10-19):**
   `codex/shared-native-window-acceptance` depends on `37b4af9`. The existing
   Cocoa graphics and SDL host fixtures now run against both native renderers.
   The common Vulkan device passes actual resolution/FOV Save, Cancel and
-  failed-save rollback, then renders/readbacks/presents successfully. Fullscreen,
-  physical input and broader scene acceptance remain pending.
+  failed-save rollback, then renders/readbacks/presents successfully. Automated
+  resize/fullscreen/restore presentation also passes on Vulkan. GL repetition
+  is pending because concurrent launcher work reconfigured the shared build
+  directory; its source/output were preserved. Physical input and broader scene
+  acceptance remain pending.
   [Evidence](STATUS.md#common-renderer-mac-settings-acceptance-2026-10-19).
 
 ### MAC-006 — Cube and volume texture resources

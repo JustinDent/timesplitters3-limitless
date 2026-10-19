@@ -133,10 +133,12 @@ integration work, tracked in the backlog.
 | `codex/shared-native-renderer` | `4d23a6d` | `2c63fbf`: common Xbox frontend in an opt-in native game, text/window adapters and shader compatibility fixes |
 | `codex/shared-interpolation-depth` | `2c63fbf` | `3e78f7c`: Shared replay depth/stencil isolation, target restoration and GPU/fault-injection contracts |
 | `codex/shared-present-metrics` | `3e78f7c` | Shared API-acceptance counts, frame timing and interpolation failure handling |
+| `codex/shared-platform-validation` | `a0c8a1a` | `083e57c`: pinned SDK download and Windows test-harness fixes; hosted Mac GPU contract passes |
+| `codex/shared-native-window-acceptance` | `37b4af9` plus validation fixes `083e57c` | One native settings/host fixture for both renderers; common Vulkan settings and window transitions pass |
 
 The complete ancestor stack through `a0c8a1a` is published on
-`codex/shared-present-metrics`; the other milestone branch refs remain local.
-`codex/shared-platform-validation` depends on that tip and repairs the pinned
-SDK download's client identification for hosted validation. Nothing has been
+`codex/shared-present-metrics`, with `codex/shared-platform-validation` also
+published at `083e57c`; the other milestone branch refs remain local.
+The native window acceptance work depends on these validation fixes. Nothing has been
 merged into main or verified on the other physical computer. Hosted CI results,
 measured scope and unavailable checks are recorded in `STATUS.md`.
