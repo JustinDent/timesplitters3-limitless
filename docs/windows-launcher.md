@@ -615,3 +615,17 @@ They show sample UI state without network requests, repairs or hardware queries.
 `--maintenance-readonly` runs only the read-only/model/UI subset while an
 interactive game must remain running. The normal `build-launcher.ps1 -Test`
 includes the full maintenance suite and retains the production game-running guard.
+
+## Game crash reports
+
+New game crash reports restore the launcher and open Diagnostics. The page offers
+Open latest crash report and Export crash report actions. Export creates a local
+ZIP with the minidump, summaries and bounded log excerpt; nothing uploads. Dumps
+and logs may contain personal information. Existing reports remain available
+from Diagnostics after restarting the launcher. See [Windows crash logging](windows-crash-logger.md).
+
+Suspected hangs also restore the launcher and open Diagnostics while the game
+remains running. Open latest game report / Export game report work without
+closing a hung game. Game updates and repair remain blocked during play.
+Frame-progress, grace-period and false-positive limits are documented in
+[Windows crash logging](windows-crash-logger.md#freeze-detection).

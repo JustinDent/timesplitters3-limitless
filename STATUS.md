@@ -1,5 +1,143 @@
 # Measured progress
 
+## Windows freeze detection and live launcher reports (2026-10-19)
+
+PR preparation rebased the source onto main `511c686`. The binary hashes and
+native runs recorded below identify the pre-rebase validation builds; source
+integration checks are recorded separately from those earlier game runs.
+
+Extends the uncommitted Windows crash logger on `feature/windows-crash-logger`
+(base main `9c92ae8`). Windows 11 Pro 10.0.26300 x64, MSVC 19.44.35207 and
+Windows SDK 10.0.26100.0. Native game/helper build and existing build checks passed
+through Windows PowerShell `tsfp.ps1 Build`, including supported US XBE and
+complete patch verification. No generated C was edited. Final executable SHA-256:
+`bc90f453dd0e85911ebfc96e27bbf8e00c3bd57643c44125e819b234b66cb18c`.
+Matching PDB/helper hashes are in `logs/windows-hang-validation.json`; the retained
+`build/windows/crash-symbols.zip` was checked against both executable and PDB.
+
+The external helper now monitors actual game-frame boundaries. Production grace
+is 60 seconds without progress after rendering begins, or 180 seconds before the
+first frame. Background/minimized windows, modal settings/debug dialogs and
+Windows menu/resize loops suppress detection. Polling gaps over five seconds
+reset grace for sleep/resume or scheduling stalls. Each continuous stall permits
+one report attempt; actual new frame progress rearms it. It never terminates the
+game. The legacy opt-in exit timer remains separate and is not enabled.
+
+`kind=suspected_hang` reports share existing bounded retention and export files.
+Hang dumps contain native thread contexts/stacks without a synthetic exception;
+JSON exception/RIP/RSP fields are null. Xbox registers are marked as cached
+last-frame state. The launcher checks for reports during play, restores its
+window and opens Diagnostics; open/export work while a hung game remains alive.
+The real Play busy flag remains set, so release changes/repair stay blocked.
+Nothing is automatically uploaded. See [behavior and limits](docs/windows-crash-logger.md#freeze-detection)
+and MAC-044 for the queued native Mac adaptation.
+
+Validation:
+
+- Native watchdog policy regression passed: startup/active grace, one report per
+  stall, recovery, modal/background suppression and machine sleep/resume.
+- `tools/test-windows-hang.py`: all nine actual-executable cases passed: unarmed,
+  startup grace, responsive frames, inhibited observation, a brief transient,
+  sustained freeze, recovery, two separated stalls, and a hang followed by a
+  fatal crash. Tests run before game files/settings/saves open and use a short
+  test-only threshold. The sustained-freeze process stayed alive; its saved
+  thread RIP independently resolved to `tsfp_hang_test_site` with matching PDB
+  GUID/age and no exception stream. Reports for later stalls/crashes remained
+  separate. Evidence: `build/windows/hang-tests/validation.json` and
+  `logs/hang-capture-validation-final.log`.
+- Live launcher/native integration passed: a deliberate freeze opened Diagnostics
+  and exported its dump before recovery and process exit, while retaining the
+  production Play busy flag. The existing real-crash integration passed as well.
+  Evidence: `logs/hang-launcher-integration-final.log` and
+  `logs/hang-crash-launcher-regression-final.log`.
+- Full launcher suites passed: updater, download/recovery, versions, startup,
+  news, settings, maintenance and crash/hang report checks. Updated Diagnostics
+  labels were rendered and visually checked at 1152x772 in
+  `logs/hang-diagnostics-preview.png`.
+- All 14 patch-stack tests passed, including historical/repeated upgrades.
+  Existing deliberate crash/dump-symbol, normal/handled exit, retention and
+  write/helper-failure regressions passed with the final build.
+- A bounded 75-second Test Lab startup run on the initial watchdog candidate
+  produced no incident, using isolated saves/settings/crash storage; the runner
+  recycled its six virtual test disks. This does not establish focused physical
+  gameplay, long-load behavior or a full-level playthrough. Its logs are
+  `logs/hang-normal-session.log` and the isolated quick-test directory.
+
+One existing graphics replay check intermittently faulted at module offset
+`0x10fad` during build validation. Windows Application events show the same
+failure in an older `menu-footer-source` build before this change. The standalone
+four-case replay and the supported full build passed on recheck; this work does
+not claim to fix that intermittent renderer/replay problem. Final passing build
+log: `logs/hang-windows-build-confirmed-final.log`.
+
+Limits: detecting stalled frame progress is a suspected hang, not proof of a
+specific deadlock. An unusually long foreground load can be reported; a gameplay
+or audio freeze that still renders can be missed. Observation is deliberately
+suppressed in the states above, is armed at guest entry and stops at cleanup.
+No Mac execution, commit, push, merge or release publication is claimed.
+
+
+## Windows game crash logger and launcher integration (2026-10-19)
+
+Local, uncommitted work on `feature/windows-crash-logger`, based on main
+`9c92ae8`. Windows 11 Pro 10.0.26300 x64; MSVC 19.44.35207, Windows SDK
+10.0.26100.0. Supported US XBE validation and complete runtime patch application
+ran through the Windows PowerShell `tsfp.ps1 Build` workflow. No generated C was
+hand-edited. The existing untracked `frame000.d3dcap` was preserved.
+
+Implemented prestarted out-of-process minidump capture, thread-local Xbox register
+snapshot, bounded log tail, 16 MiB dump cap and five-report rotation. Only the
+final unhandled filter reports a crash; normal SEH, emulated device traps and
+watchpoints retain their handling. A missing helper allows ordinary game startup
+with a diagnostic. Direct launches use a default report directory; packaged
+launchers route reports to `Logs/Crashes`. The launcher detects new reports,
+restores its window, opens Diagnostics, and offers local open/export actions.
+No automatic upload. Player packages include the helper and exclude PDBs; exact
+executable/PDB archives are retained separately. See
+[design and commands](docs/windows-crash-logger.md), MAC-044.
+
+Measured validation:
+
+- Supported Windows build and its native input/settings/display/debug/prompt/
+  save-path/network/texture/clear/replay checks passed. Exact game executable
+  SHA-256: `55f9b3ce1cf153a38ff9654ffe37a0d23e457c3c423ffbf61318235f34100475`. Matching PDB/helper hashes
+  and source/host context are in `logs/windows-crash-validation.json`.
+- `tools/test-windows-crash.py` ran the actual executable before game/config/save
+  initialization. Both main-thread and worker-thread access violations exited
+  `0xC0000005`; their dump exception addresses independently resolved to
+  `tsfp_crash_test_site+0xE`. The checker verified the PDB GUID/age against each
+  dump RSDS record and rejected the wrong image and wrong function. Native
+  register and exception streams were captured. Guest registers are present in
+  the custom stream but pre-game tests intentionally have `guest.valid=false`;
+  these do not validate a reconstructed guest call stack.
+- Normal test exit and handled SEH produced no incident. Seven serial crashes
+  left five reports and preserved an unrelated file. Log excerpts were exactly
+  bounded to 64 KiB. Unwritable destination preserved the exception exit code;
+  missing helper made the diagnostic test return 4 without faulting. Evidence:
+  `build/windows/crash-tests/validation.json`, `logs/crash-capture-validation.log`.
+- The actual launcher launched a copied test executable/helper in a disposable
+  installation, detected the native report, announced it and exported its dump.
+  No game assets were copied or opened. Evidence: `logs/crash-launcher-integration.log`.
+- Windows launcher regression suites passed (100 updater, 27 download/recovery,
+  11 version, 10 startup, 19 news, 30 settings, 20 maintenance checks), plus crash
+  discovery/lock exclusion/export/path/metadata/UI checks. Diagnostics was rendered
+  and visually inspected at 1152x772: `logs/crash-diagnostics-preview.png`.
+- All 14 patch-stack migration checks passed, including historical/repeated
+  application. Packaging, isolated-profile and release-orchestration tests:
+  62 passed, two subtests passed; synthetic fixtures verify helper inclusion,
+  PDB exclusion and separate matching-symbol archive.
+- A bounded 30-second Test Lab launch used disposable saves/settings/crash paths
+  and produced no incident before timed termination. It is startup evidence,
+  not a completed gameplay or full-level check. Its six virtual test disks were
+  recycled by the runner; the canonical fixture and personal files were not test
+  targets. Evidence: `logs/crash-normal-session.log`.
+
+Limits: no fail-fast/forced-termination/power-loss coverage, freeze watchdog or
+new gameplay breadcrumb instrumentation. PDBs identify native and generated
+functions, not a complete original Xbox call stack. Native Mac capture is queued;
+no Mac build, device synchronization, commit, push or release publication is
+claimed. Symbol bundle: `build/windows/crash-symbols.zip`.
+
 ## Release Python dependency refresh (2026-10-19)
 
 The Windows publisher now installs the pinned `requirements.txt` with its own

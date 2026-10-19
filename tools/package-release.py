@@ -40,6 +40,7 @@ def main():
         shutil.copy2(source, target)
 
     copy(ROOT / 'build/windows/Release/futureperfect_recomp.exe', 'Bin/futureperfect_recomp.exe')
+    copy(ROOT / 'build/windows/Release/tsfp_crash_helper.exe', 'Bin/tsfp_crash_helper.exe')
     copy(ROOT/'build/launcher/TimeSplitters Launcher.exe', 'TimeSplitters Launcher.exe')
     copy(ROOT/'build/launcher/Bin/TimeSplitters.App.exe', 'Bin/TimeSplitters.App.exe')
     copy(ROOT/'build/launcher/Support/Launcher/manifest.json', 'Support/Launcher/manifest.json')
@@ -165,6 +166,11 @@ Third-party notices are in Licenses. Microsoft Visual C++ runtime is bundled.
         assert not any('/Data/' in n or '/Saves/' in n or n.lower().endswith(('.iso', '.xbe', '.pak', '.img', '.pdb')) for n in archive.namelist())
     digest = hashlib.sha256(archive_path.read_bytes()).hexdigest()
     archive_path.with_suffix('.zip.sha256').write_text(f'{digest}  {archive_path.name}\n', encoding='ascii')
+    # Keep exact executable/PDB outside the player package for later analysis.
+    from importlib.util import spec_from_file_location, module_from_spec
+    spec = spec_from_file_location('crash_symbols', Path(__file__).with_name('crash-symbols.py'))
+    symbols = module_from_spec(spec); spec.loader.exec_module(symbols)
+    symbols.archive(args.output.resolve() / (name + '-symbols.zip'), root=ROOT)
     print(json.dumps({'archive': str(archive_path), 'bytes': archive_path.stat().st_size, 'sha256': digest, 'stage': str(stage)}, indent=2))
 
 

@@ -2,6 +2,7 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include "pc_controls.h"
+#include "pc_crash.h"
 #include "pc_input.h"
 #include "pc_camera.h"
 #include "pc_terminal.h"
@@ -167,6 +168,7 @@ void pc_controls_attach(HWND window)
             sensitivity, invert_y ? "on" : "off");
     if (window) pc_settings_attach(window);
     pc_debug_init(window);
+    pc_crash_window(window);
 }
 
 void pc_controls_get_mouse(double *value, int *on, int *inverted)
@@ -189,7 +191,9 @@ static void show_settings(HWND window, int debug)
 {
     if (InterlockedCompareExchange(&editing, 1, 0)) return;
     capture(window, 0);
+    pc_crash_inhibit(1);
     if (debug) pc_debug_show(window); else pc_settings_show(window);
+    pc_crash_inhibit(0);
     AcquireSRWLockExclusive(&lock);
     pc_input_focus(&input, replaying || GetForegroundWindow() == window);
     if(replaying) pc_input_capture(&input,1);
@@ -219,7 +223,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
     if (pc_menu_theme_message(window,message,wp,lp,result)) return 1;
     if (message == WM_SETTINGCHANGE || message == WM_THEMECHANGED) pc_window_theme_apply(window);
     if (message == WM_TIMER && wp == PC_DEBUG_TIMER) { pc_debug_poll(); return 1; }
-    if (message == WM_DESTROY) { pc_settings_detach(window); pc_debug_shutdown(); }
+    if (message == WM_DESTROY) { pc_crash_window(NULL); pc_settings_detach(window); pc_debug_shutdown(); }
     if(message==PC_MENU_MOUSE_MESSAGE) {
         /* Escape temporarily releases capture to open Pause. Returning to
          * gameplay restores the capture preference without another click.
@@ -247,9 +251,11 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         if ((int)wp == GWL_STYLE) update_fullscreen_menu(window);
         break;
     case WM_ENTERMENULOOP:
+        pc_crash_inhibit(1);
         capture(window, 0);
         break;
     case WM_EXITMENULOOP:
+        pc_crash_inhibit(0);
         capture(window, want_capture);
         break;
     case WM_MOUSEACTIVATE:

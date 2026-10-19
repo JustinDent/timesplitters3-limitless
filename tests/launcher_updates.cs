@@ -142,6 +142,9 @@ static class LauncherTests
             return LauncherSettingsChecks.LaunchProbe();
         if (args.Length == 1 && args[0] == "--settings-child") return LauncherSettingsChecks.Child();
         if (args.Length == 1 && args[0] == "--maintenance-readonly") return LauncherMaintenanceChecks.Run(true);
+        if (args.Length == 1 && args[0] == "--crashes") return LauncherCrashChecks.Run();
+        if (args.Length == 2 && args[0] == "--crash-integration") return LauncherCrashChecks.Integration(args[1]);
+        if (args.Length == 2 && args[0] == "--hang-integration") return LauncherCrashChecks.Integration(args[1],true);
         if (args.Length == 1 && args[0] == "--maintenance") return LauncherMaintenanceChecks.Run();
         if (args.Length == 1 && args[0] == "--downloads-live") return LauncherDownloadChecks.VerifyPublicDownload();
         if (args.Length == 1 && args[0] == "--downloads") return LauncherDownloadChecks.Run();

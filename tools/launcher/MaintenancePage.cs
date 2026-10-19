@@ -45,7 +45,7 @@ namespace TimeSplitters.Launcher
     public sealed class MaintenancePage
     {
         public readonly Grid View = new Grid();
-        public readonly Button VerifyGame, VerifyLauncher, RepairGame, RepairLauncher, Cancel, Refresh, Copy, ReportBug, RequestEnhancement, OpenFiles, Retry, ViewLogs;
+        public readonly Button VerifyGame, VerifyLauncher, RepairGame, RepairLauncher, Cancel, Refresh, Copy, ReportBug, RequestEnhancement, OpenFiles, Retry, ViewLogs, OpenCrash, ExportCrash;
         public Func<System.Threading.Tasks.Task> RetryOperation;
         readonly WrapPanel recoveryActions;
         public readonly TextBox Report;
@@ -79,6 +79,10 @@ namespace TimeSplitters.Launcher
                 ReportBug.ToolTip="Copies this report and opens the GitHub bug form. You review and submit it there.";
                 RequestEnhancement.ToolTip="Copies this report and opens the GitHub enhancement form. You review and submit it there.";
                 buttons.Children.Add(Refresh);buttons.Children.Add(Copy);buttons.Children.Add(ReportBug);buttons.Children.Add(RequestEnhancement);
+                var crashes=new WrapPanel { Margin=new Thickness(0,0,0,16) };DockPanel.SetDock(crashes,Dock.Top);body.Children.Add(crashes);
+                OpenCrash=Button("Open latest game report","OpenCrashReport");ExportCrash=Button("Export game report...","ExportCrashReport");
+                ExportCrash.ToolTip="Saves a local ZIP with the dump and recent log excerpt. Review it before sharing; nothing is uploaded.";
+                crashes.Children.Add(OpenCrash);crashes.Children.Add(ExportCrash);
                 var report=PageTheme.Card(Report);report.Padding=new Thickness(8);body.Children.Add(report);
             } else {
                 var body=new StackPanel();var scroll=new ScrollViewer { Content=body,VerticalScrollBarVisibility=ScrollBarVisibility.Auto,HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled };
@@ -139,7 +143,7 @@ namespace TimeSplitters.Launcher
         }
         public void SetBusy(bool busy,bool gameRunning)
         {
-            foreach(var button in new[]{VerifyGame,VerifyLauncher,Refresh,Copy,ReportBug,RequestEnhancement,OpenFiles,Retry})if(button!=null)button.IsEnabled=!busy;
+            foreach(var button in new[]{VerifyGame,VerifyLauncher,Refresh,Copy,ReportBug,RequestEnhancement,OpenFiles,Retry,OpenCrash,ExportCrash})if(button!=null)button.IsEnabled=!busy;
             if(RepairGame!=null)RepairGame.IsEnabled=!busy && !gameRunning && gameRepairable;
             if(RepairLauncher!=null)RepairLauncher.IsEnabled=!busy && !gameRunning && launcherRepairable;
             Cancel.Visibility=busy?Visibility.Visible:Visibility.Collapsed;

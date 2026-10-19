@@ -78,6 +78,7 @@ def game_release_path(path):
             or path.startswith('tools/release/')
             or path in {'tools/' + name for name in (
                 'recomp-generation.py', 'build-native-mac.py',
+                'crash_helper.c', 'crash-symbols.py',
                 'native_mac_common.py', 'play-native-mac.py', 'playable-launch.ps1',
                 'start-game.ps1', 'play.py', 'fetch-video.ps1', 'network-identity.py',
                 'bundle_online.py', 'online.py', 'online_host.py', 'online_client.py',

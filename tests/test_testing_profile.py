@@ -78,6 +78,6 @@ def test_fixture_and_disposable_copy_lifecycle(tmp_path,monkeypatch):
     profile.prepare_run(tmp_path,run)
     assert (run/'saves'/relative).read_bytes()==saved
     assert env['RECOMP_XMV_PLAY']=='0'
-    assert all(str(run) in env[key] for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','RECOMP_DISPLAY_CONFIG','TSFP_DISPLAY_CONFIG'))
+    assert all(str(run) in env[key] for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','RECOMP_DISPLAY_CONFIG','TSFP_DISPLAY_CONFIG','TSFP_CRASH_DIR'))
     (run/'run.lock').write_text('in use')
     with pytest.raises(ValueError,match='in use'):profile.prepare_run(tmp_path,run)

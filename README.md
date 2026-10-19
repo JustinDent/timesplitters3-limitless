@@ -279,3 +279,12 @@ Upstream and third-party components retain their own copyrights and licenses.
 The pinned runtime's GPL, MIT, LGPL, attribution and contributor files are
 preserved in [LICENSES](LICENSES/README.md); the existing icon lettering credits
 and dependency notices remain in place. Keep these notices when redistributing.
+
+## Windows game crash reports
+
+The Windows runtime writes bounded crash dumps and summaries through a separate
+helper. It also captures suspected freezes after 60 seconds without frame
+progress, with startup grace and modal/background suppression. A hang report
+leaves the game running and is available in launcher Diagnostics immediately. The launcher opens Diagnostics after a new crash and offers local report
+open/export actions. Nothing uploads automatically. Keep the exact executable/PDB
+bundle for each release. See [capture, tests and symbol verification](docs/windows-crash-logger.md).
