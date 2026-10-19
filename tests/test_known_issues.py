@@ -136,6 +136,13 @@ class KnownIssuesTests(unittest.TestCase):
         self.assertEqual(api.writes()[-1][2]['query'], known.UPDATE)
         self.assertIn('No open issues', api.generated_body)
 
+    def test_graphql_bot_login_without_rest_suffix_is_reused(self):
+        api = FakeGitHub(); self.publish(api)
+        api.discussion_comments[0]['author']['login'] = 'github-actions'
+        api.issues = []; self.publish(api)
+        self.assertEqual(len(api.discussion_comments), 1)
+        self.assertEqual(api.writes()[-1][2]['query'], known.UPDATE)
+
     def test_multiple_managed_comments_fail_without_editing_either(self):
         api = FakeGitHub(); self.publish(api)
         api.discussion_comments.append(dict(api.discussion_comments[0], id='duplicate'))

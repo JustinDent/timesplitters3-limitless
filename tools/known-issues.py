@@ -192,7 +192,7 @@ def publish(api, repository, config, dry_run=False):
     if target['title'] != config['title']:
         raise ValueError('Discussion title differs from configuration; refusing to edit another post.')
     owned = [comment for comment in target['comments']
-             if (comment.get('author') or {}).get('login') == 'github-actions[bot]'
+             if (comment.get('author') or {}).get('login', '').removesuffix('[bot]') == 'github-actions'
              and (comment.get('author') or {}).get('__typename') == 'Bot'
              and comment['body'].startswith(MARKER + '\n')]
     if len(owned) > 1:
