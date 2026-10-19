@@ -17,6 +17,7 @@ body:
         **Game releases**
 
         <!-- BEGIN AUTO GAME VERSIONS -->
+        - `v0.3.0-alpha.2`
         - `v0.3.0-alpha.1`
         - `v0.2.0-alpha.6`
         - `v0.2.0-alpha.5`
@@ -29,6 +30,7 @@ body:
         **Launcher releases**
 
         <!-- BEGIN AUTO LAUNCHER VERSIONS -->
+        - `v1.2.16`
         - `v1.2.15`
         - `v1.2.14`
         - `v1.2.13`
