@@ -289,3 +289,36 @@ def test_disabling_validation_requires_explicit_profiling(monkeypatch,capsys):
         probe.main()
     assert stopped.value.code==2
     assert 'requires --profile-frames' in capsys.readouterr().err
+
+
+def test_interpolation_capture_rejects_links_before_removing_old_evidence(tmp_path):
+    test=tmp_path/'private/test-saves/native-mac';test.mkdir(parents=True)
+    captures=tmp_path/'private/captures/native-mac';captures.mkdir(parents=True)
+    guest=captures/'interpolation-guest.bmp';guest.write_bytes(b'old')
+    outside=tmp_path/'keep';outside.write_bytes(b'preserve')
+    link=captures/'interpolation-pair.json';link.symlink_to(outside)
+    with pytest.raises(RuntimeError,match='capture path'):probe.prepare_interpolation_capture(tmp_path,test)
+    assert guest.read_bytes()==b'old' and outside.read_bytes()==b'preserve'
+    link.unlink()
+    env=probe.prepare_interpolation_capture(tmp_path,test)
+    assert not guest.exists() and Path(env['RECOMP_INTERP_CAPTURE_REQUEST']).read_text()==''
+    assert not probe.interpolation_capture_result(tmp_path)['complete']
+
+
+def test_interpolation_capture_requires_complete_same_size_readbacks(tmp_path):
+    from test_frame_replay import bmp
+    test=tmp_path/'private/test-saves/native-mac';test.mkdir(parents=True)
+    probe.prepare_interpolation_capture(tmp_path,test)
+    captures=tmp_path/'private/captures/native-mac'
+    receipt=dict(complete=True,presented=True,guest_written=True,midpoint_written=True,guest_frame=42,blend=.5)
+    metadata=captures/'interpolation-pair.json';metadata.write_text(json.dumps(receipt))
+    for name in ('guest','midpoint'):bmp(captures/('interpolation-'+name+'.bmp'))
+    result=probe.interpolation_capture_result(tmp_path)
+    assert result['complete'] and len(result['images'])==2
+    midpoint=captures/'interpolation-midpoint.bmp';midpoint.write_bytes(midpoint.read_bytes()[:-1])
+    assert not probe.interpolation_capture_result(tmp_path)['complete']
+    bmp(midpoint);receipt['presented']=False;metadata.write_text(json.dumps(receipt))
+    assert not probe.interpolation_capture_result(tmp_path)['complete']
+    for malformed in ('broken', '[]', 'null'):
+        metadata.write_text(malformed)
+        assert not probe.interpolation_capture_result(tmp_path)['complete']

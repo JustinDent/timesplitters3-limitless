@@ -8340,3 +8340,57 @@ were untouched. These changes are local until explicitly published; Windows
 runtime execution, another Mac, and this branch's GitHub CI remain unverified.
 Next: shared one-shot guest/midpoint capture, additional representative graphics
 checks, and a known-good matched reference to resolve the Khallos sky.
+
+### Shared guest and intermediate frame evidence (2026-10-19)
+
+The commit carrying this section on `codex/shared-interpolation-capture`
+depends on `codex/mac-moltenvk-default` at `65330e8` and its unmerged renderer
+stack. One-shot capture now belongs to the common HLE interpolation recorder,
+replacing the duplicate GL hook. It captures the completed guest image before
+replay and the intermediate image before host-only overlays, consumes the
+explicit request once, invalidates old pair files and writes a frame/blend/
+presentation receipt. Legacy environment names remain aliases. The isolated
+runner verifies receipt flags, dimensions, complete BMP payloads and hashes;
+missing or failed evidence cannot be reported as a complete pair. An opt-in
+trace prints only the first three draws' transforms for a requested pair.
+
+Portable production-code tests cover ordering, request consumption, stale
+evidence, legacy aliases and failed begin/readback/presentation. Runner tests
+cover symlinks, malformed receipts and truncated BMPs. The final focused run
+passed 47 renderer/runner checks; patch/tracking/CI/backlog checks passed 75
+with two host-specific skips. The initial native build passed three CTest
+checks and the renderer/input/settings/debug self-tests. The final capture
+ordering/trace rebuild and focused tests passed. Windows execution, legacy GL
+live capture and this branch's hosted CI remain unrun.
+
+Host: Apple M5 Pro/ARM64, macOS 27.0.1, Clang 21, pinned Vulkan SDK 1.4.363.0,
+manifest-selected MoltenVK, supported XBE and upstream pins unchanged.
+Final executable SHA-256:
+`3257c89de3dd7b625ed2fdbdd3764bed53e00f20d4e53a496f6b59fb7e1b91de`.
+Source was `65330e8` plus these then-uncommitted changes. Two isolated runs,
+each 95.20 seconds, used disposable Test Lab saves, synthetic SDL menu input
+and validation enabled; both exited normally with zero Vulkan validation
+errors, shader compilation failures or native faults.
+
+| Scene | Guest frame | Intermediate blend | Reviewed evidence |
+| --- | ---: | ---: | --- |
+| Khallos exterior | 4584 | 0.958429266 | Train, weapon, landscape and HUD retained in both images |
+| Opening gameplay | 5184 | 0.527869472 | Canyon, weapon/hand animation, tutorial/HUD, NPC and fire/smoke retained |
+
+Both receipts verified complete 1920x1080 pairs. Logs:
+`logs/shared-{khallos,firstmission}-pair-final-120-*`; retained PNGs:
+`private/captures/native-mac/{khallos,opening}-pair-final-{guest,intermediate}.png`.
+Raw pair BMPs rotate; the final ones belong to the opening mission. Readback
+disturbs timing, so these runs establish no new FPS result. Synthetic menu
+input and reviewed captures do not certify physical controls or a playthrough.
+
+Earlier diagnostic pairs used executable `3bf49b32...` and captured the
+intermediate image after overlays. The earlier opening pair showed the NPC
+briefing, not gameplay. Its Khallos pair at blend 0.722856 showed a sky streak
+that needs a controlled comparison; the final near-current-frame blend above
+does not independently resolve it. The final trace matches both sky draws to
+their corresponding previous draws and shows small transform changes. Static
+Khallos sky fidelity and the cause of the earlier streak remain unresolved;
+no brightness, fog or wrapping workaround was introduced. Main, personal
+settings, the canonical fixture and concurrent duplicate files were preserved.
+Known disposable partitions were recycled; captures remain below 256 MiB.

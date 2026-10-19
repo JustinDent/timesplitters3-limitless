@@ -97,7 +97,7 @@ def test_present_metrics(tmp_path):
     assert rows[1]['kind']=='other'
 
 
-@pytest.mark.parametrize('name', ['interpolation_present', 'interpolation_scene', 'interpolation_draw_key'])
+@pytest.mark.parametrize('name', ['interpolation_present', 'interpolation_scene', 'interpolation_draw_key', 'interpolation_capture'])
 def test_interpolation_present_outcomes(tmp_path,name):
     compiler, env=native_compiler(tmp_path)
     exe=tmp_path/('interp-present.exe' if os.name=='nt' else 'interp-present')
@@ -114,5 +114,5 @@ def test_interpolation_present_outcomes(tmp_path,name):
         args=[compiler,'-std=gnu11',*['-I'+str(p) for p in includes],source,'-o',str(exe)]
     result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
     assert result.returncode==0,result.stdout+result.stderr
-    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
+    result=subprocess.run([str(exe)],cwd=tmp_path,capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr

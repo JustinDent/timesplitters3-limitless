@@ -123,7 +123,8 @@ Vulkan validation pass.
 For motion evidence, `--capture-interpolation` enables a request file at
 `private/test-saves/native-mac/capture-interpolation.txt`; write `1` while moving
 to replace exactly two BMPs (`interpolation-guest.bmp` and
-`interpolation-midpoint.bmp`) in the normal native capture directory. This GPU
+`interpolation-midpoint.bmp`) plus an `interpolation-pair.json` receipt in the
+normal native capture directory. This GPU
 readback is for visual validation; keep it outside measured performance windows.
 
 The native implementation includes a reserved 4 GiB **virtual address range**
@@ -318,8 +319,20 @@ window, SDL events and CoreText overlay bitmap. It has bounded first-mission
 coverage, not full rendering, physical-input or 120-present certification.
 `--profile-frames` uses the common presentation recorder on both renderers and
 separates accepted guest/interpolated API presents. These timings do not measure
-GPU completion or display scanout. GL-specific `--trace-render` and paired
-interpolation-capture hooks remain unavailable on the common renderer.
+GPU completion or display scanout. GL-specific `--trace-render` remains
+unavailable on the common renderer. `--capture-interpolation` enables a shared
+one-shot request: write `1` to the isolated `capture-interpolation.txt` after
+entering gameplay. The next eligible replay consumes it and writes
+`interpolation-guest.bmp`, `interpolation-midpoint.bmp` and
+`interpolation-pair.json` under `private/captures/native-mac`. The runner clears
+old pair evidence at startup and verifies both BMPs before reporting a complete
+pair. The receipt records the guest frame, actual blend and presentation result;
+"midpoint" names the intermediate image even when its blend differs from 0.5.
+Both images are taken before host-only FPS/watermark overlays. For a bounded
+transform trace, `RECOMP_INTERP_DEBUG=1` also prints the first three draws'
+previous, current and blended registers when a pair is requested.
+At 60 FPS or while interpolation is held, there may be no eligible replay.
+Readback disturbs timing: paired captures are diagnostic, not FPS benchmarks.
 Use the isolated runner for automated checks. For interactive use, both the
 native app and `Play-Native-Mac.command` read the renderer from `BUILD.json`,
 verify the pinned SDK receipt, and configure the manifest-selected loader without

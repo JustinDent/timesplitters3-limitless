@@ -750,6 +750,19 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-005 — Multiple texture stages and shader fidelity
 
 - **Status:** In progress
+- **Shared paired-frame evidence (2026-10-19, commit carrying this update):**
+  `codex/shared-interpolation-capture` depends on `codex/mac-moltenvk-default`
+  at `65330e8` and its unmerged renderer stack. The common interpolation
+  recorder now owns one-shot guest/intermediate capture on both host paths;
+  legacy GL no longer carries a separate capture implementation. A receipt
+  identifies the guest frame, actual blend and readback/present outcomes; the
+  Mac runner rejects stale, incomplete and malformed evidence. Short Mac
+  Vulkan Khallos and opening-gameplay pairs passed without validation errors.
+  Windows and legacy GL live capture remain unrun. Sky fidelity is still open:
+  the new comparison tool is not a sky correction.
+  Sources: `patches/*-shared-interpolation-capture.patch`,
+  `tools/test-native-mac.py`, `tests/interpolation_capture.c`;
+  [evidence](STATUS.md#shared-guest-and-intermediate-frame-evidence-2026-10-19).
 - **Shared scene interpolation (2026-10-19, commit carrying this update):**
   `codex/shared-scene-interpolation` depends on `codex/khallos-sky` at `683026d`
   and its unmerged shared-renderer base. Both entry points now select the same

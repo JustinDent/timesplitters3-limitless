@@ -24,18 +24,21 @@ int recomp_config_int(const char *env_name,const char *key,int fallback){
 }
 void xbox_Nv2aFlipGateSetIdle(xbox_FlipGateIdleFn fn){(void)fn;unexpected_hook("gate installation");}
 static int begin_ok=1,present_ok=1,begins,presents,ends,overlays;
+static char operations[256];static unsigned operation_count;
+static void operation(char value){assert(operation_count+1<sizeof operations);operations[operation_count++]=value;operations[operation_count]=0;}
+static int dump_result=-1;
 int hle_d3d8_interp_rec;
-BOOL xbox_D3D8InterpBegin(void){begins++;return begin_ok;}
-BOOL xbox_D3D8InterpPresent(void){presents++;return present_ok;}
-void xbox_D3D8InterpEnd(void){ends++;}
+BOOL xbox_D3D8InterpBegin(void){operation('B');begins++;return begin_ok;}
+BOOL xbox_D3D8InterpPresent(void){operation('P');presents++;return present_ok;}
+void xbox_D3D8InterpEnd(void){operation('E');ends++;}
 const float *hle_d3d8_interp_constants(void){static float values[256*4];return values;}
 static float uploaded_constants[256*4];
 void d3d8_vsh_set_constant(int start,const float *values,int count){
     assert(start>=0 && count>=0 && start+count<=256);
     memcpy(uploaded_constants+start*4,values,(size_t)count*4*sizeof(float));
 }
-void hle_d3d8_overlay_redraw(void){overlays++;}
-int hle_d3d8_dump_back_buffer(const char *path){(void)path;return -1;}
+void hle_d3d8_overlay_redraw(void){operation('O');overlays++;}
+int hle_d3d8_dump_back_buffer(const char *path){operation(strstr(path,"-guest.bmp")?'G':'M');return dump_result;}
 int hle_d3d8_capture_active(void){return 0;}
 int hle_d3d8_movie_layer_shown(void){return 0;}
 static LONGLONG clock_ticks=100;
