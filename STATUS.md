@@ -1,5 +1,24 @@
 # Measured progress
 
+## Combined launcher integration checks (2026-10-19)
+
+`integrate/launcher-polish-and-recovery` combines the visual/banner work
+(`e4f37c5`), transaction-lock recovery (`6e5e0dc`) and minimize-on-start fix
+(`4814fc4`) with main `5e89eaa`. Code merged automatically; documentation
+conflicts preserve each change and the existing terminal-camera validation.
+The transaction-lock backlog entry is MAC-046 to avoid main's MAC-045 ID.
+
+Windows x64 .NET Framework required-artwork build and the complete `-Test` run
+passed on the combined source: 104 updater, 28 download/recovery, 11 version,
+10 startup, 19 news, 30 settings and 20 maintenance checks, plus crash-report
+and unfinished-session suites. Five synthetic lifecycle checks, 36 layout
+previews and three package checks also passed. The full run used the existing
+short `%TEMP%/tsfp-visual-tests` staging directory with package metadata to avoid
+the known long-path fixture limit; binaries and logs remain ignored. No personal
+game, saves or settings were used. Private banner, logo and generated backdrop
+remain local and are embedded by release packaging. No new version was published;
+Mac execution remains unverified (MAC-021 and MAC-046).
+
 ## Terminal camera depth clears (issue #47, 2026-10-19)
 
 Implemented on `47-what-lies-below-camera-visual-bug`, based on main `c006c24`.
