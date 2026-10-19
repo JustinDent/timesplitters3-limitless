@@ -188,7 +188,8 @@ int tsfp_native_renderer_test(void) {
     for(int i=0;i<4;i++)vertices[i].color=0xFFFF0000;
     dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]);
     ok &= native_test_pixel(dev,32,32,255,0,0);
-    xbox_D3D8InterpPresent();xbox_D3D8InterpEnd();
+    ok &= xbox_D3D8InterpPresent();xbox_D3D8InterpEnd();
+    ok &= !xbox_D3D8InterpPresent();
     ok &= native_test_pixel(dev,32,32,0,0,255);
     for(int i=0;i<4;i++){vertices[i].z=.6f;vertices[i].color=0xFF00FF00;}
     dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]);

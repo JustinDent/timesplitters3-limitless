@@ -21,6 +21,7 @@
 #include "input_sdl.h"
 #include "renderer_host_sdl.h"
 #include "rhi.h"
+#include "graphics/present_metrics.h"
 #include "settings_macos.h"
 #include "pc_display.h"
 #include "pc_menu_sampling.h"
@@ -664,32 +665,12 @@ static HRESULT __stdcall dev_GetCreationParameters(IDirect3DDevice8 *s, void *pP
 static HRESULT __stdcall dev_Reset(IDirect3DDevice8 *s, D3DPRESENT_PARAMETERS *pPP)
 { NATIVE_GL_SCOPE; (void)s;(void)pPP; return D3D_OK; }
 
-/* Opt-in CPU wall-clock intervals between completed host presents. This does
- * not wait for the GPU or claim display scanout timing. At most 20,000 rows
- * (under 2 MiB), with no per-frame flush or readback. */
+/* Same successful-API timing recorder as the common RHI renderer. */
+static TsfpPresentMetrics native_metrics;
 static void native_frame_timing(Uint64 swap_start,Uint64 now) {
     native_debug_present(now,!native_interp_on);
-    static int checked;
-    static FILE *output;
-    static Uint64 first,last;
-    static unsigned rows;
-    if(!checked) {
-        checked=1;const char *path=getenv("TSFP_NATIVE_FRAME_PROFILE");
-        if(path && *path) {
-            output=fopen(path,"w");
-            if(output)fputs("frame,elapsed_ms,frame_ms,swap_ms,kind,guest_frame\n",output);
-        }
-    }
-    if(!output)return;
-    if(!first)first=now;
-    if(last) {
-        fprintf(output,"%u,%.3f,%.3f,%.3f,%s,%u\n",native_present_count,
-                (now-first)/1e6,(now-last)/1e6,(now-swap_start)/1e6,
-                native_interp_on?"interpolated":"guest",native_guest_present_count);
-        if(++rows%60==0)fflush(output);
-        if(rows==20000){fclose(output);output=NULL;}
-    }
-    last=now;
+    tsfp_present_record(&native_metrics,"gl",native_interp_on?RHI_PRESENT_INTERPOLATED:RHI_PRESENT_GUEST,
+                        0,swap_start,now);
 }
 
 /* Pointer hit testing must invert the same full-canvas shape as presentation. */
@@ -703,6 +684,7 @@ static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const
     native_scene_present();
     Uint64 swap_start=SDL_GetTicksNS();
     if(!native_swap_window()) {
+        tsfp_present_record(&native_metrics,"gl",RHI_PRESENT_GUEST,-1,swap_start,SDL_GetTicksNS());
         fprintf(stderr,"[native-gl] present failed: %s\n",SDL_GetError());return E_FAIL;
     }
     native_present_count++;native_guest_present_count++;

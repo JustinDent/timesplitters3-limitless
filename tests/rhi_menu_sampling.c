@@ -29,6 +29,9 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
     CHECK(s);return s;
 }
 #include "rhi_depth_replay.h"
+#ifdef RHI_VULKAN_SDL
+#include "vulkan_present_outcomes.h"
+#endif
 int main(void) {
     void *window=NULL;
 #ifdef RHI_VULKAN_SDL
@@ -43,6 +46,7 @@ int main(void) {
     CHECK(SUCCEEDED(D3D11CreateDevice(NULL,D3D_DRIVER_TYPE_WARP,NULL,0,NULL,0,
         D3D11_SDK_VERSION,&warp,&feature,&context)));
     CHECK(rhi_d3d11_adopt(warp,context)==0 && rhi_device_ready());
+    CHECK(rhi_present_kind(0,RHI_PRESENT_GUEST)<0); /* WARP fixture has no swapchain */
 #else
 #error A native host adapter is required
 #endif
@@ -125,7 +129,8 @@ int main(void) {
     unsigned char pixels[64*64*4];uint32_t w=64,h=64;
     CHECK(rhi_swapchain_readback(pixels,64*4,&w,&h)==0 && w==64 && h==64);
     CHECK(abs(pixels[0]-64)<=1 && abs(pixels[1]-128)<=1 && abs(pixels[2]-191)<=1);
-    CHECK(rhi_present(0)>=0);
+    CHECK(rhi_present(0)==0);
+    vulkan_present_outcomes();
 #endif
     rhi_set_render_target(NULL,NULL);
     rhi_buffer_destroy(parameters);rhi_sampler_destroy(sampler);

@@ -100,6 +100,14 @@ def capture_environment(root):
                 RECOMP_HLE_D3D8_DUMP_EVERY='60', RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2')
 
 
+def present_counts(errors):
+    """Last cumulative API-acceptance snapshot, never inferred from guest ticks."""
+    samples=re.findall(r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) '
+                       r'interpolated=(\d+) other=(\d+) skipped=(\d+) failed=(\d+)',errors)
+    if not samples:return None
+    return dict(zip(('total','guest','interpolated','other','skipped','failed'),map(int,samples[-1])))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--seconds', type=int, default=15,
@@ -197,6 +205,7 @@ def run_probe(args, test, env, exe, kind):
     errors = err_path.read_text(errors='replace')
     frames = [int(n) for n in re.findall(r'\[NATIVE-GUEST\] completed frame (\d+)', errors)]
     presented = re.findall(r'\[native-gl\] presented frame (\d+), GL error=0x([0-9a-fA-F]+)', errors)
+    counts = present_counts(errors)
     captures = []
     if args.capture:
         for name in ('frame000.bmp', 'frame001.bmp'):
@@ -207,13 +216,14 @@ def run_probe(args, test, env, exe, kind):
     boot = dict(guest_entry_reached='Entering translated Xbox entry' in output,
                 graphics_initialized='graphics initialization returned 0x00000000' in errors,
                 completed_guest_frames_at_least=max(frames, default=0),
-                presented_frames_at_least=max((int(n) for n, _ in presented), default=0),
+                presented_frames_at_least=counts['total'] if counts else max((int(n) for n, _ in presented), default=0),
+                host_present_counts_at_least=counts,
                 sampled_gl_errors=[int(code, 16) for _, code in presented if int(code, 16)],
                 native_fault='[NATIVE-FAULT]' in errors,
                 rendering_connected=('host rendering connected' in errors and
                     ('[d3d8_gl] GL ' in errors or '[native-rhi] common Xbox renderer' in errors)),
                 renderer=manifest.get('renderer','gl'),
-                host_present_counter_available=manifest.get('renderer','gl')=='gl',
+                host_present_counter_available=counts is not None or bool(presented),
                 shader_compile_failures=errors.count('compile failed'),
                 vulkan_validation_errors=len(re.findall(r'\[VKVAL\]',errors)))
     cleanup = recycle_test_disks(ROOT, test)

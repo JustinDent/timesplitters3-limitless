@@ -224,3 +224,8 @@ def test_native_fixture_rejects_redirected_xdg_config(tmp_path, unlocked_fixture
             pytest.fail('XDG redirect was accepted')
     assert not list(personal.iterdir())
     assert not (test / 'run.lock').exists()
+
+
+def test_present_counts_require_actual_backend_evidence():
+    assert probe.present_counts('[NATIVE-GUEST] completed frame 600') is None
+    assert probe.present_counts('[PRESENT] backend=vulkan total=300 guest=180 interpolated=119 other=1 skipped=4 failed=2') == dict(total=300,guest=180,interpolated=119,other=1,skipped=4,failed=2)

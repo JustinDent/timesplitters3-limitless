@@ -79,8 +79,11 @@ partition images are sparse, then recycled with validated paths; profiles,
 configuration and logs remain. Native CTest uses `build/macos/path-tests` and
 recycles its partition images after the pass as well.
 
-`--profile-frames` records CPU wall-clock intervals between completed host
-presents and time spent in swap, capped at 20,000 rows (under 2 MiB). It adds
+`--profile-frames` uses the same recorder in GL and the opt-in common Vulkan
+renderer. It records CPU wall-clock intervals between successful presentation
+API returns and time spent in the call, capped at 20,000 rows (under 2 MiB).
+Guest, interpolated and other presents are separate; failed/skipped calls do not
+add samples, and their gap remains in the next successful interval. It adds
 no GPU readback. The CSV and whole-run statistics are diagnostic data; loading
 screens and menus must be excluded before describing gameplay FPS. These are
 host-present timings, not measurements of monitor scanout. Compare the same

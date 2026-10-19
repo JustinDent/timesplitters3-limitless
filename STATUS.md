@@ -1,5 +1,81 @@
 # Measured progress
 
+## Shared presentation outcomes and timing (2026-10-19)
+
+- **Source/dependency:** `codex/shared-present-metrics` depends on local unmerged
+  `3e78f7c`; tests used the task's working changes. No main merge or publication;
+  other-device synchronization and Windows execution remain unverified. The
+  existing duplicate files and personal saves/settings were preserved.
+- **Cause and fix:** The HLE counted interpolation even when its void present
+  function returned without presenting. Vulkan also returned 0 after failed
+  acquire/present. Present now reports acceptance, HLE always restores replay
+  state and counts only accepted calls, and its gate avoids stale timestamps or
+  retries within the same guest frame on failure. Vulkan retains successful
+  suboptimal presents, skips out-of-date/no-image cases, and propagates other
+  errors. These classifications follow the [Vulkan swapchain contract](https://docs.vulkan.org/refpages/latest/refpages/source/VK_KHR_swapchain.html).
+  D3D11 keeps its HRESULT, including positive statuses such as occlusion; only
+  zero counts as acceptance ([Microsoft Present documentation](https://learn.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-present)).
+- **Shared instrumentation:** `src/graphics/present_metrics.h` is consumed by
+  common RHI and native GL. It records CPU intervals between successful API
+  returns and call duration, separates guest/interpolated/other kinds and retains
+  failed/skipped counts. Failures leave a gap in the next successful interval.
+  The optional CSV is capped at 20,000 rows and retains the previous column schema;
+  `TSFP_FRAME_PROFILE` is the common name, with `TSFP_NATIVE_FRAME_PROFILE` as an
+  alias. Cumulative `[PRESENT]` snapshots feed the isolated runner's lower-bound
+  counts. Neither API acceptance nor CPU call timing proves GPU completion or
+  display scanout. Legacy call-count/HLE logs now label their scope explicitly.
+- **Host/pins:** macOS 27.0.1 arm64, Apple M5 Pro, Clang 21, SDL 3.4.16;
+  SDK 1.4.363.0, KosmicKrisp Vulkan 1.4 and MoltenVK Vulkan 1.3. Same upstream
+  `d90c929` and supported XBE SHA-256
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+- **Source/GPU checks:** 33 host/isolation/statistics/replay checks pass, including
+  actual HLE redraw/gate outcomes, production recorder gaps/CSV cap, and common
+  RHI forwarding of success/status/error. The real Vulkan fixture passes on both
+  drivers, injecting present/acquire results while retaining valid real queue
+  ownership. Its expected `presentation failed: -4` line tests error propagation;
+  it is not actual device-loss/recovery validation. No Vulkan validation errors;
+  MoltenVK retains five known primitive-restart capability warnings. Native
+  Vulkan `--test` passes three CTests plus GPU, SDL and Cocoa settings/debug tests.
+  Windows registers the same common source contracts and WARP missing-swapchain
+  check, but has not executed them here.
+- **Bounded gameplay evidence:** The isolated Test Lab run ended at its
+  150.20-second limit (exit 0), with no shader compilation failures, native faults
+  or Vulkan validation errors. It logged at least 7,800 completed guest frames
+  and 10,500 accepted presents (7,832 guest, 2,668 interpolated, zero other,
+  skipped or failed in the last snapshot). The counters are independently
+  sampled, so guest completion/present snapshots need not end at the same frame.
+  Reviewed captures show Time to Split's opening, first-person weapon/HUD/world,
+  forward movement after synthetic W, and ammunition dropping 16 to 14 after
+  synthetic mouse input. The first click captured the pointer; the second fired.
+  This is SDL event injection, not physical input or full-level verification.
+- **Timing evidence:** With validation and rotating capture enabled at 1920x1080,
+  the 100–140 second reviewed gameplay interval contains 2,382 samples and averages
+  **59.53 accepted presents/s** (54.33 guest + 5.20 interpolated), median 16.62 ms,
+  p95 22.94 ms, p99 61.75 ms and worst 64.52 ms. Capture/readback is part of this
+  workload; this is not a capture-free benchmark or stable-120 result. The 10–25
+  second menu interval averages 111.28/s (58.04 guest + 53.24 interpolated), which
+  must not be reported as gameplay performance. Guest clock remains 60 Hz and
+  interpolation target remains 2x. Evidence: `logs/shared-present-summary.json`,
+  `logs/shared-present-frame-times.csv`, `logs/shared-present-windows.json`, and
+  selected `private/captures/native-mac/shared-present-first-mission.png` /
+  `shared-present-after-input.png`.
+- **Build provenance/cleanup:** Gameplay binary SHA-256 is
+  `911cac9c1136e3b56ecd82169cc41e8f3e491952f4fef3110cef3b38dcc5e162`.
+  Final source changes after that run only clarify legacy log wording and add
+  Windows-only test coverage. The runner recycled six disposable disk images
+  (135,168 allocated bytes versus 5,243,406,848 logical bytes); fixture and personal
+  data were unchanged.
+- **Final checks/default restored:** All 26 patch transition/tracking checks pass
+  (two Windows-only checks skip), including CRLF and idempotence after the final
+  patch. All 47 CI/backlog checks pass. The default GL build is restored; its full
+  native `--test` suite and read-only launcher check pass, including active/inactive
+  interpolation present results. Restored GL executable SHA-256 is
+  `6fbef111dd6c4d1f39951e43e53477eb12c661c7b0a3d62a50107d29c4abc837`.
+- **Remaining:** Windows execution, fullscreen/settings integration, offscreen
+  color replay preservation, broader scene fidelity and capture-free pacing
+  investigation remain. The successful-present measurement gap is now addressed;
+  the measured gameplay rate does not meet a stable 120 target.
+
 ## Shared interpolation depth isolation (2026-10-19)
 
 - **Source/dependency:** `codex/shared-interpolation-depth` starts at local

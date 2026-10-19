@@ -21,6 +21,11 @@ static int size(void *context, void *window, uint32_t *width, uint32_t *height)
     *width = requested_width; *height = requested_height;
     return accept;
 }
+static int32_t present_result;
+static int present_calls;
+static int32_t present(uint32_t interval) {
+    assert(interval==0);present_calls++;return present_result;
+}
 int main(void)
 {
     uint32_t width = 3, height = 7;
@@ -48,6 +53,11 @@ int main(void)
     rhi_set_host(NULL);
     assert(!rhi_drawable_size(NULL, &width, &height));
     assert(width == 1920 && height == 1080);
+    RhiBackend mock={0};mock.name="mock";mock.present=present;g_rhi=&mock;
+    present_result=0;assert(rhi_present_kind(0,RHI_PRESENT_GUEST)==0);
+    present_result=1;assert(rhi_present_kind(0,RHI_PRESENT_INTERPOLATED)==1);
+    present_result=-1;assert(rhi_present(0)==-1);
+    assert(present_calls==3);g_rhi=NULL;assert(rhi_present(0)==-1);
     puts("PASS: host callbacks, registration copy, drawable failure preservation");
     return 0;
 }

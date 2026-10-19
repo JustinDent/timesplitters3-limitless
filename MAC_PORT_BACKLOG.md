@@ -821,6 +821,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   host-present timing and broader scene parity remain pending.
   [Evidence](STATUS.md#shared-interpolation-depth-isolation-2026-10-19).
 
+- **Shared presentation metrics (2026-10-19):** The commit carrying this entry
+  on `codex/shared-present-metrics` depends on `3e78f7c`. Common RHI and fallback
+  GL use `src/graphics/present_metrics.h` for bounded API-return timing and
+  guest/interpolated/other counters. Vulkan acquire/present skips and errors no
+  longer report success; the shared HLE only counts accepted replay presents and
+  does not reuse a stale scheduling timestamp on failure. Windows runs the same
+  source/fault contracts in CI; its execution and stable-120 gameplay remain
+  pending. [Evidence](STATUS.md#shared-presentation-outcomes-and-timing-2026-10-19).
+
 ### MAC-006 — Cube and volume texture resources
 
 - **Status:** Queued

@@ -103,7 +103,12 @@ Interpolation now uses common replay-owned depth/stencil per source subresource,
 with fresh history each replay and restoration of guest target bindings. The
 shared RHI GPU contract runs on Mac Vulkan and is registered for Windows WARP;
 the actual native Xbox device also checks automatic/custom target routing.
-Next, add truthful host-present timing, verify fullscreen and settings application,
+The common RHI and GL adapters use one bounded present-timing recorder. It counts
+only accepted API presentations, separating guest/interpolated/other kinds and
+retaining skipped/failed counts. Failed replay does not advance HLE present totals
+or feed stale timing into its scheduler. These are CPU API-call timings, not
+scanout measurements.
+Next, verify fullscreen and settings application,
 and compare targeted scenes before changing defaults.
 Keep shared build pins; do not copy another OS's build tree.
 
@@ -126,7 +131,8 @@ integration work, tracked in the backlog.
 | `codex/shared-renderer-host` | `1a650b5` | `e382e50`: common host interface, SDL adapter and both-host core compile contract |
 | `codex/shared-vulkan-mac` | `e382e50` | `4d23a6d`: native common Vulkan backend, pinned SDK and asset-free RHI GPU contract |
 | `codex/shared-native-renderer` | `4d23a6d` | `2c63fbf`: common Xbox frontend in an opt-in native game, text/window adapters and shader compatibility fixes |
-| `codex/shared-interpolation-depth` | `2c63fbf` | Shared replay depth/stencil isolation, target restoration and GPU/fault-injection contracts |
+| `codex/shared-interpolation-depth` | `2c63fbf` | `3e78f7c`: Shared replay depth/stencil isolation, target restoration and GPU/fault-injection contracts |
+| `codex/shared-present-metrics` | `3e78f7c` | Shared API-acceptance counts, frame timing and interpolation failure handling |
 
 These are local branches; they have not been merged into main or verified on the
 other computer. Measured scope and unavailable checks are recorded in `STATUS.md`.

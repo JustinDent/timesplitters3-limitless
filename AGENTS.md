@@ -113,8 +113,9 @@ reproducibility, and validation requirements.
   frontend; use the bounded runner, which selects pinned GPU loading from the
   build manifest. Restore `--renderer gl` before normal interactive use while
   launcher integration is pending. Keep GPU contracts, guest frame counts and
-  common-renderer scene validation distinct; GL-only timing hooks do not measure
-  Vulkan host presents.
+  common-renderer scene validation distinct. The shared recorder counts successful
+  presentation API calls and separates guest/interpolated/other kinds; it does not
+  measure GPU completion or monitor scanout. Skips/errors must not inflate FPS.
 - Apply the complete local patch stack with `tools/apply-patches.py` before
   generation/build. Preserve existing patches and add subsequent runtime
   changes as separate patches. Never hand-edit generated game C; keep changes

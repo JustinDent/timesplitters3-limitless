@@ -15,14 +15,15 @@ def test_host_contract(tmp_path):
     exe = tmp_path / ('host.exe' if os.name == 'nt' else 'host')
     sources = [str(ROOT / 'tests/rhi_host.c'), str(D3D / 'rhi.c')]
     if os.name == 'nt':
-        args = [compiler, '/nologo', '/std:c11', '/I'+str(D3D), *sources,
+        args = [compiler, '/nologo', '/std:c11', '/I'+str(D3D), '/I'+str(ROOT/'src'), *sources,
                 '/Fe:'+str(exe), '/link', 'user32.lib','gdi32.lib']
     else:
         args = [compiler, '-std=c11', '-Wall', '-Wextra', '-Werror',
-                '-I'+str(D3D), *sources, '-o', str(exe)]
+                '-I'+str(D3D), '-I'+str(ROOT/'src'), *sources, '-o', str(exe)]
     result = subprocess.run(args, cwd=tmp_path, env=env, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
-    result = subprocess.run([str(exe)], capture_output=True, text=True, timeout=10)
+    run_env=dict(env or os.environ, TSFP_FRAME_PROFILE=str(tmp_path/'host-presents.csv'))
+    result = subprocess.run([str(exe)], env=run_env, capture_output=True, text=True, timeout=10)
     assert result.returncode == 0, result.stdout + result.stderr
 
 
@@ -69,6 +70,42 @@ def test_interpolation_depth_cache(tmp_path):
         args=[compiler,'/nologo','/std:c11','/I'+str(D3D),'/I'+str(ROOT/'src'),source,'/Fe:'+str(exe)]
     else:
         args=[compiler,'-std=c11','-Wall','-Wextra','-Werror','-I'+str(D3D),'-I'+str(ROOT/'src'),source,'-o',str(exe)]
+    result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert result.returncode==0,result.stdout+result.stderr
+    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
+
+
+def test_present_metrics(tmp_path):
+    import csv
+    compiler, env=native_compiler(tmp_path)
+    exe=tmp_path/('present.exe' if os.name=='nt' else 'present')
+    source=str(ROOT/'tests/present_metrics.c')
+    if os.name=='nt':
+        args=[compiler,'/nologo','/std:c11','/I'+str(ROOT/'src'),source,'/Fe:'+str(exe)]
+    else:
+        args=[compiler,'-std=c11','-Wall','-Wextra','-Werror','-I'+str(ROOT/'src'),source,'-o',str(exe)]
+    result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert result.returncode==0,result.stdout+result.stderr
+    env=dict(env or os.environ, TSFP_FRAME_PROFILE=str(tmp_path/'present.csv'))
+    result=subprocess.run([str(exe)],env=env,capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr
+    rows=list(csv.DictReader((tmp_path/'present.csv').open()))
+    assert len(rows)==2
+    assert rows[0]==dict(frame='2',elapsed_ms='7.000',frame_ms='7.000',swap_ms='2.000',
+                        kind='interpolated',guest_frame='1')
+    assert rows[1]['kind']=='other'
+
+
+def test_interpolation_present_outcomes(tmp_path):
+    compiler, env=native_compiler(tmp_path)
+    exe=tmp_path/('interp-present.exe' if os.name=='nt' else 'interp-present')
+    includes=[ROOT/'src',RUNTIME,*[RUNTIME/name for name in ('d3d','config','hle','kernel','platform')]]
+    source=str(ROOT/'tests/interpolation_present.c')
+    if os.name=='nt':
+        args=[compiler,'/nologo','/std:c11','/O1','/Gy',*['/I'+str(p) for p in includes],source,'/Fe:'+str(exe),'/link','/OPT:REF']
+    else:
+        args=[compiler,'-std=gnu11','-O1','-Wl,-dead_strip',*['-I'+str(p) for p in includes],source,'-o',str(exe)]
     result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
     assert result.returncode==0,result.stdout+result.stderr
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
