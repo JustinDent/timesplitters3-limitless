@@ -19,6 +19,62 @@ The ZIP contains only the two launch executables and launcher manifest.
 No installation, game, personal data, GitHub release or published tag was changed.
 Native Mac support remains queued in MAC-021 and MAC-046.
 
+## Windows main-menu image fidelity (2026-10-19)
+
+Main integration: rebased onto `8fe6b48`, preserving the terminal-camera depth
+fix and the combined launcher changes. The supported Windows Build and all
+**78 integrated regressions** passed, covering GPU sampling, UI/FOV, terminal
+depth, patch tracking/upgrades and CI scope. The combined executable SHA-256 is
+`431133f3aeb9cbff6ea4502d90f83acd63194f8603ae2b84765e9ad45ab43913`;
+its matching symbol archive was verified by the build. Evidence is retained in
+`logs/menu-fidelity-main-integration-{build,tests}.log`. The menu's Mac follow-up
+is MAC-047; MAC-046 belongs to launcher transaction recovery. The earlier
+source revision and executable hash below describe the initial visual checks.
+The subsequent main integration at `b236c16` retains launcher v1.2.17 and its
+release notes; that incoming change contains no game-rendering source changes.
+
+Local, uncommitted on `fix/main-menu-image-fidelity`, based on updated main
+`3d0b687`. The Windows frontend now uses clamped Catmull-Rom reconstruction
+when magnifying original background, logo, icon and glyph textures. The verified
+main-menu row painter also reconstructs A8 glyph coverage, retaining its original
+size, spacing, measurement, colour and animation. This improves edge definition;
+the original artwork's resolution still limits detail. No replacement artwork
+or texture pack was created or installed.
+
+Both fixed-function and NV2A combiner pixel paths use the same helper. The
+frontend scope resets at present; row coverage resets after its queued draw
+flush. Point-filtered stages, native-size/minified samples, depth/cube/volume
+textures, framebuffer copies, render targets and gameplay keep their existing
+sampling. `TSFP_MENU_FILTER=linear` restores the old menu path for comparison.
+The patch also applies beside the legacy texture-toggle branch's added includes.
+
+Validation on Windows 11 Pro 10.0.26300 x64, MSVC 19.44.35207, Windows SDK
+10.0.26100.0 and D3D11/NVIDIA RTX 4070 SUPER (driver 32.0.16.1742):
+
+- Supported `tsfp.ps1 Build` passed complete patch/XBE validation, native build,
+  replay checks and its existing build tests. Final executable SHA-256:
+  `813d0b7f01fae775b56e95053fdebe6ccbe88c98dec06d13d00d36d97edd8196`.
+- **62 tests passed** across the GPU sampler, UI layout, FOV/settings, full patch
+  upgrade/branch-transition and CI scope suites. After strengthening the row
+  scope assertions, **24 tests passed** across UI layout, GPU reconstruction and
+  patch tracking. The GPU fixture runs the production HLSL through D3D11 WARP,
+  checks sharper alpha edges and unchanged constant colours, bounds output to
+  avoid ringing, and verifies byte-identical native/minified sampling for both
+  artwork and glyph modes. These suite counts overlap.
+- Bounded real-game Test Lab sessions used isolated saves, controls and both
+  display configurations. Reviewed main menus at 1920x1080 and 3440x1440 show
+  the background and lettering, with original proportions and transparency.
+  The linear/cubic comparison sessions reach the same menu but have slightly
+  different animation timing; their whole-frame pixel differences are not a
+  controlled image-quality metric. Each session lasted 34 seconds. Disposable
+  partition images were recycled; the canonical profile and personal settings
+  were preserved.
+
+Evidence is local/ignored in `logs/menu-fidelity-{build-final,checks,final-regressions}.log`
+and `private/test-saves/menu-fidelity`. No full gameplay or campaign validation,
+Mac runtime test, commit, push or release was performed. Native Mac retains its
+current filtering; adaptation and acceptance checks are queued under MAC-047.
+
 ## Combined launcher integration checks (2026-10-19)
 
 `integrate/launcher-polish-and-recovery` combines the visual/banner work
