@@ -46,4 +46,4 @@ jobs:
       - name: Refresh the pinned known-issues post
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: python tools/known-issues.py
+        run: python tools/bootstrap-known-issues.py
