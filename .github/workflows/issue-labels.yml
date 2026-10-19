@@ -35,7 +35,7 @@ jobs:
     needs: labels
     permissions:
       contents: read
-      issues: read
+      issues: write
       discussions: write
     # GITHUB_TOKEN label writes do not emit another issues workflow event.
     uses: ./.github/workflows/known-issues.yml

@@ -261,7 +261,7 @@ class KnownIssuesTests(unittest.TestCase):
         self.assertIn('persist-credentials: false', workflow)
         self.assertIn('group: known-issues-discussion', workflow)
         self.assertIn('discussions: write', workflow)
-        self.assertNotIn('issues: write', workflow)
+        self.assertIn('issues: write', workflow)
         self.assertNotIn('contents: write', workflow)
         self.assertIn("github.repository == 'TheDoffman/timesplitters-future-perfect-pc'", workflow)
 

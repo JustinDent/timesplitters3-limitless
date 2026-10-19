@@ -20,7 +20,7 @@ on:
 
 permissions:
   contents: read
-  issues: read
+  issues: write
   discussions: write
 
 jobs:
