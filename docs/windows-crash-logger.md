@@ -7,6 +7,8 @@ crashing thread copies its Windows context and thread-local Xbox registers; it
 does not allocate, format output, resolve symbols or acquire game locks. The
 helper writes the dump while the process is still alive. The game waits at most
 12 seconds for capture, then exits with the original exception.
+Concurrent unhandled exceptions wait on the same bounded capture completion;
+a second faulting thread cannot terminate the process before the first dump.
 
 Xbox MMIO traps and memory watchpoints retain their existing vectored handler.
 Handled SEH exceptions do not create reports. The former first-chance crash
@@ -107,6 +109,8 @@ and an optional log tail, with `dump_saved=false` and no invented exception or
 dump file. Recovery is idempotent; interrupted report creation is retried under
 the same incident ID when storage becomes available. Unknown/linked files and
 unreadable session records are preserved.
+Atomic report writes and ZIP exports use short temporary basenames so valid
+destination paths do not fail because a long temporary suffix exceeds Windows limits.
 
 An unfinished record is evidence that normal completion was not observed. It
 cannot establish whether the game crashed, was forcibly closed, ended normally
@@ -145,8 +149,8 @@ without a dump. The kill check targets only its own isolated diagnostic process.
 
 The crash test executes the real game binary with exact diagnostic commands
 before any game data, settings or saves are opened. It checks normal exit,
-handled exception, fatal main-thread exception and fatal worker-thread exception.
-The latter two must produce a dump whose saved exception resolves to
+handled exception, fatal main-thread/worker-thread exceptions, and four simultaneous
+faulting threads. Each fatal case must produce one dump whose saved exception resolves to
 `tsfp_crash_test_site`, using a PDB GUID/age matching the dump. A wrong executable
 or unexpected function must fail verification. Reports and `validation.json`
 stay in `build/windows/crash-tests`. The command can be run repeatedly, with
@@ -192,7 +196,9 @@ symbols; the deliberately faulting source is additionally compiled with `/Zi`.
 Each successful Windows build replaces one local
 `build/windows/crash-symbols.zip` containing its executable, PDB, hashes and source
 revision/working-tree status. Packaging emits a versioned `*-symbols.zip` beside
-the player package, outside it. Preserve this bundle for each published build;
+the player package, outside it. The build archives the selected configuration's
+executable/PDB (including Debug); packaging selects Release explicitly by default.
+Preserve this bundle for each published build;
 a later rebuild's PDB is not interchangeable. This task does not publish releases.
 
 ## Scope

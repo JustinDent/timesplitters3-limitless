@@ -38,7 +38,9 @@ namespace TimeSplitters.Launcher
         }
         static void Write(string root,string relative,string text)
         {
-            string path=Core.PathIn(root,relative), temporary=Core.PathIn(root,relative+"."+Guid.NewGuid().ToString("N")+".tmp");
+            // Keep the temporary basename short: appending a GUID to a report
+            // filename can exceed MAX_PATH even when its final path fits.
+            string path=Core.PathIn(root,relative), temporary=Core.PathIn(root,relative.Substring(0,relative.LastIndexOf('/')+1)+Path.GetRandomFileName());
             Directory.CreateDirectory(Path.GetDirectoryName(path));
             try {
                 using(var output=new FileStream(temporary,FileMode.CreateNew,FileAccess.Write,FileShare.None,4096,FileOptions.WriteThrough)) {

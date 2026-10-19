@@ -119,9 +119,10 @@ public static class LauncherCrashChecks
                 Require(!archive.Entries.Any(x=>x.FullName.Contains("private-save")),"Unknown files excluded.");
             }
             string oversized=Path.Combine(root,"oversized.zip");
+            string[] filesBefore=Directory.GetFiles(root).OrderBy(path=>path).ToArray();
             using(var dump=new FileStream(Path.Combine(folder,"crash.dmp"),FileMode.Open,FileAccess.Write))dump.SetLength(16*1024*1024+1);
             bool sizeRefused=false;try{CrashReports.Export(root,name,oversized);}catch{sizeRefused=true;}
-            Require(sizeRefused && !File.Exists(oversized) && Directory.GetFiles(root,"*.tmp").Length==0,"Oversized export leaves no partial ZIP.");
+            Require(sizeRefused && !File.Exists(oversized) && Directory.GetFiles(root).OrderBy(path=>path).SequenceEqual(filesBefore),"Oversized export leaves no partial ZIP or temporary file.");
             File.WriteAllText(Path.Combine(folder,"crash.dmp"),"Synthetic dump fixture");
             byte[] original=File.ReadAllBytes(zip);
             bool overwriteRefused=false;try{CrashReports.Export(root,name,zip);}catch{overwriteRefused=true;}

@@ -198,7 +198,7 @@ try {
                         $cleanupPath, 'OnlyErrorDialogs', 'SendToRecycleBin', 'ThrowException')
                     Write-Output 'Build tests passed; temporary build/path-tests data recycled.'
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'), '--seal-executable', $exe)
-                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\crash-symbols.py'))
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\crash-symbols.py'), '--build-dir', (Join-Path $buildRoot $Configuration))
                 }
                 { $_ -in 'Run', 'SmokeTest' } {
                     Assert-Game

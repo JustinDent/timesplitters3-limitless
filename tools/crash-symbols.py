@@ -9,8 +9,8 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def archive(output, root=ROOT):
-    build = root / 'build/windows/Release'
+def archive(output, root=ROOT, build=None):
+    build = Path(build) if build is not None else root / 'build/windows/Release'
     files = [build / 'futureperfect_recomp.exe', build / 'futureperfect_recomp.pdb']
     metadata = dict(schema=1, source_commit=subprocess.check_output(
         ['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
@@ -31,4 +31,6 @@ def archive(output, root=ROOT):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, default=ROOT / 'build/windows/crash-symbols.zip')
-    archive(parser.parse_args().output)
+    parser.add_argument('--build-dir', type=Path, default=ROOT / 'build/windows/Release')
+    args = parser.parse_args()
+    archive(args.output, build=args.build_dir)

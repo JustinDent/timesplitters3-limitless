@@ -12,8 +12,13 @@ static LPTOP_LEVEL_EXCEPTION_FILTER previous_filter;
 
 static LONG WINAPI fatal_exception(EXCEPTION_POINTERS *ep)
 {
-    if (!packet || InterlockedCompareExchange(&packet->entered, 1, 0))
+    if (!packet) return EXCEPTION_EXECUTE_HANDLER;
+    if (InterlockedCompareExchange(&packet->entered, 1, 0)) {
+        /* Another faulting thread must not terminate the process while the
+         * helper is capturing the first thread's exception and memory. */
+        WaitForSingleObject(done, PC_CRASH_WAIT_MS);
         return EXCEPTION_EXECUTE_HANDLER;
+    }
     packet->thread_id = GetCurrentThreadId();
     packet->exception = *ep->ExceptionRecord;
     packet->exception.ExceptionRecord = NULL;
@@ -217,11 +222,29 @@ static DWORD WINAPI test_worker(void *unused)
     tsfp_crash_test_site();
     return 0;
 }
+static DWORD WINAPI test_concurrent_worker(void *start)
+{
+    WaitForSingleObject((HANDLE)start, 5000);
+    tsfp_crash_test_site();
+    return 0;
+}
 int pc_crash_test_command(const char *command)
 {
     if (!strncmp(command, "--tsfp-hang-test=", 17)) return hang_test_command(command + 17);
     if (!packet && !strncmp(command, "--tsfp-crash-test=", 18)) return 4;
     if (!strcmp(command, "--tsfp-crash-test=main")) tsfp_crash_test_site();
+    else if (!strcmp(command, "--tsfp-crash-test=concurrent")) {
+        HANDLE start = CreateEventW(NULL, TRUE, FALSE, NULL), threads[4] = {0};
+        if (!start) return 3;
+        for (int i = 0; i < 4; ++i) {
+            threads[i] = CreateThread(NULL, 0, test_concurrent_worker, start, 0, NULL);
+            if (!threads[i]) return 3; /* Diagnostic process exits immediately. */
+        }
+        SetEvent(start);
+        WaitForMultipleObjects(4, threads, TRUE, 20000);
+        for (int i = 0; i < 4; ++i) CloseHandle(threads[i]);
+        CloseHandle(start);
+    }
     else if (!strcmp(command, "--tsfp-crash-test=worker")) {
         HANDLE thread = CreateThread(NULL, 0, test_worker, NULL, 0, NULL);
         if (!thread) return 3;

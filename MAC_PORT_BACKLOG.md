@@ -23,6 +23,9 @@
   `tools/test-windows-hang.py` and `tests/pc_hang_policy.c`.
   Session follow-up `3222e52` in the same PR: `tools/launcher/GameSessions.cs`,
   `tests/launcher_sessions.cs`, and launcher report/lifecycle integration.
+  Review follow-up in this PR: concurrent fatal threads wait for capture,
+  report/export temporary names fit valid Windows paths, selected build
+  configurations retain their own symbols, and source-only CI covers these cases.
 - **Mac support:** Existing fault/signal diagnostics remain; these Win32 sources
   and build targets are guarded and are not compiled by the Mac adapter.
 - **Remaining:** Implement native crash capture with signal-safe notification and
@@ -41,6 +44,8 @@
   Confirm clean/failed launches do not flag, an interrupted launcher does not
   flag a still-running game, PID reuse cannot hide an abandoned run, and recovery
   creates one bounded report with an unknown cause/code where unobserved.
+  Include simultaneous fatal faults and native filesystem path limits in adapter
+  validation; retain the symbols for the actual selected build configuration.
   Windows checks do not establish native Mac behavior. See
   [Windows design and checks](docs/windows-crash-logger.md); measured Windows
   results are recorded in `STATUS.md`.

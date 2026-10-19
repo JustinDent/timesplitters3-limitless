@@ -19,7 +19,7 @@ def main():
     exe = build / 'futureperfect_recomp.exe'
     helper = build / 'tsfp_crash_helper.exe'
     results = []
-    for mode in ('normal', 'handled', 'main', 'worker'):
+    for mode in ('normal', 'handled', 'main', 'worker', 'concurrent'):
         area = run / mode
         area.mkdir(exist_ok=True)
         before = set(area.glob('crash-*'))

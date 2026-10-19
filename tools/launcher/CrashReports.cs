@@ -93,7 +93,7 @@ namespace TimeSplitters.Launcher
             string folder = Folder(root,name);
             Core.Require(IsHang(root,name) || !Core.GameRunning(), "Close the game before exporting a crash report.");
             Core.Require(Latest(root) == name, "Refresh diagnostics before exporting this report.");
-            string temporary = destination + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            string temporary = Path.Combine(Path.GetDirectoryName(Path.GetFullPath(destination)),Path.GetRandomFileName());
             // Only this report's known files; never sweep the game, settings or saves.
             try {
             using (var locked = new FileStream(Path.Combine(folder,"capture.lock"),FileMode.Open,FileAccess.Read,FileShare.Read))

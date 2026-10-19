@@ -144,6 +144,17 @@ public static class LauncherSessionChecks
                 File.Delete(Path.Combine(root,"Logs/Crashes"));
                 Require(GameSessions.Recover(root)==name && GameSessions.Recover(root)==null,"Storage recovery must retry without creating duplicate reports.");
             });
+            Test(parent,"report writes fit supported long installation paths",root=> {
+                string nested=Path.Combine(root,new string('p',180-root.Length-1));Fixture(nested);
+                string id=Begin(nested);
+                using(var game=Child("--session-exit 23")) {
+                    game.WaitForExit();string report=GameSessions.Complete(nested,id,game);
+                    Require(CrashReports.Latest(nested)==report,"Atomic report writes must not exceed Windows path limits when final report paths fit.");
+                    string exported=Path.Combine(nested,new string('e',60)+".zip");
+                    CrashReports.Export(nested,report,exported);
+                    Require(File.Exists(exported),"Export must also support a valid long destination without appending a large temporary suffix.");
+                }
+            });
             Test(parent,"malformed and oversized records are retained",root=> {
                 Directory.CreateDirectory(Path.GetDirectoryName(Marker(root)));
                 foreach(string text in new[]{"invalid JSON",new string('x',8193)}) {

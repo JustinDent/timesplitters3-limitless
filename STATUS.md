@@ -1,5 +1,43 @@
 # Measured progress
 
+## Crash logger PR review and corrections (2026-10-19)
+
+Review of PR #160 found and corrected three issues:
+
+- Windows CI's dump-free exit check failed when GUID-suffixed temporary report
+  names exceeded the path limit. A 180-character installation-root regression
+  reproduced the failure locally. Short temporary basenames now keep report
+  writes and exports within the limit when their final paths fit.
+- A second unhandled exception could return from the filter and terminate the
+  game before the first thread's dump finished. A source-only four-thread fault
+  driver reproduced the missing report. All faulting threads now wait on the
+  same bounded completion event; three repeated driver runs save a dump that
+  resolves to `tsfp_crash_test_site`. The actual game has the same concurrent
+  diagnostic mode and passes exact-symbol verification.
+- `tsfp.ps1 Build -Configuration Debug` would archive the Release executable/PDB.
+  The archive now receives the selected build directory. Distinct synthetic
+  Debug/Release contents verify that selection without requiring a second native
+  build tree. A full Debug game build was not run.
+
+Main `0c3c520` was incorporated, including required CI on every PR. Crash-helper,
+symbol and launcher-session changes select their relevant suites; source-only
+concurrent capture and symbol selection tests are included in CI.
+
+Windows x64 validation passed: **88 source/CI-scope/package/publisher checks plus
+2 subtests**; the supported native Build and its checks; full launcher build and
+existing suites plus **14 session checks**; real-game main/worker/concurrent crash
+captures with exact PDB GUID/age and expected function; all nine hang scenarios;
+and all four launcher integrations (missing helper, external kill, crash, live
+hang). Executable SHA-256:
+`c741877034ecf81dd461a6b4ccad6ae29dff319a7980704ac7d14ace0a1108d1`.
+The exact executable/PDB archive hashes were checked. Evidence is local/ignored
+in `logs/crash-review-*.log` and `logs/crash-review-validation.json`.
+
+The prior executable hashes and validation entries below are historical.
+No release or merge into main was made. Mac adapter work remains queued; source
+CI is not native Mac crash/hang validation. The documented forced-exit,
+unobserved-session, storage and frame-progress limitations still apply.
+
 ## Windows unfinished-session recovery (2026-10-19)
 
 Follow-up on `feature/windows-crash-logger` in
