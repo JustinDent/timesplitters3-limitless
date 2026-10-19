@@ -8141,3 +8141,29 @@ reference, add the smallest shared regression and fix, review matched corrected
 sky captures and a short control scene, then proceed to the remaining shared
 renderer reliability work. The goal remains active; no sky-fidelity or
 cross-host visual-parity certification is claimed.
+
+### Khallos sky follow-up: source assets and independent pixel samples
+
+At `244ee77` on the same Mac, both captured sky texture payloads matched their
+full 262,144-byte originals in `pak/storymem/l_11_stm.pak` (archive entries
+`caa402f6` and `68d16bdb`), as well as the two related cutscene-memory archives.
+No texture replacement, truncated upload or stale cache content was found in
+these two resources. The sky mesh duplicates vertices at UV boundaries:
+connected, nondegenerate triangles have maximum UV edge length about 0.171,
+not the large jumps suggested by inspecting consecutive vertex records alone.
+A diagnostic capture with wrapped UVs produced no visible correction and was
+not turned into a runtime workaround.
+
+An independent Python calculation of perspective-correct UVs, Morton texture
+unswizzling, bilinear sampling, vertex-color modulation and the captured blend
+state matched all 65 sampled interior sky pixels within one 8-bit channel
+value on KosmicKrisp. This checks these samples against the captured arguments;
+it does not establish that the guest submitted the same scene/state as an
+original Xbox or a known-good PC build. Local calculation and result:
+`logs/sky-reference-samples.py`, `logs/sky-reference-result.json`; source-byte
+comparison: `logs/sky-asset-check.py`. No game assets were added to Git.
+
+The sky remains visually unverified. A known-good matched scene is still
+needed to distinguish an upstream scene/state error from the original low
+resolution artwork and its intended appearance. A blanket wrapping, fog or
+brightness change is unsupported by the evidence collected so far.
