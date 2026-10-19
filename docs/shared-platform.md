@@ -91,8 +91,8 @@ The same `tests/rhi_menu_sampling.c` pixel test runs on Windows D3D11 WARP,
 without a swapchain there. Hosted Windows and Mac validation passed at
 `083e57c`; see [the CI results](../STATUS.md#shared-platform-ci-validation-2026-10-19).
 New cube/volume resource cases pass on hosted Mac Vulkan and Windows WARP at
-`e864831`. The deeper Xbox-factory cases at published `4419205` await
-their own GPU run; the earlier green results do not cover those additions.
+`e864831`. The deeper Xbox-factory cases also pass on both hosts at `f2c2261`
+in [run 39308234267](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39308234267).
 
 The game can now be built with `tools/build-native-mac.py --renderer vulkan`.
 Its SDL adapter creates the window and supplies physical dimensions/events;
@@ -115,8 +115,12 @@ scanout measurements.
 The common Vulkan game passes programmed native settings, resize and fullscreen
 acceptance. The completed native launcher is integrated with the renderer on
 `codex/shared-native-integration`; the command launcher also selects the verified
-GPU loader from the build manifest. Combined GL/Vulkan repetition and targeted
-scenes remain required before changing defaults.
+GPU loader from the build manifest. Combined GL/Vulkan suites, native launcher
+lifecycle and a bounded first-mission check pass at `ad9cb0f`; see
+[integration evidence and limits](../STATUS.md#integrated-host-validation-and-launcher-cleanup-fix-2026-10-19).
+Windows CI found a launcher cleanup casing regression, fixed in shared code
+with hosted revalidation pending. Wider scene acceptance remains required
+before changing defaults.
 Keep shared build pins; do not copy another OS's build tree.
 
 Then migrate remaining shader/resource behavior incrementally, using shared

@@ -35,6 +35,30 @@ namespace TimeSplitters.Launcher
             return Json.Encode(new[]{new{tag_name=tag,prerelease=preview,draft=false,assets=new[]{new{name=name,state="uploaded",size=10,digest="sha256:"+new string('a',64),browser_download_url="https://github.com/"+ReleaseClient.Repository+"/releases/download/"+tag+"/"+name}}}});
         }
         sealed class Handler:HttpMessageHandler { public Func<HttpRequestMessage,HttpResponseMessage> Reply;protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken t){var response=Reply(r);response.RequestMessage=r;return Task.FromResult(response);} }
+        static void GamePruningTest()
+        {
+            foreach (string name in new[] { Core.LauncherName, Core.AppPath, Core.SelfManifest })
+                Need(Core.PreserveGameFile(name.ToLowerInvariant()) && Core.PreserveGameFile(name.ToUpperInvariant()), "Launcher casing lost cleanup protection");
+            var root = NewRoot("game-pruning");
+            Core.Apply(root, Core.Unpack(Archive(root, "v1.0.0"), Path.Combine(root, "initial"), "v1.0.0"), null);
+            var metadata = Json.Object(File.ReadAllText(Core.PathIn(root, "BUILD.json")));
+            var files = (Dictionary<string, object>)metadata["files"];
+            var preserved = new[] { Core.LauncherName, Core.AppPath, Core.SelfManifest,
+                "TimeSplitters Launcher.app/Contents/MacOS/host.dylib",
+                "TimeSplitters Launcher.app/Contents/Resources/Licenses/notice.txt" };
+            foreach (var name in preserved.Concat(new[] { "Support/retired.txt" })) {
+                Write(root, name, "old package file"); files[name] = Hash(Encoding.UTF8.GetBytes("old package file"));
+            }
+            Write(root, "BUILD.json", Json.Encode(metadata));
+            string pending = Core.PathIn(root, ".launcher/pending"); Directory.CreateDirectory(pending);
+            Core.Unpack(Archive(root, "v1.1.0"), Path.Combine(pending, "payload"), "v1.1.0");
+            Write(root, ".launcher/pending/release.json", "{\"version\":\"v1.1.0\"}");
+            Core.InstallPending(root);
+            foreach (var name in preserved) Need(File.ReadAllText(Core.PathIn(root, name)) == "old package file", "Game cleanup removed launcher file: " + name);
+            Need(!File.Exists(Core.PathIn(root, "Support/retired.txt")), "Retired game file retained");
+            Core.Rollback(root);
+            Need(Core.InstalledVersion(root) == "v1.0.0" && File.ReadAllText(Core.PathIn(root, "Support/retired.txt")) == "old package file", "Game cleanup rollback failed");
+        }
         public static int VerifyPackage(string archive,string version)
         {
             string test=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(archive)),"package-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
@@ -58,6 +82,7 @@ namespace TimeSplitters.Launcher
         {
             sandbox=Path.Combine(AppContext.BaseDirectory,"tsfp-mac-launcher-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(sandbox);
             try{
+                Test("game cleanup preserves launcher files and legacy casing while retired game files roll back", GamePruningTest);
                 Test("Mac release selection rejects Windows packages",()=>{Need(ReleaseClient.Select(Metadata("windows-x64"),true)==null,"Windows package selected");Need(ReleaseClient.Select(Metadata("macos-arm64"),false)!=null,"Native release missing");Need(ReleaseClient.Select(Metadata("macos-arm64","v1.1.0-alpha.1",true),false)==null,"Preview selected on stable");});
                 Test("JSON adapter round-trips nested fields and journal records",()=>{var map=Json.Object("{\"nested\":{\"flag\":true},\"list\":[1,2],\"n\":9223372036854775807}");Need(map["nested"] is Dictionary<string,object> && map["list"] is object[] && (long)map["n"]==long.MaxValue,"JSON types lost");var journal=Json.Serializer().Deserialize<List<Original>>(Json.Encode(new[]{new Original{Name="Bin/test",Existed=true}}));Need(journal[0].Name=="Bin/test"&&journal[0].Existed,"Journal fields lost");});
                 Test("settings drafts, backups, unknown fields and external edit protection",()=>{var r=NewRoot("settings");var model=GameSettings.Load(r,null);Need(!Directory.Exists(Path.Combine(r,"Settings")),"Load wrote settings");model.Width=1280;model.Height=720;model.Save();var file=Core.PathIn(r,"Settings/pc-controls.json");var map=Json.Object(File.ReadAllText(file));map["future_option"]="preserve";File.WriteAllText(file,Json.Encode(map));var before=File.ReadAllBytes(file);model=GameSettings.Load(r,null);model.Sensitivity=.2;model.Save();Need(File.ReadAllBytes(file+".bak").SequenceEqual(before),"Backup differs");Need(Json.String(Json.Object(File.ReadAllText(file)),"future_option")=="preserve","Unknown setting lost");var a=GameSettings.Load(r,null);File.AppendAllText(file,"\n");Reject(()=>a.Save());});

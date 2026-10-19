@@ -35,6 +35,64 @@
   `/usr/bin/python3` prerequisite check passes against the existing launcher
   binary; this is not a rebuilt integration game or gameplay validation.
 
+## Integrated host validation and launcher cleanup fix (2026-10-19)
+
+- **Revision/host:** `codex/shared-native-integration` at `ad9cb0f`, macOS
+  27.0.1 arm64, Apple M5 Pro, Apple Clang 21, SDL 3.4.16, pinned Vulkan SDK
+  1.4.363.0. The completed launcher work was integrated after its exclusive
+  build use ended. Both native builds now have integration provenance; this
+  supersedes the earlier old-binary/build-ownership limitations above.
+- **Native builds:** Complete `--renderer gl --test` and
+  `--renderer vulkan --test` passes: three CTests plus renderer, input,
+  settings and debug suites for each. Both exercise window resize, fullscreen
+  and restoration; Vulkan uses KosmicKrisp. GL executable SHA-256
+  `8d9fbc162fbb7f80288f69113dd8adf750ab52422dd729fa2e3d0c443e68b13d`;
+  current Vulkan executable
+  `9fc8783af4897e9578bcf2680d212bbc22776a6ccc21b54b8de1266670cbc8fb`.
+  Logs: `logs/shared-integration-gl-build.out` and
+  `logs/shared-integration-vulkan-build.out`. Each pass recycled 12 disposable
+  images (10,486,813,696 logical bytes, 8,192 physically allocated).
+- **Bounded gameplay:** The isolated unlocked-profile runner at `ad9cb0f`
+  completed 180.19 seconds with exit 0. Reviewed captures show profile/Story
+  navigation, first-mission world/characters/weapons, movement, mouse-look,
+  firing (16 to 13 rounds), and pause/resume. Input was synthetic SDL, including
+  an explicit focus event; this is not physical-device or full-level validation.
+  No shader compilation failures, Vulkan validation errors or native fault.
+  Logs: `logs/shared-integration-gameplay.out`, `logs/native-boot-summary.json`;
+  selected evidence: `private/captures/native-mac/shared-integration-first-mission.png`
+  and `shared-integration-move-look-fire.png`. Protected settings and controls
+  fixture hashes stayed unchanged; six test disks were recycled (5,243,406,848
+  logical bytes, 135,168 allocated).
+- **Timing limit:** With validation and 1920x1080 capture enabled, the 140–170 s
+  gameplay interval measured 65.35 accepted host presents/s: 47.57 guest and
+  17.78 interpolated. Interval p95 22.38 ms, p99 50.75 ms, worst 71.98 ms.
+  These CPU presentation intervals do not measure scanout or establish stable
+  120 FPS. The whole run includes menus/loading and is not a gameplay benchmark.
+- **Launcher integration:** The local ARM64 app builds and passes all 16 original
+  regression groups at `ad9cb0f`. Isolated real-game quit and intentional fatal
+  signal checks pass: game window observed, launcher minimized/restored,
+  normal exit 0 / synthetic crash exit 134, bounded report/export validated,
+  personal settings unchanged and disposable images recycled. Logs:
+  `logs/shared-integration-launcher-{build,quit,crash}.out`.
+- **Hosted integration:** [Run 39309443027](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39309443027)
+  at `ad9cb0f` passes the Mac job, including actual production RHI/Xbox texture
+  factories, 189 runtime checks (18 skips) and 16 native launcher groups.
+  Windows passes 202 runtime checks (30 skips) and release checks, but its
+  launcher regression catches deletion of the launcher when an older game
+  manifest uses lowercase filenames. The overall Windows job fails; it must
+  be rerun after the fix below. No Windows gameplay is claimed.
+- **Cleanup fix (commit carrying this entry):** The native launcher integration
+  replaced case-insensitive preservation with strict package-name matching.
+  Restore the existing common case-insensitive preservation for the launcher
+  executable/application/manifest while retaining native resource protection.
+  Package acceptance remains strict. The existing Windows transactional pruning
+  test reproduces the failure; a new native test verifies casing protection,
+  preservation of app resources, retired-game-file removal and rollback. All
+  17 native launcher groups pass locally. Windows rerun remains pending.
+- **Remaining:** Common Vulkan remains opt-in. Broader scene fidelity, movies,
+  advanced framebuffer effects, clean-machine delivery and stable 120 presents
+  remain open; no main merge or synchronization of the other physical device.
+
 ## Shared cube and volume resource contract (2026-10-19)
 
 - **Source/dependency:** `codex/shared-texture-contract` depends on unmerged
@@ -76,8 +134,10 @@
   and checks that child cube surfaces/volume levels survive parent release.
   Palette, feedback and device-query hooks abort if reached; those paths are
   outside this test's scope. Clang syntax and 47 CI/backlog checks pass. Actual
-  factory GPU execution for `4419205` is pending a subsequent run; run 39306301875 covers
-  only the lower-level RHI cases. No local runtime/build files were modified.
+  factory GPU execution passes on both hosted Mac Vulkan and Windows WARP at
+  `f2c2261` in [run 39308234267](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39308234267).
+  Both jobs finish successfully. Run 39306301875 covers only the lower-level
+  RHI cases; palette/compressed resources and title usage remain unverified.
 
 ## Common renderer Mac settings acceptance (2026-10-19)
 

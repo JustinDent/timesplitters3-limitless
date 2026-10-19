@@ -881,7 +881,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Xbox factory follow-up (`4419205`, same published branch):** Adds the production
   resource implementation to both GPU fixtures. It covers automatic mip counts,
   linear/swizzled Lock/Unlock uploads, face/voxel sampling and child lifetime
-  after parent release. Source checks pass; GPU execution remains pending.
+  after parent release. Both hosted Mac Vulkan and Windows WARP execute these
+  cases successfully at `f2c2261` (run 39308234267).
   Palette/compressed formats, other texture modes and actual title usage are
   outside this fixture and remain unverified.
 - **Integrated native acceptance:** `3020167` combines the renderer and completed
@@ -1299,6 +1300,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Awaiting validation
+- **Integrated regression fix (2026-10-19, commit carrying this entry):** Windows
+  CI at `ad9cb0f` exposed launcher deletion during game cleanup when a legacy
+  manifest uses different filename casing. Shared `Core.PreserveGameFile` now
+  restores case-insensitive protection while retaining native app resources.
+  The existing Windows reproduction and a new native transaction/rollback
+  check cover the fix; 17 native groups pass, Windows rerun pending. Integrated
+  native game launch/quit and synthetic crash/report checks also pass.
+  [Evidence](STATUS.md#integrated-host-validation-and-launcher-cleanup-fix-2026-10-19).
+
 - **Parity completion (2026-10-19, `356e5a3` on `codex/mac-launcher-parity`):**
   Native Discord editing/IPC, native fatal/hang report open/export, shared rich
   Markdown, matching release/version/maintenance page structure, safe successful
