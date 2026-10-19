@@ -2,7 +2,7 @@
 
 ## Native Mac launcher port (2026-10-19)
 
-Implemented on `codex/mac-launcher-parity`, based on current main `ade3763`, in
+Implemented in `c252956` on `codex/mac-launcher-parity`, based on main `ade3763`, in
 an isolated source worktree because the primary checkout had active native
 renderer edits. Those edits and its branch were preserved. The native game is
 still the primary checkout's separately built binary; the launcher is not a new

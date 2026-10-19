@@ -1289,7 +1289,7 @@ Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
-- **Native launcher port (2026-10-19, `codex/mac-launcher-parity`, uncommitted):**
+- **Native launcher port (2026-10-19, `codex/mac-launcher-parity`, commit `c252956`):**
   A standalone ARM64 Avalonia `.app` now shares the Windows v1.2.18 home layout,
   original art, settings/config models, release client, downloader, import,
   update/rollback transactions and diagnostic filtering. Host adapters are in
