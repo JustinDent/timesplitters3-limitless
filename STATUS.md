@@ -7810,3 +7810,29 @@ MAC-048. No conflict markers remain and `git diff --check` passed.
 The combined game executable and native Mac runtime were not rebuilt/retested
 for this merge; earlier build/live-game evidence remains scoped to its recorded
 revision. Personal files and the primary checkout were preserved.
+
+
+## Launcher compatibility automation (2026-10-19)
+
+Source: `codex/launcher-compatibility-automation`, based on shared launcher UI
+`725b27ca906d8af37d10925e54980e9908e36453` / PR #189, which depends on #187/#186.
+Local host: macOS 27.0.1 ARM64. No game renderer/runtime or personal data changes.
+The workflow uses a pinned Codex Action (`bdf19a4a223ec2549a3e2274a0cf61556bc07675`)
+and CLI/proxy 0.163.0. Linux reviews source; Windows and Mac run actual launcher
+checks through the same reusable workflow as release builds. Proposed repairs are
+separate PRs; automatic merging and release publication are not enabled.
+
+Local validation: 21 offline compatibility tests, 16 publication/recovery tests,
+and 52 CI-scope/backlog checks passed. Actual temporary Git repositories exercise
+patch add/modify/delete, protected paths, symlink rejection and sanitized source
+snapshots. Other cases cover both directions, incomplete file lists, credentials,
+trust, stale revisions, failed host builds, bounded output, idempotent PR creation,
+and explicit bot-PR test dispatch without recursive fix generation. Verified
+`actionlint` 1.7.12 passes all four changed workflow files. Both-host CI results will
+be appended after publication of this branch.
+
+Real OpenAI execution, live automatic repair PR creation and enforcement on main
+remain unrun until the dedicated API key is provisioned, the workflow stack is
+merged, and the activation steps are completed. No API key has been created or
+written by this work. Credential provisioning is pending. Existing MAC-021 delivery,
+notarization and visual acceptance limits remain unchanged.

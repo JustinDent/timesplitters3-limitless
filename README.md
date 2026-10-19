@@ -302,3 +302,7 @@ The launcher also records unfinished game sessions. After a nonzero exit or a
 restart with an abandoned session, Diagnostics can flag an unexpected exit even
 when no dump was captured. These reports can be exported locally; an unobserved
 exit has an unknown cause and can also follow a reboot or interrupted launcher.
+
+Launcher maintenance: [automatic Windows/Mac compatibility review](docs/launcher-compatibility.md)
+checks both directions and proposes separate fix PRs, with shared build/package
+validation. Activation requires the dedicated API credential and repository setup.

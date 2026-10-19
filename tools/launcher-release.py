@@ -279,7 +279,12 @@ def main():
     if args.command == 'plan':
         event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
         plan = plan_release(event, os.environ['GITHUB_EVENT_NAME'], os.environ['GITHUB_REF'],
-                            os.environ['GITHUB_SHA'], os.environ['GITHUB_REPOSITORY'])
+                            os.environ.get('LAUNCHER_VALIDATION_SHA') or os.environ['GITHUB_SHA'], os.environ['GITHUB_REPOSITORY'])
+        require(not os.environ.get('LAUNCHER_VALIDATION_SHA') or not plan['publish'],
+                'An alternate validation source can never publish a release.')
+        require(not os.environ.get('LAUNCHER_VALIDATION_SHA') or
+                git('rev-parse', 'HEAD') == plan['source_revision'],
+                'Validation checkout does not match its exact requested source.')
         write_json(args.plan, plan)
         if os.environ.get('GITHUB_OUTPUT'):
             with open(os.environ['GITHUB_OUTPUT'], 'a') as output:

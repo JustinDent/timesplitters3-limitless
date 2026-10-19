@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict", "summary", "findings", "patch"],
+  "properties": {
+    "verdict": {"type": "string", "enum": ["pass", "changes_needed", "blocked"]},
+    "summary": {"type": "string"},
+    "findings": {"type": "array", "items": {"type": "string"}},
+    "patch": {"type": "string"}
+  }
+}

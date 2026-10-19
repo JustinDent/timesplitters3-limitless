@@ -165,3 +165,7 @@ propagation tests also mutate a disposable source to verify that a single label,
 margin, button-padding, corner-radius or disabled-state edit reaches the Mac output.
 The release workflow runs both builds before publishing one release's packages.
 The Windows two-executable package and existing updater size limits are retained.
+
+Automatic review and proposed adapter fixes are described in
+[launcher compatibility](launcher-compatibility.md). Both host tests remain
+required evidence; automatic review does not replace additional OS/visual checks.
