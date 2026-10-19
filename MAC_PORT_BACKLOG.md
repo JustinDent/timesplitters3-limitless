@@ -835,7 +835,10 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   validation because the SDK CDN rejects urllib's default client. The dependent
   `codex/shared-platform-validation` change identifies the downloader and keeps
   the existing archive/version/checksum pins. Local regression checks pass;
-  hosted GPU rerun and Windows results remain pending. This does not close
+  Windows subsequently passed 195 runtime checks, including the common renderer
+  compile checks and WARP GPU contract, with two test-harness failures. Native
+  path comparison and explicit interpolation fixture hooks fix those failures;
+  hosted reruns remain pending. This does not close
   renderer fidelity or scene acceptance. [Evidence](STATUS.md#shared-platform-ci-validation-2026-10-19).
 
 ### MAC-006 — Cube and volume texture resources

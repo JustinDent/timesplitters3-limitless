@@ -12,7 +12,19 @@
   `macos-26-arm64/20261013.0424` (macOS 26.6.2, Python 3.12.10) passes 47
   CI/backlog checks, 26 patch checks (two skips), and 166 runtime checks
   (18 skips). Its GPU prerequisite fails downloading the pinned SDK with HTTP
-  403; no hosted GPU success is claimed. Windows results remain pending.
+  403; no hosted Mac GPU success is claimed. Windows (MSVC 14.51.36231,
+  Python 3.12.10) passes all 28 patch checks and finishes its runtime selection
+  with 195 passes, 12 skips and two harness failures. The common renderer syntax
+  checks and D3D11 WARP shader/depth/presentation contract pass. Release and
+  launcher stages are skipped after the failed runtime step; Windows gameplay
+  remains untested.
+- **Windows harness fixes:** The GPU environment assertion now compares a
+  native `Path`, rather than expecting Unix separators on Windows. The actual
+  HLE interpolation fixture now explicitly supplies its out-of-scope hooks
+  instead of relying on Clang's dead stripping to hide unresolved symbols.
+  Those hooks abort if called; both hosts link the full fixture without dead
+  stripping and retain the existing redraw/gate/failure assertions. A hosted
+  rerun must confirm MSVC acceptance.
 - **Download cause/fix:** Local HEAD and four-byte range requests reproduce
   HTTP 403 / CDN error 1010 with urllib's generic client header. Identifying the
   downloader as `TSFP-SDK-Setup/1.0` returns HTTP 200 / 206 and ZIP magic from
@@ -22,7 +34,8 @@
   the pinned archive and checksum. The regression verifies the request and
   rejects unpinned response bytes before any extraction or installer execution.
 - **Local checks:** On macOS 27.0.1 arm64, 59 SDK/CI/backlog checks pass after
-  the fix. The preceding full hosted-suite selection also passed locally
+  the downloader fix; 76 combined renderer/SDK/CI/backlog checks pass after
+  the Windows harness fixes. The preceding full hosted-suite selection also passed locally
   (173 passed, 11 skipped; `logs/shared-platform-full-host.out`). No game rebuild
   is needed for this downloader-only change. Hosted rerun and remaining common
   renderer settings/fullscreen/scene acceptance are still required.
