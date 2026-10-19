@@ -5621,3 +5621,81 @@ selected by the Windows CI native step passed (9.30 seconds). Logs:
 Python 3.12/MSVC 14.51; its rerun is needed to confirm that environment.
 No game rebuild/play session was required for this test-only fix. Native Mac
 behavior is unchanged; MAC-033's queued network adaptation remains unchanged.
+
+## Issue #118: Online bot session ownership (2026-10-18)
+
+Local, uncommitted on `118-bug-online---guests-unable-to-see-bots`, based on
+`6d351c4`. Reproduced with two Windows instances using the actual Online menu,
+companion processes and authenticated UDP bridges, backed by an isolated
+loopback directory. Two humans and six bots loaded the same match. Host bots
+became active; guest bot bodies retained disabled flags and initial health,
+then disappeared as the original game removed their unsynchronized bodies.
+
+The host generated and registered its local XNKID, but never resolved its own
+XNADDR: Online deliberately does not relay discovery broadcasts to their sender.
+Bot transmission incorrectly required that self-discovery cache entry. Bounded
+diagnostics confirmed `peers=0, targets=1` on the host, so every snapshot returned
+before sending. The guest's host address and match context were correct.
+
+`src/pc_network.c` now retains the local session ID from XNetCreateKey, enables
+it on matching XNetRegisterKey, and uses it directly for bot snapshots. Foreign
+registration/unregistration does not change ownership. Matching unregister,
+new key creation and transport shutdown invalidate the preceding registration.
+The guest still checks the selected host, session ID, match, state validity and
+tick ordering; the Online bridge's authentication and compatibility checks are
+unchanged. No snapshot format, generated game code or patch-stack change.
+
+Validation on Windows AMD64, Python 3.14.2, MSVC 19.42 / toolset 14.42.34433,
+with the D3D11 game renderer:
+
+- Verified the supported US `default.xbe` SHA-256
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+  Physical free space before builds was approximately 458 GB; apparent sparse
+  test-disk capacities were not treated as physical allocation.
+- The native regression reproduced the old host's missing Online snapshot,
+  then passed with the fix. It covers send without a self-XNADDR cache entry,
+  receipt through the bridge into a smaller title buffer, rejection of wrong
+  source/session/match, unrelated registration, unregister/re-register,
+  replacement keys and disconnect/reconnect. Existing LAN transmission passes.
+  Logs: `logs/issue118-regression-before.log` and
+  `logs/issue118-regression-after.log`.
+- `tsfp.ps1 -Action Build` applied/verified the complete pinned patch stack and
+  passed its native checks. Logs: `logs/issue118-build.log` and
+  `logs/issue118-final-build.log` (completed optimized native regressions).
+- All 43 selected Online, identity, bot model/guest/native-fallback,
+  original-US results and patch transition/tracking checks passed across the
+  initial run and focused rerun. One initial patch test encountered WinError 32
+  while cleaning its temporary source fixture; the isolated rerun passed.
+  Logs: `logs/issue118-tests.log`, `logs/issue118-patch-recheck.log`.
+- In the rebuilt Online match, all six guest bot bodies received drawable flags
+  and host vitals. Read-only samples show matching damage/death states and
+  successful guest body recreation after host respawns. Automated movement and
+  firing used disposable Test Lab profiles, with separate controls, both display
+  configurations and save paths. Log: `logs/issue118-fixed-pair.log`.
+- A second bounded Online run used a rotating stationary guest camera. Reviewed
+  D3D11 window capture `private/captures/issue118/visual-client-135.png` clearly
+  shows a bot model with its weapon; the pre-fix capture is retained beside it.
+  Across 115 guest samples, each of the six bots changed position and animation
+  pose (105–115 distinct pose samples per bot), and every bot's spawn counter
+  advanced. Host/guest health and respawn observations are retained in
+  `private/captures/issue118/observations.json`; summary and run logs are
+  `logs/issue118-observations.log` and `logs/issue118-visual-pair.log`.
+  Redundant BMP captures were recycled; retained evidence totals about 1.6 MB.
+
+Build compatibility:
+`30b8e16732c2f23683cebd74242afec2457adf0decef8041beafd3d109dccfb6`.
+Final Release executable SHA-256:
+`bb4b5fd34d8d58e0765eccc5f8eed7f180104a27cea2f6298410ee72f6284c13`.
+Gameplay runs used executable
+`2e81eaee2e691f68e70011ba1d35744fe77ae6432e2360d3cc5024454dfba03d`;
+the final build after completing test-only assertions has the same production
+source/compatibility identity and passed native checks and executable/content
+seal verification. It was not given another gameplay run.
+The local build includes the uncommitted transport fix; both peers need the
+same rebuilt version. No release was packaged or published.
+
+Internet/NAT traversal, long sessions, all game modes and native Mac execution
+were not validated by these loopback Online tests. MAC-033's experimental
+network-bot entry records the session-lifetime requirement for the eventual
+Mac network adapter. Other-device synchronization is unverified. Personal
+saves/settings were preserved; bounded runners recycle their disposable disks.

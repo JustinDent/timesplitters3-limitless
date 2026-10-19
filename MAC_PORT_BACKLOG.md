@@ -1549,6 +1549,21 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   the bot helpers linked through the menu translation unit; no production
   change or Mac adaptation is needed for this test-only fix. The full Windows
   native CI test selection passed locally (81 tests; see STATUS.md).
+- **Online visibility follow-up (issue #118, uncommitted):**
+  `src/pc_network.c` now retains the locally created and registered session ID
+  for bot snapshots. Online hosts do not receive their own discovery broadcasts,
+  so looking up the host in the XNADDR conversion cache prevented all bot sends.
+  Registration of foreign sessions cannot replace the local ID; unregister,
+  key replacement and disconnect stop use of the preceding session. Guest
+  host/session/match checks and the shared snapshot format remain unchanged.
+  `tests/pc_network.c` covers Online send/receive without self-discovery,
+  rejection and session lifetime. This is the existing Windows transport;
+  no additional Mac adapter is needed now. When MAC-013 is implemented,
+  preserve explicit session ownership rather than relying on self-discovery.
+  Acceptance includes an Online host with an empty address-conversion cache,
+  visible/animated guest bots, combat, respawns and reconnects. See
+  [issue #118 validation](STATUS.md#issue-118-online-bot-session-ownership-2026-10-18).
+  Native Mac execution and other-device synchronization remain unverified.
 - **Merge integration:** PR #108 preserves main's menu-mouse/quit adapters
   alongside network bots. The input harness accepts either absolute cursor
   coordinates or sequenced gameplay motion. Renumbered this entry from MAC-028
