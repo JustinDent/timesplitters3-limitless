@@ -8,6 +8,7 @@ namespace TimeSplitters.Launcher
     {
 #if MACOS
         public const string AssetSuffix = "macos-arm64";
+        public static string SessionLog(string tag){return "logs/native-play.err";}
         public const int LauncherArchiveLimit = 256*1024*1024, LauncherExpandedLimit = 512*1024*1024, LauncherFileLimit = 4096, LauncherManifestLimit = 1024*1024;
         public const int DefaultInterpolation = 2;
         public const string UpdateManifest = "launcher-update-macos-arm64.json";
@@ -31,6 +32,7 @@ namespace TimeSplitters.Launcher
         public static void Executable(string path) { if(OperatingSystem.IsMacOS() && File.Exists(path) && (path.EndsWith("/futureperfect_recomp") || path.EndsWith("/TimeSplitters.Launcher") || path.EndsWith(".command"))) File.SetUnixFileMode(path,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute|UnixFileMode.GroupRead|UnixFileMode.GroupExecute|UnixFileMode.OtherRead|UnixFileMode.OtherExecute); }
 #else
         public const string AssetSuffix = "windows-x64";
+        public static string SessionLog(string tag){return "Logs/"+tag+".err";}
         public const int LauncherArchiveLimit = 16*1024*1024, LauncherExpandedLimit = 32*1024*1024, LauncherFileLimit = 12, LauncherManifestLimit = 16384;
         public const int DefaultInterpolation = 1;
         public const string UpdateManifest = "launcher-update.json";

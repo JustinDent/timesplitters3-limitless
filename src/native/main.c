@@ -2,6 +2,8 @@
 #include <xbox/xboxrecomp.h>
 #include "xbox_watchpoint.h"
 #include "recomp_config.h"
+#include "crash_posix.h"
+#include "../pc_discord.h"
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +11,7 @@
 #include <unistd.h>
 #include <sys/ucontext.h>
 
-extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi;
+extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi, g_ebp;
 extern ptrdiff_t g_xbox_mem_offset;
 extern void xbe_entry_point(void);
 extern int recomp_dispatch_init(void);
@@ -22,21 +24,14 @@ extern int tsfp_native_mmio(siginfo_t *, void *);
 static void fault(int sig, siginfo_t *info, void *context)
 {
     if ((sig == SIGBUS || sig == SIGSEGV) && tsfp_native_mmio(info, context)) return;
-    ucontext_t *uc = context;
-    uintptr_t pc = uc->uc_mcontext->__ss.__pc;
-    uint32_t ins; memcpy(&ins, (void *)pc, sizeof ins);
-    char line[512];
-    int n = snprintf(line, sizeof line,
-        "\n[NATIVE-FAULT] signal=%d address=%p guest-offset=%p "
-        "pc=%p instruction=%08x eax=%08x ecx=%08x edx=%08x esp=%08x ebx=%08x esi=%08x edi=%08x\n",
-        sig, info->si_addr, (void *)g_xbox_mem_offset,
-        (void *)pc, ins, g_eax, g_ecx, g_edx, g_esp, g_ebx, g_esi, g_edi);
-    if (n > 0) write(STDERR_FILENO, line, (size_t)n < sizeof line ? (size_t)n : sizeof line - 1);
-    _Exit(128 + sig);
+    tsfp_native_crash_signal(sig,info,context);
 }
+
+static void capture_guest(uint32_t r[8]){r[0]=g_eax;r[1]=g_ecx;r[2]=g_edx;r[3]=g_esp;r[4]=g_ebx;r[5]=g_esi;r[6]=g_edi;r[7]=g_ebp;}
 
 int main(int argc, char **argv)
 {
+    int helper_result=tsfp_native_crash_helper(argc,argv);if(helper_result>=0)return helper_result;
     if(argc==2 && strcmp(argv[1],"--renderer-self-test")==0) {
         extern int tsfp_native_renderer_test(void);
         return tsfp_native_renderer_test();
@@ -54,14 +49,16 @@ int main(int argc, char **argv)
     (void)argc; (void)argv;
     setvbuf(stdout, NULL, _IONBF, 0);
     setvbuf(stderr, NULL, _IONBF, 0);
+    tsfp_native_crash_init(capture_guest);
     struct sigaction sa = {0};
     sa.sa_sigaction = fault;
-    sa.sa_flags = SA_SIGINFO;
+    sa.sa_flags = SA_SIGINFO | SA_ONSTACK;
     sigemptyset(&sa.sa_mask);
     sigaction(SIGSEGV, &sa, NULL);
     sigaction(SIGBUS, &sa, NULL);
     sigaction(SIGILL, &sa, NULL);
     sigaction(SIGFPE, &sa, NULL);
+    sigaction(SIGABRT, &sa, NULL);
 
     const char *game = getenv("RECOMP_GAME_DIR");
     const char *saves = getenv("RECOMP_SAVE_DIR");
@@ -110,7 +107,11 @@ int main(int argc, char **argv)
     if (!recomp_dispatch_init()) fprintf(stderr, "[NATIVE-BOOT] Dispatch uses binary search\n");
     xbox_WatchdogStart();
     printf("[NATIVE-BOOT] Entering translated Xbox entry 0038024D; ESP=%08x\n", g_esp);
+    pc_discord_start();
+    tsfp_native_crash_armed(1);
     xbe_entry_point();
+    tsfp_native_crash_armed(0);
+    pc_discord_stop();
     printf("[NATIVE-BOOT] Guest entry returned\n");
     xbox_kernel_shutdown();
     xbox_MemoryLayoutShutdown();

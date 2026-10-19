@@ -1,4 +1,13 @@
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <time.h>
+#include <unistd.h>
+#define Sleep(ms) usleep((ms)*1000)
+#define _putenv_s(k,v) setenv(k,v,1)
+typedef unsigned long long ULONGLONG;
+static ULONGLONG GetTickCount64(void){struct timespec t;clock_gettime(CLOCK_MONOTONIC,&t);return (ULONGLONG)t.tv_sec*1000+t.tv_nsec/1000000;}
+#endif
 #include "pc_discord.h"
 #include <stdlib.h>
 #include <stdio.h>

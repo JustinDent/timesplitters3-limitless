@@ -4,8 +4,8 @@ The native Apple Silicon launcher ports the Windows v1.2.18 interface using
 Avalonia. Its home layout is generated directly from `tools/launcher/Launcher.xaml`;
 artwork, placement, colors and labels come from that Windows source. The native
 settings, release notes, version browser, maintenance and startup windows use
-Mac controls. This is a local development port, not a published Mac release or
-certification of complete visual/behavioral parity.
+Mac controls. The local build includes native Discord, crash/hang capture, rich release notes,
+and isolated end-to-end tests. Published Mac delivery remains separate.
 
 ## Build and run
 
@@ -61,8 +61,10 @@ Version ordering, Stable/Preview filtering, original-game import, checksum/path
 validation, resumed downloads, update journals, rollback, settings models,
 diagnostics filtering and issue-draft preparation use the existing Windows
 source. Native keyboard/mouse events map to the shared binding codes, including
-134/135 for the wheel. Unsupported Discord preferences remain saved; the native
-Discord IPC game adapter is still pending and its controls are read-only.
+134/135 for the wheel and the shared reserved-key/conflict rules. The Discord
+tab edits the same optional, off-by-default preferences as Windows. Native local
+IPC uses the same bounded protocol, activity decoder, rate limit and reconnect
+policy; the running Discord desktop client is required. No login/token is used.
 
 The app requests only `macos-arm64` assets. Windows releases are never installed
 or run by this launcher. The existing checkout stays usable when no compatible
@@ -84,10 +86,19 @@ updates after the old process exits. Original game data, saves and config are
 never launcher-update targets. Building does not publish a release.
 
 The executable has a local ad-hoc signature. Developer ID signing, notarization,
-clean-machine installation, real published upgrade/repair/rollback and native
-crash-dump capture have not been validated. Windows minidumps cannot be copied
-as a Mac crash-capture implementation. Unexpected process exits still use the
-shared session records and privacy-filtered diagnostic summaries.
+clean-machine installation and real published upgrade/repair/rollback remain
+release acceptance checks. Local packaged install, helper-based repair/restart,
+transaction rollback and native game lifecycle checks are covered.
+
+Fatal signals notify a prestarted external reporter using preallocated shared
+memory. Reports retain native ARM64/Xbox registers, executable SHA-256, matching
+PC/LR symbols, a bounded native process sample and a 64 KiB log tail. The native
+builder retains an adjacent dSYM with UUID/hash provenance. Hang observation uses
+the shared 60-second/180-second policy, focus/modal suppression and sleep grace,
+leaving the game running. Diagnostics opens/exports the latest local report;
+export includes at most 256 KiB of native context. Nothing is uploaded. Native
+context files replace the Windows-only minidump format. Unexpected exits still
+use the same durable session records and uncertain-cause summaries as Windows.
 
 ## Validation
 
@@ -98,7 +109,8 @@ these checks on an ARM64 Mac runner alongside existing Windows launcher checks.
 
 The executable also supports `--render-preview output.png`,
 `--render-settings-preview output.png`, `--render-settings-graphics output.png`,
-`--render-settings-discord output.png`, and `--render-repair-preview output.png`.
+`--render-settings-discord output.png`, `--render-news-preview output.png`,
+`--render-diagnostics-preview output.png`, and `--render-repair-preview output.png`.
 Pass an explicitly disposable `--root` when rendering settings. Preview mode
 performs no network requests, startup cleanup or saves. Run actual game tests
 through `tools/test-native-mac.py` with its isolated paths and bounded duration;
@@ -106,3 +118,21 @@ do not automate Play against personal saves.
 
 The first measured native launcher port is recorded in
 [STATUS.md](../STATUS.md#native-mac-launcher-port-2026-10-19).
+
+The end-to-end wrapper uses `test-native-mac.py`'s locked, disposable Test Lab
+profile and both isolated display configurations. It launches the real app/game,
+checks native window observation, minimize/restore and exit handling, and
+recycles only disposable virtual disks after all child processes exit:
+
+```sh
+python3 tools/test-mac-launcher.py --launcher 'build/macos-launcher/TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher' --mode quit
+python3 tools/test-mac-launcher.py --launcher 'build/macos-launcher/TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher' --mode crash
+```
+
+`--discord` explicitly publishes this disposable session's activity to the running
+Discord client and requires its acknowledgement. `--seconds` bounds the run;
+`--runtime-root` selects an existing same-host checkout's local data/build.
+The native builder accepts the same `--runtime-root` to reuse dependencies and
+the single `build/macos` directory from a focused source worktree. It records the
+source worktree revision/hashes and never copies game data or virtual environments.
+Use the bounded wrapper, never automate Play against the personal installation.

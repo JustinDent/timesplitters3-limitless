@@ -25,19 +25,24 @@ def run(*args, cwd=ROOT):
 
 
 def main():
+    global UPSTREAM, PYTHON, CMAKE, NINJA, BUILD
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--setup', action='store_true', help='Install shared pinned Python requirements and build the symbol scanner')
     parser.add_argument('--generate', action='store_true', help='Regenerate game C from the verified local XBE')
     parser.add_argument('--test', action='store_true', help='Run native platform, MMIO and path regression tests after building')
     parser.add_argument('--renderer', choices=('gl','vulkan'), default='gl',
                         help='Native renderer; Vulkan opts into the common Xbox frontend')
+    parser.add_argument('--runtime-root', type=Path, default=ROOT, help='Reuse this same-host checkout’s ignored dependencies, game data and single native build')
     args = parser.parse_args()
+    runtime_root=args.runtime_root.resolve()
+    UPSTREAM=runtime_root/'external/ts3FPrecomp'; PYTHON=runtime_root/'.venv/bin/python'
+    CMAKE=runtime_root/'.venv/bin/cmake'; NINJA=runtime_root/'.venv/bin/ninja'; BUILD=runtime_root/'build/macos'
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('The native bring-up target currently supports Apple Silicon macOS only.')
     pins = (ROOT / 'tsfp.ps1').read_text()
     revision = re.search(r"\$revision = '([a-f0-9]{40})'", pins)[1]
     expected = re.search(r"\$expectedHash = '([A-F0-9]{64})'", pins)[1].lower()
-    xbe = ROOT / 'private/game/default.xbe'
+    xbe = runtime_root / 'private/game/default.xbe'
     if not xbe.is_file():
         raise SystemExit('Missing private/game/default.xbe; import the supported US game before building.')
     if hashlib.sha256(xbe.read_bytes()).hexdigest() != expected:
@@ -47,7 +52,7 @@ def main():
     if not PYTHON.exists():
         if sys.version_info < (3, 12):
             raise SystemExit('Run this script with Python 3.12 or newer to create .venv.')
-        run(sys.executable, '-m', 'venv', ROOT / '.venv')
+        run(sys.executable, '-m', 'venv', runtime_root / '.venv')
     if args.setup:
         run(PYTHON, '-m', 'pip', 'install', '-r', ROOT / 'requirements.txt')
         if not UPSTREAM.exists():
@@ -69,7 +74,7 @@ def main():
     generated = UPSTREAM / 'titles/futureperfect/src/recomp/gen/recomp_funcs.h'
     if args.generate:
         run(PYTHON, '-m', 'tools.xdk_symbols', xbe, cwd=UPSTREAM)
-        run(PYTHON, 'scripts/recompile.py', xbe, '--work-dir', ROOT / 'private/pipeline',
+        run(PYTHON, 'scripts/recompile.py', xbe, '--work-dir', runtime_root / 'private/pipeline',
             '--project', 'titles/futureperfect', '--game-name', 'TimeSplitters: Future Perfect',
             '--trace-all-entries', cwd=UPSTREAM)
         run(PYTHON, ROOT / 'tools/recomp-generation.py', UPSTREAM, '--record')
@@ -84,7 +89,7 @@ def main():
         raise SystemExit('Generated wrappers are stale; regenerate with --generate.')
     # Shared debug code uses the same content/source identity on both hosts.
     # This supplies build provenance, not a native multiplayer implementation.
-    run(PYTHON, ROOT / 'tools/network-identity.py', '--output', BUILD / 'generated')
+    run(PYTHON, ROOT / 'tools/network-identity.py', '--game', runtime_root / 'private/game', '--output', BUILD / 'generated')
     command = [CMAKE, '-S', UPSTREAM / 'titles/futureperfect', '-B', BUILD, '-G', 'Ninja',
                f'-DCMAKE_MAKE_PROGRAM={NINJA}', '-DCMAKE_BUILD_TYPE=Debug',
                '-DCMAKE_OSX_ARCHITECTURES=arm64', f'-DTSFP_NATIVE_DIR={ROOT / "src/native"}']
@@ -94,10 +99,11 @@ def main():
     command.append('-DTSFP_NATIVE_RHI='+('ON' if args.renderer=='vulkan' else 'OFF'))
     if args.renderer=='vulkan':
         import vulkan_sdk
-        command.append('-DTSFP_VULKAN_SDK='+str(vulkan_sdk.verify_install()))
+        command.append('-DTSFP_VULKAN_SDK='+str(vulkan_sdk.verify_install(runtime_root)))
     run(*command)
     run(CMAKE, '--build', BUILD, '--target', 'futureperfect_recomp', '--parallel', '4')
     run('file', BUILD / 'futureperfect_recomp')
+    run('dsymutil', BUILD / 'futureperfect_recomp', '-o', BUILD / 'futureperfect_recomp.dSYM')
     # Include shared PC source hashes as well as the native adapters.
     sources = sorted((ROOT / 'patches').glob('*.patch')) + sorted((ROOT / 'src').rglob('*'))
     manifest = dict(source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
@@ -105,6 +111,8 @@ def main():
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,
                     compatibility_identity=json.loads((BUILD / 'generated/network-identity.json').read_text())['compatibility'],
                     renderer=args.renderer, build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
+                    symbol_uuid=subprocess.check_output(['dwarfdump','--uuid',str(BUILD/'futureperfect_recomp.dSYM')],text=True).split(' (arm64)')[0],
+                    symbols_sha256=hashlib.sha256((BUILD/'futureperfect_recomp.dSYM/Contents/Resources/DWARF/futureperfect_recomp').read_bytes()).hexdigest(),
                     compiler=subprocess.check_output(['clang', '--version'], text=True).splitlines()[0],
                     executable_sha256=hashlib.sha256((BUILD / 'futureperfect_recomp').read_bytes()).hexdigest(),
                     source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources if p.is_file()},
@@ -119,13 +127,13 @@ def main():
             env = {k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_', 'TSFP_'))}
             test = BUILD / 'path-tests'
             env.update(RECOMP_INPUT_CONFIG=str(ROOT / 'tests/fixtures/pc-controls.json'),
-                       RECOMP_SAVE_DIR=str(test), RECOMP_GAME_DIR=str(ROOT / 'private/game'),
+                       RECOMP_SAVE_DIR=str(test), RECOMP_GAME_DIR=str(runtime_root / 'private/game'),
                        RECOMP_DISPLAY_CONFIG=str(test / 'runtime.conf'),
                        TSFP_DISPLAY_CONFIG=str(test / 'pc-display.ini'),
                        XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'),
                        XDG_CACHE_HOME=str(test / 'xdg-cache'))
             if args.renderer=='vulkan':
-                env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(),'kosmickrisp')
+                env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(runtime_root),'kosmickrisp')
                 env['RECOMP_VK_VALIDATION']='1'
             for check in ('--renderer-self-test', '--input-self-test', '--settings-self-test', '--debug-self-test'):
                 if check in ('--settings-self-test', '--debug-self-test'):
@@ -149,7 +157,7 @@ def main():
                     assert saved['controllers'][1:] == settings['controllers'][1:]
                     assert Path(str(control_path) + '.bak').read_bytes() == before
         finally:
-            print('Test disk cleanup:', recycle_test_disks(ROOT, BUILD / 'path-tests'))
+            print('Test disk cleanup:', recycle_test_disks(runtime_root, BUILD / 'path-tests'))
 
 
 if __name__ == '__main__':

@@ -11,6 +11,7 @@ namespace TimeSplitters.Launcher
 {
     public sealed class NativeStartup:Window
     {
+        internal static bool HandingOff;
         readonly CancellationTokenSource stop=new CancellationTokenSource();readonly TextBlock status;
         readonly string root;readonly string[] args;bool handedOff;
         public NativeStartup(string root,string[] args)
@@ -31,9 +32,7 @@ namespace TimeSplitters.Launcher
                             using(var deadline=CancellationTokenSource.CreateLinkedTokenSource(stop.Token)){
                                 deadline.CancelAfter(TimeSpan.FromMinutes(2));status.Text="Downloading launcher "+release.Tag+"…";
                                 if(await SelfUpdate.Prepare(root,release,client,new Progress<double>(n=>status.Text="Updating launcher · "+n.ToString("0")+"%"),deadline.Token)){
-                                    string helper=Core.PathIn(root,".launcher/mac-self-helper");File.Copy(Environment.ProcessPath,helper,true);File.SetUnixFileMode(helper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
-                                    var info=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};info.ArgumentList.Add("--apply-self");info.ArgumentList.Add(root);info.ArgumentList.Add(Environment.ProcessId.ToString());Process.Start(info);
-                                    handedOff=true;((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime).Shutdown();return;
+                                    handedOff=true;Handoff(root);return;
                                 }
                             }
                         }
@@ -43,10 +42,20 @@ namespace TimeSplitters.Launcher
             if(!IsVisible)return;handedOff=true;var desktop=(IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime;
             var window=new NativeWindow(root,args);desktop.MainWindow=window;window.Show();Close();
         }
-        public static int Apply(string root,int parent)
+        public static void Handoff(string root)
+        {
+            string helper=Core.PathIn(root,".launcher/mac-self-helper");LauncherPlatform.CopyFile(Environment.ProcessPath,helper);File.SetUnixFileMode(helper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
+            var info=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};info.ArgumentList.Add("--apply-self");info.ArgumentList.Add(root);info.ArgumentList.Add(Environment.ProcessId.ToString());Process.Start(info);
+            HandingOff=true;((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime).Shutdown();
+        }
+        public static int Apply(string root,int parent,bool probe=false)
         {
             try{SelfUpdate.WaitForParent(parent);using(var guard=new FileStream(Core.PathIn(root,".launcher/mac.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None)){
                 Core.RecoverLauncher(root);SelfUpdate.InstallPending(root);
+            }
+            if(probe){
+                var app=new ProcessStartInfo(Core.PathIn(root,Core.LauncherName)){UseShellExecute=false};app.ArgumentList.Add("--render-preview");app.ArgumentList.Add(Core.PathIn(root,"self-update-preview.png"));app.ArgumentList.Add("--root");app.ArgumentList.Add(root);
+                using(var process=Process.Start(app)){if(!process.WaitForExit(20000)){process.Kill(true);return 1;}return process.ExitCode;}
             }
             var info=new ProcessStartInfo("/usr/bin/open"){UseShellExecute=false};info.ArgumentList.Add("-n");info.ArgumentList.Add(Core.PathIn(root,"TimeSplitters Launcher.app"));info.ArgumentList.Add("--args");info.ArgumentList.Add("--skip-self-update");Process.Start(info);return 0;
             }catch(Exception e){LauncherLog.Write(root,e.ToString());return 1;}

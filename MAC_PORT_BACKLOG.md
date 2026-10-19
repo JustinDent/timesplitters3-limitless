@@ -148,7 +148,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
 | MAC-019 | Framebuffer refresh between effects (issue #9) | Awaiting validation |
 | MAC-020 | Adaptive cutscene letterboxing (issue #33) | Awaiting validation |
-| MAC-021 | Published-release launcher and pre-game settings | Queued |
+| MAC-021 | Published-release launcher and pre-game settings | Awaiting validation |
 | MAC-022 | Configurable gameplay FOV (issue #29) | Awaiting validation |
 | MAC-023 | Story Objectives health/shield (issue #11) | Awaiting validation |
 | MAC-024 | Resolution catalog and proportional UI (issues #27/#31) | Awaiting validation |
@@ -170,7 +170,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-041 | Published game version picker and banner replacement | Queued |
 | MAC-042 | Formatted release notes and browser links | Queued |
 | MAC-043 | Automatic mouse Auto Lookahead override | Awaiting validation |
-| MAC-044 | Game crash capture and launcher reports | Queued |
+| MAC-044 | Game crash capture and launcher reports | Awaiting validation |
 | MAC-045 | Terminal camera depth clears (issue #47) | Awaiting validation |
 | MAC-046 | Update transaction rename contention | Queued |
 | MAC-047 | Main-menu image and lettering fidelity | Awaiting validation |
@@ -179,7 +179,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-050 | Restore a reproducible native build from current main | Verified |
 | MAC-051 | Version and build-identity watermark | Awaiting validation |
 | MAC-052 | Experimental network bot setup (issue #25) | Queued |
-| MAC-053 | Discord Rich Presence (issue #63) | Queued |
+| MAC-053 | Discord Rich Presence (issue #63) | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -276,7 +276,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-044 - Game crash capture and launcher reports
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **Launcher release preparation:** v1.2.16 packages the Windows report UI and
   unfinished-session recovery from merged PR #160. Native crash/hang capture
   still requires a separate game update. The version bump adds no Mac adapter;
@@ -304,15 +304,19 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   Review follow-up in this PR: concurrent fatal threads wait for capture,
   report/export temporary names fit valid Windows paths, selected build
   configurations retain their own symbols, and source-only CI covers these cases.
-- **Mac support:** Existing fault/signal diagnostics remain; these Win32 sources
-  and build targets are guarded and are not compiled by the Mac adapter.
-- **Remaining:** Implement native crash capture with signal-safe notification and
-  an external reporter or OS crash-report integration, dSYM retention and native
-  report open/export UI. Reuse the versioned report metadata where applicable.
-  Add external frame-stall observation, native focus/modal/sleep suppression,
-  nonfatal hang dumps, recovery rearming and live report UI.
-  Add persistent launch/completion records, native process-identity checks,
-  uncertain unfinished-session reporting, and report/export recovery without a dump.
+- **Native implementation (2026-10-19, uncommitted on `codex/mac-launcher-parity`):**
+  `src/native/crash_posix.*`, native main/input hooks and the separate
+  `native-launcher-services` patch implement signal-safe shared-memory notification
+  to a prestarted reporter, ARM64/Xbox context, symbolication, bounded native
+  samples and log tails. The helper reuses `pc_hang_policy.h` with independent
+  foreground observation, modal suppression, sleep grace and recovery rearming.
+  `CrashReports.cs` and native Diagnostics share discovery/export/retention;
+  `GameSessions.cs` shares durable session recovery. Native builds retain dSYMs
+  and UUID/hash provenance. Native context replaces the OS-specific minidump.
+- **Evidence/remaining:** Actual crash and clean game exits, report export,
+  launcher restoration, synthetic hang/recovery/focus/modal/normal tests and
+  linked-path rejection pass. See [STATUS](STATUS.md#native-launcher-parity-completion-2026-10-19).
+  Clean-machine symbol/report delivery and a Windows host rerun remain unverified.
 - **Acceptance:** Isolated main/worker crash resolves against the exact Mach-O and
   dSYM; expected MMIO signals and normal exit create no crash reports; bounded
   storage, missing reporter/unwritable destination, log privacy, and native UI.
@@ -1250,6 +1254,17 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Status:** Awaiting validation
+- **Parity completion (2026-10-19, uncommitted on `codex/mac-launcher-parity`):**
+  Native Discord editing/IPC, native fatal/hang report open/export, shared rich
+  Markdown, matching release/version/maintenance page structure, safe successful
+  launch cleanup and isolated real-game lifecycle tests are implemented. Local
+  packaged helper repair/restart and live Discord acknowledgement pass. See
+  [measured acceptance](STATUS.md#native-launcher-parity-completion-2026-10-19).
+  This supersedes the historical adapter gaps below. Remaining release acceptance
+  is Windows host regression execution, Developer ID/notarization, clean-machine
+  delivery and published native runtime packages (MAC-012).
+
 - **Native launcher port (2026-10-19, `codex/mac-launcher-parity`, commit `c252956`):**
   A standalone ARM64 Avalonia `.app` now shares the Windows v1.2.18 home layout,
   original art, settings/config models, release client, downloader, import,
@@ -1264,14 +1279,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   [STATUS.md](STATUS.md#native-mac-launcher-port-2026-10-19). Personal configs and
   saves were not used for automated gameplay. Local Vulkan prerequisites use
   the existing verified SDK helper; this does not certify game rendering.
-- **Remaining acceptance:** Exact visual/behavioral comparison of every page,
-  physical input capture and minimize/restore during an isolated game run;
-  real native release install/self-update/repair and clean-machine validation;
-  Developer ID signing/notarization. MAC-012 must supply native runtime packages.
-  Discord IPC and native crash dumps remain game/host dependencies rather than
-  being silently advertised as supported. Native notes use safe text/basic
-  headings; rich WPF document formatting is not fully reproduced. Read
-  [the Mac launcher guide](docs/mac-launcher.md) for current scope and commands.
+
 
 - **Launcher v1.2.18 candidate (2026-10-19):** The local Windows candidate
   includes live Known Issues commit `2f5ca68` and main `d63a156`. Full launcher,
@@ -1373,7 +1381,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   high-contrast fallback, windowed/fullscreen transitions and clean shutdown.
   [Validation](STATUS.md#windows-title-bar-theme-experiment).
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **Repair / Verify and Diagnostics tabs (2026-10-17, commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98)):** Merged as `860dccd`, prepared for launcher v1.2.12. `MaintenancePage.cs`, `Launcher.cs`/XAML
   and the shared `PageTheme.cs` tab styling group both pages behind one Repair /
   Verify sidebar entry. Native tabs retain reports, verification results and
@@ -2187,7 +2195,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-053 - Discord Rich Presence (issue #63)
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** Optional launcher Discord tab with an enable switch and public
   Application ID. A Windows worker connects to the running Discord desktop client
   over local RPC, sends Story mission/difficulty/co-op and cutscene/pause state,
@@ -2204,17 +2212,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   `src/pc_controls.c`, the `discord-presence` patch, launcher `GameSettings.cs`,
   `SettingsPage.cs`, portable launch/package scripts, and
   [setup instructions](docs/discord-presence.md).
-- **Existing Mac support:** Configuration validation, mode policy and JSON
-  serialization and guarded-callback guest metadata decoding are plain shared C.
-  The new Win32 adapter and camera sampling define are Windows-only; existing native Mac source/build paths stay intact.
-  No Mac transport or settings UI is implemented or verified.
-- **Remaining adaptation:** Native local Unix-domain Discord IPC, bounded
-  asynchronous I/O/reconnect/exit, native preferences and lifecycle integration,
-  and guest-thread snapshot publication using the same shared model/decoder.
-  Preserve the US table bounds, Latin-1 to UTF-8 conversion, active versus menu
-  config distinction, frontend event-name caching, and occupied human-slot
-  counting (including holes). An established LAN session must work before any
-  remote latency peer/socket initializes. LAN/Online status must follow the native networking adapter when MAC-013 is implemented.
+- **Native implementation (2026-10-19, uncommitted on `codex/mac-launcher-parity`):**
+  `pc_discord.c` now shares the protocol, configuration and rate-limit worker;
+  `pc_discord_win32.h` and `native/discord_posix.h` supply only host primitives.
+  Native startup/shutdown and guest camera publication use the same model and
+  decoder, with editable launcher preferences. Eight real Unix-socket scenarios
+  plus the policy suite pass; a bounded native game session was acknowledged by
+  the running Discord desktop client. See [STATUS](STATUS.md#native-launcher-parity-completion-2026-10-19).
+- **Remaining acceptance:** Live mode/mission coverage beyond the recorded run,
+  other-device validation and native LAN/Online status after MAC-013. The existing
+  shared decoder preserves occupied human slots, built-in text bounds and event
+  caching. Native networking is not advertised as verified by this launcher work.
 - **Acceptance:** Compile shared policy tests on Mac; verify disabled/missing and
   malformed settings, Discord absent/start/restart, fragmented/oversized/error
   frames, mission/difficulty/co-op, map/type/event and population transitions,

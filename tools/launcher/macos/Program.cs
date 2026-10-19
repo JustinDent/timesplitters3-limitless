@@ -19,6 +19,7 @@ namespace TimeSplitters.Launcher
         [STAThread] public static int Main(string[] args)
         {
             Arguments=args;
+            if(args.Length==3 && args[0]=="--test-self-helper")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]),true);
             if(args.Length==3 && args[0]=="--apply-self")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]));
             if(args.Length==3 && args[0]=="--extract-art") { ExtractArt(args[1],args[2]);return 0; }
             if(args.Length==1 && args[0]=="--test")return NativeTests.Run();
@@ -49,6 +50,6 @@ namespace TimeSplitters.Launcher
     public sealed class NativeApplication:Application
     {
         public override void Initialize(){Name="TimeSplitters Launcher";RequestedThemeVariant=ThemeVariant.Dark;Styles.Add(new FluentTheme());}
-        public override void OnFrameworkInitializationCompleted(){if(ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)desktop.MainWindow=Program.Arguments.Any(a=>a.StartsWith("--render-"))?(Avalonia.Controls.Window)new NativeWindow(Program.Root,Program.Arguments):new NativeStartup(Program.Root,Program.Arguments);base.OnFrameworkInitializationCompleted();}
+        public override void OnFrameworkInitializationCompleted(){if(ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)desktop.MainWindow=Program.Arguments.Any(a=>a.StartsWith("--render-")||a=="--test-session")?(Avalonia.Controls.Window)new NativeWindow(Program.Root,Program.Arguments):new NativeStartup(Program.Root,Program.Arguments);base.OnFrameworkInitializationCompleted();}
     }
 }

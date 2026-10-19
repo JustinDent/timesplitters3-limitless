@@ -20,6 +20,16 @@ namespace TimeSplitters.Launcher
         [DllImport(CF)]static extern nint CFArrayGetCount(IntPtr array);
         [DllImport(CF)]static extern IntPtr CFArrayGetValueAtIndex(IntPtr array,nint index);
         [DllImport(CF)]static extern void CFRelease(IntPtr value);
+        [DllImport(CG)]static extern IntPtr CGWindowListCopyWindowInfo(uint options,uint relativeToWindow);
+        [DllImport(CF)]static extern IntPtr CFStringCreateWithCString(IntPtr allocator,string text,uint encoding);
+        [DllImport(CF)]static extern IntPtr CFDictionaryGetValue(IntPtr dictionary,IntPtr key);
+        [DllImport(CF)][return:MarshalAs(UnmanagedType.I1)]static extern bool CFNumberGetValue(IntPtr number,int type,out int value);
+        public static bool GameWindowReady(int pid){
+            IntPtr windows=CGWindowListCopyWindowInfo(17,0);if(windows==IntPtr.Zero)return false;
+            IntPtr owner=CFStringCreateWithCString(IntPtr.Zero,"kCGWindowOwnerPID",0x08000100),layer=CFStringCreateWithCString(IntPtr.Zero,"kCGWindowLayer",0x08000100);
+            try{for(nint i=0;i<CFArrayGetCount(windows);i++){var item=CFArrayGetValueAtIndex(windows,i);var p=CFDictionaryGetValue(item,owner);var l=CFDictionaryGetValue(item,layer);int process,level;if(p!=IntPtr.Zero&&l!=IntPtr.Zero&&CFNumberGetValue(p,3,out process)&&CFNumberGetValue(l,3,out level)&&process==pid&&level==0)return true;}return false;}
+            finally{CFRelease(owner);CFRelease(layer);CFRelease(windows);}
+        }
         public static IEnumerable<DisplayMode> DisplayModes()
         {
             var modes=new List<DisplayMode>();var array=CGDisplayCopyAllDisplayModes(CGMainDisplayID(),IntPtr.Zero);

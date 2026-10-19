@@ -1,3 +1,5 @@
+#include <signal.h>
+#include "crash_posix.h"
 /* SDL events are pumped on Cocoa's main thread. Guest input polls may happen
  * on workers: publish key/button state atomically, never call Cocoa there. */
 #include "input_sdl.h"
@@ -183,10 +185,10 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
         if(down && !e->key.repeat)pc_prompts_keyboard();
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F9){pc_debug_toggle_fps();return;}
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F12 && window){
-            tsfp_native_settings_release_input(window);pc_debug_show(NULL);return;
+            tsfp_native_settings_release_input(window);tsfp_native_crash_inhibit(1);pc_debug_show(NULL);tsfp_native_crash_inhibit(0);return;
         }
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F2 && window){
-            tsfp_native_settings_show(window);return;
+            tsfp_native_crash_inhibit(1);tsfp_native_settings_show(window);tsfp_native_crash_inhibit(0);return;
         }
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F11 && window){
             tsfp_native_settings_release_input(window);
@@ -283,6 +285,8 @@ void pc_controls_apply_mouse(uint32_t player,uint32_t fov_object,ptrdiff_t offse
     if(changed && samples++<12)fprintf(stderr,"[native-mouse] yaw %.3f -> %.3f pitch %.3f -> %.3f fov %.3f\n",old_yaw,*yaw,old_pitch,*pitch,fov);
 }
 void tsfp_native_input_frame(SDL_Window *window) {
+    tsfp_native_crash_frame();
+    if(window)tsfp_native_crash_focus((SDL_GetWindowFlags(window)&(SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MINIMIZED))==SDL_WINDOW_INPUT_FOCUS);
     atomic_store(&keys[0x86],0);atomic_store(&keys[0x87],0);
     int request=atomic_exchange(&menu_capture_request,0);
     if(request)set_capture(window,request==2);
@@ -312,6 +316,8 @@ void tsfp_native_input_frame(SDL_Window *window) {
         for(int n=0;n<32 && fgets(line,sizeof line,test_file);n++){
             line[strcspn(line,"\r\n")]=0;
             if(!line[0])continue;
+            if(!strcmp(line,"quit")){SDL_Event e={0};e.type=SDL_EVENT_QUIT;SDL_PushEvent(&e);continue;}
+            if(!strcmp(line,"crash")){raise(SIGABRT);continue;}
             float mx,my;int button,down;
             if(sscanf(line,"pointer %f %f",&mx,&my)==2 && isfinite(mx) && isfinite(my) && fabsf(mx)<=16384 && fabsf(my)<=16384) {
                 PcMenuPointer old=pc_controls_menu_hover_pointer();

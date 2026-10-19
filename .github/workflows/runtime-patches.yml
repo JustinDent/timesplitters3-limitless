@@ -124,6 +124,10 @@ on:
       - src/pc_controls.c
       - src/pc_discord*
       - tests/test_discord_presence.py
+      - tests/test_discord_macos.py
+      - tests/test_native_crash.py
+      - tests/native_crash.c
+      - tools/test-mac-launcher.py
       - tests/pc_discord.c
       - tests/discord_ipc_client.c
       - config/pc-discord.default.ini
@@ -244,7 +248,7 @@ jobs:
             tests/test_native_compiler.py tests/test_audio_timing.py
             tests/test_recomp_float_joins.py tests/test_recomp_vehicle_joins.py
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_terminal_depth.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
-            tests/test_xmv_stop.py tests/test_discord_presence.py
+            tests/test_xmv_stop.py tests/test_discord_presence.py tests/test_discord_macos.py tests/test_native_crash.py
             tests/test_crash_capture.py
             tests/test_cutscene_letterbox.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py

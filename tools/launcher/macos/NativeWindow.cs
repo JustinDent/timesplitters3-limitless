@@ -15,7 +15,7 @@ using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 namespace TimeSplitters.Launcher
 {
-    public partial class NativeWindow:Window
+    public sealed partial class NativeWindow:Window
     {
         readonly string root;readonly bool render;readonly string[] args;
         readonly ReleaseClient client=new ReleaseClient();
@@ -38,12 +38,14 @@ namespace TimeSplitters.Launcher
             Find<ComboBox>("ChannelPicker").SelectedIndex=render?1:SelfUpdate.PreviewChannel(root)?1:0;
             Find<ComboBox>("ChannelPicker").SelectionChanged+=(s,e)=>{if(render)return;Core.Write(Core.PathIn(root,".launcher/preferences.json"),Json.Encode(new{preview=Preview}));Run(Check);};
             Opened+=async(s,e)=>{try{
+                if(args.Contains("--test-session")){await TestSession();return;}
                 if(render){Refresh();await Render();return;}
                 Directory.CreateDirectory(Core.PathIn(root,".launcher"));installationLock=new FileStream(Core.PathIn(root,".launcher/mac.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
-                Core.RecoverLauncher(root);Core.Recover(root);GameSessions.Recover(root);Refresh();SelfUpdate.CleanupAfterStartup(root);await Check();
+                Core.RecoverLauncher(root);Core.Recover(root);Core.CleanupGameAfterStartup(root);string recovered=null;try{recovered=GameSessions.Recover(root);}catch(Exception ex){LauncherLog.Write(root,"Session recovery deferred: "+ex.GetType().Name);}Refresh();if(recovered!=null)Maintenance(true);SelfUpdate.CleanupAfterStartup(root);try{File.Delete(Core.PathIn(root,".launcher/mac-self-helper"));}catch(IOException){}await Check();
                 issuesTimer=new DispatcherTimer{Interval=TimeSpan.FromMinutes(5)};issuesTimer.Tick+=(a,b)=>{if(Find<ContentControl>("NewsHost").IsVisible && WindowState!=WindowState.Minimized && !busy)Run(()=>newsPage.RefreshIssues());};issuesTimer.Start();
             }catch(Exception ex){Status(ex.Message);if(installationLock==null)IsEnabled=false;}};
-            Closing+=(s,e)=>{if(busy || gameRunning){e.Cancel=true;Status("Wait for the operation or game to finish before closing the launcher.");}};
+            Activated+=(s,e)=>{if(newsPage!=null&&Find<Control>("NewsHost").IsVisible&&!busy)Run(newsPage.RefreshIssuesIfDue);};
+            Closing+=(s,e)=>{if(!NativeStartup.HandingOff && (busy || gameRunning)){e.Cancel=true;Status("Wait for the operation or game to finish before closing the launcher.");}};
             Closed+=(s,e)=>{issuesTimer?.Stop();newsPage?.Dispose();operation?.Cancel();installationLock?.Dispose();client.Dispose();};
         }
         T Find<T>(string name) where T:Control { return this.FindControl<T>(name)??throw new InvalidOperationException("Missing launcher control: "+name); }
@@ -101,14 +103,24 @@ namespace TimeSplitters.Launcher
             await Task.Run(()=>{NativeHost.CheckData(root);NativeHost.CheckBuild(root);});
             Core.Require(!Core.GameRunning(),"The game is already running.");
             NativeHost.Prepare(root);var info=GameSettings.StartInfo(root);
-            string id=GameSessions.Begin(root,DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff"));Process process;
-            try{process=Process.Start(info);}catch{GameSessions.CancelLaunch(root,id);throw;}
-            try{GameSessions.Started(root,id,process);}catch(Exception e){LauncherLog.Write(root,"Session start observation: "+e.Message);}
-            gameRunning=true;Refresh();WindowState=WindowState.Minimized;
-            try{var stdout=NativeHost.Drain(process.StandardOutput.BaseStream,Core.PathIn(root,"logs/native-play.out"));var stderr=NativeHost.Drain(process.StandardError.BaseStream,Core.PathIn(root,"logs/native-play.err"));
-                await process.WaitForExitAsync();await Task.WhenAll(stdout,stderr);GameSessions.Complete(root,id,process);Status(process.ExitCode==0?"Game closed.":"Game exited with code "+process.ExitCode+". Open Repair / Verify for diagnostics.");
-            }finally{gameRunning=false;process.Dispose();WindowState=WindowState.Normal;Activate();Refresh();}
+            await MonitorGame(info,root);
         }
+        bool lastWindowObserved;
+        async Task<int> MonitorGame(ProcessStartInfo info,string sessionRoot)
+        {
+            string previous=CrashReports.Latest(sessionRoot);string id=null;try{id=GameSessions.Begin(sessionRoot,DateTime.UtcNow.ToString("yyyyMMdd-HHmmss-fff"));}catch(Exception e){LauncherLog.Write(sessionRoot,"Session tracking unavailable: "+e.GetType().Name);}Process process;
+            string observedBuild=LauncherPlatform.Checkout(sessionRoot)?"":Core.GameBuildHash(sessionRoot);lastWindowObserved=false;var previousState=WindowState;
+            try{process=Process.Start(info);}catch{if(id!=null)GameSessions.CancelLaunch(sessionRoot,id);throw;}
+            try{if(id!=null)GameSessions.Started(sessionRoot,id,process);}catch(Exception e){LauncherLog.Write(sessionRoot,"Session start observation: "+e.Message);}
+            gameRunning=true;Refresh();WindowState=WindowState.Minimized;
+            try{Directory.CreateDirectory(Core.PathIn(sessionRoot,"logs"));var stdout=NativeHost.Drain(process.StandardOutput.BaseStream,Core.PathIn(sessionRoot,"logs/native-play.out"));var stderr=NativeHost.Drain(process.StandardError.BaseStream,Core.PathIn(sessionRoot,"logs/native-play.err"));
+                while(!process.HasExited){if(!lastWindowObserved)lastWindowObserved=NativeHost.GameWindowReady(process.Id);await Task.Delay(500);string report=CrashReports.Latest(sessionRoot);if(report!=null && report!=previous && CrashReports.IsHang(sessionRoot,report)){previous=report;CrashReports.Trim(sessionRoot,report);WindowState=WindowState.Normal;Maintenance(true);Status("The game may be stalled. A local hang report is available; the game is still running.");}}
+                await process.WaitForExitAsync();await Task.WhenAll(stdout,stderr);try{if(id!=null)GameSessions.Complete(sessionRoot,id,process);}catch(Exception e){LauncherLog.Write(sessionRoot,"Session completion deferred: "+e.GetType().Name);}int exit=process.ExitCode;
+                if(!LauncherPlatform.Checkout(sessionRoot))await Task.Run(()=>Core.FinishGameSession(sessionRoot,observedBuild,lastWindowObserved,exit));string latestReport=CrashReports.Latest(sessionRoot);if(latestReport!=null)CrashReports.Trim(sessionRoot,latestReport);
+                Status(exit==0?"Game closed.":"Game closed unexpectedly. Open Diagnostics to review its local report.");if(exit!=0||latestReport!=previous)Maintenance(true);return exit;
+            }finally{gameRunning=false;process.Dispose();WindowState=previousState;Activate();Refresh();}
+        }
+
         async Task Import(bool folder)
         {
             string source;
@@ -136,25 +148,30 @@ namespace TimeSplitters.Launcher
             if(newsPage==null){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;}
             Page("NewsHost");await newsPage.Refresh();
         }
+        NativeVersions versionsPage;
         async Task Versions()
         {
-            var panel=Heading("PUBLISHED RELEASES","Game versions","Choose an exact native Mac release. Version changes preserve your saves and settings.");Find<ContentControl>("VersionsHost").Content=Scroll(panel);Page("VersionsHost");
-            int page=1;Button more=null;
-            Func<Task> load=async()=>{if(more!=null)panel.Children.Remove(more);using(var timeout=new CancellationTokenSource(TimeSpan.FromSeconds(10))){var versions=await client.ReadGameVersions(page,timeout.Token);if(page==1&&versions.Releases.Length==0)panel.Children.Add(Text("No native Mac packages have been published yet.",16));foreach(var r in versions.Releases){var release=r;panel.Children.Add(Button(r.Tag+"  ·  "+(r.IsPreview?"Preview":"Stable"),()=>Run(()=>Install(release))));}page++;if(versions.HasMore)panel.Children.Add(more);}};
-            more=Button("Load more releases",()=>Run(load));await load();
+            if(versionsPage==null){versionsPage=new NativeVersions(root,client,()=>busy||gameRunning,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;}
+            Page("VersionsHost");await versionsPage.Load(true);
         }
-        void Maintenance()
+        NativeMaintenance maintenance;
+        void Maintenance(bool diagnostics=false)
         {
-            var panel=Heading("INSTALLATION HEALTH","Repair / Verify","Verify installed files and review diagnostics. Personal files are excluded.");var details=Text("Choose Verify files to check the installed native build.",13);
-            panel.Children.Add(Button("Verify files",()=>Run(async()=>{var result=await Task.Run(()=>NativeHost.Verify(root,CancellationToken.None));details.Text=result.ToString();})));
-            panel.Children.Add(Button("Repair installed version",()=>Run(async()=>{Core.Require(!LauncherPlatform.Checkout(root),"For a development build, rebuild using tools/build-native-mac.py. Release repair is available in portable installations.");using(var t=new CancellationTokenSource(TimeSpan.FromSeconds(10))){var release=await client.FindGame(Core.InstalledVersion(root),t.Token);await Install(release);}})));
-            panel.Children.Add(details);panel.Children.Add(Text("Diagnostics",22));var report=Text("Report excludes raw logs, personal paths, saves and game data. Nothing is uploaded automatically.",13);panel.Children.Add(report);
-            panel.Children.Add(Button("Generate diagnostics",()=>Run(async()=>{var result=await Task.Run(()=>NativeHost.Verify(root,CancellationToken.None));report.Text=InstallationMaintenance.Report(root,result,null,NativeHost.Graphics());})));
-            panel.Children.Add(Button("Copy diagnostics",()=>Run(async()=>{if(Clipboard!=null)await Clipboard.SetTextAsync(report.Text);})));panel.Children.Add(Button("Open logs",()=>OpenFolder("logs")));
-            panel.Children.Add(Button("Open game folder",()=>NativeHost.Open(root)));
-            panel.Children.Add(Button("Review a bug report",()=>Run(async()=>{Core.Require(report.Text.StartsWith("TimeSplitters launcher diagnostics"),"Generate diagnostics first so you can review what will be shared.");if(await Confirm("Review diagnostics on GitHub?","The displayed report will be copied for an editable issue draft. Review it before submitting.")){var draft=DiagnosticIssueDraft.Create(false,report.Text);if(Clipboard!=null)await Clipboard.SetTextAsync(draft.ClipboardText);NativeHost.Open(draft.Url);}})));
-            panel.Children.Add(Button("Request an improvement",()=>NativeHost.Open(DiagnosticIssueDraft.Create(true,"").Url)));
-            panel.Children.Add(Text(CrashReports.Summary(root),13));Find<ContentControl>("MaintenanceHost").Content=Scroll(panel);Page("MaintenanceHost");
+            if(maintenance==null){maintenance=new NativeMaintenance(root,this);Find<ContentControl>("MaintenanceHost").Content=maintenance.View;}
+            maintenance.Select(diagnostics);Page("MaintenanceHost");
+        }
+        internal async Task Maintain(Func<CancellationToken,Task> action)
+        {
+            Core.Require(!busy,"Finish the current operation first.");busy=true;operation=new CancellationTokenSource();Refresh();
+            try{await action(operation.Token);}finally{operation.Dispose();operation=null;busy=false;Refresh();}
+        }
+        internal void CancelMaintenance(){operation?.Cancel();}
+        internal async Task Repair(bool launcher,CancellationToken token)
+        {
+            Core.Require(!gameRunning&&!Core.GameRunning(),"Close the game before repairing files.");
+            Core.Require(!LauncherPlatform.Checkout(root),"Rebuild development files from source. Release repair is available in portable installations.");
+            if(launcher){var release=await client.FindLauncher(LauncherVersion.Value,token);Core.Require(await SelfUpdate.Prepare(root,release,client,null,token,true),"Launcher repair could not be staged.");NativeStartup.Handoff(root);}
+            else {await InstallationMaintenance.PrepareGameRepair(root,Core.InstalledVersion(root),client,null,token);token.ThrowIfCancellationRequested();await Task.Run(()=>Core.InstallPending(root));}
         }
         public static TextBlock Text(string text,int size=13)=>new TextBlock{Text=text,FontSize=size,Foreground=Brush.Parse("#E4EDF5"),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,0,0,10)};
         public static Button Button(string label,Action action){var b=new Button{Content=label,Margin=new Thickness(0,4,0,8),Padding=new Thickness(16,10),HorizontalAlignment=HorizontalAlignment.Left};b.Click+=(s,e)=>action();return b;}
@@ -165,7 +182,8 @@ namespace TimeSplitters.Launcher
         {
             string mode=args.First(a=>a.StartsWith("--render-"));int at=Array.IndexOf(args,mode);string output=args[at+1];
             if(mode.Contains("settings")){ShowSettings();if(mode.Contains("graphics"))settings.SelectTab(1);if(mode.Contains("discord"))settings.SelectTab(2);}
-            if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance();
+            if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance(mode.Contains("diagnostics"));
+            if(mode.Contains("news")){var panel=Heading("RELEASE CENTER","What’s new","Published changes for your game and launcher, all in one place.");NativeMarkdown.Render(panel,"# Native Mac launcher\n\n**Discord Rich Presence**, *native crash reports* and `local diagnostics` now share Windows behavior.\n\n- Keeps your saves and settings\n- Supports [release details](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases)\n\n> Nothing is uploaded automatically.\n\n1. Install the launcher\n2. Import your game\n3. Play\n\n```text\nNative Mac • Apple Silicon\n```\n\n---");Find<ContentControl>("NewsHost").Content=Scroll(panel);Page("NewsHost");}
             await Task.Delay(350);var visual=(Control)Content;visual.Measure(new Size(1152,772));visual.Arrange(new Rect(0,0,1152,772));using(var bitmap=new RenderTargetBitmap(new PixelSize(1152,772),new Vector(96,96))){bitmap.Render(visual);bitmap.Save(output);}Close();
         }
     }
