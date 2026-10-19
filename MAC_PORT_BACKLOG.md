@@ -811,6 +811,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   execution and complete scene parity remain pending.
   [Evidence](STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).
 
+- **Shared interpolation depth (2026-10-19):** The commit carrying this entry
+  on `codex/shared-interpolation-depth` depends on `2c63fbf`. The common PC/Mac
+  renderer now gives every depth subresource touched by replay its own fresh
+  depth/stencil history, retains it across target switches, and restores guest
+  target bindings after replay. This moves the GL preservation behavior into
+  common source and extends it to custom depth surfaces. The asset-free RHI
+  contract and native Xbox-device checks pass on Mac; Windows WARP execution,
+  host-present timing and broader scene parity remain pending.
+  [Evidence](STATUS.md#shared-interpolation-depth-isolation-2026-10-19).
+
 ### MAC-006 — Cube and volume texture resources
 
 - **Status:** Queued

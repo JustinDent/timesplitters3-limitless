@@ -1,5 +1,62 @@
 # Measured progress
 
+## Shared interpolation depth isolation (2026-10-19)
+
+- **Source/dependency:** `codex/shared-interpolation-depth` starts at local
+  unmerged `2c63fbf`; checks used this task's working changes. No main merge or
+  publication, and no changes to the other device or concurrent duplicate files.
+- **Cause and fix:** The common Xbox renderer swapped interpolation color targets
+  but reused guest depth/stencil. A replay could inherit completed-frame depth,
+  reject translucent/equal-depth draws and alter depth needed after replay.
+  `src/graphics/interpolation_depth.h` now provides common RHI scratch depth for
+  each source image/subresource. It clears depth to 1 and stencil to 0 once per
+  replay, preserves writes across target switches, retains source identity against
+  pointer reuse, and evicts entries unused in the latest replay. Depth-only formats
+  clear only depth. Allocation/view failures preserve guest resources and suppress
+  the invalid replay; bindings are restored after replay. An additive patch routes
+  common device clears and target bindings through this helper. The existing GL
+  implementation already preserves its guest depth and remains unchanged.
+- **Host/tools:** Apple M5 Pro, macOS 27.0.1 arm64, Clang 21, SDL 3.4.16,
+  pinned SDK 1.4.363.0. Same upstream `d90c929` and verified US XBE
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+  Vulkan build SHA-256 `d852a89832c96b91c204ce515a9fafd45252d84ee4fbad47b6b390b69cedfe31`.
+- **GPU evidence:** Actual common Xbox device tests pass for automatic and custom
+  depth surfaces, repeated replay without guest clears, nested-begin rejection,
+  target switching within replay, and guest color/depth/stencil/binding restoration.
+  The shared RHI pixel contract also checks fresh/reused scratch history and guest
+  depth/stencil preservation on KosmicKrisp and MoltenVK. No Vulkan validation
+  errors; MoltenVK retains its known primitive-restart capability warning.
+  Windows uses this same RHI fixture through the registered WARP test; execution
+  on Windows is still pending. This is stronger than a source-only Mac adapter
+  check, but not a substitute for Windows execution.
+- **Source/build evidence:** 15 host contracts pass, including production-helper
+  fault injection for allocation/view failures, subresource dimensions, repeated
+  lookup, eviction, source release and epoch wrap. All 26 patch transition/tracking
+  checks pass (two Windows checks skip); a legacy texture-branch include-context
+  conflict was corrected without removing transition/conflict-preservation tests.
+  All 47 CI/backlog checks pass. Native Vulkan `--test` passes three CTests plus
+  the real-device/GPU and SDL/Cocoa input/settings/debug preservation suite.
+- **Bounded scene check:** The isolated Test Lab run with 2x interpolation
+  finished at its 120.20-second limit (exit 0), with at least 6,300 guest frames,
+  no shader compilation failures, native faults or Vulkan validation errors.
+  Earlier reviewed captures showed the mission opening with terrain, sky and ship;
+  the final capture is the pause/options menu. This does not establish continuous
+  first-person play or physical input. Run evidence is
+  `logs/shared-depth-summary.json`; selected final evidence is
+  `private/captures/native-mac/shared-depth-pause-menu.png`. The runner recycled
+  six disposable disk images (135,168 allocated bytes, 5,243,406,848 logical bytes).
+- **Default restored:** Rebuilt the default GL executable and passed the read-only
+  launcher prerequisite check. GL code is unchanged by this task; its prior full
+  suite was not repeated. Restored binary SHA-256 is
+  `bc70b59b67e9fa43575941106b779d2941267fa381abb353119fd973b7c7733c`.
+- **Remaining scope:** Offscreen color-resource replay effects, accurate
+  successful-present accounting/timing, fullscreen/settings integration and
+  broader scene/physical-input/Windows checks remain. The HLE's legacy replay
+  counter increments after a void present call, so it is not yet evidence of a
+  successful host present when a backend/replay fails. This depth fix does not
+  certify 120 host presents, complete rendering fidelity or a diagnosis of the
+  originally reported disappearing world.
+
 ## Common Xbox renderer on native Mac (2026-10-19)
 
 - **Source/dependency:** `codex/shared-native-renderer` starts at local unmerged

@@ -145,6 +145,9 @@ reproducibility, and validation requirements.
   `frame_interp = 1` preferences; use `--fps 60` / `--fps 120` on the launcher
   or isolated runner for a temporary override. Report guest and interpolated
   presents separately. Never raise the console clock as an FPS shortcut.
+  Interpolated replay must preserve guest depth/stencil and target bindings;
+  use the common replay-depth helper and GPU contract for RHI changes rather
+  than adding separate Windows/Mac depth behavior.
   The shared patch stack enables optimized scalar native game code with debug
   symbols; GPU vertex programs retain the CPU interpreter as fallback/reference.
 - `Play-Native-Mac.command` is the interactive ARM64 launcher. It preserves

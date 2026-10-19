@@ -59,3 +59,17 @@ def test_macos_text_bitmap(tmp_path):
     assert result.returncode==0,result.stdout+result.stderr
     result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
     assert result.returncode==0,result.stdout+result.stderr
+
+
+def test_interpolation_depth_cache(tmp_path):
+    compiler, env=native_compiler(tmp_path)
+    exe=tmp_path/('depth-cache.exe' if os.name=='nt' else 'depth-cache')
+    source=str(ROOT/'tests/interpolation_depth_cache.c')
+    if os.name=='nt':
+        args=[compiler,'/nologo','/std:c11','/I'+str(D3D),'/I'+str(ROOT/'src'),source,'/Fe:'+str(exe)]
+    else:
+        args=[compiler,'-std=c11','-Wall','-Wextra','-Werror','-I'+str(D3D),'-I'+str(ROOT/'src'),source,'-o',str(exe)]
+    result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=60)
+    assert result.returncode==0,result.stdout+result.stderr
+    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr

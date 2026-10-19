@@ -99,9 +99,12 @@ preserving all isolated save/config paths. See the [developer commands](macos.md
 First-mission evidence is scoped in [STATUS](../STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).
 This is an opt-in migration stage, not a replacement of the validated default.
 
-Next, move native-only correctness fixes such as interpolation depth isolation
-into the common renderer, add truthful host-present timing, verify fullscreen
-and settings application, and compare targeted scenes before changing defaults.
+Interpolation now uses common replay-owned depth/stencil per source subresource,
+with fresh history each replay and restoration of guest target bindings. The
+shared RHI GPU contract runs on Mac Vulkan and is registered for Windows WARP;
+the actual native Xbox device also checks automatic/custom target routing.
+Next, add truthful host-present timing, verify fullscreen and settings application,
+and compare targeted scenes before changing defaults.
 Keep shared build pins; do not copy another OS's build tree.
 
 Then migrate remaining shader/resource behavior incrementally, using shared
@@ -122,7 +125,8 @@ integration work, tracked in the backlog.
 | `codex/shared-feature-contract` | `780346f` | `1a650b5`: shared-by-default rules and this handoff |
 | `codex/shared-renderer-host` | `1a650b5` | `e382e50`: common host interface, SDL adapter and both-host core compile contract |
 | `codex/shared-vulkan-mac` | `e382e50` | `4d23a6d`: native common Vulkan backend, pinned SDK and asset-free RHI GPU contract |
-| `codex/shared-native-renderer` | `4d23a6d` | Common Xbox frontend in an opt-in native game, text/window adapters and shader compatibility fixes |
+| `codex/shared-native-renderer` | `4d23a6d` | `2c63fbf`: common Xbox frontend in an opt-in native game, text/window adapters and shader compatibility fixes |
+| `codex/shared-interpolation-depth` | `2c63fbf` | Shared replay depth/stencil isolation, target restoration and GPU/fault-injection contracts |
 
 These are local branches; they have not been merged into main or verified on the
 other computer. Measured scope and unavailable checks are recorded in `STATUS.md`.

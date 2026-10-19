@@ -28,6 +28,7 @@ static RhiShader *shader(uint32_t stage,const char *text,const char *profile) {
     if(!s)fprintf(stderr,"Shader failure: %s\n",errors);
     CHECK(s);return s;
 }
+#include "rhi_depth_replay.h"
 int main(void) {
     void *window=NULL;
 #ifdef RHI_VULKAN_SDL
@@ -114,6 +115,7 @@ int main(void) {
     rhi_set_shader(RHI_STAGE_VERTEX,vs);rhi_set_shader(RHI_STAGE_PIXEL,ps);
     rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
     rhi_shader_destroy(point_vs);rhi_shader_destroy(point_ps);
+    rhi_depth_replay_test(rtv);
 
 #ifdef RHI_VULKAN_SDL
     /* Also exercise presentation and the swapchain readback channel order. */

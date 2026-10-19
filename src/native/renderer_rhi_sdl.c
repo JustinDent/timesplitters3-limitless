@@ -7,6 +7,8 @@
 #include "rhi.h"
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
+#include "../../tests/interpolation_depth_device.h"
 
 static SDL_Window *native_window;
 void *tsfp_native_renderer_window(unsigned width,unsigned height)
@@ -73,6 +75,7 @@ int tsfp_native_renderer_test(void)
         ok &= lit==1;surface->lpVtbl->UnlockRect(surface);
     } else ok=0;
     if(surface)surface->lpVtbl->Release(surface);
+    ok &= interpolation_depth_device_test(dev);
     d3d8_overlay_draw("Shared native renderer");
     ok &= SUCCEEDED(dev->lpVtbl->Swap(dev,0));
     dev->lpVtbl->Release(dev);api->lpVtbl->Release(api);
