@@ -15,6 +15,7 @@ from tkinter import ttk, messagebox
 from online_client import Client, Session
 from online_host import fetch_public_ipv4, invitation, parse_invitation, start_match
 from online_paths import ROOT, HANDSHAKES, SETTINGS, MANIFEST, TOOLS
+from online_theme import OnlineTheme
 
 
 
@@ -52,6 +53,7 @@ def main():
     window.title('Online - TimeSplitters Future Perfect')
     window.geometry('820x750')
     window.minsize(760, 720)
+    theme = OnlineTheme(window)
     address = tk.StringVar(value=saved.get('directory', 'https://127.0.0.1:30820'))
     pin = tk.StringVar(value=saved.get('fingerprint', ''))
     name = tk.StringVar(value=saved.get('name', 'TimeSplitters lobby'))
@@ -195,8 +197,10 @@ def main():
 
     def show_invitation(active):
         share = tk.Toplevel(window)
+        theme.track(share)
         share.title('Online match hosted')
-        share.geometry('700x270')
+        share.geometry('700x330')
+        share.minsize(700,330)
         content = ttk.Frame(share, padding=14)
         content.pack(fill='both', expand=True)
         value = getattr(active, 'invitation', invitation(address.get().strip(), pin.get().strip(), active.lobby['code']))

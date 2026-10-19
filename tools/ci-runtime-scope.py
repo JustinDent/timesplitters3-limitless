@@ -26,7 +26,9 @@ def affected(paths, *, full=False):
         elif path in ('tools/publish-release.py', 'tests/test_publish_release.py',
                       'tools/recycle-release-work.ps1', 'tools/package-release.py'):
             selected.add('release')
-        elif path.startswith(('src/', 'tests/')) or path == 'tools/recomp-generation.py':
+        elif path.startswith(('src/', 'tests/')) or path in (
+                'tools/recomp-generation.py', 'tools/online.py', 'tools/online_theme.py',
+                'tools/bundle_online.py', 'tools/network-identity.py'):
             # Other paths admitted by the workflow are native/runtime inputs.
             selected.add('native')
         if path == 'src/pc_display_modes.inc':

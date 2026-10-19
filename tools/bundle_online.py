@@ -8,7 +8,7 @@ import sys
 import zipfile
 
 COMPANION = ('online.py', 'online_client.py', 'online_transport.py', 'online_host.py',
-             'online_paths.py', 'lobby_server.py', 'network-identity.py')
+             'online_paths.py', 'online_theme.py', 'lobby_server.py', 'network-identity.py')
 
 
 def bundle(root, stage, copy):

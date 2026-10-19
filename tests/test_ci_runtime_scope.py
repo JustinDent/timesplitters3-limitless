@@ -20,6 +20,7 @@ spec.loader.exec_module(scope)
     (['tools/publish-release.py'], {'release'}),
     (['tools/publish-release.py', 'docs/releasing.md', 'STATUS.md'], {'release'}),
     (['src/pc_display.c'], {'native'}),
+    (['tools/online_theme.py', 'tools/bundle_online.py', 'tools/network-identity.py'], {'native'}),
     (['src/pc_display_modes.inc'], {'native', 'launcher'}),
     (['tools/release/ImportGame.cs', 'config/pc-controls.default.json'], {'launcher'}),
     (['tools/launcher/MainWindow.cs', 'tests/test_audio_timing.py'], {'launcher', 'native'}),

@@ -10,6 +10,21 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
 
+def test_online_theme_is_bundled_and_part_of_runtime_identity(tmp_path):
+    bundle_spec = importlib.util.spec_from_file_location('bundle_online', Path(__file__).resolve().parents[1]/'tools/bundle_online.py')
+    bundle = importlib.util.module_from_spec(bundle_spec)
+    bundle_spec.loader.exec_module(bundle)
+    assert 'online_theme.py' in bundle.COMPANION
+    game=tmp_path/'private/game';game.mkdir(parents=True)
+    (game/'default.xbe').write_bytes(b'fixture')
+    (tmp_path/'tools').mkdir()
+    theme=tmp_path/'tools/online_theme.py';theme.write_text('dark = False\n')
+    before, entries=module.identity(tmp_path,game)
+    assert any(name=='tools/online_theme.py' for name,_ in entries)
+    theme.write_text('dark = True\n')
+    assert module.identity(tmp_path,game)[0]!=before
+
+
 def test_identity_is_relocatable_and_rejects_gameplay_changes(tmp_path):
     roots = [tmp_path / 'a', tmp_path / 'b']
     for root in roots:
