@@ -112,6 +112,7 @@ try {
                         (Join-Path $projectRoot 'tests\test_audio_timing.py'),
                         (Join-Path $projectRoot 'tests\test_framebuffer_sampling.py'),
                         (Join-Path $projectRoot 'tests\test_ghost_rendering.py'),
+                        (Join-Path $projectRoot 'tests\test_auto_look.py'),
                         (Join-Path $projectRoot 'tests\test_menu_mouse.py'),
                         (Join-Path $projectRoot 'tests\test_quit_menu.py'),
                         (Join-Path $projectRoot 'tests\test_xmv_stop.py'),
