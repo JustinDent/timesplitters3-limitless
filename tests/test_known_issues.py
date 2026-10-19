@@ -2,6 +2,7 @@
 import contextlib
 import importlib.util
 import io
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import unittest
 
@@ -28,6 +29,7 @@ class FakeGitHub:
     def __init__(self):
         self.issues = [issue()]
         self.comments = {}
+        self.discussion_comments = []
         self.target = {'id': 'discussion-id', 'title': CONFIG['title'], 'body': 'Previous manual post.',
                        'url': f'https://github.com/{REPO}/discussions/143'}
         self.read_error = self.write_error = False
@@ -41,15 +43,36 @@ class FakeGitHub:
                        if '/comments?' in path else self.issues)
             return records[(page-1)*100:page*100]
         if payload['query'] == known.QUERY:
+            target = self.target.copy() if self.target else None
+            if target:
+                page = int(payload['variables'].get('after') or 0)
+                target['comments'] = {
+                    'nodes': self.discussion_comments[page*100:(page+1)*100],
+                    'pageInfo': {'hasNextPage': len(self.discussion_comments) > (page+1)*100,
+                                 'endCursor': str(page+1)}}
             return ({'errors': [{'message': 'Unavailable'}]} if self.read_error else
-                    {'data': {'repository': {'discussion': self.target.copy() if self.target else None}}})
+                    {'data': {'repository': {'discussion': target}}})
         if self.write_error:
             return {'errors': [{'message': 'Access denied'}]}
-        self.target['body'] = payload['variables']['body']
-        return {'data': {'updateDiscussion': {'discussion': {'url': self.target['url']}}}}
+        if payload['query'] == known.CREATE:
+            assert payload['variables']['id'] == 'discussion-id'
+            stamp = datetime(2026, 10, 19, tzinfo=timezone.utc) + timedelta(seconds=len(self.discussion_comments))
+            self.discussion_comments.append({'id': 'comment-' + str(len(self.discussion_comments)),
+                'createdAt': stamp.isoformat(), 'body': payload['variables']['body'],
+                'url': self.target['url'] + '#discussioncomment-123',
+                'author': {'login': 'github-actions[bot]', '__typename': 'Bot'}})
+        else:
+            raise AssertionError('Unexpected mutation; workflow token must never attempt edits.')
+        return {'data': {'addDiscussionComment': {'comment': {'url': self.target['url'] + '#discussioncomment-123'}}}}
+
+    @property
+    def generated_body(self):
+        return max((c for c in self.discussion_comments
+                    if c['author']['login'].removesuffix('[bot]') == 'github-actions'),
+                   key=lambda c: c['createdAt'])['body']
 
     def writes(self):
-        return [r for r in self.requests if r[2] and r[2].get('query') == known.UPDATE]
+        return [r for r in self.requests if r[2] and r[2].get('query') == known.CREATE]
 
 
 class KnownIssuesTests(unittest.TestCase):
@@ -63,21 +86,21 @@ class KnownIssuesTests(unittest.TestCase):
                       issue(5, pull_request={}), issue(6)]
         api.issues[-1]['state'] = 'closed'
         self.publish(api)
-        body = api.target['body']
-        self.assertIn('Open reports (2)', body)
+        body = api.generated_body
+        self.assertIn('Open bug reports (2)', body)
         self.assertLess(body.index('[#2'), body.index('[#4'))
         for number in (3, 5, 6):
             self.assertNotIn(f'/issues/{number})', body)
 
     def test_close_untag_and_reopen_regenerate_same_post(self):
         api = FakeGitHub(); self.publish(api)
-        self.assertIn('/issues/1)', api.target['body'])
+        self.assertIn('/issues/1)', api.generated_body)
         api.issues[0]['state'] = 'closed'; self.publish(api)
-        self.assertIn('No open issues', api.target['body'])
+        self.assertIn('No open issues', api.generated_body)
         api.issues[0]['state'] = 'open'; self.publish(api)
-        self.assertIn('/issues/1)', api.target['body'])
+        self.assertIn('/issues/1)', api.generated_body)
         api.issues[0]['labels'] = []; self.publish(api)
-        self.assertNotIn('/issues/1)', api.target['body'])
+        self.assertNotIn('/issues/1)', api.generated_body)
         self.assertTrue(all(r[2]['variables']['id'] == 'discussion-id' for r in api.writes()))
 
     def test_changed_title_updates_and_identical_runs_do_not_write(self):
@@ -87,7 +110,55 @@ class KnownIssuesTests(unittest.TestCase):
         api.issues[0]['title'] = 'Updated mouse report'
         self.assertTrue(self.publish(api))
         self.assertEqual(len(api.writes()), 2)
-        self.assertIn('Updated mouse report', api.target['body'])
+        self.assertIn('Updated mouse report', api.generated_body)
+
+    def test_discussion_body_and_other_authors_comments_are_preserved(self):
+        api = FakeGitHub()
+        human = {'id': 'human', 'body': known.MARKER + '\nMaintainer notes.',
+                 'author': {'login': 'owner', '__typename': 'User'}}
+        other_bot = {'id': 'other-bot', 'body': known.MARKER + '\nOther bot notes.',
+                     'author': {'login': 'another[bot]', '__typename': 'Bot'}}
+        api.discussion_comments = [human.copy(), other_bot.copy()]
+        self.publish(api)
+        self.assertEqual(api.target['body'], 'Previous manual post.')
+        self.assertEqual(api.discussion_comments[:2], [human, other_bot])
+        self.assertEqual(len(api.discussion_comments), 3)
+        api.issues = []; self.publish(api)
+        self.assertEqual(len(api.discussion_comments), 4)
+        self.assertEqual(api.discussion_comments[:2], [human, other_bot])
+        self.assertEqual(api.target['body'], 'Previous manual post.')
+
+    def test_latest_snapshot_on_later_page_is_found_and_unchanged_run_skips(self):
+        api = FakeGitHub(); self.publish(api)
+        api.discussion_comments[:0] = [{'id': str(n), 'body': 'Conversation.',
+            'author': {'login': 'human', '__typename': 'User'}} for n in range(100)]
+        self.assertFalse(self.publish(api))
+        api.issues = []; self.publish(api)
+        self.assertEqual(len(api.discussion_comments), 102)
+        self.assertEqual(api.writes()[-1][2]['query'], known.CREATE)
+        self.assertIn('No open issues', api.generated_body)
+
+    def test_graphql_bot_login_without_rest_suffix_is_reused(self):
+        api = FakeGitHub(); self.publish(api)
+        api.discussion_comments[0]['author']['login'] = 'github-actions'
+        self.assertFalse(self.publish(api))
+        self.assertEqual(len(api.discussion_comments), 1)
+        self.assertEqual(api.writes()[-1][2]['query'], known.CREATE)
+
+    def test_newest_snapshot_wins_even_if_comments_arrive_out_of_order(self):
+        api = FakeGitHub(); self.publish(api)
+        original = api.discussion_comments[0].copy()
+        api.issues = []; self.publish(api)
+        api.discussion_comments.reverse()
+        self.assertFalse(self.publish(api))
+        self.assertEqual(len(api.writes()), 2)
+        self.assertEqual(api.discussion_comments[-1], original)
+
+    def test_existing_comment_update_rejection_is_reported(self):
+        api = FakeGitHub(); self.publish(api)
+        api.issues = []; api.write_error = True
+        with self.assertRaisesRegex(RuntimeError, 'GraphQL: Access denied'):
+            self.publish(api)
 
     def test_latest_explicit_human_maintainer_workaround_only(self):
         api = FakeGitHub(); api.issues[0]['comments'] = 5
@@ -96,34 +167,34 @@ class KnownIssuesTests(unittest.TestCase):
                            comment(4, '### Workaround\nUntrusted advice.', 'CONTRIBUTOR'),
                            comment(5, '### Workaround\nBot advice.', user_type='Bot')]
         self.publish(api)
-        self.assertIn('New keyboard instructions', api.target['body'])
-        self.assertIn('#issuecomment-2', api.target['body'])
-        self.assertNotIn('Untrusted advice', api.target['body'])
-        self.assertNotIn('Bot advice', api.target['body'])
+        self.assertIn('New keyboard instructions', api.generated_body)
+        self.assertIn('#issuecomment-2', api.generated_body)
+        self.assertNotIn('Untrusted advice', api.generated_body)
+        self.assertNotIn('Bot advice', api.generated_body)
         api.comments[1][1]['body'] = '### Workaround\nEdited instructions.'
         self.publish(api)
-        self.assertIn('Edited instructions', api.target['body'])
+        self.assertIn('Edited instructions', api.generated_body)
 
     def test_deleting_last_workaround_restores_no_workaround_text(self):
         api = FakeGitHub(); api.issues[0]['comments'] = 1
         api.comments[1] = [comment()]; self.publish(api)
         api.comments[1] = []; api.issues[0]['comments'] = 0; self.publish(api)
-        self.assertIn('No workaround documented yet', api.target['body'])
-        self.assertNotIn('Use the keyboard', api.target['body'])
+        self.assertIn('No workaround documented yet', api.generated_body)
+        self.assertNotIn('Use the keyboard', api.generated_body)
 
     def test_workaround_from_untrusted_body_is_not_published(self):
         api = FakeGitHub(); api.issues[0]['body'] = '### Workaround\nGuessed fix.'
         self.publish(api)
-        self.assertNotIn('Guessed fix', api.target['body'])
+        self.assertNotIn('Guessed fix', api.generated_body)
 
     def test_paginated_issues_and_comments_are_all_read(self):
         api = FakeGitHub(); api.issues = [issue(n) for n in range(1, 102)]
         api.issues[0]['comments'] = 101
         api.comments[1] = [comment(n, 'Ordinary chat.') for n in range(1, 101)] + [comment(101)]
         self.publish(api)
-        self.assertIn('Open reports (101)', api.target['body'])
-        self.assertIn('#issuecomment-101', api.target['body'])
-        self.assertIn('/issues/101)', api.target['body'])
+        self.assertIn('Open bug reports (101)', api.generated_body)
+        self.assertIn('#issuecomment-101', api.generated_body)
+        self.assertIn('/issues/101)', api.generated_body)
 
     def test_failed_pagination_never_replaces_post_with_partial_data(self):
         api = FakeGitHub(); api.issues = [issue(n) for n in range(1, 101)]
@@ -142,7 +213,7 @@ class KnownIssuesTests(unittest.TestCase):
         api.issues[0]['comments'] = 1
         api.comments[1] = [comment(body='### Workaround\n@someone | </td> [x](javascript:evil)')]
         self.publish(api)
-        body = api.target['body']
+        body = api.generated_body
         self.assertNotIn('@someone', body)
         self.assertNotIn('<img>', body)
         self.assertIn('\\|', body)
@@ -172,7 +243,7 @@ class KnownIssuesTests(unittest.TestCase):
 
     def test_write_permission_errors_are_not_reported_as_success(self):
         api = FakeGitHub(); api.write_error = True
-        with self.assertRaisesRegex(RuntimeError, 'could not update'):
+        with self.assertRaisesRegex(RuntimeError, 'GraphQL: Access denied'):
             self.publish(api)
 
     def test_oversized_output_fails_before_discussion_write(self):
@@ -189,7 +260,7 @@ class KnownIssuesTests(unittest.TestCase):
         self.assertNotIn('pull_request_target:', triggers)
         for event in ('issues:', 'issue_comment:', 'label:', 'workflow_dispatch:', 'workflow_call:', 'schedule:'):
             self.assertIn('  ' + event, triggers)
-        self.assertIn('ref: ${{ github.event.repository.default_branch }}', workflow)
+        self.assertIn("ref: ${{ github.event_name == 'workflow_dispatch' && github.ref || github.event.repository.default_branch }}", workflow)
         self.assertIn('persist-credentials: false', workflow)
         self.assertIn('group: known-issues-discussion', workflow)
         self.assertIn('discussions: write', workflow)
