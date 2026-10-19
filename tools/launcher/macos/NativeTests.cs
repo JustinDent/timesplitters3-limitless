@@ -68,6 +68,23 @@ namespace TimeSplitters.Launcher
                 Test("corrupt packages and unsafe paths are rejected",()=>{var r=NewRoot("invalid");Reject(()=>Core.Unpack(Archive(r,"v1.0.0",true),Path.Combine(r,"bad"),"v1.0.0"));foreach(var name in new[]{"../data","/outside","foo:bar","a\\b","CON","a/../b"})Reject(()=>Core.PathIn(r,name));});
                 Test("linked installation directories cannot redirect writes",()=>{var r=NewRoot("links");var other=NewRoot("link-target");Directory.CreateSymbolicLink(Path.Combine(r,"Bin"),other);Reject(()=>Core.PathIn(r,"Bin/test"));Need(!Directory.EnumerateFileSystemEntries(other).Any(),"Link target changed");});
                 Test("native launcher manifest verifies and installs independently",()=>{var r=NewRoot("self");Write(r,"BUILD.json","keep game");var changes=SelfUpdate.Unpack(Archive(r,"1.2.18",false,true),Path.Combine(r,"stage"),"1.2.18");Core.ApplyLauncher(r,changes,null);Need(SelfUpdate.Complete(r),"Self manifest incomplete");Need(File.ReadAllText(Path.Combine(r,"BUILD.json"))=="keep game","Self update changed game");});
+                Test("legacy game manifests preserve launcher files regardless of casing",()=>{
+                    foreach(var name in new[]{Core.LauncherName,Core.AppPath,Core.SelfManifest})
+                        Need(Core.PreserveGameFile(name.ToLowerInvariant()),"Legacy launcher path not protected");
+                    Need(Core.PreserveGameFile("TimeSplitters Launcher.app/Contents/Resources/launcher.icns"),"Native icon not protected");
+                    Need(!Core.PreserveGameFile(LauncherPlatform.GameBinary),"Game binary incorrectly protected from repair");
+                });
+                Test("combined release selects only the native launcher and manifest",()=>{
+                    string version="1.2.19",prefix="https://github.com/"+ReleaseClient.Repository+"/releases/download/launcher-v"+version+"/";
+                    var names=new[]{"TimeSplitters-Launcher-v"+version+"-windows-x64.zip","launcher-update.json",
+                        "TimeSplitters-Launcher-v"+version+"-macos-arm64.zip","launcher-update-macos-arm64.json",
+                        "TimeSplitters-Launcher-windows-x64.zip","TimeSplitters-Launcher-macos-arm64.zip"};
+                    var assets=names.Select(n=>new{name=n,state="uploaded",size=100,digest="",browser_download_url=prefix+n}).ToArray();
+                    var candidate=ReleaseClient.SelectLauncher(Json.Encode(new[]{new{tag_name="launcher-v"+version,draft=false,prerelease=false,assets=assets}}),false);
+                    Need(candidate.Package.AssetName==names[2]&&candidate.ManifestUrl==prefix+names[3],"Wrong host selected from combined release");
+                    var metadata=Json.Encode(new{schema=1,version=version,size=100,sha256=new string('a',64),asset_name=names[2]});
+                    Need(ReleaseClient.VerifyLauncherMetadata(candidate,metadata).Tag==version,"Combined release metadata rejected");
+                });
                 Test("wrong XBE and altered native executable fail read-only checks",()=>{var r=NewRoot("checks");Write(r,"Data/default.xbe","invalid");Reject(()=>NativeHost.CheckData(r));Write(r,LauncherPlatform.GameBinary,"invalid");Write(r,"BUILD.json",Json.Encode(new{version="v1.0.0",executable_sha256=new string('a',64)}));Reject(()=>NativeHost.CheckBuild(r));Need(!Directory.Exists(Path.Combine(r,"Saves")),"Check created saves");});
                 Test("verified download and cached replay use shared integrity policy",()=>{var r=NewRoot("download");byte[] bytes=Encoding.UTF8.GetBytes("verified archive");var release=new Release{AssetUrl="https://github.com/"+ReleaseClient.Repository+"/releases/download/v1.0.0/a.zip",Digest="sha256:"+Hash(bytes),Size=bytes.Length};int calls=0;using(var c=new ReleaseClient(new Handler{Reply=q=>{calls++;return new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(bytes)};}})){c.Download(release,Path.Combine(r,"one.zip"),null,CancellationToken.None,Path.Combine(r,"cache")).GetAwaiter().GetResult();c.Download(release,Path.Combine(r,"two.zip"),null,CancellationToken.None,Path.Combine(r,"cache")).GetAwaiter().GetResult();}Need(calls==1&&File.ReadAllBytes(Path.Combine(r,"two.zip")).SequenceEqual(bytes),"Cache replay failed");});
                 Test("known issues exclude pull requests and closed bugs",()=>{bool more;var issues=KnownIssues.ParsePage("[{\"number\":1,\"title\":\"Live bug\",\"state\":\"open\",\"labels\":[{\"name\":\"bug\"}]},{\"number\":2,\"state\":\"closed\"},{\"pull_request\":{}}]",out more);Need(issues.Length==1&&issues[0].Number==1&&!more,"Wrong issue snapshot");});
