@@ -10,6 +10,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Navigation;
+using System.Windows.Threading;
+using System.Reflection;
 using TimeSplitters.Launcher;
 
 public static class LauncherNewsChecks
@@ -26,6 +28,17 @@ public static class LauncherNewsChecks
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken token){return Pending.Task;}
     }
     static HttpResponseMessage Response(object value){return new HttpResponseMessage(HttpStatusCode.OK){Content=new StringContent(Json.Encode(value))};}
+    static Dictionary<string,object> Issue(long number,string title="Example bug",string state="open",string label="bug",bool pr=false)
+    {
+        var value=new Dictionary<string,object>{{"number",number},{"title",title},{"state",state},{"labels",new object[]{new {name=label}}},{"html_url","https://untrusted.example/ignored"}};
+        if(pr)value["pull_request"]=new {};return value;
+    }
+    static KnownIssues ReadIssues(ReleaseClient client){return client.ReadKnownIssues(CancellationToken.None).GetAwaiter().GetResult();}
+    static void Complete(Task task)
+    {
+        if(!task.IsCompleted){var frame=new DispatcherFrame();var dispatcher=Dispatcher.CurrentDispatcher;task.ContinueWith(t=>dispatcher.BeginInvoke(new Action(()=>frame.Continue=false)));Dispatcher.PushFrame(frame);}
+        task.GetAwaiter().GetResult();
+    }
     static object Record(string version,bool launcher=false,bool preview=false,bool draft=false)
     {
         string tag=launcher?"launcher-v"+version:version;
@@ -47,6 +60,113 @@ public static class LauncherNewsChecks
     }
     static void RunCore()
     {
+        Test("known issues require open bug labels and exclude pull requests and unsafe remote URLs",()=>{
+            using(var client=new ReleaseClient(new Handler {Reply=r=>{
+                Need(r.Method==HttpMethod.Get && r.RequestUri.Host=="api.github.com" && r.RequestUri.AbsolutePath=="/repos/"+ReleaseClient.Repository+"/issues");
+                Need(r.RequestUri.Query=="?state=open&labels=bug&sort=created&direction=desc&per_page=100&page=1" && r.Headers.Authorization==null);
+                return Response(new[]{Issue(1,"Literal [title](file:///bad) <Window>"),Issue(2,state:"closed"),Issue(3,label:"enhancement"),Issue(4,pr:true),Issue(5,label:"BUG")});
+            }})) {
+                var result=ReadIssues(client);Need(result.Items.Select(i=>i.Number).SequenceEqual(new long[]{5,1}));
+                Need(result.Items[1].Title.Contains("<Window>") && result.Items[1].Url=="https://github.com/"+ReleaseClient.Repository+"/issues/1" && result.CheckedUtc.Kind==DateTimeKind.Utc);
+            }
+        });
+        Test("known issues fetch every page and deduplicate repeated issue numbers",()=>{
+            int calls=0;using(var client=new ReleaseClient(new Handler {Reply=r=>{
+                calls++;Need(r.RequestUri.Query.EndsWith("page="+calls));
+                return Response(calls==1?Enumerable.Range(1,100).Select(i=>Issue(i)).ToArray():new[]{Issue(100,"Updated title"),Issue(101)});
+            }})) {var result=ReadIssues(client);Need(calls==2 && result.Items.Length==101 && result.Items[0].Number==101 && result.Items[1].Title=="Updated title");}
+        });
+        Test("known issues never publish a partial snapshot after a later page fails",()=>{
+            int calls=0;using(var client=new ReleaseClient(new Handler {Reply=r=>++calls==1?Response(Enumerable.Range(1,100).Select(i=>Issue(i)).ToArray()):new HttpResponseMessage(HttpStatusCode.Forbidden)})) {
+                bool failed=false;try{ReadIssues(client);}catch(IOException){failed=true;}Need(failed && calls==2);
+            }
+        });
+        Test("known issue errors and missing responses are distinct from a successful empty list",()=>{
+            foreach(var status in new[]{HttpStatusCode.Forbidden,(HttpStatusCode)429,HttpStatusCode.NotFound,HttpStatusCode.InternalServerError})
+                using(var client=new ReleaseClient(new Handler {Reply=r=>new HttpResponseMessage(status)})) {bool failed=false;try{ReadIssues(client);}catch(Exception){failed=true;}Need(failed);}
+            foreach(var value in new object[]{new {message="not a list"},new[]{Issue(-1)},new[]{Issue(1,title:"")},new[]{Issue(1,state:"invalid")},new[]{new {state="open",labels=new object[]{42}}}})
+                using(var client=new ReleaseClient(new Handler {Reply=r=>Response(value)})) {bool failed=false;try{ReadIssues(client);}catch(InvalidDataException){failed=true;}Need(failed);}
+            using(var client=new ReleaseClient(new Handler {Reply=r=>Response(new object[0])}))Need(ReadIssues(client).Items.Length==0);
+        });
+        Test("known issue request deadline bounds stalled clients and cancellation",()=>{
+            var handler=new StalledHandler();using(var client=new ReleaseClient(handler)) {
+                var watch=System.Diagnostics.Stopwatch.StartNew();bool failed=false;
+                try{client.ReadKnownIssuesWithTimeout(TimeSpan.FromMilliseconds(30),CancellationToken.None).GetAwaiter().GetResult();}catch(TimeoutException){failed=true;}
+                Need(failed && watch.ElapsedMilliseconds<2000);handler.Pending.SetException(new IOException("Late issue failure"));
+            }
+            using(var client=new ReleaseClient(new Handler {Reply=r=>{throw new Exception("Unexpected request");}}))using(var cancel=new CancellationTokenSource()) {
+                cancel.Cancel();bool failed=false;try{client.ReadKnownIssues(cancel.Token).GetAwaiter().GetResult();}catch(OperationCanceledException){failed=true;}Need(failed);
+            }
+        });
+        Test("known issue pagination and response sizes are bounded",()=>{
+            int calls=0;using(var client=new ReleaseClient(new Handler {Reply=r=>{calls++;return Response(Enumerable.Range(1,100).Select(i=>Issue(i)).ToArray());}})) {
+                bool failed=false;try{ReadIssues(client);}catch(InvalidDataException){failed=true;}Need(failed && calls==10);
+            }
+            using(var client=new ReleaseClient(new Handler {Reply=r=>new HttpResponseMessage(HttpStatusCode.OK) {Content=new StringContent(new string('x',4*1024*1024+1))}})) {
+                bool failed=false;try{ReadIssues(client);}catch(InvalidDataException){failed=true;}Need(failed);
+            }
+        });
+        Test("known issue refresh replaces removed reports and keeps titles literal and links explicit",()=>{
+            string opened=null;var page=new WhatsNewPage(url=>opened=url);
+            page.SetIssues(new KnownIssues {CheckedUtc=DateTime.UtcNow,Items=new[]{new KnownIssue {Number=1,Title="Old"},new KnownIssue {Number=2,Title="Keep"}}});
+            page.SetIssues(new KnownIssues {CheckedUtc=DateTime.UtcNow,Items=new[]{new KnownIssue {Number=2,Title="Updated"},new KnownIssue {Number=3,Title="[Text](file:///bad) <Button>"}}});
+            var links=All<Hyperlink>(page.View).ToArray();Need(links.Length==2 && links.All(l=>!l.NavigateUri.AbsolutePath.EndsWith("/1")) && opened==null);
+            Need(new TextRange(links[1].ContentStart,links[1].ContentEnd).Text.Contains("[Text](file:///bad) <Button>"));
+            links[1].RaiseEvent(new RequestNavigateEventArgs(links[1].NavigateUri,null){RoutedEvent=Hyperlink.RequestNavigateEvent});Need(opened.EndsWith("/issues/3"));
+            page.BugTracker.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Need(opened==KnownIssues.TrackerUrl);
+            page.SelectComponent(true);page.Edition.SelectedIndex=1;page.Reset();Need(All<Hyperlink>(page.View).Count()==2);
+            page.SetIssues(new KnownIssues {CheckedUtc=DateTime.UtcNow});Need(!All<Hyperlink>(page.View).Any() && All<TextBlock>(page.View).Any(t=>t.Text.Contains("No open issues labeled bug")));
+        });
+        Test("offline known issues retain the prior list and never imply zero bugs",()=>{
+            var page=new WhatsNewPage();page.IssuesFailed();Need(page.IssuesStatusText.Contains("Could not check") && !All<TextBlock>(page.View).Any(t=>t.Text.Contains("No open issues labeled bug")));
+            page.SetIssues(new KnownIssues {CheckedUtc=DateTime.UtcNow,Items=new[]{new KnownIssue {Number=1,Title="Retained"}}});
+            page.SetIssuesLoading();Need(!page.RefreshIssues.IsEnabled && All<Hyperlink>(page.View).Count()==1);
+            page.IssuesFailed();Need(page.RefreshIssues.IsEnabled && page.IssuesStatusText.Contains("Showing the list checked") && All<Hyperlink>(page.View).Count()==1);
+        });
+        Test("automatic known issue checks respect cooldown while manual refresh replaces the list",()=>{
+            string root=Path.Combine(Path.GetTempPath(),"tsfp-issues-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
+            int calls=0;var client=new ReleaseClient(new Handler {Reply=r=>Response(new[]{Issue(++calls)})});
+            var ui=new LauncherWindow(root,false,client);var page=new WhatsNewPage();var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+            typeof(LauncherWindow).GetField("newsPage",flags).SetValue(ui,page);
+            var previous=SynchronizationContext.Current;SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
+            try {
+                Complete(ui.RefreshKnownIssues(false));Complete(ui.RefreshKnownIssues(false));Need(calls==1);
+                Complete(ui.RefreshKnownIssues(true));Need(calls==2 && All<Hyperlink>(page.View).Single().NavigateUri.AbsolutePath.EndsWith("/2"));
+                typeof(LauncherWindow).GetField("issuesNextCheckUtc",flags).SetValue(ui,DateTime.UtcNow.AddMinutes(-1));Complete(ui.RefreshKnownIssues(false));Need(calls==3);
+                Need(!(bool)typeof(LauncherWindow).GetMethod("KnownIssuesVisible",flags).Invoke(ui,null));
+                ui.Window.Close();Complete(ui.RefreshKnownIssues(true));Need(calls==3);
+            }finally{ui.Window.Close();SynchronizationContext.SetSynchronizationContext(previous);Directory.Delete(root,true);}
+        });
+        Test("in-flight issue requests do not overlap and late completion cannot repaint a closed launcher",()=>{
+            string root=Path.Combine(Path.GetTempPath(),"tsfp-issues-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
+            var handler=new StalledHandler();var ui=new LauncherWindow(root,false,new ReleaseClient(handler));var page=new WhatsNewPage();
+            typeof(LauncherWindow).GetField("newsPage",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(ui,page);
+            var previous=SynchronizationContext.Current;SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
+            try {
+                var pending=ui.RefreshKnownIssues(false);Need(!pending.IsCompleted);Need(ui.RefreshKnownIssues(true).IsCompleted);
+                ui.Window.Close();Complete(pending);handler.Pending.SetResult(Response(new[]{Issue(1)}));
+                Need(!All<Hyperlink>(page.View).Any());
+            }finally{ui.Window.Close();SynchronizationContext.SetSynchronizationContext(previous);Directory.Delete(root,true);}
+        });
+        Test("opening news starts independent issue polling and closing stops its timer",()=>{
+            string root=Path.Combine(Path.GetTempPath(),"tsfp-issues-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
+            int calls=0;var ui=new LauncherWindow(root,false,new ReleaseClient(new Handler {Reply=r=>{
+                if(r.RequestUri.AbsolutePath.EndsWith("/issues")){calls++;return Response(new[]{Issue(calls)});}
+                return new HttpResponseMessage(HttpStatusCode.Forbidden);
+            }}));
+            var previous=SynchronizationContext.Current;SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext());
+            try {
+                ui.ShowNews();Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.ApplicationIdle,new Action(()=>{}));
+                var flags=BindingFlags.Instance|BindingFlags.NonPublic;
+                var page=(WhatsNewPage)typeof(LauncherWindow).GetField("newsPage",flags).GetValue(ui);
+                var timer=(DispatcherTimer)typeof(LauncherWindow).GetField("issuesTimer",flags).GetValue(ui);
+                Need(calls==1 && timer.IsEnabled && timer.Interval==TimeSpan.FromMinutes(5));
+                Need(page.StatusText.Contains("Could not load release notes") && page.IssuesStatusText.Contains("Checked"));
+                ui.ShowNews();Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.ApplicationIdle,new Action(()=>{}));Need(calls==1);
+                page.RefreshIssues.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.ApplicationIdle,new Action(()=>{}));Need(calls==2);
+                ui.Window.Close();Need(!timer.IsEnabled);
+            }finally{ui.Window.Close();SynchronizationContext.SetSynchronizationContext(previous);Directory.Delete(root,true);}
+        });
         var records=new[]{Record("v1.0.0"),Record("v1.1.0"),Record("v1.2.0-beta.1",false,true),Record("v9.0.0",false,false,true),Record("1.0.0",true),Record("1.1.0",true)};
         ReleaseNews news=null;
         Test("release news uses update selection, verifies launcher metadata and retains exact installed notes",()=>{
@@ -145,7 +265,7 @@ public static class LauncherNewsChecks
                 Notes="<script>alert('test')</script>\n<Window><Button>Injected</Button></Window>\n![Remote](https://invalid.example/image.png)"}});
             string text=String.Join("\n",All<ReleaseNotesMarkdown>(page.View).Select(t=>new TextRange(t.Document.ContentStart,t.Document.ContentEnd).Text));
             Need(text.Contains("<script>") && text.Contains("<Window>") && text.Contains("Image: view on GitHub"));
-            Need(!All<WebBrowser>(page.View).Any() && !All<Image>(page.View).Any() && All<Button>(page.View).Count()==4);
+            Need(!All<WebBrowser>(page.View).Any() && !All<Image>(page.View).Any() && All<Button>(page.View).Count()==6);
         });
         Test("installed preview notes remain readable when stable has no compatible game release",()=>{
             var page=new WhatsNewPage();page.SetVersions("v1.0.0-beta.1","1.0.0",false);page.SetNews(new ReleaseNews {InstalledGame=new Release {Tag="v1.0.0-beta.1",Notes="Installed preview",Url=ReleaseClient.ReleasesPage},CheckedUtc=DateTime.UtcNow});

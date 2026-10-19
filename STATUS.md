@@ -1,5 +1,102 @@
 # Measured progress
 
+## Launcher v1.2.18 release candidate (2026-10-19)
+
+Prepared on `feature/launcher-live-known-issues`, integrating main `d63a156`
+with live Known Issues commit `2f5ca68`. Both executable versions are 1.2.18.0.
+This also includes main's Discord presence setting; it requires a compatible
+game runtime. This candidate is built locally, not published for auto-update.
+
+The Windows x64 .NET Framework required-artwork build and full launcher tests
+passed: 104 updater, 28 download, 11 version, 10 startup, 30 news, 32 settings,
+20 maintenance and 14 unfinished-session checks, plus crash-report checks.
+Three packaging tests and 42 page/state layout checks passed. The exact ZIP
+passed upgrade and injected-failure rollback through the published v1.2.17
+updater, preserving isolated game, ISO, data, saves, settings, textures,
+rollback and untracked fixtures. Embedded banner, logo and backdrop hashes
+match the private source artwork. No real game or personal data was changed.
+
+The launcher-only ZIP, checksum, update metadata, release notes and provenance
+are retained in ignored `build/launcher-release-1.2.18`. Its only contents are
+the two launch executables and launcher manifest. Native Mac execution remains
+unverified and the Known Issues adaptation is queued under MAC-021.
+
+Subsequently integrated main `ae9f86d` (vehicle-runtime fix and issue-form
+versions), preserving both progress records. Launcher source, assets and build
+script inputs are unchanged from the tested candidate; no game rebuild is
+claimed by this launcher package.
+
+## Live known issues in the launcher (2026-10-19)
+
+Implemented on `feature/launcher-live-known-issues`, based on main `a8fc545`.
+Known issues previously came only from release descriptions. It now fetches
+current open GitHub issues labeled bug, excluding PRs and other labels/states,
+and replaces its list after a complete successful refresh. The selected
+release's published limitations remain separately identified in its notes.
+Issue titles are literal text and links are constructed from validated issue
+numbers in this repository; remote HTML, URLs and issue bodies are not rendered.
+
+Requests use independent five-minute polling while What's new is visible and
+the launcher is not minimized/busy, with entry/activation checks when due and
+an immediate manual refresh. No overlapping requests; close stops the timer,
+cancels outstanding work and prevents late repaint. Pagination is bounded to
+ten 100-record pages, responses to 4 MiB, and the entire check to 25 seconds,
+including a transport that ignores cancellation. Errors or incomplete results
+retain the old list with a checked-time warning; a successful empty result is
+distinct from unavailable GitHub data. No sign-in or saved cache is required.
+
+Windows x64 .NET Framework required-artwork build passed. Thirty release-news
+checks (including eleven new issue-feed/UI/scheduling cases) and 28 existing
+download/recovery checks passed. Forty-two page/state previews at 1152x772 and
+984x681 covered live, empty and stale issue lists as well as existing launcher
+pages. Live unauthenticated access returned eight open bug reports; preview
+screenshots used that read-only snapshot. No game, saves, personal settings,
+GitHub issues or release was modified. Full updater/gameplay checks were not
+needed for this display/network change. Native Mac remains queued in MAC-021.
+
+## Issue #100 - companion jeep dismount loop (2026-10-19)
+
+Local branch `100-captain-ash-buggin-out-in-the-car`, based on main `3d0b687`;
+Validated on Windows x64, MSVC Release, pinned runtime and supported
+US XBE SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+
+Read-only sampling in Scotland the Brave reproduced Ash cycling through seated
+state 9, dismount state 13, detached state 14 and re-entry, while Cortez's player
+entity remained in the same jeep and Ash had no target. The original JNE at
+`0x002A0C4D` joins a 32-bit driver-player check and an 8-bit vehicle flag check.
+The recompiler saved each predecessor's zero flag but consumed it without
+negation, reversing the stay-mounted decision for a player driver.
+
+`recomp-zf-join-polarity.patch` gives joins with recoverable ZF on every edge an
+explicit ZF-only state, snapshots before control transfer, and uses the proper
+condition polarity for branches, SETcc, CMOVcc and LOOPcc. Unknown predecessors
+remain unknown; no carry/sign/overflow information is inferred from ZF. The
+shared original AI routine remains responsible for combat and dismounting.
+
+Executable regressions cover both incoming paths, zero/nonzero values, mixed
+comparison operations and widths, and flag-preserving blocks. An integration
+fixture recompiles the supported US mounted-AI routine in disposable RAM:
+600 player-driver decisions stay mounted; missing/non-player drivers can still
+trigger dismount, enemy acquisition still changes to combat, and vehicle flags
+retain their original effect. A separate pre-fix run reproduces state 9 -> 13.
+The upstream recompiler suite passes 352 tests plus 87 subtests (41 skips);
+36 vehicle/float-join checks and an additional no-consumer declaration check
+pass. Patch tracking/transitions, generation and CI-scope checks pass 66 tests.
+The Windows Release rebuild and built-in native tests pass. The user confirmed
+the corrected Scotland the Brave jeep encounter works: Ash stays aboard away
+from enemies and follows normally when leaving the jeep and returning.
+Harry Tipper's encounter and native macOS gameplay have not been validated.
+Before submission, integrated main `b236c16`, preserving the terminal-camera
+regression and both validation records. Patch application and 76 combined
+vehicle/float-join, terminal-depth and CI-selection tests pass after integration.
+The user gameplay confirmation above was on the pre-integration build.
+PR #174 CI follow-up: macOS checks passed at `5f6ef81`; Windows runtime
+regressions passed while release checks were still running. Integrated main
+`a8fc545` to resolve a documentation conflict; patch application and 57
+vehicle/CI-selection regressions pass. Assigned this handoff MAC-048
+to preserve the newly merged menu-fidelity entry MAC-047.
+See MAC-048 for the shared-source Mac handoff.
+
 ## Launcher v1.2.17 local build (2026-10-19)
 
 Prepared on `release/launcher-v1.2.17` from main `8fe6b48` (PR #170), with

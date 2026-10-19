@@ -1,5 +1,23 @@
 # PC features awaiting Mac adaptation
 
+### MAC-048 - Companion vehicle zero-flag joins (#100)
+
+- **Status:** Awaiting validation
+- **Behavior:** Correct the reversed stay/dismount decision that makes Captain
+  Ash repeatedly leave and re-enter the jeep without an enemy target. Preserve
+  the original driver, vehicle-mode and combat checks.
+- **Source:** `100-captain-ash-buggin-out-in-the-car`;
+  `patches/recomp-zf-join-polarity.patch`, `tests/test_recomp_vehicle_joins.py`
+  and `tests/vehicle_companion.c`. Windows Test and runtime CI include the tests.
+- **Mac support:** Shared Python recompiler and patch stack; no OS adapter is
+  required. Existing generation fingerprinting invalidates old generated C.
+  Windows results do not establish native macOS gameplay correctness.
+- **Remaining:** Regenerate/rebuild on native macOS, run source-only ZF tests and
+  the supported-XBE mounted-AI regression, then validate the encounter.
+- **Acceptance:** Ash remains seated with a player driving away from enemies,
+  still fights and can dismount appropriately. Check Harry Tipper separately
+  before claiming that encounter verified. See `STATUS.md` for Windows evidence.
+
 ### MAC-047 — Main-menu image and lettering fidelity
 
 - **Status:** Queued
@@ -1270,6 +1288,26 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 Copy this template into the queue for each new entry. Replace all placeholders.
 
 ### MAC-021 — Published-release launcher and pre-game settings
+
+- **Launcher v1.2.18 candidate (2026-10-19):** The local Windows candidate
+  includes live Known Issues commit `2f5ca68` and main `d63a156`. Full launcher,
+  layout, packaging and published-v1.2.17 upgrade/rollback checks passed as
+  recorded in STATUS.md. No new native Mac implementation is included;
+  adaptation below remains queued and Mac execution remains unverified.
+
+- **Live known issues (2026-10-19, `feature/launcher-live-known-issues`):**
+  `ReleaseClient.cs` and `ReleaseNews.cs` fetch all bounded pages of open GitHub
+  issues labeled bug, exclude PRs, and return a complete replacement snapshot.
+  `WhatsNewPage.cs` shows literal linked titles, counts, checked times, manual
+  refresh and stale/offline feedback independently of historical release notes.
+  `Launcher.cs` checks on entry/activation when due and every five minutes while
+  the page is visible; it suppresses overlapping requests and stops on close.
+  Native Mac has no corresponding UI; adaptation remains queued. Reuse the
+  filter/pagination/deadline semantics in a native client, including preservation
+  of old results on later-page failure, empty-vs-offline distinction, safe links,
+  and removal after closure or relabeling. Verify timer lifecycle, keyboard
+  navigation and narrow layouts on Mac; Windows checks in STATUS.md do not
+  establish Mac execution. No personal data or GitHub mutation is involved.
 
 - **Launcher v1.2.17 build (2026-10-19):** Prepared locally on
   `release/launcher-v1.2.17` from main `8fe6b48`. This version packages the
