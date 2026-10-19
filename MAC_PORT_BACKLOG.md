@@ -750,6 +750,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-005 — Multiple texture stages and shader fidelity
 
 - **Status:** In progress
+- **Representative common-renderer scenes (2026-10-19):** The documentation
+  commit on `codex/shared-scene-acceptance` depends on `0ded9e0`; the unchanged
+  runtime is `5271401`. Short native MoltenVK Mansion exterior and entrance-hall
+  runs retain geometry, foliage/rain, lighting, characters and chandelier/fire
+  in paired guest/intermediate captures after synthetic turning/movement.
+  A temporary affine-off control reproduced the guest image to within one
+  channel unit at one pixel, with two other pairs exactly equal. No missing-rain
+  correction was justified and no runtime/settings change was made. All three
+  runs exited normally without validation errors. Original-Xbox fidelity,
+  spirits and Windows runtime comparison remain open; this does not close the
+  entry or establish a new FPS result.
+  [Evidence](STATUS.md#shared-renderer-mansion-scene-acceptance-2026-10-19).
 - **Shared paired-frame evidence (2026-10-19, commit carrying this update):**
   `codex/shared-interpolation-capture` depends on `codex/mac-moltenvk-default`
   at `65330e8` and its unmerged renderer stack. The common interpolation
@@ -2122,6 +2134,12 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 ### MAC-049 — Spirit skull and eye rendering (#17)
 
 - **Status:** Awaiting validation
+- **Native check (2026-10-19):** Shared wrappers are present in the verified
+  `5271401` Mac Vulkan build, and the spirit/cache-restoration tests pass within
+  a 25-check focused suite. A 120-second Mansion run reached the entrance hall
+  and reviewed its characters, chandelier and fire, but the retained frames
+  did not show spirits. Do not count this as skull/eye/trail or occlusion
+  acceptance. [Scope and evidence](STATUS.md#shared-renderer-mansion-scene-acceptance-2026-10-19).
 - **PC behavior:** The US spirit renderer uses clockwise culling for rigid
   skull nodes while keeping skinned trails two sided. Its two eye-billboard
   batches use unbiased clip-space positions and no fog, preserving their

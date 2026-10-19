@@ -8440,3 +8440,66 @@ No sky brightness, fog, wrapping or motion-blur workaround was introduced.
 MAC-005 remains in progress; matched reference and Windows runtime acceptance
 remain pending. This focused investigation and its dependency commits are local,
 not newly pushed or verified on the other computer.
+
+### Shared renderer mansion scene acceptance (2026-10-19)
+
+The documentation commit on `codex/shared-scene-acceptance` depends on
+`codex/khallos-sky-replay` at `0ded9e0` and its unmerged renderer stack. No
+runtime change was needed for these checks. The production binary still comes
+from `5271401`, SHA-256
+`a38a4dfbf76119aa564084a2e52a1cbc1de94c7623d9b17a88c1215865fcc1ad`;
+all source-input hashes in BUILD.json and the binary hash matched before the
+runs. Host: Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, Vulkan SDK 1.4.363.0,
+manifest-selected MoltenVK. Supported XBE/upstream/dependency pins unchanged.
+
+Three bounded runs used `tools/test-native-mac.py --unlocked-profile` with
+`--capture-interpolation --test-keys --fps 120`, isolated saves/controls/both
+display paths, and Vulkan validation enabled. Synthetic menu navigation chose
+Story, Mansion of Madness, then skipped the opening scene. A synthetic click
+recaptured the pointer after Escape before motion input. The exterior route
+turned with `motion 280 0`, moved forward briefly, and sent a fire-button press;
+no hit/combat success is claimed. The separate hall route moved straight to
+the entrance, interacted and entered, stopping in the first room.
+
+| Run | Bound/actual seconds | Captured guest frames | Reviewed result |
+| --- | --- | --- | --- |
+| Exterior, production interpolation | 105 / 105.20 | 4419, 4555, 4817 | Building, foliage, rain, lamps, companion and weapon retained through turn/movement |
+| Exterior, temporary affine-off control | 95 / 95.14 | 4423, 4558, 4820 | Replay preserves rain and scene content without transform blending |
+| Entrance hall, production interpolation | 120 / 120.15 | 4922, 5314, 5931 | Entrance transition, stairs/railings/stained glass, characters, falling chandelier and fire retained |
+
+Each run produced three complete 1920x1080 guest/intermediate pairs and exited
+0 with no Vulkan validation errors, shader failures or native faults. All
+18 selected PNGs were reviewed. The hall's first pair is the entrance cinematic,
+not gameplay; its later pairs show the first room in gameplay. Spirits were
+not observed in these selected frames: MAC-049's appearance, red-eye/trail and
+wall-occlusion acceptance remains open. This is neither level completion nor
+original-Xbox pixel parity, physical input, or all-effects certification.
+
+An initial visual impression of fainter rain in one intermediate image was
+not supported as missing content by the control. Production pairs have mean
+absolute channel differences of 0.106, 0.199 and 0.233 on a 0–255 scale, with
+near-zero signed means; the affine-off pairs differ by one channel unit at
+one pixel, zero pixels and zero pixels respectively. These results isolate
+small transform-related differences; they do not prove every moving particle
+is correct. The override was confined to the control process; normal
+interpolation settings and the 60 Hz guest clock remain unchanged. Readback
+perturbs timing, so no FPS result is inferred from these runs.
+
+Evidence: `logs/shared-mansion-{scene,affine-off,hall}-{out.log,summary.json,err}`,
+`logs/mansion-pair-differences.json`, and `logs/mansion-capture-index.json`.
+The index is reconstructed from per-run console records and retained PNGs
+after a scratch helper reused a receipt filename; it is not presented as an
+original runtime receipt. Final-pair verification remains in each runner
+summary. Images: `private/captures/native-mac/mansion-{scene,affine-off,hall}-*`.
+The affine-off control also retains one 9,758,496-byte, 343-draw capture at
+`private/captures/native-mac/mansion-rain-control.d3dcap` for targeted follow-up.
+
+Shared spirit/cache-restoration, framebuffer-sampling, interpolation/capture
+and backlog tests: **25 passed**. Windows execution and this branch's hosted
+CI were not run. Personal settings/fixture hashes were unchanged; each runner
+recycled six disposable partition images (5,243,406,848 apparent bytes versus
+135,168 allocated bytes per pass). Captures allocate 175,784 KiB, below
+256 MiB; no second game copy or build tree was created. Main and concurrent
+untracked files are preserved. Changes remain local; other-device sync is
+unverified. Remaining goal work includes matched Khallos fidelity, spirit
+scene acceptance and Windows validation of the unmerged shared changes.
