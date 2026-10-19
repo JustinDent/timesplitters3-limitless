@@ -1,0 +1,101 @@
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -121,7 +121,17 @@
+         return None
+     if not all(p in known for p in sources):
+         return None
+-    return _merge_flag_states([known[p] for p in sources])
++    states = [known[p] for p in sources]
++    merged = _merge_flag_states(states)
++    if merged is not None:
++        return merged
++    # A CMP/TEST or width mismatch cannot share all flags, but every edge
++    # can still provide ZF. Mark that fact explicitly so JNE negates ZF;
++    # the untyped fallback treats every condition as the same boolean.
++    from .lifter import zf_expression
++    if all(zf_expression(state) is not None for state in states):
++        return ("__zf_snapshot", [])
++    return None
+ 
+ 
+ def write_if_changed(path, text):
+@@ -1456,6 +1466,11 @@
+         # its own zero flag writes one, and the fallback reads a real value
+         # instead of an uninitialised local. See lifter.zf_expression.
+         needs_zf = set()
++        for bb in blocks:
++            incoming = _incoming_flag_state(preds[bb.start], settled_state,
++                                            bb.start == start)
++            if has_conditionals and incoming == ("__zf_snapshot", []):
++                needs_zf.update(preds[bb.start])
+         zf_probe = [bb for bb in blocks
+                     if len(preds[bb.start]) > 1 and bb.start != start
+                     and not _incoming_flag_state(preds[bb.start],
+--- a/tools/recomp/lifter.py
++++ b/tools/recomp/lifter.py
+@@ -550,6 +550,8 @@
+     if not flag_state:
+         return None
+     setter, ops = flag_state
++    if setter == "__zf_snapshot":
++        return "_flags"
+     if setter == "__zf_from_dest" and ops:
+         return f"({_fmt_operand_read(ops[0])} == 0)"
+     if setter == "cmp" and len(ops) >= 2:
+@@ -573,6 +575,15 @@
+     if not cond_info:
+         return None
+     cmp_macro, test_macro, desc = cond_info
++
++    # Only the zero flag is proven at a mixed-operation/width join. SETcc,
++    # CMOVcc and LOOPcc also use this decoder, preserving their polarity.
++    if flag_setter == "__zf_snapshot":
++        if jcc in ("je", "jz"):
++            return "_flags", desc
++        if jcc in ("jne", "jnz"):
++            return "!_flags", desc
++        return None
+ 
+     # A join whose predecessors disagree on which instruction set the flags,
+     # but agree that the zero flag came from the same destination register.
+--- a/tools/recomp/translator.py
++++ b/tools/recomp/translator.py
+@@ -1497,7 +1497,7 @@
+             if bb.start in needs_zf:
+                 from .lifter import zf_expression
+                 zf = zf_expression(out_state[bb.start])
+-                if zf:
++                if zf and zf != "_flags":
+                     # Before the block leaves, not after. Appending put it
+                     # below the `goto`, where it never ran -- so the join read
+                     # a value the *other* predecessor had left, which is worse
+--- a/tools/recomp/test_flag_join_backedge.py
++++ b/tools/recomp/test_flag_join_backedge.py
+@@ -67,9 +67,9 @@
+     assert "CMP_EQ" in code or "== 0" in code, code
+ 
+ 
+-def test_disagreeing_predecessors_keep_the_fallback():
++def test_disagreeing_predecessors_snapshot_zero_flag():
+     # Two predecessors reach the jz: one after `sub`, one after `inc`, whose
+-    # flags come from a different operand. The join must refuse.
++    # flags come from a different operand. Snapshot ZF on both edges.
+     #   +0  sub eax, ecx
+     #   +2  jmp +3            -> the jz at +5
+     #   +4  inc edx           (falls through to the jz, different flag source)
+@@ -81,10 +81,13 @@
+              b"\x74\x00"          # jz +0 -> +7
+              b"\xC3")             # ret
+     code = _translate(image)
+-    assert "_flags /*" in code, code
++    assert "_flags /*" not in code, code
++    assert "_flags = (_fa == 0)" in code, code
++    assert "_flags = (edx == 0)" in code, code
++    assert "if (_flags)" in code, code
+ 
+ 
+ if __name__ == "__main__":
+     test_loop_head_inherits_flags_from_both_predecessors()
+-    test_disagreeing_predecessors_keep_the_fallback()
++    test_disagreeing_predecessors_snapshot_zero_flag()
+     print("ok")
