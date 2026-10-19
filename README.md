@@ -134,6 +134,11 @@ The main Story/Arcade menu uses a smaller font so its list
 clears the logo and scrolling description. Click the Options/Status headings to switch pause or Objectives
 tabs; available headings highlight on hover. Keyboard and controller navigation
 still work.
+
+Auto Lookahead is automatically OFF in gameplay and the Controls menu while
+keyboard/mouse controls are active and mouse aiming is enabled. Its saved
+controller preference returns when controller input becomes active.
+
 Closing Pause or Objectives restores gameplay mouse control automatically;
 no extra click is needed. **Escape** pauses and releases the pointer. Use
 **Alt+Enter** for fullscreen. Settings saved in-game remain in place for your

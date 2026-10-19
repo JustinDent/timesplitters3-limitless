@@ -269,7 +269,7 @@ jobs:
             tests/test_xmv_stop.py
             tests/test_cutscene_letterbox.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py
-            tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_quit_menu.py tests/test_ui_layout.py
+            tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_quit_menu.py tests/test_ui_layout.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             tests+=(tests/test_pc_display_modes.py tests/test_fov_settings.py tests/test_window_theme.py tests/test_online_theme.py tests/test_online.py tests/test_online_host.py tests/test_network_identity.py)

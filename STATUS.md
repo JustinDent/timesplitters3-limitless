@@ -1,5 +1,45 @@
 # Measured progress
 
+## Automatic mouse Auto Lookahead (2026-10-19)
+
+Implemented locally on `fix/mouse-auto-look-ahead`, based on main `6ad7767`.
+The US game's camera update (`sub_0025D520`, flag read at `0x25DB8F`)
+recenters pitch when movement activates Auto Lookahead. The new shared wrapper
+clears only that flag while this routine runs for local input slot zero when
+keyboard/mouse is active and mouse aiming is enabled, then restores it.
+The local slot is player +4, not the network/player ID at +0. Other local
+players, controller input and disabled mouse aiming retain the original path.
+
+The shared choice renderer presents Controls row 4 as OFF without arrows in
+both frontend and pause layouts (descriptor `0x524A40`). Its temporary drawing
+value never becomes the saved preference. The Controls draft-copy wrapper
+rejects queued mouse/keyboard changes to this automatic value while retaining
+other edits and original Accept/Cancel behavior. Controller input restores
+normal display/editing and uses the current saved preference, including OFF.
+The implementation uses a new runtime patch; generated C was regenerated,
+not hand-edited. Mac shares the adapter, pending native validation (MAC-043).
+
+Validation: Windows x64/MSVC 19.44, D3D11, supported US XBE SHA-256
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+The auto-look, terminal, menu-mouse and patch tracking/transition suites passed
+35 checks. Coverage includes idle-after-mouse behavior, switching devices,
+existing ON/OFF preferences, unrelated flag writes, guest return/register
+behavior, other players, menu filtering and queued settings changes.
+The regenerated game compiled and linked. In the isolated Test Lab session,
+Controls visibly displayed OFF with its arrows hidden; the user confirmed
+that the view stays where aimed while walking. Physical-controller switching
+and a separate pause-menu visual check remain unverified; the shared paths
+are covered by the adapter regression.
+
+Build-test limitation: `tsfp.ps1 Build` stopped in the separate
+`tests/ghost_targets.py` D3D11 replay check with access violation `0xC0000005`.
+The first run passed 128x96 then failed at 160x90; an incremental retry also
+failed. This replay executable does not link the new guest input wrappers.
+No renderer/test weakening was included. Later native build checks were not
+reached by that command; do not report the full build-test suite as passing.
+Logs: ignored `build/auto-look-tests.log`, `build/auto-look-build.log` and
+`build/auto-look-build-retry.log`. Personal saves/settings were not used.
+
 ## Full-width gameplay white flashes (2026-10-19)
 
 Implemented follow-up on `152-bug-launch-title-screen-not-covering-larger-resolutions`

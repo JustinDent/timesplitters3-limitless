@@ -1,5 +1,24 @@
 # PC features awaiting Mac adaptation
 
+### MAC-043 — Automatic mouse Auto Lookahead override
+
+- **Status:** Awaiting validation
+- **Behavior:** Keyboard/mouse with mouse aiming enabled suppresses pitch
+  recentering for local input slot zero. Controls displays OFF without arrows
+  in both frontend and pause menus. The saved controller preference, other
+  players, disabled-mouse mode, and other settings retain their original behavior.
+- **Source:** `Disable Auto Lookahead for keyboard and mouse` on
+  `fix/mouse-auto-look-ahead`,
+  `src/pc_auto_look_guest.inc`, the `mouse-auto-look-ahead` runtime patch,
+  `tests/auto_look.c` and `tests/test_auto_look.py`.
+- **Mac support:** Shared guest wrappers use existing native prompt-device and
+  mouse-enable APIs. No new OS adapter is required; Mac execution is unverified.
+- **Remaining and acceptance:** Run the native regression and build on macOS;
+  verify a tilted view stays put while walking with keyboard/mouse, OFF is
+  displayed in frontend and paused Controls, controller input restores the
+  stored ON/OFF value, and Accept/Cancel and another local player are unaffected.
+  Windows evidence belongs in STATUS.md; it does not establish Mac validation.
+
 ### MAC-042 — Formatted release notes and browser links
 
 - **Status:** Queued
