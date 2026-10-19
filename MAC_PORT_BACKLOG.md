@@ -304,7 +304,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   Review follow-up in this PR: concurrent fatal threads wait for capture,
   report/export temporary names fit valid Windows paths, selected build
   configurations retain their own symbols, and source-only CI covers these cases.
-- **Native implementation (2026-10-19, uncommitted on `codex/mac-launcher-parity`):**
+- **Native implementation (2026-10-19, `356e5a3` on `codex/mac-launcher-parity`):**
   `src/native/crash_posix.*`, native main/input hooks and the separate
   `native-launcher-services` patch implement signal-safe shared-memory notification
   to a prestarted reporter, ARM64/Xbox context, symbolication, bounded native
@@ -1255,7 +1255,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Awaiting validation
-- **Parity completion (2026-10-19, uncommitted on `codex/mac-launcher-parity`):**
+- **Parity completion (2026-10-19, `356e5a3` on `codex/mac-launcher-parity`):**
   Native Discord editing/IPC, native fatal/hang report open/export, shared rich
   Markdown, matching release/version/maintenance page structure, safe successful
   launch cleanup and isolated real-game lifecycle tests are implemented. Local
@@ -2212,13 +2212,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   `src/pc_controls.c`, the `discord-presence` patch, launcher `GameSettings.cs`,
   `SettingsPage.cs`, portable launch/package scripts, and
   [setup instructions](docs/discord-presence.md).
-- **Native implementation (2026-10-19, uncommitted on `codex/mac-launcher-parity`):**
+- **Native implementation (2026-10-19, `356e5a3` on `codex/mac-launcher-parity`):**
   `pc_discord.c` now shares the protocol, configuration and rate-limit worker;
   `pc_discord_win32.h` and `native/discord_posix.h` supply only host primitives.
   Native startup/shutdown and guest camera publication use the same model and
   decoder, with editable launcher preferences. Eight real Unix-socket scenarios
   plus the policy suite pass; a bounded native game session was acknowledged by
-  the running Discord desktop client. See [STATUS](STATUS.md#native-launcher-parity-completion-2026-10-19).
+  the running Discord desktop client, including Time to Split mission/difficulty,
+  cutscene, gameplay and pause transitions. See
+  [STATUS](STATUS.md#native-launcher-parity-completion-2026-10-19).
 - **Remaining acceptance:** Live mode/mission coverage beyond the recorded run,
   other-device validation and native LAN/Online status after MAC-013. The existing
   shared decoder preserves occupied human slots, built-in text bounds and event

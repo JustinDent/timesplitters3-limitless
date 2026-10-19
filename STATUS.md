@@ -2,12 +2,14 @@
 
 ## Native launcher parity completion (2026-10-19)
 
-Source: uncommitted on `codex/mac-launcher-parity`, depending on native runtime
+Source: `356e5a3` on `codex/mac-launcher-parity`, depending on native runtime
 baseline `a0c8a1a` through integration `8012f22`. The primary checkout's branch
-and source edits were preserved. The single ignored native build is rebuilt from
-this worktree using `--runtime-root`; its manifest records source revision and
-all local source hashes. No main merge, push, release publication or other-device
-execution is claimed.
+and source edits were preserved. Both final app and game manifests record
+`356e5a34263cfeed6f9419517f9c406621379e59` with a clean source tree. The single
+ignored native build uses `--runtime-root`; its executable SHA-256 is
+`d755ff5765abbe53de5baf24a791bdf453f9f9229a712a2424010db89d87bb6c`, with matching
+dSYM UUID `88DC189B-64F2-30DF-B440-ECD35810FC4E`. No main merge, push, release
+publication or other-device execution is claimed.
 
 Host: macOS 27.0.1 (26A434), Apple Silicon ARM64; .NET SDK 8.0.426, Avalonia
 11.3.22; native game uses the existing pinned Vulkan SDK/KosmicKrisp backend.
@@ -39,16 +41,20 @@ Measured validation:
   recovery/rearm and later crash; startup, unarmed, responsive, background/modal
   suppression; and linked-root refusal. Tests never connect to real Discord.
 - Separately, the installed Discord desktop client acknowledged Rich Presence
-  during an isolated real native game session. Main-menu and Story-menu activity
-  updates were observed. This is an IPC acknowledgement, not a screenshot of
-  another account's profile or certification of all multiplayer modes.
+  during a 75-second isolated real native game session. Observed updates covered
+  Main menu, Story menu, Time to Split / Normal / Single player, Watching a
+  cutscene, In game and Paused. This is an IPC acknowledgement, not a screenshot
+  of another account's profile or certification of all multiplayer modes.
 - The real launcher/game completed both normal quit (exit 0) and intentional
   native fatal signal (exit 134), with minimize/restore and local report export.
-  A follow-up clean run also observed the OS game window through CoreGraphics.
-  Reviewed captures show rendered native menus. Saves came from a disposable
-  Test Lab copy; both display configurations, controls, Discord and crash paths
+  Both final-build runs observed the OS game window through CoreGraphics.
+  Reviewed captures show rendered native menus and the first mission canyon.
+  Saves came from a disposable Test Lab copy; both display configurations, controls, Discord and crash paths
   were isolated. Personal control/display/Discord/runtime files were unchanged.
-  Virtual disks were recycled after child shutdown. No campaign certification.
+  Virtual disks were recycled after child shutdown. The launcher and interactive
+  entry point also passed their read-only prerequisite checks. Evidence is in
+  ignored `logs/mac-launcher-e2e-{quit,crash}.json`, with the source revision and
+  executable hash. No campaign certification.
 - The actual packaged app was extracted/installed, deliberately modified, repaired
   by its copied self-update helper after a test parent exited, restarted and
   rendered. Manifest verification and personal/game fixtures survived the cycle.
@@ -56,9 +62,9 @@ Measured validation:
 - Native runtime build, three CTests and renderer/input/settings/debug GPU/SDL
   checks pass. Windows launcher source compiles for .NET Framework 4.8 with zero
   warnings/errors; Windows WPF and named-pipe execution remain unavailable here.
-- Focused Python regressions: 95 passed, 9 host-specific skips. Patch tests:
-  12 passed, 2 Windows-only skips after registering the new patch dependency in
-  the historical-stack fixture. No dependency upgrade or game-data duplication.
+- Focused Python regressions: 105 passed, 9 host-specific skips, including the
+  patch suite after registering the new patch dependency in its historical-stack
+  fixture. No dependency upgrade or game-data duplication.
 - macOS UI events rejected reserved F2, captured K into a disposable binding
   draft, and saved enabled Discord settings to the disposable installation.
   This is OS event automation, not physical keyboard/controller playtesting.

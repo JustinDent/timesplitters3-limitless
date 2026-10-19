@@ -116,8 +116,8 @@ performs no network requests, startup cleanup or saves. Run actual game tests
 through `tools/test-native-mac.py` with its isolated paths and bounded duration;
 do not automate Play against personal saves.
 
-The first measured native launcher port is recorded in
-[STATUS.md](../STATUS.md#native-mac-launcher-port-2026-10-19).
+The completed adapter and end-to-end evidence is recorded in
+[STATUS.md](../STATUS.md#native-launcher-parity-completion-2026-10-19).
 
 The end-to-end wrapper uses `test-native-mac.py`'s locked, disposable Test Lab
 profile and both isolated display configurations. It launches the real app/game,
@@ -130,8 +130,10 @@ python3 tools/test-mac-launcher.py --launcher 'build/macos-launcher/TimeSplitter
 ```
 
 `--discord` explicitly publishes this disposable session's activity to the running
-Discord client and requires its acknowledgement. `--seconds` bounds the run;
-`--runtime-root` selects an existing same-host checkout's local data/build.
+Discord client and requires its acknowledgement. `--story --seconds 75` adds
+synthetic SDL navigation into Time to Split and checks cutscene/gameplay/pause
+activity; it is not physical input or campaign-completion validation.
+`--seconds` bounds the run; `--runtime-root` selects an existing same-host checkout's local data/build.
 The native builder accepts the same `--runtime-root` to reuse dependencies and
 the single `build/macos` directory from a focused source worktree. It records the
 source worktree revision/hashes and never copies game data or virtual environments.
