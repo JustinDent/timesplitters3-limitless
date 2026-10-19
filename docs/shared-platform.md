@@ -113,8 +113,10 @@ retaining skipped/failed counts. Failed replay does not advance HLE present tota
 or feed stale timing into its scheduler. These are CPU API-call timings, not
 scanout measurements.
 The common Vulkan game passes programmed native settings, resize and fullscreen
-acceptance. Repetition on fallback GL awaits completion of the launcher chat,
-which owns the local build directory. Compare targeted scenes before changing defaults.
+acceptance. The completed native launcher is integrated with the renderer on
+`codex/shared-native-integration`; the command launcher also selects the verified
+GPU loader from the build manifest. Combined GL/Vulkan repetition and targeted
+scenes remain required before changing defaults.
 Keep shared build pins; do not copy another OS's build tree.
 
 Then migrate remaining shader/resource behavior incrementally, using shared

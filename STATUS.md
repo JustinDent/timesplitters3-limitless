@@ -16,6 +16,24 @@
   pass locally: 92 passed, six Windows-only skips in 45.40 seconds, with
   disposable data. Native GPU, packaged launcher and isolated gameplay checks
   are pending. Log: `logs/shared-integration-source-tests.out`.
+- **Local production resource acceptance:** At `3020167`, the asset-free
+  production RHI and Xbox-factory tests pass on Apple M5 Pro / macOS 27.0.1
+  arm64, pinned SDK 1.4.363.0 with MoltenVK Vulkan 1.3. This includes linear and
+  swizzled cube/volume uploads, mip sampling and child lifetime, plus the earlier
+  shader/depth/presentation contracts. No Vulkan validation errors; nine known
+  primitive-restart warnings. Test executable SHA-256
+  `23f70c075b57697aca936e716e6bb1ce8a06252b5341b5e0e3ff0ac6fd3a0379`;
+  logs: `logs/rhi-moltenvk.json`, `.log`, `logs/shared-integration-rhi.out`.
+  This does not validate other formats or game scenes.
+- **Command launcher integration:** The app already configured Vulkan, but the
+  legacy `.command` entry point did not. It now verifies the manifest-selected
+  SDK and uses the common read-only GPU environment helper, preserving personal
+  routing, FPS preferences and GL without an SDK. Receipt hashing also supports
+  Apple's Python 3.9 without changing development pins. All 28 launcher/SDK
+  checks pass, including no writes/child launch during `--check`, corrupt-SDK
+  rejection, inherited-loader cleanup and configuration preservation. The real
+  `/usr/bin/python3` prerequisite check passes against the existing launcher
+  binary; this is not a rebuilt integration game or gameplay validation.
 
 ## Shared cube and volume resource contract (2026-10-19)
 

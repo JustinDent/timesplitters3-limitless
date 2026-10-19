@@ -296,10 +296,14 @@ driver by default, or `--vulkan-driver moltenvk`, and enables validation.
 This path compiles the PC Xbox frontend directly. The Mac adapters supply the
 window, SDL events and CoreText overlay bitmap. It has bounded first-mission
 coverage, not full rendering, physical-input or 120-present certification.
-The GL-specific `--profile-frames`, `--trace-render` and interpolation-capture
-hooks are not yet implemented for this path. Its boot summary explicitly marks
-the host-present counter unavailable; guest frames are not host presents.
-Use the isolated runner for this developer build. Restore the normal interactive
-build afterward with `.venv/bin/python tools/build-native-mac.py --renderer gl --test`.
-The interactive launcher does not yet configure the experimental SDK route.
+`--profile-frames` uses the common presentation recorder on both renderers and
+separates accepted guest/interpolated API presents. These timings do not measure
+GPU completion or display scanout. GL-specific `--trace-render` and paired
+interpolation-capture hooks remain unavailable on the common renderer.
+Use the isolated runner for automated checks. For interactive use, both the
+native app and `Play-Native-Mac.command` read the renderer from `BUILD.json`,
+verify the pinned SDK receipt, and configure the KosmicKrisp loader without
+changing saved graphics preferences. `--check` remains read-only and now catches
+missing or modified Vulkan dependencies before launch. Default builds still use
+GL; rebuild with `--renderer gl --test` to select that fallback explicitly.
 See [results and remaining work](../STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).

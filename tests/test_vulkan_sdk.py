@@ -97,6 +97,14 @@ def test_gpu_overlay_preserves_runner_isolation(tmp_path,monkeypatch):
     assert 'DYLD_INSERT_LIBRARIES' not in env
     assert env['RECOMP_SHADER_CACHE']=='0'
     assert existing['VK_DRIVER_FILES']=='/wrong/driver'
+    assert not list(tmp_path.iterdir())  # also safe for an interactive --check
+
+
+def test_digest_works_with_system_python_api(tmp_path,monkeypatch):
+    monkeypatch.delattr(sdk.hashlib,'file_digest',raising=False)
+    data=b'known receipt contents'*100000
+    path=tmp_path/'library';path.write_bytes(data)
+    assert sdk.sha256(path)==sdk.hashlib.sha256(data).hexdigest()
 
 
 @pytest.mark.parametrize('output',[

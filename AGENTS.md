@@ -111,8 +111,10 @@ reproducibility, and validation requirements.
   replace existing upstream/Python pins or change the default GL game renderer.
   `tools/build-native-mac.py --renderer vulkan` opts into the common Xbox
   frontend; use the bounded runner, which selects pinned GPU loading from the
-  build manifest. Restore `--renderer gl` before normal interactive use while
-  launcher integration is pending. Keep GPU contracts, guest frame counts and
+  build manifest. The native app and `Play-Native-Mac.command` now configure
+  the verified SDK for a Vulkan manifest; their prerequisite checks remain
+  read-only. Default builds still use GL while wider common-renderer acceptance
+  is pending. Keep GPU contracts, guest frame counts and
   common-renderer scene validation distinct. The shared recorder counts successful
   presentation API calls and separates guest/interpolated/other kinds; it does not
   measure GPU completion or monitor scanout. Skips/errors must not inflate FPS.

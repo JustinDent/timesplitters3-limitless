@@ -68,6 +68,22 @@ def prepare_settings(root):
             output.write('# Native runtime settings; PC settings remain in config/pc-display.ini\n')
 
 
+def renderer_environment(existing, root, manifest):
+    """Honor the executable's renderer without changing saved preferences."""
+    env = {k:v for k,v in existing.items() if not k.startswith(('VK_', 'SDL_VULKAN', 'DYLD_'))}
+    renderer = manifest.get('renderer', 'gl')
+    if renderer == 'vulkan':
+        import vulkan_sdk
+        try:
+            sdk = vulkan_sdk.verify_install(root)
+        except RuntimeError as error:
+            raise ValueError(f'Native Vulkan prerequisites: {error}') from error
+        env.update(vulkan_sdk.gpu_environment(sdk, 'kosmickrisp'))
+    elif renderer != 'gl':
+        raise ValueError(f'Unsupported native renderer in BUILD.json: {renderer}')
+    return env
+
+
 def drain_log(stream, path, budget=4*1024*1024):
     # Drain after the cap too, so verbose guest logging cannot stall gameplay.
     with path.open('wb') as output:
@@ -100,6 +116,9 @@ def main():
         raise ValueError('Native executable differs from BUILD.json; rebuild before launching.')
     controls = ROOT / 'config/pc-controls.json'
     read_controls(controls if controls.exists() else ROOT / 'config/pc-controls.default.json')
+    if args.check:
+        sys.dont_write_bytecode = True
+    env = renderer_environment(game_environment(os.environ, ROOT, args.fps), ROOT, manifest)
     print(f'Native ARM64 build ready: {executable}')
     if args.texture_pack and not args.texture_pack.is_dir():
         raise ValueError('Texture pack directory does not exist.')
@@ -110,7 +129,6 @@ def main():
     logs.mkdir(exist_ok=True)
     print('Arrows/Enter navigate. Click inside the game for mouse-look; click again to fire. Escape pauses/releases the pointer. F1 also toggles capture. F2 opens Settings; F9 toggles FPS; F12 opens Debug; F11 toggles fullscreen. Close the game window to quit.', flush=True)
     print('Experimental: first-level rendering and basic input tested; campaign completion is unverified.', flush=True)
-    env = game_environment(os.environ, ROOT, args.fps)
     if args.texture_pack:
         env['TSFP_TEXTURE_PACK_DIR'] = str(args.texture_pack.resolve())
     proc = subprocess.Popen([str(executable)], cwd=ROOT, env=env,

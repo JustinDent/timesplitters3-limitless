@@ -884,6 +884,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   after parent release. Source checks pass; GPU execution remains pending.
   Palette/compressed formats, other texture modes and actual title usage are
   outside this fixture and remain unverified.
+- **Integrated native acceptance:** `3020167` combines the renderer and completed
+  launcher sources. The real Xbox factory fixture passes locally through
+  MoltenVK on Apple M5 Pro, including linear/swizzled uploads and child lifetime.
+  Other formats and scene usage remain open.
+  [Evidence](STATUS.md#shared-native-runtime-and-launcher-integration-2026-10-19).
 
 ### MAC-007 — Screen-copy effects and image surfaces
 
