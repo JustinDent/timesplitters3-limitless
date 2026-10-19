@@ -230,6 +230,24 @@ namespace TimeSplitters.Launcher
         { ApplyScope(root, changes, beforeChange, false); }
         public static void ApplyLauncher(string root, List<Change> changes, Action<int> beforeChange)
         { ApplyScope(root, changes, beforeChange, true); }
+        internal static void PromoteTransaction(string root, string relative, string rollback)
+        {
+            // A scanner or sync client can briefly hold a newly written directory
+            // without delete sharing. Retry only the rename, never replay file writes.
+            for (int attempt = 0; ; attempt++)
+            {
+                try { Directory.Move(PathIn(root, relative), PathIn(root, rollback)); return; }
+                catch (Exception ex)
+                {
+                    int error = ex.HResult & 0xffff;
+                    if (!(ex is IOException || ex is UnauthorizedAccessException) ||
+                        (error != 5 && error != 32 && error != 33)) throw;
+                    if (attempt == 20)
+                        throw new IOException("Windows is blocking the update recovery folder. Close programs using this installation, then retry the update. Keep the .launcher folder for recovery.", ex);
+                    Thread.Sleep(250);
+                }
+            }
+        }
         static void ApplyScope(string root, List<Change> changes, Action<int> beforeChange, bool launcher, bool repair = false)
         {
             Require(!GameRunning(), "Close the game before updating or restoring a release.");
@@ -269,13 +287,21 @@ namespace TimeSplitters.Launcher
                 }
                 if (!launcher && Directory.Exists(PathIn(root, rollback))) CheckGameCleanupTree(PathIn(root, rollback), false);
                 RemoveOwned(root, rollback);
-                Directory.Move(transaction, PathIn(root, rollback));
+                PromoteTransaction(root, relative, rollback);
             }
-            catch
+            catch (Exception updateError)
             {
-                if (File.Exists(Path.Combine(transaction, "journal.json"))) Restore(root, transaction, launcher);
-                if(repair)CheckGameCleanupTree(transaction,false);
-                RemoveOwned(root, relative);
+                try
+                {
+                    if (File.Exists(Path.Combine(transaction, "journal.json"))) Restore(root, transaction, launcher);
+                    if(repair)CheckGameCleanupTree(transaction,false);
+                    RemoveOwned(root, relative);
+                }
+                catch (Exception recoveryError)
+                {
+                    throw new IOException("The update failed and recovery could not finish. Close programs using this installation and reopen the launcher. Keep the .launcher folder for recovery; see launcher.log for details.",
+                        new AggregateException(updateError, recoveryError));
+                }
                 throw;
             }
         }

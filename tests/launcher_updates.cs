@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -17,6 +18,15 @@ static class LauncherTests
 {
     static int passed;
     static string temp;
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFile(string path, uint access, uint share,
+        IntPtr security, uint creation, uint flags, IntPtr template);
+    static Microsoft.Win32.SafeHandles.SafeFileHandle LockDirectory(string path)
+    {
+        var handle = CreateFile(path, 0x80000000, 3, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero);
+        if (handle.IsInvalid) { int error = Marshal.GetLastWin32Error(); handle.Dispose(); throw new System.ComponentModel.Win32Exception(error); }
+        return handle;
+    }
     static void Test(string name, Action body) { body(); passed++; Console.WriteLine("PASS " + name); }
     static void Assert(bool value) { if (!value) throw new Exception("Assertion failed."); }
     static void Reject(Action action)
@@ -272,6 +282,69 @@ static class LauncherTests
                 Assert(Core.CanRollback(root)); Core.Rollback(root);
                 Assert(Core.InstalledVersion(root) == "v1.0.0"); Assert(File.ReadAllText(Path.Combine(root, Core.LauncherName)) == "old launcher");
                 Assert(!File.Exists(Path.Combine(root, "Launch.ps1"))); Personal(root);
+            });
+            Test("transaction rename survives a temporary Windows directory lock", () => {
+                string root = NewRoot("temporary transaction lock");
+                var changes = Core.Unpack(Path.Combine(temp, "valid.zip"), Path.Combine(temp, "locked-payload"), "v1.1.0");
+                Microsoft.Win32.SafeHandles.SafeFileHandle handle = null;
+                Task release = null;
+                try {
+                    Core.Apply(root, changes, index => {
+                        if (index != 0) return;
+                        string source = Core.PathIn(root, ".launcher/transaction");
+                        handle = LockDirectory(source);
+                        // Prove the old single rename fails with the actual OS lock.
+                        Reject(() => Directory.Move(source, Core.PathIn(root, ".launcher/rollback")));
+                        release = Task.Run(() => { Thread.Sleep(750); handle.Dispose(); });
+                    });
+                    Assert(release != null && release.IsCompleted);
+                    Assert(Core.InstalledVersion(root) == "v1.1.0" && Core.CanRollback(root));
+                    Assert(!Directory.Exists(Core.PathIn(root, ".launcher/transaction"))); Personal(root);
+                    Core.Rollback(root); Assert(Core.InstalledVersion(root) == "v1.0.0"); Personal(root);
+                } finally { if (release != null) release.Wait(); if (handle != null) handle.Dispose(); }
+            });
+            Test("persistent transaction lock stops with actionable error and intact journal", () => {
+                string root = NewRoot("persistent transaction lock");
+                Put(root, ".launcher/transaction/journal.json", "recovery sentinel");
+                using (var handle = LockDirectory(Core.PathIn(root, ".launcher/transaction"))) {
+                    var clock = Stopwatch.StartNew();
+                    try { Core.PromoteTransaction(root, ".launcher/transaction", ".launcher/rollback"); throw new Exception("Expected lock failure."); }
+                    catch (IOException ex) { Assert(ex.Message.Contains("retry the update") && ex.InnerException != null); }
+                    Assert(clock.Elapsed >= TimeSpan.FromSeconds(4) && clock.Elapsed < TimeSpan.FromSeconds(15));
+                    Assert(File.ReadAllText(Core.PathIn(root, ".launcher/transaction/journal.json")) == "recovery sentinel");
+                    Assert(!Directory.Exists(Core.PathIn(root, ".launcher/rollback"))); Personal(root);
+                }
+            });
+            Test("rename does not retry missing sources or replace existing destinations", () => {
+                string root = NewRoot("invalid transaction rename");
+                var clock = Stopwatch.StartNew();
+                Reject(() => Core.PromoteTransaction(root, ".launcher/transaction", ".launcher/rollback"));
+                Put(root, ".launcher/transaction/journal.json", "new journal");
+                Put(root, ".launcher/rollback/keep", "existing rollback");
+                Reject(() => Core.PromoteTransaction(root, ".launcher/transaction", ".launcher/rollback"));
+                Assert(clock.Elapsed < TimeSpan.FromSeconds(4));
+                Assert(File.ReadAllText(Core.PathIn(root, ".launcher/rollback/keep")) == "existing rollback");
+            });
+            Test("failed recovery retains both errors and can recover after unlock", () => {
+                string root = NewRoot("recovery lock");
+                var changes = Core.Unpack(Path.Combine(temp, "valid.zip"), Path.Combine(temp, "recovery-lock-payload"), "v1.1.0");
+                FileStream handle = null;
+                try {
+                    try {
+                        Core.Apply(root, changes, index => {
+                            if (index != 0) return;
+                            handle = new FileStream(Core.PathIn(root, "Bin/futureperfect_recomp.exe"), FileMode.Open, FileAccess.Read, FileShare.None);
+                            throw new IOException("injected update failure");
+                        });
+                        throw new Exception("Expected recovery failure.");
+                    } catch (IOException ex) {
+                        var causes = ex.InnerException as AggregateException;
+                        Assert(ex.Message.Contains("recovery could not finish") && causes != null && causes.InnerExceptions.Count == 2);
+                        Assert(causes.InnerExceptions[0].Message == "injected update failure");
+                        Assert(File.Exists(Core.PathIn(root, ".launcher/transaction/journal.json")));
+                    }
+                } finally { if (handle != null) handle.Dispose(); }
+                Assert(Core.Recover(root)); Assert(Core.InstalledVersion(root) == "v1.0.0"); Personal(root);
             });
             Test("failed install restores previous files", () => {
                 string root = NewRoot("failure");

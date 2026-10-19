@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 
 namespace TimeSplitters.Launcher
 {
+    internal enum UpdatePresentationState { Checking, Ready, Available, Downloading, Verifying, Paused, Error, Empty }
     public static class Program
     {
         [STAThread]
@@ -150,6 +151,8 @@ namespace TimeSplitters.Launcher
         bool busy, checking, handingOff;
         bool validData, gameInstalled;
         string installed = "";
+        bool? displayedDataVerified;
+        UpdatePresentationState? updatePresentation;
         T Find<T>(string name) where T : class { return Window.FindName(name) as T; }
         Button Button(string name) { return Find<Button>(name); }
         void Text(string name, string value) { Find<TextBlock>(name).Text = value; }
@@ -165,6 +168,12 @@ namespace TimeSplitters.Launcher
             root = path; previewMode = preview; client = releases;
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Launcher.xaml"))
                 Window = (Window)XamlReader.Load(stream);
+            Window.Resources.MergedDictionaries.Add(PageTheme.Resources());
+            ShowUpdateState(UpdatePresentationState.Checking);
+            Find<Grid>("CommandCenter").SizeChanged+=(s,e)=> {
+                // Keep the action cards reachable at the minimum window height.
+                Find<Grid>("CommandCenter").RowDefinitions[2].Height=new GridLength(Math.Max(144,Math.Min(228,e.NewSize.Height-460)));
+            };
             WindowTheme.Attach(Window);
             using (var icon = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher.ico"))
                 Window.Icon = BitmapFrame.Create(icon, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
@@ -202,6 +211,15 @@ namespace TimeSplitters.Launcher
                     Find<Grid>("HeroFallback").Visibility = Visibility.Collapsed;
                 }
             }
+            using (var backdrop = Assembly.GetExecutingAssembly().GetManifestResourceStream("launcher-backdrop.png"))
+            {
+                if (backdrop != null)
+                {
+                    var bitmap = BitmapFrame.Create(backdrop, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                    bitmap.Freeze();
+                    Find<Image>("HeroBackdrop").Source = bitmap;
+                }
+            }
             Refresh();
             Button("SettingsNav").Click += (s,e)=>ShowSettings();
             Button("HomeNav").Click += (s,e)=>ShowHome();
@@ -214,6 +232,7 @@ namespace TimeSplitters.Launcher
             Button("RetryButton").Click+=async(s,e)=> {if(!busy && !checking && retryOperation!=null)await retryOperation();};
             Button("RecoveryRepairButton").Click+=(s,e)=>ShowMaintenance(false);
             Button("RecoveryLogsButton").Click+=(s,e)=> {if(!previewMode)OpenFolder(".launcher");};
+            Button("OpenDataButton").Click+=(s,e)=> {if(!previewMode)OpenFolder("Data");};
             Window.Closed += (s,e)=> { if(sessionTimer!=null)sessionTimer.Stop();lifetime.Cancel(); client.Dispose(); };
             if (previewMode)
             {
@@ -221,10 +240,13 @@ namespace TimeSplitters.Launcher
                 Text("ReadyTitle", "Ready to play");
                 Text("ReadyDescription", "Your game is installed and ready to launch.");
                 Text("DataLabel", "●  Verified US Xbox data");
+                SetGameDataPresentation(true,true);
                 Text("ReleaseTitle", "You're on the latest release.");
                 Text("ReleaseDescription", "The installed game is up to date. New releases appear here when published.");
                 SetStatus("Ready.");
                 Button("PlayButton").IsEnabled = true;
+                ShowUpdateState(UpdatePresentationState.Ready);
+                SetHomePrimaryAction("PlayButton");
                 return;
             }
             var prefsPath = Core.PathIn(root, ".launcher/preferences.json");
@@ -599,7 +621,48 @@ namespace TimeSplitters.Launcher
             Text("ReleaseTitle",info.Title);Text("ReleaseDescription",info.Message);Button("RetryButton").Content=info.RetryLabel;
             Find<Panel>("RecoveryActions").Visibility=Visibility.Visible;Find<Grid>("UpdateActions").Visibility=Visibility.Collapsed;
             Find<StackPanel>("UpdateChannelSection").Visibility=Visibility.Collapsed;Find<TextBlock>("TransferDetails").Visibility=Visibility.Collapsed;
+            ShowUpdateState(error is OperationCanceledException?UpdatePresentationState.Paused:UpdatePresentationState.Error);
+            SetHomePrimaryAction("RetryButton");
             SetStatus(download?"The installed release is unchanged. Retry when ready.":"You can retry or inspect the installed files.");
+        }
+        internal void SetHomePrimaryAction(string name)
+        {
+            foreach(string action in new[]{"PlayButton","UpdateButton","ImportButton","OpenDataButton","RetryButton"})
+                if(action==name)PageTheme.Primary(Button(action));else PageTheme.Secondary(Button(action));
+        }
+        internal void ShowUpdateState(UpdatePresentationState state)
+        {
+            if(updatePresentation==state)return;
+            updatePresentation=state;
+            string label,icon,color="#A7D9FA";
+            switch(state) {
+                case UpdatePresentationState.Checking:label="CHECKING";icon="M15,15 L21,21 M18,10 A8,8 0 1 1 2,10 A8,8 0 1 1 18,10";break;
+                case UpdatePresentationState.Ready:label="UP TO DATE";icon="M4,12 L9,17 L20,6";color="#A4DDCC";break;
+                case UpdatePresentationState.Available:label="AVAILABLE";icon="M12,3 L12,16 M6,10 L12,16 L18,10 M4,18 L4,21 L20,21 L20,18";break;
+                case UpdatePresentationState.Downloading:label="DOWNLOADING";icon="M12,3 L12,16 M6,10 L12,16 L18,10 M4,21 L20,21";break;
+                case UpdatePresentationState.Verifying:label="VERIFYING";icon="M12,2 L21,6 L20,15 L12,22 L4,15 L3,6 Z M7,11 L11,15 L17,8";break;
+                case UpdatePresentationState.Paused:label="PAUSED";icon="M7,4 L7,20 M17,4 L17,20";color="#E3C794";break;
+                case UpdatePresentationState.Error:label="NEEDS ATTENTION";icon="M12,2 L23,21 L1,21 Z M12,8 L12,14 M12,17 L12,17.5";color="#EDB4AC";break;
+                default:label="NO RELEASE";icon="M12,2 A10,10 0 1 1 11.9,2 M12,10 L12,17 M12,6 L12,6.5";color="#B4C7D8";break;
+            }
+            Text("UpdateStateLabel",label);Find<TextBlock>("UpdateStateLabel").Foreground=PageTheme.Brush(color);
+            var glyph=Find<System.Windows.Shapes.Path>("UpdateStateIcon");glyph.Data=Geometry.Parse(icon);glyph.Stroke=PageTheme.Brush(color);
+            var progress=Find<ProgressBar>("UpdateProgress");
+            progress.Visibility=state==UpdatePresentationState.Checking || state==UpdatePresentationState.Downloading || state==UpdatePresentationState.Verifying?Visibility.Visible:Visibility.Hidden;
+            progress.IsIndeterminate=state==UpdatePresentationState.Checking || state==UpdatePresentationState.Verifying;
+            if(state!=UpdatePresentationState.Downloading)progress.Value=0;
+        }
+        internal void SetGameDataPresentation(bool verified, bool exists)
+        {
+            var expander=Find<Expander>("GameDataExpander");
+            expander.Header=verified?"Manage game data":exists?"Inspect game data":"Set up game data";
+            if(displayedDataVerified!=verified)expander.IsExpanded=!verified;
+            displayedDataVerified=verified;
+            Text("GameDataHint",verified?"Your game data is ready. You only need to import it once.":exists?
+                "Existing data needs attention. Open the folder to inspect it; your files have been kept.":
+                "Import your supported US Xbox ISO or an extracted game folder.");
+            Find<Grid>("ImportActions").Visibility=exists?Visibility.Collapsed:Visibility.Visible;
+            Button("OpenDataButton").Visibility=exists?Visibility.Visible:Visibility.Collapsed;
         }
         void Refresh()
         {
@@ -618,6 +681,7 @@ namespace TimeSplitters.Launcher
                 Text("ReadyDescription", "Existing Data is incomplete or unsupported. Choose Repair / Verify → Open game folder to inspect it; your files were kept.");
             }
             Text("DataLabel", validData ? "●  Verified US Xbox data" : dataExists ? "○  Data needs attention" : "○  ISO required");
+            SetGameDataPresentation(validData,dataExists);
             Button("ImportButton").IsEnabled = Button("FolderButton").IsEnabled = !busy && !dataExists;
             Button("PlayButton").IsEnabled = !busy && gameInstalled && validData && !Core.GameRunning();
             Button("SettingsNav").IsEnabled = !busy && (previewMode || !Core.GameRunning());
@@ -635,6 +699,7 @@ namespace TimeSplitters.Launcher
             Button("UpdateButton").IsEnabled = !busy && !checking && CanUpdate();
             Button("UpdateButton").Content = DownloadTransfer.SavedBytes(Core.PathIn(root,".launcher/downloads/game"),available)>0?"Resume download":gameInstalled ? "Update release" : "Install release";
             Button("RollbackButton").IsEnabled = !busy && !checking && Core.CanRollback(root) && !Core.GameRunning();
+            SetHomePrimaryAction(retryOperation!=null?"RetryButton":!gameInstalled?"UpdateButton":!validData?(dataExists?"OpenDataButton":"ImportButton"):"PlayButton");
             Text("ChannelBadge", PreviewChannel ? "●  PREVIEW CHANNEL" : "●  STABLE CHANNEL");
         }
         bool CanUpdate()
@@ -649,6 +714,7 @@ namespace TimeSplitters.Launcher
             if (busy || checking) return;
             ClearRecovery();checking = true; available = null;
             Refresh();
+            ShowUpdateState(UpdatePresentationState.Checking);
             Text("ReleaseTitle", "Checking for updates…");
             Text("ReleaseDescription", "Looking for published " + (PreviewChannel ? "preview or stable" : "stable") + " releases on GitHub.");
             SetStatus("Checking GitHub Releases…");
@@ -660,6 +726,7 @@ namespace TimeSplitters.Launcher
                     available = await client.Check(PreviewChannel, timeout.Token);
                     if (available == null)
                     {
+                        ShowUpdateState(UpdatePresentationState.Empty);
                         Text("ReleaseTitle", PreviewChannel ? "No compatible release yet." : "No stable release yet.");
                         Text("ReleaseDescription", PreviewChannel ? "A published Windows ZIP with a checksum will appear here." : "Stable excludes test builds. Choose Preview to check published prereleases.");
                         SetStatus(gameInstalled ? "Your installed game is available offline." : "No compatible published release was found for this channel.");
@@ -667,6 +734,7 @@ namespace TimeSplitters.Launcher
                     else
                     {
                         bool newer = CanUpdate();
+                        ShowUpdateState(newer?UpdatePresentationState.Available:UpdatePresentationState.Ready);
                         Text("ReleaseTitle", newer ? available.Tag + " is ready." : "You're on the latest release.");
                         Text("ReleaseDescription", newer ? "Published on GitHub · " + (available.Size / 1048576.0).ToString("0.0") + " MB\n" + (gameInstalled ? "Update available." : "Install the game runtime, then import your game data.") : "The installed game is up to date. Check release notes for details.");
                         SetStatus(newer ? "Release available. Select " + (gameInstalled ? "Update" : "Install") + " to download and verify." : "Ready.");
@@ -722,6 +790,7 @@ namespace TimeSplitters.Launcher
             ClearRecovery();busy=true;
             using(var cancel=CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token)) {
                 updateStop=cancel;Refresh();
+                ShowUpdateState(UpdatePresentationState.Downloading);
                 Button("PauseDownloadButton").Visibility=Visibility.Visible;
                 Find<StackPanel>("UpdateChannelSection").Visibility=Visibility.Collapsed;
                 Find<TextBlock>("TransferDetails").Visibility=Visibility.Visible;
@@ -735,10 +804,15 @@ namespace TimeSplitters.Launcher
                     var progress=new TransferProgress(value=> {
                         if(updateStop!=cancel)return;
                         Bar.IsIndeterminate=value.Phase=="Verifying" || value.Phase=="Preparing";Bar.Value=value.Percent;Text("TransferDetails",value.Summary);
+                        ShowUpdateState(value.Phase=="Verifying" || value.Phase=="Preparing" || value.Phase=="Complete"?UpdatePresentationState.Verifying:UpdatePresentationState.Downloading);
+                        Find<ProgressBar>("UpdateProgress").Value=value.Percent;
                         Button("PauseDownloadButton").Content=value.Phase=="Verifying" || value.Phase=="Preparing" || value.Phase=="Complete"?"Cancel preparation":"Pause download";
                     });
                     await client.Download(release,archive,progress,cancel.Token,Core.PathIn(root,".launcher/downloads/game"));
                     Bar.IsIndeterminate=true;Button("PauseDownloadButton").Content="Cancel preparation";
+                    ShowUpdateState(UpdatePresentationState.Verifying);
+                    Text("ReleaseTitle","Preparing "+release.Tag);
+                    Text("ReleaseDescription","Verifying and preparing release files before installation.");
                     SetStatus("Verifying and preparing the release…");
                     await Task.Run(()=>Core.Unpack(archive,Path.Combine(pending,"payload"),release.Tag,cancel.Token),cancel.Token);
                     cancel.Token.ThrowIfCancellationRequested();
@@ -789,6 +863,7 @@ namespace TimeSplitters.Launcher
         internal async Task MonitorGame(Process process,string previousReport = null)
         {
             bool minimizedForGame = false;
+            bool gameWindowShown = false;
             string observedBuild = Core.GameBuildHash(root);
             WindowState previousState = Window.WindowState;
             string lastReport=previousReport;
@@ -797,12 +872,19 @@ namespace TimeSplitters.Launcher
             try
             {
                 SetStatus("Starting game…");
+                // Process.Start has succeeded. Do not delay taskbar minimization
+                // while waiting for a detectable game window; cleanup still must.
+                if (!process.HasExited)
+                {
+                    Window.ShowInTaskbar = true;
+                    Window.WindowState = WindowState.Minimized;
+                    minimizedForGame = true;
+                }
                 while (!process.HasExited)
                 {
-                    if (!minimizedForGame && GameWindowReady(root))
+                    if (!gameWindowShown && GameWindowReady(root))
                     {
-                        Window.WindowState = WindowState.Minimized;
-                        minimizedForGame = true;
+                        gameWindowShown = true;
                         SetStatus("Game running.");
                     }
                     if(reportClock.ElapsedMilliseconds>=nextReportScan) {
@@ -824,7 +906,7 @@ namespace TimeSplitters.Launcher
                 gameMonitoring=false;
                 if (minimizedForGame) { Window.WindowState = previousState; Window.Activate(); }
             }
-            await Task.Run(() => Core.FinishGameSession(root, observedBuild, minimizedForGame, process.ExitCode));
+            await Task.Run(() => Core.FinishGameSession(root, observedBuild, gameWindowShown, process.ExitCode));
         }
         internal async Task LaunchGame(string crashTestMode = null)
         {

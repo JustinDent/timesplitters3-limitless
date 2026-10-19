@@ -1,5 +1,43 @@
 # Measured progress
 
+## Launcher v1.2.17 local build (2026-10-19)
+
+Prepared on `release/launcher-v1.2.17` from main `8fe6b48` (PR #170), with
+matching launcher, assembly and file versions. Includes the approved panoramic
+banner, Home/settings/sidebar improvements, clearer update feedback, transaction
+lock recovery and immediate minimize-on-launch behavior. No game build is included.
+
+The Windows x64 .NET Framework build with `-RequireArtwork -Test` passed the
+complete launcher test run, including 104 updater, 28 download, 11 version,
+10 startup, 19 news, 30 settings and 20 maintenance checks, plus crash-report
+and 14 unfinished-session checks. Tests used the existing short temporary staging
+directory and synthetic files. Both packaged executable versions are 1.2.17.0;
+banner, logo and backdrop resource hashes match their private source files.
+The release ZIP, checksum and update metadata are retained locally under
+`build/launcher-release-1.2.17`, alongside build provenance and release notes.
+The ZIP contains only the two launch executables and launcher manifest.
+No installation, game, personal data, GitHub release or published tag was changed.
+Native Mac support remains queued in MAC-021 and MAC-046.
+
+## Combined launcher integration checks (2026-10-19)
+
+`integrate/launcher-polish-and-recovery` combines the visual/banner work
+(`e4f37c5`), transaction-lock recovery (`6e5e0dc`) and minimize-on-start fix
+(`4814fc4`) with main `5e89eaa`. Code merged automatically; documentation
+conflicts preserve each change and the existing terminal-camera validation.
+The transaction-lock backlog entry is MAC-046 to avoid main's MAC-045 ID.
+
+Windows x64 .NET Framework required-artwork build and the complete `-Test` run
+passed on the combined source: 104 updater, 28 download/recovery, 11 version,
+10 startup, 19 news, 30 settings and 20 maintenance checks, plus crash-report
+and unfinished-session suites. Five synthetic lifecycle checks, 36 layout
+previews and three package checks also passed. The full run used the existing
+short `%TEMP%/tsfp-visual-tests` staging directory with package metadata to avoid
+the known long-path fixture limit; binaries and logs remain ignored. No personal
+game, saves or settings were used. Private banner, logo and generated backdrop
+remain local and are embedded by release packaging. No new version was published;
+Mac execution remains unverified (MAC-021 and MAC-046).
+
 ## Terminal camera depth clears (issue #47, 2026-10-19)
 
 Implemented on `47-what-lies-below-camera-visual-bug`, based on main `c006c24`.
@@ -33,6 +71,151 @@ failed host calls, malformed chunks, unmapped handles or unknown chunks.
 The relevant terminal-depth, framebuffer, ghost, channel-clear, patch-tracking,
 patch-update and CI-scope suites passed: 74 tests in 130.67 seconds. Native
 macOS execution remains unverified (MAC-045).
+
+## Launcher banner composition (2026-10-19)
+
+Local follow-up on `feature/launcher-visual-polish`, based on `40b83a3` and
+dependent on its Home layout. Replaced the inset thumbnail treatment with an
+edge-to-edge composition: an original, larger title lockup over a generated
+blue/silver time-fracture background, joined to the supplied Cortez photo with
+a narrow left-edge transparency blend. The complete photo still uses uniform
+scaling without cropping; its source hash and the logo hash are unchanged.
+The original adaptive banner height is retained so Home controls stay visible.
+
+The generated 2172x724 companion backdrop and its full prompt/provenance remain
+ignored in `private/launcher-art`. `tools/build-launcher.ps1` embeds it separately
+and accepts `-BackdropPath`; required-artwork builds now reject a missing backdrop.
+Source builds may fall back to the existing gradient. All three embedded image
+streams were checked against their source SHA-256 hashes; the packaged app needs
+no external art files. Public publication has not been performed.
+
+Windows x64 .NET Framework build passed, as did 36 page/state layout previews
+at 1152x772 and 984x681, three package checks, and the missing-backdrop release
+gate. Home was visually inspected at both sizes. Broader existing suites passed
+28 download, 30 settings, 19 news and 14 read-only maintenance checks, including
+the source-build UI without the optional backdrop resource. The game-version
+suite passed its first nine checks, then the running game blocked the synthetic
+download/retry case; that suite is not claimed as passing. No personal data or
+running game was changed. Native Mac validation remains queued in MAC-021.
+
+## Launcher Home hierarchy and update states (2026-10-19)
+
+Follow-up on `feature/launcher-visual-polish`, building on local `e763ec2` rather
+than replacing its six visual improvements. Home now groups installed version,
+readiness, Play and game data in the stronger card, with a quieter update card.
+One next action uses the shared primary style: Play, install, ISO import, data
+inspection, or Retry/Resume depending on the workflow. Embedded Save/Verify
+actions retain the same primary treatment. A shorter window contracts the banner
+without cropping or modifying the original artwork.
+
+Update checks, ready/available results, download, verification, pause, failure
+and no-release states have distinct text/icon feedback. A local progress strip
+tracks downloading and is indeterminate during checks/preparation. It stops and
+resets after pause/error/result states; existing download/update guards remain.
+Reserved message/progress/action slots kept the measured normal action row fixed
+at y=586 (1152x772) and y=499 (984x681) for checking, ready, available, downloading,
+verifying and empty-release previews. Recovery uses a full-width primary action
+plus quieter repair/log links; longer exceptional messages remain scrollable.
+
+Windows x64 .NET Framework build with required artwork passed. Thirty-six
+preview/layout checks covered the original ten page/data states plus eight
+update states at both sizes. Minimum-size Home and download/pause/error renders
+were visually inspected. Current-source suites passed: 28 download/recovery,
+30 settings, 19 release-news, 11 game-version and 14 read-only maintenance checks.
+The new regression verifies progress shutdown/reset through pause, error and
+retry without starting an installation. Six transaction-maintenance checks are
+outside the read-only suite; no actual game was started/stopped or personal
+files changed. Native Mac, physical high-DPI testing and publication are not
+claimed. See MAC-021 and the ignored `build/launcher-visual-validation` evidence.
+
+## Launcher visual polish (2026-10-19)
+
+Windows x64 work on `feature/launcher-visual-polish`, based on main `c006c24`.
+Implemented all six requested visual improvements: collapsed verified game-data
+management, matching Home dropdown/softer Play button, six distinct vector
+sidebar icons, larger small labels with clearer muted-text contrast, compact
+settings rows, and a softer banner frame. Source artwork remains untouched and
+uses uniform scaling. Existing incomplete data offers inspection rather than
+import; verification changes update the default disclosure state while routine
+refreshes preserve the user's expansion choice. Home cards scroll as necessary.
+
+The .NET Framework x64 build with required original banner/logo passed.
+Twenty local preview/layout checks passed across Home (ready, expanded, missing
+and incomplete data), both Settings tabs, Repair, Diagnostics, What's new and
+Game versions at 1152x772 and 984x681 content sizes (the latter allows for the
+frame of a minimum-size 1000x720 window). The initial small-window pass caught
+clipped data actions; the scrollable Home cards fix was rebuilt and rechecked.
+Rendered pages were visually inspected; data actions were checked for reachability
+after scrolling, and verified-data expansion was checked across refreshes.
+
+Current-source regression results: 30 settings, 19 release-news, 11 game-version
+and 14 read-only maintenance checks passed. Six transaction maintenance checks
+were intentionally skipped in read-only mode while real game processes remained
+running; no updater/runtime changes require those checks for this visual work.
+No personal files or real game processes were modified. Native Mac execution,
+physical high-DPI testing and publication are not claimed. MAC-021 records the
+native UI follow-up. Prior local transaction-lock and minimize-on-start fixes
+remain on their separate branches and are not included in this branch.
+
+Ignored evidence: `build/launcher-visual-validation` contains the build, preview
+images, harness and suite logs; `build/launcher-visual-layout.log` records the
+layout pass. Test binaries used the short `%TEMP%/tsfp-visual-tests` path to avoid
+the pre-existing long-path crash-report fixture limit.
+
+## Launcher update transaction lock recovery (2026-10-19)
+
+Local Windows x64 fix based on main `c006c24`, branch
+`fix/launcher-transaction-lock`. A reported v1.2.16 game update failed at
+`Directory.Move(transaction, rollback)` after installing its payload. The log
+identifies a denied rename, not the process responsible; a sync/scanner lock
+is a possible cause, not a confirmed diagnosis. The installed game subsequently
+reported v0.3.0-alpha.2. No personal installation files were changed by this work.
+
+The shared game/repair/self-update transaction code retries only access/sharing/
+lock errors at commit, every 250 ms for five seconds. Other failures propagate
+immediately. Persistent failures retain restoration behavior and actionable
+instructions. If restoration fails too, both errors survive in the logged inner
+exception rather than losing the original update error. See MAC-046.
+
+.NET Framework x64 build with required private artwork passed. All 104 isolated
+updater checks passed, including four new regressions: a real Win32 directory
+handle blocks the old rename and then releases for successful install/rollback;
+a persistent lock times out with its journal intact; missing sources/existing
+destinations fail promptly; a locked restoration target retains both errors and
+recovers after unlocking. Synthetic saves/settings/data were preserved.
+Download (27), version selection (11), startup (10) and release news (19) checks
+also passed. Settings passed all 30 checks from a short temporary test path;
+the initial longer checkout path exceeded the crash log fixture's path limit.
+The subsequent crash-report suite stopped at its game-running guard after the
+real game was relaunched; remaining crash/session/maintenance suites were not
+completed in this run. No real game was started or stopped by these checks.
+
+Evidence: ignored `build/launcher-lock-validation.log` and build output in
+`build/launcher-lock-validation`; settings rerun used `%TEMP%/tsfp-lock-tests`.
+No native Mac execution, release publication or exact public ZIP upgrade is
+claimed for this change.
+
+## Launcher minimizes when the game process starts (2026-10-19)
+
+Windows x64 change on `fix/launcher-minimize-on-start`, based on main `c006c24`.
+The launcher now minimizes to the taskbar once its launched game process is
+running, instead of waiting for executable-path/window detection. It restores
+the previous normal/maximized state when that process exits. Failed process
+creation leaves it visible. Window detection is retained independently for
+successful-session cleanup, so a windowless clean exit cannot discard recovery
+files. This branch is independent of `fix/launcher-transaction-lock`.
+
+.NET Framework x64 compilation with required private artwork passed. Five
+isolated WPF lifecycle checks passed: normal and maximized initial states with
+delayed game windows, early nonzero exit, clean windowless exit and missing-game
+start failure. They assert immediate minimization, retained taskbar availability,
+state restoration and cleanup eligibility using synthetic files/processes.
+The lifecycle harness's reflection call now supplies the report argument added
+to MonitorGame by crash reporting. Evidence is in ignored
+`build/launcher-minimize-validation.log` and `build/launcher-minimize-lifecycle.log`.
+No real game or personal files were used; no actual gameplay, native Mac
+execution, publication or installed-launcher replacement is claimed. MAC-021
+records the native lifecycle adaptation still needed.
 
 ## Launcher v1.2.16 release preparation (2026-10-19)
 

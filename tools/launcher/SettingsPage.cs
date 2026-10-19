@@ -26,12 +26,12 @@ namespace TimeSplitters.Launcher
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
         static Brush ColorBrush(byte r,byte g,byte b) { var brush=new SolidColorBrush(Color.FromRgb(r,g,b));brush.Freeze();return brush; }
         static readonly Brush Ink = ColorBrush(228,237,245);
-        static readonly Brush Muted = ColorBrush(158,175,191);
+        static readonly Brush Muted = ColorBrush(180,199,216);
         static readonly Brush Accent = ColorBrush(134,205,255);
         static readonly Brush Panel = ColorBrush(21,36,53);
-        static TextBlock Text(string text, int size) { var block=PageTheme.Text(text,size);block.Margin=new Thickness(0,0,0,8);return block; }
+        static TextBlock Text(string text, int size) { var block=PageTheme.Text(text,size);block.Margin=new Thickness(0,0,0,6);return block; }
         static Button Button(string text) { return new Button { Content=text, Margin=new Thickness(0,0,8,0) }; }
-        static CheckBox Check(string text, bool value) { return new CheckBox { Content=text, IsChecked=value, Foreground=Ink, Margin=new Thickness(0,7,20,7) }; }
+        static CheckBox Check(string text, bool value) { return new CheckBox { Content=text, IsChecked=value, Foreground=Ink, FontSize=13, Margin=new Thickness(0,6,20,6) }; }
         static TextBox Entry(string text) { return new TextBox { Text=text, MinWidth=90 }; }
         static ComboBox Choices(string[] choices, string selected)
         {
@@ -42,7 +42,7 @@ namespace TimeSplitters.Launcher
         }
         static void Field(Panel parent, string label, UIElement input)
         {
-            var stack=new StackPanel { Margin=new Thickness(0,0,0,14) };var caption=Text(label,12);caption.Foreground=Muted;
+            var stack=new StackPanel { Margin=new Thickness(0,0,0,10) };var caption=Text(label,13);caption.Foreground=Muted;
             stack.Children.Add(caption);stack.Children.Add(input);parent.Children.Add(stack);
             System.Windows.Automation.AutomationProperties.SetLabeledBy(input,caption);
         }
@@ -65,7 +65,7 @@ namespace TimeSplitters.Launcher
             overlay=new Border { Visibility=Visibility.Collapsed, Background=new SolidColorBrush(Color.FromArgb(248,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(7), Padding=new Thickness(28) };
             View.Children.Add(overlay);
             var heading=new StackPanel(); DockPanel.SetDock(heading,Dock.Top); layout.Children.Add(heading);
-            var eyebrow=PageTheme.Text("GAME PREFERENCES",10,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;heading.Children.Add(eyebrow);
+            var eyebrow=PageTheme.Text("GAME PREFERENCES",11,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;heading.Children.Add(eyebrow);
             var title=Text("Game settings",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
             var subtitle=Text("Adjust controls, display and performance before your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
             var footer=new DockPanel { LastChildFill=true };
@@ -76,7 +76,7 @@ namespace TimeSplitters.Launcher
             var cancel=Button("Cancel"); cancel.Name="SettingsCancelButton"; cancel.Click+=(s,e)=> { if(Cancelled!=null)Cancelled(); }; actions.Children.Add(cancel);
             var save=Button("Save settings"); save.Name="SettingsSaveButton";save.Margin=new Thickness(0);PageTheme.Primary(save);save.Click+=(s,e)=>Save();actions.Children.Add(save);
             status=Text("Home keeps your draft. Save when you’re ready.",12);status.Foreground=Muted;status.Margin=new Thickness(0,0,16,0);status.VerticalAlignment=VerticalAlignment.Center;footer.Children.Add(status);
-            tabs=new TabControl { Background=Brushes.Transparent,BorderThickness=new Thickness(0), Margin=new Thickness(0,10,0,18) };layout.Children.Add(tabs);
+            tabs=new TabControl { Background=Brushes.Transparent,BorderThickness=new Thickness(0), Margin=new Thickness(0,8,0,12) };layout.Children.Add(tabs);
             var controls=new StackPanel();
             var input=PageTheme.Section(controls,"Input & mouse","Choose your input device and adjust how the camera responds.");
             var inputColumns=Columns(input);var inputLeft=Column(inputColumns,0);var inputRight=Column(inputColumns,1);
@@ -86,8 +86,8 @@ namespace TimeSplitters.Launcher
             var mouse=new WrapPanel();enabled=Check("Mouse look",model.MouseEnabled);invert=Check("Invert vertical look",model.InvertY);mouse.Children.Add(enabled);mouse.Children.Add(invert);input.Children.Add(mouse);
             var bindings=PageTheme.Section(controls,"Key bindings","Select a slot, then press a key or mouse button. Mouse wheel is supported.");
             var bindingHead=new Grid { Margin=new Thickness(0,0,0,6) };bindingHead.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(200)});
-            var actionHeading=PageTheme.Text("ACTION",10,"#8FA8BD");actionHeading.Margin=new Thickness(4,6,0,6);bindingHead.Children.Add(actionHeading);
-            for(int slot=0;slot<4;slot++){bindingHead.ColumnDefinitions.Add(new ColumnDefinition());var label=PageTheme.Text("SLOT "+(slot+1),10,"#8FA8BD");label.HorizontalAlignment=HorizontalAlignment.Center;Grid.SetColumn(label,slot+1);bindingHead.Children.Add(label);}bindings.Children.Add(bindingHead);
+            var actionHeading=PageTheme.Text("ACTION",11,"#B4C7D8");actionHeading.Margin=new Thickness(4,6,0,6);bindingHead.Children.Add(actionHeading);
+            for(int slot=0;slot<4;slot++){bindingHead.ColumnDefinitions.Add(new ColumnDefinition());var label=PageTheme.Text("SLOT "+(slot+1),11,"#B4C7D8");label.HorizontalAlignment=HorizontalAlignment.Center;Grid.SetColumn(label,slot+1);bindingHead.Children.Add(label);}bindings.Children.Add(bindingHead);
             for (int i=0;i<24;i++)
             {
                 var row=new Grid { Margin=new Thickness(0,0,0,3), Background=i%2==0?PageTheme.Brush("#172B3F"):Brushes.Transparent };
@@ -142,26 +142,27 @@ namespace TimeSplitters.Launcher
                 var nearest=available.OrderBy(m=>Math.Abs((long)(m.Height==0?480:m.Height)-(h==0?480:h))*10000+Math.Abs((long)(m.Width==0?640:m.Width)-(w==0?640:w))).First();
                 resolution.Items.Clear();foreach(var mode in available)resolution.Items.Add(mode);resolution.SelectedItem=nearest;
             };
-            var fieldOfView=new DockPanel { MaxWidth=460, HorizontalAlignment=HorizontalAlignment.Left };
+            var fieldOfView=new DockPanel { HorizontalAlignment=HorizontalAlignment.Stretch };
             var fovValue=Text(model.VerticalFov.ToString(CultureInfo.InvariantCulture)+"°",14); fovValue.Name="VerticalFovValue";
             fovValue.MinWidth=48; fovValue.TextAlignment=TextAlignment.Right;
             DockPanel.SetDock(fovValue,Dock.Right); fieldOfView.Children.Add(fovValue);
             fov=new Slider { Name="VerticalFovSlider", Minimum=GameSettings.FovMin, Maximum=GameSettings.FovMax,
                 Value=model.VerticalFov, TickFrequency=1, IsSnapToTickEnabled=true, SmallChange=1, LargeChange=5,
-                MinWidth=180, MaxWidth=360, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
+                MinWidth=140, MaxWidth=360, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
             System.Windows.Automation.AutomationProperties.SetName(fov,"Vertical field of view in degrees");
             fov.ValueChanged+=(s,e)=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°";
             fov.IsEnabled=model.CanAdjustFov;
             fieldOfView.Children.Add(fov);
             var camera=PageTheme.Section(graphics,"Camera & window","Adjust your view and choose how the game fills your display.");
-            Field(camera,"Vertical FOV · 40–100°",fieldOfView);
+            var cameraColumns=Columns(camera);var cameraLeft=Column(cameraColumns,0);var cameraRight=Column(cameraColumns,1);
+            Field(cameraLeft,"Vertical FOV · 40–100°",fieldOfView);
+            fullscreen=Check("Borderless fullscreen",model.Fullscreen);Field(cameraRight,"Window mode",fullscreen);
             var resetFov=Button("Reset FOV to 55°"); resetFov.Name="ResetFovButton";
             resetFov.IsEnabled=model.CanAdjustFov;
             resetFov.HorizontalAlignment=HorizontalAlignment.Left; resetFov.Click+=(s,e)=>fov.Value=GameSettings.FovDefault;
-            camera.Children.Add(resetFov);
+            cameraLeft.Children.Add(resetFov);
             if(!model.CanAdjustFov) camera.Children.Add(Text("Custom FOV requires a game release newer than v0.2.0-alpha.4. Resolution settings remain available.",12));
             var fovHint=Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative.",12);fovHint.Foreground=Muted;fovHint.Margin=new Thickness(0,10,0,4);camera.Children.Add(fovHint);
-            fullscreen=Check("Borderless fullscreen",model.Fullscreen);camera.Children.Add(fullscreen);
             var quality=PageTheme.Section(graphics,"Quality & performance","Higher render scale and resolution increase GPU load.");
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());Field(qualityLeft,"Render scale / supersampling",scale);
