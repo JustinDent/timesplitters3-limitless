@@ -1,6 +1,7 @@
 """Exercise real runtime patches on small source-only checkout fixtures."""
 from pathlib import Path
 import importlib.util
+import hashlib
 import io
 import json
 import shutil
@@ -75,12 +76,18 @@ def test_integrate_independent_presentation_stacks(checkout, tmp_path, history):
     installer.apply_patches(checkout, PATCHES)
     integrated = snapshot(checkout)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
-    manual.write_bytes(manual.read_bytes() + b'\n/* integration-local edit */\n')
+    newline = b'\r\n' if manual.read_bytes().endswith(b'\r\n') else b'\n'
+    local_edit = newline + b'/* integration-local edit */' + newline
+    manual.write_bytes(manual.read_bytes() + local_edit)
     installer.apply_patches(checkout, prior)
     installer.apply_patches(checkout, PATCHES)
     key = Path('titles/futureperfect/src/recomp_manual.c')
-    integrated[key] += b'\n/* integration-local edit */\n'
-    assert snapshot(checkout) == integrated
+    integrated[key] += local_edit
+    # Hash comparison is byte-exact without dumping megabytes of source into
+    # CI logs if a transition changes one file unexpectedly.
+    digest = lambda files: {name: hashlib.sha256(data).hexdigest()
+                            for name, data in files.items()}
+    assert digest(snapshot(checkout)) == digest(integrated)
     assert installer.apply_patches(checkout, PATCHES) == []
 
 

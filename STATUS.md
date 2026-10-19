@@ -8436,3 +8436,10 @@ skips. Another 71 renderer/frame-clock/CI-scope checks passed against a disposab
 source-only archive of pinned upstream `d90c929`; the active runtime checkout was
 not patched. Fresh Windows/macOS CI and the real-GPU contract are pending.
 No game execution, new game build or release publication occurred in this pass.
+
+
+CI follow-up at `ba5aaa7`: both launcher/package jobs passed again in run
+39341464578. Windows runtime migration assertions exposed a test-only mixed
+LF/CRLF append. The fixture now follows the source file's existing line ending
+and compares byte-exact hashes to keep failure logs bounded. Both historical
+migration cases pass locally after this correction; fresh Windows CI is pending.
