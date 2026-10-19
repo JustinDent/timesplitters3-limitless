@@ -21,6 +21,7 @@
 #include "input_sdl.h"
 #include "settings_macos.h"
 #include "pc_display.h"
+#include "pc_menu_sampling.h"
 #include "pc_debug.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
@@ -900,7 +901,7 @@ static GLuint native_samplers[4];
 static void bind_texture0(void)
 {
     if(!native_samplers[0])glGenSamplers(4,native_samplers);
-    GLint used[4],flipped[4],modes[4];GLfloat scale[8];
+    GLint used[4],flipped[4],modes[4];GLfloat scale[8],menu_filter[4];
     DWORD token=d3d8_combiners_get_pixel_shader(),tm=g.rs[D3DRS_PSTEXTUREMODES];
     static unsigned warned;
     for(int stage=0;stage<4;stage++) {
@@ -912,6 +913,10 @@ static void bind_texture0(void)
         glSamplerParameteri(native_samplers[stage],GL_TEXTURE_WRAP_S,native_wrap(g.tss[stage][D3DTSS_ADDRESSU]));
         glSamplerParameteri(native_samplers[stage],GL_TEXTURE_WRAP_T,native_wrap(g.tss[stage][D3DTSS_ADDRESSV]));
         flipped[stage]=t && t->flipped;
+        menu_filter[stage]=pc_menu_sampling_mode(pc_display_menu_filter(),
+            g.tss[stage][D3DTSS_MAGFILTER]==D3DTEXF_LINEAR,t!=NULL,
+            t?t->usage:0,t?t->screen_copy:0,
+            t && (t->format==D3DFMT_A8 || t->format==D3DFMT_LIN_A8));
         scale[stage*2]=scale[stage*2+1]=1;
         if(token && t && d3d8_format_is_linear(t->format)) {
             scale[stage*2]=1.0f/t->width;scale[stage*2+1]=1.0f/t->height;
@@ -924,6 +929,9 @@ static void bind_texture0(void)
         } else if(tm&D3D8_PSTEXTUREMODES_XBOX)modes[stage]=(tm>>(5*stage))&31;
         else {unsigned m=(tm>>(4*stage))&15;modes[stage]=m==0?32:m==3?0:31;}
         unsigned mode=modes[stage];
+        /* Dependent reads retain their original sampling, as in the shared
+         * Windows combiner. Only ordinary/projected 2D uses menu filtering. */
+        if(mode!=1 && mode!=32)menu_filter[stage]=0;
         if(mode!=0 && mode!=1 && mode!=4 && mode!=9 && mode!=15 && mode!=16 && mode!=17 && mode!=32 && !(warned&(1u<<mode))) {
             warned|=1u<<mode;fprintf(stderr,"[native-gl] texture shader mode %u remains unsupported\n",mode);
         }
@@ -935,6 +943,7 @@ static void bind_texture0(void)
     glUniform1iv(glGetUniformLocation(g.prog,"u_flip"),4,flipped);
     glUniform1iv(glGetUniformLocation(g.prog,"u_mode"),4,modes);
     glUniform2fv(glGetUniformLocation(g.prog,"u_scale"),4,scale);
+    glUniform1fv(glGetUniformLocation(g.prog,"u_menu_filter"),4,menu_filter);
     glUniform1i(glGetUniformLocation(g.prog,"u_combiner"),token!=0);
     glUniform1uiv(glGetUniformLocation(g.prog,"u_rs"),256,g.rs);
 }

@@ -171,7 +171,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-044 | Game crash capture and launcher reports | Queued |
 | MAC-045 | Terminal camera depth clears (issue #47) | Awaiting validation |
 | MAC-046 | Update transaction rename contention | Queued |
-| MAC-047 | Main-menu image and lettering fidelity | Queued |
+| MAC-047 | Main-menu image and lettering fidelity | Awaiting validation |
 | MAC-048 | Companion vehicle zero-flag joins (#100) | Awaiting validation |
 | MAC-049 | Spirit skull and eye rendering (#17) | Awaiting validation |
 | MAC-050 | Restore a reproducible native build from current main | Verified |
@@ -199,7 +199,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-047 — Main-menu image and lettering fidelity
 
-- **Status:** Queued
+- **Status:** Awaiting validation
 - **PC behavior:** Windows frontend textures use clamped Catmull-Rom
   reconstruction during magnification. Verified main-menu row draws additionally
   reconstruct A8 glyph coverage without changing glyph placement or measurement.
@@ -221,6 +221,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   ringing, atlas bleed, opacity drift or changes to gameplay. Check 1080p and
   ultrawide captures, font measurements, fades and menu/gameplay transitions.
   Windows evidence is recorded in `STATUS.md`; it is not native Mac validation.
+
+- **Shared implementation (2026-10-19):** `codex/shared-menu-rendering`, based
+  on unmerged integration `bee4ed9`, moves the reconstruction and glyph coverage
+  algorithm into `src/graphics/menu_sampling_shader.h`. Windows HLSL and native
+  GLSL consume the same body; adapters map texture access and intrinsic syntax.
+  Texture eligibility is also shared. Mac binding tests cover glyph scope and
+  point/render-target/screen-copy/dependent exclusions. An asset-free OpenGL
+  test runs the same pixel contract as Windows D3D11 WARP; CI selects it on both
+  hosts. Native full regressions and menu/mission-opening captures pass.
+  Windows execution after extraction, the aspect/resolution matrix, font
+  measurements and post-change gameplay transitions remain pending.
+  [Measured evidence](STATUS.md#shared-menu-shader-2026-10-19).
 
 ### MAC-045 - Terminal camera depth clears (issue #47)
 

@@ -1,5 +1,43 @@
 # Measured progress
 
+## Shared menu shader (2026-10-19)
+
+- **Source/dependency:** `codex/shared-menu-rendering` starts at unmerged
+  integration `bee4ed9`; no main merge. Checks used this branch's working changes.
+- **Change:** The PC menu Catmull-Rom/glyph reconstruction now has a single
+  shader body in `src/graphics/menu_sampling_shader.h`. HLSL/GLSL adapters map
+  resource access, vector/intrinsic names and loop hints only. Both backends use
+  the same texture-eligibility policy in `src/pc_menu_sampling.h`. The native
+  fragment path consumes it directly, retaining projected/ordinary 2D scope;
+  dependent reads, point filtering, render targets, screen copies, gameplay and
+  minification retain their original sampling. No dependency/pin or guest-clock
+  change. The rest of the native renderer still needs incremental consolidation.
+- **Asset-free checks:** OpenGL offscreen shader test passes the shared Windows
+  WARP pixel contract: magnification changes edges, flat colors and alpha plateaus
+  remain stable, glyph coverage stays bounded, and unmodified/minified results
+  remain exact. The same C fixture supplies inputs and assertions to both APIs.
+  CI runs the appropriate GPU test on Windows/macOS without game data; it does
+  not silently skip a missing GPU on the selected host. Local selection:
+  54 passed, 1 Windows-only skip (shader, UI layout, CI scope and backlog checks).
+  Windows HLSL/WARP execution is pending; a successful Mac GPU run does not
+  establish Windows rendering verification.
+- **Native checks:** Builder `--test` passes all three CTests and real-GPU,
+  SDL input, Cocoa settings/debug suites. New production binding checks cover
+  all four stages, mode 0/1/2, glyph scope, point filtering, render-target and
+  screen-copy exclusion, plus dependent reads. Host remains macOS 27.0.1 arm64,
+  Clang 21.0.0, SDL 3.4.16, OpenGL 4.1 Metal 91.7, pinned upstream `d90c929`
+  and supported US XBE. Executable SHA-256:
+  `6256f2d59c9fe9ef44d3870125a8e271c9ea13aaa10fa570068c415eb7e63c84`.
+- **Bounded run:** Isolated Test Lab, `--seconds 120 --capture --test-keys
+  --profile-frames --fps 120`, time-limit exit 0 after 120.19 seconds. Reviewed
+  player selection, main menu and mission-opening cutscene; no sampled native
+  fault. Retained ignored `shared-menu-main.png` and `shared-menu-intro.png` in
+  `private/captures/native-mac`. This run ended during the opening movie-like
+  game scene; it does not establish post-change playable gameplay, a completed
+  mission, physical input or a resolution/ultrawide visual matrix. Earlier
+  integration gameplay evidence remains explicitly tied to its earlier binary.
+  Personal/canonical data preserved; runner recycled disposable partitions.
+
 ## Shared-platform integration baseline (2026-10-19)
 
 - **Source:** `codex/shared-platform-baseline`, merging current main `5131d29`

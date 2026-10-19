@@ -5,6 +5,8 @@
 "uniform sampler2D u_tex0;\n"
 "uniform sampler2D u_tex1,u_tex2,u_tex3;\n"
 "uniform int u_used[4],u_flip[4],u_mode[4];uniform vec2 u_scale[4];\n"
+"uniform float u_menu_filter[4];\n"
+TSFP_MENU_GLSL
 "uniform int u_combiner;\n"
 "uniform uint u_rs[256];\n"
 "out vec4 frag_color;\n"
@@ -23,7 +25,7 @@
 "void storeA(uint d,float v){if(d!=0u)r[int(d)].a=v;}\n"
 "vec4 lookup2d(int i,vec2 uv){\n"
 "  if(u_used[i]==0)return vec4(0);uv*=u_scale[i];if(u_flip[i]!=0)uv.y=1.0-uv.y;\n"
-"  if(i==0)return texture(u_tex0,uv);if(i==1)return texture(u_tex1,uv);if(i==2)return texture(u_tex2,uv);return texture(u_tex3,uv);\n"
+"  if(i==0)return menu_sample(u_tex0,uv,u_menu_filter[0]);if(i==1)return menu_sample(u_tex1,uv,u_menu_filter[1]);if(i==2)return menu_sample(u_tex2,uv,u_menu_filter[2]);return menu_sample(u_tex3,uv,u_menu_filter[3]);\n"
 "}\n"
 /* Match the PC renderer's byte-to-signed mappings; HILO mappings remain its
  * unsigned fallback. Texture stages must run in order for dependent reads. */
