@@ -838,6 +838,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   hosted GPU rerun and Windows results remain pending. This does not close
   renderer fidelity or scene acceptance. [Evidence](STATUS.md#shared-platform-ci-validation-2026-10-19).
 
+- **Common settings acceptance (2026-10-19):**
+  `codex/shared-native-window-acceptance` depends on `37b4af9`. The existing
+  Cocoa graphics and SDL host fixtures now run against both native renderers.
+  The common Vulkan device passes actual resolution/FOV Save, Cancel and
+  failed-save rollback, then renders/readbacks/presents successfully. Fullscreen,
+  physical input and broader scene acceptance remain pending.
+  [Evidence](STATUS.md#common-renderer-mac-settings-acceptance-2026-10-19).
+
 ### MAC-006 — Cube and volume texture resources
 
 - **Status:** Queued

@@ -1,5 +1,30 @@
 # Measured progress
 
+## Common renderer Mac settings acceptance (2026-10-19)
+
+- **Source/dependency:** `codex/shared-native-window-acceptance` depends on
+  unmerged `37b4af9`; local working changes were tested. No main merge.
+- **Coverage gap closed:** The existing Cocoa graphics-settings fixture now
+  exercises the actual common Xbox/Vulkan device as well as GL. The SDL host
+  fixture takes its window and quit callback as parameters, so both renderers
+  run the same physical-size, worker-snapshot, main-thread-event and unbind checks.
+  No second settings or event policy was introduced.
+- **Measured result:** On macOS 27.0.1 arm64 / Apple M5 Pro, the pinned SDK
+  1.4.363.0 KosmicKrisp driver passes the complete native Vulkan `--test` suite:
+  three CTests plus renderer, input, settings and debug checks. Actual scene
+  targets change from 64x64 to 1000x600, 1280x720 and 1920x1080; failed-save
+  rollback restores 1280x720 before the fixture restores 64x64. Custom modes,
+  aspect lists, FOV, Defaults, Cancel/Save/reopen and read-only save rollback pass.
+  A green triangle readback and subsequent overlay/present verify usable targets
+  after those transitions. There are no Vulkan validation errors.
+- **Isolation/evidence:** The build script validates the supported XBE and uses
+  `build/macos/path-tests` for all mutable test settings and saves. The runner
+  recycled its 12 known disposable disk images (8,192 allocated bytes versus
+  10,486,813,696 logical bytes). Logs:
+  `logs/shared-window-vulkan-build.out` / `.err`. These are programmed Cocoa
+  control tests, not physical F2 input or gameplay/fullscreen verification.
+  Fullscreen transitions and broader scene acceptance remain pending.
+
 ## Shared platform CI validation (2026-10-19)
 
 - **Source/publication:** `codex/shared-present-metrics` at `a0c8a1a` is now

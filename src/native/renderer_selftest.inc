@@ -45,7 +45,7 @@ int tsfp_native_renderer_test(void) {
         {56,56,0,1,0xFFFF0000,1,1}, {8,56,0,1,0xFFFF0000,0,1}
     };
     dev->lpVtbl->SetVertexShader(dev,D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1);
-    int ok=native_test_renderer_host();
+    int ok=native_test_renderer_host(g.window,native_debug_release);
     ok &= native_test_debug_overlay(dev);
     ok &= native_test_screen_copy(dev);
     ok &= native_test_channel_clears(dev);
