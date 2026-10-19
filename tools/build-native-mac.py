@@ -29,6 +29,8 @@ def main():
     parser.add_argument('--setup', action='store_true', help='Install shared pinned Python requirements and build the symbol scanner')
     parser.add_argument('--generate', action='store_true', help='Regenerate game C from the verified local XBE')
     parser.add_argument('--test', action='store_true', help='Run native platform, MMIO and path regression tests after building')
+    parser.add_argument('--renderer', choices=('gl','vulkan'), default='gl',
+                        help='Native renderer; Vulkan opts into the common Xbox frontend')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('The native bring-up target currently supports Apple Silicon macOS only.')
@@ -89,6 +91,10 @@ def main():
     # Use an installed crypto dependency, without independently upgrading it.
     if Path('/opt/homebrew/opt/openssl@3').exists():
         command.append('-DOPENSSL_ROOT_DIR=/opt/homebrew/opt/openssl@3')
+    command.append('-DTSFP_NATIVE_RHI='+('ON' if args.renderer=='vulkan' else 'OFF'))
+    if args.renderer=='vulkan':
+        import vulkan_sdk
+        command.append('-DTSFP_VULKAN_SDK='+str(vulkan_sdk.verify_install()))
     run(*command)
     run(CMAKE, '--build', BUILD, '--target', 'futureperfect_recomp', '--parallel', '4')
     run('file', BUILD / 'futureperfect_recomp')
@@ -98,7 +104,7 @@ def main():
                     working_tree_changes=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,
                     compatibility_identity=json.loads((BUILD / 'generated/network-identity.json').read_text())['compatibility'],
-                    build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
+                    renderer=args.renderer, build_type='Debug', native_game_optimization='-O2 -fno-vectorize -fno-slp-vectorize', configure_command=[str(arg) for arg in command],
                     compiler=subprocess.check_output(['clang', '--version'], text=True).splitlines()[0],
                     executable_sha256=hashlib.sha256((BUILD / 'futureperfect_recomp').read_bytes()).hexdigest(),
                     source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sources if p.is_file()},
@@ -116,7 +122,11 @@ def main():
                        RECOMP_SAVE_DIR=str(test), RECOMP_GAME_DIR=str(ROOT / 'private/game'),
                        RECOMP_DISPLAY_CONFIG=str(test / 'runtime.conf'),
                        TSFP_DISPLAY_CONFIG=str(test / 'pc-display.ini'),
-                       XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'))
+                       XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'),
+                       XDG_CACHE_HOME=str(test / 'xdg-cache'))
+            if args.renderer=='vulkan':
+                env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(),'kosmickrisp')
+                env['RECOMP_VK_VALIDATION']='1'
             for check in ('--renderer-self-test', '--input-self-test', '--settings-self-test', '--debug-self-test'):
                 if check in ('--settings-self-test', '--debug-self-test'):
                     settings = json.loads((ROOT / 'tests/fixtures/pc-controls.json').read_text())
@@ -126,8 +136,13 @@ def main():
                     control_path.write_text(json.dumps(settings))
                     before = control_path.read_bytes()
                     env['RECOMP_INPUT_CONFIG'] = str(control_path)
-                subprocess.run([str(BUILD / 'futureperfect_recomp'), check],
-                               cwd=ROOT, env=env, check=True, timeout=20)
+                result=subprocess.run([str(BUILD / 'futureperfect_recomp'), check],
+                               cwd=ROOT, env=env, timeout=20,
+                               capture_output=True,text=True)
+                print(result.stdout,end='');print(result.stderr,end='',file=sys.stderr)
+                result.check_returncode()
+                if args.renderer=='vulkan' and check=='--renderer-self-test':
+                    vulkan_sdk.require_clean_validation(result.stdout+result.stderr)
                 if check in ('--settings-self-test', '--debug-self-test'):
                     saved = json.loads(control_path.read_text())
                     assert saved['keep_test_member'] == settings['keep_test_member']

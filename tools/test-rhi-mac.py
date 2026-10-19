@@ -47,13 +47,17 @@ def main():
     output=result.stdout+result.stderr
     logs=ROOT/'logs';logs.mkdir(exist_ok=True)
     (logs/('rhi-'+args.driver+'.log')).write_text(output)
-    passed=(result.returncode==0 and 'PASS: shared RHI' in output and
-            'validation on' in output and '[VKVAL error]' not in output)
+    validation_error=None
+    try:
+        vulkan_sdk.require_clean_validation(output)
+    except RuntimeError as error:
+        validation_error=str(error)
+    passed=result.returncode==0 and 'PASS: shared RHI' in output and validation_error is None
     summary=dict(source_revision=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
         working_tree_changes=subprocess.check_output(['git','status','--porcelain'],text=True),
         runtime_revision=revision,host=platform.platform(),sdk_version=vulkan_sdk.pin()['version'],
         driver=args.driver,executable_sha256=vulkan_sdk.sha256(exe),seconds=round(time.monotonic()-started,3),
-        returncode=result.returncode,passed=passed,scope='Asset-free common RHI shader/pixel/presentation contract; not gameplay')
+        returncode=result.returncode,passed=passed,validation_error=validation_error,scope='Asset-free common RHI shader/pixel/presentation contract; not gameplay')
     (logs/('rhi-'+args.driver+'.json')).write_text(json.dumps(summary,indent=2)+'\n')
     print(output)
     if not passed:raise SystemExit('Common RHI validation failed; see logs/rhi-'+args.driver+'.log')

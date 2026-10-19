@@ -60,3 +60,30 @@ def test_probe_environment_is_local_and_pinned(tmp_path,monkeypatch):
     assert env['RECOMP_SHADER_CACHE']=='0'
     assert Path(env['XDG_CONFIG_HOME']).is_relative_to(tmp_path/'build/macos/rhi-tests')
     with pytest.raises(ValueError):sdk.probe_environment(tmp_path/'sdk','unknown',tmp_path)
+
+
+def test_gpu_overlay_preserves_runner_isolation(tmp_path,monkeypatch):
+    monkeypatch.setenv('RECOMP_SAVE_DIR','/personal/saves')
+    existing=dict(RECOMP_SAVE_DIR='/isolated/saves',RECOMP_INPUT_CONFIG='/isolated/input',
+                  TSFP_DISPLAY_CONFIG='/isolated/pc.ini',RECOMP_DISPLAY_CONFIG='/isolated/runtime.ini',
+                  XDG_CONFIG_HOME='/isolated/xdg',XDG_CACHE_HOME='/isolated/cache',VK_DRIVER_FILES='/wrong/driver',
+                  DYLD_INSERT_LIBRARIES='/wrong/library',RECOMP_SHADER_CACHE='1')
+    env=sdk.with_probe_gpu_environment(existing,tmp_path/'sdk','kosmickrisp',tmp_path)
+    for key in ('RECOMP_SAVE_DIR','RECOMP_INPUT_CONFIG','TSFP_DISPLAY_CONFIG','RECOMP_DISPLAY_CONFIG','XDG_CONFIG_HOME','XDG_CACHE_HOME'):
+        assert env[key]==existing[key]
+    assert env['VK_DRIVER_FILES'].endswith('/libkosmickrisp_icd.json')
+    assert 'DYLD_INSERT_LIBRARIES' not in env
+    assert env['RECOMP_SHADER_CACHE']=='0'
+    assert existing['VK_DRIVER_FILES']=='/wrong/driver'
+
+
+@pytest.mark.parametrize('output',[
+    'validation off',
+    'validation on\n[VKVAL] vkCmdDraw(): PointSize is not written',
+    'validation on\n[VKVAL error] error'])
+def test_validation_errors_fail_the_contract(output):
+    with pytest.raises(RuntimeError):sdk.require_clean_validation(output)
+
+
+def test_validation_warning_is_distinct():
+    sdk.require_clean_validation('validation on\n[VKVAL warning] optional capability')

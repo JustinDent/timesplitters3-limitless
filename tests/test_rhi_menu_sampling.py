@@ -18,7 +18,7 @@ def test_shared_rhi_menu_warp(tmp_path):
         runtime/'config/recomp_config.c']
     args=[compiler,'/nologo','/std:c11','/O2','/W3',
           *['/I'+str(path) for path in (ROOT/'src',ROOT/'tests',runtime,runtime/'d3d',runtime/'config')],
-          *map(str,sources),'/Fe:'+str(exe),'/link','d3d11.lib','dxgi.lib','dxguid.lib','d3dcompiler.lib','user32.lib']
+          *map(str,sources),'/Fe:'+str(exe),'/link','d3d11.lib','dxgi.lib','dxguid.lib','d3dcompiler.lib','user32.lib','gdi32.lib']
     result=subprocess.run(args,cwd=tmp_path,env=env,capture_output=True,text=True,timeout=90)
     assert result.returncode==0,result.stdout+result.stderr
     env={k:v for k,v in env.items() if not k.startswith(('RECOMP_','TSFP_'))}

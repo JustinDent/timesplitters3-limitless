@@ -16,7 +16,7 @@ def test_host_contract(tmp_path):
     sources = [str(ROOT / 'tests/rhi_host.c'), str(D3D / 'rhi.c')]
     if os.name == 'nt':
         args = [compiler, '/nologo', '/std:c11', '/I'+str(D3D), *sources,
-                '/Fe:'+str(exe), '/link', 'user32.lib']
+                '/Fe:'+str(exe), '/link', 'user32.lib','gdi32.lib']
     else:
         args = [compiler, '-std=c11', '-Wall', '-Wextra', '-Werror',
                 '-I'+str(D3D), *sources, '-o', str(exe)]
@@ -44,3 +44,18 @@ def test_common_renderer_compiles(tmp_path, source):
     result = subprocess.run([*args, str(D3D / source)], cwd=tmp_path, env=env,
                             capture_output=True, text=True, timeout=60)
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def test_macos_text_bitmap(tmp_path):
+    import sys
+    if sys.platform != 'darwin':
+        pytest.skip('CoreText host adapter requires macOS')
+    compiler, env = native_compiler(tmp_path)
+    exe=tmp_path/'text-bitmap'
+    result=subprocess.run([compiler,'-I'+str(ROOT/'src/native'),
+        str(ROOT/'tests/text_bitmap_macos.c'),str(ROOT/'src/native/text_bitmap_macos.m'),
+        '-framework','CoreText','-framework','CoreGraphics','-framework','CoreFoundation',
+        '-o',str(exe)],env=env,capture_output=True,text=True,timeout=60)
+    assert result.returncode==0,result.stdout+result.stderr
+    result=subprocess.run([str(exe)],capture_output=True,text=True,timeout=10)
+    assert result.returncode==0,result.stdout+result.stderr

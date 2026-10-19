@@ -799,13 +799,25 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   services next. Missing modes and scene acceptance remain open, and Windows
   RHI/WARP execution is pending. [Evidence](STATUS.md#common-vulkan-backend-on-mac-2026-10-19).
 
+- **Common native frontend (2026-10-19):** The commit carrying this entry on
+  `codex/shared-native-renderer` depends on `4d23a6d`. Opt-in Vulkan builds compile
+  the same PC Xbox device, resources, shaders, combiners and display code. SDL
+  window/event and CoreText text adapters replace the remaining host services.
+  Shared HLSL dialect and point-output fixes address actual boot/mission errors;
+  synthetic GPU contracts and bounded first-mission captures provide limited
+  evidence. Default GL remains available. Next: common interpolation depth
+  isolation, host-present measurement, fullscreen/settings integration and
+  targeted cube/volume/movie/framebuffer/advanced-combiner scenes. Windows
+  execution and complete scene parity remain pending.
+  [Evidence](STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).
+
 ### MAC-006 — Cube and volume texture resources
 
 - **Status:** Queued
 - **PC behavior:** Windows has resource factories and sampling paths for cube/volume textures.
 - **PC source:** Audited revision above; `external/ts3FPrecomp/src/d3d/d3d8_device.c`, `external/ts3FPrecomp/src/d3d/d3d8_combiners.c`; `src/native/renderer_gl.c`, `src/native/gl_bridge.inc`.
 - **PC validation:** Factories are implemented on the Windows path; usage and fidelity in particular game scenes need targeted evidence.
-- **Existing Mac support:** Native cube/volume creation returns `E_NOTIMPL`; cube metadata/level queries return false.
+- **Existing Mac support:** Default GL cube/volume creation returns `E_NOTIMPL`; cube metadata/level queries return false. The opt-in common Vulkan game now compiles the PC factories; face/slice/mip and scene acceptance remain unverified (see MAC-005).
 - **Mac adaptation needed:** Add resource lifetime, face/slice/mip uploads and sampler integration. Coordinate with MAC-005; establish actual title usage before prioritizing expensive format work.
 - **Mac acceptance checks:** Synthetic face/slice/mip checks and resource release pass on the GPU; validate a game scene if one uses these resources. Unsupported formats must fail explicitly.
 - **Mac implementation and evidence:** Remaining work pending. Existing coverage:

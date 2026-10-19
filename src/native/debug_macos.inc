@@ -1,34 +1,6 @@
 #import <CoreText/CoreText.h>
 #include <sys/stat.h>
 #include <unistd.h>
-/* Text rasterization uses thread-safe CoreText/CG objects, never AppKit views
- * on the rendering thread. Pixels are opaque RGBA for a separate host overlay. */
-int tsfp_native_debug_bitmap(const char *text,unsigned char *pixels,int width,int height,int *used_width) {
-    CGColorSpaceRef space=CGColorSpaceCreateDeviceRGB();
-    CGContextRef c=CGBitmapContextCreate(pixels,width,height,8,width*4,space,kCGImageAlphaPremultipliedLast|kCGBitmapByteOrder32Big);
-    CGColorSpaceRelease(space);if(!c)return 0;
-    CGContextSetRGBFillColor(c,.03,.03,.03,1);CGContextFillRect(c,CGRectMake(0,0,width,height));
-    CTFontRef font=CTFontCreateWithName(CFSTR("Menlo"),22,NULL);
-    CGColorRef white=CGColorCreateGenericRGB(1,1,1,1);
-    CFStringRef string=CFStringCreateWithCString(NULL,text,kCFStringEncodingUTF8);
-    const void *keys[]={kCTFontAttributeName,kCTForegroundColorAttributeName};const void *values[]={font,white};
-    CFDictionaryRef attrs=CFDictionaryCreate(NULL,keys,values,2,&kCFTypeDictionaryKeyCallBacks,&kCFTypeDictionaryValueCallBacks);
-    CFAttributedStringRef attributed=CFAttributedStringCreate(NULL,string,attrs);
-    CTLineRef line=CTLineCreateWithAttributedString(attributed);
-    double measured=CTLineGetTypographicBounds(line,NULL,NULL,NULL);
-    if(measured>width-16) {
-        CFAttributedStringRef dots=CFAttributedStringCreate(NULL,CFSTR("…"),attrs);
-        CTLineRef token=CTLineCreateWithAttributedString(dots);
-        CTLineRef truncated=CTLineCreateTruncatedLine(line,width-16,kCTLineTruncationEnd,token);
-        if(truncated){CFRelease(line);line=truncated;}
-        CFRelease(token);CFRelease(dots);
-        measured=CTLineGetTypographicBounds(line,NULL,NULL,NULL);
-    }
-    if(used_width)*used_width=(int)fmin(width,ceil(measured)+16);
-    CGContextSetTextPosition(c,8,12);CTLineDraw(line,c);
-    CFRelease(line);CFRelease(attributed);CFRelease(attrs);CFRelease(string);CGColorRelease(white);CFRelease(font);CGContextRelease(c);
-    return 1;
-}
 @interface TSFPDebug : NSObject <NSWindowDelegate> {
     NSWindow *panel;NSButton *checks[PC_DEBUG_OPTION_COUNT];NSTextField *stats;NSTextView *recent;
 }

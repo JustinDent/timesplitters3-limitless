@@ -109,7 +109,12 @@ reproducibility, and validation requirements.
   checksum, installed-file receipt, licenses and version manifest; install only
   inside ignored `external/vulkan-sdk`. This new adapter dependency does not
   replace existing upstream/Python pins or change the default GL game renderer.
-  Keep GPU contract results distinct from common-renderer gameplay validation.
+  `tools/build-native-mac.py --renderer vulkan` opts into the common Xbox
+  frontend; use the bounded runner, which selects pinned GPU loading from the
+  build manifest. Restore `--renderer gl` before normal interactive use while
+  launcher integration is pending. Keep GPU contracts, guest frame counts and
+  common-renderer scene validation distinct; GL-only timing hooks do not measure
+  Vulkan host presents.
 - Apply the complete local patch stack with `tools/apply-patches.py` before
   generation/build. Preserve existing patches and add subsequent runtime
   changes as separate patches. Never hand-edit generated game C; keep changes

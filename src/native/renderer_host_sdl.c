@@ -1,6 +1,7 @@
 /* SDL owns OS events and physical window dimensions; renderer policy is shared. */
 #include "renderer_host_sdl.h"
 #include "input_sdl.h"
+#include "text_bitmap_macos.h"
 #include "rhi.h"
 #include <pthread.h>
 #include <stdio.h>
@@ -58,6 +59,14 @@ static void pump_events(void *context)
     refresh_size();
 }
 
+static int text_bitmap(void *context,const char *text,unsigned char *pixels,
+                       uint32_t width,uint32_t height,uint32_t *used_width)
+{
+    (void)context;int used=0;
+    if(!tsfp_native_overlay_bitmap(text,pixels,(int)width,(int)height,&used))return 0;
+    *used_width=(uint32_t)used;return 1;
+}
+
 void tsfp_renderer_host_bind(SDL_Window *window, void (*on_quit)(void))
 {
     /* Binding/unbinding is outside the render-thread lifetime. */
@@ -65,7 +74,7 @@ void tsfp_renderer_host_bind(SDL_Window *window, void (*on_quit)(void))
     host.on_quit = on_quit;
     host.width = host.height = 0;
     if (window) {
-        RhiHost callbacks = {NULL, pump_events, drawable_size};
+        RhiHost callbacks = {.pump_events=pump_events,.drawable_size=drawable_size,.text_bitmap=text_bitmap};
         refresh_size();
         rhi_set_host(&callbacks);
     } else {

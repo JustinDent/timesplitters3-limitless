@@ -6,6 +6,7 @@
 #endif
 #include "rhi.h"
 #include "pc_menu_sampling.h"
+#include "graphics/point_size_shader.h"
 #include "menu_sampling_cases.h"
 #include <stdlib.h>
 #ifdef RHI_VULKAN_SDL
@@ -85,6 +86,35 @@ int main(void) {
     rhi_set_raster_state(raster);rhi_set_depth_state(depth,0);
     rhi_set_blend_state(blend,NULL,~0u);
     CHECK(menu_sampling_cases(render));
+    /* Common NV2A texture signed-mapping helpers use vector conditionals.
+     * This must retain FXC semantics even when DXC defaults to HLSL 2021+. */
+    RhiShader *legacy=shader(RHI_STAGE_PIXEL,
+        "float4 main(float4 p:SV_POSITION):SV_TARGET {"
+        "float3 x=float3(p.x,128,256);"
+        "return float4(x>=128 ? float3(.2,.4,.6) : float3(.8,.1,.3),1);}","ps_5_0");
+    rhi_set_shader(RHI_STAGE_PIXEL,legacy);rhi_draw(3,0);
+    float conditional_pixels[64*64*4];
+    CHECK(rhi_image_readback(target,0,conditional_pixels,64*4*sizeof(float))==0);
+    CHECK(fabsf(conditional_pixels[0]-.8f)<.001f && fabsf(conditional_pixels[1]-.4f)<.001f &&
+          fabsf(conditional_pixels[2]-.6f)<.001f);
+    rhi_set_shader(RHI_STAGE_PIXEL,ps);rhi_shader_destroy(legacy);
+    RhiShader *point_vs=shader(RHI_STAGE_VERTEX,
+        "struct Output {float4 pos:SV_POSITION;\n" TSFP_POINT_SIZE_FIELD "};\n"
+        "Output main(uint id:SV_VertexID) {Output o;\n" TSFP_POINT_SIZE_INIT
+        "o.pos=float4(.015625,.015625,0,1);return o;}","vs_5_0");
+    RhiShader *point_ps=shader(RHI_STAGE_PIXEL,
+        "float4 main():SV_TARGET{return float4(1,0,0,1);}","ps_5_0");
+    const float black[4]={0,0,0,1};rhi_clear_color(rtv,black);
+    rhi_set_shader(RHI_STAGE_VERTEX,point_vs);rhi_set_shader(RHI_STAGE_PIXEL,point_ps);
+    rhi_set_topology(RHI_TOPOLOGY_POINTS);rhi_draw(1,0);
+    CHECK(rhi_image_readback(target,0,conditional_pixels,64*4*sizeof(float))==0);
+    unsigned lit=0;
+    for(unsigned i=0;i<64*64;i++)lit+=conditional_pixels[i*4]>.99f;
+    CHECK(lit==1);
+    rhi_set_shader(RHI_STAGE_VERTEX,vs);rhi_set_shader(RHI_STAGE_PIXEL,ps);
+    rhi_set_topology(RHI_TOPOLOGY_TRIANGLES);
+    rhi_shader_destroy(point_vs);rhi_shader_destroy(point_ps);
+
 #ifdef RHI_VULKAN_SDL
     /* Also exercise presentation and the swapchain readback channel order. */
     RhiView *swap=rhi_swapchain_view();CHECK(swap);

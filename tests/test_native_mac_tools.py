@@ -49,7 +49,7 @@ def test_all_runtime_settings_are_isolated(tmp_path, monkeypatch):
     test = tmp_path / 'private/test-saves/native-mac'
     env = probe.isolated_environment(tmp_path, test)
     for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
-                'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME'):
+                'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
         assert Path(env[key]).is_relative_to(test)
     assert env['RECOMP_LOG_FILE'] == str(tmp_path / 'logs/native-boot.err')
     assert 'RECOMP_INPUT_SEQ' not in env
@@ -152,7 +152,7 @@ def test_native_unlocked_copy_isolated_reset_and_locked(tmp_path, monkeypatch, u
         with probe.test_session(tmp_path, test, unlocked=True) as env:
             run = test / 'unlocked'
             for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
-                        'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME'):
+                        'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
                 assert Path(env[key]).is_relative_to(run)
             assert 'TSFP_PC_INPUT_REPLAY' not in env
             assert env['RECOMP_XMV_PLAY'] == '0'

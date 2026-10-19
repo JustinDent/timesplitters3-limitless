@@ -249,7 +249,7 @@ Portable patch, launcher and test-isolation checks:
 
 The normal game launcher still uses the validated OpenGL path. Development of
 its common PC/Mac renderer uses the existing Vulkan backend and PC HLSL through
-DXC; it is not yet a game-renderer switch. No game data or save fixture is needed
+DXC. No game data or save fixture is needed
 for this probe. Use the checkout's pinned Python/CMake/Ninja environment:
 
 ```sh
@@ -276,3 +276,27 @@ validation layer or reported validation error fails the check. The shared shader
 pixel checks also run through Windows D3D11 WARP in CI; Mac additionally checks
 swapchain channel order and presentation. These checks are not gameplay or full
 rendering certification. See [measured scope](../STATUS.md#common-vulkan-backend-on-mac-2026-10-19).
+
+
+### Opt-in common game renderer
+
+With verified local game data/generated sources and the pinned SDK installed:
+
+```sh
+.venv/bin/python tools/build-native-mac.py --renderer vulkan --test
+.venv/bin/python tools/test-native-mac.py --unlocked-profile --seconds 120 --capture --test-keys --fps 60
+```
+
+The builder reuses `build/macos` and records the renderer in `BUILD.json`; there
+is no second game build tree. The isolated runner uses the pinned KosmicKrisp
+driver by default, or `--vulkan-driver moltenvk`, and enables validation.
+This path compiles the PC Xbox frontend directly. The Mac adapters supply the
+window, SDL events and CoreText overlay bitmap. It has bounded first-mission
+coverage, not full rendering, physical-input or 120-present certification.
+The GL-specific `--profile-frames`, `--trace-render` and interpolation-capture
+hooks are not yet implemented for this path. Its boot summary explicitly marks
+the host-present counter unavailable; guest frames are not host presents.
+Use the isolated runner for this developer build. Restore the normal interactive
+build afterward with `.venv/bin/python tools/build-native-mac.py --renderer gl --test`.
+The interactive launcher does not yet configure the experimental SDK route.
+See [results and remaining work](../STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).

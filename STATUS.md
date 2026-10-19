@@ -1,5 +1,78 @@
 # Measured progress
 
+## Common Xbox renderer on native Mac (2026-10-19)
+
+- **Source/dependency:** `codex/shared-native-renderer` starts at local unmerged
+  `4d23a6d`; validation used this task's working changes. The focused stack is
+  local, not pushed or merged into main; the other device is unverified. Existing
+  concurrent duplicate files were preserved. Upstream remains `d90c929` and the
+  verified US XBE remains `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+- **Implementation:** `--renderer vulkan` links the PC `d3d8_*` frontend into
+  the ARM64 game. Device/resources, HLSL generation, combiners, screen copies and
+  display policy are now common code in this opt-in build. Mac supplies an SDL
+  window/event/drawable adapter and CoreText bitmap callback for the common
+  overlay. The default GL build remains available. `BUILD.json` records the
+  selected renderer; the bounded runner adds pinned GPU loading without replacing
+  its isolated saves, input, runtime/PC display settings or XDG paths.
+- **Boot fixes:** The first game boot failed on vector HLSL conditionals because
+  newer DXC defaults to HLSL 2021. The common Vulkan compiler now explicitly uses
+  HLSL 2018, with a shader-cache ABI tag change and a real GPU vector-conditional
+  regression. See Microsoft's [migration guide](https://devblogs.microsoft.com/directx/hlsl-2021-migration-guide/).
+  The first mission then exposed missing Vulkan PointSize output (13 validation
+  errors in that exploratory run). Both common vertex generators now consume
+  one shared API-mapping snippet that emits Vulkan's required one-pixel output,
+  matching D3D11 point-list rasterization. Larger guest point sprites remain
+  separate work. The mapping follows [DXC's SPIR-V attributes](https://github.com/microsoft/DirectXShaderCompiler/blob/main/docs/SPIR-V.rst).
+  Validation checks now reject the runtime's actual `[VKVAL]` error prefix;
+  warnings are recorded separately, never silently counted as clean errors.
+- **Host/tools:** macOS 27.0.1 arm64, Apple M5 Pro, Clang 21, SDL 3.4.16;
+  pinned SDK 1.4.363.0. The game used KosmicKrisp Vulkan 1.4, D32S8, validation
+  enabled, explicit 60-present setting and unchanged 60 Hz guest clock.
+- **GPU/native checks:** The shared RHI menu sampling, HLSL vector conditionals,
+  one-pixel point rasterization, swapchain readback and present pass on both
+  KosmicKrisp and MoltenVK. MoltenVK reports its known warning about disabling
+  primitive restart; no validation errors. The actual common Xbox device passes
+  fixed-function triangle/point draw readback, overlay and presentation. Native
+  Vulkan `--test` also passes all three CTests and SDL/Cocoa input, capture,
+  settings/debug preservation checks. The final Vulkan self-test binary SHA-256
+  is `c5b72cd8c11bd1ff2616c68019e9b5106a097e2e117d74c7cd7604ffc982a7cf`.
+- **Bounded scene evidence:** After the shader fixes, a 150.13-second isolated
+  Test Lab run ended normally at its time limit (exit 0), logged at least 8,400
+  guest frames and no shader compilation errors, native faults or Vulkan
+  validation errors. Reviewed captures show menu/profile navigation, Time to
+  Split's opening and the first-person weapon/HUD, terrain, character and objective
+  text at 1920x1080. Selected evidence is ignored
+  `private/captures/native-mac/shared-native-first-mission-before.png`; structured
+  run evidence is `logs/shared-native-renderer-summary.json`. Gameplay binary
+  SHA-256 was `3ec653e168efcb82c13ade9dccbcc6bd015d774c452ac9f0fc21504696b5e4af`;
+  the subsequent rebuild changed patch ordering/context and provenance, not the
+  point-output algorithm. Synthetic movement/fire events were submitted, but
+  intervening pause/menu state prevents a clean attribution of their results;
+  movement/fire acceptance is therefore still pending for this renderer.
+  The six disposable partition files were recycled (5,243,406,848 logical bytes,
+  135,168 physically allocated bytes); the canonical fixture/personal data stayed
+  separate. No complete level or campaign playthrough was attempted.
+- **Source checks:** 96 adapter/CI/backlog checks pass; 26 patch transition/tracking
+  checks pass, two Windows checks skip on this host. Historical texture-branch
+  transitions initially exposed an include-context conflict in the new point
+  patch; narrowing only that context preserves both branches and restores all
+  transitions, including CRLF and conflict-preservation checks. CoreText tests
+  check real glyph pixels and invalid UTF-8, and host callback tests check copied
+  registration and output preservation. Windows WARP/MSVC and remote CI have not
+  run; shared source and Mac passes do not substitute for them.
+- **Default restoration:** Rebuilt with `--renderer gl --test`; all three
+  CTests and the full GL GPU/SDL/Cocoa regression suite pass. The one active
+  native executable is again GL, SHA-256 `6f9d0e0223b6e76ac6c04caa0a5c30b74e91a88eec7d1819eda20c08d6909af0`.
+  The final save/config/cache-isolation checks pass (23 tests), including the
+  added isolated XDG cache route. No personal launcher test was used.
+- **Remaining acceptance:** Common-renderer interpolation depth isolation and
+  truthful host-present profiling, fullscreen/settings application, targeted
+  advanced-combiner/cube/volume/movie/framebuffer scenes, texture-pack scenes,
+  physical input and audio checks, and Windows execution. The Vulkan summary
+  marks its host-present counter unavailable; 8,400 guest frames are not measured
+  host presents. No stable-120 claim. The validated GL implementation remains
+  the normal interactive build while this migration continues.
+
 ## Common Vulkan backend on Mac (2026-10-19)
 
 - **Source/dependency:** `codex/shared-vulkan-mac` starts at local unmerged

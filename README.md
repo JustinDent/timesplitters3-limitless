@@ -226,7 +226,7 @@ the saved bot set. The host sees how many are waiting.
 | [Controls & display](docs/windows-settings.md) — bindings, resolution and diagnostics | [Release publishing](docs/releasing.md) — package, validate and publish |
 | [Multiplayer](docs/multiplayer.md) — Online, invitations and LAN | [Measured progress](STATUS.md) — evidence and remaining work |
 | [Native Mac](docs/macos.md) — Apple Silicon setup and controls | [Project rules](AGENTS.md) — reproducibility and data preservation |
-| [Mac renderer probe](docs/macos.md#common-renderer-development-probe) — asset-free developer check | [Shared PC/Mac architecture](docs/shared-platform.md) — common code and adapters |
+| [Mac renderer development](docs/macos.md#common-renderer-development-probe) — asset-free checks and opt-in common game renderer | [Shared PC/Mac architecture](docs/shared-platform.md) — common code and adapters |
 
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
 or **[request an enhancement](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)**.

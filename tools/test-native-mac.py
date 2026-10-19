@@ -23,6 +23,7 @@ def isolated_environment(root, test):
     env.update(RECOMP_GAME_DIR=str(root / 'private/game'), RECOMP_SAVE_DIR=str(test),
                RECOMP_INPUT_CONFIG=str(test / 'pc-controls.json'), RECOMP_DISPLAY_CONFIG=str(test / 'runtime.conf'),
                XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'),
+               XDG_CACHE_HOME=str(test / 'xdg-cache'),
                TSFP_DISPLAY_CONFIG=str(test / 'pc-display.ini'),
                RECOMP_TRACE_BUDGET='500', RECOMP_LOG_FILE=str(root / 'logs/native-boot.err'))
     return env
@@ -38,7 +39,7 @@ def prepare_environment(root, test, unlocked=False):
         prepared = prepare_run(root, run)
         env.update({k:v for k,v in prepared.items() if k.startswith(('RECOMP_', 'TSFP_'))})
         for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
-                    'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME'):
+                    'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
             contained(root, Path(env[key]), 'private/test-saves')
         return env
     test.mkdir(parents=True, exist_ok=True)
@@ -50,7 +51,7 @@ def prepare_environment(root, test, unlocked=False):
         runtime.write_text('# Isolated native boot defaults\n')
     contained(root, test / 'pc-display.ini', 'private/test-saves')
     env = isolated_environment(root, test)
-    for key in ('XDG_CONFIG_HOME', 'XDG_DATA_HOME'):
+    for key in ('XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
         contained(root, Path(env[key]), 'private/test-saves')
     return env
 
@@ -112,6 +113,8 @@ def main():
                         help='Record up to 20,000 host present intervals, without GPU readback')
     parser.add_argument('--fps', type=int, choices=(60,120), help='Override the native display target for this test only')
     parser.add_argument('--capture-interpolation', action='store_true', help='Capture one guest/midpoint pair when capture-interpolation.txt requests it')
+    parser.add_argument('--vulkan-driver',choices=('moltenvk','kosmickrisp'),default='kosmickrisp',
+                        help='Driver for an explicitly built common Vulkan renderer')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
@@ -132,6 +135,13 @@ def main():
 
 
 def run_probe(args, test, env, exe, kind):
+    manifest_path=ROOT/'build/macos/BUILD.json'
+    manifest=json.loads(manifest_path.read_text()) if manifest_path.is_file() else {}
+    if manifest.get('renderer')=='vulkan':
+        import vulkan_sdk
+        env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(),
+            getattr(args,'vulkan_driver','kosmickrisp'))
+        env['RECOMP_VK_VALIDATION']='1'
     if args.fps:
         env.update(RECOMP_FRAME_INTERP='2' if args.fps==120 else '1',
                    RECOMP_FPS_CAP='60' if args.fps==120 else 'adaptive')
@@ -200,7 +210,12 @@ def run_probe(args, test, env, exe, kind):
                 presented_frames_at_least=max((int(n) for n, _ in presented), default=0),
                 sampled_gl_errors=[int(code, 16) for _, code in presented if int(code, 16)],
                 native_fault='[NATIVE-FAULT]' in errors,
-                rendering_connected='[d3d8_gl] GL ' in errors and 'host rendering connected' in errors)
+                rendering_connected=('host rendering connected' in errors and
+                    ('[d3d8_gl] GL ' in errors or '[native-rhi] common Xbox renderer' in errors)),
+                renderer=manifest.get('renderer','gl'),
+                host_present_counter_available=manifest.get('renderer','gl')=='gl',
+                shader_compile_failures=errors.count('compile failed'),
+                vulkan_validation_errors=len(re.findall(r'\[VKVAL\]',errors)))
     cleanup = recycle_test_disks(ROOT, test)
     result = dict(boot=boot, disposable_test_disks=cleanup, branch=subprocess.check_output(['git', 'branch', '--show-current'], cwd=ROOT, text=True).strip(),
                   source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
@@ -228,7 +243,8 @@ def run_probe(args, test, env, exe, kind):
     print(json.dumps({k:result[k] for k in ('seconds', 'reason', 'exit_code')}, indent=2))
     # A process exit of zero can be the guest rebooting after a startup error.
     # Count this milestone only when real frame calls survive to our time limit.
-    return 0 if reason == 'time_limit' and frames and not boot['native_fault'] else 1
+    return 0 if (reason == 'time_limit' and frames and not boot['native_fault']
+                 and not boot['shader_compile_failures'] and not boot['vulkan_validation_errors']) else 1
 
 
 if __name__ == '__main__':

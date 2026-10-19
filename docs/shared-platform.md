@@ -14,7 +14,7 @@ API. Git synchronization, a shared account and a backlog do not translate code.
 | Debug settings | `pc_debug_options.def` generates fields, keys, labels and capability metadata | Win32/Cocoa controls, layout, log-folder opening |
 | Menu reconstruction shader | `graphics/menu_sampling_shader.h` and `pc_menu_sampling.h` eligibility | HLSL/GLSL intrinsic/resource syntax and uniform/constant binding |
 | Renderer window/events | `RhiHost` callbacks and drawable-size contract | Default Win32 host and SDL/Cocoa host; worker threads use cached physical dimensions |
-| Xbox graphics semantics | Shared HLE, format helpers and vertex decoder/interpreter | Still substantially duplicated between Windows `d3d8_*` and native `renderer_gl.c` |
+| Xbox graphics semantics | `d3d8_*` device/resources/shaders/display in Windows and opt-in Mac Vulkan builds | SDL/Vulkan window and CoreText text bitmap; default Mac GL remains a separate fallback |
 
 The shared debug definition automatically exposes a new boolean setting in both
 dialogs and persistence, unless its required capability is unavailable. Runtime
@@ -71,14 +71,14 @@ device, resources, state, shader compilation and display policy. `RhiHost` remov
 Win32 event pumping and window sizing from that frontend. The current GL renderer
 uses the same interface through `renderer_host_sdl.c`; callback registration is
 outside the render-thread lifetime and drawable sizes are physical pixels.
-This does not select a Mac GPU backend or establish common-renderer gameplay.
+The opt-in native Vulkan game now links this frontend; default GL remains available.
 
 The existing Vulkan backend now has an SDL surface adapter and uses the same
 loader as SDL. It compiles the PC HLSL through DXC and passes the shared menu
 pixel contract, swapchain readback and presentation on this Mac. Portability
 extensions are enabled only when advertised. This is the selected integration
-route; the normal game still uses GL until its Xbox frontend and host services
-are connected and validated.
+route. The opt-in native game connects its Xbox frontend and host services;
+normal builds still use GL while wider acceptance remains pending.
 
 The asset-free probe uses `tools/test-rhi-mac.py` and the SDK pinned in
 `config/vulkan-sdk.json`. Setup verifies the publisher's archive checksum and
@@ -90,11 +90,19 @@ requirement. Run `--setup-sdk` once, then `--driver moltenvk` or
 The same `tests/rhi_menu_sampling.c` pixel test is registered for Windows D3D11
 WARP, without a swapchain there. Remote Windows/CI execution is still pending.
 
-Next, connect the common Xbox device/resources/shader frontend to this native
-backend, replace its remaining Win32 overlay/window services with host adapters,
-and run bounded isolated scenes. Keep the validated GL path until those checks
-pass. Shared build pins remain authoritative; do not independently upgrade the
-SDK or copy another OS's build tree.
+The game can now be built with `tools/build-native-mac.py --renderer vulkan`.
+Its SDL adapter creates the window and supplies physical dimensions/events;
+CoreText rasterizes the common overlay text. The PC device/resource/shader,
+combiner, screen-copy and display code is compiled directly into the Mac game.
+The bounded runner selects the pinned GPU environment from `BUILD.json` while
+preserving all isolated save/config paths. See the [developer commands](macos.md#opt-in-common-game-renderer).
+First-mission evidence is scoped in [STATUS](../STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).
+This is an opt-in migration stage, not a replacement of the validated default.
+
+Next, move native-only correctness fixes such as interpolation depth isolation
+into the common renderer, add truthful host-present timing, verify fullscreen
+and settings application, and compare targeted scenes before changing defaults.
+Keep shared build pins; do not copy another OS's build tree.
 
 Then migrate remaining shader/resource behavior incrementally, using shared
 asset-free contracts plus bounded scene checks. Cube/volume textures, movie
@@ -113,7 +121,8 @@ integration work, tracked in the backlog.
 | `codex/shared-debug-settings` | `dde016d` | `780346f`: one debug setting definition list, UI/persistence consumers and capability checks |
 | `codex/shared-feature-contract` | `780346f` | `1a650b5`: shared-by-default rules and this handoff |
 | `codex/shared-renderer-host` | `1a650b5` | `e382e50`: common host interface, SDL adapter and both-host core compile contract |
-| `codex/shared-vulkan-mac` | `e382e50` | Native common Vulkan backend, pinned SDK and asset-free RHI GPU contract |
+| `codex/shared-vulkan-mac` | `e382e50` | `4d23a6d`: native common Vulkan backend, pinned SDK and asset-free RHI GPU contract |
+| `codex/shared-native-renderer` | `4d23a6d` | Common Xbox frontend in an opt-in native game, text/window adapters and shader compatibility fixes |
 
 These are local branches; they have not been merged into main or verified on the
 other computer. Measured scope and unavailable checks are recorded in `STATUS.md`.

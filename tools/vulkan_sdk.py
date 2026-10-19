@@ -130,3 +130,21 @@ def probe_environment(sdk, driver, root=ROOT):
                XDG_CACHE_HOME=str(isolated / 'cache'),
                XDG_CONFIG_HOME=str(isolated / 'config'), XDG_DATA_HOME=str(isolated / 'data'))
     return env
+
+
+def with_probe_gpu_environment(existing, sdk, driver, root=ROOT):
+    """Add pinned GPU loading without replacing a runner's isolated data paths."""
+    env = {key: value for key, value in existing.items()
+           if not key.startswith(('VK_', 'SDL_VULKAN', 'DYLD_'))}
+    for key, value in probe_environment(sdk, driver, root).items():
+        if key.startswith(('VK_', 'SDL_VULKAN', 'DYLD_')) or key=='RECOMP_SHADER_CACHE':
+            env[key]=value
+    return env
+
+
+def require_clean_validation(output):
+    """The runtime emits errors as [VKVAL], warnings as [VKVAL warning]."""
+    if 'validation on' not in output:
+        raise RuntimeError('Vulkan validation was not enabled')
+    if '[VKVAL]' in output or '[VKVAL error]' in output:
+        raise RuntimeError('Vulkan validation reported an error')
