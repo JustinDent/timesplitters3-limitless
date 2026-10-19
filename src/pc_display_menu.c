@@ -2,6 +2,11 @@
    Settings sub_002CBFC0, and paused Options sub_002F5520. Original controls,
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
+#ifdef TSFP_PC_DISCORD
+#include "pc_discord_guest.h"
+#include "pc_guest_memory.h"
+#include "pc_network.h"
+#endif
 #include "pc_display.h"
 #include "pc_cutscene.h"
 #ifndef _WIN32
@@ -114,8 +119,31 @@ static float gameplay_fov_scale(uint32_t caller)
     return pc_display_fov_scale();
 }
 
+#ifdef TSFP_PC_DISCORD
+static int discord_guest_read(void *context,uint32_t address,void *out,size_t bytes)
+{
+    uintptr_t host=(uintptr_t)address+g_xbox_mem_offset;
+    (void)context;
+    if(!address || bytes>UINT32_MAX-address || !pc_guest_memory(host,bytes,0)) return 0;
+    memcpy(out,(const void *)host,bytes);return 1;
+}
+#endif
+
 void pc_display_camera(void (*original)(void))
 {
+#ifdef TSFP_PC_DISCORD
+    /* Sample guest RAM on its own thread; publish only plain values to IPC. */
+    static ULONGLONG discord_sampled;
+    static PcDiscordGuestCache discord_cache;
+    ULONGLONG now=GetTickCount64();
+    if(now-discord_sampled>=1000) {
+        PcDiscordSnapshot sample;
+        double latency;unsigned peers;
+        int network=pc_network_latency(&latency,&peers);
+        pc_discord_sample(&sample,discord_guest_read,NULL,&discord_cache,network);
+        pc_discord_submit(&sample);discord_sampled=now;
+    }
+#endif
     static float last_factor;
     uint32_t player, matrix;
     float factor, zoom, fov_scale=gameplay_fov_scale(WORD_AT(g_esp));

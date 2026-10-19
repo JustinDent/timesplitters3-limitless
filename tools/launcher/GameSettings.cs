@@ -20,6 +20,8 @@ namespace TimeSplitters.Launcher
         Dictionary<string, object> document, controller, bindings;
         string runtime;
         public double Sensitivity = .10;
+        public bool DiscordEnabled;
+        public string DiscordApplicationId = "1561627743353962566";
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
@@ -40,7 +42,7 @@ namespace TimeSplitters.Launcher
         public int Width, Height, Scale = 1, Anisotropy = 1, Interpolation = 1;
         public string FrameCap = "adaptive";
         public string Device { get { return Convert.ToString(controller["device"], CultureInfo.InvariantCulture); } set { controller["device"] = value; } }
-        static readonly string[] Files = { "Settings/pc-controls.json", "Settings/pc-display.ini", "Settings/runtime.conf" };
+        static readonly string[] Files = { "Settings/pc-controls.json", "Settings/pc-display.ini", "Settings/runtime.conf", "Settings/pc-discord.ini" };
         static Dictionary<string, object> Map(object value)
         { var map = value as Dictionary<string, object>; Core.Require(map != null, "Settings contain an invalid object."); return map; }
         static byte[] Read(string path)
@@ -54,6 +56,13 @@ namespace TimeSplitters.Launcher
             foreach (string file in Files) model.originals[file] = Read(Core.PathIn(root, file));
             model.document = Json.Object(model.originals[Files[0]] == null ? DefaultControls() : Text(model.originals[Files[0]]));
             model.ReadController();
+            string discord = Text(model.originals[Files[3]]);
+            if (discord.Length > 0) {
+                var presence = Regex.Match(discord, @"\ATSFP_DISCORD_V1\s+([01])\s+([0-9]{1,20})\s*\z");
+                Core.Require(presence.Success, "Discord settings are invalid. No settings were changed.");
+                model.DiscordEnabled = presence.Groups[1].Value == "1";
+                model.DiscordApplicationId = presence.Groups[2].Value == "0" ? "" : presence.Groups[2].Value;
+            }
             object value;
             if (model.document.TryGetValue("launcher", out value))
             {
@@ -176,6 +185,10 @@ namespace TimeSplitters.Launcher
         { string v; int n; if (!values.TryGetValue(key, out v)) return fallback; if (Int32.TryParse(v, out n)) return n; if (v == "true" || v == "on" || v == "yes") return 1; if (v == "false" || v == "off" || v == "no") return 0; throw new InvalidDataException("Invalid runtime setting: " + key); }
         public void Validate()
         {
+            ulong discordId;
+            Core.Require((!DiscordEnabled && DiscordApplicationId.Length == 0) ||
+                (Regex.IsMatch(DiscordApplicationId, @"\A[1-9][0-9]{16,19}\z") && UInt64.TryParse(DiscordApplicationId, out discordId)),
+                "Enter the public numeric Discord Application ID (17–20 digits), or turn off Rich Presence and clear the ID.");
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
             Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
@@ -231,7 +244,8 @@ namespace TimeSplitters.Launcher
             if (!document.TryGetValue("launcher", out value)) document["launcher"] = value = new Dictionary<string, object>();
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
-            var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics) };
+            var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
+                "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n" };
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch
@@ -251,6 +265,7 @@ namespace TimeSplitters.Launcher
             foreach (var pair in new Dictionary<string, string> {
                 {"TSFP_CRASH_DIR","Logs/Crashes"}, {"RECOMP_GAME_DIR","Data"}, {"RECOMP_SAVE_DIR","Saves"}, {"RECOMP_INPUT_CONFIG",Files[0]}, {"RECOMP_FFMPEG_DIR","Bin"}, {"RECOMP_DISPLAY_CONFIG",Files[2]}, {"TSFP_DISPLAY_CONFIG",Files[1]}, {"TSFP_TEXTURE_PACK_DIR","Textures"}, {"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"} }) info.EnvironmentVariables[pair.Key] = Core.PathIn(root, pair.Value);
             info.EnvironmentVariables["RECOMP_TRACE_BUDGET"] = "0";
+            info.EnvironmentVariables["TSFP_DISCORD_CONFIG"] = Core.PathIn(root, Files[3]);
             // The existing XMV HLE completes skipped movies normally. Story
             // cutscenes are rendered by the game and do not use this player.
             info.EnvironmentVariables["RECOMP_XMV_PLAY"] = model.SkipStartupSplashes ? "0" : "1";

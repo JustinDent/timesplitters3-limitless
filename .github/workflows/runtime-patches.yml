@@ -77,6 +77,11 @@ on:
       - src/pc_terminal.h
       - src/pc_input.c
       - src/pc_controls.c
+      - src/pc_discord*
+      - tests/test_discord_presence.py
+      - tests/pc_discord.c
+      - tests/discord_ipc_client.c
+      - config/pc-discord.default.ini
       - src/pc_window_theme.h
       - src/pc_menu_theme.h
       - src/pc_dialog_theme.h
@@ -182,7 +187,7 @@ jobs:
           tests=(
             tests/test_native_compiler.py tests/test_audio_timing.py
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
-            tests/test_xmv_stop.py
+            tests/test_xmv_stop.py tests/test_discord_presence.py
             tests/test_crash_capture.py
             tests/test_cutscene_letterbox.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py
