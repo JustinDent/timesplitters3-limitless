@@ -86,7 +86,7 @@ class KnownIssuesTests(unittest.TestCase):
         api.issues[-1]['state'] = 'closed'
         self.publish(api)
         body = api.generated_body
-        self.assertIn('Open reports (2)', body)
+        self.assertIn('Open bug reports (2)', body)
         self.assertLess(body.index('[#2'), body.index('[#4'))
         for number in (3, 5, 6):
             self.assertNotIn(f'/issues/{number})', body)
@@ -111,6 +111,44 @@ class KnownIssuesTests(unittest.TestCase):
         self.assertTrue(self.publish(api))
         self.assertEqual(len(api.writes()), 2)
         self.assertIn('Updated mouse report', api.generated_body)
+
+    def test_discussion_body_and_other_authors_comments_are_preserved(self):
+        api = FakeGitHub()
+        human = {'id': 'human', 'body': known.MARKER + '\nMaintainer notes.',
+                 'author': {'login': 'owner', '__typename': 'User'}}
+        other_bot = {'id': 'other-bot', 'body': known.MARKER + '\nOther bot notes.',
+                     'author': {'login': 'another[bot]', '__typename': 'Bot'}}
+        api.discussion_comments = [human.copy(), other_bot.copy()]
+        self.publish(api)
+        self.assertEqual(api.target['body'], 'Previous manual post.')
+        self.assertEqual(api.discussion_comments[:2], [human, other_bot])
+        self.assertEqual(len(api.discussion_comments), 3)
+        api.issues = []; self.publish(api)
+        self.assertEqual(len(api.discussion_comments), 3)
+        self.assertEqual(api.target['body'], 'Previous manual post.')
+
+    def test_existing_bot_comment_on_later_page_is_updated_without_duplicate(self):
+        api = FakeGitHub(); self.publish(api)
+        api.discussion_comments[:0] = [{'id': str(n), 'body': 'Conversation.',
+            'author': {'login': 'human', '__typename': 'User'}} for n in range(100)]
+        api.issues = []; self.publish(api)
+        self.assertEqual(len(api.discussion_comments), 101)
+        self.assertEqual(api.writes()[-1][2]['query'], known.UPDATE)
+        self.assertIn('No open issues', api.generated_body)
+
+    def test_multiple_managed_comments_fail_without_editing_either(self):
+        api = FakeGitHub(); self.publish(api)
+        api.discussion_comments.append(dict(api.discussion_comments[0], id='duplicate'))
+        before = len(api.writes())
+        with self.assertRaisesRegex(ValueError, 'Multiple managed'):
+            self.publish(api)
+        self.assertEqual(len(api.writes()), before)
+
+    def test_existing_comment_update_rejection_is_reported(self):
+        api = FakeGitHub(); self.publish(api)
+        api.issues = []; api.write_error = True
+        with self.assertRaisesRegex(RuntimeError, 'GraphQL: Access denied'):
+            self.publish(api)
 
     def test_latest_explicit_human_maintainer_workaround_only(self):
         api = FakeGitHub(); api.issues[0]['comments'] = 5
@@ -144,7 +182,7 @@ class KnownIssuesTests(unittest.TestCase):
         api.issues[0]['comments'] = 101
         api.comments[1] = [comment(n, 'Ordinary chat.') for n in range(1, 101)] + [comment(101)]
         self.publish(api)
-        self.assertIn('Open reports (101)', api.generated_body)
+        self.assertIn('Open bug reports (101)', api.generated_body)
         self.assertIn('#issuecomment-101', api.generated_body)
         self.assertIn('/issues/101)', api.generated_body)
 

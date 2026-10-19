@@ -1,9 +1,12 @@
 # Automatic known issues and workarounds
 
-GitHub Actions maintains the existing pinned
+GitHub Actions maintains one bot-owned comment under the existing pinned
 [Known issues and workarounds Discussion](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/143).
-The first run replaces its manually maintained snapshot with the live list.
-Its title, pinned placement, category and locked state stay unchanged.
+The first run creates the live list; later runs edit that same comment.
+The Discussion introduction links to it. Its title, pinned placement, category
+and locked state stay unchanged. Live validation showed that `GITHUB_TOKEN`
+can create Discussions but GitHub rejects `updateDiscussion`, even on a
+bot-owned post. Editing the bot's own comment works without a personal token.
 
 Open issues labeled **bug** or **bugged** appear, with links to the full reports.
 The existing bug form and labeler use **bug**; no new label is needed.
@@ -34,16 +37,20 @@ bot-created changes. Identical snapshots do not write or bump the Discussion.
 Concurrent runs serialize and always read the current issue list, not old event
 payloads. A failed or oversized read leaves the previous post in place.
 
-The entire Discussion body is generated: keep workaround notes on their issues.
+The live bot comment is generated: keep workaround notes on their issues.
+The Discussion introduction and comments by other people or bots are preserved.
 The target number, exact title and accepted labels live in
 `.github/known-issues.json`. A missing target or changed title fails visibly
 instead of creating duplicates or editing another post. Update the configuration
 if the target is intentionally changed. Forks do not publish to this post.
 
-Automation uses trusted default-branch code with `contents: read`, `issues: read`
+Automatic runs use trusted default-branch code with `contents: read`, `issues: read`
 and `discussions: write`; no personal token or secret is needed. It never checks
 out or executes issue text. Tests run inside the existing **Issue form tests**
 check, and the publishing workflow does not run on pull requests.
+Manual dispatch uses the maintainer-selected branch so a fix can be validated
+with the real workflow token before merge. GitHub's error type and message are
+reported when a comment update is rejected.
 
 Read-only local preview (public repository reads only; no token needed):
 

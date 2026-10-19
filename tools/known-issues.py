@@ -132,7 +132,7 @@ def render(api, repository, labels):
             'A closed report does not necessarily mean a fix is in a published build.\n\n'
             'Workarounds below come from explicit maintainer notes on the linked issues. '
             'Follow each report for affected versions, evidence and the latest status.\n\n'
-            f'## Open reports ({len(issues)})\n\n')
+            f'## Open bug reports ({len(issues)})\n\n')
     if issues:
         body += '| Report | Workaround |\n| --- | --- |\n'
         for number, issue in sorted(issues.items()):
@@ -147,7 +147,7 @@ def render(api, repository, labels):
              'Include your installed game version, launcher version, platform and steps to reproduce. '
              'Add evidence to an existing report if it covers the same problem.\n\n'
              'Maintainers: add or edit a comment with a `### Workaround` heading on an issue '
-             'to update its workaround here. This post is generated; keep notes on the issue.\n')
+             'to update its workaround here. This comment is generated; keep notes on the issue.\n')
     if len(body) > 60000:
         raise ValueError('Known-issues post is too large; Discussion was not changed.')
     return body
