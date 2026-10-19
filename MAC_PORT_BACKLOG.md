@@ -1255,6 +1255,26 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-021 — Published-release launcher and pre-game settings
 
 - **Status:** Awaiting validation
+- **Automatic compatibility review (2026-10-19, `f96d1be`, PR #190 on
+  `codex/launcher-compatibility-automation`):** The GitHub workflow inspects
+  launcher changes in both directions, proposes bounded separate adapter-fix PRs,
+  and reuses the Windows/Mac release build/package checks. No game adapter is
+  required: this is host-neutral repository automation. Offline orchestration
+  tests and both real launcher CI builds/package checks pass; real AI execution/repair publication and required-check activation
+  await the dedicated API key and default-branch installation. Windows/Mac CI
+  evidence and these limits are recorded in
+  [STATUS](STATUS.md#launcher-compatibility-automation-2026-10-19).
+- **Shared interface (2026-10-19, `2ac286d`, `ee495e6`, `a0c4e14`, PR #189):**
+  Windows and Mac compile the same `*Page.cs` sources for settings, news, game
+  versions, repair and diagnostics, plus shared `PageTheme.cs` and theme XAML.
+  Home stays generated from `Launcher.xaml`. `Ui.cs` maps framework operations;
+  native controllers retain OS/lifetime integration without separate layouts.
+  Seven identical UI groups pass on Windows and Mac, alongside existing host
+  regressions, source-mutation checks and actual Mac packaged repair/restart.
+  Both packages and all 12 combined release assets pass verification. No game adapter is required; OS integrations and document/control
+  rendering remain adapters. This supersedes the separate page implementations
+  described below. See [STATUS](STATUS.md#shared-launcher-interface-2026-10-19).
+
 - **Unified release automation (2026-10-19, `55d3141`, `d58bcf2` on `codex/launcher-dual-platform-release`):**
   `.github/workflows/launcher-release.yml` and `tools/launcher-release.py` build
   Windows x64 and native Mac ARM64 from one version/revision. Both host regressions,

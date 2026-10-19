@@ -8,6 +8,7 @@ API. Git synchronization, a shared account and a backlog do not translate code.
 
 | Area | Common implementation | Host-specific work |
 | --- | --- | --- |
+| Launcher pages and theme | `Launcher.xaml`, `*Page.cs`, `PageTheme.cs`, `PageTheme.xaml`, `TabsTheme.xaml` | `Ui.cs` maps WPF/Avalonia events and controls; native templates/text rendering, dialogs, process lifetime and file opening |
 | Guest execution and gameplay fixes | Pinned runtime, complete patch stack, generated guest code | Build/compiler and process entry |
 | Menu, camera and display policy | `pc_display*`, `pc_menu_*`, `pc_cutscene.h`, `pc_ui_layout.h` | OS pointer events, window/resolution application |
 | Controls and configuration | `pc_input*`, `pc_bindings.inc`, shared validation | Win32/SDL events and atomic file writes |
@@ -136,3 +137,35 @@ integration work, tracked in the backlog.
 
 These are local branches; they have not been merged into main or verified on the
 other computer. Measured scope and unavailable checks are recorded in `STATUS.md`.
+
+## Launcher changes that reach both builds
+
+Edit the shared files under `tools/launcher` for ordinary launcher UI work:
+`Launcher.xaml` defines Home, and `SettingsPage.cs`, `WhatsNewPage.cs`,
+`GameVersionsPage.cs`, and `MaintenancePage.cs` define the other screens and their
+interactions. Both builds compile every `*Page.cs` in this directory automatically.
+`PageTheme.cs` defines cards and headings; `PageTheme.xaml`/`TabsTheme.xaml` contain
+theme values. Mac generates its home/theme syntax at build time, including shared
+button states and expander geometry. Do not edit the ignored generated AXAML.
+
+The Mac `NativeNews`, `NativeVersions` and `NativeMaintenance` classes connect
+shared pages to the native window's lifetime, clipboard, file dialogs and process
+operations; they must not add alternate page layouts. `Ui.cs` contains framework
+operations such as input capture, visibility, tooltips and scroll forwarding.
+Rich-text rendering and native control templates remain framework adapters.
+OS-specific startup/process integrations still need the corresponding host work;
+editing a Windows-only adapter cannot automatically implement a Mac OS API.
+
+Use the same shared models for feature rules and the same shared pages for buttons,
+labels, spacing and page state. A new host operation belongs behind an adapter.
+Build with `tools/build-launcher.ps1 -Test` on Windows and
+`tools/build-mac-launcher.py --test` on Mac. Both execute
+`tests/launcher_shared_ui.cs` against their actual UI framework. The layout/theme
+propagation tests also mutate a disposable source to verify that a single label,
+margin, button-padding, corner-radius or disabled-state edit reaches the Mac output.
+The release workflow runs both builds before publishing one release's packages.
+The Windows two-executable package and existing updater size limits are retained.
+
+Automatic review and proposed adapter fixes are described in
+[launcher compatibility](launcher-compatibility.md). Both host tests remain
+required evidence; automatic review does not replace additional OS/visual checks.

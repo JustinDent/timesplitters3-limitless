@@ -2,9 +2,22 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+
+#if MACOS
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Automation;
+using UIElement = Avalonia.Controls.Control;
+using Brush = Avalonia.Media.IBrush;
+using FontWeights = Avalonia.Media.FontWeight;
+#else
 using System.Windows;
 using System.Windows.Automation;
 using System.Windows.Controls;
+#endif
 
 namespace TimeSplitters.Launcher
 {
@@ -23,7 +36,7 @@ namespace TimeSplitters.Launcher
         public int Count { get { return releases.Count; } }
         public GameVersionsPage(Action<string> openLink=null)
         {
-            View.Margin=new Thickness(30,24,30,20);View.Resources.MergedDictionaries.Add(PageTheme.Resources());
+            View.Margin=new Thickness(30,24,30,20);Ui.Theme(View);
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});
             View.RowDefinitions.Add(new RowDefinition {Height=new GridLength(1,GridUnitType.Star)});
             View.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});
@@ -35,7 +48,7 @@ namespace TimeSplitters.Launcher
             selector.ColumnDefinitions.Add(new ColumnDefinition());selector.ColumnDefinitions.Add(new ColumnDefinition {Width=GridLength.Auto});
             AutomationProperties.SetName(Versions,"Published game version");selector.Children.Add(Versions);
             Older=new Button {Content="Load older releases",Margin=new Thickness(10,0,0,0)};Grid.SetColumn(Older,1);selector.Children.Add(Older);header.Children.Add(selector);
-            details=PageTheme.Text("Refresh to load stable and preview releases with verified Windows packages.",12,"#9EB4C8");details.Margin=new Thickness(0,0,0,14);header.Children.Add(details);View.Children.Add(header);
+            details=PageTheme.Text("Refresh to load stable and preview releases with verified packages for this platform.",12,"#9EB4C8");details.Margin=new Thickness(0,0,0,14);header.Children.Add(details);View.Children.Add(header);
             var body=new Grid();body.RowDefinitions.Add(new RowDefinition {Height=GridLength.Auto});body.RowDefinitions.Add(new RowDefinition());
             body.Children.Add(PageTheme.Text("RELEASE NOTES",10,"#9EB4C8"));
             notes=new ReleaseNotesMarkdown(openLink) {Margin=new Thickness(0,12,0,0)};
@@ -67,7 +80,7 @@ namespace TimeSplitters.Launcher
                 if(release.Tag==selection)Versions.SelectedItem=item;
             }
             if(Versions.SelectedIndex<0 && Versions.Items.Count>0)Versions.SelectedIndex=0;
-            status.Text=releases.Count==0?"No compatible Windows game packages found on this page. Load older releases if available.":"Showing "+releases.Count+" published game versions. Choose one to install.";
+            status.Text=releases.Count==0?"No compatible game packages for this platform found on this page. Load older releases if available.":"Showing "+releases.Count+" published game versions. Choose one to install.";
             loading=false;Render();
         }
         public void Failed()
@@ -80,7 +93,7 @@ namespace TimeSplitters.Launcher
             Older.IsEnabled=more && !blocked && !loading;Refresh.IsEnabled=!blocked && !loading;
             Install.IsEnabled=release!=null && !blocked && !loading && !running;OnGitHub.IsEnabled=release!=null;
             Install.Content=release!=null && release.Tag==installed?"Reinstall selected version":"Install selected version";
-            Install.ToolTip=running?"Close the game before switching versions.":"Review and confirm the selected game version before downloading.";
+            Ui.Tip(Install,running?"Close the game before switching versions.":"Review and confirm the selected game version before downloading.");
             if(release==null) {notes.SetMarkdown("");return;}
             DateTime date;string published=DateTime.TryParse(release.Published,CultureInfo.InvariantCulture,DateTimeStyles.RoundtripKind,out date)?date.ToUniversalTime().ToString("yyyy-MM-dd",CultureInfo.InvariantCulture):"Date unavailable";
             details.Text=release.Tag+"  ·  "+(release.IsPreview?"Preview":"Stable")+"  ·  "+published+"  ·  "+(release.Size/1048576.0).ToString("0.0",CultureInfo.InvariantCulture)+" MB";

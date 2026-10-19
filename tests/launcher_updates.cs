@@ -167,6 +167,7 @@ static class LauncherTests
         if (args.Length == 1 && args[0] == "--versions") return LauncherVersionChecks.Run();
         if (args.Length == 1 && args[0] == "--startup") return LauncherStartupChecks.Run();
         if (args.Length == 1 && args[0] == "--news") return LauncherNewsChecks.Run();
+        if (args.Length == 1 && args[0] == "--shared-ui") return LauncherSharedUiChecks.Run();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();
         if (args.Length == 2 && args[0] == "--helper")
             return Program.RunHelper("--apply", args[1], Int32.MaxValue, false);

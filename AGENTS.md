@@ -72,6 +72,12 @@ reproducibility, and validation requirements.
   host checks, and report unavailable checks. Preserve existing settings and
   supported defaults. Deferring a new feature does not authorize regressions in
   existing Mac functionality.
+- Launcher changes follow the same rule in both directions: implement common
+  behavior once, adapt Windows/macOS system calls, and run both host checks.
+  `docs/launcher-compatibility.md` describes the automatic review/fix workflow.
+  Its passing check is evidence of its scope, not a guarantee of visual parity.
+  Automated fixes must remain separate reviewable PRs and must not weaken tests,
+  edit their own workflow policy, merge, or publish releases.
 - Every PR description must explain the problem or root cause and how the
   change fixes it, in plain language. Include the resulting behavior, relevant
   validation and known limits. Keep this explanation current when updating

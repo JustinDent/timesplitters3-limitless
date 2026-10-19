@@ -53,6 +53,7 @@ def main():
   if (artwork/name).exists() and (artwork/name).stat().st_size>8*1024**2:raise SystemExit('Artwork exceeds 8 MiB: '+name)
  source=ROOT/'tools/launcher/macos';spec=importlib.util.spec_from_file_location('layout',source/'generate_layout.py');layout=importlib.util.module_from_spec(spec);spec.loader.exec_module(layout)
  layout.generate(ROOT/'tools/launcher/Launcher.xaml',source/'NativeWindow.axaml')
+ for theme in ('PageTheme','TabsTheme'):layout.generate_theme(ROOT/f'tools/launcher/{theme}.xaml',source/f'{theme}.axaml')
  app=output/'TimeSplitters Launcher.app';binary_dir=app/'Contents/MacOS';binary_dir.mkdir(parents=True,exist_ok=True)
  publish_dir=output/'publish';publish_dir.mkdir(parents=True,exist_ok=True)
  command=[str(sdk),'publish',str(source/'NativeLauncher.csproj'),'-p:RestoreLockedMode=true','-c','Release','-r','osx-arm64','--self-contained','true','-p:PublishSingleFile=true','-p:_EnableMacOSCodeSign=false','-p:DebugType=None','-p:DebugSymbols=false','-p:IncludeNativeLibrariesForSelfExtract=true','-p:EnableCompressionInSingleFile=true',f'-p:BaseIntermediateOutputPath={output}/obj/',f'-p:BaseOutputPath={output}/bin/',f'-p:ArtworkDir={artwork}','-o',str(publish_dir)]
@@ -84,10 +85,11 @@ def main():
      shutil.copyfile(notice,licenses/(package.replace('/','-')+'-'+notice.name))
  files={str(f.relative_to(output)):digest(f) for f in app.rglob('*') if f.is_file()}
  manifest=output/'Support/Launcher/manifest.json';manifest.parent.mkdir(parents=True,exist_ok=True);manifest.write_text(json.dumps({'schema':1,'version':version,'files':files},indent=2)+'\n')
- receipt={'source_revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_changes':subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True),'source_sha256':{str(f.relative_to(ROOT)):digest(f) for f in [ROOT/'tools/build-mac-launcher.py',ROOT/'config/mac-launcher-sdk.json',ROOT/'tools/launcher/Launcher.xaml',ROOT/'tools/launcher/macos/NativeLauncher.csproj',ROOT/'tools/launcher/macos/packages.lock.json',ROOT/'tools/launcher/macos/generate_layout.py',ROOT/'tools/launcher/macos/NativeHomeStyles.axaml',*sorted((ROOT/'tools/launcher').glob('*.cs')),*sorted((ROOT/'tools/launcher/macos').glob('*.cs'))]},'sdk':pin,'avalonia':'11.3.22','artwork':{n:digest(artwork/n) for n in ('launcher-banner.png','launcher-logo.png','launcher-backdrop.png') if (artwork/n).exists()},'files':files}
+ receipt={'source_revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_changes':subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True),'source_sha256':{str(f.relative_to(ROOT)):digest(f) for f in [ROOT/'tools/build-mac-launcher.py',ROOT/'config/mac-launcher-sdk.json',*sorted((ROOT/'tools/launcher').glob('*.xaml')),ROOT/'tests/launcher_shared_ui.cs',ROOT/'tools/launcher/macos/NativeLauncher.csproj',ROOT/'tools/launcher/macos/packages.lock.json',ROOT/'tools/launcher/macos/generate_layout.py',*sorted((ROOT/'tools/launcher').glob('*.cs')),*sorted((ROOT/'tools/launcher/macos').glob('*.cs'))]},'sdk':pin,'avalonia':'11.3.22','artwork':{n:digest(artwork/n) for n in ('launcher-banner.png','launcher-logo.png','launcher-backdrop.png') if (artwork/n).exists()},'files':files}
  (output/'BUILD-launcher.json').write_text(json.dumps(receipt,indent=2)+'\n')
  binary=binary_dir/'TimeSplitters.Launcher'
- if a.test:subprocess.run([str(binary),'--test'],check=True,cwd=ROOT)
+ if a.test:
+  for mode in ('--test','--test-ui'):subprocess.run([str(binary),mode],check=True,cwd=ROOT)
  if a.package:
   archive=output/f'TimeSplitters-Launcher-v{version}-macos-arm64.zip'
   with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
