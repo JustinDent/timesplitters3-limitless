@@ -61,16 +61,16 @@ def bundle_libraries(executable, stage, sdk):
     origins = {}
     records = {}
     while pending:
-        source = pending.pop(0).resolve()
-        if source == executable.resolve():
+        source = pending.pop(0)
+        if source.resolve() == executable.resolve():
             target = stage/GAME
         else:
             name = source.name
             if name in origins:
-                if origins[name] != source:
+                if origins[name] != source.resolve():
                     raise ValueError('Conflicting runtime library basename: '+name)
                 continue
-            origins[name] = source
+            origins[name] = source.resolve()
             target = stage/'Bin'/name
             shutil.copy2(source, target)
             target.chmod(target.stat().st_mode | 0o200)
@@ -84,7 +84,7 @@ def bundle_libraries(executable, stage, sdk):
                 continue
             name = Path(dependency).name
             # A dylib's own LC_ID_DYLIB is printed by otool too.
-            if name == source.name and source != executable.resolve():
+            if name == source.name and source.resolve() != executable.resolve():
                 continue
             if dependency.startswith('@'):
                 candidates = [source.parent/name, sdk/'lib'/name]
