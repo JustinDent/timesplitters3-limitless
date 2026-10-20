@@ -19,7 +19,8 @@ published release or a full-game 144 FPS certification.
   pause and uneven intervals; native 60 output is byte-identical. Scene
   collision and damage application are mocked, so the plasma-sniper report
   remains open. The separate 0xF08D0 updater and distance-based damage falloff
-  still need auditing. Windows rebuild and actual Mac execution are pending.
+  still need auditing. Windows Release/built-in tests and a 120-second
+  isolated native-144 smoke check pass; actual Mac execution is pending.
   [Projectile evidence](docs/native-high-refresh-regressions.md#projectile-travel-on-fractional-frames).
 - The ship reported in the canyon after the first bridge destruction is
   identified as the crashed mothership, model 0x53A. Its updater skipped
@@ -43,8 +44,9 @@ published release or a full-game 144 FPS certification.
   fractional frames. Its shared division guard is now corrected, with a
   failing-before/passing-after original-code fixture covering model choice,
   random effects, allocation failures, zero time and catch-up. The 60 FPS
-  output is byte-identical. This additional fix is source-only while the
-  user plays the build containing the mothership landing correction.
+  output is byte-identical. Windows Release and the 120-second isolated
+  native-144 smoke check now pass on `ef2ace3`, together with projectile
+  travel; live debris and bridge-scene comparisons remain pending.
   [Debris check](docs/native-high-refresh-regressions.md#ship-debris-inherited-velocity).
 - Object rocking/bounce motion has a reproduced smoothness gap: the original
   updater produces only 60 changed transforms across 144 live updates, while

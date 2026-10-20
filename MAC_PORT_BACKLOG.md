@@ -3018,15 +3018,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   frames. The complete original-code fixture checks velocity, both model
   branches, RNG/effect output, allocator failures, catch-up, zero time and
   ABI, with byte-identical original 60 FPS output. No OS adapter is needed.
-  Full Windows rebuild and actual Mac execution remain pending; the current
-  interactive build includes the earlier landing fix only. See the
+  Windows Release/built-in tests and a 120-second isolated native-144 smoke
+  check pass on `ef2ace3`; live debris and actual Mac execution remain pending. See the
   [debris check](docs/native-high-refresh-regressions.md#ship-debris-inherited-velocity).
 - **Projectile travel:** Shared site 0xF4A66 now accepts every positive
   fractional game interval. The full original updater fixture checks travel,
   sweep/impact dispatch, expiry, pause, uneven intervals and native-60 identity.
   No platform adapter is needed. Scene geometry and damage application remain
   mocked; live plasma-sniper damage, other projectile families and actual Mac
-  execution are unverified. Windows rebuild is pending. See the
+  execution are unverified. Windows Release/built-in and 120-second isolated
+  native-144 smoke checks pass on `ef2ace3`. See the
   [projectile record](docs/native-high-refresh-regressions.md#projectile-travel-on-fractional-frames).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.

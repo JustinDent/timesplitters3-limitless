@@ -1345,3 +1345,34 @@ expected failure (`logs/native-projectile-shared.log`). Full patch-stack
 validation passes with zero runtime files updated; generation is current.
 Full Windows rebuild, scene replay and actual Mac execution are pending at
 this source checkpoint.
+
+
+The supported Windows Release build of `ef2ace3` and built-in tests pass
+(`logs/native-projectile-windows-build.log`). Executable SHA-256:
+`9c9f801015f988ad4ce952d54136324c6117e2dd2324802484ef9c3b7114d77d`.
+The 120-second isolated Test Lab native-144 run passes movement, equipped
+firearm/ammunition, hand animation, pause/resume, native hook and successful
+guest presentation checks, with interpolation disabled. Evidence is
+`private/test-saves/high-refresh/native-144-projectile-travel-validation.json`
+and `logs/native-projectile-built-smoke.log`. Runner termination is intentional
+(exit 1); completed/passed are true. The 73 bounded entity snapshots are in
+the companion entities JSON and do not reach the reported bridge encounter.
+
+From 85 seconds onward: 4,825 unpaused Story CPU intervals over 34.7362
+seconds, mean 138.904 updates/s, p50/p95/p99 7.0446/8.9396/9.9019 ms,
+worst 12.3229 ms, game/raw clocks both 1.0 seconds per wall second. This
+windowed 1280x720 opening check is neither scanout measurement nor a full
+campaign/damage test. The interactive launcher was started again at native
+144 with personal settings/saves after the isolated child exited.
+
+A read-only inspection of the owned isolated child's weapon table located
+it at guest 0x4EEF74 (pointer 0x4F9BAC). Weapon record stride is 0x29C;
+fire-mode flags start at +0x68 and projectile kind is +0x6C (secondary +0xE8).
+Weapon ID 17, recorded throughout the earlier user observation, uses kind 24
+for both modes. Its descriptor selects initializer 0xE36D0 and updater
+0xF5FF0, which calls the immediate trace/hit helper 0xF5D30. Therefore the
+0xF4A50 travel fix does **not** resolve that weapon's damage report.
+Kind 24's original hit path reaches damage setup 0xB91F0/0xB9220 and
+application 0xBD0F0; actual health behavior is still pending reproduction.
+The small table snapshot is ignored at
+`private/pipeline/projectile-weapon-table.bin`. No game memory was written.
