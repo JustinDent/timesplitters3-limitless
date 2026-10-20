@@ -3033,15 +3033,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   positive fractional game interval; pause remains blocked. The original
   sniper/actor damage chain reproduces dropped health changes and passes
   across native intervals, misses, target eligibility and rejection checks.
-  No OS adapter is needed. Source-only while the interactive game runs;
-  Windows build/live sniper and actual Mac execution remain unverified. See
+  No OS adapter is needed. Windows Release and the 120-second native-144
+  smoke check pass on `fc3a7ce`; targeted live sniper and actual Mac execution
+  remain unverified. See
   [the sniper record](docs/native-high-refresh-regressions.md#sniper-damage-on-fractional-frames).
 - **NPC animation-marker shots:** Shared caller-specific transaction handling
   in `pc_native_weapon_guest.h` preserves one-time shot events at return sites
   0x27AE66/0x2B9BF8. The additive manual-wrapper patch composes with the existing
   network boundary. Original selector/caller/firing fixtures pass on Windows;
   continuous-fire scenarios retain their old cadence. No OS adapter change.
-  Windows build/live AI confirmation and actual Mac execution remain pending.
+  Windows Release and a 120-second native-144 smoke check pass on `fc3a7ce`;
+  targeted live AI confirmation and actual Mac execution remain pending.
   See [event evidence](docs/native-high-refresh-regressions.md#npc-animation-marker-shots).
 - **Beam lifetime audit:** `tests/native_beam_lifetime.c` executes the original
   shared effect manager with original switch/type tables. First-update,

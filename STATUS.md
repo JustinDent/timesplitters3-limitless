@@ -20,8 +20,8 @@ published release or a full-game 144 FPS certification.
   fractional/slow/catch-up intervals; the unpatched zero-whole case leaves
   health at 1.00. Pause and rejected/untargetable hits remain blocked. Scene
   geometry, network acceptance and reactions are controlled fixture services.
-  Source-only while the user plays; Windows rebuild, live sniper confirmation
-  and actual Mac execution remain pending.
+  Windows Release and a 120-second native-144 smoke check now pass on
+  `fc3a7ce`; live sniper-hit confirmation and actual Mac execution remain pending.
   [Sniper evidence](docs/native-high-refresh-regressions.md#sniper-damage-on-fractional-frames).
 - NPC animation-event firing now preserves a crossed firing marker on a
   fractional frame. Two original caller branches discarded the marker when
@@ -30,8 +30,17 @@ published release or a full-game 144 FPS certification.
   callers retain their existing cadence. The original selector/caller/firing
   chain passes shots, sounds, ammo, no-duplicate, pause and rejection checks.
   This is not yet tied to the first-mission enemies; their movement report
-  remains open. Windows build/live verification and actual Mac execution are
-  pending. [Event evidence](docs/native-high-refresh-regressions.md#npc-animation-marker-shots).
+  remains open. Windows Release and the 120-second native-144 smoke check
+  pass on `fc3a7ce`; targeted live AI and actual Mac verification remain pending. [Event evidence](docs/native-high-refresh-regressions.md#npc-animation-marker-shots).
+- Current play build `fc3a7ce` includes the sniper and NPC animation-event
+  fixes. The shared suite passes 169 checks with the existing object-rocking
+  expected failure; final wrapper integration passes two focused checks.
+  The 120-second isolated test passes movement, firearm handoff/animation,
+  ammo use, pause/resume and fresh presentation without interpolation.
+  Active CPU frame samples average 137.60 FPS (p95 9.24 ms), so stable 144
+  FPS is not established. Personal controls/display hashes are unchanged.
+  Interactive native-144 PID 25304 was reopened and is responding.
+  [Build evidence](docs/native-high-refresh-regressions.md#npc-and-sniper-build-validation).
 - Beam-manager lifetime audit passes without a runtime change: the original
   type-32 manager starts an undelayed beam on its first update and expires it
   near 1.2 game seconds at 60/120/144, including quarter-speed and paused

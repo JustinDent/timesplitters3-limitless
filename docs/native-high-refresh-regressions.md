@@ -1528,3 +1528,53 @@ application passes and updates only the manual runtime wrapper
 C already calls the manual NPC entry with the two original return addresses;
 no generated C was edited. Windows rebuild and live confirmation, including
 the reported pre-bridge behavior, and actual Mac execution remain pending.
+
+
+### NPC and sniper build validation
+
+The animation-event source change is `81c213c`; manual guest-memory access is
+corrected in `fc3a7ce`. The full Windows build initially caught an integration
+mistake: MEM32 is defined for generated routines, not this manual runtime
+file. The wrapper now uses the same direct guest-memory read convention as
+neighboring wrappers. The first build invocation also used PowerShell 7,
+whose drawing assembly did not satisfy the icon helper; the supported Windows
+PowerShell invocation avoids that shell mismatch. These failures were resolved
+before launching the new executable.
+
+The broader suite passes **169 tests, one existing object-rocking xfail** in
+475.07 seconds (`logs/native-npc-animation-shared.log`), covering native timing,
+float/vehicle joins, network guest/fallback dispatch, CI scope, Mac backlog,
+and patch updates/tracking. After the manual access correction, fresh/repeated
+patch application and the original NPC firing fixture pass two focused checks
+(`logs/native-npc-animation-final-integration.log`). Windows Release and all
+build-command tests pass (`logs/native-npc-animation-windows-rebuild.log`).
+Executable SHA-256: `912f416b5f6eaeabf545c960c255491907988eae9f031ead4231b24832cbc333`.
+
+The isolated 120-second `native-144-npc-animation-sniper` test is complete and
+passed. All crash, Story, native timing, guest presentation, interpolation-off,
+presentation-failure, movement, hand-animation/handoff, ammunition and
+pause/resume checks pass. It collected 73 entity snapshots and 140 gameplay
+samples. Exit code 1 is the runner's intentional bounded termination, not a
+crash. Logs: `logs/native-npc-animation-built-smoke.log`; structured evidence:
+`private/test-saves/high-refresh/native-144-npc-animation-sniper-validation.json`.
+This opening-area replay does not equip or test a live sniper hit and does not
+reach the reported bridge enemies/crash; those targeted checks remain open.
+
+From trace second 85, 4,755 complete intervals span 34.5557 seconds: **137.60
+CPU updates/s**, p50/p95/p99 **7.0507/9.2407/10.3390 ms**, worst **11.9642 ms**.
+Integrated game time/wall time is 1.0000000001. The single truncated final CSV
+row from bounded termination was excluded. These are CPU timing samples,
+not scanout or a stable-144 certification; the text FPS log also records dips.
+No prior performance regression cause is established by this one run.
+
+Personal controls/display hashes match their pre-test values. Normal
+native-144 play was reopened as PID 25304, responding, from the same executable.
+`logs/play-20261020-141507.err` confirms native timing/interpolation off and
+XAudio2 initialization; that is not an audible-output test. An initial launcher
+attempt inherited an incompatible PowerShell module path and failed before
+game creation (`logs/launch-20261020-141431-445.err`). Its owned launcher was
+closed, and a child-process-only Windows module path allowed the normal
+`Play-Native.cmd 144` launch; no persistent environment/settings edit was made.
+The delayed trails, specific pre-bridge enemy behavior, remaining physics/
+weapon/campaign audits, full-game performance and actual Mac validation remain
+open. The goal is active.
