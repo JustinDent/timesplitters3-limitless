@@ -3131,6 +3131,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   No platform adapter or host cache is added. The full Windows build, 138
   shared checks, 21 patch-upgrade checks and two-minute native-144 Story smoke
   pass. Actual Mac compilation and live MapMaker visual acceptance remain pending.
+- **Procedural-texture cache cadence (local source):**
+  `src/pc_native_numeric.h` keys the surface caller's two cache reads by native
+  update ID instead of console vblank, and prevents the procedural dispatcher
+  from updating on zero-float pause with a stale positive whole count.
+  `tests/native_surface_cache.c` executes the complete original caller and
+  dispatcher with graphics/pass spies, covering phase offsets, resource aliases,
+  view slots, UV motion, pause/resume and catch-up. The existing shared load
+  policy supplies all hooks, so no new patch or platform adapter is required.
+  Actual Mac execution and live procedural-texture visuals remain unverified.
 - **Fractional screen-distortion clock (`ae410c4`, local):**
   `src/pc_native_visual_time.h`, `pc_native_visual_time_guest.inc`, the numeric
   policy and additive `*-native-visual-time.patch` observe direct level-clock

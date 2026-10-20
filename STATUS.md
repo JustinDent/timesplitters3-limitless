@@ -6,6 +6,18 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Shared source corrects a reproduced procedural-texture cache collision.
+  A zero-whole native frame could cache a no-op against the display vblank;
+  the following advancing frame then skipped its texture update. The two
+  cache reads now use the native update ID, preserving per-view/shared-resource
+  deduplication. A zero-float pause also freezes the procedural dispatcher
+  even if a stale whole count is positive. Original-code fixtures reproduce
+  missed updates at 120/144 and check restored cadence, UV/phase integration,
+  resource swaps, pause/resume and original inactive-native behavior.
+  All 147 shared checks pass; the unchanged patch stack verifies cleanly.
+  Windows build validation is pending at this source checkpoint;
+  live textures, GPU pass contents and complete level coverage remain open.
+  [Procedural texture cache](docs/native-high-refresh-regressions.md#procedural-texture-cache-cadence).
 - Build `ae410c4` now supplies fractional level time to the audited screen-distortion
   read. Direct clock stores update a shared fractional offset, explicit
   reset/demo/network writes rebase it, and render calls only sample it.

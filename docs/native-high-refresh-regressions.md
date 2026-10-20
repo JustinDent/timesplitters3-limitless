@@ -1600,6 +1600,73 @@ Actual Mac execution, live distortion visuals, complete original-60 comparison,
 full replay/network/level lifecycle behavior and world texture animation remain
 unverified; this correction does not close the full high-refresh goal.
 
+## Procedural-texture cache cadence
+
+The original surface updater `sub_00127500` advances two wrapped texture
+offsets at record `+0xB0/+0xB4`, velocities at `+0xA8/+0xAC` and another
+phase at `+0xB8`. The downstream surface routine `sub_00127830` consumes
+those offsets while constructing coordinate data, including at `0x127BD2`,
+`0x127BF5`, `0x127D88` and `0x127DB1`. The float-delta offset integration
+already advances on fractional intervals in the controlled zero-force/
+zero-drag fixture. This does not establish all surface/material behaviors.
+
+The same updater invokes procedural-texture dispatcher `sub_001956A0` using
+a resource pointer at `+0xBC`. It compares a per-view timestamp against console
+vblank `0x7497A8`, calls the dispatcher, then stores that vblank into the cache.
+The dispatcher immediately returns when whole game ticks are zero. At native
+rates a zero-whole frame can therefore populate the cache on a new vblank;
+the following positive-whole frame shares that vblank and skips real work.
+The two clocks have independent fractional phase, so this is not just an
+incorrectly chosen FPS constant.
+
+`tests/native_surface_cache.c` executes the complete pinned US caller
+(`0x127500..0x12782C`) and dispatcher (`0x1956A0..0x19576D`). Two controlled
+material records alias one procedural resource. Its graphics services and
+five nested texture-pass bodies are spies; the outer call sequence and two
+resource swaps execute original instructions. The fixture checks the full
+sequence and restored handles, callee-saved registers/stack/FPU depth,
+unchanged timing globals and integrated U/V/phase values. It does not execute
+the nested GPU kernels, produce a procedural image, or prove material loading.
+
+Over eight game seconds at native 144, the original cache produces respectively
+480, 192, **0**, and 192 updates for display-clock phase offsets of 0, 1/4,
+1/2 and 3/4 tick. At native 120, the latter two offsets also suppress all
+updates. Native 60 has no such collision in these sequences. These controlled
+phase offsets reproduce a timing failure; they are not measurements of its
+frequency in live levels.
+
+The shared numeric policy now maps only the two vblank loads at `0x12764C`
+and `0x127694` to native frame/update counter `0x7497B8`. Every advancing
+native update gets a fresh cache key, while aliases within a view still
+deduplicate. The procedural callee keeps its authored whole-tick gate and
+positive-interval pass sequence, including its original one-dispatch
+catch-up behavior. Its load at `0x1956A0` now reads zero during a native
+zero-float pause, preventing stale positive whole counts from evolving the
+image. That register is replaced by a graphics-state return value before
+subsequent use. Native-disabled behavior and neighboring loads stay original.
+
+The fixed fixture restores 480 updates in each normal/quarter-speed
+60/120/144 sequence across all four phase offsets and view slots 0 and 3.
+It checks every individual frame, not just the final count. Additional cases
+cover a second view's independent stamp, shared-resource aliases, ordinary
+pause/resume, the stale-whole paused-image counterexample and multi-tick
+catch-up. U/V/phase values retain their original constant-velocity integration.
+The procedural GPU algorithm is still discrete; evaluating its image at
+fractional intervals requires auditing its nested passes and coefficients.
+This cache correction alone does not establish native-144 procedural simulation
+or complete texture fluidity.
+
+Evidence: `logs/native-surface-cache-before.log` reproduces the failure;
+`logs/native-surface-cache-fixed.log` records the correction. The fixture is
+registered in the existing shared native timing suite. All 147 shared timing,
+float/vehicle-join, CI-scope and backlog checks pass in 61.92 seconds
+(`logs/native-surface-cache-shared.log`). The unchanged complete patch stack
+verifies with zero updated files (`logs/native-surface-cache-patches.log`);
+no new patch or generator change is needed for these existing load-policy sites.
+Full Windows build, actual Mac execution and live surface/texture
+visual acceptance remain pending at this source checkpoint. The game windows
+remain closed; the previous original-60 comparison is still incomplete.
+
 ## Bridge-crash placement investigation
 
 The user reports a later ship crash intruding into the playable canyon,

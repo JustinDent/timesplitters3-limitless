@@ -83,10 +83,22 @@ extern float pc_native_visual_sample(uint32_t value);
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
 {
-    /* The rocking callback still builds its transform while paused, but
-     * must not integrate a stale carried whole count. Its pre-loop settling
-     * branch is guarded separately below. Positive time stays original. */
-    if ((site == 0xA8595u || site == 0xA8980u) && address == 0x4E7944u &&
+    /* Animated surfaces cache their procedural-texture dispatch per view.
+     * A zero-whole native frame can arrive on a new console vblank and cache
+     * a no-op; the following whole tick then sees that same vblank and loses
+     * its update. Key both comparison and store by the native update id.
+     * Shared-resource/view deduplication and the callee's discrete tick gate
+     * stay original here. Fractional simulation needs its own integration
+     * changes, not simply more executions of the authored GPU passes. */
+    if ((site==0x12764Cu || site==0x127694u) && address==0x7497A8u &&
+        g_tsfp_native_timing_active)
+        return *(const uint32_t *)((uintptr_t)0x7497B8u+g_xbox_mem_offset);
+    /* Rocking still builds its transform while paused, but must not integrate
+     * a stale whole count. Its settling branch is guarded separately below.
+     * The procedural-texture dispatcher likewise must not evolve its image
+     * during a zero-float pause; its gate register is replaced by a render-
+     * state return value before use. Positive intervals stay original. */
+    if ((site == 0xA8595u || site == 0xA8980u || site == 0x1956A0u) && address == 0x4E7944u &&
         g_tsfp_native_timing_active &&
         *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) == 0.0f)
         return 0;
