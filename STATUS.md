@@ -1,5 +1,51 @@
 # Measured progress
 
+## Texture artwork batch 250: five wood and metal replacements (2026-10-20)
+
+Eight cached opaque originals matched archive RGBA/dimensions and the supported
+XBE hash was verified. Built-in image generation produced four 1254x1254 and
+four 1774x887 sources, totaling 24,283,494 bytes. Accepted horizontal wood planks
+0cfaa1bdc48acf62, blue-gray wall 9b0e8252d4c4df11, nested blue panel
+0c4873b2d44c0c92, olive panel 0ea27372e26b6ead and bronze/red atlas
+0815e2083ee1f81e. Output: three 1024x512, one 512x512, one 1024x1024 DXT1
+with mip chains, LANCZOS downsampled from actual sources; not native 4K art.
+
+Held wooden door atlases 8a63cec41a2bd078 and 0e4d3e00c77bb262 for +27.79%
+and +24.86% brightness respectively. Held 072ecbe2447d85b5 for an erased oval
+detail in its far-right strip and -10.34% brightness. No correction hold counts
+as completion. Five RAM full/repeat/original-grid comparisons inspected and
+exactly replayed; 1,843,857 raster bytes were not written. Scene adjacency and
+mapping, material lighting, Mac GPU, display modes and residency remain pending.
+
+Five new Windows native DDS parser checks pass; checker identity and all prior
+1,469 DDS hashes match batch 249 evidence. Fresh Python whole-pack format,
+metadata, aspect, dimensions, mip and hash audit passes 1,474 installed files.
+Counts: 5,178 needing art, 1,474 installed, 160 held. Known-key classification
+remains 6,812, with category/use and whole-game discovery validation unfinished.
+No runtime/build changes or gameplay. The 90% installed-and-audited gate is unmet.
+
+Compacted JSON formatting in inventory-28/32/29/35.json and alpha-audit-30.json;
+all parsed values preserved. Before changing them, retained a 93,006-byte gzip
+recovery record and verified byte-exact decompression. Per-file before/after
+hashes and semantic equality are recorded. Gross saving 376,175 bytes; net
+281,158 bytes after recovery and receipt, excluding the new compaction script.
+No deletions, artwork changes or previously denied cleanup retries. Review files
+remain at their existing paths; exact historical bytes remain recoverable.
+
+Pack: 1,153,294,936 bytes, +1,925,264 bytes, below 6144 MiB. Temporary snapshot:
+267,950,496 bytes, below 256 MiB with 484,960 bytes headroom. Windows allocation
+query covered 10,359 texture-workspace files without errors: logical/allocated
+snapshot 7,368,356,650 bytes including source artwork; free disk 84,454,756,352
+bytes. This excludes Codex default generation outputs outside the project;
+metadata writes follow the snapshot. No new original exports, duplicate extracts,
+staging or publication. One active pack, 512 MiB residency and personal data kept.
+
+Private evidence: review/hybrid-250-selection.json, prompts.json, generation
+receipts, memory-review.json, decisions.json, native-audit.json, acceptance.json,
+json-compaction.json, json-format-recovery.json.gz and physical-storage-final.json
+(all share the hybrid-250 prefix). Previous goal turn was progress (batch 249).
+Local issue #74 work only. MAC-011 remains Awaiting validation.
+
 ## Texture artwork batch 249: four replacements installed (2026-10-20)
 
 Returned to artwork production after the completed known-key appearance pass and
