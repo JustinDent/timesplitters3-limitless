@@ -1692,6 +1692,51 @@ call scan finds the procedural dispatcher only at `0x127684`; that does not
 exclude indirect callers. The surface construction routine's broader material
 and GPU behavior remains outside this fixture.
 
+## Fractional strip distortion
+
+The separate screen effect `sub_000F9B10` samples whole level time at `0xF9B4B`,
+divides by the original ticks-per-second value and uses two sine waves to
+offset screen-copy source coordinates. It emits two-row strips through
+`sub_0001F090`; destination coordinates, row stepping and tint remain original.
+The absolute-time read is continuous visual phase, not an event counter.
+
+`tests/native_strip_distortion.c` executes the entire pinned US routine
+(`0xF9B10..0xF9CAF`) and the original sine-table generator/FSIN helper. Graphics
+services are spies that capture every nine-word copy packet. In a controlled
+640-by-448 region the routine emits 224 strips. The fixture compares original
+whole time, exact rational fractional time, and production visual-clock
+sampling through the existing direct-store observer.
+
+Over eight game seconds at normal speed, original native 120 repeats 480 of
+960 frames, and native 144 repeats 672 of 1,152. The correction repeats zero
+in both sequences. At quarter speed, original 60/120/144 repeat respectively
+1,440/3,360/4,128 frames, versus zero with the correction. These are captured
+draw-argument counts, not live frame-pacing or GPU measurements. Original
+whole-tick packets match exactly at every common boundary. Native 60 normal
+speed remains identical to original 60.
+
+Every production frame is compared with the exact fractional reference.
+All normal-speed cases and quarter-speed 60/120 match byte-for-byte. Five of
+4,608 quarter-speed 144 frames differ by at most one source-coordinate pixel:
+accumulated float deltas differ from rational time by at most 0.000031 ticks
+at those samples, crossing a lookup-table/integer-pixel boundary. Destination
+coordinates, extents and tint stay exact. The assertion explicitly bounds
+this rounding difference rather than calling the outputs identical.
+
+Additional cases check repeated paused draws, explicit clock rebases, four
+views sampling without advancing time, clipped X/Y ranges with odd/even
+heights, empty-range early-outs, neighboring unmodified sites and the original
+native-disabled path. The only runtime change adds `0xF9B4B` to the existing
+site-specific fractional visual sampling policy in `pc_native_numeric.h`.
+Guest clocks and every other read remain unchanged; no new patch is needed.
+
+Evidence: `logs/native-strip-before.log` records the original production-policy
+failure at 120; `logs/native-strip-fixed.log` records all six corrected cases.
+The focused fixture passes. Full Windows build, live strip-effect triggering,
+actual GPU visuals, complete original-60 gameplay comparison and Mac execution
+remain pending at this source checkpoint. This does not establish full-game
+native 144 FPS coverage.
+
 ## Bridge-crash placement investigation
 
 The user reports a later ship crash intruding into the playable canyon,

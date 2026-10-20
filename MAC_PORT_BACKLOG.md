@@ -3131,6 +3131,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   No platform adapter or host cache is added. The full Windows build, 138
   shared checks, 21 patch-upgrade checks and two-minute native-144 Story smoke
   pass. Actual Mac compilation and live MapMaker visual acceptance remain pending.
+- **Fractional strip-distortion clock (local source):**
+  `src/pc_native_numeric.h` extends the existing shared visual-clock sampling
+  to the continuous strip effect at `0xF9B4B`. The original-code fixture in
+  `tests/native_strip_distortion.c` checks draw arguments, original whole-tick
+  parity, native cadence, pause, rebases and view/range isolation. No new clock,
+  patch or platform adapter is introduced. Actual Mac execution and live
+  strip-effect rendering remain unverified; Windows build validation is pending.
 - **Procedural-texture cache cadence (`b3c30cf`, local):**
   `src/pc_native_numeric.h` keys the surface caller's two cache reads by native
   update ID instead of console vblank, and prevents the procedural dispatcher

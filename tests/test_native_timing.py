@@ -198,6 +198,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                     (0x691f3,0x691f9),(0x69239,0x6923f),
                                     (0x69265,0x6926b),(0x69325,0x6932c),
                                     (0x357939,0x35793f)]),
+    ('native_strip_distortion.c', [(0xf9b10,0xf9caf),(0x153c20,0x153c57),(0x12010,0x12017)]),
     ('native_screen_distortion.c', [(0xf9700,0xf9b0b),(0xf8aa0,0xf8ac4),
                                     (0x153c20,0x153c57),(0x12010,0x12017)]),
     ('native_light_preview.c', [(0x116130,0x1163f5)]),
@@ -286,7 +287,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 a,b=config.va_to_file_offset(start),config.va_to_file_offset(end-1)
                 assert image[a:b].hex()==expected[start]
                 image=image[:b]+b'\xc3'+image[b+1:]
-        if harness_name in ('native_surface_cache.c','native_screen_distortion.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
+        if harness_name in ('native_surface_cache.c','native_strip_distortion.c','native_screen_distortion.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
@@ -298,7 +299,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                           else range(0xf1a4c,0xf1a90,4) if harness_name=='native_projectile_coupled.c'
                           else [0x478674]+list(range(0x10ad74,0x10ade8,4))+list(range(0x4e11bc,0x4e143c,4))
                           if harness_name in ('native_beam_lifetime.c','native_beam_geometry.c')
-                          else [] if harness_name in ('native_npc_aim.c','native_screen_distortion.c','native_surface_cache.c')
+                          else [] if harness_name in ('native_npc_aim.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c')
                           else range(0x4dad48,0x4dafb8,4))
             if harness_name in ('native_projectile_motion.c','native_projectile_coupled.c'):
                 # Captured projectile kinds and damage profiles. These are
@@ -454,7 +455,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
-    if harness_name in ('native_light_preview.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
+    if harness_name in ('native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
     if harness_name=='native_projectile_coupled.c':

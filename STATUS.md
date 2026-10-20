@@ -6,6 +6,14 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Shared source now samples fractional level time in the second, strip-based
+  screen-distortion effect (`0xF9B4B`). The complete original-code fixture
+  reproduces 672 repeated frames out of 1,152 at native 144 over eight game
+  seconds; the correction produces zero in this controlled full-screen case.
+  Whole-tick draw arguments remain exact. Pause, rebases, four views, clipped
+  ranges and disabled-native checks pass. Graphics calls are spies; this does
+  not yet establish live visual acceptance. Build validation is pending.
+  [Strip distortion](docs/native-high-refresh-regressions.md#fractional-strip-distortion).
 - Shared source corrects a reproduced procedural-texture cache collision.
   A zero-whole native frame could cache a no-op against the display vblank;
   the following advancing frame then skipped its texture update. The two

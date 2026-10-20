@@ -23,12 +23,12 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
 extern uint32_t pc_native_visual_store(uint32_t site,uint32_t value);
 extern float pc_native_visual_sample(uint32_t value);
 /* Observe only the level clock's direct stores, without changing their
- * values. Smooth only the audited screen-distortion absolute-time read.
+ * values. Smooth only the audited mesh/strip distortion absolute-time reads.
  * Discrete counters and every other absolute-time consumer remain original. */
 #define RECOMP_STORE_GLOBAL_U32(site,address,value) \
     ((address)==0x7DE318u ? pc_native_visual_store((site),(uint32_t)(value)) : (uint32_t)(value))
 #define RECOMP_I32_TO_F32_AT(site,address,value) \
-    ((site)==0xF9726u && (address)==0x7DE318u && g_tsfp_native_timing_active ? \
+    (((site)==0xF9726u || (site)==0xF9B4Bu) && (address)==0x7DE318u && g_tsfp_native_timing_active ? \
      pc_native_visual_sample((uint32_t)(value)) : RECOMP_I32_TO_F32((address),(value)))
 /* US script dispatcher sub_00228870 uses this load only as a pause gate.
  * At native rates a zero whole tick still contains fractional game time.
