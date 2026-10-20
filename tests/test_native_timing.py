@@ -195,9 +195,11 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                               (0xb91f0,0xb921b),(0xb9220,0xb9264),(0xbd0f0,0xbd18d),
                               (0xb9790,0xb991d),(0xb9720,0xb9789),
                               (0xbb6c0,0xbb842),(0xbb490,0xbb6bf),(0xba310,0xba6f7)]),
-    ('native_projectile_motion.c', [(0xf4a50,0xf51af)]),
+    ('native_projectile_motion.c', [(0xf4a50,0xf51af),(0xdcef0,0xdcf85),
+                                    (0xb9920,0xb995a),(0xb9720,0xb9789)]),
     ('native_projectile_coupled.c', [(0xf08d0,0xf1a4b),
-                 (0xe78f0,0xe799a),(0xe1fa0,0xe2370),(0xe2370,0xe2514)]),
+                 (0xe78f0,0xe799a),(0xe1fa0,0xe2370),(0xe2370,0xe2514),
+                 (0xdcef0,0xdcf85),(0xb9920,0xb995a),(0xb9720,0xb9789)]),
     ('native_npc_aim.c', [(0x2b93d5,0x2b9793),(0x2b9381,0x2b938a),
                                      (0x2b9389,0x2b938a),(0x2b938d,0x2b938e),
                                      (0x123d0,0x123f3),(0x124f0,0x12533),
@@ -240,6 +242,12 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                           if harness_name in ('native_beam_lifetime.c','native_beam_geometry.c')
                           else [] if harness_name=='native_npc_aim.c'
                           else range(0x4dad48,0x4dafb8,4))
+            if harness_name in ('native_projectile_motion.c','native_projectile_coupled.c'):
+                # Captured projectile kinds and damage profiles. These are
+                # original table entries, not made-up falloff coefficients.
+                addresses.update(0x4deb54+kind*64 for kind in (24,28,31,35,45,46))
+                for profile in (2,8,9,11,12):
+                    addresses.update((0x4dad4c+profile*60,0x4dad78+profile*60))
             decoder=Cs(CS_ARCH_X86,CS_MODE_32)
             for start,end in ranges:
                 offset=config.va_to_file_offset(start)
@@ -250,6 +258,11 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             constants='\n'.join(
                 f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                 for address in sorted(addresses))
+        if harness_name=='native_projectile_coupled.c':
+            # Original CRT pow adapter marshals ST(1) base and ST(0) exponent.
+            offset=config.va_to_file_offset(0x3c8c64)
+            expected=bytes.fromhex('eb0083ec14d9c9dd1c24dd5424088b44240ce80d00000083c414c3')
+            assert image[offset:offset+len(expected)]==expected
         if harness_name=='native_beam_geometry.c':
             # Execute the entire type-32 render-list branch. Its outgoing
             # join begins the next unrelated effect list; terminate there.

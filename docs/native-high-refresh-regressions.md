@@ -1920,3 +1920,92 @@ in the generated declarations, and the generator fingerprint is current
 (`logs/native-projectile-generate.log`). The generation/backlog contract checks
 passed two tests (`logs/native-projectile-generation-checks.log`). These are source,
 translation and fixture results; they do not claim a new linked executable.
+
+
+### Projectile distance accumulation and damage dispatch
+
+At source baseline `5ece0b9`, the existing saved read-only capture
+`private/pipeline/npc-projectile-observation.jsonl` contains 10,148,608 bytes
+(SHA-256 `06fd0a428238d8ebfe0e118e360b905ddb408efae14d3c3a635faef7e8e5fe52`,
+last modified 2026-10-20 13:25:49 local). Decoding each projectile's kind at
++0, damage-profile index at +8 and distance accumulator at +0xF4 gives:
+
+| Kind | Profile | Updater | Observations |
+| --- | --- | --- | ---: |
+| 28 | 2 | 0xF4A50 | 47 |
+| 31 | 8 | 0xF4A50 | 375 |
+| 35 | -1 | 0xF08D0 | 56 |
+| 45 | 2 | 0xF4A50 | 82 |
+| 46 | 2 | 0xF4A50 | 200 |
+| 24 | 9 | 0xF5FF0 | 3 |
+| 23 | 0 | 0xEFF90 | 40 |
+
+These are repeated observations, not unique projectiles or proven weapon
+identities. The old capture is not evidence about the newly corrected build.
+It does identify realistic kind/profile combinations for the original-code
+fixtures, including kind 46 that the earlier movement test omitted.
+
+Both moving-projectile fixtures now execute the complete original collision
+record path 0xDCEF0, profile helper 0xB9920 and falloff helper 0xB9720. The
+controlled scene hit populates the original updater's hit record; the original
+caller forwards it to those routines before their final service boundary
+0x12A170 is captured. Actual kind flags and profile values are loaded from the
+checksum-verified US XBE. Kinds 28/31/45/46 have flag 4 in their descriptor
+(0x9C) and bypass the falloff computation, forwarding scalar 1 at every tested
+rate. For the captured kind-35 profile -1, the original helper forwards 0 at
+every rate without evaluating an exponent. This is one collision-record
+scalar, not the projectile's total damage: the original kind-35 impact still
+creates its impact object and follows its separate impact callback.
+
+The +0xF4 accumulator remains frame dependent. For example, the controlled
+kind-28 impact has approximately 405 at 60 FPS and 202.5 at 120 FPS, while the
+forwarded scalar remains exactly 1. Consequently, these captured paths do not
+justify changing the accumulator globally or blaming it for missing sniper
+health loss. The sniper's separate original damage/health fixture remains
+necessary; it is not replaced by these projectile checks.
+
+Fifteen additional caller-contract cases deliberately use kind 35 with
+profiles -1, 2, 9, 11 and 12 and accumulator values 0, 16 and 4096. Positive
+flat profiles preserve their table multiplier; non-flat profiles exercise the
+actual falloff branch. The CRT pow adapter is replaced by host pow with its
+original x87 argument/return convention; the original adapter bytes are
+verified before translation. For profile 12 the scalar is 1, 0.732094169 and
+0.006808810 respectively. Profiles 11/12 with kind 35 are controls, not observed
+live combinations. This demonstrates the remaining conditional sensitivity
+without inventing a confirmed live damage regression. Mapping all legal
+profile/kind combinations, other accumulator consumers, target health and
+full collision geometry remain open.
+
+The movement fixture adds kind 46 to its normal/quarter-speed 60/120/144
+travel, impact and expiry schedules. Captured profiles verify one collision
+record, the expected scalar, one impact callback and one retirement/cleanup.
+Focused projectile checks pass (`logs/native-projectile-falloff-focused.log`).
+No gameplay code changed in this audit. The same portable original-code
+fixtures run through the existing shared timing test entry; actual Mac
+execution remains unverified.
+
+
+The final timing/CI/backlog suite passed **98 tests with one expected
+object-rocking failure** (`logs/native-projectile-falloff-shared.log`,
+148.32 s while production compilation was active). The focused projectile
+run passed three tests (`logs/native-projectile-falloff-focused.log`, 29.55 s),
+and the final backlog format check passed. Original-code tests require the
+pinned local XBE; these results do not imply an asset-free CI run executed it.
+
+Production Windows compilation of the `5ece0b9` gameplay source completed
+successfully using the existing Release project with MSBuild 17.14.40 and
+MSVC 14.44.35207:
+
+```
+MSBuild.exe build/windows/futureperfect_recomp.vcxproj /t:ClCompile /p:Configuration=Release /p:Platform=x64 /p:BuildProjectReferences=false /m:2 /v:minimal
+```
+
+This compiled the manual runtime wrappers and all generated game units
+without linking/replacing the executable. The log
+`logs/native-projectile-compile-only.log` contains warning MSB8028 about reused
+intermediate project files, but no compilation errors. Full linking and the
+supported `tsfp.ps1 Build` regression checks still remain. The interactive
+PID 25304 remained responsive and its executable SHA-256 stayed
+`912f416b5f6eaeabf545c960c255491907988eae9f031ead4231b24832cbc333`.
+Thus the NPC aiming and kind-35 corrections have production compilation
+evidence, while the user's running fc3a7ce game does not yet include them.

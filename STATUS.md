@@ -96,8 +96,19 @@ published release or a full-game 144 FPS certification.
   The prior coupled expected failure is resolved in source. Windows linkage,
   live identification of the reported trails, distance-based damage falloff,
   other kinds in this updater and actual Mac execution remain unverified.
+  The manual wrappers and generated game units now compile successfully in
+  the existing Windows Release project; full linkage and build tests remain.
   The user's running fc3a7ce game is unchanged while they play.
   [Correction evidence](docs/native-high-refresh-regressions.md#kind-35-projectile-motion-and-trail-correction).
+- Extended projectile damage-dispatch checks now execute the original
+  0xDCEF0/0xB9920/0xB9720 chain for kind/profile combinations from the saved
+  live trace. Kinds 28/31/45/46 bypass distance falloff and retain scalar 1
+  across native rates; captured kind 35 uses profile -1 and retains scalar 0
+  on this record path. This does not measure total impact damage or health.
+  Kind 46 now also has travel/impact/expiry coverage. Non-flat profile controls
+  confirm that other combinations can depend on the frame-dependent +0xF4
+  accumulator, so the remaining mapping/health audit stays open.
+  [Damage-dispatch evidence](docs/native-high-refresh-regressions.md#projectile-distance-accumulation-and-damage-dispatch).
 - The ship reported in the canyon after the first bridge destruction is
   identified as the crashed mothership, model 0x53A. Its updater skipped
   fractional intervals while still applying whole-tick damping, changing

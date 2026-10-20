@@ -19,7 +19,8 @@ RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 enum { SHOT=0x1000,TARGET=0x2000,FX=0x5000,STACK=0x30000 };
 static unsigned sweeps,scans,rng,fx_updates,allocated,retired,opened,seed;
 static unsigned lifecycle,hits,impacts,damage_calls,cleanups,quiet;
-static float hit_plane;
+static float hit_plane,record_multiplier;
+static unsigned damage_records,power_calls;
 #undef RECOMP_ITAIL
 #define RECOMP_ITAIL(target) assert(!"Unexpected coupled projectile tail")
 #undef RECOMP_ICALL_SAFE_AT
@@ -60,7 +61,7 @@ void sub_000DCB80(void) {
         uint32_t point=MEM32(g_esp+8),normal=MEM32(g_esp+12);
         MEMF(point)=hit_plane;MEMF(point+4)=MEMF(point+8)=0;
         MEMF(normal)=-1;MEMF(normal+4)=MEMF(normal+8)=0;
-        hits++;g_eax=TARGET;
+        hits++;g_eax=TARGET;MEM32(MEM32(g_esp+16))=1;
     }
     g_esp+=4;
 }
@@ -76,7 +77,17 @@ void sub_000C3C50(void) { assert(lifecycle);g_eax=0;g_esp+=4; }
 void sub_000DC2B0(void) { assert(lifecycle && MEM32(g_esp+4)==SHOT && MEM32(g_esp+8)<4);cleanups++;MEM32(SHOT+0xac+4*MEM32(g_esp+8))=0;g_esp+=4; }
 void sub_000DC4A0(void) { assert(lifecycle && MEM32(g_esp+4)==23);impacts++;memset((void *)((uintptr_t)0x6000+g_xbox_mem_offset),0,0x22c);g_eax=0x6000;g_esp+=4; }
 void sub_000DC5D0(void) { assert(!"Unexpected call sub_000DC5D0"); }
-void sub_000DCEF0(void) { assert(!"Unexpected call sub_000DCEF0"); }
+void sub_0012A170(void) {
+    assert(lifecycle && hits==1 && MEM32(g_esp+8)==35);
+    record_multiplier=MEMF(g_esp+12);damage_records++;g_esp+=4;
+}
+/* Original CRT adapter accepts base in ST(1), exponent in ST(0), and
+ * returns one x87 value. Its adapter bytes are checked by the Python fixture. */
+void sub_003C8C64(void) {
+    double exponent=g_fp_stack[g_fp_top];g_fp_top=(g_fp_top+1)&7;
+    g_fp_stack[g_fp_top]=pow(g_fp_stack[g_fp_top],exponent);
+    power_calls++;g_esp+=4;
+}
 void sub_000DD170(void) { assert(lifecycle);g_eax=0;g_esp+=4; }
 void sub_000E2520(void) { assert(!"Unexpected call sub_000E2520"); }
 void sub_000E94E0(void) { assert(lifecycle && hits==1 && MEM32(g_esp+4)==SHOT && MEMF(MEM32(g_esp+12))==hit_plane);g_esp+=4; }
@@ -157,6 +168,8 @@ static float run_lifecycle(unsigned fps,float slow,unsigned hit) {
     MEM32(SHOT)=35;MEMF(SHOT+0x64)=1;MEMF(SHOT+0x88)=240;
     MEM32(TARGET+0x20)=0;MEM32(TARGET+0x28)=0;
     sweeps=scans=rng=fx_updates=allocated=retired=0;seed=1;
+    MEM32(SHOT+8)=UINT32_MAX; /* captured kind-35 damage profile */
+    damage_records=power_calls=0;record_multiplier=-1;
     hits=impacts=damage_calls=cleanups=0;lifecycle=1;hit_plane=hit?100.f:0;
     g_tsfp_native_timing_active=1;opened=0;call(sub_000E78F0);
     double ticks=0;unsigned previous=0;float delta=60.f/fps*slow;
@@ -167,10 +180,35 @@ static float run_lifecycle(unsigned fps,float slow,unsigned hit) {
     }
     assert(retired==1 && impacts==1 && cleanups==4 && hits==hit && damage_calls==hit);
     assert(MEM32(SHOT)==UINT32_MAX);
+    assert(damage_records==hit && power_calls==0);if(hit)assert(record_multiplier==0);
     assert(!pc_kind35_context.cache);lifecycle=0;hit_plane=0;
     printf("projectile_lifecycle fps=%u slow=%.2f hit=%u age=%.6f impacts=%u damage=%u cleanup=%u\n",
            fps,slow,hit,MEMF(SHOT+0x98),impacts,damage_calls,cleanups);
     return MEMF(SHOT+0x98);
+}
+/* Caller contract beyond the captured profile=-1 case. Non-flat profiles
+ * are deliberate controls: these combinations have not been observed live. */
+static void damage_profile_controls(void) {
+    memset((void *)((uintptr_t)SHOT+g_xbox_mem_offset),0,0x22c);
+    MEM32(SHOT)=35;MEM32(0x7000)=1;MEM32(0x7004)=0;
+    lifecycle=1;hits=1;
+    const uint32_t profiles[]={UINT32_MAX,2,9,11,12};
+    const float distances[]={0,16,4096};
+    for(unsigned p=0;p<5;p++)for(unsigned d=0;d<3;d++) {
+        uint32_t profile=profiles[p];MEM32(SHOT+8)=profile;MEMF(SHOT+0xf4)=distances[d];
+        damage_records=power_calls=0;
+        g_esp=STACK;MEM32(STACK)=0x12345678;MEM32(STACK+4)=SHOT;MEM32(STACK+8)=0x7000;
+        g_esi=0xdead;g_edi=0xbeef;sub_000DCEF0();
+        assert(g_esp==STACK+4 && g_fp_top==0 && g_esi==0xdead && g_edi==0xbeef);
+        assert(damage_records==1);
+        float expected=profile==UINT32_MAX?0:MEMF(0x4dad78+profile*60);
+        if(profile!=UINT32_MAX)expected*=powf(MEMF(0x4dad4c+profile*60),sqrtf(distances[d]));
+        assert(fabsf(record_multiplier-expected)<.000001f);
+        assert(power_calls==((profile==11 || profile==12) && d>0));
+        printf("damage_profile profile=%u accumulator=%.0f multiplier=%.9f pow=%u\n",
+            profile,distances[d],record_multiplier,power_calls);
+    }
+    lifecycle=0;
 }
 static void uneven_motion(void) {
     memset((void *)((uintptr_t)SHOT+g_xbox_mem_offset),0,0x22c);
@@ -234,6 +272,7 @@ int main(void) {
     }
     missing_emitters();
     uneven_motion();
+    damage_profile_controls();
     puts("PASS: coupled projectile audit executes original initialization, motion, steering and effect positioning");
     free(memory);return 0;
 }

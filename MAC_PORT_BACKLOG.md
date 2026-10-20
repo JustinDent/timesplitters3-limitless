@@ -3086,6 +3086,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   live scene verification are pending; actual Mac generation/build/gameplay
   remains unverified. Other projectile kinds and damage falloff are open.
   [Correction evidence](docs/native-high-refresh-regressions.md#kind-35-projectile-motion-and-trail-correction).
+- **Projectile damage-dispatch audit (local tests):** The same portable
+  original-code fixtures now execute 0xDCEF0/0xB9920/0xB9720 for captured
+  kind/profile combinations and include kind 46. Collision-record multipliers
+  stay correct across 60/120/144 and slow motion for these paths. Non-flat
+  profile controls preserve explicit coverage limits; actual target health,
+  other legal combinations and Mac execution remain unverified. No platform
+  adapter or gameplay policy changed in this audit.
+  [Damage-dispatch evidence](docs/native-high-refresh-regressions.md#projectile-distance-accumulation-and-damage-dispatch).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.

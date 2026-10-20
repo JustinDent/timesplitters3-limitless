@@ -16,7 +16,8 @@ RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
 RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 enum { SHOT=0x1000,TARGET=0x2000,STACK=0x30000 };
-static unsigned sweeps,hits,retired,cleanups,damage_calls;
+static unsigned sweeps,hits,retired,cleanups,damage_calls,damage_records;
+static float record_multiplier;
 static float wall,expected_step;
 static int collide;
 #undef RECOMP_ITAIL
@@ -37,6 +38,7 @@ void sub_000E97A0(void)
         MEMF(g_ebx)=wall;MEMF(g_ebx+4)=MEMF(g_ebx+8)=0;
         MEMF(normal)=-1;MEMF(normal+4)=MEMF(normal+8)=0;
         g_eax=TARGET;hits++;
+        MEM32(MEM32(g_esp+12))=1;
     } else g_eax=0;
     g_esp+=4;
 }
@@ -58,7 +60,12 @@ void sub_000BD0F0(void) { g_esp+=4; }
 void sub_000F4920(void) { g_esp+=4; }
 void sub_000E1400(void) { g_eax=0;g_esp+=4; }
 void sub_000DC1D0(void) { assert(!"Unexpected call 000DC1D0"); }
-void sub_000DCEF0(void) { assert(!"Unexpected call 000DCEF0"); }
+void sub_0012A170(void) {
+    assert(MEM32(g_esp+8)==MEM32(SHOT));
+    record_multiplier=MEMF(g_esp+12);damage_records++;g_esp+=4;
+}
+void sub_00238510(void) { assert(!"Unexpected player statistics"); }
+void sub_003C8C64(void) { assert(!"Captured projectile unexpectedly used falloff exponent"); }
 void sub_000DD130(void) { assert(!"Unexpected call 000DD130"); }
 void sub_000E17C0(void) { assert(!"Unexpected call 000E17C0"); }
 void sub_000E9690(void) { assert(!"Unexpected call 000E9690"); }
@@ -88,7 +95,8 @@ static float run(unsigned fps,int native,unsigned kind,float speed,float slow,in
     memset((void *)((uintptr_t)SHOT+g_xbox_mem_offset),0,0x22c);
     MEM32(SHOT)=kind;MEMF(SHOT+0x64)=MEMF(SHOT+0x70)=MEMF(SHOT+0x7c)=1;
     MEMF(SHOT+0x88)=speed;MEM32(TARGET+0x20)=8;
-    sweeps=hits=retired=cleanups=damage_calls=0;collide=hit;wall=speed*(hit==2?1.5f:.75f);
+    MEM32(SHOT+8)=kind==31?8:2;
+    sweeps=hits=retired=cleanups=damage_calls=damage_records=0;record_multiplier=-1;collide=hit;wall=speed*(hit==2?1.5f:.75f);
     g_tsfp_native_timing_active=native;
     double ticks=0;unsigned previous=0;float delta=60.f/fps*slow;
     for(unsigned frame=0;frame<fps*9 && !retired;frame++) {
@@ -102,10 +110,11 @@ static float run(unsigned fps,int native,unsigned kind,float speed,float slow,in
         before=sweeps;step(0,0);
         assert(before==sweeps && !memcmp(paused,(void *)((uintptr_t)SHOT+g_xbox_mem_offset),sizeof(paused)));
     }
-    if(native && hit) assert(hits==1 && damage_calls==1 && retired==1 && cleanups==1);
+    if(native && hit) assert(hits==1 && damage_calls==1 && retired==1 && cleanups==1
+        && damage_records==1 && record_multiplier==1);
     if(native && !hit)assert(retired==1 && damage_calls==0 && cleanups==1);
-    printf("projectile fps=%u native=%d kind=%u slow=%.2f hit=%d time=%.6f distance=%.6f sweeps=%u damage_callbacks=%u\n",
-           fps,native,kind,slow,hit,MEMF(SHOT+0x98),MEMF(SHOT+0x1c),sweeps,damage_calls);
+    printf("projectile fps=%u native=%d kind=%u slow=%.2f hit=%d time=%.6f distance=%.6f sweeps=%u damage_callbacks=%u multiplier=%.6f accumulator=%.6f\n",
+           fps,native,kind,slow,hit,MEMF(SHOT+0x98),MEMF(SHOT+0x1c),sweeps,damage_calls,record_multiplier,MEMF(SHOT+0xf4));
     return MEMF(SHOT+0x98);
 }
 int main(void)
@@ -114,7 +123,7 @@ int main(void)
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x4e8cec)=60;
-    const unsigned kinds[]={28,31,45};const float speeds[]={180,240,480};
+    const unsigned kinds[]={28,31,45,46};const float speeds[]={180,240,480,240};
     /* Byte-identical native-60 arithmetic and callback counts. */
     run(60,0,31,240,1,0);
     unsigned char reference_bytes[0x22c];
@@ -123,7 +132,7 @@ int main(void)
     run(60,1,31,240,1,0);
     assert(sweeps==reference_sweeps && !memcmp(reference_bytes,
         (void *)((uintptr_t)SHOT+g_xbox_mem_offset),sizeof(reference_bytes)));
-    for(unsigned kind=0;kind<3;kind++) {
+    for(unsigned kind=0;kind<4;kind++) {
         float reference=run(60,0,kinds[kind],speeds[kind],1,1);
         for(unsigned slow=0;slow<2;slow++)for(unsigned rate=0;rate<3;rate++) {
             unsigned fps=rate==0?60:rate==1?120:144;
