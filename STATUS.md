@@ -1,5 +1,29 @@
 # Measured progress
 
+## Launcher v1.2.19 release preparation (2026-10-19)
+
+Prepared on `release/launcher-v1.2.19` from main `f53b31f`. The shared launcher
+version and both assembly attributes are 1.2.19. This release packages the
+already merged shared Windows/Mac pages and themes, native Mac adapters,
+launcher-file preservation during game updates, and Windows experimental
+presentation settings. The latter require a game newer than v0.3.0-alpha.2;
+this launcher update does not supply that runtime.
+
+Local Windows x64 .NET Framework required-artwork build and full tests passed:
+105 updater, eight shared UI groups, 28 download, 11 version, 10 startup,
+30 news, 37 settings, 20 maintenance and 14 unfinished-session checks, plus
+crash-report checks. The 16 publication-policy, seven compatibility-policy and
+three shared-layout Python tests also passed. The published v1.2.18 updater
+successfully installed the local v1.2.19 ZIP and recovered an injected failure,
+preserving isolated game, ISO, data, save, setting, texture, rollback and
+untracked fixtures. All three embedded artwork hashes match the pinned art.
+
+The dual-platform workflow must pass both real host builds and package checks
+before publication from main. Local Windows validation does not establish Mac
+execution. MAC-021 retains signing/notarization and clean-machine delivery
+gaps; MAC-054 tracks unsupported native presentation targets. No personal
+files or live game installation were used for these checks.
+
 ## Shared launcher interface (2026-10-19)
 
 Source: `2ac286d`, `ee495e6` and `a0c4e14` on `codex/shared-launcher-interface`, based on `306d6dd`
