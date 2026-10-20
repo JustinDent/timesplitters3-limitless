@@ -1,5 +1,51 @@
 # Measured progress
 
+## Texture artwork batch 252: eight metal materials installed (2026-10-20)
+
+Eight opaque metal-family originals verified against archive payload/RGBA hashes;
+supported XBE hash checked. Source exports were budgeted in RAM before writing:
+273,500 bytes for eight references. Built-in image generation produced six
+1774x887 and two 1254x1254 sources, totaling 26,247,556 bytes. Accepted all eight:
+vented panel c81fac9e2e89cc77, bright silver atlas c882d82599912c2c, reflected-band
+metal cccd83e8b32c4002, overlapping riveted plates d130645fd140648d, brushed wall
+def31bea48081ae0, small eight-fastener plate 260a09b5bb628196, curved dark rail
+33e2085599464bf9 and diamond tread 42b9128594e7e1be. No new correction holds.
+
+Outputs: four 1024x512, one 1024x1024, one 256x256 and two 512x256 DXT1 files
+with mip chains, LANCZOS downsampled from generated sources; not native 4K art.
+Six full/repeat/original-grid/vent-focus RAM sheets inspected and replayed exactly;
+1,753,685 raster bytes were not written. Enlarged grille comparison verifies nine
+vent sections and primary bar spacing. Layout, hardware and tread checks are
+offline evidence; mapped seams, light/channel use and scene sampling remain pending.
+
+Retired only the eight new batch252 original exports after byte-exact PNG
+reconstruction from unchanged archives and resolved-path/hash/size checks.
+Recovered 273,500 bytes; source art, game, pack and older cached exports preserved.
+Six review rasters and all metadata reproduce exactly after retirement. No prior
+denied cleanup retried. Private receipt retains source hashes and decoder version.
+
+Eight new Windows native DDS parser checks pass. Checker identity and prior 1,481
+DDS hashes match batch 251 evidence; fresh full Python format/metadata/dimensions,
+aspect/mip/hash audit passes all 1,489 installed replacements. Counts: 5,162 needing
+art, 1,489 installed, 161 held. All 6,812 known keys remain classified; category/use
+validation and embedded/procedural discovery are unfinished. No runtime/build
+changes or gameplay. MAC-011 remains Awaiting validation; Mac GPU, mapped scenes,
+display modes, material lighting and residency are not proven by offline checks.
+
+Pack: 1,158,327,982 bytes (+2,320,204), below 6144 MiB. Temporary snapshot:
+268,099,093 bytes, below 256 MiB with 336,363 bytes headroom. Windows filesystem
+allocation query: 10,468 texture-workspace files, no errors; logical/allocated
+snapshot 7,425,349,768 bytes including source art, free disk 84,121,800,704 bytes.
+Codex default generation outputs outside the project are excluded; metadata writes
+follow the snapshot. One active pack, 512 MiB residency and personal data retained.
+No duplicate extracts, staging or publication; near-completion playtest gate unmet.
+
+Private evidence: review/hybrid-252-selection.json, prompts.json, generation
+receipts, memory-review.json, vent-focus.py, decisions.json, retirement receipt,
+native-audit.json, acceptance.json and physical-storage-final.json (all filenames
+share hybrid-252 prefix). Previous goal turn was progress (batch 251). Local #74
+branch work only.
+
 ## Texture artwork batch 251: seven grouped metal materials (2026-10-20)
 
 Selected eight metal-family batch candidates after visual and opaque-alpha review.
