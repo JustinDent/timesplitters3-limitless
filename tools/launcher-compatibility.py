@@ -16,6 +16,14 @@ POLICY_FILES = {
     'config/launcher-artwork.json', 'config/pc-controls.default.json',
     'config/pc-discord.default.ini', 'src/pc_display_modes.inc',
     'tests/test_native_mac_launcher.py', 'AGENTS.md',
+    # Tests formerly owned by runtime-patches.yml now run with the launcher.
+    'tools/build-game-icon.ps1', 'tests/test_game_icon.py',
+    'patches/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-game-icon.patch',
+    'tests/native_compiler.py',
+    'tests/package_launcher.py', 'tools/package-release.py',
+    'tools/release/ImportGame.cs', 'requirements.txt',
+    '.github/workflows/runtime-patches.yml', 'tools/ci-runtime-scope.py',
+    'tests/test_ci_runtime_scope.py',
 }
 
 

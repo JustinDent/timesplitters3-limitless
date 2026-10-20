@@ -44,6 +44,18 @@ jobs:
         run: python -m unittest discover -s tests -p test_launcher_compatibility.py -v
       - name: Test shared launcher layout and theme propagation
         run: python -m unittest discover -s tests -p test_launcher_shared_ui.py -v
+      - name: Install pinned packaging and icon test dependencies
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess, sys
+          pins = [line for line in Path('requirements.txt').read_text().splitlines()
+                  if line.startswith(('pytest==', 'Pillow==', 'pefile==', 'ninja==', 'cmake=='))]
+          subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
+          PY
+      - name: Test startup preferences, packaging and Windows game icons
+        run: python -m pytest tests/test_launcher_startup.py tests/package_launcher.py tests/test_game_icon.py -q --tb=short
       - name: Recover checksum-pinned original artwork
         shell: powershell
         run: ./tools/fetch-launcher-art.ps1

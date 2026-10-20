@@ -1116,6 +1116,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-011 — Real texture-pack gameplay coverage
 
 - **Status:** Awaiting validation
+- **Windows replay link fix (2026-10-20, `fix/replay-texture-mode-link`):**
+  `patches/replay-texture-mode-link.patch` supplies the existing shared
+  `src/texture_mode.c` to standalone Windows `d3d8_replay`, which intentionally
+  omits `xbox_input`. This fixes the unresolved `tsfp_texture_is_4k` release
+  build error without adding a second mode policy or the full input library.
+  The new real-target build regression in `tests/test_frame_replay.py` is in
+  the existing Windows/macOS workflow; its build tools use the repository pins.
+  No Mac adapter change is needed: native common and legacy renderers already
+  own this source, and the added CMake block is Windows-only. Local Windows
+  build/native checks and isolated synthetic D3D11 replay pass. Mac execution
+  remains unverified on this host; existing Mac Vulkan replay checks remain
+  the acceptance path. See [validation](STATUS.md#windows-release-replay-link-fix--2026-10-20).
 - **In-game Display choice (issue #74 follow-up):** The shared
   `src/pc_display_menu.c` adds a native **Textures: Classic / Enhanced** choice on
   the existing Display settings page. Arrows apply immediately for the session,
