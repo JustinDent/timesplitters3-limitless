@@ -22,6 +22,9 @@ void hle_d3d8_interp_snapshot(void){unexpected_hook("snapshot");}
 int recomp_config_int(const char *env_name,const char *key,int fallback){
     (void)env_name;(void)key;(void)fallback;unexpected_hook("configuration");return 0;
 }
+const char *recomp_config_lookup(const char *env_name,const char *key){
+    (void)env_name;(void)key;unexpected_hook("configuration lookup");return NULL;
+}
 void xbox_Nv2aFlipGateSetIdle(xbox_FlipGateIdleFn fn){(void)fn;unexpected_hook("gate installation");}
 #ifndef TSFP_TEST_TITLE_REGISTERS
 void xbox_D3D8SetInterpRegisters(int p,int a,int n){(void)p;(void)a;(void)n;unexpected_hook("title registers");}

@@ -1253,6 +1253,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Mac implementation and evidence:** Shared fix present locally; macOS checks
   and other-device synchronization remain unverified.
 
+- **Hosted integration follow-up:** `d0edd6d` passes macOS patch/runtime/GPU/launcher
+  checks. Windows patch transitions pass, but three isolated interpolation tests
+  need a missing config-lookup stub. The test-only correction passes all 20 local
+  renderer-host cases; Windows rerun remains pending. See
+  [harness linkage evidence](STATUS.md#interpolation-harness-windows-linkage-2026-10-19).
+
 ### MAC-015 — Release test privileges and disposable cleanup
 
 - **Release follow-up:** `tools/publish-release.py` recognizes only pytest's

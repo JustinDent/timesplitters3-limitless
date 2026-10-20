@@ -9119,3 +9119,17 @@ history/conversion combinations pass (46.18 seconds). The existing workflow
 already selects this test; no new workflow entry or runtime patch is required.
 Logs: `logs/renderer-integration-crlf-{repro,fixed}.log`. Windows rerun remains
 pending; the native executable and its prior scene evidence are unchanged.
+
+
+### Interpolation harness Windows linkage (2026-10-19)
+
+At `d0edd6d`, [run 39346834585](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39346834585)
+passed macOS completely (30 patch tests with two skips; 228 runtime/render/input
+checks with 18 skips; real MoltenVK GPU contracts; native launcher checks).
+Windows passed the patch transitions, then 248 runtime checks with 30 skips,
+but three interpolation harnesses failed to link `recomp_config_lookup`.
+The integrated Windows initializer calls that API; the isolated harness supplied
+only the integer-config stub. The shared harness now supplies the missing lookup
+stub, retaining its fail-loud behavior if configuration is unexpectedly reached.
+No runtime behavior changes. All 20 renderer-host tests pass locally on macOS
+ARM64/Clang 21 (3.22 seconds); Windows rerun remains required.
