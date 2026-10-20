@@ -1,5 +1,47 @@
 # Measured progress
 
+## Texture batch 203: reused texture inventory and hidden alpha detail (2026-10-20)
+
+Issue #74 inventory pass: 128 previously unclassified keys, each with two
+catalog occurrences, decoded from hash-verified original payload spans.
+Eight RGB and eight separate alpha sheets preserve source aspect ratios.
+Visual classification now covers 4,297 of 6,812 supported catalog keys
+(63.08%); 2,515 remain unclassified. This is provisional routing, not
+replacement approval or full category/scene validation. No artwork generated,
+resampled or installed in this pass.
+
+Recorded preservation constraints for weapon silhouettes, exclamation/numeral
+and skull/container icons, scene thumbnails, graffiti, dragon-banner script,
+and an illustrated landscape. Shipping stencils and transit-sign lettering
+appear only in alpha on some assets; white RGB must not be treated as blank.
+Several shadow/light projections likewise encode structure only in alpha.
+A granular gray surface has constant alpha127; inverse-alpha reflections,
+flames and partial-opacity masks retain unresolved shader/usage semantics.
+Thin foliage, lattice openings, frame rails and damaged silhouettes require
+original alpha fidelity. Unknown functions remain open, never excluded.
+
+Full current Python pack audit passed: metadata, hashes, dimensions, aspect
+and mip chains. All 1,319 installed DDS hashes match prior audited asset
+records and the native checker binary is unchanged. Batch202 native parser
+evidence is carried forward; no redundant native execution or game rebuild.
+Counts remain 5,369 needing art, 124 held drafts and 1,319 installed.
+Worklist, hybrid production queue and inventory refreshed. Uncataloged,
+other-encoding and procedural discovery remains incomplete.
+
+Pack remains 1,081,108,849 bytes (1031.03 MiB).
+Temporary output: 211.52 MiB; texture workspace including
+retained source art: 6176.24 MiB logical/allocated by existing
+helper. Disk free: 84.55 GiB at audit. The 6144 MiB pack,
+256 MiB temporary and unchanged 512 MiB residency policies hold; no new
+GPU residency measurement. No duplicate extracts/builds/staging/ZIPs.
+Game files, personal settings and saves were not modified.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation; no format
+or adapter change, and Windows offline evidence does not prove Mac scenes,
+alpha rendering or GPU memory behavior. Private evidence resides in
+`review/hybrid-203-acceptance.json`, triage decisions/verification/sheets and
+native audit. Classification and the partial pack are not a full remaster.
+
 ## Texture batch 202: metal and architectural surfaces (2026-10-20)
 
 Issue #74: twelve independent sources generated with built-in image generation;

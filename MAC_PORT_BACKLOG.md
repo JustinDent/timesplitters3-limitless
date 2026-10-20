@@ -1115,6 +1115,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 203 (2026-10-20, commit carrying this entry): 128 reused
+  original RGB/alpha pairs classified, total 4,297. No art, format or adapter
+  change; existing 1,319-file native evidence retained through unchanged
+  DDS/checker hashes and current Python audit. Status: Awaiting validation;
+  alpha-only text/icons, partial opacity and material behavior still require
+  Mac scene/GPU validation. No new game or native parser execution.
+  See [batch 203 evidence](STATUS.md#texture-batch-203-reused-texture-inventory-and-hidden-alpha-detail-2026-10-20).
+
 - Texture batch 202 (2026-10-20, commit carrying this entry): eight standard
   DXT1 material replacements accepted offline; four layout/lighting drafts held.
   Total 1,319 installed and 4,169 provisionally classified keys. Shared format
