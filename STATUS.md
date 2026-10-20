@@ -1,5 +1,35 @@
 # Measured progress
 
+## Texture batch 193: portrait identity review and inventory (2026-10-20)
+
+Issue #74: eight built-in portrait edits produced from verified 64x64 originals.
+One mechanical lens portrait accepted offline; seven held for changed facial
+expressions/proportions, gas-mask or helmet geometry, or missing cap insignia.
+Higher detail alone does not establish character fidelity. All generated sources
+are 1254x1254; the accepted portrait is Lanczos-resampled to 256x256 lossless
+RGBA8 with nine mip levels. SHA256-verified original corner alpha is bilinear-
+scaled and restored exactly in its base mip. Not native 4K source artwork.
+
+Reviewed original/compiled pairs and checkerboard alpha. These UI portraits are
+non-tiling; acceptance checks identity, crop, backdrop and boundary opacity.
+Inspected 64 additional original RGB/alpha pairs, reaching 3,497 visually
+classified keys. Classification does not complete artwork or category review;
+other encodings, procedural assets and uncataloged discovery remain open.
+
+Windows offline checks cover 1,256 installed files: one new native DDS-reader
+pass, 1,255 unchanged prior-audited hashes with the same checker, and full
+Python hash/dimension/aspect/mip-byte verification. Installed coverage is 18.44%
+of 6,812 cataloged keys; 5,445 need art and 111 drafts are held. Pack including
+metadata is 1,045,636,242 bytes (997.20 MiB), up 350,535 bytes. Temporary
+outputs measured 167.23 MiB; the artwork workspace grew about 21.38 MiB this
+batch including retained sources and review evidence. Both storage caps hold.
+The 512 MiB residency policy is unchanged and not runtime-measured this turn.
+
+Private evidence: `review/hybrid-193-acceptance.json`, with prompts/source paths
+in `review/hybrid-193-generation.json` and the linked comparison/audit records.
+No gameplay, Mac scene or GPU residency checks. MAC-011 stays Awaiting
+validation. Local issue-74 checkpoint; private art and game data stay local.
+
 ## Texture batch 192: small props and exact-alpha lamp (2026-10-20)
 
 Issue #74: eight built-in prop drafts, two accepted lamps and six held for

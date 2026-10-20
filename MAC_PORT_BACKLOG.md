@@ -1115,6 +1115,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 193 (2026-10-20, commit carrying this entry): one private
+  identity-preserving portrait installed, seven drafts held; 1,256 installed
+  and 3,497 original keys visually classified. Existing shared RGBA8/alpha
+  support needs no adapter change. Windows offline DDS checks do not establish
+  Mac UI, scene or residency behavior; status remains Awaiting validation. See
+  [batch 193 evidence](STATUS.md#texture-batch-193-portrait-identity-review-and-inventory-2026-10-20).
+
 - Texture batch 192 (2026-10-20, commit carrying this entry): two private lamp
   replacements, including RGBA8 with exact resampled original alpha; 1,255
   installed and 3,433 original keys visually classified. Existing shared
