@@ -1,5 +1,50 @@
 # Measured progress
 
+## Texture batch 242: three mechanical replacements (2026-10-20)
+
+Eight classified cached references matched archive RGBA and were individually edited
+with built-in image generation. Three accepted offline and installed:
+68639f2cf6c9e628 (dense brass-gray components), 8344c0c69cf3d7b9 (tall mechanical
+atlas) and a1d15b2c25bc2512 (riveted panel/emblem/oval cutout). Mean luminance
+changes are +0.78%, +4.59% and -6.59%. Full, repeat and original-grid comparisons
+retain principal island divisions, pipes, dark openings, trim, rivets and emblem
+silhouette. Top rib-strip focus retains primary spacing; an intensity-profile
+diagnostic records extra micrograin maxima, which are not component counts.
+Fine metal grain and wear accepted offline. Dense mapped components, seam sampling,
+reflections and scene brightness remain pending.
+
+Five drafts held: 727f752029556212 (yellow equipment, +12.92%) adds excessive pale
+wear/reflections and changes small radial/grille detail; 7a0ddc697cc680ff (gray
+mechanical atlas, +18.06%) changes broad flat shadows into polished gradients;
+7c7f10e2918b4d10 (amber-feature atlas, +21.50%) over-brightens brass and changes
+small dial/component details. 804885b1a9c4c4df (olive drum, +9.78%) does not reliably
+preserve stamped glyph shapes; a6e4e8ede36feec0 (instrument panel, +7.62%) rewrites
+bottom nameplate marks and changes small gauge strokes. Enlarged original-grid
+marking comparisons inspected; original wording was not guessed or normalized.
+None of these five installed or counted complete.
+
+Actual sources: five 1254x1254, two 1774x887 and one 887x1774, totaling
+22,855,762 bytes. Installed: one 1024x512, one 512x1024 and one 1024x1024;
+all LANCZOS downsampled without crop/color/alpha edits, not native 4K. Six RAM-only
+comparison sheets (including component/marking focus) avoid 2,091,481 raster bytes
+and replay exactly. No new original exports or deletion attempts. Three new
+Windows DDS parser checks pass; prior 1,462 hashes and checker identity unchanged.
+All 1,465 installed files pass a fresh Python format/metadata/dimensions/aspect/
+mip/hash audit. Queue/progress refreshed: 1,465 installed, 5,194 needing art,
+153 held; 6,121 classified, 691 unclassified. Private evidence:
+review/hybrid-242-acceptance.json, decisions, memory-review, component-focus and
+rib-profile scripts/results, selection, prompts, generation receipts and native-audit.
+Artwork and game data remain private.
+
+Pack including metadata: 1,149,619,742 bytes (1096.36 MiB), up 1,399,828 bytes,
+below 6144 MiB. Temporary snapshot: 267,817,886 bytes, below 256 MiB with
+617,570 bytes headroom. Texture workspace including source art: 7,316,364,470
+bytes; free disk snapshot: 84,937,400,320 bytes. Allocation helper equals logical
+size, not independent physical-allocation proof. One active pack; unchanged
+512 MiB residency limit. No gameplay, runtime changes, duplicate game/build/staging,
+publication or personal save/settings edits. MAC-011 stays Awaiting validation;
+inventory/category coverage and consolidated scene checks remain unfinished.
+
 ## Texture batch 241: five clothing, equipment and character replacements (2026-10-20)
 
 Eight classified cached references matched archive RGBA. Built-in image generation
