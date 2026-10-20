@@ -3181,6 +3181,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   execution and live terminal-scene acceptance remain pending. No separate
   Mac policy is required.
   [Terminal evidence](docs/native-high-refresh-regressions.md#terminal-mouse-fractional-cadence).
+- **Arcade acceptance failure (Windows `c4171db`):** Vietnam Deathmatch renders
+  and accepts pause/resume at native 144, but player movement/fire remain
+  unresponsive despite advancing native game time. Original-60 mode on the
+  same binary shows combat and ammunition consumption. Shared/native Arcade
+  timing is not accepted; root cause is still under investigation. Mac
+  execution is unverified, not inferred from the Windows failure.
+  [Live comparison](docs/native-high-refresh-regressions.md#arcade-vietnam-comparison).
 - **Latest Windows integration comparison (`3c2fcc2`, local):** Matching
   original-60/native-144 opening replays pass handoff, hand animation, movement,
   firing and pause/resume. Native CPU intervals average 140.399 updates/s at

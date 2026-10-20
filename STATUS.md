@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Open Arcade regression:** A live Vietnam Deathmatch on Windows build
+  `c4171db` renders at the native-144 target and accepts pause/resume, but the
+  player's position and ammunition do not respond to movement/fire commands.
+  The same binary in original-60 mode shows combat, death/respawn and firing
+  consuming nine rounds. Native game time advances normally; reaching the
+  arena and a high present count do not establish functioning gameplay.
+  This comparison expands coverage beyond the opening mission and fails
+  native Arcade acceptance. Root cause and correction remain open.
+  [Arcade comparison](docs/native-high-refresh-regressions.md#arcade-vietnam-comparison).
 - Terminal mouse motion now uses the shared batch-consumption helper and,
   in native mode, the fractional game-time pause gate. A 1,000 Hz input
   fixture reproduces only 39.1 units of a requested 100-unit horizontal move

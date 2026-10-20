@@ -1,6 +1,6 @@
 """Bounded, operator-steered integration session on an isolated Test Lab copy.
 
-Append JSON lines to commands.jsonl: keys (virtual-key numbers), label, gap,
+Append JSON lines to commands.jsonl: keys (virtual-key numbers), label, gap, hold,
 window (toggle/focus), restart, or stop. Inputs go to the game's replay hook;
 window messages target only the child. Captures are renderer output, not scanout.
 The entire session is limited to ten minutes, including process restarts.
@@ -66,12 +66,38 @@ def main():
         value=c.c_uint32()
         if not kernel.ReadProcessMemory(handle,address+0x10000,c.byref(value),4,None):return None
         return value.value
+    def floats(address,count):
+        values=(c.c_float*count)()
+        if not kernel.ReadProcessMemory(handle,address+0x10000,values,count*4,None):return None
+        return list(values)
+    def short(address):
+        value=c.c_int16()
+        if not kernel.ReadProcessMemory(handle,address+0x10000,c.byref(value),2,None):return None
+        return value.value
+    def player_snapshot():
+        player=word(0x7b0c7c)
+        if player is None or not 0x80000000<=player<0x84000000:return None
+        entity=word(player+0x14)
+        actor=word(entity+0x7c) if entity else None
+        result=dict(player=player,position=floats(player+0xb4,3),look=floats(player+0x100,2),
+                    equipped=[word(player+0x1b4),word(player+0x58c)],ammo=[])
+        if actor is None or not 0x80000000<=actor<0x84000000:return result
+        loadout=word(actor+0x98);table=word(0x4f9bac)
+        if loadout is None or not 0<=loadout<256 or not table:return result
+        for base,record in [(0x4fa134,0xa4),(0x4fa138,0x1d4)]:
+            weapon=word(base+loadout*0x3c)
+            if weapon is None or not 0<=weapon<256:continue
+            definition=table+weapon*0x29c;ammo=word(definition+0x14)
+            if ammo is None or not 0<=ammo<45:continue
+            result['ammo'].append(dict(weapon=weapon,type=ammo,capacity=word(definition+0x18),
+                loaded=short(actor+record+0x38+ammo*2),reserve=short(actor+0x61e+ammo*2)))
+        return result
     def snapshot():
         pointer=word(0x761C48)
         return dict(pid=process.pid,scene=word(0x79094C),flags=word(0x7DE458),
             paused=word(pointer)&1 if pointer else 0,mission=word(0x78AD48),
             held=word(0x6B93DC),pressed=word(0x6B93E0),previous=word(0x6B9408),
-            raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944))
+            raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),player=player_snapshot())
     def drain(pipe,path):
         with path.open('wb') as out:
             left=4*1024*1024
@@ -109,6 +135,10 @@ def main():
         raise AssertionError('No renderer capture')
     window=None;index=0;seen=0;start=time.monotonic();next_sample=0
     lock=run/'run.lock'
+    (run/'provenance.json').write_text(json.dumps(dict(
+        executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
+        runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        native_fps=args.native_fps or 0,seconds=args.seconds),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)
@@ -122,8 +152,10 @@ def main():
             if seen<len(lines):
                 command=json.loads(lines[seen]);seen+=1
                 assert len(command.get('keys',[]))<=16 and 0.1<=command.get('gap',.7)<=4
+                hold=command.get('hold',.18)
+                assert .05<=hold<=3
                 assert 0<=command.get('wait',2.5)<=30
-                budget=len(command.get('keys',[]))*(.18+command.get('gap',.7))+command.get('wait',2.5)
+                budget=len(command.get('keys',[]))*(hold+command.get('gap',.7))+command.get('wait',2.5)
                 if elapsed+budget+(22 if command.get('restart') else 0)>args.seconds:break
                 if command.get('stop'):break
                 if command.get('restart'):
@@ -132,7 +164,7 @@ def main():
                     assert process.returncode==0,'Game did not exit cleanly'
                     index+=1;assert index<=3;launch(index)
                 for key in command.get('keys',[]):
-                    state.write_text(f'{key} 1\n');time.sleep(.18);state.write_text('0 0\n');time.sleep(command.get('gap',.7))
+                    state.write_text(f'{key} 1\n');time.sleep(hold);state.write_text('0 0\n');time.sleep(command.get('gap',.7))
                 if command.get('window')=='toggle':user.PostMessageW(window,0x104,13,1<<29)
                 if command.get('window')=='focus':
                     user.ShowWindow(window,6);time.sleep(1)
@@ -140,7 +172,7 @@ def main():
                     user.ShowWindow(window,9);user.SetForegroundWindow(window);time.sleep(1)
                     report.append(dict(focus_lost=lost,focus_restored=user.GetForegroundWindow()==window))
                 time.sleep(command.get('wait',2.5))
-                item=dict(command=command,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
+                item=dict(seconds=round(time.monotonic()-start,3),command=command,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
                 if 'label' in command:capture(command['label'])
                 report.append(item);(run/'report.json').write_text(json.dumps(report,indent=2))
                 print(json.dumps(item),flush=True)

@@ -40,6 +40,65 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Arcade Vietnam comparison
+
+Windows x64 build `c4171db` was tested through the normal Arcade menus using
+isolated Test Lab profiles: Deathmatch, Vietnam, recommended weapons/bots,
+Cortez. Executable SHA-256:
+`85ebe7f5665eb2426b7d80438abfe59d8fe7c70584082268ae54122b57baa2ad`.
+The extended `tests/stability_transitions_game.py` records read-only player
+position/look/equipment/ammunition, bounded held-key commands, command times
+and executable/runner hashes. The runner hash for both sessions is
+`362787dc1a8eaf727985bd05b67ef4c4fd800eb8a4e445be0e0bc1536af26e6b`.
+Commands and screenshots are retained in `private/test-saves/native-arcade`
+and `private/test-saves/original-arcade`; logs are `logs/native-arcade.log`
+and `logs/original-arcade.log`.
+
+The native-144 session was bounded to 300 seconds and stopped normally after
+the observations; the original-60 session was bounded to 150 seconds. They
+use the same helper and binary, with the explicit native-rate override only
+in the native session. Both preserve the fixture and exit normally; neither
+reports a crash/unresolved indirect call. The runner's generic completion
+message certifies process/fixture handling, not the scenario's gameplay.
+
+Native-144 **fails Arcade gameplay acceptance**. At 179.391 seconds the arena
+is visible and scene is 48, flags 34571298, player at
+`[48.951206, 0.395421, 66.067909]`, dual weapon ID 2 with 18 rounds in each
+magazine and shared reserve 24 (total 60). Three-second forward, strafe and
+fire commands, including another fire attempt after pause/resume, leave the
+same position and ammunition at 244.969 seconds. Reviewed captures
+`match-start.png` and `refire.png` show the same view and full magazines.
+The pause menu opens and closes normally. A separate read-only clock sample
+(`live-clock-observation.json`) finds update IDs 39097/39169/39238 and level
+ticks 4764/4794/4824 at roughly half-second spacing, positive fractional game
+deltas near 0.42 and pause count zero. The title is not globally paused;
+advancing its clock has not produced responsive player gameplay here.
+
+Original-60 shows combat, death and respawn (`spawn-confirmed.png` includes
+the dead player). During the later three-second fire command, the same ammo
+type's total falls from 60 to 51, with 14/13 rounds loaded and shared reserve
+24; the visible `game-fire.png` matches those values. Positions change and
+pause/resume succeeds. Respawns and combat prevent treating these positions
+as a controlled movement-distance comparison. Menu timing also differs: the
+initial queued original commands stopped at the Ready screen, so their early
+move/fire labels are excluded; subsequent confirmed scene-48 observations
+provide the comparison. No network peers were used: this is local Arcade,
+not online multiplayer validation.
+
+The native CPU trace exhausts its 20,000-row cap at 143.542 seconds, before
+the match, so it cannot supply gameplay interval percentiles for this run.
+Late FPS reports show 140.4 swaps/s in native mode and 59.4 in original mode;
+these are not evidence of correct simulation or an isolated performance
+comparison. The separate user session remained open and responsive. Personal
+controls/display hashes stayed unchanged; each runner recycled its disposable
+disks/lock and preserved the canonical profile.
+
+Next investigation: reproduce with faster state-confirmed menu navigation,
+compare native 60 against native 144, and inspect the Arcade simulation/input
+dispatch and any temporary delta scopes using original code. The frontend
+input gate is a candidate, not a confirmed cause. No production correction,
+Arcade pass, full-match completion or Mac result is claimed from this work.
+
 ## Terminal mouse fractional cadence
 
 The follow-up to camera input found two independent losses in
