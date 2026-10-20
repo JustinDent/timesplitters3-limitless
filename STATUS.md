@@ -9184,3 +9184,50 @@ configuration/fixture paths still match their baseline hashes. No executable,
 shader, personal setting or fixture was changed. The latest counters record
 8,486 guest and 7,714 interpolated successful presents, zero skips/failures;
 this validation/readback run is not a pacing benchmark.
+
+### Renderer integration hosted CI and line-ending fixture (2026-10-19)
+
+Draft [PR #191](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/191)
+now reviews `codex/renderer-main-integration` against its unmerged
+`codex/shared-scene-acceptance` base. No merge into main was performed.
+At head `9940dba`, [run 39345301346](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39345301346)
+passed its macOS job: 49 scope/backlog tests; 28 patch tests (two host skips);
+228 runtime/render/input tests (18 host skips); real MoltenVK GPU contracts and
+production frame replay; 49 release tests (three host skips); and native launcher
+build/tests. This hosted run uses synthetic GPU data, not game assets.
+
+Windows passed 28 patch tests but failed the two newly added historical-stack
+fixtures before reaching runtime tests. Both appended LF bytes to a CRLF file;
+Git's configured CRLF conversion normalized the artificial mixed-ending edit,
+violating the fixture's byte comparison. The same two failures reproduced on
+Mac with `core.autocrlf=true`. The fixture now appends using the file's existing
+line ending and explicitly tests both conversion settings on both hosts while
+retaining exact source snapshots and unrelated-edit checks. All four local
+history/conversion combinations pass (46.18 seconds). The existing workflow
+already selects this test; no new workflow entry or runtime patch is required.
+Logs: `logs/renderer-integration-crlf-{repro,fixed}.log`. Windows rerun remains
+pending; the native executable and its prior scene evidence are unchanged.
+
+### Khallos PC appearance comparison (2026-10-19)
+
+The user checked the PC build at the mission's starting train stairs and
+reported that its sky also looks muted grey/stretched ("it looks like that").
+This is user-reported observation; the PC revision, driver and a matched frame
+capture were not supplied. Combined with the source-texture/CPU-pixel checks
+and the independent motion-blur reference above, it does not support a new
+Mac-specific static-sky correction. Preserve the train's authored motion effect.
+Exact original-console fidelity is not certified. The shared interpolation and
+Vulkan resource fixes retain their separate measured evidence.
+
+The acceptance branch incorporates the test-only integration follow-up
+`d0edd6d`, preserving the earlier scene/pacing records. PR #191 remains a draft
+against its unmerged renderer base; main and the other chat's worktree are
+unchanged by this work.
+
+The `d0edd6d` follow-up [run 39346834585](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39346834585)
+passed macOS completely, including 30 patch tests (two host skips), 228 runtime
+checks (18 host skips), real GPU contracts and native launcher checks. Windows
+passed the patch transitions, then reported 248 runtime checks passing, 30 skips
+and three interpolation harness link failures: their config stub lacks
+`recomp_config_lookup`, now used by the Windows initializer. A focused test
+harness correction is required; this run does not establish Windows success.
