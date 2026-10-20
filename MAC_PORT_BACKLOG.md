@@ -1115,6 +1115,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 194 (2026-10-20, commit carrying this entry): eight private
+  DXT1 environment/atlas replacements; 1,264 installed and 3,561 original keys
+  visually classified. Existing shared DDS support needs no adapter change.
+  Windows offline structure/repeat-grid review does not establish Mac scene,
+  brightness or residency behavior; status remains Awaiting validation. See
+  [batch 194 evidence](STATUS.md#texture-batch-194-environment-materials-and-architectural-atlases-2026-10-20).
+
 - Texture batch 193 (2026-10-20, commit carrying this entry): one private
   identity-preserving portrait installed, seven drafts held; 1,256 installed
   and 3,497 original keys visually classified. Existing shared RGBA8/alpha

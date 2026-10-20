@@ -1,5 +1,42 @@
 # Measured progress
 
+## Texture batch 194: environment materials and architectural atlases (2026-10-20)
+
+Issue #74: eight independent built-in edits accepted offline: rusty corrugated
+metal, dark brick facade, bordered granular panel, rose-gray fractured rock,
+cobblestone/rusted-plate wall, pale concrete, wood/wallpaper tile and studded
+door atlas. Original layout, window/door openings, major cracks, material bands,
+fastener arrangements and 2x2 repetition inspected against actual DDS previews.
+The facade mean luminance increases from 23.13 to 29.84 on a 0-255 scale; it
+remains a dark facade. Concrete lateral edge MAE increases from 0.07 to 8.74
+with added grain; no obvious hard stripe in the repeat grid. These differences
+are recorded for later scene brightness/adjacency validation, not hidden by
+structural passes. Original atlas parts are not assumed to tile in both axes.
+
+All eight sources are actually 1254x1254 despite the prompt requesting 2048
+where possible: seven Lanczos-resampled to 1024x1024, the small corrugated
+source to 256x256. Opaque DXT1 with complete 11/9-level mip chains. No native
+4K source claim. Eight new native DDS-reader passes plus 1,256 unchanged
+prior-audited hashes and the same checker cover 1,264 installed files; full
+Python hash/dimension/aspect/mip-byte checks passed. No game launch.
+
+Inspected 64 more catalog-verified original RGB/alpha pairs: 32 small/reused
+and 32 single-use assets. Visual classification reaches 3,561 keys; text, logo,
+weapon glyph, creature atlas and channel-dependent effects remain specialist
+work. Classification is not artwork completion or full category review.
+
+Installed coverage is 18.56% of 6,812 cataloged keys; 5,437 need art and 111
+prior drafts remain held. Pack including metadata: 1,050,577,870 bytes
+(1001.91 MiB), up 4,941,628 bytes. Temporary files measured 171.67 MiB;
+artwork workspace growth about 37.93 MiB including sources/review evidence.
+Caps remain 6144 MiB for the pack and 256 MiB for temporary output; the
+512 MiB residency policy is unchanged, with runtime measurement pending.
+
+Private evidence: `review/hybrid-194-acceptance.json` and linked generation,
+comparison, triage and audit records. No gameplay, Mac scene or GPU residency
+validation; MAC-011 remains Awaiting validation. Local issue-74 checkpoint,
+with private source artwork and game assets retained locally.
+
 ## Texture batch 193: portrait identity review and inventory (2026-10-20)
 
 Issue #74: eight built-in portrait edits produced from verified 64x64 originals.
