@@ -12682,3 +12682,83 @@ it remains intact. No personal settings, saves or private texture pack were
 changed. This corrects Windows package layout, not runtime gameplay or native
 Mac distribution. MAC-021 records the host boundary and MAC-053 retains the
 separate Discord acceptance work.
+
+## Native Mac alpha.1 distribution — 2026-10-20
+
+Branch `release/macos-alpha1` packages the native game from the existing
+`v0.3.1-alpha.1` game source (`5db4efc`); packaging and bundled launcher changes
+are recorded separately and do not retag or replace the Windows release.
+
+- Mac mini: macOS 27.0.1 arm64, Apple Clang 21, Python 3.12.12; verified US XBE,
+  pinned runtime/SDL/SDK and MoltenVK. Recreated the copied, broken virtual
+  environment with pinned requirements; preserved the old environment and cache.
+- Native rebuild/regeneration passed three CTests and renderer/input/settings/
+  debug checks. Vulkan reported its known primitive-restart capability warning;
+  no validation errors were reported. Personal saves/settings were isolated.
+- The real ZIP installs and verifies all 61 files on fresh and personal-file
+  fixtures; both installed app signatures and portable dependency hashes pass.
+  Launcher 1.2.21 supplies portable Vulkan loading. All 23 native launcher
+  groups and eight shared UI groups pass. Windows launcher regression suites
+  pass; 102 Python checks and ten subtests pass on Windows (the preceding
+  101-check revision also passed on Mac).
+- A 95.22-second relocated probe on Apple M4 passes: at least 5,100 completed
+  guest frames and sampled 8,700 successful host presents (5,260 guest and 3,440
+  interpolated); normal exit 0, no native fault or shader compilation failure.
+  These counters do not measure display scanout or whole-game performance.
+  Dyld traces show bundled crypto, Vulkan loader, MoltenVK and DXC; none loads
+  from Homebrew or the development SDK. Personal settings remain unchanged.
+  The final capture shows the rendered pause/options menu; complete gameplay
+  and full visual fidelity remain unverified.
+- Alpha.1 native ZIP: 88,570,219 bytes, SHA-256
+  `e462fbabc6ebda3fc411b533da9a98a904d2913796855f828e6f7cb4ca352483`.
+  Game source is `5db4efc`; packaging source is `339fe94`, with the actual
+  launcher source recorded separately in its receipt. Its actual deployment
+  target requires macOS 27.0+; it is ad-hoc signed, without notarization.
+  Mac ZIP/checksum/build provenance are added to the existing alpha.1 release.
+  The Windows assets and release tag are unchanged.
+- Cloud-provider Finder metadata prevented signing under the Mac Desktop.
+  The generated bundle and release staging use a local cache instead; generated
+  bundle metadata is normalized before signing, with source artwork preserved.
+  Source changes remain on this focused branch for review; main is not merged.
+
+
+## 2026-10-20: launcher texture installation and OneDrive path repair
+
+Branch fix/launcher-onedrive-paths, based on main 5db4efc. The local portable
+installation had no Textures folder and logged zero replacements. An attempted
+directory junction was rejected by the launcher. After the user removed that
+junction, a normal directory with 2,484 NTFS file hard links (1,242 DDS plus
+metadata) was installed. Same-file identity was verified for every pair: no
+second texture payload copy. The subsequent user-run session logged 45 loaded
+replacement entries and Enhanced mode. This establishes loading, not visual
+approval or complete remaster coverage. Future new/replaced keys need an explicit
+installation refresh; hard links are not a directory mirror.
+
+A separate path-validation defect also rejects ordinary OneDrive ancestors:
+Core.PathIn rejects every reparse marker, including a measured Cloud Files tag
+0x9000601a. The Windows adapter now reads metadata without following the final
+reparse point and admits only the documented CLOUD / CLOUD_1 through CLOUD_F tag
+family. Unknown tags, junctions and symbolic links remain rejected. Installation,
+download and cleanup guards share this decision; missing-file checks retain
+dangling-link inspection. Reference: Microsoft Reparse Point Tags documentation,
+https://learn.microsoft.com/en-us/windows/win32/fileio/reparse-point-tags.
+
+Validation on Windows x64: build-launcher.ps1 -Test passed all groups, including
+109 updater regressions, existing real junction-cleanup guards, cloud/unknown-tag
+cases, download/recovery, settings, sessions and maintenance. The built launcher's
+PathIn accepts the actual desktop installation's Bin, Textures, settings and
+pending-download paths; it positively identifies the desktop's Cloud Files tag.
+13 Python launcher/handoff tests plus 26 subtests passed. No game build or new
+automated playtest was needed. The original installed launcher rejected
+these paths in a read-only probe. After the user closed the game and launcher,
+the corrected binaries and self manifest were installed locally on October 20.
+Installed SelfUpdate.Complete and GameSettings.StartInfo passed in the Windows
+.NET Framework runtime, resolving all 1,242 DDS files. Nine personal settings
+files and the game build manifest retained their hashes. A small launcher-only
+recovery copy and installation receipt remain under .launcher/local-fixes.
+This local fix has not been published as a launcher release. Personal settings and saves remain
+untouched. Local build output is build/launcher-onedrive-fix in the working root.
+
+Mac: no adapter is required for Windows Cloud Files. The existing Mac rejection
+of filesystem links remains unchanged behind its platform adapter; native Mac
+build/interaction validation was not performed in this Windows-only repair.

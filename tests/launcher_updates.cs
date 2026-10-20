@@ -241,6 +241,13 @@ static class LauncherTests
             }
             CleanupTests();
             GameCleanupTests();
+            Test("cloud storage tags do not admit redirected or unknown paths", () => {
+                for (uint variant=0; variant<16; variant++) Assert(LauncherPlatform.IsCloudTag(0x9000001Au | (variant<<12)));
+                foreach (uint tag in new uint[]{0,0xA0000003u,0xA000000Cu,0x9000001Bu,0x9001001Au,0xB000001Au})
+                    Assert(!LauncherPlatform.IsCloudTag(tag));
+                Assert(!LauncherPlatform.IsCloudPlaceholder(temp));
+                Assert(Core.PathIn(temp,"not-created/texture.dds")==Path.Combine(temp,"not-created","texture.dds"));
+            });
             Test("semantic version ordering", () => {
                 var ordered = new[] { "v1.0.0-alpha", "v1.0.0-alpha.2", "v1.0.0-alpha.10", "v1.0.0-beta", "v1.0.0", "v1.0.1", "v1.10.0", "v2.0.0" };
                 for (int i = 1; i < ordered.Length; i++) Assert(GameVersion.Parse(ordered[i]).CompareTo(GameVersion.Parse(ordered[i-1])) > 0);

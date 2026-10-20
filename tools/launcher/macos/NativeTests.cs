@@ -165,6 +165,25 @@ namespace TimeSplitters.Launcher
             catch(Exception e){Console.Error.WriteLine(e);return 1;}
             finally{Directory.Delete(test,true);}
         }
+        public static int VerifyGamePackage(string archive,string version)
+        {
+            string test=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(archive)),"game-package-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
+            try {
+                foreach(bool preserve in new[]{false,true}){
+                    string root=Path.Combine(test,preserve?"existing":"fresh"),pending=Path.Combine(root,".launcher/pending");Directory.CreateDirectory(pending);
+                    if(preserve){Write(root,"Data/keep","game data");Write(root,"Saves/keep","save");Write(root,"Settings/pc-controls.json","personal controls");Write(root,"Settings/pc-display.ini","personal display");}
+                    Core.Unpack(archive,Path.Combine(pending,"payload"),version);Write(pending,"release.json",Json.Encode(new{version=version}));
+                    Core.InstallPending(root);
+                    var manifest=NativeHost.CheckBuild(root);var files=(Dictionary<string,object>)manifest["files"];
+                    foreach(var pair in files){if(preserve&&pair.Key=="Settings/pc-controls.json")continue;Need(Core.Hash(Core.PathIn(root,pair.Key))==(string)pair.Value,"Installed package file changed: "+pair.Key);}
+                    Need(SelfUpdate.Complete(root)&&BundleSignatureValid(root),"Bundled launcher failed installation/signature checks");
+                    if(preserve)Need(File.ReadAllText(Core.PathIn(root,"Data/keep"))=="game data"&&File.ReadAllText(Core.PathIn(root,"Saves/keep"))=="save"&&File.ReadAllText(Core.PathIn(root,"Settings/pc-controls.json"))=="personal controls"&&File.ReadAllText(Core.PathIn(root,"Settings/pc-display.ini"))=="personal display","Personal files changed");
+                    Console.WriteLine("Mac game package installed and verified "+files.Count+" files (preserve personal files: "+preserve+").");
+                }
+                return 0;
+            }catch(Exception e){Console.Error.WriteLine(e);return 1;}
+            finally{Directory.Delete(test,true);}
+        }
         public static int Run()
         {
             sandbox=Path.Combine(AppContext.BaseDirectory,"tsfp-mac-launcher-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(sandbox);
@@ -220,6 +239,20 @@ namespace TimeSplitters.Launcher
                     Need(NativeHost.ReadGpuHelper(Helper("head -c 100000 /dev/zero")).Length==16384,"Unbounded or blocked output");
                     Reject(()=>NativeHost.ReadGpuHelper(Helper("printf rejected; exit 7")));
                     Reject(()=>NativeHost.ReadGpuHelper(Helper("sleep 5"),50));
+                });
+                Test("portable Vulkan uses only hashed bundled libraries without a checkout",()=>{
+                    var r=NewRoot("portable-vulkan");var hashes=new Dictionary<string,object>();
+                    foreach(var name in new[]{"Bin/libvulkan.1.dylib","Bin/libMoltenVK.dylib","Bin/libdxcompiler.dylib","Bin/libcrypto.3.dylib","Support/Vulkan/MoltenVK_icd.json"}){
+                        Write(r,name,name.EndsWith(".json")?"{\"ICD\":{\"library_path\":\"../../Bin/libMoltenVK.dylib\"}}":"library");hashes[name]=Core.Hash(Core.PathIn(r,name));
+                    }
+                    var manifest=new Dictionary<string,object>{{"vulkan_driver","moltenvk"},{"files",hashes}};
+                    var env=NativeHost.PortableGpuEnvironment(r,manifest);
+                    Need((string)env["SDL_VULKAN_LIBRARY"]==Core.PathIn(r,"Bin/libvulkan.1.dylib")&&(string)env["VK_DRIVER_FILES"]==Core.PathIn(r,"Support/Vulkan/MoltenVK_icd.json"),"Wrong packaged GPU paths");
+                    Need(!Directory.Exists(Path.Combine(r,"Settings")),"Read-only GPU check wrote settings");
+                    Write(r,"Bin/libcrypto.3.dylib","altered");Reject(()=>NativeHost.PortableGpuEnvironment(r,manifest));
+                    hashes["Bin/libcrypto.3.dylib"]=Core.Hash(Core.PathIn(r,"Bin/libcrypto.3.dylib"));
+                    Write(r,"Support/Vulkan/MoltenVK_icd.json","{\"ICD\":{\"library_path\":\"/tmp/untrusted.dylib\"}}");hashes["Support/Vulkan/MoltenVK_icd.json"]=Core.Hash(Core.PathIn(r,"Support/Vulkan/MoltenVK_icd.json"));Reject(()=>NativeHost.PortableGpuEnvironment(r,manifest));
+                    manifest["vulkan_driver"]="unknown";Reject(()=>NativeHost.PortableGpuEnvironment(r,manifest));
                 });
                 Test("wrong XBE and altered native executable fail read-only checks",()=>{var r=NewRoot("checks");Write(r,"Data/default.xbe","invalid");Reject(()=>NativeHost.CheckData(r));Write(r,LauncherPlatform.GameBinary,"invalid");Write(r,"BUILD.json",Json.Encode(new{version="v1.0.0",executable_sha256=new string('a',64)}));Reject(()=>NativeHost.CheckBuild(r));Need(!Directory.Exists(Path.Combine(r,"Saves")),"Check created saves");});
                 Test("verified download and cached replay use shared integrity policy",()=>{var r=NewRoot("download");byte[] bytes=Encoding.UTF8.GetBytes("verified archive");var release=new Release{AssetUrl="https://github.com/"+ReleaseClient.Repository+"/releases/download/v1.0.0/a.zip",Digest="sha256:"+Hash(bytes),Size=bytes.Length};int calls=0;using(var c=new ReleaseClient(new Handler{Reply=q=>{calls++;return new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(bytes)};}})){c.Download(release,Path.Combine(r,"one.zip"),null,CancellationToken.None,Path.Combine(r,"cache")).GetAwaiter().GetResult();c.Download(release,Path.Combine(r,"two.zip"),null,CancellationToken.None,Path.Combine(r,"cache")).GetAwaiter().GetResult();}Need(calls==1&&File.ReadAllBytes(Path.Combine(r,"two.zip")).SequenceEqual(bytes),"Cache replay failed");});

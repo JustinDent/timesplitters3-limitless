@@ -60,6 +60,15 @@ namespace TimeSplitters.Launcher
             if (p[0].Equals("Licenses", StringComparison.OrdinalIgnoreCase)) return p[1].EndsWith(".txt", StringComparison.OrdinalIgnoreCase);
             return name.Equals("Settings/pc-controls.json", StringComparison.OrdinalIgnoreCase);
         }
+        public static void RequireUnlinked(string path, string message)
+        {
+            FileAttributes attributes;
+            try { attributes = File.GetAttributes(path); }
+            catch (FileNotFoundException) { return; }
+            catch (DirectoryNotFoundException) { return; }
+            Require((attributes & FileAttributes.ReparsePoint) == 0 ||
+                LauncherPlatform.IsCloudPlaceholder(path), message);
+        }
         public static string PathIn(string root, string relative)
         {
             Name(relative);
@@ -68,8 +77,7 @@ namespace TimeSplitters.Launcher
             Require(path.StartsWith(root, StringComparison.OrdinalIgnoreCase), "Update path escaped its folder.");
             for (string cursor = path; cursor != null; cursor = Path.GetDirectoryName(cursor))
             {
-                if (File.Exists(cursor) || Directory.Exists(cursor))
-                    Require((File.GetAttributes(cursor) & FileAttributes.ReparsePoint) == 0, "Linked installation paths are not supported.");
+                RequireUnlinked(cursor, "Linked installation paths are not supported.");
             }
             return path;
         }
@@ -92,11 +100,11 @@ namespace TimeSplitters.Launcher
         }
         static void CheckTree(string dir)
         {
-            Require((File.GetAttributes(dir) & FileAttributes.ReparsePoint) == 0, "Refusing linked cleanup folder.");
+            RequireUnlinked(dir, "Refusing linked cleanup folder.");
             foreach (string file in Directory.GetFileSystemEntries(dir))
             {
                 var attr = File.GetAttributes(file);
-                Require((attr & FileAttributes.ReparsePoint) == 0, "Refusing linked cleanup path.");
+                RequireUnlinked(file, "Refusing linked cleanup path.");
                 if ((attr & FileAttributes.Directory) != 0) CheckTree(file);
             }
         }
@@ -399,7 +407,7 @@ namespace TimeSplitters.Launcher
             foreach (string entry in Directory.GetFileSystemEntries(folder))
             {
                 var attributes = File.GetAttributes(entry);
-                Require((attributes & FileAttributes.ReparsePoint) == 0, "Linked game cleanup path.");
+                RequireUnlinked(entry, "Linked game cleanup path.");
                 string name = Path.GetFileName(entry);
                 if ((attributes & FileAttributes.Directory) != 0)
                 {
