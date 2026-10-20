@@ -1,5 +1,47 @@
 # Measured progress
 
+## Texture batch 210: machinery panels and expanded inventory (2026-10-20)
+
+Generated twelve individual metal-panel and machinery edits. Eleven passed
+offline original/compiled-DDS and 2x2 repetition review, including silver and
+gray panels, circular inset, pipe routing, corroded atlases, damaged machinery,
+X-braced plate and pale wall with yellow stripe. Reviewed main UV partitions,
+hardware, boundaries and baked shading. One olive-gray sheet remains held:
+it became 20.10% darker with excessive coarse mottling. It is not installed.
+Mapped scene appearance and exact adjacency still require later validation.
+
+Actual generated sources: ten 1254x1254 squares and two 1774x887 landscapes.
+Eleven installed DXT1 outputs: two 512x512, eight 1024x1024 and one 1024x512,
+with complete mip chains. LANCZOS downsampling only; no crop, aspect stretching,
+synthetic padding or color repair. These are not native 4K generated sources.
+
+Inspected 128 further hash-verified original RGB/alpha pairs in eight RGB and
+eight alpha sheets. Classification now covers 4,713 of 6,812 keys (69.19%),
+with 2,099 unclassified. Important constraints include skull/icon variants,
+weapon silhouettes, inverted typography, portraits and posters, ornate grille
+alpha, partial-opacity grids, constant-alpha160 artwork, impact masks and
+functional swatches. Classification is provisional routing, not completion.
+
+Full current Python audit passed for format, metadata, dimensions, aspect,
+hashes and mip chains. Eleven new DDS files passed the existing Windows native
+parser; hashes for 1,341 prior files and checker identity match carried-forward
+evidence. Total 1,352 installed, 5,333 needing art and 127 held drafts. Worklist
+and hybrid queue refreshed. No runtime, format or adapter changes; 512 MiB
+residency policy unchanged, with no new GPU-memory measurement.
+
+Pack 1,095,815,356 bytes (1045.05 MiB), including metadata;
+this batch adds 6.01 MiB. Temporary output
+231.05 MiB, below 256 MiB; headroom 24.95 MiB.
+Texture workspace including source art 6335.49 MiB logical/allocated
+by existing helper; disk free 83.77 GiB. One active pack under 6144 MiB.
+No duplicate extracts, builds, staging or ZIPs; game, saves and settings preserved.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation. Inventory,
+full category review, other-encoding/procedural discovery and final scene/GPU
+validation are incomplete. Private review/hybrid-210-acceptance.json links source
+provenance, compiled comparisons, decisions, metrics, native audit and triage
+records. This partial pack is not a completed remaster.
+
 ## Texture batch 209: environment materials and damaged-wall detail (2026-10-20)
 
 Eight individual edits passed offline original/compiled-DDS and 2x2 repetition
