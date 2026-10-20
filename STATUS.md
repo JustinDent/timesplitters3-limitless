@@ -1,5 +1,36 @@
 # Measured progress
 
+## Texture artwork batch 255: seven metal surfaces installed (2026-10-20)
+
+Accepted b49c9a4ff8354384, c531d44117342a0f, c6c2e5dc20bfd6eb,
+c8e51305db918620, cec3c2b7b4e521f2, d1f0bb9c0a7b25f2 and
+d69c4b462fd4a5e2 after six RAM comparisons including an enlarged vent-bar
+check. Held c20503e49bb7eec0: darker/patchier material (-14.07% luminance)
+and emphasized right rivet column. Nonuniform-alpha b2ba2e001048f470 remains
+queued for specialist work. Eight generated sources (six 1774x887, two 1254x1254)
+total 26,339,360 bytes; selected outputs downsampled with LANCZOS, without
+crop/color/alpha edits. These are not native 4K images.
+
+Seven new Windows DDS parser checks and fresh Python audit of all 1,505
+installed replacements pass; previous 1,498 DDS hashes and checker unchanged.
+Counts: 5,138 need art, 1,505 installed, 169 held, 6,812 classified known keys.
+Classification does not establish full category/use validation or scene coverage.
+
+Six review rasters replay exactly before and after retiring eight new original
+reference exports (341,426 bytes) with byte-exact archive PNG/RGBA reconstruction
+and guarded path/hash checks. RAM review avoided 1,726,642 raster bytes on disk.
+No previously denied cleanup retried; authoritative art/game and settings retained.
+
+Pack 1,165,240,310 bytes (+2,625,468), below 6144 MiB. Temporary snapshot
+267,500,128 bytes, below 256 MiB with 935,328 bytes headroom. Windows filesystem
+allocation: 10,622 files, logical/allocated 7,512,240,528 bytes, no errors;
+free disk 83,742,937,088 bytes. Includes source art; excludes Codex default
+outputs outside the project and subsequent small metadata writes. One pack,
+512 MiB residency unchanged. Private review/hybrid-255 evidence retains selection,
+generation, decisions, memory-review, native-audit, acceptance, retirement and
+physical-storage-final records. No gameplay/build/publication; near-completion
+gate remains unmet. MAC-011 stays Awaiting validation for Mac GPU and scenes.
+
 ## Texture artwork batch 254: five metal surfaces installed, storage recovered (2026-10-20)
 
 Continued eight classified opaque metal-family candidates on the local #74 branch.
