@@ -207,6 +207,29 @@ int main(int argc, char **argv)
         pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
         CHECK(fabs(*(float *)(guest+0x10100)-yaw)<.001); /* same sequence is not replayed */
     }
+    {
+        /* Native-rate selection must reach the real Windows terminal adapter,
+           including paused stale-whole input and return to original mode. */
+        char *saved_rate=NULL;size_t saved_size=0;
+        CHECK(!_dupenv_s(&saved_rate,&saved_size,"TSFP_NATIVE_FPS"));
+        CHECK(!_putenv_s("TSFP_NATIVE_FPS","144"));
+        *(uint32_t *)(guest+0x10114)=0x2000;
+        *(float *)(guest+0x22038)=100;*(float *)(guest+0x2203c)=100;
+        float old_yaw=*(float *)(guest+0x10100);
+        for(int step=0;step<5;++step) {
+            *(uint32_t *)(guest+0x4e7944)=(step==1 || step==4)?1:0;
+            *(float *)(guest+0x4e794c)=(step==1 || step==4)?0:60.f/144;
+            if(step==3) CHECK(!_putenv_s("TSFP_NATIVE_FPS","0"));
+            f=fopen(state_file,"w");CHECK(f);
+            fprintf(f,"1 0 %d 100 20",step+2);fclose(f);Sleep(50);
+            pc_controls_apply_mouse(0x10000,0x20000,(ptrdiff_t)guest);
+            const float expected[]={110,110,120,120,130};
+            CHECK(fabs(*(float *)(guest+0x22038)-expected[step])<.001);
+            CHECK(*(float *)(guest+0x10100)==old_yaw);
+        }
+        CHECK(!_putenv_s("TSFP_NATIVE_FPS",saved_rate?saved_rate:""));
+        free(saved_rate);
+    }
     VirtualFree(guest, 0, MEM_RELEASE);
     puts("PASS: PC input focus/capture, released buttons, wheel queue, raw-count camera math, pitch limits, FOV scaling, poll independence, WASD/reload/fire bindings and guest camera integration");
     return 0;

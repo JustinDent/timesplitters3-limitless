@@ -73,18 +73,25 @@ void pc_input_normalize_movement(int16_t *x, int16_t *y)
     }
 }
 
-int pc_input_look(PcInput *s, uint64_t now, float sensitivity, int invert_y,
-                  float fov_scale, float *yaw, float *pitch)
+uint64_t pc_input_consume_motion(PcInput *s, uint64_t now, double *dx, double *dy)
 {
-    double dx = s->dx, dy = s->dy;
-    uint64_t motion_at = s->motion_at;
+    uint64_t age = now - s->motion_at;
+    *dx = s->dx; *dy = s->dy;
     s->dx = s->dy = 0;
     /* The consumed batch is empty now. Start its age at this consumption,
        otherwise a later packet can expire fresh counts against the previous
        batch's timestamp in the middle of an ordinary render interval. Keep
        the saved age for rejecting this batch if gameplay was suspended. */
     s->motion_at = now;
-    if (!s->focused || !s->captured || now - motion_at > 100 ||
+    return age;
+}
+
+int pc_input_look(PcInput *s, uint64_t now, float sensitivity, int invert_y,
+                  float fov_scale, float *yaw, float *pitch)
+{
+    double dx, dy;
+    uint64_t age = pc_input_consume_motion(s, now, &dx, &dy);
+    if (!s->focused || !s->captured || age > 100 ||
         !isfinite(*yaw) || !isfinite(*pitch) || !isfinite(sensitivity) ||
         sensitivity <= 0 || !isfinite(fov_scale) || fov_scale <= 0 ||
         (!dx && !dy)) return 0;

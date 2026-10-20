@@ -6,6 +6,16 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Terminal mouse motion now uses the shared batch-consumption helper and,
+  in native mode, the fractional game-time pause gate. A 1,000 Hz input
+  fixture reproduces only 39.1 units of a requested 100-unit horizontal move
+  at native 144; the correction retains the full move and advances every
+  frame receiving packets. Forty-two cadence/slow-motion/jitter cases and
+  pause, stale-whole, ownership, scripted-pointer and gameplay-return checks
+  pass. All 161 shared/regression checks pass and the complete patch stack
+  verifies unchanged. Windows and SDL adapters select the same policy. Production build
+  and live terminal acceptance remain pending.
+  [Terminal cadence](docs/native-high-refresh-regressions.md#terminal-mouse-fractional-cadence).
 - Shared raw mouse input now rebases its empty buffer's age after consumption.
   Previously a later packet could expire fresh counts using an earlier batch's
   timestamp, producing refresh-dependent aim loss. A controlled 1,000 Hz

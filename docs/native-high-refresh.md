@@ -39,6 +39,13 @@ button-state sampling at that cadence and clears consumed edges between those
 ticks, preventing a press from disappearing before the frontend can consume it.
 Raw mouse aiming and continuous rendering do not use that button gate.
 
+Raw mouse batches reset their age after consumption, preserving fresh counts
+at different camera update rates. Terminal pointers use the same consumption
+helper and accept packets on every positive fractional game interval in native
+mode; pause still consumes motion without moving the pointer or hidden camera.
+Original mode retains its whole-tick terminal gate. Packet-count fixtures do
+not measure physical-device latency or establish live terminal visual acceptance.
+
 The entity post-update also uses live fractional time when deriving velocity
 from position changes. Its original whole-tick guard cleared the result on
 fractional updates even after an entity moved. This changes that guard only;

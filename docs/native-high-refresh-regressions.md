@@ -40,6 +40,54 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Terminal mouse fractional cadence
+
+The follow-up to camera input found two independent losses in
+`src/pc_terminal.h`: its separate consumption did not rebase the mouse batch,
+and its pause guard rejected zero whole ticks even when native fractional
+time advanced. Rejected terminal motion is deliberately consumed to prevent
+it turning the hidden player or leaking on terminal exit, so those packets
+were lost rather than deferred to the next tick.
+
+`tests/native_terminal_mouse.c` executes the shared helper against guarded
+guest memory. In the original helper, a one-second 1,000 Hz stream requesting
+100 horizontal and 25 vertical pointer units produces only 39.1 and 9.775
+units at native 144. At quarter speed the horizontal move falls to 9.5 units.
+Original fixed-60 produces 87.4 horizontal units because of the separate
+buffer-age bug. Evidence: `logs/native-terminal-before.log`.
+
+Shared `pc_input_consume_motion` now returns the previous batch age while
+clearing counts and rebasing the empty batch. Both camera aiming and terminal
+movement use it. The terminal helper takes explicit native-mode selection from
+the existing shared rate lookup in each host adapter. Native mode requires
+positive finite fractional game time at `0x4E794C`; original mode retains its
+whole gate at `0x4E7944`. A zero fractional delta rejects movement even when a
+stale whole counter is positive. Counts remain unscaled by delta, zoom or
+inversion, with the original pointer bounds and inactivity reset.
+
+Forty-two cases combine original 60 and native 60/120/144, normal/quarter-speed
+native clocks, 125/1,000/8,000 Hz packet schedules and uniform/uneven frame
+intervals. Every corrected path retains the requested displacement within
+0.003 pointer units. Movement occurs on exactly the frames receiving packets;
+low-poll-rate input can legitimately leave some uneven frames without motion.
+Additional cases cover native pause, invalid/nonfinite time, stale positive
+whole ticks, original disabled-native behavior, all four local input indices,
+catch-up without multiplying counts, scripted/disabled pointer descriptors,
+ownership mismatch, stale input and return to the gameplay camera without a
+stored jump. The original terminal routing tests and all 48 camera packet
+cases still pass (`logs/native-terminal-fixed.log`).
+
+Windows and SDL adapters also have synthetic integration cases that select
+native 144, exercise a zero-whole live interval and stale-whole pause, then
+switch back to original mode. Mac execution remains unverified. These fixtures
+do not drive a live mission terminal, measure hardware input latency, or
+establish pixel-level pointer smoothness. Production build and adapter-check
+execution are pending at this source checkpoint. All 161 shared timing,
+terminal/automatic-look/menu input, float/vehicle-join, CI-scope, backlog and
+XMV-stop checks pass in 77.78 seconds (`logs/native-terminal-shared.log`).
+The complete unchanged patch stack verifies with zero updated runtime files
+(`logs/native-terminal-patches.log`).
+
 ## Raw mouse packet cadence
 
 The native-refresh aiming audit found an input-buffer age bug in shared
@@ -112,12 +160,12 @@ Controls/display hashes are unchanged and the runner cleaned its disposable
 disks/lock. The normal executable is ready for the next launch; no forced
 restart occurred.
 
-Remaining input audit: `pc_terminal_mouse` consumes motion separately in
+Follow-up input audit: `pc_terminal_mouse` consumed motion separately in
 `src/pc_terminal.h`. Its buffer-age handling and integer game-delta gate are
-unchanged by this camera fix. Existing terminal routing checks pass, but do
-not cover native fractional pointer cadence. That path needs its own
-reproduction and pause-preserving correction; neither these tests nor a high
-FPS counter establishes terminal pointer smoothness.
+unchanged by this camera fix. Existing terminal routing checks passed, but did
+not cover native fractional pointer cadence. The separate reproduction and
+pause-preserving correction are recorded above; live terminal visual
+acceptance remains open.
 
 ## Latest-build opening comparison
 

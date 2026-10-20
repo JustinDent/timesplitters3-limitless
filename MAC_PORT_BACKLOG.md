@@ -3170,6 +3170,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   open. The terminal pointer consumes its own buffer and still requires a
   separate native timing audit.
   [Mouse cadence evidence](docs/native-high-refresh-regressions.md#raw-mouse-packet-cadence).
+- **Terminal fractional pointer cadence (local source):** Shared
+  `pc_input_consume_motion` and `pc_terminal_mouse` retain fresh packet batches
+  and use positive finite fractional game time in native mode. Original mode
+  keeps its whole-tick gate. Windows `pc_controls.c` and SDL `input_sdl.c`
+  supply the same native-rate selection. The shared terminal fixture covers
+  42 timing cases plus pause/ownership/return checks. Both adapters gain a
+  synthetic integration check; actual Mac execution and live terminal-scene
+  acceptance remain pending. No separate Mac policy is required.
+  [Terminal evidence](docs/native-high-refresh-regressions.md#terminal-mouse-fractional-cadence).
 - **Latest Windows integration comparison (`3c2fcc2`, local):** Matching
   original-60/native-144 opening replays pass handoff, hand animation, movement,
   firing and pause/resume. Native CPU intervals average 140.399 updates/s at
