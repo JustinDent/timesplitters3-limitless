@@ -7,6 +7,9 @@ and surfaces, using up to 4096×4096 for major surfaces and smaller sizes where
 appropriate. It is not a completed full-game remaster, and the public download
 does not include the private development artwork or original game assets.
 
+See the [texture alpha overview](texture-alpha.md) for the current source scope,
+local pack snapshot and remaining validation gates.
+
 ## Preview an installed local pack
 
 From a Windows source checkout with a built runtime and an existing pack,
