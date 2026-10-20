@@ -6,14 +6,21 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Latest built executable `6fc4d87` reduces duplicate VM queries during prompt
+  rendering, with the same labels and protection checks. The supported Windows
+  Release build, focused real-memory tests, 66 shared checks and a 120-second
+  native-144 gameplay/pause replay pass. The active window averages 137.512 CPU
+  updates/s (p95 9.1119 ms) with 1x game speed under profiling/capture. This is
+  not evidence of an overall FPS gain or stable 144 FPS. The matching original-60
+  gameplay/pause replay also passes; actual Mac execution remains pending.
+  [Prompt validation](docs/native-high-refresh-regressions.md#performance-follow-up-and-rejected-gpu-poll-experiment).
 - Restored executable `eae18a3` passes the full supported Windows Release build,
   137 shared regressions and a 120-second native-144 gameplay/pause check.
   A GPU polling optimization in `aef8d29` passed isolated tests but stalled
   during the live replay; it was reverted in full. No GPU-poll performance
   improvement is retained or claimed. The user's old interactive process
-  exited independently before restoration. A narrower prompt-memory change
-  now reuses one call's queried region for nearby text and scratch writes;
-  focused Windows protection tests pass, with full build/live validation pending.
+  exited independently before restoration. The retained old executable was
+  removed after the new build passed live validation.
   [Performance follow-up](docs/native-high-refresh-regressions.md#performance-follow-up-and-rejected-gpu-poll-experiment).
 - Earlier built executable `dee6170` passes the full supported Windows Release
   build and a 120-second isolated native-144 gameplay check, including movement,

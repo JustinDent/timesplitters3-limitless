@@ -1361,8 +1361,38 @@ other regions, protection boundaries and unwritable scratch still receive
 their necessary queries. Windows real-VM tests exercise those cases, changed
 permissions on successive calls, no-access and guard pages. The native Mac
 self-test adds read-only scratch and page-boundary cases but is not run here.
-Full game integration validation of this prompt change is pending; no FPS
-gain or perceived-smoothness improvement is claimed from query counts alone.
+The prompt change is committed locally as `6fc4d87`. Its full supported Windows
+Release build and built-in tests pass, along with 66 CI-scope/backlog checks.
+The controller-routing subtest explicitly skips when foreground activation is
+refused; this is not physical-controller acceptance. The generated-code
+fingerprint remains current and the pinned US XBE hash is unchanged. Executable
+SHA-256: `1f59510ed7bc8ce088dd87238546bee89e65ac30abf46f8ce3f61d4700109b02`.
+
+The 120-second native-144 replay with profiling and capture passes all Story,
+movement, firearm handoff/animation, ammo, pause/resume and fresh-present checks.
+The reviewed final capture shows the starting canyon, weapon and ammunition HUD
+(16 loaded, 80 reserve). Its unpaused Story intervals after trace second 60
+average **137.512 updates/s**, p50 **7.0515 ms**, p95 **9.1119 ms**, p99
+**10.4290 ms**, worst **34.2793 ms**, with game/wall time ratio **1.000000**.
+The restored build's earlier capture-only run averaged 138.285 updates/s;
+profiling and background-load differences prevent a causal before/after
+performance conclusion. No overall FPS gain or perceived-smoothness improvement
+is claimed from the reduced query count. Stable 144 FPS and complete-game
+coverage remain open. The matching 120-second original-60 replay also passes
+all gameplay/pause checks on the same executable. Its reviewed final capture
+shows the same canyon/weapon/HUD and 16 loaded, 80 reserve ammunition.
+Evidence: `logs/native-prompt-region-live-60.log` and
+`private/test-saves/high-refresh/60-prompt-region-reference-*`.
+
+Evidence: `logs/native-prompt-region-full-build.log`,
+`logs/native-prompt-region-test.log`, `logs/native-prompt-region-shared.log`,
+`logs/native-prompt-region-live-144.log`,
+`private/test-saves/high-refresh/native-144-prompt-region-*` and
+`private/pipeline/prompt-region-validation.json`. Selected final captures are
+retained; disposable test disks and run locks are cleaned, and no test child
+remains. Redundant intermediate captures and the no-longer-loaded `fc3a7ce`
+executable were removed after validation. Personal controls/display hashes
+remain unchanged. Nothing has been pushed and actual Mac validation is pending.
 
 ## Bridge-crash placement investigation
 

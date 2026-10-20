@@ -3116,6 +3116,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   `src/native/prompt_selftest.inc` adds read-only scratch and boundary cases.
   Actual Mac execution is pending; the common Mach query already supplies the
   region bounds and protection, so no new platform adapter is required.
+  Source `6fc4d87` passes the full Windows Release build and native-144/original-60
+  two-minute gameplay/pause checks. Reduced local query counts are verified;
+  overall FPS gains and stable 144 FPS are not established.
   The separate GPU-flush experiment `aef8d29` failed live Windows progress
   and was reverted by `eae18a3`; no GPU acknowledgment change remains.
 - **Offline network-hook overhead:** `pc_network_bots_guest.inc` and
