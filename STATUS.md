@@ -1,5 +1,40 @@
 # Measured progress
 
+## Mac launcher translocation recovery (2026-10-19)
+
+Prepared on `codex/mac-launcher-translocation` from main `b7a0630`, in the commit
+carrying this entry. The user's release screenshot identifies a failed `.launcher`
+write beneath `/private/var/folders/.../AppTranslocation/<UUID>/d`; moving the
+outer extraction folder did not stop the reported translocation. Startup had
+treated the running app's parent as the writable portable installation.
+
+The Mac startup adapter now detects that location before creating the normal
+startup/main window. A recovery window lets the user select the actual
+installation. It reuses shared manifest, path and checksum validation, requires
+the same running launcher binary, rejects linked/incomplete/modified folders,
+and probes write access with an exclusive temporary file removed on close.
+It then opens normal startup with that root. Cancellation and invalid selections
+leave the recovery window usable. Selection lasts for this launch; it does not
+copy/migrate data or change quarantine attributes. Explicit `--root` and checkout
+discovery remain supported. Windows code and shared installation policy are
+unchanged. Existing v1.2.20 downloads do not yet contain this fix.
+
+Local validation: macOS 27.0.1 (26A434), Apple Silicon, pinned .NET SDK 8.0.426,
+Avalonia 11.3.22. The native build passes 22 regression groups, the new recovery
+UI route test and eight shared UI groups. Python compatibility/shared-layout/
+release-policy checks pass 7/3/21 tests; native launcher/backlog checks pass 18.
+The launcher's real-checkout `--check` passes without starting the game.
+The initial Desktop build hit existing File Provider metadata that prevents
+bundle signing; the clean build uses a cache directory outside Desktop/iCloud.
+No security attributes were removed. The final packaged app passes installation,
+recovery-folder validation, negative signature tests, copied-helper repair,
+restart/render and strict restored-signature verification with game metadata and
+saves preserved. The recovery-screen PNG was visually inspected for readable
+instructions and buttons. Exact-revision Windows/macOS CI remains pending.
+Real Gatekeeper-translocated browser launch and the user's
+installed release remain unverified; synthetic routing/read-only tests do not
+certify those paths. No game rebuild, personal data changes or release publication.
+
 ## Launcher v1.2.20 replacement release (2026-10-19)
 
 Prepared on `release/launcher-v1.2.20` from merged main `ec1d067`. This release

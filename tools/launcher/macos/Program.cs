@@ -24,19 +24,20 @@ namespace TimeSplitters.Launcher
             if(args.Length==3 && args[0]=="--extract-art") { ExtractArt(args[1],args[2]);return 0; }
             if(args.Length==1 && args[0]=="--test")return NativeTests.Run();
             if(args.Length==3 && args[0]=="--verify-package")return NativeTests.VerifyPackage(args[1],args[2]);
-            if(args.Length==1 && args[0]=="--test-ui"){AppBuilder.Configure<NativeApplication>().UsePlatformDetect().SetupWithoutStarting();try{return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(e);return 1;}}
+            if(args.Length==1 && args[0]=="--test-ui"){AppBuilder.Configure<NativeApplication>().UsePlatformDetect().SetupWithoutStarting();try{NativeTests.LocationUi();return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(e);return 1;}}
             Root=FindRoot(args);
-            if(args.Contains("--check")){try{NativeHost.CheckData(Root);NativeHost.CheckBuild(Root);GameSettings.Load(Root,null);Console.WriteLine("Native Mac launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
+            if(args.Contains("--check")){try{Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance);NativeHost.CheckData(Root);NativeHost.CheckBuild(Root);GameSettings.Load(Root,null);Console.WriteLine("Native Mac launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
             return AppBuilder.Configure<NativeApplication>().UsePlatformDetect().StartWithClassicDesktopLifetime(args);
         }
-        static string FindRoot(string[] args)
+        internal static string FindRoot(string[] args, string baseDirectory=null)
         {
             int option=Array.IndexOf(args,"--root");if(option>=0){if(option+1>=args.Length)throw new ArgumentException("--root needs a path");return Path.GetFullPath(args[option+1]);}
-            for(var dir=new DirectoryInfo(AppContext.BaseDirectory);dir!=null;dir=dir.Parent)
+            baseDirectory=baseDirectory??AppContext.BaseDirectory;
+            for(var dir=new DirectoryInfo(baseDirectory);dir!=null;dir=dir.Parent)
                 if(File.Exists(Path.Combine(dir.FullName,"tools/play-native-mac.py")))return dir.FullName;
-            var bundle=new DirectoryInfo(AppContext.BaseDirectory).Parent?.Parent;
+            var bundle=new DirectoryInfo(baseDirectory).Parent?.Parent;
             if(bundle!=null && bundle.Name.EndsWith(".app"))return bundle.Parent.FullName;
-            return AppContext.BaseDirectory;
+            return baseDirectory;
         }
         public static void Log(string root,string text){LauncherLog.Write(root,text);}
         static void ExtractArt(string path,string destination)
@@ -51,6 +52,11 @@ namespace TimeSplitters.Launcher
     public sealed class NativeApplication:Application
     {
         public override void Initialize(){Name="TimeSplitters Launcher";RequestedThemeVariant=ThemeVariant.Dark;Styles.Add(new FluentTheme());}
-        public override void OnFrameworkInitializationCompleted(){if(ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)desktop.MainWindow=Program.Arguments.Any(a=>a.StartsWith("--render-")||a=="--test-session")?(Avalonia.Controls.Window)new NativeWindow(Program.Root,Program.Arguments):new NativeStartup(Program.Root,Program.Arguments);base.OnFrameworkInitializationCompleted();}
+        internal static Avalonia.Controls.Window StartupWindow(string root,string[] args)
+        {
+            if(NativeInstallation.Translocated(root)||args.Contains("--render-location-preview"))return new NativeLocationWindow(args);
+            return args.Any(a=>a.StartsWith("--render-")||a=="--test-session")?(Avalonia.Controls.Window)new NativeWindow(root,args):new NativeStartup(root,args);
+        }
+        public override void OnFrameworkInitializationCompleted(){if(ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)desktop.MainWindow=StartupWindow(Program.Root,Program.Arguments);base.OnFrameworkInitializationCompleted();}
     }
 }

@@ -90,6 +90,10 @@ open '/path/to/TimeSplitters Launcher.app' --args --root '/path/to/timesplitters
 
 For an existing native checkout, `./Play-Native-Mac.command` is also available;
 `./Play-Native-Mac.command --check` checks prerequisites without starting the game.
+
+If the release launcher reports a read-only `AppTranslocation` path, follow the
+[Mac launcher folder recovery instructions](docs/mac-launcher.md#shared-behavior-and-distribution).
+Keep the `.app` and `Support` folder together.
 Development checkouts disable release installation and self-updates to preserve
 your source and local builds. Keep `private/game`, `private/saves`, `config` and
 `private/native-settings` when updating the checkout.

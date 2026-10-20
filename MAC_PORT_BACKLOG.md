@@ -1460,6 +1460,19 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Translocation recovery (2026-10-19, commit carrying this entry on
+  `codex/mac-launcher-translocation`):** Windows keeps its existing portable
+  installation behavior. macOS can run a downloaded bundle from a read-only
+  `AppTranslocation` mount, hiding the real portable folder. `Program.cs` now
+  routes that startup to `NativeInstallation.cs` before updater/log/lock writes.
+  The user selects the real folder; shared manifest/path/hash checks and an
+  exclusive temporary write probe validate it before normal startup continues.
+  No game/settings/model policy is duplicated or moved. Native regression/UI
+  and packaged installation checks cover recovery and personal-file preservation.
+  Real browser-translocated first launch and Windows CI remain acceptance work;
+  this is not Developer ID/notarization. Status remains Awaiting validation.
+  [Evidence](STATUS.md#mac-launcher-translocation-recovery-2026-10-19).
+
 - **v1.2.20 replacement release (2026-10-19):** Version bump packages the merged
   sealed Mac app and one-ZIP-per-platform policy. Implementation CI at `1454320`
   passed strict installed/repaired signatures and negative seal/plist tests;
