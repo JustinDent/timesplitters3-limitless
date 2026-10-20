@@ -88,8 +88,10 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
     return value;
 }
+extern uint32_t pc_native_kind35_gate(uint32_t value);
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
-    pc_native_global_load((uint32_t)(site), (uint32_t)(address), (uint32_t)(value))
+    ((site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \
+    pc_native_global_load((uint32_t)(site), (uint32_t)(address), (uint32_t)(value)))
 /* Player+0x1008 is halved by the US update at 0xD5F60. Once the update
  * runs every fractional frame, retain the same half-life in game time.
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
@@ -135,8 +137,10 @@ static inline float pc_native_divide(uint32_t site, float left, float right)
     }
     return value;
 }
+extern float pc_native_kind35_turn(float value);
 #define RECOMP_F32_DIV_AT(site, left, right) \
-    pc_native_divide((uint32_t)(site), (float)(left), (float)(right))
+    ((site)==0xE237Au ? pc_native_kind35_turn((float)(left)/(float)(right)) : \
+    pc_native_divide((uint32_t)(site), (float)(left), (float)(right)))
 /* The original NPC aim tracker closes 5% of its gap per whole update.
  * Normalize only this argument, leaving the shared interpolation helper and
  * every other immediate unchanged. Its chance decision still runs only on
@@ -164,6 +168,12 @@ static inline int pc_native_skip_aim_random(void)
  * including on compilers that decline to inline function-pointer helpers. */
 #define RECOMP_PUSH_IMM_U32_AT(site,value) \
     ((site)==0x2B963Fu ? pc_native_push_imm((site),(uint32_t)(value)) : (uint32_t)(value))
+extern void pc_native_kind35_rng(void);
+extern void pc_native_kind35_target(void);
 #define RECOMP_DIRECT_CALLEE_AT(site,function) \
-    (((site)==0x2B9478u && pc_native_skip_aim_random()) ? pc_native_rng_interval_skip : (function))
+    ((site)==0xF0CA7u ? pc_native_kind35_target : \
+    ((site)==0xF1741u || (site)==0xF1770u || (site)==0xF17A0u || \
+     (site)==0xF17F0u || (site)==0xF181Fu || (site)==0xF184Fu || \
+     (site)==0xF189Fu || (site)==0xF18CEu || (site)==0xF18FEu) ? pc_native_kind35_rng : \
+    ((site)==0x2B9478u && pc_native_skip_aim_random()) ? pc_native_rng_interval_skip : (function))
 #endif

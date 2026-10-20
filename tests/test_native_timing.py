@@ -9,15 +9,12 @@ from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
 
-class ProjectileCoupledTiming(AssertionError):
-    """Travel/steering/effect cadence differs after complete routine execution."""
-
-
 class ObjectRockingQuantization(AssertionError):
     """Measured repeated live transforms; fixture/build errors remain failures."""
 
 
-@pytest.mark.parametrize('source', ['native_timing.c', 'native_timing_guest.c'])
+@pytest.mark.parametrize('source', ['native_timing.c', 'native_timing_guest.c',
+                                    'native_projectile_scope.c'])
 def test_native_timing(source, tmp_path):
     compiler, environment = native_compiler(tmp_path)
     runtime = ROOT / 'external/ts3FPrecomp/src'
@@ -199,10 +196,8 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                               (0xb9790,0xb991d),(0xb9720,0xb9789),
                               (0xbb6c0,0xbb842),(0xbb490,0xbb6bf),(0xba310,0xba6f7)]),
     ('native_projectile_motion.c', [(0xf4a50,0xf51af)]),
-    pytest.param('native_projectile_coupled.c', [(0xf08d0,0xf1a4b),
-                 (0xe78f0,0xe799a),(0xe1fa0,0xe2370),(0xe2370,0xe2514)],
-                 marks=pytest.mark.xfail(strict=True, raises=ProjectileCoupledTiming,
-                     reason='Second projectile updater loses fractional motion; gate-only changes steering/effect cadence')),
+    ('native_projectile_coupled.c', [(0xf08d0,0xf1a4b),
+                 (0xe78f0,0xe799a),(0xe1fa0,0xe2370),(0xe2370,0xe2514)]),
     ('native_npc_aim.c', [(0x2b93d5,0x2b9793),(0x2b9381,0x2b938a),
                                      (0x2b9389,0x2b938a),(0x2b938d,0x2b938e),
                                      (0x123d0,0x123f3),(0x124f0,0x12533),
@@ -349,6 +344,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             functions[0x244f30]['name']='sub_00244F30_gen'
         if harness_name=='native_npc_weapon_fire.c':
             functions[0x1bb5c0]['name']='sub_001BB5C0_gen'
+        if harness_name=='native_projectile_coupled.c':
+            for start in (0xf08d0,0xe78f0):
+                functions[start]['name']+='_gen'
         translator=FunctionTranslator(image,functions)
         code='\n'.join(f'void {info["name"]}(void);' for info in functions.values())+'\n'
         code+='\n'.join(translator.translate_function(start,info)
@@ -366,6 +364,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     output=compile_and_run(tmp_path,harness.replace('/* NUMERIC_POLICY */',policy)
                            .replace('/* FIRE_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
+                           .replace('/* PROJECTILE_POLICY */',
+                                    f'#include "{(ROOT / "src/pc_native_projectile_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
@@ -386,7 +386,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                         abs(float(r['speed'])-float(reference['speed']))>.001 or
                         r['rng']!=reference['rng'] or r['scans']!=reference['scans'] or
                         int(r['fx'])!=4*int(r['frames'])):
-                        raise ProjectileCoupledTiming(output)
+                        raise AssertionError(output)
     if harness_name=='native_npc_aim.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_aim ')]

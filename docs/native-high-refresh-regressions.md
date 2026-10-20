@@ -1781,6 +1781,9 @@ The interactive process and its executable were left untouched.
 
 ### Second projectile updater coupled timing
 
+This subsection records the pre-fix audit at `bf6b5d8`; the source correction
+and its validation follow below.
+
 Source baseline `38c3f4c`, Windows x64, supported checksum-verified US XBE.
 `tests/native_projectile_coupled.c` translates the complete original
 0xF08D0..0xF1A4B updater, kind-35 initializer 0xE78F0..0xE799A,
@@ -1851,3 +1854,69 @@ existing object-rocking quantization (`logs/native-projectile-coupled-shared.log
 configuration IDs, owner slots and sizes before reproducing the timing
 failure; the backlog format check passes. The test is in the existing shared
 timing CI suite. These results do not mark the runtime defect resolved.
+
+
+### Kind-35 projectile motion and trail correction
+
+The shared kind-35 wrapper now enables 0xF08D0 on positive fractional time,
+scales its homing contribution at 0xE237A by the live step, and updates all
+four original trail anchors each advancing frame. The 1.02 acceleration
+loop retains carried whole ticks. Target sampling retains the original
+whole-update countdown. A newborn homing shot acquires a usable target on
+its first fractional update, then skips the duplicate countdown at the next
+whole boundary. The original target-vector calculation still runs each frame.
+
+Nine random trail values are cached separately by their original call sites
+and original projectile-pool slot. Fraction-only callbacks reuse these values
+at fresh positions; they do not consume the shared RNG. Missing emitters do
+not shift the other coordinates. Initialization resets the slot even with
+native timing disabled. The pool bound is derived from the original 0xE8EB0
+allocation: 0xB8A0 bytes with 0x22C stride, or 85 complete slots. Unknown slots
+fall back to original behavior. Nested updater calls save/restore the active
+scope; other projectile kinds and native-off retain the original policy.
+
+The complete original-code fixture now passes its former strict expected
+failure. At native 144, normal-speed unsteered X is 454.700317 after one game
+second versus original 456.205841 (before fix 190.085800). Homing X/Y is
+215.639862/104.503189 versus original 215.687500/104.512825. Every advancing
+frame produces fresh movement and effect positions. All tested rates retain
+540 trail RNG draws and six target checks per game second. Quarter speed
+also passes at 60/120/144; native/original 60 normal-speed projectile bytes
+remain identical. Initial fractional jitter is neutral until its first
+whole-tick random sample, avoiding extra random draws at birth.
+
+Additional checks execute the original collision and expiry branches against
+a controlled X=100 plane and controlled allocation/sound/damage services.
+Each impact dispatches one damage callback, creates one impact object and
+cleans up all four attached effects; expiry retires once without an impact
+hit callback. Arrival and expiry times differ from original-step timing by
+less than one 60 Hz frame. This verifies dispatch, not actual health loss,
+scene geometry or rendered impact effects. Pause checks include zero float
+time with a stale whole-tick value of one. Missing-emitter tests verify other
+anchors keep their own cached jitter. An uneven .125/.875/2/.25/.75/6-tick
+schedule verifies integrated motion, the original acceleration loop and one
+random set per accepted whole update. The separate sidecar fixture checks
+interleaved and recycled slots, native-off initialization, unknown slots,
+pool changes, nested unrelated kinds and uncached impact random calls.
+
+This change is deliberately limited to kind 35. The user's red trails have
+not yet been identified as this projectile/effect. Original distance
+accumulation at +0xF4, its use by damage falloff, moving/occluded targets,
+other updater kinds and full mission behavior remain open. Windows linkage
+and an isolated live smoke check are pending; the user's interactive
+fc3a7ce executable is left running unchanged. Actual Mac execution is pending;
+the implementation and tests use shared source with no OS-specific gameplay
+adapter. The wider native-144 goal remains active.
+
+
+Validation on Windows/MSVC: the final shared timing/CI/backlog/entity/effect
+suite passed **103 tests with one expected object-rocking failure**
+(`logs/native-projectile-final-shared.log`, 44.94 s). The initial combined
+timing and full patch-transition suite passed **52 tests with that same
+expected failure** (`logs/native-projectile-coupled-shared.log`, 400.12 s).
+Focused projectile integration and scope checks pass separately. The supported
+`tsfp.ps1 Generate` command completed successfully, both manual wrappers appear
+in the generated declarations, and the generator fingerprint is current
+(`logs/native-projectile-generate.log`). The generation/backlog contract checks
+passed two tests (`logs/native-projectile-generation-checks.log`). These are source,
+translation and fixture results; they do not claim a new linked executable.

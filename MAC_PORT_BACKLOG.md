@@ -3075,15 +3075,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Windows runner exposes it through `--trace-effects`. No game or OS adapter
   changed. Actual Mac execution, upstream scene visibility inputs and GPU
   submission remain unverified. [Dispatch evidence](docs/native-high-refresh-regressions.md#effect-visibility-and-reproduction-tracing).
-- **Second projectile updater audit:** The shared original-code fixture
-  `tests/native_projectile_coupled.c` reproduces lost fractional travel in
-  0xF08D0 for kind 35 and demonstrates the steering/trail cadence changes from
-  opening its gate alone. It executes the original initializer, target sampler,
-  steering and updater with controlled geometry/effect services. This is a
-  strict expected failure while the runtime correction remains outstanding;
-  no OS adapter or production code changed. Actual Mac execution and live
-  projectile identification remain unverified.
-  [Coupled evidence](docs/native-high-refresh-regressions.md#second-projectile-updater-coupled-timing).
+- **Kind-35 projectile correction (local source):**
+  `src/pc_native_projectile_guest.h`, the numeric call-site policy and the
+  additive `-native-kind35-projectile-timing.patch` apply through the same
+  manual wrappers on Windows and Mac. No OS adapter is required. Fractional
+  travel/steering/trail anchoring now pass the original-code fixture while
+  preserving whole-update random/target cadence. Tests cover impact/expiry
+  dispatch with controlled services, pause, uneven intervals, missing
+  emitters, recycled slots and nested scope isolation. Windows linkage and
+  live scene verification are pending; actual Mac generation/build/gameplay
+  remains unverified. Other projectile kinds and damage falloff are open.
+  [Correction evidence](docs/native-high-refresh-regressions.md#kind-35-projectile-motion-and-trail-correction).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.

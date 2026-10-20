@@ -85,16 +85,19 @@ published release or a full-game 144 FPS certification.
   still need auditing. Windows Release/built-in tests and a 120-second
   isolated native-144 smoke check pass; actual Mac execution is pending.
   [Projectile evidence](docs/native-high-refresh-regressions.md#projectile-travel-on-fractional-frames).
-- The separate 0xF08D0 updater now has a coupled regression fixture for
-  projectile kind 35, including original initialization, target sampling and
-  steering. Over one game second its unsteered native-144 travel is 190.09
-  units versus 456.21 at original 60. A gate-only counterfactual restores
-  travel to 454.70 but increases random trail draws from 540 to 1,296 and
-  homing target checks from 6 to 14. This remains an explicit strict expected
-  failure, not a runtime fix or identification of the user's delayed trails.
-  The eventual correction must preserve random/target cadence and speed
-  while producing fresh movement/effect positions on every advancing frame.
-  [Coupled evidence](docs/native-high-refresh-regressions.md#second-projectile-updater-coupled-timing).
+- The separate 0xF08D0 updater now has a shared, kind-35-only source fix.
+  Motion, steering and four trail anchors advance on fractional frames;
+  target checks, acceleration and shared random draws retain their original
+  whole-update cadence. At native 144, one-second unsteered travel is 454.70
+  units versus original 456.21 (previously 190.09), with all 144 positions
+  fresh, 540 random draws and six homing checks. Original/native 60 remains
+  byte-identical in the controlled fixture. Impact, expiry, pause, missing
+  emitters, uneven intervals and sidecar isolation now have passing checks.
+  The prior coupled expected failure is resolved in source. Windows linkage,
+  live identification of the reported trails, distance-based damage falloff,
+  other kinds in this updater and actual Mac execution remain unverified.
+  The user's running fc3a7ce game is unchanged while they play.
+  [Correction evidence](docs/native-high-refresh-regressions.md#kind-35-projectile-motion-and-trail-correction).
 - The ship reported in the canyon after the first bridge destruction is
   identified as the crashed mothership, model 0x53A. Its updater skipped
   fractional intervals while still applying whole-tick damping, changing
