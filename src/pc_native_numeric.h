@@ -60,6 +60,11 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
  * age advances independently in 0xDC7B0, so this shortened shot range.
  * EAX only receives flag bytes before replacement at 0xF4B18; collision
  * and expiry now see every advancing interval.
+ * Damage application at 0xBB6C0 has a pause-only gate as well. One-shot
+ * hits (including the sniper) can arrive on fractional frames and retire
+ * immediately, so rejecting them loses damage permanently. EAX is replaced
+ * at 0xBB6D2 before use. Keep the hit amount and the separate continuous-
+ * damage scaling unchanged; zero live time still rejects application.
  * All other loads, including other reads of this same address, stay exact. */
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
@@ -72,7 +77,7 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
          site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u ||
-         site == 0x216958u || site == 0xF4A66u) &&
+         site == 0x216958u || site == 0xF4A66u || site == 0xBB6C0u) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;

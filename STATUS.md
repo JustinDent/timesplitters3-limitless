@@ -12,6 +12,17 @@ published release or a full-game 144 FPS certification.
   AI, projectile collision/damage and effect-lifetime checks beyond the
   current opening-area smoke test and isolated arithmetic fixtures.
   [Investigation](docs/native-high-refresh-regressions.md#additional-first-mission-reports-awaiting-reproduction).
+- Sniper damage now has a reproduced cause and source fix: the shared
+  damage-application gate at 0xBB6C0 dropped one-shot hits on live frames
+  with zero whole ticks. An extended original-code fixture executes sniper
+  setup, impact damage calculation, actor dispatch and health subtraction.
+  The unchanged hit goes from health 1.00 to 0.35 at native 60/120/144 and
+  fractional/slow/catch-up intervals; the unpatched zero-whole case leaves
+  health at 1.00. Pause and rejected/untargetable hits remain blocked. Scene
+  geometry, network acceptance and reactions are controlled fixture services.
+  Source-only while the user plays; Windows rebuild, live sniper confirmation
+  and actual Mac execution remain pending.
+  [Sniper evidence](docs/native-high-refresh-regressions.md#sniper-damage-on-fractional-frames).
 - Projectile travel regression reproduced: the 0xF4A50 updater uses fractional
   displacement but skipped zero-whole-tick frames while age advanced normally.
   Its entry gate is corrected in shared source. The original-code fixture

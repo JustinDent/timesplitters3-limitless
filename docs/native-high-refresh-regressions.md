@@ -1376,3 +1376,57 @@ Kind 24's original hit path reaches damage setup 0xB91F0/0xB9220 and
 application 0xBD0F0; actual health behavior is still pending reproduction.
 The small table snapshot is ignored at
 `private/pipeline/projectile-weapon-table.bin`. No game memory was written.
+
+
+### Sniper damage on fractional frames
+
+Source baseline `2d90c6c`, Windows x64, pinned US XBE and repository MSVC/Python.
+The previous projectile-travel fix does not affect weapon 17 / shot kind 24.
+Tracing its damage chain found a second independent timing gate:
+`sub_000BB6C0` returns immediately when integer delta 0x4E7944 is zero.
+The sniper's immediate ray can hit on such a frame, calculate positive damage,
+then retire before a later whole-tick frame. Its health change is lost.
+The gate's EAX is replaced at 0xBB6D2; no counter consumes its value. The
+shared `pc_native_numeric.h` policy now tests positive live game time at that
+load only. Damage amounts, health arithmetic, network policy and continuous-
+damage scaling are unchanged. Zero live time still blocks application.
+
+`tests/native_sniper_damage.c` translates the complete original routines:
+0xE36D0 initialization, 0xF5FF0 update, 0xF5D30 hit processing,
+0xB91F0/0xB9220 damage setup, 0xBD0F0/0xB9790/0xB9720 damage calculation,
+and 0xBB6C0/0xBB490/0xBA310 damage dispatch and actor health subtraction.
+Original scalar and damage-table constants come from the checksum-verified XBE.
+The world ray result, region choice, network/eligibility-service response,
+modifiers, statistics, sound/render effects and reactions are controlled
+fixture services. The actual subtraction of entity +0x1CC runs original code;
+it is no longer replaced by an impact-call counter.
+
+The initial arithmetic-only fixture passed with damage 0.65 at every rate;
+that did not establish health loss. Extending through application reproduces
+the failed health effect (`logs/native-sniper-health-before.log`). With the
+source correction, `logs/native-sniper-health-after.log` verifies:
+
+- An accepted hit reduces health 1.00 to 0.35, matching original 60 FPS,
+  with deltas 1, 1/2, 5/12, 1/4, 5/48, 2 and 6 ticks.
+- Fractional intervals work with either zero or one carried integer tick.
+- Misses, untargetable actors, rejected damage and zero-time pause leave
+  health unchanged. The unpatched zero-whole positive-time case also leaves
+  health at 1.00, explicitly preserving the counterfactual reproduction.
+- Each shot performs one trace and one beam emission, then retires once;
+  the next update does not apply duplicate damage. ABI, x87 stack balance
+  and live timing fields are preserved.
+
+A fixture boundary typo initially omitted the miss-path RET from 0xF5D30;
+correcting its range to end at 0xF5FEC resolved that fixture-only stack mismatch.
+It was not a production translation defect. This source change is shared
+with Mac. Full Windows rebuild, actual user-scene sniper damage confirmation
+and actual Mac execution remain pending while the interactive PID 2212 runs.
+The delayed trails and pre-bridge NPC behavior remain separate open reports.
+
+
+The focused shared regression suite passes 149 checks with one existing
+object-rocking expected failure in 52.91 seconds (`logs/native-sniper-shared.log`).
+Full patch validation passes with zero runtime files updated
+(`logs/native-sniper-patches.log`); generation is current. The production
+translation already calls the shared policy at 0xBB6C0, so no generated C was
+edited. These are offline checks, not a rebuilt or live-verified sniper fix.

@@ -189,6 +189,10 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_mothership.c', [(0x217050,0x21862f),(0x2157b0,0x215982),
                            (0x1515e0,0x15163b),(0x151e80,0x151f1c),
                            (0x152090,0x15211d)]),
+    ('native_sniper_damage.c', [(0xe36d0,0xe3725),(0xf5d30,0xf5fec),(0xf5ff0,0xf61d1),
+                              (0xb91f0,0xb921b),(0xb9220,0xb9264),(0xbd0f0,0xbd18d),
+                              (0xb9790,0xb991d),(0xb9720,0xb9789),
+                              (0xbb6c0,0xbb842),(0xbb490,0xbb6bf),(0xba310,0xba6f7)]),
     ('native_projectile_motion.c', [(0xf4a50,0xf51af)]),
     ('native_ship_debris.c', [(0x2168c0,0x216ca5)]),
     pytest.param('native_object_rocking.c', [(0xa84f0,0xa8a97),
@@ -211,14 +215,15 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c'):
+        if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
             from capstone import Cs, CS_ARCH_X86, CS_MODE_32
             addresses=set(range(0x218630,0x218648,4) if harness_name=='native_mothership.c'
                           else range(0x507d88,0x507db8,4) if harness_name=='native_ship_debris.c'
-                          else range(0xf51b0,0xf51e8,4))
+                          else range(0xf51b0,0xf51e8,4) if harness_name=='native_projectile_motion.c'
+                          else range(0x4dad48,0x4dafb8,4))
             decoder=Cs(CS_ARCH_X86,CS_MODE_32)
             for start,end in ranges:
                 offset=config.va_to_file_offset(start)
@@ -313,7 +318,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
-    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c'):
+    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c'):
         print(output)
     if harness_name=='native_object_rocking.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])

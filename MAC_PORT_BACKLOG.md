@@ -3029,6 +3029,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   execution are unverified. Windows Release/built-in and 120-second isolated
   native-144 smoke checks pass on `ef2ace3`. See the
   [projectile record](docs/native-high-refresh-regressions.md#projectile-travel-on-fractional-frames).
+- **Sniper damage:** Shared gate 0xBB6C0 now accepts a one-shot hit on any
+  positive fractional game interval; pause remains blocked. The original
+  sniper/actor damage chain reproduces dropped health changes and passes
+  across native intervals, misses, target eligibility and rejection checks.
+  No OS adapter is needed. Source-only while the interactive game runs;
+  Windows build/live sniper and actual Mac execution remain unverified. See
+  [the sniper record](docs/native-high-refresh-regressions.md#sniper-damage-on-fractional-frames).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.
