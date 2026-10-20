@@ -153,6 +153,10 @@ The executable also supports `--render-preview output.png`,
 `--render-settings-preview output.png`, `--render-settings-graphics output.png`,
 `--render-settings-discord output.png`, `--render-news-preview output.png`,
 `--render-diagnostics-preview output.png`, and `--render-repair-preview output.png`.
+The modal previews `--render-confirm-preview output.png`,
+`--render-confirm-long-preview output.png`, and `--render-alert-preview output.png`
+render the actual confirmation/error dialog content and then close without
+performing an operation. Long messages scroll above a fixed action row.
 Pass an explicitly disposable `--root` when rendering settings. Preview mode
 performs no network requests, startup cleanup or saves. The news preview renders
 the actual page controls, including its toolbars and release selector. Run actual game tests
