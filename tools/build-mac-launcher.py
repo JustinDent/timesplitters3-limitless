@@ -16,6 +16,14 @@ import urllib.request
 import zipfile
 ROOT=Path(__file__).resolve().parents[1]
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def sign_bundle(app):
+ # Sign nested native code first, then seal the final plist/resources. A signed
+ # command-line host alone is not a signed application bundle.
+ for library in sorted((app/'Contents/MacOS').glob('*.dylib')):
+  subprocess.run(['/usr/bin/codesign','--force','--sign','-','--timestamp=none',str(library)],check=True)
+ subprocess.run(['/usr/bin/codesign','--force','--sign','-','--timestamp=none',str(app)],check=True)
+ subprocess.run(['/usr/bin/codesign','--verify','--deep','--strict','--verbose=2',str(app)],check=True)
 def ico_to_icns(source,destination):
  data=source.read_bytes()
  if len(data)<6 or data[:4]!=b'\0\0\1\0':raise ValueError('Invalid launcher icon')
@@ -64,8 +72,8 @@ def main():
  intermediate_host=output/'obj/Release/net8.0/osx-arm64/singlefilehost'
  if intermediate_host.exists():intermediate_host.unlink()
  subprocess.run(command,env=env,check=True,cwd=ROOT)
- # Sign the executable outside the .app before assembly: file-provider Finder
- # metadata on Desktop app bundles otherwise interferes with SDK codesigning.
+ # Assemble the complete bundle before signing; the resource envelope must
+ # cover the final plist, icon, notices and nested native libraries.
  for generated in publish_dir.iterdir():
   if generated.is_file():os.replace(generated,binary_dir/generated.name)
  version=re.search(r'Value = "([^"]+)"',(ROOT/'tools/launcher/LauncherVersion.cs').read_text()).group(1)
@@ -83,6 +91,7 @@ def main():
    for notice in package_dir.glob('*.txt'):
     if any(word in notice.name.lower() for word in ('license','notice','copying')):
      shutil.copyfile(notice,licenses/(package.replace('/','-')+'-'+notice.name))
+ sign_bundle(app)
  files={str(f.relative_to(output)):digest(f) for f in app.rglob('*') if f.is_file()}
  manifest=output/'Support/Launcher/manifest.json';manifest.parent.mkdir(parents=True,exist_ok=True);manifest.write_text(json.dumps({'schema':1,'version':version,'files':files},indent=2)+'\n')
  receipt={'source_revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_changes':subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True),'source_sha256':{str(f.relative_to(ROOT)):digest(f) for f in [ROOT/'tools/build-mac-launcher.py',ROOT/'config/mac-launcher-sdk.json',*sorted((ROOT/'tools/launcher').glob('*.xaml')),ROOT/'tests/launcher_shared_ui.cs',ROOT/'tools/launcher/macos/NativeLauncher.csproj',ROOT/'tools/launcher/macos/packages.lock.json',ROOT/'tools/launcher/macos/generate_layout.py',*sorted((ROOT/'tools/launcher').glob('*.cs')),*sorted((ROOT/'tools/launcher/macos').glob('*.cs'))]},'sdk':pin,'avalonia':'11.3.22','artwork':{n:digest(artwork/n) for n in ('launcher-banner.png','launcher-logo.png','launcher-backdrop.png') if (artwork/n).exists()},'files':files}

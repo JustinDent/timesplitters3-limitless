@@ -77,3 +77,32 @@ Developer ID signing/notarization and clean-machine Gatekeeper acceptance remain
 separate delivery work. This workflow releases the launcher only; native game
 packages and original game data are not bundled. CI package tests use disposable
 fixtures and never use personal saves or settings.
+
+## Mac application signing and the v1.2.19 migration
+
+The Mac builder signs nested native libraries, then the completed application
+bundle, using a local ad-hoc identity. It strictly verifies the complete signature
+before generating file hashes. The release manifest includes the canonical
+`TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources` seal. Mac CI
+also verifies the extracted/installed app, rejects a missing seal and a changed
+Info.plist, then verifies the repaired bundle before accepting the package.
+
+This fixes a packaging gap in v1.2.19: the executable was ad-hoc signed but the
+assembled .app was not sealed. Direct executable tests did not check Finder's
+bundle signature. An intact ZIP or a successful command-line launch therefore
+was not evidence that a downloaded app would pass macOS launch assessment.
+
+Ad-hoc signing does not establish an Apple Developer ID or notarization. A browser
+download can still be blocked by Gatekeeper. Do not claim a warning-free install,
+notarization or clean-machine acceptance from `codesign --verify` alone. Never
+remove quarantine or disable Gatekeeper in the build, updater or automated tests.
+Developer ID signing and notarization require separate credentials/setup.
+
+**One-time Mac migration:** v1.2.19's updater rejects the newly required signature
+file. Users of that version must manually install the first corrected Mac package;
+its automatic updater cannot perform this transition. Close the launcher, keep
+the existing game installation, saves, settings and ISO, and replace only
+`TimeSplitters Launcher.app` and `Support/Launcher/manifest.json` with the corrected
+release's copies. Subsequent corrected versions accept and preserve the seal.
+Windows update layout/discovery is unchanged. Release notes must disclose this
+Mac migration; do not replace the immutable v1.2.19 download in place.

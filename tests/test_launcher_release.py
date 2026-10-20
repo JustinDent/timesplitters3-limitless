@@ -80,12 +80,15 @@ class LauncherReleaseTests(unittest.TestCase):
         self.version = patch.object(release, 'source_version', return_value=self.plan['version']).start()
         self.addCleanup(patch.stopall)
 
-    def package(self, platform, *, extra=None, executable=True):
+    def package(self, platform, *, extra=None, executable=True, sealed=True):
         files = ({'TimeSplitters Launcher.exe': b'bootstrap', 'Bin/TimeSplitters.App.exe': b'launcher'}
                  if platform == 'windows-x64' else {
                      'TimeSplitters Launcher.app/Contents/Info.plist': b'plist',
                      'TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher': b'native',
+                     'TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources': b'seal',
                      'TimeSplitters Launcher.app/Contents/Resources/Licenses/Avalonia.txt': b'license'})
+        if not sealed:
+            files.pop("TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources", None)
         if extra:
             files.update(extra)
         manifest = {'schema': 1, 'version': self.plan['version'],
@@ -193,6 +196,32 @@ class LauncherReleaseTests(unittest.TestCase):
                 self.package('windows-x64', extra={path: b'bad'})
                 with self.assertRaises(ValueError):
                     release.verify_package(self.directory, self.plan, 'windows-x64')
+
+    def test_mac_bundle_seal_is_required_and_only_canonical_signature_path_is_allowed(self):
+        self.package('macos-arm64', sealed=False)
+        with self.assertRaisesRegex(ValueError, 'Missing launcher entry point'):
+            release.verify_package(self.directory, self.plan, 'macos-arm64')
+        self.package('macos-arm64', extra={
+            'TimeSplitters Launcher.app/Contents/_CodeSignature/unexpected': b'bad'})
+        with self.assertRaisesRegex(ValueError, 'Unexpected launcher payload'):
+            release.verify_package(self.directory, self.plan, 'macos-arm64')
+
+    def test_mac_signing_seals_nested_code_before_bundle_and_requires_strict_verification(self):
+        spec = importlib.util.spec_from_file_location('mac_builder', ROOT/'tools/build-mac-launcher.py')
+        builder = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(builder)
+        app = self.directory/'TimeSplitters Launcher.app'
+        libs = app/'Contents/MacOS'
+        libs.mkdir(parents=True)
+        (libs/'native.dylib').write_bytes(b'fixture')
+        with patch.object(builder.subprocess, 'run') as run:
+            builder.sign_bundle(app)
+        calls = [c.args[0] for c in run.call_args_list]
+        self.assertEqual(calls[0][-1], str(libs/'native.dylib'))
+        self.assertEqual(calls[1][-1], str(app))
+        self.assertIn('--sign', calls[1])
+        self.assertEqual(calls[2], ['/usr/bin/codesign', '--verify', '--deep', '--strict', '--verbose=2', str(app)])
+        self.assertTrue(all(c.kwargs['check'] for c in run.call_args_list))
 
     def test_mac_executable_mode_is_required(self):
         self.package('macos-arm64', executable=False)

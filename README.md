@@ -102,6 +102,9 @@ The launcher targets **macOS 12+**. The current shared Vulkan game renderer
 requires **macOS 26+**; the [Mac guide](docs/macos.md) documents the legacy OpenGL
 fallback for older systems. The app currently uses ad-hoc signing; Developer ID
 signing, notarization and clean-machine installation remain pending.
+Mac launcher v1.2.19 has a reported damaged-app rejection and an unsealed app
+bundle; see [the signing correction and one-time migration](docs/launcher-releases.md#mac-application-signing-and-the-v1219-migration)
+for the fix status and remaining Gatekeeper limitations.
 
 **Controls:** click inside gameplay to capture the mouse, use **WASD** to move,
 and **Escape** to pause and release it. **F2** opens keyboard, mouse and graphics
