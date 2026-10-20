@@ -12673,9 +12673,14 @@ cases, download/recovery, settings, sessions and maintenance. The built launcher
 PathIn accepts the actual desktop installation's Bin, Textures, settings and
 pending-download paths; it positively identifies the desktop's Cloud Files tag.
 13 Python launcher/handoff tests plus 26 subtests passed. No game build or new
-automated playtest was needed. The original installed launcher still rejects
-these paths in a read-only probe; installing the corrected build waits for the
-user to close the active game and launcher. Personal settings and saves remain
+automated playtest was needed. The original installed launcher rejected
+these paths in a read-only probe. After the user closed the game and launcher,
+the corrected binaries and self manifest were installed locally on October 20.
+Installed SelfUpdate.Complete and GameSettings.StartInfo passed in the Windows
+.NET Framework runtime, resolving all 1,242 DDS files. Nine personal settings
+files and the game build manifest retained their hashes. A small launcher-only
+recovery copy and installation receipt remain under .launcher/local-fixes.
+This local fix has not been published as a launcher release. Personal settings and saves remain
 untouched. Local build output is build/launcher-onedrive-fix in the working root.
 
 Mac: no adapter is required for Windows Cloud Files. The existing Mac rejection
