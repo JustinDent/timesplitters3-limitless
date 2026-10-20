@@ -77,8 +77,14 @@ int pc_input_look(PcInput *s, uint64_t now, float sensitivity, int invert_y,
                   float fov_scale, float *yaw, float *pitch)
 {
     double dx = s->dx, dy = s->dy;
+    uint64_t motion_at = s->motion_at;
     s->dx = s->dy = 0;
-    if (!s->focused || !s->captured || now - s->motion_at > 100 ||
+    /* The consumed batch is empty now. Start its age at this consumption,
+       otherwise a later packet can expire fresh counts against the previous
+       batch's timestamp in the middle of an ordinary render interval. Keep
+       the saved age for rejecting this batch if gameplay was suspended. */
+    s->motion_at = now;
+    if (!s->focused || !s->captured || now - motion_at > 100 ||
         !isfinite(*yaw) || !isfinite(*pitch) || !isfinite(sensitivity) ||
         sensitivity <= 0 || !isfinite(fov_scale) || fov_scale <= 0 ||
         (!dx && !dy)) return 0;

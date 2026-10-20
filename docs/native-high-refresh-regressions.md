@@ -40,6 +40,53 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Raw mouse packet cadence
+
+The native-refresh aiming audit found an input-buffer age bug in shared
+`src/pc_input.c`. `pc_input_motion` drops an unconsumed batch after 50 ms to
+avoid storing a long turn while gameplay/camera updates are suspended.
+`pc_input_look` consumed its counts without resetting that age. At ordinary
+frame rates, a new packet could therefore clear other fresh packets already
+queued for the same frame using a timestamp from a previously consumed batch.
+The resulting count loss depended on packet timing and camera update rate.
+
+The correction saves the incoming timestamp for the existing stale-batch
+check, then rebases the empty buffer to the current consumption time. Normal
+camera updates retain all packets received between them. When no camera
+consumes input, the original 50 ms discard still bounds accumulated movement;
+the existing 100 ms stale-look rejection and focus/capture clearing remain.
+Mouse sensitivity, FOV scaling, pitch limits and counts-based yaw are unchanged.
+This helper is used by both Windows `pc_controls.c` and native SDL
+`input_sdl.c`, including the original fixed-60 mode. No platform fork or new
+timing gate is added.
+
+`tests/native_mouse_cadence.c` executes that actual shared input code, with
+packet arrivals independent of camera updates. For a one-second 1,000 Hz
+stream containing 1,000 horizontal counts at sensitivity 0.1, the original
+60/120/144 update paths turn 87.4/93.8/93.3 degrees instead of 100. The fixed
+paths turn 100 within 0.0002 degrees of float accumulation error. Twelve
+uniform unzoomed rate combinations expose loss in eleven original cases;
+the original 125 Hz mouse / 144 Hz camera happens to retain all counts.
+Evidence: `logs/native-mouse-cadence-before.log`.
+
+The expanded fixture passes 48 combinations: 60/120/144 camera updates;
+125/500/1,000/8,000 Hz packet arrivals; uniform and alternating +/-2 ms frame
+offsets; normal view and half-FOV inverted pitch. Each run delivers the same
+total horizontal/vertical counts, checks the analytical end angles and verifies
+that a second consumption cannot replay the same motion. Additional checks
+cover stale buffered motion, fresh input after a stall, bounded continuous
+motion while no camera consumes it, focus loss and capture transitions.
+Evidence: `logs/native-mouse-cadence-fixed.log`. The test is registered in
+the existing shared native timing suite. These are synthetic packet schedules,
+not measured physical-device delivery, end-to-end input latency or live
+camera-pose acceptance. Actual Mac execution remains pending.
+
+All 153 shared native timing, float/vehicle-join, CI-scope, backlog and XMV-stop
+checks pass in 69.51 seconds (`logs/native-mouse-shared.log`). The unchanged
+complete patch stack verifies with zero updated runtime files
+(`logs/native-mouse-patches.log`). Windows production build validation is
+pending at this source checkpoint.
+
 ## Latest-build opening comparison
 
 On Windows x64, the latest production source `3c2fcc2` was compared using

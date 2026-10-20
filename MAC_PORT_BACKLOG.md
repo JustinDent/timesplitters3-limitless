@@ -3158,6 +3158,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   (MAC-009). Model and actual update-body tests pass with synthetic backends;
   the full Windows build/built-in checks and real-file decode/hash comparison
   pass. Actual GPU/audio-device movie playback and Mac execution remain pending.
+- **Raw mouse packet cadence (local source):** `src/pc_input.c` resets the
+  consumed buffer's age so the next packet batch does not expire against a
+  previous batch's timestamp. Windows and SDL adapters already use this shared
+  helper; no additional Mac adapter is needed. `tests/native_mouse_cadence.c`
+  reproduces lost counts and validates 60/120/144 update rates, 125–8,000 Hz
+  packets, uneven intervals, zoom/inversion and stale-input/focus/capture
+  transitions. Actual Mac execution and physical-device latency remain open.
+  [Mouse cadence evidence](docs/native-high-refresh-regressions.md#raw-mouse-packet-cadence).
 - **Latest Windows integration comparison (`3c2fcc2`, local):** Matching
   original-60/native-144 opening replays pass handoff, hand animation, movement,
   firing and pause/resume. Native CPU intervals average 140.399 updates/s at

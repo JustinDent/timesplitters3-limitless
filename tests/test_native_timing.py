@@ -15,7 +15,8 @@ class ObjectRockingQuantization(AssertionError):
 
 @pytest.mark.parametrize('source', ['native_timing.c', 'native_timing_guest.c',
                                     'native_projectile_scope.c', 'native_visual_time.c',
-                                    'native_movie_pacing.c', 'native_movie_update.c'])
+                                    'native_movie_pacing.c', 'native_movie_update.c',
+                                    'native_mouse_cadence.c'])
 def test_native_timing(source, tmp_path):
     compiler, environment = native_compiler(tmp_path)
     runtime = ROOT / 'external/ts3FPrecomp/src'

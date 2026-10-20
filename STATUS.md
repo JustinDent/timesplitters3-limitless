@@ -6,6 +6,16 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Shared raw mouse input now rebases its empty buffer's age after consumption.
+  Previously a later packet could expire fresh counts using an earlier batch's
+  timestamp, producing refresh-dependent aim loss. A controlled 1,000 Hz
+  packet stream intended to turn 100 degrees produced 87.4/93.8/93.3 degrees
+  at 60/120/144 updates/s; the corrected code produces 100 within float error.
+  All 48 packet-rate/frame-rate/jitter/zoom cases and stale-input/focus/capture
+  checks pass. This is shared Windows/Mac input policy; actual device latency
+  and Mac execution remain unverified. All 153 shared checks pass; the complete
+  patch stack verifies with no runtime changes. Production build validation is pending.
+  [Raw mouse cadence](docs/native-high-refresh-regressions.md#raw-mouse-packet-cadence).
 - The latest Windows build (`3c2fcc2`) passes matching 120-second original-60
   and native-144 opening gameplay replays: handoff, hand animation, movement,
   firing and pause/resume. Both consume 32 rounds and observe the same three
