@@ -168,7 +168,7 @@ def test_live_observer_waits_for_guest_mapping_with_bounded_deadline():
         guest_memory_ready(read, 30)
 
 
-def test_native_presents_require_real_guest_frames():
+def test_native_present_kinds_and_errors():
     from native_refresh_game import native_present_checks
     assert not any(native_present_checks('').values())
     valid='[PRESENT] backend=d3d11 total=3000 guest=3000 interpolated=0 other=0 skipped=0 failed=0'

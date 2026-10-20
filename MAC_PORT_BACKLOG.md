@@ -3158,6 +3158,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   (MAC-009). Model and actual update-body tests pass with synthetic backends;
   the full Windows build/built-in checks and real-file decode/hash comparison
   pass. Actual GPU/audio-device movie playback and Mac execution remain pending.
+- **Latest Windows integration comparison (`3c2fcc2`, local):** Matching
+  original-60/native-144 opening replays pass handoff, hand animation, movement,
+  firing and pause/resume. Native CPU intervals average 140.399 updates/s at
+  1x game speed with another game session open. No production or host-adapter
+  change follows from these checks. Mac execution, later levels/modes and
+  physical input/display latency remain unverified.
+  [Comparison evidence](docs/native-high-refresh-regressions.md#latest-build-opening-comparison).
 - **Fractional strip-distortion clock (`a08f41a`, local):**
   `src/pc_native_numeric.h` extends the existing shared visual-clock sampling
   to the continuous strip effect at `0xF9B4B`. The original-code fixture in

@@ -40,6 +40,74 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Latest-build opening comparison
+
+On Windows x64, the latest production source `3c2fcc2` was compared using
+the same executable and runner in two 120-second isolated Test Lab replays:
+
+```
+python tests/native_refresh_game.py --fps 60 --label movie-strip-regression --stress --pause-check --seconds 120 --windowed --capture
+python tests/native_refresh_game.py --fps 144 --native --label movie-strip-regression --stress --pause-check --seconds 120 --windowed --capture
+```
+
+Executable SHA-256:
+`16ddf892fc209737f682345c5d7203945bc531a52dadb471e9f231c180c753f7`.
+Runner SHA-256 at both executions:
+`060b1424dab281a9cbaffd85c0eb9609fd0666f5fa50b254cbbab1c1cea98492`.
+The supported US XBE hash is checked by the runner before launch. Both runs
+completed, passed their gameplay/pause checks and were terminated at the
+requested bound by the runner (child exit 1 is the Windows termination result,
+not an observed crash). Logs are `logs/native-latest-original60.log` and
+`logs/native-latest-144.log`; full records use the corresponding
+`60-movie-strip-regression` / `native-144-movie-strip-regression` prefixes in
+`private/test-saves/high-refresh`.
+
+| Observation | Original 60 | Native target 144 |
+| --- | ---: | ---: |
+| First sampled firearm handoff, seconds after launch | 72.844 | 72.328 |
+| Total ammunition, start/end of 85–115 s action window | 128 / 96 | 128 / 96 |
+| Observed hand animation clips in action window | 1180, 1188, 1190 | 1180, 1188, 1190 |
+| Movement, hand advancement, pause/resume | Pass | Pass |
+
+The half-second observer and wall-time input replay do not prove identical
+handoff timing or trajectories. Final sampled positions differ by about
+0.4 game units; movement parity remains broader than these smoke checks.
+The selected original frame `60-movie-strip-regression-frame_s00006900.bmp`
+and native frame `native-144-movie-strip-regression-frame_s00016560.bmp` were
+reviewed: both show the opening canyon, an equipped visible pistol and
+80 reserve / 16 loaded ammunition. They are not synchronized frame pairs or
+proof of perceptual smoothness.
+
+`tools/native_update_stats.py` measures 7,936 unpaused Story CPU update
+intervals after 60 seconds, totaling 56.5248 seconds: mean 140.399 updates/s,
+p50 7.0356 ms, p95 8.3620 ms, p99 9.3273 ms, maximum 35.1005 ms. Summed game
+and raw deltas both yield 1.000000 seconds per wall second. The original path's
+last five-second FPS report is 59.7; it has no equivalent detailed CPU trace
+in this run, so this is not a percentile comparison. A separate interactive
+game was open during each test (older `b3c30cf` during original-60, latest
+`3c2fcc2` during native-144); this is not an isolated performance benchmark.
+
+Presentation records show guest-tagged API submissions, no interpolation and
+no reported presentation failures. They cannot alone prove fresh content:
+the movie investigation below demonstrates repeated guest-tagged pictures.
+The runner's assertion wording and its test name now reflect that limitation;
+the checks themselves are unchanged. Fresh update cadence is measured
+separately by the native CPU trace.
+
+The presentation-check unit test passes, as do all 66 backlog/CI-scope checks
+(`logs/native-latest-evidence-checks.log`, `logs/native-latest-doc-checks.log`).
+Only test wording and evidence documentation changed after these live runs;
+no production rebuild is required for this checkpoint.
+
+The user-requested latest-build session (PID 38248 at validation) remained
+responsive throughout the native run. Personal controls/display hashes match
+`private/pipeline/gameplay-comparison-protected-before.json`; disposable
+test disks and the run lock were cleaned by the runner. These replays disable
+startup movies and skip the intro. They do not trigger/accept the new strip
+distortion visually, test the later bridge encounter, resolve the deferred
+enemy/trail/sniper reports, establish input latency or GPU/scanout timing,
+or validate later levels, other modes, multiplayer or native Mac execution.
+
 ## Opening-sequence regression
 
 The original timing and native timing at 60 FPS reach firearm/HUD gameplay.

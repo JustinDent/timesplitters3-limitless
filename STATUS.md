@@ -6,6 +6,16 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- The latest Windows build (`3c2fcc2`) passes matching 120-second original-60
+  and native-144 opening gameplay replays: handoff, hand animation, movement,
+  firing and pause/resume. Both consume 32 rounds and observe the same three
+  hand clips during the action window. Native gameplay measures 140.399 CPU
+  updates/s, 1.000000 game seconds per wall second, and p95/p99 intervals of
+  8.362/9.327 ms while a separate interactive session is open. These are
+  bounded smoke checks, not full-level or steady-144 acceptance. The user has
+  now launched this build at target 144; their session remained responsive
+  throughout the native comparison. Controls/display hashes are unchanged.
+  [Comparison and limits](docs/native-high-refresh-regressions.md#latest-build-opening-comparison).
 - Native host-movie polling now has a separate per-playback pacer at the
   selected 60/120/144 rate. The movie loop bypasses the level-update pacer;
   previously it could repeatedly submit an unchanged movie picture without
@@ -19,8 +29,8 @@ published release or a full-game 144 FPS certification.
   content and confirmed timer release. At 144 the measured poll-completion
   mean/p95/max are 6.94/9.21/9.99 ms, including decode and test hashing.
   On-screen playback, audible sync and input latency remain open;
-  native Mac movie support remains MAC-009. The user's session stays on
-  `b3c30cf`; this build is ready for its next launch.
+  native Mac movie support remains MAC-009. The user has since launched this
+  build; startup alone does not establish movie visual/audio acceptance.
   [Movie pacing](docs/native-high-refresh-regressions.md#native-movie-polling).
 - Shared source now samples fractional level time in the second, strip-based
   screen-distortion effect (`0xF9B4B`). The complete original-code fixture

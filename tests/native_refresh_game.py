@@ -55,6 +55,11 @@ def recycle_captures(run, tag):
 
 
 def native_present_checks(text):
+    """Check presentation kinds/errors, not freshness of submitted content.
+
+    Guest-tagged presents can repeat movie pictures without a level update.
+    Freshness, update cadence and game speed require separate observations.
+    """
     reports=[tuple(map(int,m)) for m in re.findall(
         r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) interpolated=(\d+) '
         r'other=(\d+) skipped=(\d+) failed=(\d+)',text)]
@@ -465,7 +470,7 @@ def main():
     assert '[CRASH]' not in log
     if args.native:
         assert '[NATIVE-TIMING]' in log, 'Native timing hook was not executed'
-        assert all(native_present_checks(log).values()), 'Native run did not present only fresh guest frames'
+        assert all(native_present_checks(log).values()), 'Native presentation kind/error checks failed'
         print('Native engine timing:', run / (tag+'-timing.json'),flush=True)
     if args.stress and args.seconds >= 116:
         observed=gameplay_checks(game_samples)
