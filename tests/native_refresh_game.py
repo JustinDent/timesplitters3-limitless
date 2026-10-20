@@ -21,6 +21,20 @@ from native_entity_trace import snapshot_entities
 from native_effect_trace import snapshot_effects
 
 
+def guest_memory_ready(read_bytes, elapsed):
+    """Allow guest mapping to finish before any observer reads its globals.
+
+    Keep the existing five-second native-observation deadline: failure to map
+    is a failed test, rather than an indefinitely empty effects trace.
+    """
+    scene = read_bytes(0x79094c, 4)
+    if scene is not None and len(scene) == 4:
+        return True
+    if elapsed >= 5:
+        raise RuntimeError('Guest memory is unreadable after the five-second startup deadline')
+    return False
+
+
 def recycle_captures(run, tag):
     """Keep three frames from this run, never adjacent evidence or linked files.
 
@@ -298,6 +312,9 @@ def main():
                 elapsed=time.monotonic()-started
                 if args.capture:
                     recycle_captures(run,tag)
+                if not guest_memory_ready(read_bytes, elapsed):
+                    time.sleep(.05)
+                    continue
                 if args.trace_effects and not effect_trace_limited and word(0x79094c)==2:
                     import json
                     snapshot=snapshot_effects(read_bytes)

@@ -1251,9 +1251,72 @@ does not relink or replace the running executable.
 A ten-second read-only observation of the unchanged interactive `fc3a7ce`
 build found state 101, a pool capacity of 20 and no listed entities in all six
 samples (`private/pipeline/rocking-pool-observation.json`). Those non-atomic
-samples establish no live rocking behavior or scene acceptance. The user’s
-session remains open; this correction still needs full Windows link/live
-validation, representative scenes and actual Mac compilation/runtime.
+samples establish no live rocking behavior or scene acceptance.
+
+The subsequent full supported Windows PowerShell 5 `tsfp.ps1 Build` succeeds
+on `dee6170`, including its built-in checks, network identity seal and matching
+crash symbols (`logs/native-rocking-full-build.log`). The loaded `fc3a7ce`
+executable was renamed in place to
+`build/windows/Release/futureperfect_recomp.running-fc3a7ce.exe`, preserving
+the responsive interactive PID 25304. Its SHA-256 remains
+`912f416b5f6eaeabf545c960c255491907988eae9f031ead4231b24832cbc333`.
+The new normal Release executable is `dee6170`, SHA-256
+`3e5932fb336506015b35e83312a8a3c9c8cd5eee2a855843e916462e0bb454e6`.
+The retained loaded image is needed until that interactive process exits;
+its original reported process path does not establish that it runs the new
+file. Ignored `private/pipeline/live-build-handoff.json` records the handoff.
+No second game-data copy or build tree was created. Representative live scenes
+and actual Mac compilation/runtime remain pending.
+
+The first effects-enabled run exposed an observer startup race: it read the
+scene global before the guest address space was mapped. The runner now probes
+that global before any guest observation, tolerates startup unavailability for
+at most five seconds, and still fails on missing/partial memory at the deadline.
+The game-exit check remains active throughout. A focused regression exercises
+unmapped, partial, mapped menu-state and later unreadable memory. Five observer/
+smoke-check tests and five effects/entity tracing tests pass; 66 CI-scope/backlog
+checks also pass. The runner change does not alter game code or require relinking.
+
+The repeated 120-second native-144 run on the new executable passes all checks:
+Story, firearm handoff, advancing/changing hand animations, movement, ammunition
+consumption, pause/resume, fresh guest-only successful presents and no logged
+crash. It uses isolated Test Lab saves/configuration and internal replay input,
+with its window created behind the user's existing window without activation.
+The owned child alone is terminated at the deadline; the resulting child exit
+code 1 is intentional, recorded separately from the successful runner result.
+Logs are `logs/native-rocking-live-144.log` and
+`private/test-saves/high-refresh/native-144-rocking-build-*`.
+
+The unpaused Story window after trace second 60 contains 7,811 CPU update
+intervals over 56.4306 seconds: mean **138.418 updates/s**, p50 **7.0673 ms**,
+p95 **8.8808 ms**, p99 **10.1254 ms**, worst **32.1661 ms**, and game/raw time
+ratios both **1.000000**. The old interactive renderer remains running, so this
+is a shared-load measurement, not an isolated performance benchmark or proof
+of steady 144 Hz, GPU completion, monitor scanout or input latency.
+
+The effects observer retains 147 snapshots, 146 complete; one detects changing
+list heads. Observed effect kinds are 2/5/9/11/12/29/39, with **no type-32 beam**.
+All 74 entity traversals complete, but none observes callback 0xA84F0. These
+half-second/one-second non-atomic samples can miss short-lived effects and
+cannot verify live rocking or identify the reported delayed trail. A reviewed
+late capture shows the starting canyon, weapon 14, crosshair, ammunition HUD
+and surrounding geometry. The replay does not reach the pre-bridge encounter,
+plasma-sniper hit scenario or post-bridge ship landing; those reports remain
+open despite the passing smoke check and original-code fixtures.
+
+The matching 120-second original-60 replay also passes all gameplay and pause
+checks on the same executable (`logs/native-rocking-live-60.log`, evidence
+prefix `60-rocking-reference`). All 146 effects and 73 entity traversals
+complete; it observes the same effect-kind set, again no type-32 beams or
+rocking callbacks. These are repeated samples, not equal-spawn-count or
+per-frame motion comparisons. The reviewed final capture shows the same
+starting canyon/weapon/HUD, with 16 rounds loaded and 80 reserve in both runs.
+Each run retains three BMPs; all evidence for the pair totals about 25.1 MiB.
+The disposable disk cleanup completes and the run lock is removed. Personal
+controls/display SHA-256 values match their pre-build values, and the old
+interactive PID 25304 remains responsive. The user subsequently deferred
+the encounter-specific reports and asked to prioritize overall experience;
+they remain recorded as unverified rather than resolved.
 
 ## Bridge-crash placement investigation
 

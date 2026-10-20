@@ -113,6 +113,26 @@ def test_opening_handoff_rejects_unarmed_natural_intro():
     assert not all(checks.values())
 
 
+def test_live_observer_waits_for_guest_mapping_with_bounded_deadline():
+    from native_refresh_game import guest_memory_ready
+    memory = {}
+    def read(address, size):
+        assert address == 0x79094c and size == 4
+        return memory.get(address)
+    assert not guest_memory_ready(read, 0)
+    assert not guest_memory_ready(read, 4.99)
+    memory[0x79094c] = b'\0\0'  # A partial read is not ready either.
+    assert not guest_memory_ready(read, 1)
+    with pytest.raises(RuntimeError, match='startup deadline'):
+        guest_memory_ready(read, 5)
+    memory[0x79094c] = b'\0' * 4  # Mapped menu state, before Story.
+    assert guest_memory_ready(read, .05)
+    assert guest_memory_ready(read, 30)
+    del memory[0x79094c]
+    with pytest.raises(RuntimeError, match='startup deadline'):
+        guest_memory_ready(read, 30)
+
+
 def test_native_presents_require_real_guest_frames():
     from native_refresh_game import native_present_checks
     assert not any(native_present_checks('').values())

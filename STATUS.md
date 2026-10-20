@@ -6,7 +6,20 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
-- New playtest reports remain open: pre-bridge enemies react to hits and die
+- Latest built executable `dee6170` passes the full supported Windows Release
+  build and a 120-second isolated native-144 gameplay check, including movement,
+  firearm handoff/animation, ammunition use, pause/resume and fresh presents.
+  The measured active window averages 138.418 CPU updates/s (p95 8.8808 ms)
+  with 1x game speed while the older interactive session remains open. This
+  is not a stable-144 or scanout certification. The new binary includes the
+  NPC aim, kind-35 projectile and rocking corrections; the interactive
+  `fc3a7ce` process still uses its retained old image. The bounded effects
+  trace now starts safely after guest mapping, but this opening replay
+  observes no type-32 beams or active rocking callbacks and cannot close
+  the reported encounter-specific bugs.
+  [Latest build and run evidence](docs/native-high-refresh-regressions.md#native-object-rocking-integration).
+- At the user's request, encounter-specific reports are deferred while broader
+  smoothness work continues. They remain open: pre-bridge enemies react to hits and die
   but do not move/fire; gun trails appear about three seconds late and later
   disappear; the plasma sniper reportedly deals no damage. These need live
   AI, projectile collision/damage and effect-lifetime checks beyond the
@@ -50,8 +63,9 @@ published release or a full-game 144 FPS certification.
   changes each frame. Rare decisions retain their counts and game ticks;
   their subframe blend phase is bounded, not bit-identical. Wider checks pass
   484 tests, 87 subtests, with 41 skips and the existing rocking xfail;
-  17 patch-transition checks pass. This is source-only while the user plays;
-  Windows rebuild, targeted live AI and actual Mac execution remain pending.
+  17 patch-transition checks pass. Windows Release and the opening smoke
+  check now pass on `dee6170`; targeted live AI and actual Mac execution
+  remain pending while the user's older session stays open.
   [Aim evidence](docs/native-high-refresh-regressions.md#npc-aim-recovery-and-tracking).
 - Beam-manager lifetime audit passes without a runtime change: the original
   type-32 manager starts an undelayed beam on its first update and expires it
@@ -72,8 +86,9 @@ published release or a full-game 144 FPS certification.
   hidden/wrong-view/deferred effects are suppressed and retired effects do
   not reappear in the fixture. A bounded `--trace-effects` runner option now
   records effect identity fields, age, colors and render-gate state for the
-  next live reproduction. It does not yet establish the reported trail's
-  effect type or actual GPU submission. No runtime fix or rebuild is claimed.
+  next live reproduction. The `dee6170` opening replay collects 147 snapshots
+  (146 complete traversals) without observing type 32. It does not establish
+  the reported trail's effect type or actual GPU submission; no beam fix is claimed.
   [Dispatch evidence](docs/native-high-refresh-regressions.md#effect-visibility-and-reproduction-tracing).
 - Projectile travel regression reproduced: the 0xF4A50 updater uses fractional
   displacement but skipped zero-whole-tick frames while age advanced normally.
@@ -93,11 +108,11 @@ published release or a full-game 144 FPS certification.
   fresh, 540 random draws and six homing checks. Original/native 60 remains
   byte-identical in the controlled fixture. Impact, expiry, pause, missing
   emitters, uneven intervals and sidecar isolation now have passing checks.
-  The prior coupled expected failure is resolved in source. Windows linkage,
-  live identification of the reported trails, distance-based damage falloff,
+  The prior coupled expected failure is resolved in source. Live identification
+  of the reported trails, complete distance-based damage falloff coverage,
   other kinds in this updater and actual Mac execution remain unverified.
-  The manual wrappers and generated game units now compile successfully in
-  the existing Windows Release project; full linkage and build tests remain.
+  The full supported Windows Release build and opening smoke check now pass
+  on `dee6170`, including the manual wrappers and generated game units.
   The user's running fc3a7ce game is unchanged while they play.
   [Correction evidence](docs/native-high-refresh-regressions.md#kind-35-projectile-motion-and-trail-correction).
 - Extended projectile damage-dispatch checks now execute the original
@@ -146,9 +161,10 @@ published release or a full-game 144 FPS certification.
   Tests cover original recursive impulses, interleaved/nested updates,
   object reuse, pool resets/changes, uneven steps and pause during floor
   contact. Shared checks pass 136 tests with no expected failures, and all
-  21 patch-upgrade checks pass. Windows generation and Release compile-only
-  validation pass. Full Windows link/live validation and actual Mac execution remain
-  pending while the interactive `fc3a7ce` build stays open. Unknown entities
+  21 patch-upgrade checks pass. The full supported Windows Release build and
+  built-in checks now pass on `dee6170`; the interactive `fc3a7ce` session
+  remains open on its retained executable. Live scene acceptance and actual
+  Mac execution remain pending. Unknown entities
   outside the audited object pool retain the original motion path.
   [Rocking integration](docs/native-high-refresh-regressions.md#native-object-rocking-integration).
 - The NPC firing path now has the same scoped event-timing correction in

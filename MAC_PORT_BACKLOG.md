@@ -3002,11 +3002,12 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   recursive impulses, per-object isolation, reuse/reset and floor-contact
   pause. The prior cadence expected failure now passes; the shared suite
   passes 136 tests, and all 21 patch-upgrade checks pass. No OS adapter is
-  required. Windows generation and Release compile-only checks pass;
-  full Windows link/live and actual Mac compilation/runtime remain pending.
+  required. The full supported Windows Release build and built-in checks
+  pass on `dee6170`. Live scene acceptance and actual Mac compilation/runtime
+  remain pending.
   The CRT asin/audio-device boundaries remain adapted fixture services,
   and entities outside the audited pool retain original motion. Source is
-  part of this commit on `feature/native-144-fps`. See
+  committed as `dee6170` on `feature/native-144-fps`. See
   [the integration evidence](docs/native-high-refresh-regressions.md#native-object-rocking-integration).
 - **Bridge-crash placement:** The crashed mothership's updater at 0x217050
   dropped fractional motion intervals behind its whole-tick entry gate.
@@ -3055,8 +3056,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   RNG decisions at 0x2B9478. New generic identity-default immediate/callee
   hooks are supplied through the shared patch stack. Original branch and
   helper fixtures pass across 60/120/144, quarter speed, rare decisions,
-  pause and uneven/catch-up intervals. Source-only; Windows rebuild,
-  targeted live AI and actual Mac execution remain pending. No OS adapter
+  pause and uneven/catch-up intervals. Full Windows Release and the opening
+  native-144 smoke check pass on `dee6170`; targeted live AI and actual Mac
+  execution remain pending. No OS adapter
   change is needed. [Aim evidence](docs/native-high-refresh-regressions.md#npc-aim-recovery-and-tracking).
 - **Beam lifetime audit:** `tests/native_beam_lifetime.c` executes the original
   shared effect manager with original switch/type tables. First-update,
@@ -3087,8 +3089,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   travel/steering/trail anchoring now pass the original-code fixture while
   preserving whole-update random/target cadence. Tests cover impact/expiry
   dispatch with controlled services, pause, uneven intervals, missing
-  emitters, recycled slots and nested scope isolation. Windows linkage and
-  live scene verification are pending; actual Mac generation/build/gameplay
+  emitters, recycled slots and nested scope isolation. Full Windows Release
+  and the opening native-144 smoke check pass on `dee6170`. Live scene
+  verification is pending; actual Mac generation/build/gameplay
   remains unverified. Other projectile kinds and damage falloff are open.
   [Correction evidence](docs/native-high-refresh-regressions.md#kind-35-projectile-motion-and-trail-correction).
 - **Projectile damage-dispatch audit (local tests):** The same portable
