@@ -1,4 +1,5 @@
 #include "texture_pack_io.h"
+#include "texture_mode.h"
 #include <inttypes.h>
 static uint64_t native_pack_resident;
 static void native_pack_release(GLTexture *t) {

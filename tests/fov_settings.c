@@ -73,9 +73,11 @@ void sub_00075B70(void) {
 STUB(sub_00071B10) STUB(sub_00071C50)
 STUB(sub_000771D0) STUB(sub_000770E0)
 void sub_00078980(void) {
-    unsigned first=WORD_AT(0x200000+0xc8),second=WORD_AT(0x200200+0xc8);build_menu();
+    unsigned first=WORD_AT(0x200000+0xc8),second=WORD_AT(0x200200+0xc8),
+        textures=WORD_AT(0x200e00+0xc8);build_menu();
     /* Native refresh restores choices by row ID, even across different pages. */
     WORD_AT(0x200000+0xc8)=first;WORD_AT(0x200200+0xc8)=second;
+    WORD_AT(0x200e00+0xc8)=textures;
 }
 STUB(sub_0007D480) STUB(sub_000717D0)
 void sub_00075430(void) { WORD_AT(WORD_AT(g_esp+4)+0xc8)=WORD_AT(g_esp+8);g_esp+=4; }
@@ -133,6 +135,27 @@ int main(int argc,char **argv)
     call(BUILD_CB,0,0);
     CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(7)),"Aspect ratio"));
     CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(9)),"Smoothness / refresh"));
+    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(2)),"Textures"));
+    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(3)),"Classic"));
+    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(10)),"Enhanced"));
+    CHECK(texture_row==0x200e00);
+    /* Actual native choice arrows change the live mode, independently of
+       resolution Apply. Host toggles cannot be undone by an unchanged row. */
+    tsfp_texture_set_4k(0);call(TICK_CB,7,0);CHECK(WORD_AT(texture_row+0xc8)==0);
+    WORD_AT(texture_row+0xc8)=1;call(TICK_CB,7,0);
+    CHECK(tsfp_texture_is_4k() && texture_choice==1);
+    content("TSFP_DISPLAY_V1 1280 720\n");
+    tsfp_texture_toggle();call(TICK_CB,7,0);
+    CHECK(!tsfp_texture_is_4k() && WORD_AT(texture_row+0xc8)==0);
+    tsfp_texture_toggle();call(TICK_CB,0,0);
+    CHECK(tsfp_texture_is_4k() && WORD_AT(texture_row+0xc8)==1);
+    WORD_AT(texture_row+0xc8)=99;call(TICK_CB,7,0);
+    CHECK(tsfp_texture_is_4k() && WORD_AT(texture_row+0xc8)==1);
+    WORD_AT(texture_row+0xc8)=0;tsfp_texture_set_4k(1);refresh(0,0);
+    CHECK(WORD_AT(texture_row+0xc8)==1); /* refresh's stale row restore */
+    call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    CHECK(tsfp_texture_is_4k() && WORD_AT(texture_row+0xc8)==1);
+    WORD_AT(texture_row+0xc8)=0;call(TICK_CB,7,0);CHECK(!tsfp_texture_is_4k());
     for(unsigned a=1;a<PC_DISPLAY_ASPECT_COUNT;a++) {
         WORD_AT(aspect_row+0xc8)=a;call(TICK_CB,0,0);
         CHECK(selected_aspect==(int)a && mode_count>0);
@@ -204,6 +227,6 @@ int main(int argc,char **argv)
     {PcMotionSettings saved;CHECK(pc_motion_load(&saved));CHECK(saved.fps==144);}
     content("TSFP_DISPLAY_V1 1920 1080\n"); /* Performance page never commits resolution/FOV. */
     VirtualFree(mem,0,MEM_RELEASE);
-    puts("PASS: FOV config, bounds, staging, reset, cancellation, atomic failure, preview rollback, keep and guest ABI");
+    puts("PASS: FOV config, bounds, staging, reset, cancellation, atomic failure, preview rollback, keep, live texture choice/synchronization and guest ABI");
     return 0;
 }
