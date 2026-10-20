@@ -1,5 +1,54 @@
 # Measured progress
 
+## Texture batch 232: six timber and panel replacements (2026-10-20)
+
+Eight classified opaque timber/wood-like materials were inspected and edited
+with built-in image generation. Six accepted offline and installed:
+e802db20899d8b55 (weathered vertical timber), 5f3e06247c6bdf30 (irregular
+bark-like slats), b3ad7ae08735bb02 (pink-peach grain), e604db46a3b63df0
+(orange-brown knotted timber), f4ff50de31be4f49 (ivory-banded panel),
+3f26b4b21d1db023 (curved-border panel). Full, 2x2-repeat and original-grid
+comparisons retain principal seams, strip rhythm, knots, band positions and
+frame geometry while adding fine material detail. Black slat gaps remain
+opaque RGB. Mean luminance changes in that order: -4.19%, -5.11%, +1.02%,
+-7.77%, -3.26%, -2.84%. The banded panel is slightly warmer and the curved
+border has stronger contrast; adjoining surfaces and scene lighting are untested.
+
+Two remain held: 92a04e699932708a loses its cool gray-blue lower-left color
+patch, and 86efa81522d3f6e8 becomes visibly too dark (-13.67%) with deeper
+black crevices. Neither installed. Classified/routed assets are not counted as
+finished artwork, and offline acceptance does not establish scene fidelity.
+
+Actual sources: seven 1774x887 and one 1254x1254. Accepted outputs: four
+512x256, one 1024x512 and one 1024x1024, all LANCZOS downsampled without
+crop, color edits, aspect change or alpha override. Not native 4K artwork.
+All eight sources retained privately (26,747,531 bytes). Five comparisons
+stayed in memory, avoiding 1,558,557 raster bytes. Their metrics and image
+hashes replay exactly after retiring eight newly created PNG reference exports
+(170,106 bytes), verified against catalog hashes and decoded archive pixels.
+Previously denied cleanup paths, game files, source artwork and personal data
+remain untouched. Prompts, selection, decisions and recovery receipts are private.
+
+Six new Windows native parser executions pass. Prior 1,413 DDS hashes and
+checker identity match existing evidence; all 1,419 installed files pass a fresh
+Python format, metadata, dimensions, aspect, mip and hash audit. The full audit
+runs once after installation; a separate storage-only refresh avoids repeating
+identical content checks after writing reports. Worklist/hybrid queue/progress
+refreshed: 1,419 installed, 5,265 needing artwork, 128 held; 6,121 classified
+and 691 unclassified. See private review/hybrid-232-acceptance.json.
+
+Pack including metadata: 1,133,296,726 bytes (1080.80 MiB),
+below 6144 MiB; increase 1,401,550 bytes. Temporary snapshot:
+267,709,877 bytes (255.31 MiB), below
+256 MiB. Texture workspace including source art: 7,041,817,326
+bytes; measured disk free 84,098,629,632 bytes. Existing helper reports
+logical/allocated equally, not independent physical-allocation proof.
+One active pack; no new game/build/staging copies, gameplay, publication,
+runtime changes or personal save/settings edits. The 512 MiB residency cap
+stays unchanged. MAC-011 remains Awaiting validation for Mac GPU, mapped
+scenes, transparency, display modes and runtime residency. Asset discovery,
+category review and consolidated scene validation remain unfinished.
+
 ## Texture batch 231: four stone and molding replacements (2026-10-20)
 
 The six unreturned requests from batch 230 were regenerated after confirming
