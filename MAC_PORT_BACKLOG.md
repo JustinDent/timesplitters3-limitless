@@ -1115,6 +1115,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 200 (2026-10-20, commit carrying this entry): seven metal
+  replacements accepted offline; one altered tread pattern held. Standard
+  DXT1 uses existing shared support, requiring no new adapter. The 1,311-file
+  Windows offline structure/hash evidence does not verify Mac curved mapping,
+  brightness, adjacency, residency or scene fidelity. Status: Awaiting
+  validation; retain consolidated Mac scenes, modes, memory and fallback checks
+  near completion. See [batch 200 evidence](STATUS.md#texture-batch-200-metal-patterns-and-baked-shading-2026-10-20).
+
 - Texture batch 199 (2026-10-20, commit carrying this entry): three
   character/clothing atlases accepted offline and five identity/tone failures
   held; 1,304 installed files have current offline structure/hash evidence.

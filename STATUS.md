@@ -1,5 +1,50 @@
 # Measured progress
 
+## Texture batch 200: metal patterns and baked shading (2026-10-20)
+
+Issue #74: eight independently generated metal/panel textures reviewed;
+seven accepted offline and one diamond tread plate held. Accepted: two-row
+riveted strip, bent-rib tread, gray wall bands, narrow grille panel, mirrored
+rust/coating panel, gray curved band and gold-brown curved panel. The held
+tread replaces overlapping/curved raised marks with short isolated diamonds;
+its material detail does not compensate for changed pattern silhouettes.
+
+Original/compiled and 2x2 diagnostic repeats plus enlarged feature crops
+reviewed. Riveted strip retains two rows of six rivets; grille interior has
+26 matched brightness peaks with at most one original-pixel displacement.
+Top/bottom bevel peaks are excluded: this is not an automated total bar count.
+Accepted changes retain broad highlights, seams and UV positions. Dark bent
+ribs (-11.57% mean luminance) and grille panel (-12.43%) need final scene
+brightness checks. Repeated sheets do not prove actual adjacency or curved
+mapping. All originals and outputs are opaque.
+
+Actual generated sources: eight 1774x887 images. Accepted outputs: two
+512x256 and five 1024x512 DXT1, Lanczos resampled, full 10/11-level mips.
+No native 4K claim. Seven native DDS-reader passes plus 1,304 unchanged
+prior-audited DDS hashes and unchanged checker cover 1,311 installed files.
+Full current Python metadata/hash/dimension/aspect/mip-byte audit passed;
+worklist, hybrid queue and inventory refreshed.
+
+Additional 64 original RGB/alpha pairs classified, reaching 3,977 keys.
+Moon, effects, masks, controller lettering, character imagery, gauges and
+foliage need specialist preservation. Installed coverage: 19.25% of 6,812
+cataloged supported keys; 5,381 need art, 120 correction drafts remain.
+Catalog has 7,147 payloads and no unsupported cataloged formats; uncataloged,
+other-encoded and procedural discovery gaps remain open. Classification is
+not artwork completion, and full-category/scene review remains unfinished.
+
+Pack including metadata: 1,078,220,657 bytes (1028.27 MiB),
+up 1,926,422 bytes. Temporary output: 201.96 MiB; texture workspace
+including retained art: 6124.29 MiB logical/allocated by the existing
+helper; disk free 84.78 GiB. The 6144 MiB pack and 256 MiB temporary
+caps hold. The 512 MiB residency policy is unchanged and unmeasured here.
+No duplicate game, build, extract, ZIP or pack staging trees were created.
+
+Private evidence: review/hybrid-200-acceptance.json and linked prompts,
+source verification, comparisons, profiles, triage and native audit. No game
+launch, Mac scene/GPU validation or rebuild; MAC-011 remains Awaiting
+validation. Local issue #74 checkpoint; artwork/game files remain private.
+
 ## Texture batch 199: character identity and clothing atlas review (2026-10-20)
 
 Issue #74: eight independent built-in atlas edits reviewed. Three accepted
