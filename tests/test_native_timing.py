@@ -191,7 +191,8 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 
 
 @pytest.mark.parametrize('harness_name,ranges', [
-    ('native_surface_cache.c', [(0x127500,0x12782c),(0x1956a0,0x19576d)]),
+    ('native_surface_cache.c', [(0x127400,0x127494),(0x127500,0x12782c),
+                               (0x194b00,0x194bb0),(0x1956a0,0x19576d)]),
     ('native_visual_time_guest.c', [(0x43595,0x4359c),(0x670e8,0x670ef),
                                     (0x688bb,0x688c1),(0x68f8e,0x68f94),
                                     (0x691f3,0x691f9),(0x69239,0x6923f),

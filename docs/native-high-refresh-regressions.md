@@ -1663,9 +1663,34 @@ float/vehicle-join, CI-scope and backlog checks pass in 61.92 seconds
 (`logs/native-surface-cache-shared.log`). The unchanged complete patch stack
 verifies with zero updated files (`logs/native-surface-cache-patches.log`);
 no new patch or generator change is needed for these existing load-policy sites.
-Full Windows build, actual Mac execution and live surface/texture
-visual acceptance remain pending at this source checkpoint. The game windows
-remain closed; the previous original-60 comparison is still incomplete.
+Windows source checkpoint `b3c30cf` builds successfully through the supported
+MSVC x64 Release workflow and passes its built-in checks
+(`logs/native-surface-cache-build.log` / `.err`). Executable SHA-256:
+`3b73d1223ffc53841fb3431ccc3caf79dd4afd8829c576687151fcc9f2e73f1e`.
+Personal controls and display files match their pre-build hashes. The user
+requested an interactive launch of this build at native target 144; PID 22536
+was responding, using the normal personal save route. Startup is not gameplay
+or texture visual acceptance. The previous original-60 comparison remains
+incomplete; actual Mac execution and live surface/texture acceptance are open.
+
+The lifecycle extension executes original resource lookup/allocation
+`0x127400..0x127494` and initialization `0x194B00..0x194BB0` as well. Five
+controlled pool slots start with poisoned stamps. New allocation sets all six
+stamp fields to `-1`; requesting an existing resource preserves its stamps,
+and an exhausted pool returns null. Recycling one slot at the same native
+update ID invalidates the previous resource's stamps and permits a fresh
+update. Four player views each dispatch once, with duplicate calls suppressed.
+Original initialization sets the resource tables, handles and image state;
+render-target binding and the two 128-by-128 clears are argument-checking
+spies, not GPU work. The focused fixture passes in 1.27 seconds
+(`logs/native-surface-cache-lifecycle.log`). This tests allocator behavior with
+a controlled recycled slot, not a complete level-unload/load sequence.
+
+The nearby clock reads in `sub_00195810` select strings using shifted vblank
+bits; they do not access these resource stamps and remain unchanged. A direct
+call scan finds the procedural dispatcher only at `0x127684`; that does not
+exclude indirect callers. The surface construction routine's broader material
+and GPU behavior remains outside this fixture.
 
 ## Bridge-crash placement investigation
 

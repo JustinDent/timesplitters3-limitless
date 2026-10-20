@@ -15,8 +15,11 @@ published release or a full-game 144 FPS certification.
   missed updates at 120/144 and check restored cadence, UV/phase integration,
   resource swaps, pause/resume and original inactive-native behavior.
   All 147 shared checks pass; the unchanged patch stack verifies cleanly.
-  Windows build validation is pending at this source checkpoint;
-  live textures, GPU pass contents and complete level coverage remain open.
+  Windows build `b3c30cf` and its built-in checks pass. The expanded original-code
+  fixture also passes resource allocation, reuse, pool exhaustion, recycling
+  and four-view deduplication checks. The user-requested interactive launch
+  uses this build; live textures, GPU pass contents and complete level coverage
+  remain open.
   [Procedural texture cache](docs/native-high-refresh-regressions.md#procedural-texture-cache-cadence).
 - Build `ae410c4` now supplies fractional level time to the audited screen-distortion
   read. Direct clock stores update a shared fractional offset, explicit
