@@ -121,7 +121,7 @@ namespace TimeSplitters.Launcher
             foreach(var path in new[]{LauncherPlatform.Saves(root),Path.GetDirectoryName(files[2]),"logs"})Directory.CreateDirectory(Core.PathIn(root,path));
             string controls=Core.PathIn(root,files[0]);Directory.CreateDirectory(Path.GetDirectoryName(controls));
             if(!File.Exists(controls))using(var src=typeof(NativeHost).Assembly.GetManifestResourceStream("launcher-controls-default.json"))using(var dst=new FileStream(controls,FileMode.CreateNew))src.CopyTo(dst);
-            string runtime=Core.PathIn(root,files[2]);if(!File.Exists(runtime))using(var writer=new StreamWriter(new FileStream(runtime,FileMode.CreateNew)))writer.WriteLine("# Native runtime settings\nframe_interp = 2");
+            string runtime=Core.PathIn(root,files[2]);if(!File.Exists(runtime))using(var writer=new StreamWriter(new FileStream(runtime,FileMode.CreateNew)))writer.WriteLine("# Native runtime settings\nframe_interp = 1\nframe_target = 0\nframe_cap = 60\nrefresh_rate = 0");
         }
         public static async Task Drain(Stream input,string path)
         {

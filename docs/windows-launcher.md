@@ -271,122 +271,17 @@ Home; closing the launcher also discards unsaved edits. Existing
 backup, rollback and external-edit protection are unchanged.
 
 Graphics include output resolution (presets, attached display sizes and custom
-dimensions), borderless fullscreen, console supersampling (1–8), anisotropic filtering
-(1–16), frame pacing, interpolation (1–4), VRR and the FPS overlay. Invalid
-resolutions and non-finite sensitivity are refused. Desktop refresh is unchanged
-unless a supported fullscreen monitor rate is explicitly selected.
+dimensions), borderless fullscreen, console supersampling (1–8), anisotropic
+filtering (1–16), VRR and the FPS overlay. Rendering is fixed at 60 FPS.
+Interpolation, 120/144 FPS presets, uncapped pacing and monitor-rate switching
+have been removed from both launchers and the in-game display menu.
 
-The development build adds **Smooth motion → 120 FPS / 144 FPS** under
-**Quality & performance**. These experimental targets require a game build
-newer than v0.3.0-alpha.2; older installed releases keep the legacy multiplier.
-Selecting a target enables fullscreen and VRR, and selects 60 Hz game pacing
-when necessary. The game-pacing and legacy-multiplier controls are disabled
-while a presentation target is selected to prevent conflicting choices.
-Save and restart the game. **Use interpolation setting** restores the existing `frame_interp` preference;
-existing installations are not switched automatically.
-
-For an easier starting point, open **Game settings → Graphics & resolution →
-Smoothness setup**:
-
-1. Select **120 FPS · smooth** first. This sets fullscreen, VRR, 60 Hz game
-   pacing, 1× console render scale and the FPS overlay. It requests 120 Hz if
-   the primary display reports support; otherwise it keeps the desktop rate.
-   Your output resolution and filtering stay as selected.
-2. Check **Monitor refresh · fullscreen** and the displayed current primary
-   monitor rate. A supported **144 FPS · smooth** setup works the same way
-   with a 144 Hz request. If the display rate is too low, check the game's
-   monitor in **Windows Settings → System → Display → Advanced display**.
-   Windows only offers rates supported by that display and current resolution.
-   See [Microsoft's refresh-rate instructions](https://support.microsoft.com/en-us/windows/hardware/display-graphics/change-the-refresh-rate-on-your-monitor-in-windows).
-3. Choose **Save settings**, then restart the game. Buttons update a draft;
-   Cancel discards it. Compare the same scene while moving the camera.
-4. If 144 is uneven, try 120. If GPU load causes drops, lower **Output
-   resolution**. Console scale only affects **Original console resolution**:
-   2× draws four times as many scene pixels, so reduce it to 1× first in that
-   mode. With an explicit resolution, the renderer uses that scene size and
-   console scale is disabled in the UI while retaining its saved value.
-5. **60 FPS · original** explicitly turns interpolation off and uses 60 Hz
-   game pacing, 1× console scale, fullscreen, VRR and the FPS overlay, with the
-   current desktop refresh rate. It retains output resolution and filtering.
-
-The guidance updates when resolution, target, fullscreen, VRR or refresh
-changes. The monitor inventory reflects the primary display when the settings
-page opens; reopen it after changing displays. The runtime validates the
-requested rate against the monitor actually hosting the game. Selecting VRR
-here does not enable the monitor/driver feature for you. The Windows presentation
-path uses the tearing-allowed flag needed for VRR; a fixed-refresh screen can
-still tear. See [Microsoft's VRR requirements](https://learn.microsoft.com/en-us/windows/win32/direct3ddxgi/variable-refresh-rate-displays).
-
-Use **Game** FPS to check the original game updates and **Shown** to check host
-submissions. Game FPS can fall during loading or CPU-heavy work even at a low
-resolution. Shown FPS can fall when there is insufficient rendering time or
-when prediction cannot safely match a frame. Neither counter measures monitor
-scanout, GPU execution time or input latency. The existing disk shader cache is
-already enabled by default; clearing it is not a general FPS improvement.
-
-The target controls host presentation, while the console clock stays at 60 Hz.
-Camera and object transforms are blended between guest frames. During CPU work,
-the renderer can predict up to one game frame ahead using the two completed
-poses while the next frame is still being built. Separate color/depth targets
-and a host-state snapshot preserve that partial frame. Feedback and offscreen
-effects use their latest real-frame image during prediction, so those passes
-do not interrupt the main scene's extra frames. Use an appropriate
-high refresh monitor with VRR enabled in its driver and borderless fullscreen.
-This setting does not change the desktop refresh rate. GPU load, loading,
-camera cuts, movies and frames that cannot be matched can reduce the rate;
-144 FPS is a target, not a constant-rate guarantee. Screen-space UI and some
-CPU-animated effects still update at the game's own rate.
-
-If the extra rendering target is temporarily unavailable, the 120/144 FPS
-mode continues with normal game frames and retries at most once per second.
-It can resume smooth motion without restarting after resources become
-available. Persistent GPU pressure may still require a lower output resolution.
-
-**Camera & window → Monitor refresh · fullscreen** separately offers the
-current desktop rate and supported **120 Hz / 144 Hz** rates at the desktop's
-current resolution. The FPS target and the monitor rate are separate controls.
-Choose matching values for a high refresh display. The game applies the monitor
-rate only while it owns the foreground fullscreen window; it restores the
-previous rate on focus loss, leaving fullscreen, or exit. An independent helper
-also restores it after a process crash or forced termination. Unsupported modes
-or unavailable recovery support leave the display unchanged. Independent user
-display-mode changes are preserved. Existing settings keep the desktop rate.
-The implementation tests driver-reported modes with Windows'
-[display-mode API](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-changedisplaysettingsexw).
-
-For a direct development run, put `frame_target = 144` and `frame_cap = 60`
-in the runtime display configuration, or set `RECOMP_FRAME_TARGET=144` and
-`RECOMP_FPS_CAP=60` for that process. `frame_target = 0` keeps legacy behavior.
-`refresh_rate = 120` / `144` (or `RECOMP_REFRESH_RATE`) selects the optional
-fullscreen monitor rate; `0` preserves the desktop rate.
-Alternatively, double-click `Play-Smooth.cmd` for a temporary 144 FPS/fullscreen
-override, or run `Play-Smooth.cmd 120`. It requests the matching monitor rate
-when supported and leaves saved preferences unchanged.
-`RECOMP_INTERP_TRACE=<csv path>` optionally records up to 20,000 interpolated
-CPU submission timestamps and blend factors; it does not measure scanout.
-
-The running Windows game also offers **Settings → Display settings →
-Smoothness / refresh** (or paused **Options → Display settings**). Its FPS
-and monitor-rate choices save for the next normal launch; Back discards edits.
-Unlike the launcher's setup buttons, this page preserves render scale and
-the FPS-overlay preference. See the [in-game controls](windows-settings.md#in-game-display-settings).
-
-For development investigations, `TSFP_GPU_TRACE=<csv path>` enables a bounded
-D3D11 timestamp probe around interpolated redraws and their resolve, plus CPU
-redraw and Present-call timings. Queries are polled without waiting or flushing;
-the CSV stops after 20,000 samples. GPU elapsed spans can include idle bubbles
-and exclude the guest frame, so they are not whole-frame GPU busy time.
-DXGI display statistics are recorded when available; zero statistics do not
-establish scanout timing. The probe is off by default. The isolated
-`tests/high_refresh_game.py --fps 144 --seconds 120 --stress --pause-check
---gpu-timing` runner bounds and collects this trace. Its optional `--presentmon`
-argument accepts a locally installed PresentMon console executable and traces
-only that child game's PID; unavailable ETW events are reported explicitly.
-For a longer stability check, `--seconds 300 --resources` samples the isolated
-child's private memory, working set and handle count every five seconds into
-a separate `*-stability-resources.json` file. Runs are capped at ten minutes;
-the interpolation CSV retains its independent 20,000-sample cap. The existing
-stress inputs run early in the session; later time observes continued gameplay.
+Older `frame_interp`, `frame_target`, `frame_cap` and `refresh_rate` preferences
+are normalized to `1`, `0`, `60` and `0` when saved. Startup also forces those
+values, including when launching an older game package without saving first.
+The updated runtime ignores retired timing overrides even when started directly.
+Unrelated settings, comments and profile data are preserved. The monitor keeps
+its desktop refresh rate; VRR remains available for 60 FPS presentation.
 
 Launcher v1.2.1 adds
 **Game settings → Graphics & resolution → Startup → Skip startup splash screens**:

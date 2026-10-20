@@ -1,5 +1,43 @@
 # Measured progress
 
+## Fixed 60 FPS restoration (2026-10-20)
+
+Prepared on `remove-high-fps-enhancements`, based on main `5db4efc`, in the
+commit carrying this entry.
+At the user's request, removed the interpolation/prediction engine, fractional
+presentation clock, in-game and launcher timing selectors, high-refresh presets,
+Play-Smooth helper and obsolete interpolation tests. The upstream recorder
+retains inert ABI compatibility functions only. Historical patches remain for
+safe checkout transitions; unrelated renderer and gameplay fixes are preserved.
+
+Both hosts use frame_interp=1, frame_target=0, frame_cap=60 and refresh_rate=0.
+The runtime ignores old timing files/overrides, and both launchers normalize the
+legacy keys on Save while preserving unrelated preferences. Launch also enforces
+safe values for older packages. Native scripts reject higher FPS targets.
+Desktop refresh is unchanged; guest simulation remains 60 Hz.
+
+Windows x64 / MSVC 17.14 build and build tests passed. The standalone launcher
+passed its regression groups, including 35 settings checks and eight shared UI
+groups. Configuration migration, removed-engine and native-script checks passed.
+Historical patch transitions passed after updating the pre-presentation fixture
+to exclude the later removal patch. The final targeted recheck passed 20 tests
+with one platform skip; obsolete tests of deleted interpolation internals were
+replaced by checks that no replay or guest-frame suppression occurs.
+Patch-transition and renderer results are in ignored
+`build/fixed60-regressions.log` and `build/fixed60-recheck.log`.
+
+A 45-second isolated startup/menu test on D3D11 / RTX 4070 SUPER at 3440×1440
+supplied 144 FPS, interpolation 4 and uncapped values through both a test file
+and environment. The runtime reported strict 60 FPS pacing. Its last cumulative
+sample recorded 2,400 guest presentations, zero interpolated/other presentations,
+and zero skipped/failed presentations. This checks policy and startup/menu
+execution, not complete weapon/level visual coverage or monitor scanout.
+Test preferences were restored to 60 afterward; personal saves were not used.
+
+Native macOS compilation, launcher execution and GPU/gameplay validation remain
+pending on a Mac (MAC-054). Windows checks do not establish those results.
+This is a source change; no release has been published.
+
 ## Mac launcher translocation recovery (2026-10-19)
 
 Prepared on `codex/mac-launcher-translocation` from main `b7a0630`, in the commit

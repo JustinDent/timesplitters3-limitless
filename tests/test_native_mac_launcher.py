@@ -64,12 +64,14 @@ def test_log_cap_still_drains_pipe(tmp_path):
 
 
 def test_fps_override_does_not_change_console_clock(tmp_path):
-    for fps,multiple in ((60,'1'),(120,'2')):
+    for fps,multiple in ((None,'1'),(60,'1')):
         env=launcher.game_environment({'RECOMP_VBLANK_HZ':'144'},tmp_path,fps)
         assert env['RECOMP_FRAME_INTERP']==multiple
-        assert env['RECOMP_FPS_CAP']==('60' if fps==120 else 'adaptive')
+        assert env['RECOMP_FPS_CAP']=='60'
         assert 'RECOMP_VBLANK_HZ' not in env
-    assert 'RECOMP_FRAME_INTERP' not in launcher.game_environment({},tmp_path)
+    assert launcher.game_environment({},tmp_path)['RECOMP_FRAME_INTERP']=='1'
+    for fps in (120,144):
+        with pytest.raises(ValueError,match='60 FPS'):launcher.game_environment({},tmp_path,fps)
 
 
 @pytest.mark.parametrize('driver,filename',[(None,'libkosmickrisp_icd.json'),
@@ -81,7 +83,7 @@ def test_manifest_gpu_routing_preserves_personal_paths_without_writes(tmp_path,m
         calls.append(root)
         return root/'sdk'
     monkeypatch.setattr(vulkan_sdk,'verify_install',verify)
-    base=launcher.game_environment({'DYLD_INSERT_LIBRARIES':'stale','VK_DRIVER_FILES':'stale'},tmp_path,120)
+    base=launcher.game_environment({'DYLD_INSERT_LIBRARIES':'stale','VK_DRIVER_FILES':'stale'},tmp_path,60)
     manifest={'renderer':'vulkan'}
     if driver is not None:manifest['vulkan_driver']=driver
     env=launcher.renderer_environment(base,tmp_path,manifest)

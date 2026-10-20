@@ -10,8 +10,6 @@ namespace TimeSplitters.Launcher
         public const string AssetSuffix = "macos-arm64";
         public static string SessionLog(string tag){return "logs/native-play.err";}
         public const int LauncherArchiveLimit = 256*1024*1024, LauncherExpandedLimit = 512*1024*1024, LauncherFileLimit = 4096, LauncherManifestLimit = 1024*1024;
-        public const int DefaultInterpolation = 2;
-        public static readonly bool CanSelectPresentationTarget = false;
         public const string DisplaySettingsLocation = "System Settings → Displays";
         public const string UpdateManifest = "launcher-update-macos-arm64.json";
         public static bool LauncherResource(string name) { return name == "TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources" || (name.StartsWith("TimeSplitters Launcher.app/Contents/MacOS/",StringComparison.Ordinal) && name.EndsWith(".dylib",StringComparison.Ordinal)) || name.StartsWith("TimeSplitters Launcher.app/Contents/Resources/",StringComparison.Ordinal) && (name.EndsWith(".txt",StringComparison.Ordinal) || name.EndsWith(".icns",StringComparison.Ordinal)); }
@@ -36,8 +34,6 @@ namespace TimeSplitters.Launcher
         public const string AssetSuffix = "windows-x64";
         public static string SessionLog(string tag){return "Logs/"+tag+".err";}
         public const int LauncherArchiveLimit = 16*1024*1024, LauncherExpandedLimit = 32*1024*1024, LauncherFileLimit = 12, LauncherManifestLimit = 16384;
-        public const int DefaultInterpolation = 1;
-        public static readonly bool CanSelectPresentationTarget = true;
         public const string DisplaySettingsLocation = "Windows Settings → System → Display → Advanced display";
         public const string UpdateManifest = "launcher-update.json";
         public static bool LauncherResource(string name) { return false; }
