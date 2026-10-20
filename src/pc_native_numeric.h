@@ -6,11 +6,6 @@
 #include <string.h>
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
-/* Only the original US D3D PFB flush poll. Keep all other TEST instructions,
- * status registers, DMA submissions and completion fences unchanged. */
-extern uint32_t pc_gpu_flush_poll(uint32_t address, uint32_t observed);
-#define RECOMP_TEST_MEM_U32_AT(site, address, value) \
-    ((site)==0x3D66D0u ? pc_gpu_flush_poll((uint32_t)(address),(uint32_t)(value)) : (value))
 /* These original integer-to-float reads are continuous motion consumers of
  * the engine delta (animation, particles, camera easing). Native updates use
  * the adjacent fractional delta. Integer arithmetic and counters keep using

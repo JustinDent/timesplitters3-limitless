@@ -68,23 +68,6 @@ def test_native_update_statistics():
     assert summarize(rows,0)['intervals']==142
 
 
-@pytest.mark.parametrize('encoding,hooked', [
-    ('f7801004100000000100', True),  # test dword [eax+0x100410], 0x10000
-    ('66f7000100', False),           # test word [eax], 1
-    ('f60001', False),               # test byte [eax], 1
-    ('813800000100', False),         # cmp dword [eax], 0x10000
-    ('a900000100', False),           # test eax, 0x10000
-])
-def test_gpu_poll_hook_is_only_dword_memory_test(encoding,hooked):
-    sys.path.insert(0,str(ROOT/'external/ts3FPrecomp'))
-    from tools.recomp.disasm import Disassembler
-    from tools.recomp.lifter import Lifter
-    raw=bytes.fromhex(encoding)
-    insn=Disassembler().disassemble_function(raw,0x3d66d0,0x3d66d0+len(raw))[0]
-    code='\n'.join(Lifter().lift_instruction(insn))
-    assert ('RECOMP_TEST_MEM_U32_AT(' in code)==hooked
-
-
 def test_gameplay_checks_reject_frozen_opening():
     from native_refresh_game import gameplay_checks
     frozen=[dict(seconds=t,position=[1,2,3],
@@ -191,7 +174,6 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 
 
 @pytest.mark.parametrize('harness_name,ranges', [
-    ('native_gpu_flush.c', [(0x3d6690,0x3d6740)]),
     ('native_script_events.c', [(0x228870,0x228b35),(0x218910,0x218aa6),
                                (0x61570,0x6160f),(0x585e0,0x5861b),(0x59cf0,0x59d14)]),
     ('native_npc_dispatch.c', [(0x15eae0,0x15f0ca)]),
@@ -424,8 +406,6 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_projectile_guest.h").as_posix()}"')
                            .replace('/* ROCKING_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_rocking_guest.h").as_posix()}"')
-                           .replace('/* GPU_FLUSH_POLICY */',
-                                    f'#include "{(ROOT / "src/pc_gpu_flush_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
