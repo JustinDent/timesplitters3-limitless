@@ -67,6 +67,14 @@ published release or a full-game 144 FPS certification.
   identification, scene visibility and GPU submission remain unverified.
   No production behavior changed and the interactive game remains running.
   [Geometry evidence](docs/native-high-refresh-regressions.md#beam-construction-and-vertex-output-audit).
+- The beam audit now includes the original type-32 render-list branch and
+  manager visibility flags. Eligible beams draw on fractional frames;
+  hidden/wrong-view/deferred effects are suppressed and retired effects do
+  not reappear in the fixture. A bounded `--trace-effects` runner option now
+  records effect identity fields, age, colors and render-gate state for the
+  next live reproduction. It does not yet establish the reported trail's
+  effect type or actual GPU submission. No runtime fix or rebuild is claimed.
+  [Dispatch evidence](docs/native-high-refresh-regressions.md#effect-visibility-and-reproduction-tracing).
 - Projectile travel regression reproduced: the 0xF4A50 updater uses fractional
   displacement but skipped zero-whole-tick frames while age advanced normally.
   Its entry gate is corrected in shared source. The original-code fixture

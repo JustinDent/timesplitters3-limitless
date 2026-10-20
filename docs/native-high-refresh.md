@@ -172,6 +172,18 @@ partial timing evidence is retained with that status. `--capture` keeps up to
 contains at most 20,000 update timestamps and deltas. These measure CPU update
 cadence, not GPU completion, monitor scanout or end-to-end input latency.
 
+For effect reports, add `--trace-effects`. This samples the owned child's
+effect lists approximately every half second during Story mode, saving
+`<tag>-effects.json` within the disposable test directory. Each traversal is
+limited to 256 effects and the output to 16 MiB. Records include effect type,
+age, lifetime, deferred start, position and view flags; type-32 beams also
+include colors, strand delays and the original dispatch-gate result when the
+current player is readable. Validation records the tracer's hash and whether
+its output limit was reached. Reads are not atomic, pool addresses can be
+recycled, and short-lived effects can fall between samples. An eligible effect
+is not proof that a GPU draw or visible frame occurred. This option changes
+only observation of the isolated test child, not personal settings.
+
 Measured Windows results and their source/build scope are in `STATUS.md`.
 Native Mac build/runtime validation, additional levels and modes, vehicles,
 recorded demos, multiplayer synchronization, full campaign timing, and

@@ -16,7 +16,8 @@ RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
 RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 
-enum { FX=0x1000,DATA=0x2000,ORIGIN=0x4000,END=0x4010,VERTICES=0x10000,STACK=0x30000,HEAD=0x73bb88 };
+enum { FX=0x1000,DATA=0x2000,ORIGIN=0x4000,END=0x4010,PLAYER=0x5000,
+       VERTICES=0x10000,STACK=0x30000,HEAD=0x73bb88 };
 static unsigned retired,random_calls,draws,visible_vertices,vertex_count,quality;
 static float random_value;
 #undef RECOMP_ITAIL
@@ -82,9 +83,11 @@ void sub_000459D0(void) {
 static void call(void (*fn)(void)) {
     g_esp=STACK;MEM32(STACK)=0x12345678;
     g_esi=0xdead;g_ebx=0xbeef;g_edi=0xfeed;g_ebp=0xabcd;
+    if(fn==sub_0010BF5C)g_ebx=1;
     fn();
     assert(g_esp==STACK+4 && g_fp_top==0);
-    assert(g_esi==0xdead && g_ebx==0xbeef && g_edi==0xfeed && g_ebp==0xabcd);
+    assert(g_esi==(fn==sub_0010BF5C?0u:0xdeadu));
+    assert(g_ebx==(fn==sub_0010BF5C?1u:0xbeefu) && g_edi==0xfeed && g_ebp==0xabcd);
 }
 static void construct(unsigned strands) {
     memset((void *)((uintptr_t)FX+g_xbox_mem_offset),0,0x68);
@@ -105,11 +108,12 @@ static void tick(float delta,unsigned whole) {
     call(sub_0010A760);
     assert(MEM32(0x4e7944)==whole && MEMF(0x4e794c)==delta);
 }
-static unsigned render(void) {
-    draws=visible_vertices=0;MEM32(STACK+4)=FX;call(sub_000141A0);
-    assert(draws==2*(MEM32(DATA)-1));
+static unsigned render_expected(unsigned expected) {
+    draws=visible_vertices=0;call(sub_0010BF5C);
+    assert(draws==expected);
     return visible_vertices;
 }
+static unsigned render(void) { return render_expected(2*(MEM32(DATA)-1)); }
 static float run(int fps,int native,float speed,unsigned strands,unsigned q,float rng) {
     g_tsfp_native_timing_active=native;quality=q;random_value=rng;
     construct(strands);
@@ -130,6 +134,7 @@ static float run(int fps,int native,float speed,unsigned strands,unsigned q,floa
         assert(render()==visible);
     }
     assert(first==1 && retired==1 && draw_frames>0);
+    assert(render_expected(0)==0); /* Retired effects cannot reappear. */
     assert(fabs(elapsed-1.2)<=2*dt/60+.00001);
     assert(last*dt/60<=1.2+.00001);
     assert(random_calls==5*(strands-1));
@@ -137,11 +142,48 @@ static float run(int fps,int native,float speed,unsigned strands,unsigned q,floa
         native,fps,speed,strands,q,rng,first*dt/60,last*dt/60,elapsed,draw_frames);
     return last*dt/60;
 }
+static void visibility_cases(unsigned fps,float speed) {
+    g_tsfp_native_timing_active=1;quality=1;random_value=.5f;
+    float dt=60.f/fps*speed;double carry=0;
+    construct(4);
+    /* Original manager computes per-player room visibility every live
+     * interval; only the upstream camera/room query result is controlled. */
+    MEM32(FX+8)=0x80000;MEM32(FX+0x98)=1;MEM32(FX+0x9c)=0;
+    MEM32(0x7b0ce0)=1;MEM32(0x7b0ce4)=PLAYER;
+    MEM32(PLAYER+0x21c)=0x80000001;MEM8(PLAYER+0xd2c)=0;
+    for(unsigned i=0;i<fps/(4*speed);i++) {
+        carry+=dt;unsigned whole=(unsigned)carry;carry-=whole;
+        tick(dt,whole);assert(render_expected(0)==0 && !retired);
+    }
+    MEM8(PLAYER+0xd2c)=1;
+    tick(dt,0);assert(render()>0); /* No whole tick required for visibility. */
+    unsigned normal=MEM32(FX+8);
+    MEM32(FX+8)=normal|0x200000;assert(render_expected(0)==0);
+    MEM32(FX+8)=normal;
+    MEM32(FX+0x34)=2;assert(render_expected(0)==0);
+    MEM32(FX+0x34)=1;assert(render()>0);
+    MEM32(FX+8)=normal&~0x10000u;assert(render_expected(0)==0);
+    tick(0,0);assert(render()>0); /* Zero-time visibility refresh, frozen age. */
+    MEM32(FX+0x98)=0;MEM32(PLAYER+0x21c)=0;
+    construct(4);MEMF(FX+0x38)=.3f;
+    unsigned first=0,frames=0;carry=0;
+    while(!retired && frames<fps*8u) {
+        carry+=dt;unsigned whole=(unsigned)carry;carry-=whole;
+        tick(dt,whole);frames++;
+        if(retired) { assert(render_expected(0)==0);break; }
+        if(MEMF(FX+0x38)>0)assert(render_expected(0)==0);
+        else if(render()>0 && !first)first=frames;
+    }
+    assert(first && fabsf(first*dt/60-.3f)<=dt/60+.00001f);
+    printf("beam_visibility fps=%u speed=%.2f delayed_first=%.6f retired=%u\n",
+           fps,speed,first*dt/60,retired);
+}
 int main(void) {
     unsigned char *memory=calloc(1,0x800000);assert(memory);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x4e8cec)=60;
+    MEM32(0x7b0cc0)=PLAYER;MEM32(PLAYER+0x214)=0;
     /* Controlled trig service table, shared by all comparison schedules. */
     for(unsigned i=0;i<2048;i++)MEMF(0x7a38a0+i*4)=sinf((float)(i*6.283185307179586/2048));
     setvbuf(stdout,NULL,_IONBF,0);
@@ -160,6 +202,9 @@ int main(void) {
                         (void *)((uintptr_t)DATA+g_xbox_mem_offset),sizeof original));
                 }
             }
+    const unsigned rates[]={60,120,144};
+    for(unsigned i=0;i<3;i++)for(unsigned slow=0;slow<2;slow++)
+        visibility_cases(rates[i],slow?.25f:1);
     puts("PASS: original beam construction, geometry, vertex alpha onset/fade, pause and retirement");
     free(memory);return 0;
 }

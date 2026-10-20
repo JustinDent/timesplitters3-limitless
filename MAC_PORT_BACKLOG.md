@@ -3067,6 +3067,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   No runtime or OS adapter change is required. Actual Mac execution, scene
   visibility and GPU submission remain unverified; the user's delayed trails
   remain open. [Geometry evidence](docs/native-high-refresh-regressions.md#beam-construction-and-vertex-output-audit).
+- **Effect visibility and tracing:** The geometry fixture now executes the
+  original type-32 render-list branch and manager room visibility. Windows
+  checks cover fractional eligibility, hidden/view-mask rejection, deferred
+  starts and retired-list suppression. The portable read-only
+  `tools/native_effect_trace.py` accepts an injected memory reader; the existing
+  Windows runner exposes it through `--trace-effects`. No game or OS adapter
+  changed. Actual Mac execution, upstream scene visibility inputs and GPU
+  submission remain unverified. [Dispatch evidence](docs/native-high-refresh-regressions.md#effect-visibility-and-reproduction-tracing).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.

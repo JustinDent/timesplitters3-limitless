@@ -201,7 +201,8 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                      (0x126c0,0x12717)]),
     ('native_beam_lifetime.c', [(0x10a760,0x10ad71)]),
     ('native_beam_geometry.c', [(0x104f30,0x1053ca),(0x1053d0,0x105615),
-                                (0x141a0,0x14532),(0x10a760,0x10ad71)]),
+                                (0x141a0,0x14532),(0x10a760,0x10ad71),
+                                (0x10bf5c,0x10bfca)]),
     ('native_ship_debris.c', [(0x2168c0,0x216ca5)]),
     pytest.param('native_object_rocking.c', [(0xa84f0,0xa8a97),
                                             (0x151650,0x15178f),(0x153550,0x1535a1),
@@ -245,6 +246,12 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             constants='\n'.join(
                 f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                 for address in sorted(addresses))
+        if harness_name=='native_beam_geometry.c':
+            # Execute the entire type-32 render-list branch. Its outgoing
+            # join begins the next unrelated effect list; terminate there.
+            end=config.va_to_file_offset(0x10bfc9)
+            assert image[end:end+5].hex()=='a18cbb7300'
+            image=image[:end]+b'\xc3'+image[end+1:]
         if harness_name=='native_npc_aim.c':
             # Keep the original aim branch and its zero-result store. End
             # before unrelated eligibility/firing work at each outgoing join.

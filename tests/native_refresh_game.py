@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 from testing_profile import XBE_SHA256, prepare_run, recycle_disks, check_fixture
 from native_entity_trace import snapshot_entities
+from native_effect_trace import snapshot_effects
 
 
 def recycle_captures(run, tag):
@@ -112,6 +113,8 @@ def main():
                         help='sample live camera position/direction every half second, including the intro')
     parser.add_argument('--trace-entities', action='store_true',
                         help='sample the owned child entity list once a second (16 MiB limit)')
+    parser.add_argument('--trace-effects', action='store_true',
+                        help='sample owned child effect lists each observation (~0.5 seconds, 16 MiB limit)')
     parser.add_argument('--handoff-watch', choices=('none', 'equipped', 'loadout', 'npc-position'), default='equipped',
                         help='fixed diagnostic address to watch; none samples actors by live lookup only')
     parser.add_argument('--profile', action='store_true')
@@ -128,6 +131,8 @@ def main():
     runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     entity_tracer_sha256=hashlib.sha256(
         (ROOT/'tools/native_entity_trace.py').read_bytes()).hexdigest()
+    effect_tracer_sha256=hashlib.sha256(
+        (ROOT/'tools/native_effect_trace.py').read_bytes()).hexdigest()
     if os.name != 'nt': parser.error('Windows only')
     assert hashlib.sha256((ROOT / 'private/game/default.xbe').read_bytes()).hexdigest() == XBE_SHA256
     run = ROOT / 'private/test-saves/high-refresh'
@@ -186,6 +191,7 @@ def main():
     threads = []
     states=[];resources=[];native_samples=[];game_samples=[];camera_samples=[];completed=False
     entity_samples=[];entity_bytes=0;entity_trace_limited=False
+    effect_samples=[];effect_bytes=0;effect_trace_limited=False
     terminated_by_runner=False
     def drain(pipe, path):
         with path.open('wb') as output:
@@ -292,6 +298,17 @@ def main():
                 elapsed=time.monotonic()-started
                 if args.capture:
                     recycle_captures(run,tag)
+                if args.trace_effects and not effect_trace_limited and word(0x79094c)==2:
+                    import json
+                    snapshot=snapshot_effects(read_bytes)
+                    snapshot.update(seconds=round(elapsed,4),ticks=word(0x7de318),
+                                    flags=word(0x7de458))
+                    encoded=json.dumps(snapshot)
+                    effect_bytes+=len(encoded)+2
+                    if effect_bytes<=16*1024*1024:
+                        effect_samples.append(snapshot)
+                    else:
+                        effect_trace_limited=True
                 if args.trace_entities and elapsed>=next_entities and not entity_trace_limited:
                     import json
                     if word(0x79094c)==2:
@@ -406,6 +423,9 @@ def main():
             entity_trace=args.trace_entities,entity_samples=len(entity_samples),
             entity_tracer_sha256=entity_tracer_sha256,
             entity_trace_limited=entity_trace_limited,
+            effect_trace=args.trace_effects,effect_samples=len(effect_samples),
+            effect_tracer_sha256=effect_tracer_sha256,
+            effect_trace_limited=effect_trace_limited,
             handoff_trace=args.trace_handoff,
             handoff_watch=args.handoff_watch if args.trace_handoff else None,
             samples=len(native_samples),gameplay_samples=len(game_samples)),indent=2))
@@ -415,6 +435,8 @@ def main():
             (run/(tag+'-camera.json')).write_text(json.dumps(camera_samples,indent=2))
         if args.trace_entities:
             (run/(tag+'-entities.json')).write_text(json.dumps(entity_samples))
+        if args.trace_effects:
+            (run/(tag+'-effects.json')).write_text(json.dumps(effect_samples))
         if args.capture:
             recycle_captures(run,tag)
         lock.unlink(); recycle_disks(ROOT, run)

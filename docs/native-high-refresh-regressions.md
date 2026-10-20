@@ -1716,3 +1716,65 @@ existing object-rocking expected failure in 57.74 seconds
 (`logs/native-beam-geometry-shared.log`). The fixture is registered in the
 existing `test_native_timing.py` CI suite. No runtime code changed, so this
 audit did not require replacing the running executable.
+
+### Effect visibility and reproduction tracing
+
+Source baseline `84b0157`, Windows x64, supported checksum-verified US XBE.
+The beam fixture now also translates 0x10BF5C..0x10BFC9, the entire type-32
+list branch in the original render dispatcher. Only its outgoing join into
+the next unrelated effect list is replaced with a return, after checking
+the original bytes. The branch receives the original current-player bit and
+player-index field; all 84 construction/geometry schedules now reach vertex
+output through that branch.
+
+Six additional 60/120/144 normal/quarter-speed schedules exercise visibility.
+The original manager reads controlled active-player/room-visibility inputs
+and builds the effect's visibility flags. A beam hidden for 0.25 game seconds
+becomes drawable on the next live fractional update when that room becomes
+visible. The prepared flag, explicit-hidden flag, player view mask and room
+visibility mask independently suppress rendering as intended. Zero-time
+callbacks can refresh visibility without advancing effect age. Explicit
+0.3-game-second deferred starts reach vertex output at 0.300000–0.305556
+game seconds (within one update); retirement leaves an empty list that the
+original branch traverses without drawing. `logs/native-beam-visibility.log`
+passes these cases. Upstream camera/room queries remain controlled, so this
+does not prove the actual bridge scene's visibility.
+
+Read-only inspection of the host path finds that `host_DrawPrimitiveUP`
+copies vertex bytes into a deferred payload when that mode is active;
+otherwise it submits to the device immediately. The swap path flushes deferred
+operations before capture/presentation. The device appends vertex bytes to a
+dynamic ring and calls `rhi_draw`. That inspection does not establish GPU
+completion, resource correctness or visible output, and supplies no runtime
+fix for the user's delayed-trail report.
+
+`tools/native_effect_trace.py` now provides bounded read-only snapshots for
+reproduction. It traverses all 40 effect types with a global 256-node default
+limit, rejects invalid pointers, type changes, cycles and unreadable/changed
+heads, and marks traversal completeness separately from atomicity. Records
+include age/lifetime/delay, position, flags, view mask, and optional type-32
+colors/endpoint/strand delays. Its type-32 eligibility result describes only
+the original dispatch gate, not a GPU draw. Missing player context yields
+unknown eligibility; unreadable optional geometry is explicit. Nonfinite
+floats become null rather than invalid JSON numbers.
+
+The existing isolated Windows runner accepts `--trace-effects` and samples
+its owned child approximately every 0.5 seconds during Story mode, with a
+16 MiB output limit. It retains `<tag>-effects.json` and the tracer hash,
+sample count and limit status in validation metadata. Short effects can fall
+between samples and recycled addresses cannot establish continuous identity.
+The new tests cover visibility metadata, missing/short reads, list mutation,
+limits and optional payload failures and are registered in shared CI.
+The runner option has passed its help/import check; a complete isolated
+gameplay run with this option is still pending. Actual Mac execution remains
+unverified. No production runtime code changed in this audit.
+
+The targeted trace/CI checks pass 70 tests. The final timing, effect/entity
+trace, CI-scope and backlog suite passes 101 tests with the existing rocking
+expected failure in 36.45 seconds (`logs/native-effect-dispatch-shared.log`).
+A 30-second read-only observation of interactive PID 25304 collected 299
+snapshots / 69,818 bytes with no traversal faults. All were outside Story
+(state 101) with empty effect heads, so this validates the read path but does
+not reproduce the reported shot/trail. Evidence is retained in
+`private/pipeline/effects-dispatch-observation.jsonl` and its `.json` summary.
+The interactive process and its executable were left untouched.
