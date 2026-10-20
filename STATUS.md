@@ -1,5 +1,27 @@
 # Measured progress
 
+## Texture batch 189: stone and concrete (2026-10-20)
+
+Issue #74 local artwork batch: eight built-in image-generation edits, four
+accepted and installed after original/compiled comparisons and 2x2 repetition
+review, four held for excessive cracks, brighter stone or prominent borders.
+Sources are 1254x1254; accepted outputs use Lanczos resampling to 1024x1024 DXT1
+with complete 11-level mip chains. This is not native 4K source artwork.
+
+Windows offline audit: all 1,246 installed DDS files pass the existing native
+format reader plus Python dimensions, mip-size, aspect and SHA256 checks.
+The pack including metadata is 1,041,042,120 bytes (992.82 MiB); temporary texture
+outputs are about 156.49 MiB. The 6 GiB pack and 256 MiB temporary caps hold;
+the existing 512 MiB resident policy is unchanged, not runtime-measured here.
+Private evidence: `review/hybrid-189-acceptance.json` and native audit under the
+single `private/texture-remaster` tree. No artwork or game data is tracked.
+
+Coverage is 1,246/6,812 cataloged keys (18.29%), with 5,469 needing artwork and
+97 held drafts. Uncataloged/embedded discovery remains incomplete. No game was
+launched; scene/UV-on-model, memory and cross-platform validation remain open.
+MAC-011 retains Awaiting validation. This entry is local to the issue #74 branch
+in the commit carrying it; artwork/pack are local and not published.
+
 ## Launcher v1.2.20 replacement release (2026-10-19)
 
 Prepared on `release/launcher-v1.2.20` from merged main `ec1d067`. This release

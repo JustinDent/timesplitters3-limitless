@@ -1115,6 +1115,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 189 (2026-10-20, commit carrying this note) adds four private
+  shared DDS replacements after Windows offline checks; 1,246 total installed.
+  No adapter change is needed for the existing shared DXT1 loader. No Mac
+  runtime/scene or GPU-residency validation was run; status remains Awaiting
+  validation. See [batch 189 evidence](STATUS.md#texture-batch-189-stone-and-concrete-2026-10-20).
+
 - **Status:** Awaiting validation
 - **In-game Display choice (issue #74 follow-up):** The shared
   `src/pc_display_menu.c` adds a native **Textures: Classic / Enhanced** choice on
