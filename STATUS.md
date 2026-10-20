@@ -1,5 +1,46 @@
 # Measured progress
 
+## Texture batch 237: six masonry, timber and striated materials (2026-10-20)
+
+Eight original references were inspected and edited with built-in image generation.
+Six accepted offline and installed: b15e91c31051642c (six-course brown masonry),
+94282d65c5c1a45c (ochre stone wall), 96b8f96f06a540eb (damaged plaster/stone),
+91cc9d0c961c9acc (nested timber recess), e07dc6f6996c141a (striated material),
+and 930664ce953d4a5e (weathered planks). Major courses, exposed-stone contours,
+concentric squares and plank seams remain recognizable in full, repeat and
+original-grid comparisons. Mean luminance changes respectively: -9.64%, -5.24%,
+-7.15%, -6.39%, -7.07% and +1.51%. Exact use of the striated material remains
+unresolved; its visual acceptance does not close scene/category coverage.
+
+Two drafts held: 794a184e7c94393e is too dark (-15.06%) and changes small
+fastener details along its right seam; cc093aaa6af7cd8c is too dark (-25.37%)
+with excessively deep black stripes and saturated red. Neither installed.
+Actual generated sources: five 1254x1254 and three 1774x887, totaling
+28,712,984 bytes. Installed outputs: three 512x512, two 512x256 and one
+256x256, LANCZOS downsampled without crop/color/alpha edits; not native 4K.
+Five RAM-only sheets avoid 2,155,068 raster bytes and replay exactly. Eight
+original exports (144,028 bytes) retained. Seven historical JSON records had
+formatting compacted in place, preserving every value/key and exact original-byte
+reconstruction; gross whitespace saving 17,506 bytes, before receipt overhead.
+No denied cleanup was retried. Artwork, originals and provenance stay private.
+
+Six new Windows native DDS parser checks pass; prior 1,435 hashes and checker
+identity match existing evidence. All 1,441 installed files pass a fresh Python
+format/metadata/dimensions/aspect/mip/hash audit. Refreshed queue: 1,441 installed,
+5,233 needing art, 138 held; 6,121 classified and 691 unclassified.
+Private evidence: review/hybrid-237-acceptance.json, decisions, memory-review,
+selection, prompts, generation receipts, json-compaction and native-audit.
+
+Pack including metadata: 1,138,071,624 bytes (1085.35 MiB), up 746,174 bytes,
+below 6144 MiB. Temporary snapshot: 268,246,333 bytes, below 256 MiB with
+189,123 bytes headroom. Texture workspace including source art: 7,187,367,539
+bytes; free disk snapshot: 85,994,237,952 bytes. Allocation helper equals logical
+size; it is not independent physical-allocation proof. One active pack, unchanged
+512 MiB residency limit. No gameplay, duplicate game/build/staging, publication,
+runtime changes or personal save/settings edits. MAC-011 stays Awaiting validation.
+Discovery, category review and consolidated scenes remain unfinished; the
+near-completion playtesting gate is not met.
+
 ## Texture batch 236: one corrected rock replacement, seven drafts held (2026-10-20)
 
 Eight held drafts received focused built-in image-generation corrections using
