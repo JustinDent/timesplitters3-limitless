@@ -1115,6 +1115,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 inventory batch 245: 128 RGB/alpha pairs reviewed (90 opaque,
+  38 nonopaque); 6,441 provisionally classified and 371 unclassified. Sixteen
+  RAM-only sheets exactly replayed; 23,350-byte gzip retains full provenance.
+  Alpha-only signage/diagrams, inverse masks and character identity retain
+  explicit constraints. No artwork generated or installed. All 1,465 DDS
+  hashes unchanged; fresh full Python audit passes, native evidence stays
+  batch 242. Pack 1,149,619,742 bytes; temporary 267,996,909 bytes, below caps.
+  **Awaiting validation** remains for Mac GPU, mapped scenes, alpha semantics,
+  display modes and residency. No gameplay; classification is not completion.
+
 - 2026-10-20 inventory batch 244: 128 original RGB/alpha pairs reviewed
   (93 opaque, 35 nonopaque), bringing provisional classification to 6,313 keys.
   Functional constants, diagrams, exact lettering, character atlases and
