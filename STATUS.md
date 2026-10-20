@@ -1,5 +1,53 @@
 # Measured progress
 
+## Issue #49 — U-Genix monitor composition (2026-10-19)
+
+Implementation `61235d1` on `49-u-genix-screen-bug`, [PR #195](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/195),
+initially based on `c238ab3` and integrated with main `988daa3`.
+The opening U-Genix monitor was reproduced independently at 1280×720:
+its left quarter was black and Crow/the subsequent U logo shifted right and
+clipped. The guest texture camera renders a 256×256 feed into the top-left
+backbuffer and copies it into a monitor texture without binding a render target.
+The existing widescreen HUD adjustment therefore incorrectly moved its 2D
+logo, scanlines and alpha mask relative to the camera geometry.
+
+The shared `pc_display_camera_feed` scope wraps original US `sub_000C8120`.
+Only enabled texture cameras receive guest-coordinate STRETCH placement.
+Guest sprite batches flush before both boundaries, and the prior placement/tag
+is restored afterward. The additive patch declares the generated wrapper so
+regeneration retains the original function. Ordinary world cameras and HUD
+layout keep their existing behavior. No game asset or generated C is edited.
+The same hook runs under `TSFP_NATIVE_DISPLAY`; existing native GL/common RHI
+placement adapters need no new platform code (MAC-056: awaiting validation).
+
+The Windows build and its built-in checks passed, including a rebuild after
+integrating main `988daa3`. Initial PR CI caught an end-of-file patch anchor
+that prevented unwinding the hook when local edits followed it. The patch now
+inserts before a stable upstream declaration, preserving appended local edits
+when migrating historical stacks; the hook behavior is unchanged.
+Twenty-one focused camera,
+UI-layout and cutscene regression cases passed, followed by all five camera
+cases with the generator-hook assertion and the backlog integrity check.
+Mutation cases detect missing scope, missing restoration and missing batch
+flushes; fixture cases cover ordinary/disabled/invalid and nested cameras.
+All 39 local patch tracking, historical upgrade and camera regressions passed
+after the anchor correction. Windows and macOS runtime CI, including the new
+regression, passed in [run 39355133510](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39355133510).
+Actual Mac game rendering remains unverified.
+
+Independent live-game verification uses the isolated unlocked Test Lab profile,
+with personal saves/configs untouched and each run capped at 150 seconds.
+The corrected Crow message fills the monitor without the black left strip
+at both 1280×720 and 3440×1440. The subsequent U logo is also correctly
+centered and fills the monitor at both resolutions. Native framebuffer dumps and draw
+captures are retained locally under `build/issue-49-before`,
+`build/issue-49-after` and `build/issue-49-ultrawide`; the first two folders
+include `monitor.png` with matched before/after views. The full patch-stack
+validation and `git diff --check` passed. The capture format does not
+record the GPU CopyRects result, so a full replay's black monitor is not visual
+validation; use the real game's framebuffer dumps. Replaying the feed's first
+44 draws does reproduce the original composition error and its placement fix.
+
 ## Launcher v1.2.19 release preparation (2026-10-19)
 
 Prepared on `release/launcher-v1.2.19` from main `f53b31f`. The shared launcher
