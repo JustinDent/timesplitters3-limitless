@@ -1115,6 +1115,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 texture build dependency and game ZIP inclusion (local #74 source):
+  tools/build_textures.py shares audit/download/cache policy across Windows and
+  native Mac builders. play-native-mac.py automatically selects the prepared pack.
+  Shared tools/launcher/Core.cs accepts bounded keyed DDS/JSON in game packages,
+  seeds missing texture pairs, preserves existing pairs, and safely cleans staged
+  payloads. Windows launcher build/regressions and 183 Python tests pass;
+  one platform test skips. Mac native host build/install/GPU checks remain pending,
+  so **Awaiting validation** is unchanged. No separate Mac policy implementation.
+  Missing published textures-v0.1.0-alpha.1 prevents fresh-clone remote validation;
+  local 1,505-texture reuse passes. No release/push/gameplay. See STATUS.md texture
+  build dependency entry; no cross-device synchronization claimed.
+
 - 2026-10-20 texture batch 255: seven metal surfaces installed, one held;
   1,505 installed. Seven new Windows parser checks and full Python audit pass;
   previous 1,498 DDS hashes/checker unchanged. Six RAM reviews replay exactly

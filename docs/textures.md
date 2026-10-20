@@ -10,6 +10,37 @@ does not include the private development artwork or original game assets.
 See the [texture alpha overview](texture-alpha.md) for the current source scope,
 local pack snapshot and remaining validation gates.
 
+## Texture build dependency
+
+Windows `tsfp.ps1 Build` and native Mac `tools/build-native-mac.py` prepare the
+same compiled pack by default. The repository contains its pinned release
+manifest and shared download/audit code; artwork and DDS binaries remain outside
+Git history. A valid local pack is reused without downloading, copying, or
+replacing it. An invalid nonempty pack stops the build for inspection.
+
+On a clean checkout, setup downloads the manifest's immutable release parts,
+checks their hashes and archive paths, and installs one active pack under
+`private/texture-remaster/pack`. Parts are bounded to 64 MiB in RAM, with no ZIP
+cache or second full pack. The installed pack must fit the 6 GiB budget. Failed
+installs remove only files created by that attempt; an interrupted process lock
+requires inspection before retrying. Original game files are still supplied by
+the player. Texture mode and saves/settings are not changed by building.
+
+Native Mac launch picks up this pack automatically; `--texture-pack` overrides
+it for one launch. Explicit lightweight builds can use `-SkipTextures` on
+Windows or `--without-textures` on Mac. Game ZIP packaging includes textures by
+default, streaming the DDS files and sanitized metadata directly into `Textures/`
+without a staging duplicate. This is a partial overhaul, not full-game coverage.
+
+**Publication prerequisite (2026-10-20):** the inherited manifest pins
+`textures-v0.1.0-alpha.1` (1,242 replacements), but an authenticated GitHub check
+found no matching release. A fresh download currently stops explicitly. The local
+1,505-texture pack works through the reuse path. Before fresh-clone distribution,
+publish an audited pack using `tools/texture-release.py publish --version <version>`,
+commit its generated `config/texture-pack.json`, then run
+`python tools/texture-release.py verify --remote`. A Git push alone does not
+upload the private compiled pack. No release was published by this source change.
+
 ## Preview an installed local pack
 
 From a Windows source checkout with a built runtime and an existing pack,

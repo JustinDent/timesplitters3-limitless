@@ -43,6 +43,7 @@ namespace TimeSplitters.Launcher
         public static bool Allowed(string name)
         {
             Name(name);
+            if (TextureFile(name)) return true;
             if (RootFiles.Contains(name) || name == LauncherPlatform.GameBinary || name == LauncherPlatform.LaunchScript || LauncherFile(name)) return true;
 #if MACOS
             if (name.StartsWith("Bin/",StringComparison.Ordinal) && name.EndsWith(".dylib",StringComparison.Ordinal)) return true;
@@ -60,6 +61,8 @@ namespace TimeSplitters.Launcher
             if (p[0].Equals("Licenses", StringComparison.OrdinalIgnoreCase)) return p[1].EndsWith(".txt", StringComparison.OrdinalIgnoreCase);
             return name.Equals("Settings/pc-controls.json", StringComparison.OrdinalIgnoreCase);
         }
+        internal static bool TextureFile(string name)
+        { return Regex.IsMatch(name, @"\ATextures/[0-9a-f]{16}\.(dds|json)\z"); }
         public static string PathIn(string root, string relative)
         {
             Name(relative);
@@ -155,7 +158,7 @@ namespace TimeSplitters.Launcher
                 }
                 Require(expected.ContainsKey(LauncherPlatform.GameBinary) && expected.ContainsKey(LauncherPlatform.LaunchScript) &&
                     expected.ContainsKey("Settings/pc-controls.json"), "The release is missing required runtime files.");
-                long size = 0;
+                long size = 0, textureSize = 0;
                 var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var entries = new List<Tuple<ZipArchiveEntry, string>>();
                 foreach (var entry in zip.Entries)
@@ -170,6 +173,11 @@ namespace TimeSplitters.Launcher
                     Require(Allowed(name) && names.Add(name), "Duplicate or protected archive path: " + name);
                     Require(name == "BUILD.json" || expected.ContainsKey(name), "Unlisted archive file: " + name);
                     size += entry.Length;
+                    if (TextureFile(name)) {
+                        textureSize += entry.Length;
+                        Require(entry.Length > 0 && entry.Length <= (name.EndsWith(".json", StringComparison.Ordinal) ? 65536L : 24L*1024*1024) &&
+                            textureSize <= 6L*1024*1024*1024, "The texture payload exceeds its budget.");
+                    }
                     Require(entry.Length <= 2L * 1024 * 1024 * 1024 && size <= 8L * 1024 * 1024 * 1024, "The expanded release is too large.");
                     entries.Add(Tuple.Create(entry, name));
                 }
@@ -269,6 +277,8 @@ namespace TimeSplitters.Launcher
                     Require(Mutable(change.Name) && (!launcher || LauncherFile(change.Name)) && unique.Add(change.Name), "Invalid or duplicate installation target.");
                     string target = PathIn(root, change.Name);
                     if (change.Name.StartsWith("Settings/", StringComparison.OrdinalIgnoreCase) && File.Exists(target)) continue;
+                    if (TextureFile(change.Name) && (File.Exists(Path.ChangeExtension(target, ".dds")) ||
+                        File.Exists(Path.ChangeExtension(target, ".json")))) continue;
                     bool exists = File.Exists(target);
                     if (exists)
                     {
@@ -336,7 +346,7 @@ namespace TimeSplitters.Launcher
             // Legacy game manifests may use different filename casing. Keep
             // installed launchers protected on case-insensitive filesystems,
             // while LauncherFile still requires canonical package paths.
-            return name.StartsWith("Settings/", StringComparison.OrdinalIgnoreCase) ||
+            return name.StartsWith("Settings/", StringComparison.OrdinalIgnoreCase) || TextureFile(name) ||
                 new[] { LauncherName, AppPath, SelfManifest }.Contains(name, StringComparer.OrdinalIgnoreCase) ||
                 LauncherPlatform.LauncherResource(name);
         }
@@ -403,6 +413,21 @@ namespace TimeSplitters.Launcher
                 string name = Path.GetFileName(entry);
                 if ((attributes & FileAttributes.Directory) != 0)
                 {
+                    // Only a verified flat keyed texture payload inside pending
+                    // staging is disposable; installed textures stay protected.
+                    if (pending && relative == "payload" && name == "Textures") {
+                        long bytes = 0;
+                        foreach (string texture in Directory.GetFileSystemEntries(entry)) {
+                            var flags = File.GetAttributes(texture);
+                            Require((flags & (FileAttributes.Directory | FileAttributes.ReparsePoint)) == 0 &&
+                                TextureFile("Textures/" + Path.GetFileName(texture)), "Unexpected file in staged textures.");
+                            long length = new FileInfo(texture).Length;
+                            bytes += length;
+                            Require(length <= (texture.EndsWith(".json", StringComparison.Ordinal) ? 65536L : 24L*1024*1024) &&
+                                bytes <= 6L*1024*1024*1024, "Oversized staged texture payload.");
+                        }
+                        continue;
+                    }
                     bool installationRoot = relative.Length == 0 || relative.Equals(pending ? "payload" : "files", StringComparison.OrdinalIgnoreCase);
                     Require(!installationRoot || (!new[] { "Saves", "Data", "Textures" }.Contains(name, StringComparer.OrdinalIgnoreCase) &&
                         (pending || !name.Equals("Settings", StringComparison.OrdinalIgnoreCase))), "Protected data inside game cleanup folder: " + entry);

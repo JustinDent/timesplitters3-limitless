@@ -1,5 +1,52 @@
 # Measured progress
 
+## Texture build dependency and bundled game ZIPs (2026-10-20)
+
+Local #74 source now prepares a shared audited texture pack during Windows and
+native Mac game builds. tools/build_textures.py reuses a valid existing pack,
+otherwise downloads the version pinned by config/texture-pack.json. Existing
+nonempty invalid packs are preserved and rejected. Downloads verify part sizes,
+SHA-256, flat keyed members, expansion budgets and the complete DDS/metadata audit.
+One compressed part is held in RAM; no retained ZIP or full staging copy. Failed
+attempts clean only exclusively created files; interrupted-process locks require
+inspection. Explicit lightweight builds may skip preparation.
+
+Reused the manifest, texture-release publisher/audit and tests from origin/main
+a0deeea without merging other work. Authenticated verification found no release
+tag textures-v0.1.0-alpha.1; the release listing also contained no texture assets.
+Fresh-clone download is therefore NOT validated/available. A reviewed texture
+release and matching committed manifest are still required before distribution.
+No push, release publication, game build or gameplay test was performed.
+
+tools/package-release.py includes compiled textures by default, streams them
+directly into Textures/ in the game ZIP, strips private provenance and records
+hashes plus pack identity in BUILD.json. Publication checks validate these ZIP
+members without requiring duplicate stage files. The shared C# installer accepts
+only flat keyed DDS/JSON, enforces payload limits, installs missing pairs and
+preserves existing texture pairs/settings. Game repair/pruning treats installed
+textures as separately managed. Staged texture cleanup permits only bounded
+flat keyed payloads. The standalone launcher bootstrap remains small.
+
+Windows local validation at parent 3e2043f plus these source changes:
+183 Python tests pass, one platform-dependent test skips, 20 subtests pass.
+Synthetic download/checksum/archive/path/rollback/offline/packaging checks,
+native-launch routing/preflight, publisher and shared launcher contracts pass.
+Windows .NET launcher build and all requested regression groups pass, including
+bundled texture installation, preserving a preexisting DDS without writing
+mismatched metadata, staging cleanup, shared UI, updates, settings, maintenance,
+downloads, startup, versions, news, crash and session tests. Initial validation
+output path was too long for an existing session fixture; moved the same small
+output folder to build/texture-launcher-check and the complete suite passed.
+PowerShell parser and git diff whitespace checks pass. Native Mac execution,
+packaged delivery and real renderer appearance remain unverified (MAC-011).
+
+Read-only local pack reuse audited all 1,505 DDS replacements: sanitized
+distribution size 1,164,919,237 bytes. Actual active pack remains 1,165,240,310
+bytes including private metadata, within 6 GiB. No artwork/DDS duplicates,
+new game extracts or texture downloads created; batch255 storage snapshot above
+remains the last measured texture-workspace allocation. Source/test output is
+separate and small; one launcher validation output folder and log retained.
+
 ## Texture artwork batch 255: seven metal surfaces installed (2026-10-20)
 
 Accepted b49c9a4ff8354384, c531d44117342a0f, c6c2e5dc20bfd6eb,

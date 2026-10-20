@@ -46,6 +46,8 @@ def game_environment(base, root, fps=None):
                XDG_CONFIG_HOME=str(settings / 'xdg-config'),
                XDG_DATA_HOME=str(settings / 'xdg-data'), RECOMP_TRACE_BUDGET='0',
                RECOMP_LOG_FILE=str(root / 'logs/native-play.err'))
+    if (root/'private/texture-remaster/pack').is_dir():
+        env['TSFP_TEXTURE_PACK_DIR'] = str(root/'private/texture-remaster/pack')
     if fps is not None:
         if fps not in (60,120):raise ValueError('Native FPS must be 60 or 120')
         env.update(RECOMP_FRAME_INTERP='2' if fps==120 else '1',

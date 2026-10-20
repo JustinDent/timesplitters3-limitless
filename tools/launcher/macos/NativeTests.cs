@@ -37,6 +37,8 @@ namespace TimeSplitters.Launcher
         sealed class Handler:HttpMessageHandler { public Func<HttpRequestMessage,HttpResponseMessage> Reply;protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken t){var response=Reply(r);response.RequestMessage=r;return Task.FromResult(response);} }
         static void GamePruningTest()
         {
+            Need(Core.Allowed("Textures/0123456789abcdef.dds") && Core.PreserveGameFile("Textures/0123456789abcdef.dds"), "Bundled texture install/preservation missing");
+            Need(!Core.Allowed("Textures/game.exe") && !Core.Allowed("Textures/sub/0123456789abcdef.dds"), "Unsafe texture path accepted");
             foreach (string name in new[] { Core.LauncherName, Core.AppPath, Core.SelfManifest })
                 Need(Core.PreserveGameFile(name.ToLowerInvariant()) && Core.PreserveGameFile(name.ToUpperInvariant()), "Launcher casing lost cleanup protection");
             var root = NewRoot("game-pruning");

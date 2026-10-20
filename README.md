@@ -290,8 +290,10 @@ the saved bot set. The host sees how many are waiting.
 **Texture overhaul:** modern materials and surfaces, with **up to 4K** on major
 surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit
 keep storage and memory bounded. This is a **partial local preview**: much of the
-game still uses original art. Development artwork is not bundled with the public
-release; 4K output does not imply native 4K source detail.
+game still uses original art. Source builds prepare an audited pack, and game ZIP
+packaging includes compiled replacements by default, while Git stays small.
+Fresh-clone downloads still need the [pinned texture release published](docs/textures.md#texture-build-dependency).
+Source artwork stays private; 4K output does not imply native 4K source detail.
 [Texture guide →](docs/textures.md)
 
 > [!NOTE]

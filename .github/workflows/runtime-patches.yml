@@ -7,6 +7,9 @@ on:
       - src/texture_mode.*
       - src/pc_display_menu.c
       - tools/texture-*.py
+      - tools/build_textures.py
+      - config/texture-pack.json
+      - tests/test_build_textures.py
       - tests/texture*
       - tests/test_texture*
       - .github/workflows/runtime-patches.yml
@@ -270,6 +273,8 @@ jobs:
           PY
       - name: Test CI suite selection and feature handoff index
         run: python -m pytest tests/test_ci_runtime_scope.py tests/test_mac_backlog.py -q --tb=short
+      - name: Test texture build dependencies and streamed packaging
+        run: python -m pytest tests/test_build_textures.py tests/test_texture_release.py -q --tb=short
       - name: Test subscription worker selection and publication boundaries
         run: python -m unittest discover -s tests -p test_compatibility_worker.py -v
       - name: Check out pinned upstream source only
