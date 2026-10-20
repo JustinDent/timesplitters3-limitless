@@ -233,6 +233,16 @@ reproducibility, and validation requirements.
 
 ## Project storage and texture work
 
+- The user explicitly authorized optional public delivery of the compiled
+  replacement DDS pack through the launcher (2026-10-20). This is an exception
+  to the local-only rule for those compiled replacements and sanitized metadata,
+  not for source artwork, original game assets or personal files. Use
+  `tools/texture-release.py publish` before merging a new pack manifest; commit
+  only `config/texture-pack.json`, never large texture files into Git. Keep pack
+  downloads opt-in, release versions immutable, and the launcher as GitHub Latest.
+  Source pushes cannot upload ignored local art from a hosted runner. Confirm the
+  Optional texture pack check passes before merging delivery updates.
+
 The user explicitly requires a lean project folder on every device. Preserve
 this preference on all further work, including texture remastering and testing.
 

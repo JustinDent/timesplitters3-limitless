@@ -293,9 +293,12 @@ the saved bot set. The host sees how many are waiting.
 
 **Texture overhaul:** modern materials and surfaces, with **up to 4K** on major
 surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit
-keep storage and memory bounded. This is a **partial local preview**: much of the
-game still uses original art. Development artwork is not bundled with the public
-release; 4K output does not imply native 4K source detail.
+keep storage and memory bounded. The **optional alpha pack** contains 1,242
+replacements (about 990 MiB installed); much of the game still uses original art.
+In launchers containing the texture installer, choose **Game settings → Graphics
+& resolution → Download 4K texture pack**, then enable **Enhanced** in the game's
+Display settings. The pack is hosted separately on GitHub and is never downloaded
+by cloning the repository. 4K output does not imply native 4K source detail.
 [Texture guide →](docs/textures.md)
 
 > [!NOTE]
