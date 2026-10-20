@@ -1,5 +1,31 @@
 # Measured progress
 
+## Texture batch 190: metal, timber and visual triage (2026-10-20)
+
+Issue #74 local artwork: eight built-in image edits, three accepted replacements
+and five held for altered ridge patterns, brighter metal, deep wood bevels or
+lifted shadows. All sources are 1254x1254; accepted DDS outputs are 1024x1024 or
+512x512 with Lanczos resampling and complete DXT1 mip chains. The L8 metal panel
+retains opaque luminance channel semantics. This is not native 4K source art.
+
+Inspected 16 more SHA256-verified original RGB/alpha pairs, reaching 3,369
+visually classified keys. Portraits, damage decals, cables and compositing masks
+remain separate from ordinary material production. Classification is not completion.
+
+Windows offline coverage: all 1,249 installed files pass structural checks.
+Three new files passed the native DDS reader; the other 1,246 match their prior
+native-audited SHA256 hashes with unchanged checker binary. The full Python
+worklist also validates dimensions, aspect, mip byte lengths and hashes.
+The pack including metadata is 1,042,092,416 bytes (993.82 MiB);
+temporary texture outputs are 159.86 MiB. Both storage caps hold. Residency
+policy remains 512 MiB; runtime residency was not measured in this batch.
+
+Private evidence is `review/hybrid-190-acceptance.json` in the single local
+texture workspace. No game launch, scene/UV-on-model or Mac runtime validation.
+Coverage is 1,249/6,812 cataloged keys (18.34%); 5,461 still need art and 102
+drafts are held. Uncataloged/embedded discovery remains incomplete. MAC-011
+remains Awaiting validation. This local #74 checkpoint does not publish artwork.
+
 ## Texture batch 189: stone and concrete (2026-10-20)
 
 Issue #74 local artwork batch: eight built-in image-generation edits, four

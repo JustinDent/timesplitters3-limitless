@@ -1115,6 +1115,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 190 (2026-10-20, commit carrying this entry): three private
+  shared DDS additions, including luminance preservation for the L8 panel;
+  1,249 installed and 3,369 original keys visually classified. Existing shared
+  format support needs no adapter change. Mac scene and residency validation
+  remain pending; status stays Awaiting validation. See
+  [batch 190 evidence](STATUS.md#texture-batch-190-metal-timber-and-visual-triage-2026-10-20).
+
 - Texture batch 189 (2026-10-20, commit carrying this note) adds four private
   shared DDS replacements after Windows offline checks; 1,246 total installed.
   No adapter change is needed for the existing shared DXT1 loader. No Mac
