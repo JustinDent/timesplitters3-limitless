@@ -1115,6 +1115,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 texture batch 233: three small surfaces/trim accepted and installed;
+  five drafts held for ridge, atlas, border or brightness errors. Total 1,422
+  installed; fresh full Python audit and three new Windows parser checks pass,
+  with prior 1,419 hashes/checker identity carried forward unchanged. Five RAM
+  comparisons replay exactly; seven reference exports retained after policy
+  denial. Pack 1,133,516,898 bytes, below 6 GiB; temporary 267,793,785 bytes,
+  below 256 MiB. No runtime changes or gameplay. **Awaiting validation** remains
+  for Mac GPU, mapped scenes, transparency, modes and 512 MiB residency. See
+  STATUS.md batch 233 and private review/hybrid-233-acceptance.json.
+
 - Texture batch 232: six timber/panel replacements installed; two drafts held
   for missing color detail/darkening. Sources seven 1774x887 and one 1254x1254;
   accepted outputs downsampled to four 512x256, one 1024x512 and one 1024x1024.

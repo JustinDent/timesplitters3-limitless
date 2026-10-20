@@ -1,5 +1,50 @@
 # Measured progress
 
+## Texture batch 233: three small surface and trim replacements (2026-10-20)
+
+Eight classified opaque surfaces were edited with built-in image generation.
+Three accepted offline and installed: e592ad98f2e0256a (pale mottled surface),
+6157ce0180105129 (dark ridged trim), 0560388e30ee5e6f (beige rounded molding).
+Full, 2x2-repeat and original-grid comparisons retain their main cloudy patches,
+ridge profiles and molding bands with finer material grain. Mean luminance
+changes: +1.66%, -8.78%, +4.16%. The dark trim is slightly browner/darker;
+scene lighting and neighboring surfaces remain untested.
+
+Five drafts held: 23fd69d9622c963f changes ridge count/spacing;
+648fc36fa0f6b674 regularizes the irregular dotted pattern and is brighter
+(+15.63%); 72a2e193429c2555 loses the lower fastener and changes strip widths;
+7709fa9251037bfa shifts the lower border and loses the original bottom margin;
+9cfe890aa1f2e6b3 is too dark (-14.47%) with stronger seams. None installed.
+Classification is routing; failed drafts and scene validation remain unfinished.
+
+Actual sources: four 1254x1254 and four 1774x887. Accepted outputs: one 256x256
+and two 512x256, LANCZOS downsampled with no crop/color/alpha edits. These are
+appropriately scaled small assets, not native 4K art. All eight sources retained
+privately (24,352,751 bytes). Five RAM-only comparisons avoid
+1,069,985 raster bytes, with exact metrics/image-hash replay.
+Seven new reference exports were verified recoverable from archive pixels,
+but deletion was rejected by automatic approval review: blocked by policy.
+All seven remain (28,188 bytes); no retry, bypass or reclaimed-space claim.
+One reused reference and previously denied cleanup paths remain untouched.
+
+Three new Windows native parser checks pass; prior 1,419 DDS hashes and checker
+identity match existing evidence. All 1,422 installed files pass a fresh Python
+format/metadata/dimensions/aspect/mip/hash audit. Worklist, hybrid queue and
+progress refreshed: 1,422 installed, 5,257 needing artwork, 133 held; 6,121
+classified and 691 unclassified. Private evidence: review/hybrid-233-acceptance.json,
+review/hybrid-233-memory-review.json and review/hybrid-233-decisions.json.
+
+Pack including metadata: 1,133,516,898 bytes (1081.01 MiB),
+up 220,172 bytes and below 6144 MiB. Temporary snapshot:
+267,793,785 bytes, below 256 MiB with 641,671 bytes headroom.
+Workspace including source art: 7,066,496,748 bytes;
+free disk snapshot: 81,419,149,312 bytes. Allocation helper equals
+logical size; this is not independent physical-allocation proof.
+One active pack; no game/build/staging copies, runtime changes, gameplay,
+publication or save/settings edits. Residency stays 512 MiB. MAC-011 remains
+Awaiting validation. Discovery, category review and consolidated scenes remain
+open; Windows parser checks do not validate Mac GPU or mapped game scenes.
+
 ## Texture batch 232: six timber and panel replacements (2026-10-20)
 
 Eight classified opaque timber/wood-like materials were inspected and edited
