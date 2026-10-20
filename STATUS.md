@@ -12644,3 +12644,19 @@ it remains intact. No personal settings, saves or private texture pack were
 changed. This corrects Windows package layout, not runtime gameplay or native
 Mac distribution. MAC-021 records the host boundary and MAC-053 retains the
 separate Discord acceptance work.
+
+## Native Mac alpha.1 distribution — 2026-10-20
+
+Branch `release/macos-alpha1` packages the native game from the existing
+`v0.3.1-alpha.1` game source (`5db4efc`); packaging and bundled launcher changes
+are recorded separately and do not retag or replace the Windows release.
+
+- Mac mini: macOS 27.0.1 arm64, Apple Clang 21, Python 3.12.12; verified US XBE,
+  pinned runtime/SDL/SDK and MoltenVK. Recreated the copied, broken virtual
+  environment with pinned requirements; preserved the old environment and cache.
+- Native rebuild/regeneration passed three CTests and renderer/input/settings/
+  debug checks. Vulkan reported its known primitive-restart capability warning;
+  no validation errors were reported. Personal saves/settings were isolated.
+- Portable packaging and launcher support are implemented; checksum/license/
+  protected-file regressions pass locally. Actual relocated game validation
+  and public Mac release assets remain pending. Windows release assets are unchanged.

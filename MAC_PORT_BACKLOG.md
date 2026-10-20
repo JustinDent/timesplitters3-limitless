@@ -148,7 +148,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-009 | Intro and in-game movie playback | Queued |
 | MAC-010 | In-game resolution preview and rollback | Awaiting validation |
 | MAC-011 | Real texture-pack gameplay coverage | Awaiting validation |
-| MAC-012 | Standalone Mac runtime distribution | Queued |
+| MAC-012 | Standalone Mac runtime distribution | In progress |
 | MAC-013 | System Link and Online multiplayer | Queued |
 | MAC-014 | Patch upgrades across Windows watermark and native overlay guards | Verified |
 | MAC-015 | Release test privileges and disposable cleanup | Awaiting validation |
@@ -1264,14 +1264,20 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   affected native regressions on Mac. See
   [compiler validation](STATUS.md#release-regression-compiler-discovery--2026-10-16).
 
-- **Status:** Queued
+- **Status:** In progress
 - **PC behavior:** Windows has a public runtime package with launcher, dependencies, licenses, checksums/build manifest and game-import workflow.
 - **PC source:** Audited revision above; `tools/package-release.py`, `tools/release/Import-game.ps1`, `tools/release/ImportGame.cs`, `tests/release_import.py`; `tools/play-native-mac.py`.
 - **PC validation:** Windows packaging/import tooling exists; this audit did not assemble or validate a new release.
 - **Existing Mac support:** Mac has a checkout-based interactive launcher and `BUILD.json`, but the release packager targets Windows executables/DLLs.
 - **Mac adaptation needed:** Add a relocatable native runtime package and supported local-data import/check path, with host dependencies, licenses and accurate provenance. Plan signing/distribution requirements when this work is requested.
 - **Mac acceptance checks:** Launch from a clean path without compiler/build tree, verify architecture/dependencies and hashes, reject unsupported XBE, preserve existing saves/settings, and exclude game data/personal files from public artifacts.
-- **Mac implementation and evidence:** Remaining work pending. Existing coverage:
+- **Mac implementation and evidence:** `release/macos-alpha1` adds native
+  dependency bundling/relocation, signed binaries, pinned notices, source and
+  provenance, and fresh/existing real-ZIP installation gates. Launcher 1.2.21
+  loads hashed portable Vulkan dependencies without a checkout or Python.
+  Native alpha.1 source rebuild and platform/GPU/input/settings/debug tests
+  pass on the Mac mini; relocated package execution/publication are pending.
+  [Validation](STATUS.md#native-mac-alpha1-distribution--2026-10-20). Existing coverage:
   [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
 
 ### MAC-013 — System Link and Online multiplayer
