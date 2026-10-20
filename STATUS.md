@@ -12657,6 +12657,28 @@ are recorded separately and do not retag or replace the Windows release.
 - Native rebuild/regeneration passed three CTests and renderer/input/settings/
   debug checks. Vulkan reported its known primitive-restart capability warning;
   no validation errors were reported. Personal saves/settings were isolated.
-- Portable packaging and launcher support are implemented; checksum/license/
-  protected-file regressions pass locally. Actual relocated game validation
-  and public Mac release assets remain pending. Windows release assets are unchanged.
+- The real ZIP installs and verifies all 61 files on fresh and personal-file
+  fixtures; both installed app signatures and portable dependency hashes pass.
+  Launcher 1.2.21 supplies portable Vulkan loading. All 23 native launcher
+  groups and eight shared UI groups pass. Windows launcher regression suites
+  pass; 102 Python checks and ten subtests pass on Windows (the preceding
+  101-check revision also passed on Mac).
+- A 95.22-second relocated probe on Apple M4 passes: at least 5,100 completed
+  guest frames and sampled 8,700 successful host presents (5,260 guest and 3,440
+  interpolated); normal exit 0, no native fault or shader compilation failure.
+  These counters do not measure display scanout or whole-game performance.
+  Dyld traces show bundled crypto, Vulkan loader, MoltenVK and DXC; none loads
+  from Homebrew or the development SDK. Personal settings remain unchanged.
+  The final capture shows the rendered pause/options menu; complete gameplay
+  and full visual fidelity remain unverified.
+- Alpha.1 native ZIP: 88,570,219 bytes, SHA-256
+  `e462fbabc6ebda3fc411b533da9a98a904d2913796855f828e6f7cb4ca352483`.
+  Game source is `5db4efc`; packaging source is `339fe94`, with the actual
+  launcher source recorded separately in its receipt. Its actual deployment
+  target requires macOS 27.0+; it is ad-hoc signed, without notarization.
+  Mac ZIP/checksum/build provenance are added to the existing alpha.1 release.
+  The Windows assets and release tag are unchanged.
+- Cloud-provider Finder metadata prevented signing under the Mac Desktop.
+  The generated bundle and release staging use a local cache instead; generated
+  bundle metadata is normalized before signing, with source artwork preserved.
+  Source changes remain on this focused branch for review; main is not merged.

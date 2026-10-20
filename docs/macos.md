@@ -361,11 +361,18 @@ actual ZIP with production launcher installation code on fresh/existing profiles
 It emits a `macos-arm64.zip`, SHA-256 sidecar and `BUILD.json` beside the ZIP.
 Existing output paths are never overwritten. No original game data, personal
 settings or saves belong in the public package. A bounded relocated runtime
-probe is still required before uploading those three files to an existing release.
+probe is required before uploading those three files to an existing release.
+For alpha.1 this passed on an Apple M4 Mac mini with macOS 27.0.1; its three
+Mac assets are published alongside the existing Windows assets.
 
-The portable Vulkan package requires Apple Silicon and macOS 26 or newer. It
-includes its runtime dependencies; the player needs no compiler, Python,
+The portable Vulkan package requires Apple Silicon. Its minimum macOS version
+is derived from the actual Mach-O deployment targets and recorded in `BUILD.json`;
+the alpha.1 build requires macOS 27.0 or newer. It includes its runtime dependencies; the player needs no compiler, Python,
 Homebrew or Vulkan SDK. The app and binaries are ad-hoc signed, without Developer
 ID/notarization. The source tag identifies the game; `packaging_commit`, launcher
 receipt and source archive identify any later packaging-only changes. Packaging
 does not change the release tag or publish assets automatically.
+
+Build/sign generated `.app` output outside cloud-synced storage when its provider
+recreates Finder metadata. `--output "$HOME/Library/Caches/tsfp-mac-release/launcher"`
+and a corresponding packager `--output` keep signing and ZIP staging local.
