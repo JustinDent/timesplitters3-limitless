@@ -1,5 +1,49 @@
 # Measured progress
 
+## Texture batch 214: weapon, interface and channel inventory (2026-10-20)
+
+Inspected 128 additional catalog-hash-verified originals through eight RGB and
+eight separate alpha contact sheets. Preserved source spans, payload/RGBA
+hashes, dimensions, alpha ranges and per-key constraints. This batch includes
+88 opaque and 40 alpha-bearing originals. Classification now covers 4,969 of
+6,812 keys, with 1,843 unclassified. Routing remains provisional; no artwork
+was generated, installed or counted complete by this inventory pass.
+
+Specialist cases include scope reticle calibration/numerals, outlined weapon
+icons, stacked skull symbols with different RGB/alpha details, translucent
+window panes, fine foliage, character equipment atlases and flat RGB masking
+complex gradients. Recorded glyph orientation, motif identity, slot counts,
+UV partitions and channel polarity where visible; unknown scene use remains
+explicit. Contact-sheet thumbnails preserve aspect with nearest sampling.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passed for all 1,366 installed DDS files. All file hashes and the native checker
+identity match batch 213; prior Windows parser results carried forward without
+rerunning unchanged files. Pack remains unchanged: 5,321 keys need art and
+125 drafts require correction. Worklist and hybrid routing refreshed. No
+runtime, format or adapter changes; 512 MiB residency policy unchanged.
+
+Verified 320 source RGBA payloads supporting 40 older original-only inventory
+sheets from batches 207, 209 and 210. Their proposed retirement would reclaim
+6,835,279 bytes while preserving decisions, source-span hashes and recovery
+instructions. Automatic approval review rejected the guarded deletion as
+blocked by policy, without a further reason. All 40 remain hash-intact; zero
+files deleted and zero bytes reclaimed. No alternate deletion attempted.
+Manifest: review/hybrid-214-contact-retirement.json. Earlier original-cache
+cleanup denial remains in force; those files were not targeted or changed.
+
+Single active pack remains 1,101,940,090 bytes (1050.89 MiB), including metadata,
+under 6144 MiB. Temporary output about 240.60 MiB, leaving 15.40 MiB below
+256 MiB. Texture workspace including source art about 6421.44 MiB logical/
+allocated by existing helper; disk free 83.42 GiB. No duplicate extracts,
+builds, staging or ZIPs. Game data, source art, saves and settings preserved.
+
+No game launch or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior, alpha and residency. Embedded/other-encoding/procedural
+discovery, full category coverage and final scene testing remain incomplete.
+Private review/hybrid-214-acceptance.json links evidence and cleanup outcome.
+This inventory progress does not make the partial pack a full remaster.
+
 ## Texture batch 213: worn environment materials (2026-10-20)
 
 Generated twelve individual material edits using built-in image generation and
