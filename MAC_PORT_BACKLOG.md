@@ -1115,6 +1115,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 texture batch 240: six equipment/clothing replacements installed;
+  two equipment atlases held for warning-symbol/stamped-marking fidelity.
+  Total 1,457 installed. Fresh full Python audit and six new Windows parser
+  checks pass; prior 1,451 DDS hashes/checker identity unchanged. Six RAM
+  comparisons replay exactly, including enlarged marking focus. Pack 1,146,294,650
+  bytes; temporary 267,702,477 bytes, both below caps. Cached originals reused.
+  **Awaiting validation** remains for Mac GPU, character/weapon mapping, seams,
+  lamps/reflections, display modes, alpha and 512 MiB residency. No gameplay or
+  runtime changes. See STATUS.md batch 240 and private acceptance.
+
 - 2026-10-20 texture batch 239: seven prop/folded-metal atlases installed;
   one curved atlas held for tonal correction. Total 1,451 installed. Fresh full
   Python audit and seven new Windows parser checks pass; prior 1,444 DDS hashes

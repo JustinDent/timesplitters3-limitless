@@ -1,5 +1,47 @@
 # Measured progress
 
+## Texture batch 240: six equipment and clothing replacements (2026-10-20)
+
+Eight cached references matched archive RGBA and were individually edited with
+built-in image generation. Six accepted offline and installed: 7dbf8e3b0e513be3
+(receiver atlas), 946873fb89102ed9 (mechanical door and orange indicator),
+9732a6d520d3018a (reflective channel and fittings), 98a28f54c158fff2 (blue/yellow
+clothing and equipment), a7d871e51fbc6ebb (pipe grille and yellow indicator),
+and afcd56cd4e9455c3 (teal clothing atlas). Their mean luminance changes are
++0.91%, +9.67%, -5.16%, -5.34%, +4.80% and -4.94% respectively. Full, repeat
+and original-grid comparisons preserve principal atlas divisions, mechanical
+parts, light positions, clothing outlines, black opening, trim and skin regions.
+Finer material grain, stitching and wear are accepted offline; mapped character
+identity, weapon appearance, seams, reflected light and indicators remain untested.
+
+Two equipment atlases held: 83eb8e9fba38e904 changes its small yellow warning
+symbol into an exclamation-like form and needs component-level UV review;
+8992e44448b0aced does not reliably preserve stamped glyphs and adds stronger
+pale edge highlights/small grip-detail changes. Mean luminance -0.69% and +8.81%
+respectively does not establish fidelity. Neither installed. Enlarged original-grid
+marking comparisons were inspected without guessing or normalizing original text.
+
+Actual sources: six 1254x1254 and two 1774x887, totaling
+24,379,718 bytes. Installed: three 1024x1024, two 512x512 and one 1024x512;
+all LANCZOS downsampled without crop/color/alpha edits, not native 4K. Six RAM-only
+comparison sheets (including marking focus) avoid 2,052,256 raster bytes and replay
+exactly. No new original exports or deletion attempts. Six new Windows DDS parser
+checks pass; prior 1,451 hashes and checker identity unchanged. All 1,457 installed
+files pass a fresh Python format/metadata/dimensions/aspect/mip/hash audit.
+Queue/progress refreshed: 1,457 installed, 5,209 needing art, 146 held;
+6,121 classified, 691 unclassified. Private evidence: review/hybrid-240-acceptance.json,
+decisions, memory-review, marking-focus script, selection, prompts, generation
+receipts and native-audit. Artwork and game data remain private.
+
+Pack including metadata: 1,146,294,650 bytes (1093.19 MiB), up 2,799,642 bytes,
+below 6144 MiB. Temporary snapshot: 267,702,477 bytes, below 256 MiB with
+732,979 bytes headroom. Texture workspace including source art: 7,268,313,183
+bytes; free disk snapshot: 85,410,844,672 bytes. Allocation helper equals logical
+size, not independent physical-allocation proof. One active pack; unchanged
+512 MiB residency limit. No gameplay, runtime changes, duplicate game/build/staging,
+publication or personal save/settings edits. MAC-011 stays Awaiting validation;
+inventory/category coverage and consolidated scene checks remain unfinished.
+
 ## Texture batch 239: seven prop and folded-metal replacements (2026-10-20)
 
 Eight cached references matched archive RGBA and were individually edited using
