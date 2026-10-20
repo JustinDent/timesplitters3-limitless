@@ -1076,6 +1076,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-009 — Intro and in-game movie playback
 
 - **Status:** Queued
+- **Native-rate pacing follow-up (local source):** `pc_native_movie_pacing.h`
+  provides per-playback 60/120/144 polling through the existing platform clock/
+  wait interface. The additive `*-native-movie-pacing.patch` connects it to the
+  existing Windows host XMV player and closes its timer with playback. Host
+  movie decoding is still absent from the Mac path; when implementing it,
+  consume this shared helper rather than adding independent pacing rules.
+  Offline timing and actual-update-body fixtures cover cadence, delayed work,
+  queue retry, timestamps, EOF and cleanup using mocked decoder/audio output.
+  Native playback, audible sync, skip latency and full movie coverage remain
+  acceptance work; no Mac movie support is claimed from these fixtures.
 - **PC behavior:** Windows uses FFmpeg to decode XMV movies, draws their frames and submits movie PCM audio.
 - **PC source:** Audited revision above; `external/ts3FPrecomp/src/d3d/d3d8_movie.c`, `tools/fetch-video.ps1`, `tools/build-native-mac.py`, `src/native/gl_bridge.inc`.
 - **PC validation:** [Windows validation](STATUS.md#validation) records EA/Free Radical intro decoding and PCM submissions; this is not exhaustive movie/audio fidelity.
@@ -3131,6 +3141,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   No platform adapter or host cache is added. The full Windows build, 138
   shared checks, 21 patch-upgrade checks and two-minute native-144 Story smoke
   pass. Actual Mac compilation and live MapMaker visual acceptance remain pending.
+- **Movie polling pacing (local source):**
+  `src/pc_native_movie_pacing.h` and the additive `*-native-movie-pacing.patch`
+  bound the separate host-video loop at the selected native rate while keeping
+  movie timestamps/audio and guest clocks unchanged. The helper uses shared
+  clock and platform waits; existing Mac host movie playback is still absent
+  (MAC-009). Model and actual update-body tests pass with synthetic backends;
+  full Windows build/live playback and actual Mac execution remain pending.
 - **Fractional strip-distortion clock (`a08f41a`, local):**
   `src/pc_native_numeric.h` extends the existing shared visual-clock sampling
   to the continuous strip effect at `0xF9B4B`. The original-code fixture in

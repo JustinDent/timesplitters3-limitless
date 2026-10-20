@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Native host-movie polling now has a separate per-playback pacer at the
+  selected 60/120/144 rate. The movie loop bypasses the level-update pacer;
+  previously it could repeatedly submit an unchanged movie picture without
+  waiting. Shared timing policy retains movie/audio clocks and releases its
+  timer on playback close. With synthetic packet/audio backends, the actual
+  movie updater delivers the same 90 timestamps and 2,880 audio bytes using
+  643 polls instead of 44,502 at native 144. Real playback/build validation
+  is pending; native Mac movie support remains MAC-009.
+  [Movie pacing](docs/native-high-refresh-regressions.md#native-movie-polling).
 - Shared source now samples fractional level time in the second, strip-based
   screen-distortion effect (`0xF9B4B`). The complete original-code fixture
   reproduces 672 repeated frames out of 1,152 at native 144 over eight game

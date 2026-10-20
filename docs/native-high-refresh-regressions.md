@@ -1759,6 +1759,49 @@ and is not a performance benchmark. Evidence is
 `private/pipeline/strip-interactive-counter-audit.json` and the corresponding
 `logs/play-20261020-180012.err` movie/presentation records.
 
+## Native movie polling
+
+The live `b3c30cf` attract-movie observation above exposed a separate loop:
+native mode bypasses `xbox_Nv2aFlipGateArm()` at guest swaps, but movie playback
+does not call the level-update pacer. `xmv_play_update` frequently returns
+NOFRAME while the guest keeps submitting the same movie layer. Consequently
+accepted present calls can increase far faster than decoded pictures or guest
+updates. This is a pacing gap, not evidence of fresh high-refresh gameplay.
+
+`src/pc_native_movie_pacing.h` adds a per-playback rational schedule using the
+existing `PcNativeClock`, native-rate setting and platform clock/wait interface.
+The first poll is immediate; subsequent polls wait until the next native
+60/120/144 slot. Already-paced callers do not wait twice. Late work skips missed
+slots without an immediate catch-up burst. Rate/clock changes rebase the poll
+schedule, timer failures fall back to a short sleep, and playback close releases
+the timer. The guest clock, video timestamps and movie wall clock are untouched.
+
+The additive `*-native-movie-pacing.patch` places the wait in the existing host
+player after handle validation and before processing its next poll. It stores
+the pacing state in that player's movie object and closes it with playback.
+Disabled native mode returns immediately. The existing host decoder is only
+available on Windows; the Mac player remains a stub under MAC-009. The pacing
+helper is shared and should be consumed by that backend when implemented.
+
+`tests/native_movie_pacing.c` checks exact rational cadence at 60/120/144 with
+two counter frequencies, independent playback schedules, already-paced calls,
+late work, reset/disable, timer create/set/wait failures and timer lifetime.
+`tests/native_movie_update.c` compiles the actual patched movie structure and
+get/start/update/time/close/audio-feed bodies. Demux, decoder, audio output and
+rendering are synthetic backends; the fixture does not decode a real file.
+Its ninety 20-FPS packet timestamps and 2,880 PCM bytes are identical with and
+without pacing, including rejected audio submissions retried without loss.
+At a modeled 100 microseconds of guest work per poll, native 144 reduces calls
+from 44,502 to 643. EOF is observed at 4,458 rather than 4,450 ms, within one
+poll interval after the final picture; timestamp values are unchanged.
+Invalid/closed handles do not wait, and close releases the timer exactly once.
+
+Evidence: `logs/native-movie-pacing-model.log` and
+`logs/native-movie-update.log`. These checks establish scheduling and update
+protocol behavior, not decoded image quality, audible synchronization, real
+CPU savings or human skip latency. Full patch-upgrade/shared/build checks and
+isolated real-file movie validation are pending at this source checkpoint.
+
 ## Bridge-crash placement investigation
 
 The user reports a later ship crash intruding into the playable canyon,

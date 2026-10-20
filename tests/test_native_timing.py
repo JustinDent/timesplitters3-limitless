@@ -14,19 +14,37 @@ class ObjectRockingQuantization(AssertionError):
 
 
 @pytest.mark.parametrize('source', ['native_timing.c', 'native_timing_guest.c',
-                                    'native_projectile_scope.c', 'native_visual_time.c'])
+                                    'native_projectile_scope.c', 'native_visual_time.c',
+                                    'native_movie_pacing.c', 'native_movie_update.c'])
 def test_native_timing(source, tmp_path):
     compiler, environment = native_compiler(tmp_path)
     runtime = ROOT / 'external/ts3FPrecomp/src'
     includes = [runtime, runtime / 'config']
     output = tmp_path / ('native-timing.exe' if os.name == 'nt' else 'native-timing')
+    source_path = ROOT / 'tests' / source
+    if source == 'native_movie_update.c':
+        player=(runtime/'hle/hle_xmv_play.c').read_text(encoding='utf-8')
+        start=player.index('typedef struct {')
+        structure=player[start:player.index('} movie;',start)+len('} movie;')]
+        names=('static movie *get(', 'static void feed_audio(', 'static uint32_t movie_clock(',
+               'void xmv_play_start(', 'uint32_t xmv_play_update(', 'uint32_t xmv_play_time(',
+               'void xmv_play_close(')
+        functions=[]
+        for name in names:
+            start=player.index(name)
+            functions.append(player[start:player.index('\n}',start)+2])
+        text=source_path.read_text(encoding='utf-8')
+        text=text.replace('/* MOVIE_STRUCT */',structure).replace('/* MOVIE_FUNCTIONS */','\n'.join(functions))
+        text=text.replace('../src/pc_native_movie_pacing.h',(ROOT/'src/pc_native_movie_pacing.h').as_posix())
+        source_path=tmp_path/'native_movie_update.c'
+        source_path.write_text(text,encoding='utf-8')
     if os.name == 'nt':
         command = [compiler, '/nologo', '/std:c11', '/W4',
-                   *['/I' + str(path) for path in includes], str(ROOT / 'tests' / source),
+                   *['/I' + str(path) for path in includes], str(source_path),
                    '/Fe:' + str(output), '/Fo:' + str(tmp_path / 'timing.obj')]
     else:
         command = [compiler, '-std=c11', '-Wall', '-Wextra',
-                   *['-I' + str(path) for path in includes], str(ROOT / 'tests' / source),
+                   *['-I' + str(path) for path in includes], str(source_path),
                    '-lm', '-o', str(output)]
     subprocess.run(command, env=environment, cwd=tmp_path, check=True)
     subprocess.run([str(output)], env={k:v for k,v in os.environ.items()
