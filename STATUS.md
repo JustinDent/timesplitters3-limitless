@@ -1,5 +1,48 @@
 # Measured progress
 
+## Texture batch 224: original material and atlas review (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals: 93 opaque and 35
+nonopaque. All sixteen RGB/alpha sheets inspected. Per-key notes cover ordinary
+materials, detailed UV atlases, mesh/cutout geometry, signs, controls, reflections
+and effects. Several reflection maps need projection-aware work, while alpha
+sometimes encodes a glow or inverted coverage rather than the RGB silhouette.
+Preservation constraints distinguish those cases. Classification now covers
+5,737 of 6,812 supported keys; 1,075 remain unclassified.
+
+Unchanged memory renderer ce45eb4 reproduced every record and sheet hash exactly
+with explicit ordered keys. File count, bytes and path/size/mtime fingerprint
+of the artwork root were unchanged across rendering and replay. No original
+PNG exports or diagnostic raster files. Avoided 2,602,223 bytes of saved JPEGs.
+Original display uses aspect-preserving nearest-neighbor thumbnails only.
+
+Complete decisions and provenance are retained in private
+review/hybrid-224-review.json.gz: 128,247 JSON bytes compressed losslessly to
+25,213 bytes, with byte-identical decompression readback. Read with Python
+gzip.open in text mode and json.load; ordered keys and hashes reproduce the
+memory sheets. No existing evidence moved, relabelled or removed.
+
+Fresh Python format, metadata, dimensions, aspect, hash and mip audit passes
+all 1,398 installed DDS files. Their hashes and native checker identity are
+unchanged; Windows parser evidence carried from batch 223 without new parser
+execution. Counts remain 5,289 needing art and 125 held drafts. Worklist/hybrid
+queue, classifications and current progress storage refreshed.
+
+One private pack remains 1,118,255,076 bytes including metadata (1066.45 MiB)
+under 6144 MiB. Temporary output about 254.98 MiB, leaving about 1.02 MiB below
+256 MiB. Workspace including source art about 6589.21 MiB logical/allocated
+by the existing helper; free disk about 82.69 GiB. This is not independent
+physical-allocation evidence. No cleanup attempts, duplicate game/build/staging,
+personal-data changes or publication.
+
+No generation, installation, gameplay, runtime/adapter changes or Mac execution.
+Shared renderer requires no OS adapter; host execution and scene validation
+remain distinct. MAC-011 stays Awaiting validation for Mac GPU, mapped scenes,
+alpha and 512 MiB residency. Full asset/category inventory, other encodings,
+procedural discovery and consolidated scene/display-mode checks remain open.
+Private review/hybrid-224-acceptance.json links compressed review, storage and
+carried-forward parser evidence. Classification is not replacement completion.
+
 ## Texture batch 223: inventory with compressed review provenance (2026-10-20)
 
 Reviewed 128 further catalog/game hash-verified originals: 83 opaque and 45
