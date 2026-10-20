@@ -44,6 +44,7 @@ namespace TimeSplitters.Launcher
             var metadata = Json.Object(File.ReadAllText(Core.PathIn(root, "BUILD.json")));
             var files = (Dictionary<string, object>)metadata["files"];
             var preserved = new[] { Core.LauncherName, Core.AppPath, Core.SelfManifest,
+                "TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources",
                 "TimeSplitters Launcher.app/Contents/MacOS/host.dylib",
                 "TimeSplitters Launcher.app/Contents/Resources/Licenses/notice.txt" };
             foreach (var name in preserved.Concat(new[] { "Support/retired.txt" })) {
@@ -59,19 +60,35 @@ namespace TimeSplitters.Launcher
             Core.Rollback(root);
             Need(Core.InstalledVersion(root) == "v1.0.0" && File.ReadAllText(Core.PathIn(root, "Support/retired.txt")) == "old package file", "Game cleanup rollback failed");
         }
+        static bool BundleSignatureValid(string root)
+        {
+            var start=new ProcessStartInfo("/usr/bin/codesign"){UseShellExecute=false};
+            foreach(var arg in new[]{"--verify","--deep","--strict","--verbose=2",Path.Combine(root,"TimeSplitters Launcher.app")})start.ArgumentList.Add(arg);
+            using(var process=Process.Start(start)){
+                if(!process.WaitForExit(20000)){process.Kill(true);throw new Exception("Bundle signature verification timed out");}
+                return process.ExitCode==0;
+            }
+        }
         public static int VerifyPackage(string archive,string version)
         {
             string test=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(archive)),"package-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
             try {
                 var changes=SelfUpdate.Unpack(archive,Path.Combine(test,"payload"),version);string install=Path.Combine(test,"install");Directory.CreateDirectory(install);Write(install,"BUILD.json","preserved game metadata");Write(install,"Saves/keep","preserved save");Core.ApplyLauncher(install,changes,null);Need(SelfUpdate.Complete(install),"Packaged app did not verify after installation");
+                Need(BundleSignatureValid(install),"Installed app bundle signature is invalid");
+                string seal=Core.PathIn(install,"TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources");
+                byte[] sealBytes=File.ReadAllBytes(seal);File.Delete(seal);
+                Need(!BundleSignatureValid(install),"Bundle signature accepted a missing resource seal");
+                File.WriteAllBytes(seal,sealBytes);
                 string pending=Core.PathIn(install,".launcher/self-pending");Directory.CreateDirectory(pending);SelfUpdate.Unpack(archive,Path.Combine(pending,"payload"),version);Write(install,".launcher/self-pending/release.json",Json.Encode(new{version=version,repair=true}));
                 string helper=Core.PathIn(install,".launcher/mac-self-helper");File.Copy(Core.PathIn(install,Core.LauncherName),helper);File.SetUnixFileMode(helper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
                 File.AppendAllText(Core.PathIn(install,Core.AppPath),"modified fixture");
+                Need(!BundleSignatureValid(install),"Bundle signature accepted a modified Info.plist");
                 using(var parent=Process.Start(new ProcessStartInfo("/bin/sleep","1"){UseShellExecute=false})){
                     var start=new ProcessStartInfo(helper){UseShellExecute=false};start.ArgumentList.Add("--test-self-helper");start.ArgumentList.Add(install);start.ArgumentList.Add(parent.Id.ToString());
                     using(var child=Process.Start(start)){Need(child.WaitForExit(40000),"Self-update helper timed out");Need(child.ExitCode==0,"Self-update helper failed");}
                 }
                 Need(SelfUpdate.Complete(install),"Self repair did not restore the modified bundle");Need(File.Exists(Core.PathIn(install,"self-update-preview.png")),"Updated app did not open and render");Need(!Directory.Exists(pending),"Completed staging retained");
+                Need(BundleSignatureValid(install),"Self repair did not restore the app bundle signature");
                 Need(File.ReadAllText(Path.Combine(install,"Saves/keep"))=="preserved save"&&File.ReadAllText(Path.Combine(install,"BUILD.json"))=="preserved game metadata","Package touched personal/game files");
                 Console.WriteLine("Packaged Mac app installed, repaired through a copied helper, restarted and rendered; game metadata and saves preserved.");return 0;
             }

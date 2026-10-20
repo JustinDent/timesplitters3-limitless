@@ -14,7 +14,7 @@ namespace TimeSplitters.Launcher
         public static readonly bool CanSelectPresentationTarget = false;
         public const string DisplaySettingsLocation = "System Settings → Displays";
         public const string UpdateManifest = "launcher-update-macos-arm64.json";
-        public static bool LauncherResource(string name) { return (name.StartsWith("TimeSplitters Launcher.app/Contents/MacOS/",StringComparison.Ordinal) && name.EndsWith(".dylib",StringComparison.Ordinal)) || name.StartsWith("TimeSplitters Launcher.app/Contents/Resources/",StringComparison.Ordinal) && (name.EndsWith(".txt",StringComparison.Ordinal) || name.EndsWith(".icns",StringComparison.Ordinal)); }
+        public static bool LauncherResource(string name) { return name == "TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources" || (name.StartsWith("TimeSplitters Launcher.app/Contents/MacOS/",StringComparison.Ordinal) && name.EndsWith(".dylib",StringComparison.Ordinal)) || name.StartsWith("TimeSplitters Launcher.app/Contents/Resources/",StringComparison.Ordinal) && (name.EndsWith(".txt",StringComparison.Ordinal) || name.EndsWith(".icns",StringComparison.Ordinal)); }
         public const string GameBinary = "Bin/futureperfect_recomp";
         public const string LaunchScript = "Launch.command";
         public const string LauncherBinary = "TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher";

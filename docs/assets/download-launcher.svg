@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="280" height="52" viewBox="0 0 280 52" role="img" aria-labelledby="title desc">
-  <title id="title">Download Windows launcher</title>
-  <desc id="desc">A silver and blue download button for the TimeSplitters PC launcher.</desc>
+  <title id="title">Download Windows or Mac launcher</title>
+  <desc id="desc">A silver and blue download button for the TimeSplitters Windows and Apple Silicon Mac launchers.</desc>
   <defs>
     <linearGradient id="chrome" x2="0" y2="1">
       <stop stop-color="#e5f5ff"/>
