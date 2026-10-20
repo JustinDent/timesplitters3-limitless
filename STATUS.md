@@ -1,5 +1,46 @@
 # Measured progress
 
+## Texture batch 199: character identity and clothing atlas review (2026-10-20)
+
+Issue #74: eight independent built-in atlas edits reviewed. Three accepted
+for offline installation: purple-red checked clothing/face atlas, uniformed
+character atlas, and teal clothing atlas. Five remain held: furry creature
+and green striped character eye shapes, narrowed mouth/full lips, bright
+leathery material (+37.96% mean luminance), and glossy shark eyes. These
+failures are not installed or counted as complete.
+
+Original/compiled atlas, enlarged identity crops and 2x2 diagnostic repeats
+were reviewed. Accepted drafts retain garment boundaries, major folds and
+facial feature positions. Increased contrast in the green eye and actual
+model seams remain final scene checks. Repeat sheets are diagnostics, not
+proof of seamless tiling or scene adjacency. All original/output alpha is
+opaque. Eight sources are actually 1254x1254; three installed outputs are
+1024x1024 DXT1, Lanczos-resampled with full 11-level mip chains. No native
+4K claim. Source prompts, generation provenance and reasons remain private.
+
+Three new native DDS-reader passes, 1,301 unchanged prior-audited DDS hashes
+and unchanged checker cover 1,304 installed files. Full current worklist
+metadata, hashes, dimensions, aspect and mip-byte checks passed. Inventory
+and hybrid queue refreshed. An additional 64 original RGB/alpha pairs were
+classified: 3,913 keys now visually classified. Installed coverage is
+19.14% of 6,812 cataloged supported keys; 5,389 need art and 119 drafts need
+correction. There are 7,147 catalog payloads and no cataloged unsupported
+formats; uncataloged, other-encoded and procedural discovery gaps remain.
+Classification and parser acceptance do not establish completed artwork.
+
+Pack including metadata: 1,076,294,235 bytes
+(1026.43 MiB), up 2,098,872 bytes.
+Temporary output: 198.26 MiB; texture workspace
+including necessary source art: 6091.69 MiB logical/allocated
+by the existing helper; free disk: 84.97 GiB. The 6144 MiB pack
+and 256 MiB temporary limits hold. The 512 MiB residency policy is unchanged
+and not measured here. No duplicate game, build, extract or pack staging.
+
+Evidence: private review/hybrid-199-acceptance.json and linked comparison,
+identity, metrics, original verification, generation, triage and native audit
+records. No gameplay, Mac scene/GPU validation or game rebuild. MAC-011
+remains Awaiting validation. Local issue #74 checkpoint; no art publication.
+
 ## Texture batch 198: architectural materials and prop layout checks (2026-10-20)
 
 Issue #74: sixteen independent built-in texture edits reviewed; fourteen

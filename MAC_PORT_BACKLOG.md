@@ -1115,6 +1115,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 199 (2026-10-20, commit carrying this entry): three
+  character/clothing atlases accepted offline and five identity/tone failures
+  held; 1,304 installed files have current offline structure/hash evidence.
+  Standard DXT1 and shared loader support require no adapter change. Windows
+  parser checks do not establish Mac model seams, skin/cloth appearance,
+  renderer fidelity or GPU residency. Status: Awaiting validation; retain
+  consolidated Mac scene/mode/memory/fallback checks near completion. See
+  [batch 199 evidence](STATUS.md#texture-batch-199-character-identity-and-clothing-atlas-review-2026-10-20).
+
 - Texture batch 198 (2026-10-20, commit carrying this entry): fourteen
   private DXT1 environment/prop replacements accepted; cloth and wood atlas
   held for correction. 1,301 installed and 3,849 original keys classified.
