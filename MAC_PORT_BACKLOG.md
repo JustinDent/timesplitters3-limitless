@@ -3036,6 +3036,12 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   No OS adapter is needed. Source-only while the interactive game runs;
   Windows build/live sniper and actual Mac execution remain unverified. See
   [the sniper record](docs/native-high-refresh-regressions.md#sniper-damage-on-fractional-frames).
+- **Beam lifetime audit:** `tests/native_beam_lifetime.c` executes the original
+  shared effect manager with original switch/type tables. First-update,
+  lifetime, explicit delay and paused-age checks pass on Windows at
+  60/120/144 and quarter speed. Visual geometry/rendering are mocked; delayed
+  trails remain open. No runtime or OS adapter change. Actual Mac execution
+  remains pending. See [beam evidence](docs/native-high-refresh-regressions.md#beam-manager-lifetime-audit).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.

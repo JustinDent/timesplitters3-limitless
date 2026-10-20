@@ -194,6 +194,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                               (0xb9790,0xb991d),(0xb9720,0xb9789),
                               (0xbb6c0,0xbb842),(0xbb490,0xbb6bf),(0xba310,0xba6f7)]),
     ('native_projectile_motion.c', [(0xf4a50,0xf51af)]),
+    ('native_beam_lifetime.c', [(0x10a760,0x10ad71)]),
     ('native_ship_debris.c', [(0x2168c0,0x216ca5)]),
     pytest.param('native_object_rocking.c', [(0xa84f0,0xa8a97),
                                             (0x151650,0x15178f),(0x153550,0x1535a1),
@@ -215,7 +216,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c'):
+        if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c','native_beam_lifetime.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
@@ -223,6 +224,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             addresses=set(range(0x218630,0x218648,4) if harness_name=='native_mothership.c'
                           else range(0x507d88,0x507db8,4) if harness_name=='native_ship_debris.c'
                           else range(0xf51b0,0xf51e8,4) if harness_name=='native_projectile_motion.c'
+                          else [0x478674]+list(range(0x10ad74,0x10ade8,4))+list(range(0x4e11bc,0x4e143c,4))
+                          if harness_name=='native_beam_lifetime.c'
                           else range(0x4dad48,0x4dafb8,4))
             decoder=Cs(CS_ARCH_X86,CS_MODE_32)
             for start,end in ranges:
@@ -318,7 +321,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
-    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c'):
+    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c','native_beam_lifetime.c'):
         print(output)
     if harness_name=='native_object_rocking.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])

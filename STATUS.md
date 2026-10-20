@@ -23,6 +23,13 @@ published release or a full-game 144 FPS certification.
   Source-only while the user plays; Windows rebuild, live sniper confirmation
   and actual Mac execution remain pending.
   [Sniper evidence](docs/native-high-refresh-regressions.md#sniper-damage-on-fractional-frames).
+- Beam-manager lifetime audit passes without a runtime change: the original
+  type-32 manager starts an undelayed beam on its first update and expires it
+  near 1.2 game seconds at 60/120/144, including quarter-speed and paused
+  intervals. This checks scheduling, not rendered visibility. A 30-second
+  read-only observation of the interactive game captured no active effects,
+  so delayed trails remain unreproduced. The user's game was left running.
+  [Beam evidence](docs/native-high-refresh-regressions.md#beam-manager-lifetime-audit).
 - Projectile travel regression reproduced: the 0xF4A50 updater uses fractional
   displacement but skipped zero-whole-tick frames while age advanced normally.
   Its entry gate is corrected in shared source. The original-code fixture

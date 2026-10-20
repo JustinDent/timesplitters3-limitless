@@ -1430,3 +1430,49 @@ Full patch validation passes with zero runtime files updated
 (`logs/native-sniper-patches.log`); generation is current. The production
 translation already calls the shared policy at 0xBB6C0, so no generated C was
 edited. These are offline checks, not a rebuilt or live-verified sniper fix.
+
+
+### Beam-manager lifetime audit
+
+Source baseline `e7da2e4`, Windows x64, pinned US XBE. The kind-24 sniper
+updater emits type-32 effects through 0x104F30. That constructor sets age zero
+and lifetime 1.2 seconds. The complete manager 0x10A760 uses float delta
+0x4E794C, stores its effective delta in 0x73BBA8, and advances effect age
+by delta/60. Type-32 dispatch calls 0x1053D0. The inspected gameplay caller
+0x1CE2E0 reaches this manager without a whole-tick gate on the normal path.
+
+`tests/native_beam_lifetime.c` executes the complete original manager and
+original descriptor/switch tables. Type-32 geometry updates and unrelated
+subsystem services are spies; expiry captures the original decision while
+replacing allocator cleanup. This isolates manager scheduling, not complete
+beam construction, rendering or GPU resource lifetime. It does not prove
+which effect produced the user's red trails.
+
+`logs/native-beam-lifetime.log` passes 13 schedules: original 60, native
+60/120/144 at normal/quarter speed, and explicit 0.3-second deferred starts.
+With no explicit delay, the updater runs on the first advancing frame.
+Expiry is 1.216667 game seconds at original/native 60 and 1.201389 at native
+144, within normal step/float boundary rounding of 1.2 seconds. Deferred
+starts remain within one step of their requested time, and total expiry
+within two steps of delay plus lifetime. A zero-time callback before each
+live frame leaves age unchanged; register preservation, x87 stack balance
+and timing globals are checked. The manager may visit its geometry updater
+at zero time; this fixture does not assert that all visual state is frozen.
+An initial fixture omission left the constructor's lifetime constant unloaded;
+loading its verified original value resolved the fixture-only failure.
+No production timing change was justified by these results.
+
+A bounded read-only observation of interactive PID 2212 collected 596
+snapshots over 30 seconds (`private/pipeline/fx-trails-observation.jsonl`,
+72,977 bytes), with advancing time but no active effect heads. It did not
+capture firing or the reported delayed trails. No input, memory writes,
+restart or personal-settings changes were performed. Further reproduction
+and render-path investigation remain necessary; actual Mac execution is
+also pending. Sniper source fix `e7da2e4` still needs a Windows rebuild and
+live gameplay verification; the current interactive executable remains
+`ef2ace3`.
+
+The timing, CI runtime-scope and Mac-backlog checks pass 94 tests with one
+existing object-rocking expected failure in 33.61 seconds
+(`logs/native-beam-shared.log`). The new harness is included in the existing
+CI timing suite. This is audit coverage, not a delayed-trail fix.
