@@ -181,8 +181,9 @@ def publish_version_pr(client, root, changed, base_branch, base_sha):
 
 
 def report_labels(body):
+    body = (body or '').lstrip('\ufeff')
     fields = {name.strip(): value.strip() for name, value in re.findall(
-        r'^### ([^\r\n]+)\r?\n(.*?)(?=^### |\Z)', body or '', re.M | re.S)}
+        r'^### ([^\r\n]+)\r?\n(.*?)(?=^### |\Z)', body, re.M | re.S)}
     if {'Game version', 'Launcher version', 'Platform', 'What happened?'} <= fields.keys():
         desired = {'bug'}
     elif 'What would you like to add or change?' in fields:
