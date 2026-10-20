@@ -244,10 +244,11 @@ class LauncherReleaseTests(unittest.TestCase):
         with patch.object(builder.subprocess, 'run') as run:
             builder.sign_bundle(app)
         calls = [c.args[0] for c in run.call_args_list]
-        self.assertEqual(calls[0][-1], str(libs/'native.dylib'))
-        self.assertEqual(calls[1][-1], str(app))
-        self.assertIn('--sign', calls[1])
-        self.assertEqual(calls[2], ['/usr/bin/codesign', '--verify', '--deep', '--strict', '--verbose=2', str(app)])
+        self.assertEqual(calls[0], ['/usr/bin/xattr', '-cr', str(app)])
+        self.assertEqual(calls[1][-1], str(libs/'native.dylib'))
+        self.assertEqual(calls[2][-1], str(app))
+        self.assertIn('--sign', calls[2])
+        self.assertEqual(calls[3], ['/usr/bin/codesign', '--verify', '--deep', '--strict', '--verbose=2', str(app)])
         self.assertTrue(all(c.kwargs['check'] for c in run.call_args_list))
 
     def test_mac_executable_mode_is_required(self):

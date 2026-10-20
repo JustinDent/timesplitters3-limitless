@@ -76,8 +76,12 @@ development checkouts so they cannot overwrite source or native build work.
 Portable game packages use `Bin/futureperfect_recomp`, `Launch.command`,
 `Settings/pc-controls.json`, `Licenses`, and a hashed `BUILD.json`; personal data
 uses `Data`, `Saves`, `Settings`, and `Textures`. A new native runtime package,
-including redistributable dependencies and provenance, still needs the MAC-012
-release pipeline. The launcher alone cannot supply a game runtime.
+including redistributable dependencies and provenance, is assembled on Apple
+Silicon with `tools/package-native-mac.py`. It bundles the verified Vulkan loader,
+MoltenVK, DXC and native dependencies, checks their hashes before launch, and
+requires no Python, Homebrew or SDK on the player's Mac. Launcher 1.2.21 adds
+this portable Vulkan loading path. The launcher alone cannot supply a game runtime.
+See [native packaging](macos.md#native-release-packaging) and MAC-012 for validation.
 
 `--package` additionally creates a launcher ZIP, SHA-256 sidecar and
 `launcher-update-macos-arm64.json`. Keep the `.app` beside `Support/Launcher` in
