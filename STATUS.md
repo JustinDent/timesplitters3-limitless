@@ -1,5 +1,38 @@
 # Measured progress
 
+## Texture inventory batch 246: 128 additional RGB/alpha classifications (2026-10-20)
+
+Reviewed keys d966fd068ff3f72f through e7306a0f5d90ad58: 87 opaque and 41
+nonopaque originals. Payload/decoded hashes, dimensions and alpha were checked.
+Sixteen RAM-only RGB/alpha sheets exactly replay from pinned keys. Complete
+private provenance is 169,864 bytes stored as 23,704-byte lossless gzip, with
+round-trip verification. No original exports or raster files; 5,289,943 raster
+bytes avoided. Previous goal turn classified as progress (batch 245).
+
+Classification rises from 6,441 to 6,569; 243 remain, all needing art. This batch
+also classifies the previously unclassified installed Spanish disc-error screen;
+its installed status and file are unchanged. Source-language text, instrument
+labels, warning signs, alpha-only diagrams/glyphs, inverse masks, character
+identity and partial-opacity effects retain explicit specialist constraints.
+Embedded scene previews are catalog artwork, not new runtime evidence.
+Appearance-based inventory is provisional, not artwork completion or mapped-use
+validation; discovery, category/use review and most production remain unfinished.
+
+No new artwork generated or installed. All 1,465 installed DDS hashes unchanged;
+fresh full Python format/metadata/dimensions/aspect/mip/hash audit passed. Native
+parser evidence stays batch 242, with no new native executions. Queue refreshed:
+1,465 installed, 5,194 needing art and 153 held. Pack unchanged at 1,149,619,742
+bytes (1096.36 MiB), under 6144 MiB; residency limit remains 512 MiB.
+Temporary snapshot 268,034,212 bytes is below 256 MiB with 401,244 bytes headroom.
+Texture workspace including source art: 7,316,978,744 bytes; free disk:
+84,884,549,632 bytes. Allocation helper equals logical size, not independent
+physical-allocation proof. No cleanup, duplicate extracts/staging or publication.
+
+Private evidence: review/hybrid-246-review.json.gz, pinned inventory-memory.py,
+guarded inventory-apply.py and inventory-acceptance.json. Personal saves/settings
+preserved. No gameplay; 90% installed-and-audited gate remains unmet. MAC-011 stays
+Awaiting validation for Mac GPU, mapped scenes, display modes and residency.
+
 ## Texture inventory batch 245: 128 additional RGB/alpha classifications (2026-10-20)
 
 Reviewed 128 previously unclassified keys from cd76521e080d89d8 through
