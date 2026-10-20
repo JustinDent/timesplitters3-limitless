@@ -20,6 +20,14 @@ two-line transfer text, progress bar and pause button no longer overlap.
 The minimum-size window uses the existing card scrollbar to reach the pause
 button. Preview commands are documented in `docs/mac-launcher.md`.
 
+The first Windows CI attempt (run 39378565086) stopped before compilation:
+`launcher-release.py` decoded the UTF-8 GitHub event using Windows CP1252, which
+rejects a byte in the PR body's curly quotes. Event parsing now specifies UTF-8.
+A regression invokes the real plan command with an unescaped Unicode event and
+simulated CP1252 default; it reproduces the failure before the fix and passes
+afterward. All 24 release-policy tests pass locally; the existing workflow runs
+this suite on both hosts.
+
 The read-only launcher `--check` against the existing development checkout was
 attempted but cannot start its missing `.venv/bin/python`; this task does not
 recreate or change that separate environment. Windows/native Mac CI and package

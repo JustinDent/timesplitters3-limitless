@@ -1564,7 +1564,9 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   these controls vertically so wrapping text expands the row. No OS adapter
   is needed. `NativeWindow.cs` adds offline download previews for normal and
   minimum sizes, including scrolled controls. Native build/regressions and
-  inspected previews pass; Windows/native Mac CI remains pending at
+  inspected previews pass. Initial Windows CI exposed locale-dependent event
+  decoding in `tools/launcher-release.py`; explicit UTF-8 and a CP1252 regression
+  fix that shared build prerequisite. Windows/native Mac CI remains pending at
   implementation. The local game prerequisite check is blocked by the existing
   checkout's missing Python environment. Live transfer and Windows visual
   acceptance remain unverified; status remains Awaiting validation.

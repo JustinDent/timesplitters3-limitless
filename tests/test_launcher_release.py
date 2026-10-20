@@ -328,6 +328,30 @@ class LauncherReleaseTests(unittest.TestCase):
             release.publish(self.directory, self.plan, self.api)
         self.assertEqual(self.api.calls, [])
 
+    def test_plan_reads_utf8_github_event_with_windows_default_encoding(self):
+        event = self.directory/'event.json'
+        plan_path = self.directory/'plan.json'
+        event.write_text(json.dumps({
+            'repository': {'default_branch': 'r\u00e9vision'},
+            'pull_request': {'body': 'Fix the \u201cUPDATE CHANNEL\u201d overlap.'},
+        }, ensure_ascii=False), encoding='utf-8')
+        read_text = Path.read_text
+
+        def windows_read_text(path, encoding=None, **kwargs):
+            return read_text(path, encoding=encoding or 'cp1252', **kwargs)
+
+        environment = dict(GITHUB_EVENT_PATH=str(event), GITHUB_EVENT_NAME='pull_request',
+                           GITHUB_REF='refs/pull/215/merge', GITHUB_SHA=SHA,
+                           GITHUB_REPOSITORY=release.REPOSITORY, LAUNCHER_VALIDATION_SHA=SHA)
+        with patch.dict(release.os.environ, environment, clear=True), \
+                patch('sys.argv', ['launcher-release.py', 'plan', '--plan', str(plan_path)]), \
+                patch.object(Path, 'read_text', windows_read_text), patch('builtins.print'):
+            release.main()
+        plan = json.loads(plan_path.read_text(encoding='utf-8'))
+        self.assertEqual(plan['default_branch'], 'r\u00e9vision')
+        self.assertEqual(plan['source_revision'], SHA)
+        self.assertFalse(plan['publish'])
+
     @patch.object(release.subprocess, 'run')
     def test_publish_event_policy_checks_main_ancestry_and_matching_tag(self, run):
         event = {'repository': {'default_branch': 'main'}, 'inputs': {'publish': 'true'}}
