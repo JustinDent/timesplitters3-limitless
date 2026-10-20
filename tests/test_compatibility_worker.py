@@ -174,7 +174,9 @@ class RepairTests(unittest.TestCase):
                 return b'Windows/Mac test failed in src/fix.c'
             if argv[0] == 'fake-codex':
                 snapshot = Path(argv[argv.index('-C') + 1])
-                (snapshot / 'src/fix.c').write_text('fixed\n', encoding='utf-8')
+                # Model output is a byte-preserving edit, not the test host's
+                # implicit text newline translation (CRLF on Windows).
+                (snapshot / 'src/fix.c').write_bytes(b'fixed\n')
                 Path(argv[argv.index('-o') + 1]).write_text(
                     'Shared adapter corrected. Portable fixture passed; Windows CI pending.', encoding='utf-8')
                 return b'model result'
