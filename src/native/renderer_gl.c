@@ -877,11 +877,13 @@ static void bind_texture0(void)
     GLint used[4],flipped[4],modes[4];GLfloat scale[8],menu_filter[4];
     DWORD token=d3d8_combiners_get_pixel_shader(),tm=g.rs[D3DRS_PSTEXTUREMODES];
     static unsigned warned;
+    const int enhanced=tsfp_texture_is_4k();
     for(int stage=0;stage<4;stage++) {
         GLTexture *t=(GLTexture*)g.textures[stage];
+        const int replacement=enhanced && t && !t->usage && !t->screen_copy && t->pack_texture;
         glActiveTexture(GL_TEXTURE0+stage);glBindSampler(stage,native_samplers[stage]);used[stage]=t && t->gl_tex;
-        glBindTexture(GL_TEXTURE_2D,used[stage]?(t->pack_texture?t->pack_texture:t->gl_tex):g.fallback_texture);
-        glSamplerParameteri(native_samplers[stage],GL_TEXTURE_MIN_FILTER,g.tss[stage][D3DTSS_MINFILTER]==D3DTEXF_POINT?GL_NEAREST:(t&&t->pack_texture?GL_LINEAR_MIPMAP_LINEAR:GL_LINEAR));
+        glBindTexture(GL_TEXTURE_2D,used[stage]?(replacement?t->pack_texture:t->gl_tex):g.fallback_texture);
+        glSamplerParameteri(native_samplers[stage],GL_TEXTURE_MIN_FILTER,g.tss[stage][D3DTSS_MINFILTER]==D3DTEXF_POINT?GL_NEAREST:(replacement?GL_LINEAR_MIPMAP_LINEAR:GL_LINEAR));
         glSamplerParameteri(native_samplers[stage],GL_TEXTURE_MAG_FILTER,g.tss[stage][D3DTSS_MAGFILTER]==D3DTEXF_POINT?GL_NEAREST:GL_LINEAR);
         glSamplerParameteri(native_samplers[stage],GL_TEXTURE_WRAP_S,native_wrap(g.tss[stage][D3DTSS_ADDRESSU]));
         glSamplerParameteri(native_samplers[stage],GL_TEXTURE_WRAP_T,native_wrap(g.tss[stage][D3DTSS_ADDRESSV]));

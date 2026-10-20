@@ -15,9 +15,12 @@ local pack snapshot and remaining validation gates.
 From a Windows source checkout with a built runtime and an existing pack,
 double-click **Play-Textures.cmd**. It loads replacements from
 `private/texture-remaster/pack`; it does not download or generate a pack.
-On the issue #74 source branch, F10 or **PC Settings > 4K Textures**
-switches between cached originals and replacements live. This is separate from
-render resolution. Restart after changing pack files. Ordinary **Play.cmd** starts
+In the game's **Settings** (or paused **Options**), open **Display settings**
+and change **Textures** between **Classic** and **Enhanced** with the native
+choice arrows. It takes effect immediately; **Apply settings** is for
+resolution/FOV. The texture choice lasts for this game session and remains in sync
+with Windows **F10** and **PC Settings > 4K Textures**.
+This is separate from render resolution. Restart after changing pack files. Ordinary **Play.cmd** starts
 in Classic mode with the local pack available for switching.
 
 For a native Mac launch:
@@ -25,6 +28,9 @@ For a native Mac launch:
 ```sh
 ./Play-Native-Mac.command --texture-pack private/texture-remaster/pack
 ```
+
+Native Mac builds expose the same in-game Display setting; actual Mac interaction
+and scene validation are still pending. Launch defaults remain unchanged.
 
 The common renderer's loader accepts full-mip DXT1/DXT3/DXT5 and RGBA DDS
 replacements with compatible alpha. The legacy Mac GL adapter accepts compressed

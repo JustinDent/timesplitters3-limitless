@@ -1116,6 +1116,21 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-011 — Real texture-pack gameplay coverage
 
 - **Status:** Awaiting validation
+- **In-game Display choice (issue #74 follow-up):** The shared
+  `src/pc_display_menu.c` adds a native **Textures: Classic / Enhanced** choice on
+  the existing Display settings page. Arrows apply immediately for the session,
+  reflect host toggles, and reinitialize from the current mode after page
+  refresh. Resolution/FOV Apply and personal config files are unaffected.
+  `src/texture_mode.c` supplies an atomic explicit setter for both hosts.
+  Common RHI already consumes this policy; legacy GL now selects both texture
+  binding and mip filtering from the same mode, with its source linked by
+  `texture-mode-ui.patch`. Native Cocoa/F10 controls remain separate follow-up
+  work. Windows offline guest-callback, cached-loader and menu-pointer tests
+  pass; native Mac compile/interaction and real-art checks remain pending.
+  Acceptance: exercise the in-game choice with native keyboard/controller/mouse,
+  verify cached originals/replacements on both renderer paths, and check
+  refresh/reopen plus missing-pack fallback. See the Display-menu entry in
+  `STATUS.md`; this does not mark scene validation complete.
 - **Texture alpha integration (PR #198):** The mode policy in
   `src/texture_mode.c` now shares initialization and toggle behavior, with
   Win32 once/atomic operations and POSIX pthread/C11 atomic operations as thin
@@ -1124,12 +1139,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   an explicit pack still defaults to replacements unless Classic is requested.
   This prevents the Windows alpha from introducing unresolved mode symbols in
   the current Mac common-renderer build. The existing PC-only F10/menu UI still
-  needs native event/settings wiring; no Mac interactive toggle parity is claimed.
+  needs native Cocoa/F10 wiring. The shared in-game choice above is implemented
+  separately; Mac interaction validation remains pending.
   Legacy GL remains a compressed-texture adapter and rejects RGBA or
   alpha-incompatible replacements before upload, preserving original fallback.
   The shared DDS/loader/mode checks in `tests/test_texture_runtime.py` and the
   artwork-tool suites are registered in Windows/macOS CI. Real-art GPU/scene
-  acceptance and native interactive settings remain pending; portable compilation
+  acceptance and native interaction validation remain pending; portable compilation
   and synthetic loader results do not replace those checks.
 - **Source dimension rounding (issue #74, batch 180):**
   `tools/texture-pack.py` retains exact aspect matching by default and adds
