@@ -1115,6 +1115,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 texture batch 241: five clothing/equipment/character replacements
+  installed; two character drafts held for facial/component fidelity and one
+  generation blocked without retry. Total 1,462 installed. Fresh full Python
+  audit and five new Windows parser checks pass; prior 1,457 DDS hashes/checker
+  identity unchanged. Six RAM comparisons replay exactly, including face focus.
+  Pack 1,148,219,914 bytes; temporary 267,758,522 bytes, both below caps.
+  **Awaiting validation** remains for Mac GPU, mapped character identity, skin/seam
+  matching, equipment, lighting, display modes, alpha and 512 MiB residency.
+  No gameplay/runtime changes. See STATUS.md batch 241 and private acceptance.
+
 - 2026-10-20 texture batch 240: six equipment/clothing replacements installed;
   two equipment atlases held for warning-symbol/stamped-marking fidelity.
   Total 1,457 installed. Fresh full Python audit and six new Windows parser

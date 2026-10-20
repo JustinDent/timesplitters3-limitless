@@ -1,5 +1,48 @@
 # Measured progress
 
+## Texture batch 241: five clothing, equipment and character replacements (2026-10-20)
+
+Eight classified cached references matched archive RGBA. Built-in image generation
+produced seven drafts; one output was blocked. Five accepted offline and installed:
+6e48a4f5236dea14 (pale helmet/armor), 733759ec6a7642ce (dark panel/pale bevel),
+a47f5ce82a1d5a2e (curved pale panel/dark trim), 0747001d83495ad1 (tan strap/panel)
+and 9036d8d5b0002629 (character, hands, clothing and hardware atlas).
+Their mean luminance changes are +2.24%, -4.08%, +4.16%, +7.28% and -2.06%.
+Full, repeat and original-grid comparisons retain principal islands, holes,
+seams, strap marks, facial contour, hairline and equipment placement. Fine material
+detail accepted offline. The character skin is warmer locally and hand highlights
+stronger; mapped identity, skin/seam matching and scene lighting remain pending.
+
+Two character drafts held: 0f6b4ff8639e0364 has stronger dark nose/eyelid strokes
+and changed facial shading/expression; 9bea57693d56c2b5 changes brow, cheek, jaw,
+mouth/ear details and regularizes small equipment patterns. Rotated face-focus
+comparisons inspected. Mean luminance -7.42% and -0.62% does not establish fidelity.
+Neither installed. Tool output moderation blocked 72dff45853767494 (sexual category,
+request 0d7b5e16-e202-48d7-8d66-949a4fb3de08). No retry; recorded in generation_gaps
+and private generation-block evidence. It remains unfinished with original fallback.
+
+Actual sources: four 1254x1254 and three 887x1774, totaling 21,705,311 bytes.
+Installed: one 512x512, three 512x1024 and one 1024x1024; all LANCZOS downsampled
+without crop/color/alpha edits, not native 4K. Six RAM-only comparison sheets
+(including rotated face focus) avoid 1,813,559 raster bytes and replay exactly.
+No new original exports or deletion attempts. Five new Windows DDS parser checks
+pass; prior 1,457 hashes and checker identity unchanged. All 1,462 installed files
+pass a fresh Python format/metadata/dimensions/aspect/mip/hash audit.
+Queue/progress refreshed: 1,462 installed, 5,202 needing art, 148 held;
+6,121 classified, 691 unclassified. Blocked generation remains within needing art.
+Private evidence: review/hybrid-241-acceptance.json, decisions, memory-review,
+character-focus script, selection, prompts, generation receipts/block and native-audit.
+Artwork and game data remain private.
+
+Pack including metadata: 1,148,219,914 bytes (1095.03 MiB), up 1,925,264 bytes,
+below 6144 MiB. Temporary snapshot: 267,758,522 bytes, below 256 MiB with
+676,934 bytes headroom. Texture workspace including source art: 7,292,023,974
+bytes; free disk snapshot: 85,206,454,272 bytes. Allocation helper equals logical
+size, not independent physical-allocation proof. One active pack; unchanged
+512 MiB residency limit. No gameplay, runtime changes, duplicate game/build/staging,
+publication or personal save/settings edits. MAC-011 stays Awaiting validation;
+inventory/category coverage and consolidated scene checks remain unfinished.
+
 ## Texture batch 240: six equipment and clothing replacements (2026-10-20)
 
 Eight cached references matched archive RGBA and were individually edited with
