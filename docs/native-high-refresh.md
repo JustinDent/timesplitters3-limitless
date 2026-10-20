@@ -51,6 +51,13 @@ frame, and lets its repeat timer consume fractional time when called every
 update. The enclosing firing/state-machine gates still need separate audit;
 this helper change does not establish complete weapon cadence or audio parity.
 
+The audited generic firing routine retains its authored whole-tick projectile
+gate. Its event timers and nested sound requests use that same whole-tick span
+inside the call, then restore fractional time for other updates. Opening this
+gate on every fractional frame would overproduce zero-interval projectiles.
+This preserves discrete event cadence while continuous animation/movement
+remain on fractional updates; other weapon caller families need their own audit.
+
 The recompiler also supports an optional title numeric-conversion header.
 Future Perfect uses it to read the adjacent fractional delta when an original
 instruction converts an integer frame delta to floating point. Ordinary

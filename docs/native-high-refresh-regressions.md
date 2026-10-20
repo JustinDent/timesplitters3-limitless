@@ -710,7 +710,7 @@ multiplayer and actual Mac execution remain pending.
 
 ### Deferred weapon cooldown preservation
 
-The original branch 0x1C320C–0x1C3273 subtracts the carried whole-game-tick
+The original branch 0x1C320Câ€“0x1C3273 subtracts the carried whole-game-tick
 count from state+0x110, then invokes 0x1C0110 once when the counter expires
 and callback metadata is present. `tests/native_weapon_cooldown.c` executes
 these original bytes, replacing only the instruction at the final join with
@@ -736,13 +736,17 @@ Source and smoke-evidence hashes are retained in
 
 ## Generic firing mixed-clock regression
 
+This section records the pre-fix failure. The following
+[event-tick scope](#generic-firing-event-tick-scope) addresses the reproduced
+case; broader weapon acceptance remains open.
+
 Audit checkpoint: d6e8fe4 plus the new test; Windows x64/MSVC 14.44.35207.
 No production code changes or game rebuild are part of this audit. The
 existing user session was left running.
 
 `tests/native_weapon_fire.c` translates the complete original routines
-0x244F30–0x24598E (generic firing), 0x1BC890–0x1BC988 (integer weapon-counter
-update) and 0x1B5660–0x1B567B (mode lookup) from the hash-verified US XBE.
+0x244F30â€“0x24598E (generic firing), 0x1BC890â€“0x1BC988 (integer weapon-counter
+update) and 0x1B5660â€“0x1B567B (mode lookup) from the hash-verified US XBE.
 It invokes counter update then firing on every synthetic update, with the
 native policy enabled at 120/144 and the original policy at 60. The fixture
 uses the actor-flag 0x40 socket path, a single projectile per event and
@@ -796,3 +800,84 @@ intervals, variable/catch-up steps, slow motion, pause, the alternate mode,
 multiple projectiles, actual caller states and representative weapons.
 A complete damage/ammo comparison remains necessary before claiming weapon
 mechanics parity. Actual Mac execution remains unverified under MAC-058.
+
+## Generic firing event-tick scope
+
+`pc_native_weapon_guest.h` wraps only the audited US generic firing routine
+0x244F30. Native mode supplies its carried whole-game-tick span as the float
+delta for this discrete transaction and restores both fields on return.
+The original gate, cooldown counters, projectile loop and reset behavior
+remain original code. A locally paused float interval suppresses the
+transaction even if the caller retained a whole tick. The non-native path
+calls the original body without changing either field.
+
+This gives the routine's event-timer additions and its nested sound helper
+the same elapsed tick span as the discrete firing gate. It does not run
+additional firing calls or round every native update up to a tick. Continuous
+animation/movement outside this routine retains fractional time. The additive
+`native-weapon-event-scope.patch` supplies the manual wrapper; the common
+patch installer orders it after native timing/input wrappers. Generation
+retains `sub_00244F30_gen` reproducibly; generated C is not hand-edited.
+The original clock 0x1538C0 supplies matching integer/float tick values in
+its normal path, which is the reference for this discrete transaction.
+
+The original-code fixture now executes the sound helper 0x1B6FF0, parameter
+builders 0x21780/0x21FB0 and initializer 0x45390 in addition to firing, mode
+lookup and counter update. Only the final audio backend is mocked. Nested
+projectile/audio callbacks assert the scoped delta, and every call checks
+that caller time fields are restored. Actor/socket services, projectile
+construction, effects, eligibility and RNG remain mocked; this does not
+prove damage, ammunition, audible output or complete caller behavior.
+
+There are 96 configuration combinations: primary/secondary/fallback mode,
+normal/repeating sound, one/three projectiles, the definition's 0x200 phase
+gate off/on, zero/0.1-second interval, and normal/quarter-speed schedules.
+Each compares 60/120/144, including pause between updates, integer cooldown
+remainders, emitted sound count and repeat remainder, projectile/effect/RNG
+counts and both event-timer fields. Quarter-speed scheduling supplies 15
+whole game ticks per simulated second, comparing against original calls
+with matching integer/float deltas; it is not a playtest of every in-game
+slow-motion mode. Separate repeated variable-step sequences include zero,
+fractional and three-tick catch-up intervals. A retained whole tick with a
+zero float delta produces no firing/audio events. Actual actor callers and
+arbitrary-rate physics remain separate acceptance work.
+
+The focused test passes in `logs/native-weapon-fire-scope-focused.log`.
+The original timer/shot mismatch now passes without an expected-failure
+marker. The intentionally unsafe gate-opening alternative remains confined
+to the test to demonstrate overfire. Full stack application passes in
+`logs/native-weapon-fire-scope-patches.log`; source generation passes in
+`logs/native-weapon-fire-scope-generate.log`. Windows Release and its built-in
+checks pass (`logs/native-weapon-fire-scope-build.log`). The initial broader
+suite passed 173 checks and exposed four patch-transition failures. The
+overlay link patch unnecessarily included optional texture-source context;
+its hunk now depends only on the common input target. Historical fixtures now
+exclude the new firing wrapper when they exclude its prerequisite native
+wrappers. Reapplying the complete corrected stack updates zero runtime files
+(`logs/native-weapon-fire-scope-patches-recheck.log`), so these compatibility
+repairs do not alter the tested executable. All 35 patch-transition/tracking
+rechecks pass in 395.08 seconds
+(`logs/native-weapon-fire-scope-patch-recheck.log`), including all four
+previous failures. The other 142 checks passed in the original broader run.
+
+The Windows x64 Release executable SHA-256 is
+`1edf3c62f7f648448e8d8a3fc8050d53f00cfe2aff509bd694d349653ad55ded`.
+The isolated 120-second native-144 run
+`native-144-handoff-none-weapon-event-scope` passes all reported checks:
+Story gameplay, fresh guest presentation with interpolation disabled, movement,
+hand-animation progression, opening weapon handoff and ammunition consumption,
+pause/resume, and no reported crash or presentation failure. The runner ends
+the process deliberately (exit 1, `terminated_by_runner: true`). It uses the
+verified US XBE and runner SHA-256
+`65b94927ec6bed6e603ec219d2274e3ce3dd2a280ef023550196b20ac0486e2a`.
+Evidence is retained under `private/test-saves/high-refresh/` and in
+`logs/native-weapon-fire-scope-144.log`. This behavior check does not establish
+sustained 144 FPS: the runtime reported a 69.28 FPS mean over its first 115
+seconds, including startup. No GPU/display timing was collected.
+
+The interactive game was reopened with `Play-Native.cmd 144`; its
+`logs/play-20261020-115115.err` confirms the native 144 fresh-update target,
+interpolation disabled and 3440x1440 fullscreen at 144 Hz. The earlier overlay
+fix remains included: native target replaces the misleading cap label, and
+offline sessions hide RTT. The shared firing wrapper has no host adapter;
+actual Mac compilation/execution remains unverified under MAC-058.

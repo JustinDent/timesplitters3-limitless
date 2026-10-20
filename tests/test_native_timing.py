@@ -10,10 +10,6 @@ from native_compiler import native_compiler
 ROOT = Path(__file__).resolve().parents[1]
 
 
-class WeaponTimingMismatch(AssertionError):
-    """A measured original-code weapon timer/cadence mismatch, not a build error."""
-
-
 @pytest.mark.parametrize('source', ['native_timing.c', 'native_timing_guest.c'])
 def test_native_timing(source, tmp_path):
     compiler, environment = native_compiler(tmp_path)
@@ -169,10 +165,10 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_weapon_sound.c', [(0x45390,0x453d0),(0x21780,0x217a2),
                               (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258)]),
     ('native_weapon_cooldown.c', [(0x1c320c,0x1c3274)]),
-    pytest.param('native_weapon_fire.c', [(0x1b5660,0x1b567b),(0x1bc890,0x1bc988),
-                                       (0x244f30,0x24598e)],
-                 marks=pytest.mark.xfail(strict=True, raises=WeaponTimingMismatch,
-                     reason='Generic firing mixes a whole-tick gate with fractional timers; cadence-safe fix pending')),
+    ('native_weapon_fire.c', [(0x45390,0x453d0),(0x21780,0x217a2),
+                             (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258),
+                             (0x1b5660,0x1b567b),(0x1bc890,0x1bc988),
+                             (0x244f30,0x24598e)]),
 ])
 def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     import hashlib
@@ -199,7 +195,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             constants='\n'.join(
                 f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                 for address in (0x475c78,0x475ce8,0x475ccc,0x4785d0,0x475cd4,
-                                0x47666c,0x47cfd8,0x475d10))
+                                0x47666c,0x47cfd8,0x475d10,0x475d28,
+                                0x47d1f8,0x478674,0x47d01c,0x47864c))
         if harness_name=='native_camera_track.c':
             import struct
             # Execute this complete switch branch. Redirect only its three
@@ -227,6 +224,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             assert image[end:end+6].hex()=='8b0d7c0c7b00'
             image=image[:end]+b'\xc3'+image[end+1:]
         functions={start:dict(end=end,name=f'sub_{start:08X}') for start,end in ranges}
+        if harness_name=='native_weapon_fire.c':
+            functions[0x244f30]['name']='sub_00244F30_gen'
         translator=FunctionTranslator(image,functions)
         code='\n'.join(translator.translate_function(start,info)
                        for start,info in functions.items())
@@ -235,6 +234,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     harness=(ROOT/'tests'/harness_name).read_text()
     policy=f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
     output=compile_and_run(tmp_path,harness.replace('/* NUMERIC_POLICY */',policy)
+                           .replace('/* FIRE_POLICY */',
+                                    f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
     if harness_name=='native_weapon_fire.c':
@@ -253,4 +254,4 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                 f"shots {row['shots']} vs {reference['shots']}, "
                                 f"timer {row['timer']} vs {reference['timer']}")
         if failures:
-            raise WeaponTimingMismatch('\n'.join(failures)+'\n'+output)
+            raise AssertionError('\n'.join(failures)+'\n'+output)
