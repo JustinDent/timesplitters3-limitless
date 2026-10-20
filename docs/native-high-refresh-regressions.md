@@ -1298,3 +1298,50 @@ during this observation; other actors include a fixed `portalnonjumper02`
 pose and `zomdeath01` poses. Actor addresses can be recycled and this
 post-bridge observation does not identify the particular pre-bridge enemy.
 Do not infer a root cause or resolution from those pose names alone.
+
+
+### Projectile travel on fractional frames
+
+Source baseline `b551804`; shared gate change at 0xF4A66 and
+`tests/native_projectile_motion.c` are the next local checkpoint. Windows x64,
+pinned US XBE, repository Python/MSVC test toolchain. No personal saves,
+settings or live process memory were modified. The interactive process later
+closed independently; both Get-Process and Win32_Process queries found none.
+
+The bounded read-only 45-second observation in
+`private/pipeline/npc-projectile-observation.jsonl` contains 179 snapshots
+(10,148,429 bytes). Captured kinds 28/31/45 use updater 0xF4A50. A continuous
+kind-31 segment with speed 240 travels about 24.9 units in 0.25 seconds while
+its age advances by 0.25 seconds: approximately 100 units/s rather than 240.
+The original routine skips its fractional displacement/collision sweep when
+integer delta is zero, but outer 0xDC7B0 advances age on every callback.
+The shared change opens only that entry gate for positive live game time.
+
+The new fixture translates the complete original 0xF4A50..0xF51AF routine.
+A deterministic collision plane replaces the world query; impact, damage,
+rendering and effect services are captured rather than executed. Before the
+fix it fails the requirement for one sweep per advancing interval
+(`logs/native-projectile-before.log`). After the fix it passes
+(`logs/native-projectile-after.log`):
+
+- Kinds 28/31/45, speeds 180/240/480, 60/120/144 FPS and quarter speed.
+- At speed 240, a plane 180 units away is reached at about 0.75 seconds,
+  versus 1.80555 seconds on the unpatched native-144 schedule.
+- A plane 360 units away receives one impact/damage callback at about
+  1.50694 seconds; the unpatched shot expires after traveling only 200 units
+  and never reaches it.
+- No-hit expiry and cleanup, exactly one hit/retirement, zero-time pause on
+  every frame, uneven intervals, two-/six-tick catch-up, ABI/timing integrity,
+  and byte-identical native-60 free-flight state.
+
+Limits: these callbacks do not prove enemy health decreases, plasma-sniper
+identity/damage, trail appearance or pre-bridge AI recovery. The observed
+kind-35 updater 0xF08D0 has a similar gate plus homing/decay behavior that needs
+separate coverage. The sum-of-squared-step accumulator at projectile +0xF4 is
+frame dependent and can feed the original damage-falloff helper 0xB9920 via
+0xDCEF0. This change does not redefine that mechanic; cross-rate falloff and
+partial-hit behavior remain explicit follow-up work. The focused shared suite passes 148 checks with one existing object-rocking
+expected failure (`logs/native-projectile-shared.log`). Full patch-stack
+validation passes with zero runtime files updated; generation is current.
+Full Windows rebuild, scene replay and actual Mac execution are pending at
+this source checkpoint.

@@ -12,6 +12,15 @@ published release or a full-game 144 FPS certification.
   AI, projectile collision/damage and effect-lifetime checks beyond the
   current opening-area smoke test and isolated arithmetic fixtures.
   [Investigation](docs/native-high-refresh-regressions.md#additional-first-mission-reports-awaiting-reproduction).
+- Projectile travel regression reproduced: the 0xF4A50 updater uses fractional
+  displacement but skipped zero-whole-tick frames while age advanced normally.
+  Its entry gate is corrected in shared source. The original-code fixture
+  restores swept impact dispatch and range at 60/120/144, normal/quarter speed,
+  pause and uneven intervals; native 60 output is byte-identical. Scene
+  collision and damage application are mocked, so the plasma-sniper report
+  remains open. The separate 0xF08D0 updater and distance-based damage falloff
+  still need auditing. Windows rebuild and actual Mac execution are pending.
+  [Projectile evidence](docs/native-high-refresh-regressions.md#projectile-travel-on-fractional-frames).
 - The ship reported in the canyon after the first bridge destruction is
   identified as the crashed mothership, model 0x53A. Its updater skipped
   fractional intervals while still applying whole-tick damping, changing

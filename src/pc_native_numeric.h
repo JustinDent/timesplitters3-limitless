@@ -55,6 +55,11 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
  * 0x216972. Its guard at 0x216958 must also accept fractional intervals;
  * otherwise the inherited velocity is scaled down by the frame's fraction.
  * EAX is replaced at 0x216987. The spawn loop/count and RNG stay unchanged.
+ * Projectile updater 0xF4A50 computes displacement from the fractional
+ * delta, but its gate at 0xF4A66 discarded zero-whole-tick intervals. Its
+ * age advances independently in 0xDC7B0, so this shortened shot range.
+ * EAX only receives flag bytes before replacement at 0xF4B18; collision
+ * and expiry now see every advancing interval.
  * All other loads, including other reads of this same address, stay exact. */
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
@@ -67,7 +72,7 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
          site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u ||
-         site == 0x216958u) &&
+         site == 0x216958u || site == 0xF4A66u) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;

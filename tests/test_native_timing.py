@@ -189,6 +189,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_mothership.c', [(0x217050,0x21862f),(0x2157b0,0x215982),
                            (0x1515e0,0x15163b),(0x151e80,0x151f1c),
                            (0x152090,0x15211d)]),
+    ('native_projectile_motion.c', [(0xf4a50,0xf51af)]),
     ('native_ship_debris.c', [(0x2168c0,0x216ca5)]),
     pytest.param('native_object_rocking.c', [(0xa84f0,0xa8a97),
                                             (0x151650,0x15178f),(0x153550,0x1535a1),
@@ -210,13 +211,14 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name in ('native_mothership.c','native_ship_debris.c'):
+        if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
             from capstone import Cs, CS_ARCH_X86, CS_MODE_32
             addresses=set(range(0x218630,0x218648,4) if harness_name=='native_mothership.c'
-                          else range(0x507d88,0x507db8,4))
+                          else range(0x507d88,0x507db8,4) if harness_name=='native_ship_debris.c'
+                          else range(0xf51b0,0xf51e8,4))
             decoder=Cs(CS_ARCH_X86,CS_MODE_32)
             for start,end in ranges:
                 offset=config.va_to_file_offset(start)
@@ -311,7 +313,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
-    if harness_name in ('native_mothership.c','native_ship_debris.c'):
+    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c'):
         print(output)
     if harness_name=='native_object_rocking.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
