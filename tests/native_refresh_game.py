@@ -114,7 +114,6 @@ def main():
     parser.add_argument('--profile', action='store_true')
     parser.add_argument('--presentmon', type=Path,
                         help='optional PresentMon console EXE; captures only this test PID')
-    parser.add_argument('--gpu-timing', action='store_true', help='opt-in asynchronous D3D11 redraw/present CSV')
     parser.add_argument('--resources', action='store_true', help='sample child private memory and handle count every five seconds')
     parser.add_argument('--seconds', type=int, choices=range(60,601), default=90)
     parser.add_argument('--windowed', action='store_true')
@@ -169,7 +168,6 @@ def main():
     (run / 'state.txt').write_text('0 0\n')
     (run / 'discord.ini').write_text('TSFP_DISCORD_V1 0 0\n')
     env['TSFP_DISCORD_CONFIG'] = str(run / 'discord.ini')
-    if args.gpu_timing: env['TSFP_GPU_TRACE']=str(run/(tag+'-gpu.csv'))
     if args.profile: env.update(RECOMP_WAIT_LOG='1',RECOMP_WAIT_PROFILE='1',
         RECOMP_SAMPLE='200',RECOMP_SAMPLE_REPORT='10',RECOMP_SAMPLE_DEPTH='8',
         RECOMP_SAMPLE_DUMP=str(run/(tag+'-sample.txt')))
@@ -288,7 +286,10 @@ def main():
                             mode=word(camera+0x218),camera_flags=word(camera+0x21c),
                             scene=word(0x79094c),flags=word(0x7de458),
                             position=floats(camera+0x27c,3),
-                            direction=floats(camera+0x334,3)))
+                            direction=floats(camera+0x334,3),
+                            effect_seconds=floats(camera+0x398,1)[0],
+                            kick=[floats(camera+0x3a4,1)[0],floats(camera+0x3ac,1)[0]],
+                            kick_decay=[floats(camera+0x3a8,1)[0],floats(camera+0x3b0,1)[0]]))
                 if elapsed > 50 and word(0x79094C)==2:
                     player=word(0x7b0c7c)
                     if 0x80000000 <= player < 0x84000000:
@@ -370,6 +371,8 @@ def main():
             executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
             runner_sha256=runner_sha256,native_fps=args.fps if args.native else 0,
             presentation_fps=args.fps,seconds=args.seconds,
+            capture_enabled=args.capture,profiling_enabled=args.profile,
+            resource_sampling=args.resources,presentmon_enabled=bool(args.presentmon),
             intro_skip_requested=not args.no_intro_skip,
             camera_trace=args.trace_camera,camera_samples=len(camera_samples),
             handoff_trace=args.trace_handoff,
@@ -383,13 +386,6 @@ def main():
             recycle_captures(run,tag)
         lock.unlink(); recycle_disks(ROOT, run)
     check_fixture(ROOT)
-    if args.gpu_timing:
-        import csv
-        trace=run/(tag+'-gpu.csv')
-        assert trace.exists(), 'D3D11 timing probe did not produce a CSV'
-        with trace.open() as stream: samples=[r for r in csv.DictReader(stream) if None not in r.values()]
-        assert any(r['gpu_valid']=='1' for r in samples), 'No valid GPU timestamp samples'
-        print('GPU timing:', trace, 'complete samples:', len(samples),flush=True)
     if args.presentmon:
         trace=run/(tag+'-presentmon.csv')
         print('PresentMon:', str(trace) if trace.exists() and trace.stat().st_size else 'No frame events captured; GPU/display timing unavailable from ETW.',flush=True)

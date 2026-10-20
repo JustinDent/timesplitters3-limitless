@@ -62,6 +62,14 @@ including slow motion, pause, angular wrap and direct target snaps. Collision
 services are mocked; complete camera modes and moving targets require scene
 acceptance.
 
+The camera-effect caller also runs on live fractional intervals. Its effect
+timer and collision evaluation can therefore advance each native frame. The
+old whole-tick kick-decay loop runs once with time-scaled factors, preserving
+its one-tick result and cutoff threshold. `tests/native_camera_effects.c`
+exercises the original effect routine, matrix helpers and caller gate, with
+an unobstructed collision fixture. Real geometry and complete camera modes
+remain separate acceptance work.
+
 These changes target responsive input, consistent frame pacing and continuous
 motion. They do not guarantee a performance increase: running more genuine
 updates and draws costs CPU and GPU time. The renderer's normal scene remains

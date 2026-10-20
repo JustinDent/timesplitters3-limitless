@@ -155,6 +155,9 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_npc_dispatch.c', [(0x15eae0,0x15f0ca)]),
     ('native_player_dispatch.c', [(0xd5eb0,0xd683d)]),
     ('native_camera_motion.c', [(0xc73c0,0xc760e),(0xc7610,0xc77bc)]),
+    ('native_camera_effects.c', [(0x151e80,0x151f1c),(0x1533e0,0x153431),
+                               (0x153440,0x153490),(0xc79c0,0xc8114),
+                               (0xcea8d,0xceaa6)]),
 ])
 def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     import hashlib
@@ -169,6 +172,14 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     previous=dict(vars(config))
     try:
         config.configure_from_xbe(str(xbe))
+        if harness_name=='native_camera_effects.c':
+            # Isolate the original caller's load/test/branch/call/join. The
+            # appended RET replaces only the first instruction after that
+            # slice; all gate/call bytes and the complete callee stay original.
+            start=config.va_to_file_offset(0xcea8d)
+            end=config.va_to_file_offset(0xceaa5)
+            assert image[start:end].hex()=='8b0d44794e0085c97e0e8d742414e8208fffffa1c00c7b00'
+            image=image[:end]+b'\xc3'+image[end+1:]
         functions={start:dict(end=end,name=f'sub_{start:08X}') for start,end in ranges}
         translator=FunctionTranslator(image,functions)
         code='\n'.join(translator.translate_function(start,info)

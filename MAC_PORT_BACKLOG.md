@@ -2950,7 +2950,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   `pc_native_timing_guest.inc`, `pc_native_clock.h`, `pc_native_rate.h`, `pc_native_numeric.h`,
   additive native timing/numeric/animation-scope/input/script-event/decay/camera patches and
   `tests/test_native_timing.py`, including execution of the original US script
-  and NPC/player dispatchers, animation-event readers and camera motion. Usage is in
+  and NPC/player dispatchers, animation-event readers, camera motion and
+  camera-effect timer/decay/collision-call cadence. Usage is in
   `docs/native-high-refresh.md`.
 - **Existing Mac support:** The guest hooks, update clock and numeric conversion
   policy are compiled by the shared title build. The Mac entry point reports

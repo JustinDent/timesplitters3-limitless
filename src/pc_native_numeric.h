@@ -32,12 +32,16 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
  * Camera translation sub_000C73C0 discards its gate register before use;
  * direction easing sub_000C7610 only tests it, then overwrites it on the
  * direct-copy path. Their motion and easing must consume each live interval.
+ * Camera effects have an outer gate at 0xCEA8D and a whole-tick decay loop
+ * bounded by 0xC7D73 / 0xC7E0C. In native mode run that loop once per live
+ * interval, with its two decay factors raised to elapsed ticks below.
  * All other loads, including other reads of this same address, stay exact. */
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
 {
     if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
-         site == 0xC73C0u || site == 0xC7610u) &&
+         site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
+         site == 0xC7D73u || site == 0xC7E0Cu) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
@@ -53,6 +57,12 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
     if (site == 0xD5F60u && g_tsfp_native_timing_active) {
         float delta=*(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset);
         right=powf(right,delta);
+    }
+    /* Here the left operand is the decay factor, unlike player damping.
+     * The original camera-kick setter supplies 0.8 for both channels. */
+    if ((site == 0xC7DA8u || site == 0xC7DC5u) && g_tsfp_native_timing_active) {
+        float delta=*(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset);
+        if (delta != 1.0f) left=powf(left,delta);
     }
     return left*right;
 }

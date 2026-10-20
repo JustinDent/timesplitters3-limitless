@@ -6,6 +6,25 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Camera effects now evaluate every advancing native interval, with kick decay
+  scaled by elapsed game time. The original whole-tick loop and caller could
+  skip effects between ticks. **53 timing/camera/auto-look/float/vehicle tests**
+  and Windows Release/built-in checks pass. Executable SHA-256:
+  `5820d4f6bd4dda225bf7181cb67f638e1712d7b1a2bcbbf5ddbdc57a0c307d95`.
+  Separate 120-second original-60 and native-144 movement/firing/pause replays
+  pass all runner checks. Walking measures 6.2554 versus 6.2593 world units/s
+  (0.063% difference); both finish with 16 loaded rounds and 80 in reserve.
+  No nonzero kick was observed by the asynchronous live camera samples, so
+  live kick coverage remains pending despite original-routine test coverage.
+  The unprofiled native Story interval averages **134.484 updates/s** over
+  34.465 s, with p95/p99 intervals of 10.285/11.433 ms and a 12.756 ms maximum.
+  Sustained 144 FPS remains unmet. A separate 120-second sampled run also
+  passes; `NtQueryVirtualMemory` accounts for 4,706 of 19,976 main-thread samples
+  (16,133 on CPU), warranting investigation of repeated guest-memory queries.
+  That aggregate includes loading and menus; it is not a gameplay-only cost
+  estimate or GPU measurement. Evidence: `logs/native-camera-effects-*` and
+  isolated `camera-effects`/`camera-profile` records. Actual Mac, full-game,
+  real collision and additional camera-mode validation remain open.
 - Scripted camera translation/direction now consume fractional intervals.
   Their two original whole-tick gates lost movement or reported premature
   transition completion; direction easing also needed its per-call decay

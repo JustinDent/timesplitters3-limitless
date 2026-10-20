@@ -346,12 +346,64 @@ can observe temporary rendering cameras. The comparison identifies the
 dominant Story camera pointer; it cannot establish per-frame visual smoothness
 or prove that every camera path exercised the repaired routines.
 
-The broader camera audit remains open, including camera collision/blending
-in `sub_000C79C0`, the caller gate at `0xCEA8D`, and the mode-specific branch
+The broader camera audit remains open, including the mode-specific branch
 at `0xCD70F`. Do not broaden the load policy without following register uses,
-per-call constants and the affected original behavior. Moving targets,
-vehicle cameras, multiplayer cameras and full cinematics need scene checks.
-In particular, `0xC7D73` and `0xC7E0C` bound a whole-tick decay loop for
-camera fields `+0x3A4` and `+0x3AC`, using factors at `+0x3A8` and `+0x3B0`.
-These reads are not interchangeable with standalone pause gates. A follow-up
-must test the loop and its decay rate together with the outer caller gate.
+per-call constants and the affected original behavior. Moving targets, real
+collision geometry, vehicle cameras, multiplayer cameras and full cinematics
+need scene checks.
+
+### Camera effect timer, collision cadence and kick decay
+
+The follow-up covers the outer gate at `0xCEA8D` and `sub_000C79C0`.
+The routine's effect timer and phase increments already use fractional game
+time, but the caller skipped zero-whole-tick intervals. A kick could also be
+absent from a newly supplied base pose on those skipped frames.
+
+Inside the routine, `0xC7D73` and `0xC7E0C` bound a whole-tick decay loop for
+camera fields `+0x3A4` and `+0x3AC`, with factors at `+0x3A8` and `+0x3B0`.
+The original kick setter's observed caller supplies a 0.8 factor for both.
+The native policy runs this loop once per advancing interval and raises those
+factors to elapsed ticks at multiply sites `0xC7DA8` and `0xC7DC5`. It preserves
+the original one-tick multiplication, threshold clamp and guest integer fields.
+Pause skips the entire effect evaluation.
+
+`tests/native_camera_effects.c` executes the complete original effect routine,
+its three original matrix helpers, and the original caller's gate/call slice.
+Only a terminal RET is added at that slice's join; the complete caller is not
+executed. The fixture supplies a fresh base pose and unobstructed collision
+services. It reproduces lost timer time with the old gate and verifies live
+offset application, collision-call cadence, kick decay, thresholds, quarter
+speed, three-tick catch-up, flag-driven reset, pause and stack preservation at
+60/120/144. The two loop loads are tested together with the decay multipliers,
+not treated as independent pause gates.
+
+The combined native timing, camera, auto-look and original floating-point/
+vehicle suites pass **53 tests**. Windows Release and built-in checks pass.
+Build SHA-256:
+`5820d4f6bd4dda225bf7181cb67f638e1712d7b1a2bcbbf5ddbdc57a0c307d95`.
+Logs use `logs/native-camera-effects-*`; camera observations now include effect
+time, kick amplitudes and decay factors. These asynchronous samples remain
+diagnostics, not per-frame or complete collision acceptance.
+
+The separate 120-second original-60 and native-144 movement/firing/pause runs
+both pass every runner check. Walking measures 6.255391 and 6.259301 world
+units/s (0.063% difference), and both finish with 16 loaded rounds/80 reserve.
+There are no nonzero kick samples in either asynchronous camera trace; live
+kick acceptance is therefore still pending. The unprofiled native interval
+after 85 seconds contains 4,635 intervals over 34.465 seconds: 134.484 mean
+updates/s, p50/p95/p99 7.078/10.285/11.433 ms and a 12.756 ms maximum. Both
+game and raw deltas sum to one second per wall second. Five-second windows
+fall to roughly 111 FPS during movement/firing, so sustained 144 is unmet.
+Neither run captured frames or enabled CPU profiling. Source hashes and
+comparison details are in the ignored `native-camera-effects-comparison.json`.
+
+A separate 120-second `camera-profile` replay passes all checks. Its final
+200-Hz sample contains 19,976 main-thread samples, 16,133 on CPU, including
+4,706 leaves in `NtQueryVirtualMemory` and 2,513 in `sub_003D6690`. Repeated
+memory queries in text/camera call chains warrant causal investigation.
+Optimized static-function names may be folded; names such as `fprintf` or
+`pc_online_disconnect` in a chain do not establish that those named operations
+caused the cost. These totals include startup, loading and menus and do not
+measure GPU completion. Runner metadata now explicitly records profiling,
+capture, resource-sampling and PresentMon flags; the obsolete GPU-trace option
+was removed because the current runtime no longer implements that hook.
