@@ -1115,6 +1115,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 hybrid queue reconciliation: shared Python planner accepts the
+  environment_material alias and routes mixed sensitive categories to specialist
+  review. 145 keys join bounded material batches; 1,191 move to specialist review.
+  Eight planner tests pass on Windows; already registered in runtime-patches CI.
+  No OS-specific adapter or runtime change. Mac execution is unrun. All 1,465
+  installed DDS hashes unchanged and fresh Python audit passes; native evidence
+  stays batch 242. No new artwork or gameplay. **Awaiting validation** remains
+  for Mac GPU, mapped scenes, channel semantics, display modes and residency.
+
 - 2026-10-20 inventory batch 247: final 243 known keys reviewed (195 opaque,
   48 nonopaque). Exact-set check proves all 6,812 supported catalog keys have a
   provisional appearance/alpha classification; zero unclassified. This closes

@@ -1,5 +1,42 @@
 # Measured progress
 
+## Texture hybrid queue: reconcile completed inventory labels (2026-10-20)
+
+The planner recognized only environment for material batches, leaving the newer
+environment_material entries in individual review. Its short exact-name specialist
+list also missed mixed labels such as prop_or_interface and effect_or_reflection.
+tools/texture-hybrid-plan.py now accepts both explicit material labels for bounded
+family batches and recognizes sensitive semantic parts in mixed category names.
+Text, UI, effects, reflections, artwork/identity, uncertain materials, foliage,
+alpha/cutouts and sky labels receive specialist review. Unknown/atlas categories
+remain individual review. Installed, correction and format-research status take
+precedence. Routing still requires original/alpha inspection and never approves art.
+
+Eight tests in tests/test_texture_hybrid_plan.py pass on Windows Python, covering
+mixed-label routing, material-family grouping, status precedence, deterministic
+bounded batches, unknown labels, duplicates and budget limits. This test file is
+already registered in runtime-patches CI; no duplicate job added. No runtime/build
+change is needed. Mac execution is unrun; shared Python logic needs no OS adapter.
+
+Fresh full Python pack audit and unchanged hashes verify all 1,465 installed DDS.
+Catalog-wide comparison is deterministic and covers exactly 6,812 unique keys.
+145 newly labeled materials move to batch candidates and 1,191 sensitive entries
+to specialist review. Counts now: 477 batch candidates in 61 groups of up to eight,
+1,546 individual-review entries, 3,171 specialist entries, 153 corrections and
+1,465 installed. No artwork generated/installed. Full-category/use and discovery
+validation remain unfinished; known-key first appearance pass remains complete.
+
+Private evidence: review/hybrid-248-routing-refresh.py and hybrid-248-routing.json.gz
+(212,537 bytes stored as 17,357-byte round-trip-verified gzip), with changed-key
+routes and source/test hashes. Previous goal turn was progress (batch 247).
+Pack unchanged at 1,149,619,742 bytes, below 6144 MiB. Temporary snapshot:
+268,115,397 bytes, below 256 MiB with 320,059 bytes headroom. Texture workspace:
+7,317,266,434 bytes including source art; free disk 84,867,469,312 bytes. Allocation
+helper equals logical size, not independent physical-allocation proof. One pack,
+512 MiB residency limit and personal data preserved. No cleanup, staging, gameplay
+or publication. Native parser evidence remains batch 242; no new native executions.
+MAC-011 stays Awaiting validation; installed-and-audited playtest gate remains unmet.
+
 ## Texture inventory batch 247: first appearance pass covers all known keys (2026-10-20)
 
 Reviewed the final 243 unclassified supported keys, e7613b36c1133c1c through
