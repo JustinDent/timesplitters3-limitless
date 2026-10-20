@@ -1460,6 +1460,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **v1.2.20 replacement release (2026-10-19):** Version bump packages the merged
+  sealed Mac app and one-ZIP-per-platform policy. Implementation CI at `1454320`
+  passed strict installed/repaired signatures and negative seal/plist tests;
+  exact v1.2.20 publication checks remain required. The user explicitly requests
+  retiring the faulty v1.2.19 release after the replacement is verified. Existing
+  v1.2.19 Mac clients need one manual replacement. Developer ID/notarization and
+  browser-download acceptance remain outstanding. See
+  [STATUS](STATUS.md#launcher-v1220-replacement-release-2026-10-19).
+
 - **Bundle signing correction (2026-10-19, `72a4bb3`, PR #201):** The published v1.2.19
   executable signature is intact, but the completed app is unsealed. The Mac
   builder now signs nested code and then the app, with strict validation before

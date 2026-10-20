@@ -1,5 +1,28 @@
 # Measured progress
 
+## Launcher v1.2.20 replacement release (2026-10-19)
+
+Prepared on `release/launcher-v1.2.20` from merged main `ec1d067`. This release
+packages PR #199's one-ZIP-per-platform policy and PR #201's complete Mac app
+bundle signing, exact signature-file preservation and strict installed/repaired
+signature checks. Both Windows and Mac versions advance to 1.2.20 so Windows
+clients can detect the replacement. No game runtime or personal data changes.
+
+PR #201 passed Windows/Mac builds and regressions, complete release verification,
+and Mac signed-app install, missing-seal/tampered-plist rejection, helper repair,
+restart and rendering in run 39362384850 at `1454320`. Final v1.2.20 host/package
+checks and public download verification are required before publication; results
+are recorded in the release PR and release notes.
+
+The user explicitly requested removal of faulty launcher v1.2.19 and reposting
+the fix. Publish and verify v1.2.20 first, then remove the v1.2.19 GitHub release
+and its assets. Keep the historical Git tag. Tag-specific v1.2.19 download links
+will retire; README's Latest page will select v1.2.20. This is an explicit
+exception to preserving published releases, not an overwrite of existing bytes.
+Mac v1.2.19 needs one manual app/manifest replacement; Windows self-update remains
+compatible. Mac delivery is still ad-hoc signed without Developer ID/notarization;
+Gatekeeper browser-download acceptance remains unverified (MAC-021).
+
 ## Mac launcher bundle-signing correction (2026-10-19)
 
 Prepared on `fix/mac-launcher-bundle-signing` from main `0bf9672` (implementation `72a4bb3`, PR #201).
