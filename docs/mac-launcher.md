@@ -87,6 +87,23 @@ The previous launcher remains until a successful verified startup; helpers apply
 updates after the old process exits. Original game data, saves and config are
 never launcher-update targets. Building does not publish a release.
 
+When macOS opens a downloaded app under `AppTranslocation`, its apparent parent
+folder is temporary and read-only. Startup now offers **Choose installation
+folder** before checking updates or writing launcher state. Select the real
+extracted folder containing both the `.app` and `Support`, not the `.app` itself.
+The launcher verifies the manifest, matching running executable and write access
+before continuing against that folder. Invalid selections leave existing files
+untouched; cancelling keeps the picker available. The selection applies to this
+launch and does not move or copy an installation.
+
+The existing v1.2.20 release predates this recovery screen. If it reports a
+read-only `AppTranslocation/.../.launcher` error, quit it and use Finder to move
+the `.app` itself out of the extracted folder and back, keeping `Support` beside
+it, then reopen it. Moving only the outer folder may leave translocation active.
+Source-checkout users can also continue using the documented explicit `--root`
+path. This is separate from a Gatekeeper refusal to open the app; no quarantine
+attributes or system security settings are changed.
+
 The corrected builder signs the complete app bundle with a local ad-hoc signature.
 Mac v1.2.19 shipped only a signed executable and requires a one-time manual
 replacement when the corrected package is released; its updater rejects the new

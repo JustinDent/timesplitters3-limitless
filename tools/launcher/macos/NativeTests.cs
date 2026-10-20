@@ -69,11 +69,81 @@ namespace TimeSplitters.Launcher
                 return process.ExitCode==0;
             }
         }
+        public static void LocationUi()
+        {
+            string translocated = "/private/var/folders/test/T/AppTranslocation/" + Guid.NewGuid() + "/d";
+            var window = NativeApplication.StartupWindow(translocated, Array.Empty<string>());
+            try {
+                Need(window is NativeLocationWindow, "Translocated startup reached the updater or main window");
+                var content = (Avalonia.Controls.StackPanel)((Avalonia.Controls.Border)window.Content).Child;
+                Need(content.Children.OfType<Avalonia.Controls.Button>().Any(b => b.IsEnabled &&
+                    Convert.ToString(b.Content) == "Choose installation folder…"), "Recovery has no usable folder picker");
+                Need(content.Children.OfType<Avalonia.Controls.TextBlock>().Any(t => t.Text == NativeInstallation.Guidance),
+                    "Recovery instructions missing");
+                Need(!Directory.Exists(translocated), "Recovery created a temporary installation");
+                Console.WriteLine("PASS native UI: translocated startup offers recovery before any installation writes");
+            } finally { window.Close(); }
+        }
+        static void LocationTests()
+        {
+            string translocated = "/private/var/folders/k1/test/T/AppTranslocation/" + Guid.NewGuid() + "/d";
+            string bundle = Path.Combine(translocated, "TimeSplitters Launcher.app/Contents/MacOS");
+            Need(Program.FindRoot(Array.Empty<string>(), bundle) == translocated, "Wrong translocated root");
+            Need(NativeInstallation.Translocated(translocated) && NativeInstallation.Translocated(bundle), "Translocation not detected");
+            Need(!NativeInstallation.Translocated("/Users/example/AppTranslocation/ordinary/d"), "Ordinary folder rejected");
+            var portable = NewRoot("portable-location");
+            Need(!NativeInstallation.Translocated(portable), "Portable root rejected");
+            Need(Program.FindRoot(new[] { "--root", portable }, bundle) == portable, "Explicit root ignored");
+            const string standalone = "/Users/example/TimeSplitters";
+            Need(Program.FindRoot(Array.Empty<string>(), Path.Combine(standalone, "TimeSplitters Launcher.app/Contents/MacOS")) == standalone,
+                "Portable package root changed");
+            var checkout = NewRoot("checkout-location"); Write(checkout, "tools/play-native-mac.py", "fixture");
+            Need(Program.FindRoot(Array.Empty<string>(), Path.Combine(checkout, "build/launcher/Test.app/Contents/MacOS")) == checkout,
+                "Checkout discovery changed");
+            Reject(() => NativeInstallation.ValidateFolder(translocated, Environment.ProcessPath));
+            Need(!Directory.Exists(translocated), "Rejected translocation created files");
+
+            var root = NewRoot("selected-location");
+            var changes = SelfUpdate.Unpack(Archive(root, LauncherVersion.Value, launcher:true), Path.Combine(root, "payload"), LauncherVersion.Value);
+            Core.ApplyLauncher(root, changes, null);
+            Write(root, "Saves/keep", "save"); Write(root, "Settings/keep", "settings"); Write(root, "Data/keep", "game");
+            var before = Directory.GetFiles(root, "*", SearchOption.AllDirectories).ToDictionary(p => p, Core.Hash);
+            string executable = Core.PathIn(root, Core.LauncherName);
+            Need(NativeInstallation.ValidateFolder(root, executable) == root, "Valid installation rejected");
+            var after = Directory.GetFiles(root, "*", SearchOption.AllDirectories).ToDictionary(p => p, Core.Hash);
+            Need(before.Count == after.Count && before.All(p => after[p.Key] == p.Value), "Selection changed existing files or left a probe");
+            string unrelated = NewRoot("unrelated-location");
+            Reject(() => NativeInstallation.ValidateFolder(unrelated, executable));
+            Need(!Directory.EnumerateFileSystemEntries(unrelated).Any(), "Rejected folder was modified");
+            string other = Path.Combine(unrelated, "different-build"); File.WriteAllText(other, "different binary");
+            Reject(() => NativeInstallation.ValidateFolder(root, other));
+            File.AppendAllText(Core.PathIn(root, Core.AppPath), "changed");
+            Reject(() => NativeInstallation.ValidateFolder(root, executable));
+            File.WriteAllText(Core.PathIn(root, Core.AppPath), "plist");
+            string metadata = Core.PathIn(root, ".launcher");
+            var rootMode = File.GetUnixFileMode(root);
+            try {
+                File.SetUnixFileMode(root, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+                Reject(() => NativeInstallation.ValidateFolder(root, executable));
+            } finally { File.SetUnixFileMode(root, rootMode); }
+            var mode = File.GetUnixFileMode(metadata);
+            try {
+                File.SetUnixFileMode(metadata, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+                Reject(() => NativeInstallation.ValidateFolder(root, executable));
+            } finally { File.SetUnixFileMode(metadata, mode); }
+            string linked = Path.Combine(sandbox, "linked-location"); Directory.CreateSymbolicLink(linked, root);
+            try { Reject(() => NativeInstallation.ValidateFolder(linked, executable)); }
+            finally { Directory.Delete(linked); }
+            Need(File.ReadAllText(Core.PathIn(root, "Saves/keep")) == "save" &&
+                File.ReadAllText(Core.PathIn(root, "Settings/keep")) == "settings" &&
+                File.ReadAllText(Core.PathIn(root, "Data/keep")) == "game", "Recovery changed personal data");
+        }
         public static int VerifyPackage(string archive,string version)
         {
             string test=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(archive)),"package-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
             try {
                 var changes=SelfUpdate.Unpack(archive,Path.Combine(test,"payload"),version);string install=Path.Combine(test,"install");Directory.CreateDirectory(install);Write(install,"BUILD.json","preserved game metadata");Write(install,"Saves/keep","preserved save");Core.ApplyLauncher(install,changes,null);Need(SelfUpdate.Complete(install),"Packaged app did not verify after installation");
+                Need(NativeInstallation.ValidateFolder(install, Environment.ProcessPath) == install, "Packaged installation cannot be selected from translocation recovery");
                 Need(BundleSignatureValid(install),"Installed app bundle signature is invalid");
                 string seal=Core.PathIn(install,"TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources");
                 byte[] sealBytes=File.ReadAllBytes(seal);File.Delete(seal);
@@ -99,6 +169,7 @@ namespace TimeSplitters.Launcher
         {
             sandbox=Path.Combine(AppContext.BaseDirectory,"tsfp-mac-launcher-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(sandbox);
             try{
+                Test("translocation recovery validates the real writable installation and preserves personal files", LocationTests);
                 Test("game cleanup preserves launcher files and legacy casing while retired game files roll back", GamePruningTest);
                 Test("Mac release selection rejects Windows packages",()=>{Need(ReleaseClient.Select(Metadata("windows-x64"),true)==null,"Windows package selected");Need(ReleaseClient.Select(Metadata("macos-arm64"),false)!=null,"Native release missing");Need(ReleaseClient.Select(Metadata("macos-arm64","v1.1.0-alpha.1",true),false)==null,"Preview selected on stable");});
                 Test("JSON adapter round-trips nested fields and journal records",()=>{var map=Json.Object("{\"nested\":{\"flag\":true},\"list\":[1,2],\"n\":9223372036854775807}");Need(map["nested"] is Dictionary<string,object> && map["list"] is object[] && (long)map["n"]==long.MaxValue,"JSON types lost");var journal=Json.Serializer().Deserialize<List<Original>>(Json.Encode(new[]{new Original{Name="Bin/test",Existed=true}}));Need(journal[0].Name=="Bin/test"&&journal[0].Existed,"Journal fields lost");});
