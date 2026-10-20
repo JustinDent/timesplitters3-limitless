@@ -407,3 +407,40 @@ caused the cost. These totals include startup, loading and menus and do not
 measure GPU completion. Runner metadata now explicitly records profiling,
 capture, resource-sampling and PresentMon flags; the obsolete GPU-trace option
 was removed because the current runtime no longer implements that hook.
+
+### Text wrapping query overhead
+
+Following the profile chain into original `sub_00040C10` shows that its loop
+calls the prompt-aware width routine while building a stack-local fragment.
+The prompt wrapper previously queried both its argument stack and that text,
+even when one readable mapping covered both. `pc_prompt_guest.inc` now reuses
+the validated forward stack span within that one wrapper invocation. Text
+outside the span receives a fresh query; rewritten scratch storage retains
+its separate write-protection check. Nothing is cached across guest calls.
+
+Windows real-VM tests confirm one read query instead of two for an ordinary
+stack-local fragment, translation/ABI preservation, fallback for text below
+the stack, strings crossing differently protected regions, no-access fallback,
+argument frames crossing a boundary, and fresh checks after protection changes.
+Windows Release and all built-in checks pass. Equivalent stack-local cases
+were added to the Mac self-test; that host remains unavailable.
+
+The unprofiled 120-second native replay passes all gameplay checks and ends
+with 16 loaded rounds/80 reserve. The interval after 85 seconds averages
+138.101 updates/s across 34.728 seconds, compared with 134.484 before this
+change. Its p50/p95/p99 are 7.023/9.040/10.121 ms, with a 12.819 ms maximum.
+Both clocks retain a 1.0 game/raw second per wall second. This single before/
+after comparison suggests improvement but is not a repeatability claim;
+five-second windows still fall to 119.8 FPS during the stress replay.
+Build SHA-256:
+`f4800caaa98d593b8b62bc657c95081463a8a35d2a7fd1a139b3dc712bf19b04`.
+Evidence: `logs/native-prompt-span-*` and ignored
+`native-prompt-span-comparison.json`, with source trace hashes.
+
+The separate 120-second `prompt-profile` run also passes all checks. It
+contains 19,970 samples (15,748 on CPU). `NtQueryVirtualMemory` leaves fall
+from 4,706 to 4,055; the text-wrap query chain falls from 1,881 to 1,093
+samples. Total reported main-thread CPU time is 94.3 versus 92.8 seconds,
+so this does not establish a reduction in overall CPU time. The narrower
+chain reduction supports the redundant-query diagnosis, while whole-run
+variation and remaining render/update costs still require investigation.

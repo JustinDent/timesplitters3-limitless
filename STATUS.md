@@ -6,6 +6,21 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Text wrapping now reuses a single call's validated stack-memory span for
+  stack-local fragments, avoiding a duplicate VM query on each width probe.
+  Protection boundaries, changed mappings and rewrite scratch space remain
+  checked. Windows real-VM tests and the Release build's full built-in checks
+  pass; Mac cases are added but unrun. The 120-second native movement/firing/
+  pause replay passes. Its measured stress interval averages **138.101
+  updates/s**, versus 134.484 before this change; p95 falls from 10.285 to
+  9.040 ms. This single comparison suggests an improvement, not sustained
+  144 FPS or repeatable full-game performance. Build SHA-256:
+  `f4800caaa98d593b8b62bc657c95081463a8a35d2a7fd1a139b3dc712bf19b04`.
+  Evidence: `logs/native-prompt-span-*` and isolated `prompt-span` records.
+  A separate 120-second profile also passes; the text-wrap memory-query chain
+  falls from 1,881 to 1,093 samples at 200 Hz. Overall CPU time does not fall
+  in this pair (92.8 versus 94.3 s), so only the narrower query reduction is
+  supported by the profile. Sustained performance remains open.
 - Camera effects now evaluate every advancing native interval, with kick decay
   scaled by elapsed game time. The original whole-tick loop and caller could
   skip effects between ticks. **53 timing/camera/auto-look/float/vehicle tests**

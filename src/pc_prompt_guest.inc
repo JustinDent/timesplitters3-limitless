@@ -13,7 +13,8 @@ static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned 
     uintptr_t stack=(uintptr_t)saved+g_xbox_mem_offset, text;
     char source[2048], translated[2048];
     size_t length=0;
-    if (!pc_guest_memory(stack,(args+1)*4,0)) {
+    size_t stack_span=pc_guest_region(stack,0);
+    if ((args+1)*4>UINTPTR_MAX-stack || (args+1)*4>stack_span) {
         original(); return;
     }
     text_va=((uint32_t *)stack)[text_arg];
@@ -21,7 +22,13 @@ static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned 
     if (!text_va) { original(); return; }
     /* Validate one region at a time, including strings straddling a page. */
     while (length<sizeof source) {
-        size_t available=pc_guest_region(text+length,0);
+        uintptr_t current=text+length;
+        /* The line wrapper measures a growing fragment in its own stack.
+         * Reuse this call's validated forward span for that fragment; never
+         * retain mapping information across guest calls or protection changes.
+         * Text outside the span still receives its own real VM query. */
+        size_t available=current>=stack && current-stack<stack_span ?
+            stack_span-(current-stack) : pc_guest_region(current,0);
         if(!available)break;
         if (available>sizeof source-length) available=sizeof source-length;
         const char *part=(const char *)(text+length);

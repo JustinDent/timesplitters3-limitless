@@ -2953,6 +2953,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   and NPC/player dispatchers, animation-event readers, camera motion and
   camera-effect timer/decay/collision-call cadence. Usage is in
   `docs/native-high-refresh.md`.
+- **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
+  stack span for stack-local text fragments, avoiding duplicate VM queries.
+  Mapping checks remain fresh for each call and at protection boundaries.
+  Windows real-VM boundary tests are in `tests/pc_prompts.c`; native Mac
+  stack-fragment cases were added to `src/native/prompt_selftest.inc` but
+  require an actual host run. This source change applies to both fixed-60 and
+  native-refresh paths; it does not alter text formatting or wrapping.
 - **Existing Mac support:** The guest hooks, update clock and numeric conversion
   policy are compiled by the shared title build. The Mac entry point reports
   the opt-in native rate; normal play retains main's fixed-60 default. No second

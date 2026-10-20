@@ -45,6 +45,15 @@ static int native_test_prompts(void) {
     pc_prompt_guest(prompt_test_original,3,4);
     ok &= prompt_test_esp==page/2+4 && stack[0]==0x12345678 && stack[3]==128;
     ok &= !strcmp(prompt_test_text,"[E] Select");
+    stack[3]=(uint32_t)(page/2+128);
+    strcpy((char*)memory+stack[3],"\v2 Select");
+    prompt_test_esp=(uint32_t)(page/2);
+    pc_prompt_guest(prompt_test_original,3,4);
+    ok &= prompt_test_esp==page/2+4 && !strcmp(prompt_test_text,"[E] Select");
+    strcpy((char*)memory+stack[3],"ordinary text");
+    prompt_test_esp=(uint32_t)(page/2);
+    pc_prompt_guest(prompt_test_original,3,4);
+    ok &= prompt_test_esp==page/2+4 && !strcmp(prompt_test_text,"ordinary text");
     ok &= mprotect(memory,page,PROT_READ)==0;
     ok &= pc_guest_memory((uintptr_t)memory,32,0) && !pc_guest_memory((uintptr_t)memory,32,1);
     munmap(memory,page*2);
