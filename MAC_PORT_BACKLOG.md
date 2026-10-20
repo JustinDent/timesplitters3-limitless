@@ -220,6 +220,18 @@ runtime readiness. No full campaign playthrough is required.
 ### MAC-011 — Real texture-pack gameplay coverage
 
 - **Status:** Awaiting validation
+- **Source dimension rounding (issue #74, batch 180):**
+  `tools/texture-pack.py` retains exact aspect matching by default and adds
+  explicit `--allow-one-pixel-aspect-rounding` for opaque color sources with
+  both axes >=512 and at most one long-axis pixel difference. Larger mismatch,
+  non-opaque sources, channel conversion and original-alpha overrides remain
+  rejected. Metadata records the rounding and resampling. Shared Python/Pillow
+  code needs no Mac adapter or runtime change; source is included with the
+  batch180 commit. Windows texture-tool/planner suite: 40 tests passed.
+  Mac execution remains unverified. Acceptance: run `tests/texture_pack_tools.py`
+  on Mac, confirm default rejection and opt-in metadata/encoded output, and
+  retain real-art scene checks for the consolidated validation phase.
+  See [batch 180 evidence](STATUS.md#texture-overhaul-issue-74-hybrid-batch-180).
 - **Original-alpha compilation (issue #74):** `tools/texture-pack.py` accepts
   `--alpha-source` with its required SHA-256 to retain a verified original
   channel while compiling new RGB artwork. Metadata records source size/hash,

@@ -45,6 +45,37 @@ def test_budget_rejection_writes_no_asset(tmp_path):
     assert not (tmp_path/'pack').exists()
 
 
+@pytest.mark.parametrize('size,alpha,allow,channels,accepted', [
+    ((1025,512),255,False,'color',False),
+    ((1025,512),255,True,'color',True),
+    ((512,1025),255,True,'color',True),
+    ((1026,512),255,True,'color',False),
+    ((513,256),255,True,'color',False),
+    ((1025,512),254,True,'color',False),
+    ((1025,512),255,True,'luminance',False),
+])
+def test_explicit_source_rounding_is_bounded_and_recorded(tmp_path,size,alpha,allow,channels,accepted):
+    import json
+    source=tmp_path/'source.png';Image.new('RGBA',size,(70,90,110,alpha)).save(source)
+    output=(256,512) if size[0]<size[1] else (512,256)
+    args=[sys.executable,str(ROOT/'tools/texture-pack.py'),str(source),
+          '--key','0000000000000001','--width',str(output[0]),'--height',str(output[1]),
+          '--format','DXT5','--channels',channels,'--output',str(tmp_path/'pack')]
+    if allow:args.append('--allow-one-pixel-aspect-rounding')
+    result=subprocess.run(args,capture_output=True,text=True)
+    assert (result.returncode==0)==accepted,result.stderr
+    if not accepted:
+        assert not (tmp_path/'pack').exists()
+        return
+    meta=json.loads((tmp_path/'pack/0000000000000001.json').read_text())
+    assert meta['source_size']==list(size) and meta['output_size']==list(output)
+    assert meta['source_aspect_rounding']==dict(source_long_axis_error_pixels=1.0,
+                                               explicitly_allowed=True,resampling='LANCZOS')
+    expected,mips=pack.encode(Image.open(source).convert('RGBA').resize(output,Image.Resampling.LANCZOS),'DXT5')
+    assert (tmp_path/'pack/0000000000000001.dds').read_bytes()==expected
+    assert meta['mips']==mips and meta['resampled']
+
+
 def test_worklist_deduplicates_keys_but_keeps_unsupported(tmp_path):
     import json
     entries=[]

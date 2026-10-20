@@ -92,6 +92,8 @@ def main():
                     help='Verified original PNG whose alpha replaces authored alpha during encoding')
     ap.add_argument('--alpha-source-sha256',
                     help='Required SHA-256 of alpha-source; both options must be supplied together')
+    ap.add_argument('--allow-one-pixel-aspect-rounding', action='store_true',
+                    help='Explicitly accept at most one source pixel of long-axis rounding for opaque color sources at least 512 pixels on both axes')
     ap.add_argument('--budget-mib',type=int,default=6144,help='Maximum total active pack size (default 6 GiB)')
     a=ap.parse_args()
     if not re.fullmatch('[0-9a-f]{16}',a.key):ap.error('key must be 16 lowercase hexadecimal characters')
@@ -119,7 +121,17 @@ def main():
         ap.error(f'Pack budget exceeded: existing {used} + new {expected} bytes; reduce asset resolution or retire unused assets')
     image=Image.open(a.image).convert('RGBA');native=image.size
     image=channel_layout(image,a.channels)
-    if native[0]*a.height!=native[1]*a.width:ap.error('Resizing would change the aspect ratio')
+    aspect_delta = abs(native[0]*a.height-native[1]*a.width)
+    aspect_rounding = None
+    if aspect_delta:
+        if not a.allow_one_pixel_aspect_rounding:
+            ap.error('Resizing would change the aspect ratio')
+        if (aspect_delta > min(a.width,a.height) or min(native) < 512
+                or a.channels != 'color' or a.alpha_source
+                or image.getchannel('A').getextrema() != (255,255)):
+            ap.error('Aspect rounding requires opaque color, no alpha override, source axes >=512, and at most one long-axis source pixel')
+        aspect_rounding = dict(source_long_axis_error_pixels=aspect_delta/min(a.width,a.height),
+                               explicitly_allowed=True, resampling='LANCZOS')
     if a.alpha_source:
         # Generated opacity must not premultiply/darken the replacement RGB.
         image = image.convert('RGB').convert('RGBA')
@@ -137,6 +149,8 @@ def main():
         format=a.format,channels=a.channels,mips=mips,bytes=len(data),sha256=hashlib.sha256(data).hexdigest())
     if alpha_meta is not None:
         meta['original_alpha'] = alpha_meta
+    if aspect_rounding is not None:
+        meta['source_aspect_rounding'] = aspect_rounding
     metadata=(json.dumps(meta,indent=2)+'\n').encode('utf-8')
     # The user's cap includes provenance files, not only GPU payloads.
     if used+len(data)+len(metadata)>a.budget_mib*1024*1024:

@@ -92,6 +92,15 @@ and run the pack audit. Defer failed drafts to focused correction batches instea
 of repeatedly blocking the production queue. Retain exact prompts, source sizes,
 resampling and review decisions locally.
 
+The compiler requires an exact source/output aspect ratio by default. For a
+reviewed opaque color source whose generated dimensions differ by at most one
+pixel along the long axis, explicitly pass `--allow-one-pixel-aspect-rounding`.
+Both source axes must be at least 512 pixels. The option records the source
+rounding and LANCZOS resampling in metadata; it rejects larger differences,
+non-opaque images, channel conversions and original-alpha overrides. It does
+not crop or pad the image, and does not repair displaced UV details. Review
+the actual encoded result before installation.
+
 Keep one active pack under 6 GiB, including metadata, and temporary review/export
 outputs under 256 MiB. Consolidated playtesting remains deferred until at least
 90% of audited in-scope textures are installed and all categories are reviewed.
