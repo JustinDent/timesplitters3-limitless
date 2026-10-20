@@ -173,7 +173,7 @@ namespace TimeSplitters.Launcher
                     string root=Path.Combine(test,preserve?"existing":"fresh"),pending=Path.Combine(root,".launcher/pending");Directory.CreateDirectory(pending);
                     if(preserve){Write(root,"Data/keep","game data");Write(root,"Saves/keep","save");Write(root,"Settings/pc-controls.json","personal controls");Write(root,"Settings/pc-display.ini","personal display");}
                     Core.Unpack(archive,Path.Combine(pending,"payload"),version);Write(pending,"release.json",Json.Encode(new{version=version}));
-                    Core.InstallPending(root,null);
+                    Core.InstallPending(root);
                     var manifest=NativeHost.CheckBuild(root);var files=(Dictionary<string,object>)manifest["files"];
                     foreach(var pair in files){if(preserve&&pair.Key=="Settings/pc-controls.json")continue;Need(Core.Hash(Core.PathIn(root,pair.Key))==(string)pair.Value,"Installed package file changed: "+pair.Key);}
                     Need(SelfUpdate.Complete(root)&&BundleSignatureValid(root),"Bundled launcher failed installation/signature checks");
