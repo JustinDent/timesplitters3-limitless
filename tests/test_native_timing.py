@@ -209,11 +209,9 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                 (0x141a0,0x14532),(0x10a760,0x10ad71),
                                 (0x10bf5c,0x10bfca)]),
     ('native_ship_debris.c', [(0x2168c0,0x216ca5)]),
-    pytest.param('native_object_rocking.c', [(0xa84f0,0xa8a97),
+    ('native_object_rocking.c', [(0xa84f0,0xa8a97),(0xa8aa0,0xa8c37),
                                             (0x151650,0x15178f),(0x153550,0x1535a1),
-                                            (0x153650,0x1536a0),(0x153270,0x1533e0)],
-                 marks=pytest.mark.xfail(strict=True, raises=ObjectRockingQuantization,
-                     reason='Object rocking remains quantized to carried whole ticks')),
+                                            (0x153650,0x1536a0),(0x153270,0x1533e0)]),
 ])
 def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     import hashlib
@@ -294,7 +292,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 for address in (0x475c78,0x475cc4,0x475cc8,0x475cd4,0x475cdc,
                                 0x475ce8,0x475dbc,0x4783dc,0x47d3a4,0x47d564,
                                 0x47d568,0x47d56c,0x47d570,0x47d574,0x47d578,
-                                0x475d28))
+                                0x475d28,0x4785cc,0x4785d0,0x4785d4,0x475ccc,0x475d40))
         if harness_name=='native_weapon_sound.c':
             import struct
             constants='\n'.join(
@@ -360,10 +358,17 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         if harness_name=='native_projectile_coupled.c':
             for start in (0xf08d0,0xe78f0):
                 functions[start]['name']+='_gen'
+        if harness_name in ('native_object_rocking.c','native_object_bounce.c'):
+            functions[0xa84f0]['name']+='_gen'
+        if harness_name=='native_object_rocking.c':
+            functions[0xa8aa0]['name']+='_gen'
         translator=FunctionTranslator(image,functions)
         code='\n'.join(f'void {info["name"]}(void);' for info in functions.values())+'\n'
         code+='\n'.join(translator.translate_function(start,info)
                        for start,info in functions.items())
+        if harness_name=='native_object_rocking.c':
+            assert code.count('sub_000A8AA0_gen)')==1
+            code='void sub_000A8AA0(void);\n'+code.replace('sub_000A8AA0_gen)', 'sub_000A8AA0)')
         if harness_name=='native_npc_weapon_fire.c':
             # Match production's manual NPC entry wrapper at both caller sites.
             assert code.count('sub_001BB5C0_gen)')==2
@@ -379,9 +384,11 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* PROJECTILE_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_projectile_guest.h").as_posix()}"')
+                           .replace('/* ROCKING_POLICY */',
+                                    f'#include "{(ROOT / "src/pc_native_rocking_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
-    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
+    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
     if harness_name=='native_projectile_coupled.c':
         import math
@@ -425,8 +432,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     if harness_name=='native_object_rocking.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('rocking_audit ')]
-        assert len(rows)==6,output
-        if any(int(r['frozen']) for r in rows if r['fps']!='60'):
+        assert len(rows)==8,output
+        if any(int(r['frozen']) for r in rows if r['native']=='1'):
             raise ObjectRockingQuantization(output)
     if harness_name=='native_npc_weapon_fire.c':
         print(output)

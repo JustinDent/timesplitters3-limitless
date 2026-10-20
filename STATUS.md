@@ -135,28 +135,22 @@ published release or a full-game 144 FPS certification.
   native-144 smoke check now pass on `ef2ace3`, together with projectile
   travel; live debris and bridge-scene comparisons remain pending.
   [Debris check](docs/native-high-refresh-regressions.md#ship-debris-inherited-velocity).
-- Object rocking/bounce motion has a reproduced smoothness gap: the original
-  updater produces only 60 changed transforms across 144 live updates, while
-  preserving the 60 FPS endpoint and speed. At a quarter-speed schedule it
-  changes only 15 times. The complete updater and original matrix builders
-  are covered by a new fixture; its smoothness requirement is a strict
-  expected failure, not a passing feature. No runtime conversion is applied
-  until per-step damping, bounce and settling semantics are characterized.
-  A second fixture now verifies 72 bounce/sound/slow-motion combinations,
-  original sound parameters, catch-up and moving-object pause. It exposes
-  the original early settling check's one-tick retirement difference on
-  fractional callbacks. Extending it to settled objects reproduced retirement
-  during zero native game time. A scoped shared pause fix now preserves the
-  entity and still builds its original transform, including when a stale
-  whole count is present. Positive-time bounce and native-off behavior remain
-  unchanged. The shared timing/float/vehicle/CI/backlog suite passes 135 tests
-  with the existing cadence xfail, and all 21 patch-upgrade checks pass.
-  A fractional-motion prototype was rejected
-  because it changed impact timing and shortened settling; that prototype is
-  not enabled. Windows generation and Release compile-only checks pass;
-  final build/live and Mac validation of this pause fix remain pending while
-  the current play session stays open.
-  [Rocking audit](docs/native-high-refresh-regressions.md#object-rocking-and-bounce-audit).
+- Object rocking now has a shared native-motion correction in source. At
+  144 FPS, the original updater changed its transform only 60 times per second
+  (15 at quarter speed); the corrected path changes it on all 144 updates in
+  both schedules and retains the exact original one-second endpoints.
+  It integrates damping/gravity continuously and evaluates original floor,
+  tilt and sound rules at their original contact intervals. All 96 tested
+  bounce/material/rate/slow-motion combinations retain original impact ticks
+  and sound payloads. The former expected failure is now a passing check.
+  Tests cover original recursive impulses, interleaved/nested updates,
+  object reuse, pool resets/changes, uneven steps and pause during floor
+  contact. Shared checks pass 136 tests with no expected failures, and all
+  21 patch-upgrade checks pass. Windows generation and Release compile-only
+  validation pass. Full Windows link/live validation and actual Mac execution remain
+  pending while the interactive `fc3a7ce` build stays open. Unknown entities
+  outside the audited object pool retain the original motion path.
+  [Rocking integration](docs/native-high-refresh-regressions.md#native-object-rocking-integration).
 - The NPC firing path now has the same scoped event-timing correction in
   shared source. Its whole-tick gate previously kept projectile counts
   stable but advanced the event timer by only 0.417 seconds per second at

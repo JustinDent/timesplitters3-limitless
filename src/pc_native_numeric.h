@@ -105,10 +105,23 @@ static inline int pc_native_float_branch(uint32_t site, int taken)
         return 1;
     return taken;
 }
-#define RECOMP_FLOAT_BRANCH_AT(site, taken) pc_native_float_branch((uint32_t)(site), (taken))
+extern int pc_native_rocking_branch(uint32_t site,int taken);
+#define RECOMP_FLOAT_BRANCH_AT(site, taken) \
+    (((site)==0xA8526u || (site)==0xA86C0u) ? \
+    pc_native_rocking_branch((uint32_t)(site),pc_native_float_branch((uint32_t)(site),(taken))) : (taken))
+extern uint32_t pc_native_rocking_gate(uint32_t site,uint32_t value);
+extern float pc_native_rocking_add(uint32_t site,float left,float right);
+extern float pc_native_rocking_sub(float left,float right);
+#define RECOMP_F32_ADD_AT(site,left,right) \
+    (((site)==0xA85F2u || (site)==0xA863Du || (site)==0xA8651u) ? \
+    pc_native_rocking_add((uint32_t)(site),(float)(left),(float)(right)) : ((left)+(right)))
+#define RECOMP_F32_SUB_AT(site,left,right) \
+    ((site)==0xA8645u ? pc_native_rocking_sub((float)(left),(float)(right)) : ((left)-(right)))
 extern uint32_t pc_native_kind35_gate(uint32_t value);
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
     ((site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \
+    ((site)==0xA8595u || (site)==0xA8980u) ? \
+    pc_native_rocking_gate((uint32_t)(site),pc_native_global_load((uint32_t)(site),(uint32_t)(address),(uint32_t)(value))) : \
     pc_native_global_load((uint32_t)(site), (uint32_t)(address), (uint32_t)(value)))
 /* Player+0x1008 is halved by the US update at 0xD5F60. Once the update
  * runs every fractional frame, retain the same half-life in game time.

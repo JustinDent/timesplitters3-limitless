@@ -2993,24 +2993,21 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   window versus 62.0 earlier; this is Windows evidence only.
   Actual Mac compilation/runtime remain pending. See
   [the NPC regression record](docs/native-high-refresh-regressions.md#npc-firing-event-tick-scope).
-- **Object rocking audit:** The shared original-code fixture demonstrates
-  repeated transforms on fractional native updates despite correct total
-  displacement. No fractional-motion fix yet; its strict expected failure remains
-  separate from passing checks. Damping, impact/bounce, settling and actual
-  Mac execution remain acceptance work. A second shared fixture now checks
-  the original bounce and impact-sound sequence across 72 configurations,
-  catch-up and pause, while exposing a one-tick settling timestamp
-  distinction. The CRT asin and audio-device boundaries are adapted in
-  that fixture. A shared pause correction now bypasses pre-loop retirement
-  and ignores stale whole counts when native game time is zero, while still
-  rebuilding the original matrix. The extended fixture checks paused moving
-  and settled objects, resumption and native-off compatibility. A fractional
-  free-flight prototype changed impact timing and settling and was rejected;
-  the cadence expected failure remains. No host adapter is needed; actual
-  Mac compilation/runtime of the pause correction remain pending. Shared
-  checks pass 135 tests plus 21 patch upgrades, with the cadence expected
-  failure; Windows generation and compile-only validation pass. See
-  [the rocking audit](docs/native-high-refresh-regressions.md#object-rocking-and-bounce-audit).
+- **Object rocking integration:** `src/pc_native_rocking_guest.h`, the shared
+  numeric policy and additive `native-object-rocking` patch now integrate
+  fractional motion while preserving original contact/impact rules. The
+  original-code fixture advances all 144 transforms per second at normal and
+  quarter speed, with exact original endpoints. Expanded checks retain the
+  impact sequence and sound payloads across 96 combinations and cover
+  recursive impulses, per-object isolation, reuse/reset and floor-contact
+  pause. The prior cadence expected failure now passes; the shared suite
+  passes 136 tests, and all 21 patch-upgrade checks pass. No OS adapter is
+  required. Windows generation and Release compile-only checks pass;
+  full Windows link/live and actual Mac compilation/runtime remain pending.
+  The CRT asin/audio-device boundaries remain adapted fixture services,
+  and entities outside the audited pool retain original motion. Source is
+  part of this commit on `feature/native-144-fps`. See
+  [the integration evidence](docs/native-high-refresh-regressions.md#native-object-rocking-integration).
 - **Bridge-crash placement:** The crashed mothership's updater at 0x217050
   dropped fractional motion intervals behind its whole-tick entry gate.
   `pc_native_numeric.h` now corrects that one gate in shared source, leaving

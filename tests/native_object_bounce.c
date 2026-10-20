@@ -1,7 +1,7 @@
 /* Complete original object callback, transforms and sound parameter builders.
  * Only the CRT asin service and the audio-device boundary are adapted.
- * The native pause policy bypasses retirement/steps while preserving matrix
- * construction; advancing bounce mechanics remain original and quantized. */
+ * Native free flight advances fractionally; original contact, sound and
+ * retirement logic is checked against the native-off 60-Hz reference. */
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -16,6 +16,7 @@ RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp,g_ebx,g_esi,g_edi,g_ebp,g_seh_ebp;
 RECOMP_TLS RecompXmm g_xmm0,g_xmm1,g_xmm2,g_xmm3,g_xmm4,g_xmm5,g_xmm6,g_xmm7;
 RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
+/* ROCKING_POLICY */
 enum { ENTITY=0x1000, MODEL=0x3000, MATRICES=0x4000, STACK=0x10000 };
 typedef struct { unsigned tick; unsigned char parameters[48]; } Sound;
 static Sound events[128];
@@ -39,8 +40,11 @@ void sub_00045820(void)
     g_eax=17;g_esp+=4;
 }
 /* GENERATED_ROUTINES */
+void sub_000A84F0(void)
+{ pc_native_rocking_update_guest(sub_000A84F0_gen,MEM32(g_esp+4)); }
 static void prepare(unsigned flags,unsigned tilt)
 {
+    memset(pc_rocking_slot(ENTITY,1),0,sizeof(PcRockingState));
     memset((void *)((uintptr_t)ENTITY+g_xbox_mem_offset),0,0x300);
     memset(events,0,sizeof(events));sounds=math_calls=tick=0;
     MEM32(ENTITY+4)=MODEL;MEM32(MODEL+0x10)=MATRICES;
@@ -95,15 +99,16 @@ static void check_sound(unsigned flags)
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
-    const unsigned rates[]={60,120,144},flags[]={0,0x40,0x20,0x200,0x260,0x220};
+    const unsigned rates[]={60,60,120,144},flags[]={0,0x40,0x20,0x200,0x260,0x220};
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
     /* ORIGINAL_CONSTANTS */
     MEM32(0x4e8cec)=60;
+    MEM32(0x72f5e8)=ENTITY;MEM32(0x72f5e4)=2;
     for(unsigned i=0;i<16;i++) MEMF(0x4e7900+i*4)=i%5==0?1.f:0.f;
     for(unsigned tilt=0;tilt<2;tilt++) for(unsigned kind=0;kind<6;kind++) {
         Sound reference[128];unsigned reference_sounds=0,reference_tick=0;
         float reference_velocity=0;
-        for(unsigned slow=1;slow<=4;slow*=4) for(unsigned rate=0;rate<3;rate++) {
+        for(unsigned slow=1;slow<=4;slow*=4) for(unsigned rate=0;rate<4;rate++) {
             unsigned fps=rates[rate],frames=0;
             prepare(flags[kind],tilt);g_tsfp_native_timing_active=rate!=0;
             while(MEM32(ENTITY+0x16c) && frames<fps*slow*20) {
@@ -127,8 +132,8 @@ int main(void)
                  * callback can clear it before the next carried tick. */
                 assert(tick==reference_tick || tick+1==reference_tick);
             }
-            printf("bounce_audit tilt=%u flags=%x fps=%u slow=%u sounds=%u settle_tick=%u frames=%u\n",
-                   tilt,flags[kind],fps,slow,sounds,tick,frames);
+            printf("bounce_audit tilt=%u flags=%x native=%u fps=%u slow=%u sounds=%u settle_tick=%u frames=%u\n",
+                   tilt,flags[kind],rate!=0,fps,slow,sounds,tick,frames);
         }
     }
     /* Paused rendering still rebuilds the object's transform from the base
@@ -183,7 +188,35 @@ int main(void)
         assert(!memcmp(catchup[i].parameters,events[i].parameters,48));
     const unsigned offsets[]={0x220,0x224,0xd4,0xdc,0xe0,0xe8};
     for(unsigned i=0;i<6;i++) assert(MEMF(ENTITY+offsets[i])==state[i]);
-    free(memory);
+    /* Pause during fractional floor contact, before the original bounce
+     * boundary. Visible height stays nonnegative; latent penetration must
+     * survive pause without an early sound or lost impact velocity. */
+    prepare(0x40,1);g_tsfp_native_timing_active=0;
+    for(tick=1;tick<=5;tick++)call(1,1);
+    Sound first_impact=events[0];assert(sounds==1);
+    for(unsigned i=0;i<6;i++)state[i]=MEMF(ENTITY+offsets[i]);
+    prepare(0x40,1);g_tsfp_native_timing_active=1;
+    for(unsigned frame=0;frame<11;frame++) {
+        unsigned whole=(frame+1)*60/144-frame*60/144;tick+=whole;
+        call(whole,60.f/144);
+    }
+    assert(MEMF(ENTITY+0x220)==0 && !sounds);
+    PcRockingState contact=*pc_rocking_slot(ENTITY,1);
+    assert(contact.hidden_height<0 && contact.phase>0);
+    unsigned prior_math=math_calls;
+    memcpy(before,(void *)((uintptr_t)ENTITY+g_xbox_mem_offset),sizeof(before));
+    memcpy(paused_matrix,(void *)((uintptr_t)MATRICES+g_xbox_mem_offset),64);
+    for(unsigned whole=0;whole<=6;whole+=6) {
+        call(whole,0);
+        assert(!memcmp(before,(void *)((uintptr_t)ENTITY+g_xbox_mem_offset),sizeof(before)));
+        assert(!memcmp(paused_matrix,(void *)((uintptr_t)MATRICES+g_xbox_mem_offset),64));
+        assert(!memcmp(&contact,pc_rocking_slot(ENTITY,1),sizeof contact));
+        assert(!sounds && math_calls==prior_math);
+    }
+    tick++;call(1,60.f/144);
+    assert(sounds==1 && !memcmp(&first_impact,&events[0],sizeof first_impact));
+    for(unsigned i=0;i<6;i++) assert(MEMF(ENTITY+offsets[i])==state[i]);
+    free(pc_rocking_slots);free(memory);
     puts("PASS: original bounce, sound selection, parameters, settling and pause");
     return 0;
 }

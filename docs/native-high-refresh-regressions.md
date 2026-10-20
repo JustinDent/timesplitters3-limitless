@@ -1001,6 +1001,9 @@ families, multiplayer and actual Mac compilation/execution remain open.
 
 ## Object rocking and bounce audit
 
+This section preserves the baseline and earlier experiments. The current
+source correction is described under [Native object rocking integration](#native-object-rocking-integration).
+
 The callback at 0xA84F0–0xA8A97 updates an object's vertical rocking/bounce
 offset and two tilt components, then builds its transform. Its initializer
 0xA8AA0 selects a model matrix, applies an impulse and installs 0xA84F0 as
@@ -1168,6 +1171,89 @@ PID 25304 still runs `fc3a7ce`, whose executable SHA-256 remains
 The pause correction, NPC aim correction and kind-35 projectile motion
 changes still need a complete supported build and targeted live checks.
 Actual Mac compilation/runtime and full-game acceptance remain unverified.
+
+## Native object rocking integration
+
+The shared `pc_native_rocking_guest.h` implementation now advances the
+0xA84F0 callback on fractional intervals. It evaluates the affine
+gravity/damping flow at the current time, using the last original contact
+state as its integration origin. It does not blend two rendered poses or
+require a future frame. At an original one-tick boundary it uses the exact
+original float operation order, then executes the original floor response,
+tilt limits and sound builders. Keeping those contact intervals avoids the
+earlier prototype's changed impacts and settling. The original matrix
+builders run for every advancing native update and during pause.
+
+| Native update rate | Fresh transforms, normal speed | Fresh transforms, quarter speed |
+| ---: | ---: | ---: |
+| 60 | 60/60 | 60/60 |
+| 120 | 120/120 | 120/120 |
+| 144 | 144/144 | 144/144 |
+
+The one-second height/velocity endpoints match the original **exactly** in
+all six native cases: 9.546200752 / -4.523219109 at normal speed and
+10.686166763 / 1.669251561 at quarter speed. The native-off quarter-speed
+reference still changes 15/60 transforms. The strict expected-failure mark
+has been removed; repeated native transforms now fail the test normally.
+
+The bounce fixture expands to 96 combinations: native-off 60 plus native
+60/120/144, normal/quarter speed, two initial tilts and six material flags.
+All preserve the original impact ticks and byte-identical sound payloads,
+including gain, material priority and position. Native settling retains the
+previously documented next-callback distinction (tick 62 versus original
+normal-speed 60-FPS tick 63). Zero-time calls preserve state and matrices.
+A pause immediately before the first floor-impact boundary retains latent
+penetration without drawing below-floor height, emitting early audio, or
+losing the eventual original impact velocity. The sound boundary is captured,
+not played; the previously verified CRT asin service remains a host adapter.
+
+Timing state is kept per slot of the original object pool, whose base and
+capacity are 0x72F5E8/0x72F5E4 and whose stride is 0x2E8. The original pool
+reset at 0xA5AF0 explicitly clears that array; its shared wrapper invalidates
+the host state too. The 0xA8AA0 initializer either starts a fresh rocking
+instance or adds an impulse to an existing instance, including recursive
+child impulses. New instances reset their slot; live impulses rebase the
+motion at the current phase without restarting the contact clock. A hidden
+negative offset is restored only for physical calculations, while exposed
+height remains nonnegative between contact boundaries. No guest padding is
+used. Pool base/capacity changes clear the host state; native-off, invalid pool
+membership, allocation failure, non-60 base rate and intervals outside the
+audited 0–6-tick range retain the original updater.
+
+The original-code lifecycle checks compare separate and interleaved runs,
+nested update contexts, 60 single ticks versus uneven fractional/catch-up
+steps, impulses applied partway through a tick, rejected impulses, recursive
+initialization, address reuse, pool reset/base/capacity changes and unknown
+entities. The original initializer's RNG call count is retained. These checks
+exercise both the shared header and translated original routines, rather than
+replacing the bounce response with a test approximation. The pool-reset
+wrapper's original-call boundary is spied; the full level-reset chain is not
+executed by this fixture. Whole-game callback/lifecycle coverage remains open.
+
+The additive patch provides optional scalar add/subtract policy hooks and
+wraps the updater, initializer and pool reset. Generic arithmetic is unchanged;
+the title policy selects only the audited rocking instructions. Full generation
+confirms the recursive initializer calls the wrapper, not its generated body.
+Measurements and lifecycle results are in
+`logs/native-rocking-integration-measurements.log` (two focused checks).
+The broader timing, float/vehicle translation, CI-scope and backlog suite
+passes **136 tests with no expected failures** in 67.23 seconds
+(`logs/native-rocking-integration-shared.log`). Supported Windows generation
+passes in 91.0 seconds (`logs/native-rocking-integration-generate.log`).
+All **21 patch-upgrade checks pass** in 424.54 seconds
+(`logs/native-rocking-integration-upgrades.log`). Release/x64 `ClCompile`
+succeeds with MSBuild 17.14.40 / MSVC 14.44.35207, using two below-normal
+priority compiler workers (`logs/native-rocking-integration-compile-only.log`).
+The existing MSB8028 intermediate-directory warning remains; no compile errors
+occurred. This check compiles the generated/manual code and display menu but
+does not relink or replace the running executable.
+
+A ten-second read-only observation of the unchanged interactive `fc3a7ce`
+build found state 101, a pool capacity of 20 and no listed entities in all six
+samples (`private/pipeline/rocking-pool-observation.json`). Those non-atomic
+samples establish no live rocking behavior or scene acceptance. The user’s
+session remains open; this correction still needs full Windows link/live
+validation, representative scenes and actual Mac compilation/runtime.
 
 ## Bridge-crash placement investigation
 
