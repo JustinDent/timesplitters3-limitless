@@ -1,5 +1,52 @@
 # Measured progress
 
+## Texture batch 198: architectural materials and prop layout checks (2026-10-20)
+
+Issue #74: sixteen independent built-in texture edits reviewed; fourteen
+accepted offline and two held. Accepted materials include blue-gray metal,
+science-fiction wall atlas, carved wood arch, dark planks, fractured rock,
+rough panel variants, riveted structure, seven-slot vent strip, four slab
+quadrants, four-opening mechanical panel, ornate wall, fibrous panel and
+mottled mineral surface. Cloth is held for darker/heavier folds (-15.53%
+mean luminance); wooden furniture atlas is held for brighter orange/polished
+color (+23.01%). Neither failed draft counts as installed or complete.
+
+Original/compiled RGB and 2x2 diagnostic repeat sheets reviewed for layout,
+major features, color and edge continuation. Fixed original-scale brightness
+profiles corroborate seven vent slots (centers within 0.5 original pixel)
+and four circular openings (within 1 original pixel). Such profiles support
+the visual review but do not prove actual scene adjacency or lighting.
+The dark wood arch is -13.39% in mean luminance and remains dark carved wood;
+scene brightness, baked reflections and atlas usage remain pending checks.
+
+Actual generated sources: nine 1254x1254 squares and seven 1774x887 landscapes.
+Accepted outputs: eight 1024x1024 and six 1024x512, all opaque DXT1 with full
+11-level mip chains, Lanczos-resampled. No native 4K claim. Fourteen new native
+DDS-reader passes plus 1,287 unchanged prior-audited hashes and unchanged
+checker cover 1,301 installed files. Full Python metadata/hash/dimension/aspect/
+mip-byte audit passed. No game rebuild or gameplay was needed for private art.
+
+Reviewed 96 additional verified original RGB/alpha pairs: 32 small/reused and
+64 single-use. Visual classification reaches 3,849 keys. Lettering, portraits,
+chain cutouts, reflections, low-opacity effects and creature/character atlases
+remain specialist work. Installed coverage is 19.10% of 6,812 cataloged keys;
+5,397 need art and 114 correction drafts remain incomplete. Classification is
+not completed artwork or full-category validation. Existing uncataloged,
+other-encoded and procedural discovery gaps remain open.
+
+Pack including metadata: 1,074,195,363 bytes (1024.43 MiB),
+up 7,697,604 bytes. Temporary outputs measured
+193.72 MiB; texture workspace including retained source art
+6060.69 MiB logical/allocated by the existing helper;
+disk free 85.08 GiB. The 6144 MiB pack and 256 MiB temporary caps
+hold. The 512 MiB residency policy is unchanged, not measured this batch.
+No duplicate game extracts, build trees or pack staging copies were created.
+
+Private evidence: `review/hybrid-198-acceptance.json` and linked generation,
+source verification, comparisons, profiles, triage and native audit records.
+No new gameplay or Mac scene/GPU validation; MAC-011 stays Awaiting validation.
+Local issue #74 checkpoint only; artwork and game files remain private.
+
 ## Texture batch 197: cutout corrections with complete color coverage (2026-10-20)
 
 Issue #74: eight focused built-in corrections, seven accepted offline and one
