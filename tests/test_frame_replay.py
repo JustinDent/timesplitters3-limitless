@@ -1,6 +1,8 @@
 """Readback must distinguish rendered output from stale/empty/flipped images."""
 from pathlib import Path
+import os
 import struct
+import subprocess
 import sys
 import pytest
 
@@ -53,3 +55,38 @@ def test_successful_process_without_new_readback_cannot_pass(tmp_path, monkeypat
     monkeypatch.setattr(contract.subprocess,'run',no_readback)
     with pytest.raises(FileNotFoundError):
         contract.run('unused',tmp_path,{'TSFP_DISPLAY_CONFIG':'personal.ini'})
+
+
+@pytest.mark.skipif(os.name != 'nt', reason='Windows replay CMake dependency regression')
+def test_windows_replay_links_without_input_library(tmp_path):
+    """Build the production renderer/replay with texture packs but no game/input."""
+    from native_compiler import native_compiler
+    root = Path(__file__).resolve().parents[1]
+    runtime = root / 'external/ts3FPrecomp'
+    _, environment = native_compiler(tmp_path)
+    # No generated game code, SDL, original assets or input library is needed.
+    (tmp_path / 'CMakeLists.txt').write_text('''
+cmake_minimum_required(VERSION 3.20)
+project(replay_link_regression C CXX)
+set(CMAKE_C_STANDARD 11)
+add_compile_definitions(WIN32_LEAN_AND_MEAN NOMINMAX)
+set(XBOXRECOMP_VULKAN OFF CACHE BOOL "" FORCE)
+add_subdirectory("${TSFP_RUNTIME_DIR}/src/platform" platform)
+add_subdirectory("${TSFP_RUNTIME_DIR}/src/config" config)
+add_subdirectory("${TSFP_RUNTIME_DIR}/src/d3d" d3d)
+add_subdirectory("${TSFP_RUNTIME_DIR}/src/replay" replay)
+''', encoding='utf-8')
+    build = tmp_path / 'build'
+    commands = [
+        ['cmake', '-S', str(tmp_path), '-B', str(build), '-G', 'Ninja',
+         '-DCMAKE_BUILD_TYPE=Release', '-DTSFP_RUNTIME_DIR=' + runtime.as_posix(),
+         '-DTSFP_PC_CONTROLS_DIR=' + (root / 'src').as_posix()],
+        ['cmake', '--build', str(build), '--target', 'd3d8_replay', '--parallel', '4'],
+    ]
+    for command in commands:
+        result = subprocess.run(command, cwd=tmp_path, env=environment,
+                                capture_output=True, text=True, timeout=180)
+        assert result.returncode == 0, result.stdout + result.stderr
+    result = subprocess.run([str(build / 'replay/d3d8_replay.exe')], cwd=tmp_path,
+                            env=environment, capture_output=True, text=True, timeout=10)
+    assert result.returncode == 2 and 'usage: d3d8_replay' in result.stderr

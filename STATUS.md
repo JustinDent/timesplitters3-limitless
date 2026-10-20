@@ -12499,3 +12499,48 @@ All 34 patch-transition/tracking checks passed in 314.60 seconds, including fres
 art generation, pack copy, save/config modification or additional game build tree.
 The existing Windows executable has not been replaced; these changes require a
 new runtime build. Visual layout and real-art scene behavior remain unverified.
+
+## Windows release replay link fix — 2026-10-20
+
+Investigated the `Publish-Release.ps1` failure on clean main `140f53c`
+(`0.3.1-alpha.1`). The game linked successfully, but `d3d8_replay` failed with
+LNK2019/LNK2001 for `tsfp_texture_is_4k`. Windows supplied its implementation
+through `xbox_input`, while replay deliberately links only the renderer. This
+was a missing target dependency, not stale generated game code.
+
+Focused branch `fix/replay-texture-mode-link` adds the shared source directly
+to standalone Windows replay through `patches/replay-texture-mode-link.patch`.
+The full input/kernel/audio dependency chain stays unnecessary. Native Mac's
+renderer already owns the same mode source; its existing build path is preserved.
+MAC-011 records this build fix and the unavailable Mac host validation.
+
+The regression in `tests/test_frame_replay.py` builds the real patched renderer
+and replay CMake targets with texture packs enabled and no input library or
+original game assets, then checks executable startup/usage. The existing
+Windows/macOS CI suite runs this file; CMake/Ninja are installed from the
+unchanged `requirements.txt` pins. The Windows-only build regression skips on
+Mac, where the production Vulkan replay/readback contract already runs.
+
+Local validation on Windows x64 (OS build 26300, MSVC 14.44.35207,
+CMake 4.4.4, Ninja 1.13.2; upstream/Python pins unchanged):
+
+- `tsfp.ps1 Build` completed successfully, including `d3d8_replay` and all
+  native build tests, isolated temporary save/config cleanup, executable
+  compatibility sealing and matching crash-symbol generation. The supported
+  US Xbox executable passed the build's SHA-256 check.
+- Replay/texture/renderer/CI-selection/backlog regressions: 87 passed, one
+  Mac-only CoreText check skipped (27.70 seconds).
+- The rebuilt production D3D11 replay rendered the synthetic 64x64 red-triangle
+  and blue-clear capture with verified pixels, one successful guest present,
+  zero failed host calls and zero malformed/unknown chunks. Settings/input/save
+  paths were isolated under `build/replay-link-smoke`; no game was launched.
+- Complete patch-transition/tracking checks: 34 passed (339.20 seconds),
+  including fresh/repeated application, historical PC/Mac migrations and
+  texture/main branch switches under both line-ending modes.
+
+Evidence: `build/replay-link-build.log`, `build/replay-link-contracts.log`,
+`build/replay-link-patches.log` and `build/replay-link-smoke/replay.log`.
+The fix is committed locally on the focused branch. Main has not been changed,
+and no release/tag has been created. Personal settings, saves and the private
+texture pack were preserved. Mac runtime/visual behavior and full-game
+playability are outside this validation.
