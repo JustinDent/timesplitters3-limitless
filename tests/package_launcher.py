@@ -85,14 +85,18 @@ class LauncherPackaging(unittest.TestCase):
                 self.assertEqual(build.call_count, 2)
                 self.assertIn(str(root / 'tools/build-launcher.ps1'), build.call_args.args[0])
                 self.assertIn('-RequireArtwork', build.call_args.args[0])
+                self.assertIn('-Test', build.call_args.args[0])
             archive_path = root / 'build/releases/TimeSplitters-Future-Perfect-PC-v1.2.3-windows-x64.zip'
             prefix = archive_path.stem + '/'
             with zipfile.ZipFile(archive_path) as archive:
                 self.assertIn(prefix + 'TimeSplitters Launcher.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/TimeSplitters.App.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/tsfp_crash_helper.exe', archive.namelist())
-                self.assertIn(prefix + 'Discord-setup.txt', archive.namelist())
-                self.assertEqual(archive.read(prefix + 'Settings/pc-discord.ini'), discord_default)
+                self.assertIn(prefix + 'Support/Discord/README.txt', archive.namelist())
+                self.assertEqual(archive.read(prefix + 'Support/Discord/pc-discord.default.ini'), discord_default)
+                self.assertNotIn(prefix + 'Discord-setup.txt', archive.namelist())
+                self.assertNotIn(prefix + 'Settings/pc-discord.ini', archive.namelist())
+                self.assertIn('Support/Discord/README.txt', archive.read(prefix + 'README.txt').decode())
                 self.assertTrue(discord_default.startswith(b'TSFP_DISCORD_V1 0 '))
                 self.assertFalse(any('/config/pc-discord.ini' in name for name in archive.namelist()))
                 self.assertFalse(any(name.endswith('.pdb') for name in archive.namelist()))

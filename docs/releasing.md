@@ -45,6 +45,9 @@ git pull --ff-only origin main
 The script requires clean source and an exact match with `origin/main`. It reads
 `VERSION`, validates the runtime patch stack, rebuilds Release with native checks,
 runs Python tests, packages the public ZIP and verifies its manifest/checksum.
+It then installs that exact ZIP with the launcher's production unpack/install
+code in a disposable folder, checking fresh installs and preservation of existing
+settings, saves, game data and textures. A launcher rejection stops publication.
 It tests the bundled Online runtime with the existing game data, without copying
 the game or using personal saves. It creates a GitHub draft for the exact tested
 commit, uploads the ZIP, checksum and build metadata, checks the uploaded asset

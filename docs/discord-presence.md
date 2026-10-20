@@ -59,6 +59,12 @@ number to `1`:
 TSFP_DISCORD_V1 1 1561627743353962566
 ```
 
+Portable packages keep the disabled template and these instructions under
+`Support/Discord`; they do not distribute a personal `Settings/pc-discord.ini`.
+Use the launcher's Discord settings to create that preference when needed.
+For manual configuration, copy `Support/Discord/pc-discord.default.ini` to
+`Settings/pc-discord.ini` before enabling it. Updates preserve an existing file.
+
 Use `0` instead of `1` to disable it. The second number is the Application ID;
 `0` is accepted only when disabled. Settings are read once at game startup.
 The launcher preserves the file under `Settings` across updates and rollback.

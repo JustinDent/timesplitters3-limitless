@@ -1557,6 +1557,19 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Game package compatibility correction (2026-10-20,
+  `fix/launcher-compatible-discord-package`):** Windows runtime packages now
+  place Discord documentation and the disabled template under `Support/Discord`.
+  They no longer include the unsupported root `Discord-setup.txt` or personal
+  `Settings/pc-discord.ini`. Existing launchers accept the supported tree;
+  missing Discord preferences already mean disabled, and the shared settings
+  model creates the preference when saved. No allowlist or Mac adapter change
+  is required. `tests/launcher_updates.cs --verify-package` exercises production
+  unpack/install on the exact local ZIP, with fresh and existing-personal-file
+  fixtures; the Windows publisher requires it before upload. Host-specific
+  validation is recorded in [STATUS](STATUS.md#launcher-compatible-game-package-correction--2026-10-20).
+  Native Mac distribution/visual acceptance remains unverified locally; shared
+  launcher behavior is unchanged. MAC-053 retains Discord runtime coverage.
 - **v1.2.20 replacement release (2026-10-19):** Version bump packages the merged
   sealed Mac app and one-ZIP-per-platform policy. Implementation CI at `1454320`
   passed strict installed/repaired signatures and negative seal/plist tests;

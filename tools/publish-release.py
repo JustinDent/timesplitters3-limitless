@@ -336,6 +336,10 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
                 self.recycle(tests)
         self.run([self.python, self.root/'tools/package-release.py'], live=True)
         self.verify_package()
+        # Hashes alone do not prove the installed launcher accepts the layout.
+        # Exercise its production unpack/install path on this exact ZIP.
+        self.run([self.root/'build/launcher/launcher-tests.exe', '--verify-package',
+                  self.archive, self.tag], live=True)
         self.run([self.python, self.root/'tests/portable_online.py', '--stage', self.stage,
                   '--game', self.root/'private/game'], live=True)
         self.verify_package()  # A check must not modify files being distributed.

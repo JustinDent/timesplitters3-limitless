@@ -12544,3 +12544,56 @@ The fix is committed locally on the focused branch. Main has not been changed,
 and no release/tag has been created. Personal settings, saves and the private
 texture pack were preserved. Mac runtime/visual behavior and full-game
 playability are outside this validation.
+
+## Launcher-compatible game package correction — 2026-10-20
+
+The user reported `Release could not be prepared` for v0.3.1-alpha.1, then
+deleted its GitHub release. The exact retained public ZIP reproduces the error
+in the production launcher unpacker: `Discord-setup.txt` is an unsupported root
+file. The package also contained protected `Settings/pc-discord.ini`, which
+would be rejected next. Earlier publication validated checksums, ZIP contents
+and portable Online behavior without testing the actual launcher install path.
+
+Focused branch `fix/launcher-compatible-discord-package`, based on main
+`38c23c1`, moves the instructions and disabled preference template into
+`Support/Discord`. Personal Discord configuration is absent from the package:
+the existing shared settings model defaults to disabled and writes that file
+when a user saves settings. README/setup pointers follow the new location.
+Existing launcher allowlists and personal-file protections remain unchanged;
+no launcher update is required. VERSION prepares v0.3.1-alpha.2 without
+restoring or modifying the removed alpha.1 release or its existing tag.
+
+Packaging now builds/runs the Windows launcher tests. The publisher invokes
+their new `--verify-package <zip> <version>` mode on its exact completed ZIP
+before Online checks or upload. That mode uses production `Core.Unpack` and
+`Core.InstallPending` in a disposable folder, checks installed version and
+preserves synthetic settings (including Discord), data, saves and textures.
+It copies packaged binaries without executing them. Regression fixtures cover
+both supported Discord files, continued rejection of the original unsupported
+paths, and a publisher that must stop when launcher installation rejects a ZIP.
+The existing Windows launcher and release CI suites include these regressions.
+
+Windows x64 validation (MSVC 14.44.35207, pinned upstream/Python/tool versions):
+
+- The retained alpha.1 ZIP fails before installation with the exact reported
+  `Discord-setup.txt` error (`build/discord-package-original-rejection.log`).
+- `tsfp.ps1 Build` passes with alpha.2's regenerated multiplayer identity and
+  all native tests; supported US executable SHA-256 validation passes.
+- Focused packaging/publisher/Discord/release/CI/backlog checks: 139 passed,
+  12 subtests passed (29.50 seconds).
+- Complete Windows launcher suites passed. One repeat during packaging hit a
+  Windows file-replacement IO error in a disposable settings fixture; the
+  isolated settings retry passed all 37 checks, then the complete packaging
+  retry passed that group and the remaining suites.
+- The real corrected `v0.3.1-alpha.2-local.2` ZIP passes production unpack
+  and install for all 1,524 files, both fresh and with existing synthetic
+  personal controls, display/runtime/Discord settings, data, saves and textures.
+  No packaged code was executed (`build/discord-package-install.log`).
+
+Evidence is under `build/discord-package-*.log`. Local validation archives are
+explicitly marked `-local.*`; they are not published releases. Automatic
+approval review denied removal of the empty failed `-local.1` staging folder;
+it remains intact. No personal settings, saves or private texture pack were
+changed. This corrects Windows package layout, not runtime gameplay or native
+Mac distribution. MAC-021 records the host boundary and MAC-053 retains the
+separate Discord acceptance work.
