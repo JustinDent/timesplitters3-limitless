@@ -66,8 +66,18 @@ not the Windows/Mac C# UI or native package tests.
 Automatic reviews, cloud coding and automatic repair dispatch are separate
 capabilities. The current web event-task dry run can read this repository and
 filter PR activity, but cannot directly select or launch the published coding
-environment. No event repair task is enabled yet. The documented GitHub
-`@codex` repair-request route must be verified before connecting a watcher to it.
+environment. No event repair task is enabled yet. On 2026-10-19, the isolated
+[PR #192 dispatch test](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/192#issuecomment-6280238841)
+reached the GitHub bot, which required a separate integration environment.
+Its setup link redirected to the ChatGPT home page in both available browsers.
+The published current-generation cloud environment does not satisfy that
+legacy integration requirement. Do not enable a watcher that repeatedly posts
+repair requests until a successful cloud task and branch update verify the path.
+
+The published environment remains usable for manually started cloud coding
+tasks. A trusted local Codex worker signed in with ChatGPT is a separate possible
+fallback, requiring the host computer to be awake. Neither an unattended cloud
+repair watcher nor a local background worker is installed by this documentation.
 
 A repair watcher must restrict work to open, non-draft, same-repository PRs by
 the maintainer targeting `main`. It must wait for current-head CI, use evidence
