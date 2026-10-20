@@ -1,5 +1,51 @@
 # Measured progress
 
+## Texture batch 235: six cliff, stone and concrete replacements (2026-10-20)
+
+Eight classified opaque materials were edited with built-in image generation.
+Six accepted offline and installed: cf22bb54fcd40f88 (pale eroded cliff),
+e298a692afc0e28a (very dark cave rock), e723d9d879562a20 (warm stratified rock),
+f046c84e1625d9f3 (concrete panel), 3f973a1299adb148 (gray mottled stone),
+463f81035726a644 (pale pink-gray eroded rock). Full, 2x2-repeat and original-grid
+reviews retain principal formations, cavities, bedding directions, mineral
+clouds and the concrete panel's sixteen main holes. Mean luminance changes:
++3.48%, -5.85%, +1.19%, +8.10%, +3.09%, +6.25%, respectively. Local contrast,
+slightly cooler concrete and brighter rock grain need later scene validation.
+Dark cave gaps remain opaque RGB. Adjoining surfaces and lighting are untested.
+
+Two drafts held: d1d8fd564e8fc2de becomes too bright (+17.19%) and shifts toward
+ochre-brown; e7801f23cc578d2d adds conspicuous pale speckling/highlights (+9.74%).
+Neither installed. Classification, generation and offline acceptance remain
+distinct from mapped-scene validation and completed overhaul coverage.
+
+Actual sources: four 1254x1254 and four 1774x887. Accepted outputs: three
+1024x1024 and three 1024x512, all LANCZOS downsampled without crop, color or
+alpha edits; not native 4K artwork. Eight private sources total 30,834,947
+bytes. Five RAM-only comparisons avoid 2,385,359 raster bytes and replay exactly.
+Twelve historical JSON manifests compacted in place, preserving schemas,
+records, key order and values. Original bytes reconstruct exactly using recorded
+format recipes and SHA-256 hashes: 598,673 bytes saved before receipt overhead.
+See private review/hybrid-235-json-compaction.json. No image/cache deletion or
+retry of previously denied paths. This batch's reference exports remain
+(568,244 bytes); existing evidence references keep their original JSON paths.
+
+Six new Windows native parser checks pass. Prior 1,428 DDS hashes and checker
+identity match existing evidence; all 1,434 files pass a fresh Python format,
+metadata, dimensions, aspect, mip and hash audit. Queue/progress refreshed:
+1,434 installed, 5,241 needing art, 137 held; 6,121 classified, 691 unclassified.
+Private evidence: review/hybrid-235-acceptance.json, memory-review, decisions,
+prompts, generation receipts, native-audit and selection.
+
+Pack with metadata: 1,137,237,494 bytes (1084.55 MiB), up
+3,149,178 bytes, below 6144 MiB. Temporary snapshot: 268,002,202
+bytes, below 256 MiB with 433,254 bytes headroom. Workspace including
+source art: 7,132,911,795 bytes; free disk snapshot: 81,226,342,400
+bytes. Allocation helper equals logical size, not independent physical proof.
+One active pack; no game/build/staging duplicates, gameplay, runtime changes,
+publication or personal save/settings edits. Residency stays 512 MiB. MAC-011
+remains Awaiting validation. Discovery, category review and consolidated scene
+validation remain incomplete; the near-completion playtesting gate is unmet.
+
 ## Texture batch 234: six stone, masonry and plaster replacements (2026-10-20)
 
 Eight classified opaque materials were edited with built-in image generation.
