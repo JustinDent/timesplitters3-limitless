@@ -6,7 +6,16 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
-- Latest built executable `dee6170` passes the full supported Windows Release
+- Restored executable `eae18a3` passes the full supported Windows Release build,
+  137 shared regressions and a 120-second native-144 gameplay/pause check.
+  A GPU polling optimization in `aef8d29` passed isolated tests but stalled
+  during the live replay; it was reverted in full. No GPU-poll performance
+  improvement is retained or claimed. The user's old interactive process
+  exited independently before restoration. A narrower prompt-memory change
+  now reuses one call's queried region for nearby text and scratch writes;
+  focused Windows protection tests pass, with full build/live validation pending.
+  [Performance follow-up](docs/native-high-refresh-regressions.md#performance-follow-up-and-rejected-gpu-poll-experiment).
+- Earlier built executable `dee6170` passes the full supported Windows Release
   build and a 120-second isolated native-144 gameplay check, including movement,
   firearm handoff/animation, ammunition use, pause/resume and fresh presents.
   The measured active window averages 138.418 CPU updates/s (p95 8.8808 ms)

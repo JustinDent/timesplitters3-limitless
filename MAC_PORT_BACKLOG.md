@@ -3109,6 +3109,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   stack-fragment cases were added to `src/native/prompt_selftest.inc` but
   require an actual host run. This source change applies to both fixed-60 and
   native-refresh paths; it does not alter text formatting or wrapping.
+  The follow-up in `pc_guest_memory.h` exposes the queried region and its write
+  permission, so nearby text and scratch within that same region need no
+  duplicate query. No snapshot survives a guest call. Windows real-VM tests
+  cover same-page reuse, different/protected pages and changed permissions;
+  `src/native/prompt_selftest.inc` adds read-only scratch and boundary cases.
+  Actual Mac execution is pending; the common Mach query already supplies the
+  region bounds and protection, so no new platform adapter is required.
+  The separate GPU-flush experiment `aef8d29` failed live Windows progress
+  and was reverted by `eae18a3`; no GPU acknowledgment change remains.
 - **Offline network-hook overhead:** `pc_network_bots_guest.inc` and
   `pc_network_bots_lobby.inc` reject ineligible guest modes/actors before reading
   host network settings. Eligible calls still read live settings; no transport

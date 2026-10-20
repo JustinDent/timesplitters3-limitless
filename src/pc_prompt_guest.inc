@@ -13,7 +13,8 @@ static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned 
     uintptr_t stack=(uintptr_t)saved+g_xbox_mem_offset, text;
     char source[2048], translated[2048];
     size_t length=0;
-    size_t stack_span=pc_guest_region(stack,0);
+    PcGuestRegion stack_region=pc_guest_query_region(stack);
+    size_t stack_span=pc_guest_region_remaining(&stack_region,stack,0);
     if ((args+1)*4>UINTPTR_MAX-stack || (args+1)*4>stack_span) {
         original(); return;
     }
@@ -23,12 +24,10 @@ static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned 
     /* Validate one region at a time, including strings straddling a page. */
     while (length<sizeof source) {
         uintptr_t current=text+length;
-        /* The line wrapper measures a growing fragment in its own stack.
-         * Reuse this call's validated forward span for that fragment; never
-         * retain mapping information across guest calls or protection changes.
-         * Text outside the span still receives its own real VM query. */
-        size_t available=current>=stack && current-stack<stack_span ?
-            stack_span-(current-stack) : pc_guest_region(current,0);
+        /* Reuse this call's complete stack mapping for text on either side
+         * of ESP. Other mappings and protection boundaries get a fresh query. */
+        size_t available=pc_guest_region_remaining(&stack_region,current,0);
+        if(!available)available=pc_guest_region(current,0);
         if(!available)break;
         if (available>sizeof source-length) available=sizeof source-length;
         const char *part=(const char *)(text+length);
@@ -43,7 +42,12 @@ static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned 
     if (saved<length+128) { original(); return; }
     scratch=(saved-(uint32_t)length)&~15u;
     frame=scratch-(args+1)*4;
-    if (!pc_guest_memory((uintptr_t)frame+g_xbox_mem_offset,saved-frame,1)) { original(); return; }
+    /* No guest code has run since the query. The same mapping also proves
+     * scratch writes when writable; otherwise validate the new span normally. */
+    uintptr_t scratch_host=(uintptr_t)frame+g_xbox_mem_offset;
+    if (saved-frame>UINTPTR_MAX-scratch_host ||
+        (saved-frame>pc_guest_region_remaining(&stack_region,scratch_host,1) &&
+         !pc_guest_memory(scratch_host,saved-frame,1))) { original(); return; }
     memcpy((void *)((uintptr_t)scratch+g_xbox_mem_offset),translated,length);
     memcpy((void *)((uintptr_t)frame+g_xbox_mem_offset),(void *)stack,(args+1)*4);
     ((uint32_t *)((uintptr_t)frame+g_xbox_mem_offset))[text_arg]=scratch;

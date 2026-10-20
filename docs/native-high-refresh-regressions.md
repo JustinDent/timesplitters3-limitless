@@ -1318,6 +1318,52 @@ interactive PID 25304 remains responsive. The user subsequently deferred
 the encounter-specific reports and asked to prioritize overall experience;
 they remain recorded as unverified rather than resolved.
 
+## Performance follow-up and rejected GPU-poll experiment
+
+After the user deferred the encounter-specific reports, the `dee6170` build
+passed a 120-second native-144 replay with 200 Hz main-thread profiling
+(`native-144-experience-profile-*`). The whole-run sample includes startup,
+menus and gameplay: 5,182 of 20,573 samples ended in `NtQueryVirtualMemory`
+and 2,531 in `sub_003D6690`. Folded wrapper symbols can be misleading;
+these counts neither isolate active gameplay cost nor establish GPU time.
+
+Experimental commit `aef8d29` immediately acknowledged the audited PFB-flush
+poll at 0x3D66D0. A 32-case original-submit fixture, 143 shared checks,
+21 patch-upgrade checks and a full Windows build passed. The actual two-minute
+replay **failed** to reach Story or perform movement/firing/pause checks.
+Its profile instead accumulated 14,390 samples in `sub_003D65B0`; the last
+buffered frame timestamp was 34.3128 seconds. Sampling does not identify the
+precise stalled instruction or prove the dependency between the two waits.
+This is evidence that the isolated fixture did not model full device progress,
+not permission to bypass another driver wait.
+
+The entire optimization was reverted in `eae18a3`, the complete patch stack
+reapplied, generated source refreshed and the supported Windows Release build
+rerun successfully. The rejected executable was removed by an exact hash
+check. The restored executable SHA-256 is
+`12863fe128dfde83e4a726c5feb924a0ba361e77ae8aae9dcf8caeeb69d4ada2`.
+All 137 shared regressions pass. The 120-second restored native-144 replay
+passes Story, movement, firearm handoff/animation, ammunition consumption,
+pause/resume and fresh guest-only presents. A late capture shows the starting
+canyon, weapon and HUD. This does not revisit the user's deferred encounter.
+Evidence: `logs/native-gpu-flush-revert-build.log`,
+`logs/native-gpu-flush-revert-shared.log`, `logs/native-gpu-flush-restored-live.log`,
+`private/test-saves/high-refresh/native-144-gpu-flush-restored-*` and
+`private/pipeline/gpu-flush-rejected.json`. The user's old PID 25304 exited
+independently before the experimental test; no user session was terminated.
+
+The subsequent, narrower prompt change keeps one fresh mapping snapshot per
+wrapper invocation. It reuses the OS-reported bounds and write permission
+for nearby text and scratch, without retaining them across guest execution.
+On Windows a non-page-aligned stack and nearby rewritten text require one
+VM query instead of two (or three for text below ESP). Page-aligned stacks,
+other regions, protection boundaries and unwritable scratch still receive
+their necessary queries. Windows real-VM tests exercise those cases, changed
+permissions on successive calls, no-access and guard pages. The native Mac
+self-test adds read-only scratch and page-boundary cases but is not run here.
+Full game integration validation of this prompt change is pending; no FPS
+gain or perceived-smoothness improvement is claimed from query counts alone.
+
 ## Bridge-crash placement investigation
 
 The user reports a later ship crash intruding into the playable canyon,
