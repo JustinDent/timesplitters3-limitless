@@ -287,6 +287,8 @@ def main():
                             scene=word(0x79094c),flags=word(0x7de458),
                             position=floats(camera+0x27c,3),
                             direction=floats(camera+0x334,3),
+                            track=word(camera+0xfd0),
+                            track_seconds=floats(camera+0xfd4,1)[0],
                             effect_seconds=floats(camera+0x398,1)[0],
                             kick=[floats(camera+0x3a4,1)[0],floats(camera+0x3ac,1)[0]],
                             kick_decay=[floats(camera+0x3a8,1)[0],floats(camera+0x3b0,1)[0]]))

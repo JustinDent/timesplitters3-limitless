@@ -346,8 +346,8 @@ can observe temporary rendering cameras. The comparison identifies the
 dominant Story camera pointer; it cannot establish per-frame visual smoothness
 or prove that every camera path exercised the repaired routines.
 
-The broader camera audit remains open, including the mode-specific branch
-at `0xCD70F`. Do not broaden the load policy without following register uses,
+The broader camera audit remains open. The mode-27 branch at `0xCD70F`
+is covered by the later camera-track checkpoint below. Do not broaden the load policy without following register uses,
 per-call constants and the affected original behavior. Moving targets, real
 collision geometry, vehicle cameras, multiplayer cameras and full cinematics
 need scene checks.
@@ -444,3 +444,84 @@ samples. Total reported main-thread CPU time is 94.3 versus 92.8 seconds,
 so this does not establish a reduction in overall CPU time. The narrower
 chain reduction supports the redundant-query diagnosis, while whole-run
 variation and remaining render/update costs still require investigation.
+
+### Authored camera-track sampling
+
+The original switch table maps camera mode 27 to `0xCD691`. Its float track
+clock advances before the whole-tick gate at `0xCD70F`, so native fractional
+frames previously left the pose unchanged. The branch also selects its second
+keyframe using the integer delta loaded at `0xCD851`. Removing only the gate
+still samples the same keyframe twice on zero-whole-tick intervals.
+
+The native policy evaluates the track on positive live game time and supplies
+a one-keyframe span only when that span would otherwise be zero. Existing
+fractional blend weights then evaluate the authored track at the current time.
+The divisor at `0xCD88E` also uses the selected integer span, rather than
+assuming it equals the float elapsed delta. A 2.5-tick interval with a two-frame
+span exposed a separate error after the gate/span repair; a 1.8-tick interval
+with a two-frame span covers the opposite mismatch. Multi-tick spans are
+retained, as are track-end, loop, external-clock and
+large-discontinuity cut behavior. This uses the game's existing keyframe
+evaluation, not synthesized intermediate presentation frames.
+
+`native_camera_track.c` executes the original complete mode branch, with its
+three exits redirected to a terminal RET in the in-memory fixture only.
+Synthetic linear keyframe decoding, matrix/sector/projection services and
+player input are stubbed. The enclosing camera routine and real asset decoder
+are not covered by that fixture. The original policy fails the fractional
+pose comparison; a gate-only change also fails it. The complete change passes
+60/120/144, quarter speed, pause, externally synchronized clocks, three-tick
+and fractional catch-up, loop/completion, discontinuity cuts, stack and
+integer-delta checks. Native-disabled division and neighboring sites stay exact.
+
+The frontend audit also traces `sub_002DA0E0` to its raw fractional delta at
+`0x4E7948`, its rotating-layer helper `sub_002DAB30`, and sheet/texture-index
+helper `sub_002DAF90`. No timing rewrite is needed for these paths. Their
+source tests use original code with matrix/menu services stubbed; broader
+world texture/UV/water motion, rendered filtering and replacement-texture
+coverage remain pending.
+
+The combined timing/camera/frontend/auto-look/float/vehicle suite passes
+**55 tests**, and Windows Release plus its built-in checks pass.
+Final executable SHA-256:
+`ea81dc2b9e148d2e71063e2e7ea64a2221cb61b8abed5a95825f4844298097dc`.
+Logs: `native-camera-track-regressions.log`,
+`native-camera-track-acceptance-build.log`, and `native-menu-motion-tests.log`.
+
+One intermediate build's debug-settings test encountered system error 5 while
+saving its disposable settings and blocked behind nested error dialogs. Its
+timer repeatedly queued Save, and an attempted IDOK dismissal did not match
+the observed dialog's OK control ID (IDCANCEL). `tests/pc_debug.c` now posts
+Save once and dismisses save-error dialogs with WM_CLOSE. A forced read-only
+save verifies bounded dismissal and unchanged settings; the final build passes
+that case and ordinary Save/Cancel. The original unexpected access-denied
+event's underlying filesystem cause is unconfirmed. No production persistence
+behavior or personal files were changed, and interrupted runs are not counted
+as passing checks.
+
+The final 240-second unskipped native run passes scene, opening-firearm,
+guest-only-presentation and no-failed-present checks. It observes 45 mode-27
+samples for track 2485, from 157.625 to 179.656 seconds. The track clock
+advances at 0.999546 seconds per wall second; the original-60 reference's 45
+samples measure 1.000023. First firearm is observed at 182.156 versus 183.656
+seconds. Subtracting the median estimated track start gives 24.830 versus
+25.115 seconds to that observation. Half-second sampling and loading offsets
+prevent exact event or pose-parity claims.
+
+The reference executable is the intermediate
+`0797de6d828bd395acbb5c13036d8e4deb59cbbd1ca3a9e2f6c9d865b2a0c167`
+build, before the final native-only divisor correction; the final native
+executable is the `ea81dc2...` build above. The original-path division remains
+exact in the source test. Both runs use runner SHA-256
+`16065fa19dff50563a80b802d7b6f15789dbc032a3e0690131a1e4f9a68a35d0`.
+No captures or profiler were enabled. The final native trace reaches its
+20,000-row limit at 154.936 s, before the track begins, so there is no
+cinematic/gameplay interval distribution from that run. Extend the bounded
+trace window before using another long-intro run for pacing acceptance.
+
+Local source hashes and comparison calculations are in the ignored
+`private/test-saves/high-refresh/native-camera-track-comparison.json`.
+Run labels are `60-natural-intro-handoff-none-camera-track` and
+`native-144-natural-intro-handoff-none-camera-track-final`. These half-second
+observations establish exercised track progression and completion, not
+per-frame visual smoothness, full cinematics or full-game acceptance.

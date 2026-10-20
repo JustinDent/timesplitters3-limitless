@@ -6,6 +6,29 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Camera mode 27 now evaluates its authored track on live fractional frames
+  and selects an adjacent keyframe when the whole-tick delta is zero. A
+  gate-only change still produced repeated poses; the original branch test
+  reproduces both failures. Fractional catch-up also required matching the
+  blend divisor to the selected integer keyframe span. Original-code tests cover 60/120/144, quarter
+  speed, pause, external clocks, catch-up, looping, completion and authored
+  discontinuity cuts. **55 timing/camera/auto-look/float/vehicle/frontend checks** pass,
+  including a new original frontend-backdrop test covering fractional rotation,
+  bidirectional wrapping and texture-index transitions. Windows Release and
+  its built-in checks pass. Build SHA-256:
+  `ea81dc2b9e148d2e71063e2e7ea64a2221cb61b8abed5a95825f4844298097dc`.
+  The camera fixture stubs asset decoding, matrix, projection, sector and
+  input services; the frontend fixture stubs matrix/menu services. These are
+  behavioral timing checks, not rendered-fidelity or complete texture-motion
+  acceptance. The final 240-second unskipped native run passes scene/handoff
+  and guest-only-present checks. Track 2485 advances at 0.99955 seconds per
+  wall second versus 1.00002 in the original-60 reference; first firearm is
+  observed at 182.156 versus 183.656 s. Loading and half-second sampling limit
+  timing comparisons. The 20,000-row native trace ends at 154.936 s, before
+  mode 27 starts, so it supplies no cinematic/gameplay pacing measurement.
+  The reference predates the final native-only divisor correction; hashes
+  and scope are recorded in `native-camera-track-comparison.json` and the
+  regression document. Actual Mac and broader modes remain unverified.
 - Text wrapping now reuses a single call's validated stack-memory span for
   stack-local fragments, avoiding a duplicate VM query on each width probe.
   Protection boundaries, changed mappings and rewrite scratch space remain

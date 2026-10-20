@@ -35,13 +35,21 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
  * Camera effects have an outer gate at 0xCEA8D and a whole-tick decay loop
  * bounded by 0xC7D73 / 0xC7E0C. In native mode run that loop once per live
  * interval, with its two decay factors raised to elapsed ticks below.
+ * Camera tracks gate evaluation at 0xCD70F, after advancing their float clock.
+ * Their keyframe span at 0xCD851 needs an adjacent sample even when the
+ * integer delta is zero; the existing fractional weight then selects the
+ * pose at that clock time. Keep multi-tick spans and cut detection intact.
  * All other loads, including other reads of this same address, stay exact. */
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
 {
+    if (site == 0xCD851u && address == 0x4E7944u && value == 0 &&
+        g_tsfp_native_timing_active &&
+        *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0)
+        return 1;
     if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
-         site == 0xC7D73u || site == 0xC7E0Cu) &&
+         site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
@@ -76,6 +84,13 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
  * and negative cases copy the target directly without reaching this divide. */
 static inline float pc_native_divide(uint32_t site, float left, float right)
 {
+    /* Track blending uses an integer keyframe span. The original float delta
+     * matched it; fractional catch-up no longer does. Normalize by the span
+     * actually selected at 0xCD851, retaining the original multi-tick path. */
+    if (site == 0xCD88Eu && g_tsfp_native_timing_active) {
+        uint32_t span=*(const uint32_t *)((uintptr_t)0x4E7944u + g_xbox_mem_offset);
+        right=span ? (float)span : 1.0f;
+    }
     float value=left/right;
     if (site == 0xC7651u && g_tsfp_native_timing_active) {
         float delta=*(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset);

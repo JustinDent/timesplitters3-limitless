@@ -158,6 +158,9 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_camera_effects.c', [(0x151e80,0x151f1c),(0x1533e0,0x153431),
                                (0x153440,0x153490),(0xc79c0,0xc8114),
                                (0xcea8d,0xceaa6)]),
+    ('native_camera_track.c', [(0xcd691,0xcdd3e)]),
+    ('native_menu_motion.c', [(0x2dab30,0x2dab77),(0x2daf90,0x2db005),
+                            (0x2da0e0,0x2da440)]),
 ])
 def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     import hashlib
@@ -172,6 +175,18 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     previous=dict(vars(config))
     try:
         config.configure_from_xbe(str(xbe))
+        if harness_name=='native_camera_track.c':
+            import struct
+            # Execute this complete switch branch. Redirect only its three
+            # exits to a terminal RET, rather than the enclosing camera tail.
+            for site in (0xcd816,0xcd9d7,0xcdd38):
+                offset=config.va_to_file_offset(site)
+                assert image[offset]==0xe9
+                assert site+5+struct.unpack_from('<i',image,offset+1)[0]==0xce18c
+                image=image[:offset+1]+struct.pack('<i',0xcdd3d-site-5)+image[offset+5:]
+            end=config.va_to_file_offset(0xcdd3d)
+            assert image[end:end+5].hex()=='a17c0c7b00'
+            image=image[:end]+b'\xc3'+image[end+1:]
         if harness_name=='native_camera_effects.c':
             # Isolate the original caller's load/test/branch/call/join. The
             # appended RET replaces only the first instruction after that

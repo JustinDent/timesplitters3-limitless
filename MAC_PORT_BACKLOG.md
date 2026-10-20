@@ -2951,7 +2951,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   additive native timing/numeric/animation-scope/input/script-event/decay/camera patches and
   `tests/test_native_timing.py`, including execution of the original US script
   and NPC/player dispatchers, animation-event readers, camera motion and
-  camera-effect timer/decay/collision-call cadence. Usage is in
+  camera-effect timer/decay/collision-call cadence and mode-27 track sampling.
+  The original frontend backdrop motion and texture alternation also have
+  fractional-time coverage. Usage is in
   `docs/native-high-refresh.md`.
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.

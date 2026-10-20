@@ -70,6 +70,14 @@ exercises the original effect routine, matrix helpers and caller gate, with
 an unobstructed collision fixture. Real geometry and complete camera modes
 remain separate acceptance work.
 
+Camera mode 27 evaluates its authored track on each advancing fractional
+interval. Its next sample must be at least one keyframe ahead even when the
+whole-tick delta is zero; otherwise the existing blend repeatedly samples the
+same pose. The native policy changes the gate at `0xCD70F`, that zero-span
+case at `0xCD851`, and the divisor at `0xCD88E` to match the selected integer
+span during fractional catch-up. Multi-tick spans, external track clocks, looping,
+completion and large discontinuity cuts retain their original logic.
+
 These changes target responsive input, consistent frame pacing and continuous
 motion. They do not guarantee a performance increase: running more genuine
 updates and draws costs CPU and GPU time. The renderer's normal scene remains
