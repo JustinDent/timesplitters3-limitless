@@ -145,7 +145,17 @@ published release or a full-game 144 FPS certification.
   A second fixture now verifies 72 bounce/sound/slow-motion combinations,
   original sound parameters, catch-up and moving-object pause. It exposes
   the original early settling check's one-tick retirement difference on
-  fractional callbacks.
+  fractional callbacks. Extending it to settled objects reproduced retirement
+  during zero native game time. A scoped shared pause fix now preserves the
+  entity and still builds its original transform, including when a stale
+  whole count is present. Positive-time bounce and native-off behavior remain
+  unchanged. The shared timing/float/vehicle/CI/backlog suite passes 135 tests
+  with the existing cadence xfail, and all 21 patch-upgrade checks pass.
+  A fractional-motion prototype was rejected
+  because it changed impact timing and shortened settling; that prototype is
+  not enabled. Windows generation and Release compile-only checks pass;
+  final build/live and Mac validation of this pause fix remain pending while
+  the current play session stays open.
   [Rocking audit](docs/native-high-refresh-regressions.md#object-rocking-and-bounce-audit).
 - The NPC firing path now has the same scoped event-timing correction in
   shared source. Its whole-tick gate previously kept projectile counts

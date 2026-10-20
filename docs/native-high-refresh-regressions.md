@@ -1044,7 +1044,7 @@ float/vehicle translation, audio, CI scope and Mac backlog suite reports
 143 passed and one expected failure in 44.75 seconds, recorded in
 `logs/native-object-rocking-regressions.log`.
 
-No production change is made to this routine. A fix must preserve the
+The initial audit made no production change to this routine. A motion fix must preserve the
 original step's damping/acceleration, characterize tilt clamping, impact
 timing/audio, bounce restitution and settling, and produce a fresh transform
 for each advancing native interval. Whole-game collision coverage, actual
@@ -1079,6 +1079,95 @@ behavior while documenting what a fractional replacement must address.
 Measurements are in `logs/native-object-bounce-measurements.log`; the
 focused checks are in `logs/native-object-bounce-audit.log`. No production
 motion conversion is included in this audit.
+
+### Native pause guard and rejected fractional prototype
+
+Extending the pause check to an already-settled object reproduced a separate
+failure: with height 0 and velocity 0.2, the original callback clears +0x16C,
+clears the rocking flag and stamps +0x90 even when the live game delta is zero.
+The existing moving-object pause check did not enter that pre-loop branch.
+`logs/native-rocking-pause-before.log` records the failing entity-state check.
+
+The shared policy now takes the bypass branch at 0xA8526 only during native
+zero-time calls, then supplies zero to this callback's two whole-tick loop
+bounds. It still executes the original matrix builders: returning at function
+entry would omit the rocking transform when the caller supplies a fresh base
+matrix. No guest field is temporarily changed. Advancing intervals and the
+native-off path retain the original comparison and loop counts. The additive
+`native-object-pause` patch exposes an optional float-branch policy in the
+lifter; the generic default preserves the original condition, and operands
+remain captured at the comparison instruction.
+
+The original-code fixture checks byte-identical entity state and matrices
+for a tilted moving object with zero live delta and carried counts 0 through
+6. It separately checks settled-object pause, positive-fraction resumption,
+native-off zero-tick compatibility, and the existing 72 advancing bounce/sound
+configurations. The strict rocking-cadence expected failure remains open.
+This pause correction does not make bounce motion advance at 144 Hz.
+
+A separate, unshipped prototype tested a fractional extension of the original
+free-flight affine update. For one original step, write `v' = r*v - q` and
+`h' = h + a*v - b`, where `dt=1/60`, `r=1-damping*dt`, `q=gravity*dt`,
+`a=0.8333333134651184*dt`, and `b=4.158332824707031*dt*dt`. For a fraction `d`,
+`s=(1-r^d)/(1-r)`, `v(d)=r^d*v-q*s`, and
+`h(d)=h+a*s*v-b*d-a*q/(1-r)*(d-s)`. Angular increments were scaled by `d`;
+the original floor, tilt and sound logic ran after each fractional step.
+
+This produced 144 changed free-flight transforms out of 144 updates, with
+one-second endpoints within 0.00002 of the original in the measured normal
+and quarter-speed cases. It did **not** preserve the sampled impact response:
+
+| Case (height 0.2, velocity -3, impact flag 0x40) | Audible requests | Settling game tick |
+| --- | ---: | ---: |
+| Original 60, normal | 3 | 63 |
+| Prototype 120, normal | 3 | 55 |
+| Prototype 144, normal | 3 | 53 |
+| Original 60, quarter speed | 3 | 62 |
+| Prototype 120, quarter speed | 3 | 52 |
+| Prototype 144, quarter speed | 3 | 52 |
+
+At normal 144 the impact tick sequence changed from 5/29/43 to 4/28/41,
+and the last sound gain changed from 0.359771818 to 0.313612521. The prototype
+measured these differences by relaxing cross-rate assertions only in its
+temporary in-memory fixture; the tracked acceptance assertions were not
+weakened. All 72 prototype configurations completed, but completion is not
+acceptance. See `logs/native-rocking-fractional-experiment.log`; the ignored
+driver is `private/pipeline/rocking-fractional-experiment.py`. No prototype
+integration, floor response or sound change is present in production source.
+Preserving original impact/settling behavior while advancing fractional motion
+remains the next design problem; free-flight endpoint agreement is insufficient.
+
+A second ignored prototype splits the affine motion at original one-tick
+boundaries and evaluates near-floor constraints only at those boundaries.
+In the same fixture it retained impact ticks 5/29/43 and sound gains within
+0.000001, while still producing 144/144 changed free-flight transforms.
+However, it can carry negative height between boundary checks, and its
+phase-gated retirement waits until tick 65 at 144 FPS rather than 62/63.
+The nonnegative-height assertion was relaxed only in that temporary
+experiment; this is another incomplete design, not an accepted fix.
+`logs/native-rocking-contact-boundary-experiment.log` and the ignored
+`private/pipeline/rocking-contact-boundary-experiment.py` preserve the result.
+Object initialization/reuse, interleaved callbacks, floor presentation and
+settling across partial steps must be resolved before integrating such a path.
+
+For the pause correction, the shared timing, float/vehicle translation,
+CI-scope and backlog suite passes **135 tests with the existing rocking
+expected failure** in 64.37 seconds (`logs/native-rocking-pause-shared.log`).
+All **21 patch-upgrade checks pass** in 418.91 seconds, including older
+Windows/Mac stacks and repeated application (`logs/native-rocking-pause-upgrades.log`).
+The supported Windows `tsfp.ps1 Generate` pipeline completes in 83.4 seconds,
+and its generation fingerprint is current. A Release/x64 `ClCompile` pass
+with MSBuild 17.14.40 and MSVC 14.44.35207 succeeds for the generated units,
+manual code and display menu. It uses two compiler workers at below-normal
+priority. Logs are `logs/native-rocking-pause-generate.log` and
+`logs/native-rocking-pause-compile-only.log`. MSB8028 again reports shared
+intermediate-project files; there are no compilation errors.
+This was compile-only, with no relink or launch: the responsive interactive
+PID 25304 still runs `fc3a7ce`, whose executable SHA-256 remains
+`912f416b5f6eaeabf545c960c255491907988eae9f031ead4231b24832cbc333`.
+The pause correction, NPC aim correction and kind-35 projectile motion
+changes still need a complete supported build and targeted live checks.
+Actual Mac compilation/runtime and full-game acceptance remain unverified.
 
 ## Bridge-crash placement investigation
 

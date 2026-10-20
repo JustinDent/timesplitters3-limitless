@@ -1,6 +1,7 @@
 /* Complete original object callback, transforms and sound parameter builders.
  * Only the CRT asin service and the audio-device boundary are adapted.
- * This characterizes the original discrete mechanics, not a native-rate fix. */
+ * The native pause policy bypasses retirement/steps while preserving matrix
+ * construction; advancing bounce mechanics remain original and quantized. */
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -130,13 +131,42 @@ int main(void)
                    tilt,flags[kind],fps,slow,sounds,tick,frames);
         }
     }
-    /* Pause while moving must preserve motion and emit nothing. */
-    prepare(0x40,1);
+    /* Paused rendering still rebuilds the object's transform from the base
+     * matrix. Returning at callback entry would hide its height/tilt. */
+    prepare(0x40,1);g_tsfp_native_timing_active=0;
+    call(0,0);
+    unsigned char paused_matrix[64];
+    memcpy(paused_matrix,(void *)((uintptr_t)MATRICES+g_xbox_mem_offset),64);
     unsigned char before[0x300];
     memcpy(before,(void *)((uintptr_t)ENTITY+g_xbox_mem_offset),sizeof(before));
+    g_tsfp_native_timing_active=1;
+    for(unsigned whole=0;whole<=6;whole++) {
+        call(whole,0);
+        assert(!memcmp(before,(void *)((uintptr_t)ENTITY+g_xbox_mem_offset),sizeof(before)));
+        assert(!memcmp(paused_matrix,(void *)((uintptr_t)MATRICES+g_xbox_mem_offset),64));
+        assert(!sounds && !math_calls);
+    }
+    /* Settling is before the original tick loop, so testing only a moving
+     * object misses zero-time callback retirement. A paused native callback
+     * must preserve the entire entity, including its lifetime flags/stamp. */
+    for(unsigned whole=0;whole<=1;whole++) {
+        prepare(0x40,0);g_tsfp_native_timing_active=1;
+        MEMF(ENTITY+0x220)=0;MEMF(ENTITY+0x224)=.2f;
+        memcpy(before,(void *)((uintptr_t)ENTITY+g_xbox_mem_offset),sizeof(before));
+        call(whole,0);
+        assert(!memcmp(before,(void *)((uintptr_t)ENTITY+g_xbox_mem_offset),sizeof(before)));
+        assert(!sounds && !math_calls);
+        /* Positive fractional time must still permit original settling. */
+        call(0,.25f);
+        assert(!MEM32(ENTITY+0x16c) && MEM32(ENTITY+0x28)==0x80);
+        assert(MEM32(ENTITY+0x90)==1000+tick);
+    }
+    /* Native-off compatibility: retain original zero-tick retirement. */
+    prepare(0x40,0);g_tsfp_native_timing_active=0;
+    MEMF(ENTITY+0x220)=0;MEMF(ENTITY+0x224)=.2f;
     call(0,0);
-    assert(!memcmp(before,(void *)((uintptr_t)ENTITY+g_xbox_mem_offset),sizeof(before)));
-    assert(!sounds && !math_calls);
+    assert(!MEM32(ENTITY+0x16c) && MEM32(ENTITY+0x28)==0x80);
+    g_tsfp_native_timing_active=1;
     /* Catch-up traverses the same bounce/impact response as six single
      * steps. Audio timestamps here are the containing call's tick; compare
      * the emitted payload and final physics separately. */

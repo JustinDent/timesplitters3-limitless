@@ -73,6 +73,13 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
 {
+    /* The rocking callback still builds its transform while paused, but
+     * must not integrate a stale carried whole count. Its pre-loop settling
+     * branch is guarded separately below. Positive time stays original. */
+    if ((site == 0xA8595u || site == 0xA8980u) && address == 0x4E7944u &&
+        g_tsfp_native_timing_active &&
+        *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) == 0.0f)
+        return 0;
     if (site == 0xCD851u && address == 0x4E7944u && value == 0 &&
         g_tsfp_native_timing_active &&
         *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0)
@@ -88,6 +95,17 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
     return value;
 }
+/* At A8526, a taken branch bypasses callback retirement and reaches the
+ * tick loop/transform builders. Preserve the original float comparison for
+ * every other branch and every advancing interval, including fractions. */
+static inline int pc_native_float_branch(uint32_t site, int taken)
+{
+    if (site == 0xA8526u && g_tsfp_native_timing_active &&
+        *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) == 0.0f)
+        return 1;
+    return taken;
+}
+#define RECOMP_FLOAT_BRANCH_AT(site, taken) pc_native_float_branch((uint32_t)(site), (taken))
 extern uint32_t pc_native_kind35_gate(uint32_t value);
 #define RECOMP_LOAD_GLOBAL_U32(site, address, value) \
     ((site)==0xF08D0u ? pc_native_kind35_gate((uint32_t)(value)) : \

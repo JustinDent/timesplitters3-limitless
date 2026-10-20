@@ -2995,13 +2995,21 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   [the NPC regression record](docs/native-high-refresh-regressions.md#npc-firing-event-tick-scope).
 - **Object rocking audit:** The shared original-code fixture demonstrates
   repeated transforms on fractional native updates despite correct total
-  displacement. No runtime fix yet; its strict expected failure remains
+  displacement. No fractional-motion fix yet; its strict expected failure remains
   separate from passing checks. Damping, impact/bounce, settling and actual
   Mac execution remain acceptance work. A second shared fixture now checks
   the original bounce and impact-sound sequence across 72 configurations,
   catch-up and pause, while exposing a one-tick settling timestamp
   distinction. The CRT asin and audio-device boundaries are adapted in
-  that fixture; no new runtime behavior or host adapter is introduced. See
+  that fixture. A shared pause correction now bypasses pre-loop retirement
+  and ignores stale whole counts when native game time is zero, while still
+  rebuilding the original matrix. The extended fixture checks paused moving
+  and settled objects, resumption and native-off compatibility. A fractional
+  free-flight prototype changed impact timing and settling and was rejected;
+  the cadence expected failure remains. No host adapter is needed; actual
+  Mac compilation/runtime of the pause correction remain pending. Shared
+  checks pass 135 tests plus 21 patch upgrades, with the cadence expected
+  failure; Windows generation and compile-only validation pass. See
   [the rocking audit](docs/native-high-refresh-regressions.md#object-rocking-and-bounce-audit).
 - **Bridge-crash placement:** The crashed mothership's updater at 0x217050
   dropped fractional motion intervals behind its whole-tick entry gate.
