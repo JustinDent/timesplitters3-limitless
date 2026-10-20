@@ -1,0 +1,26 @@
+{
+  "Vulkan-Loader.txt": {
+    "url": "https://raw.githubusercontent.com/KhronosGroup/Vulkan-Loader/fa218055ff4948b159f31d43f800c808a13d51df/LICENSE.txt",
+    "sha256": "43c0a37e6a0fa7ff3c843b3ec5a4fac84b712558ddac103fbd4c1649662a9ece"
+  },
+  "MoltenVK.txt": {
+    "url": "https://raw.githubusercontent.com/KhronosGroup/MoltenVK/db66022459ffb663aa2b50f6b018bc2e124f5edf/LICENSE",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "SPIRV-Cross.txt": {
+    "url": "https://raw.githubusercontent.com/KhronosGroup/SPIRV-Cross/f11ba9f0b21ba8fc15153d50a2a1ae31ab1cf8f7/LICENSE",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "SPIRV-Tools.txt": {
+    "url": "https://raw.githubusercontent.com/KhronosGroup/SPIRV-Tools/ef96ed763b43b59b33b31b362f09a02b729fa1c9/LICENSE",
+    "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "DXC.txt": {
+    "url": "https://raw.githubusercontent.com/microsoft/DirectXShaderCompiler/01b62ad47db7dee3dd33f90e7339cf9e860b3f93/LICENSE.TXT",
+    "sha256": "27a49e35d1da96eba18fba54bc882667ff0ff8c0254f16f2b6e165d605ba7df8"
+  },
+  "DXC-ThirdParty.txt": {
+    "url": "https://raw.githubusercontent.com/microsoft/DirectXShaderCompiler/01b62ad47db7dee3dd33f90e7339cf9e860b3f93/ThirdPartyNotices.txt",
+    "sha256": "19512a5d0a015ef16d167272c164da49a604614a786206212a80ad486ed0be6d"
+  }
+}

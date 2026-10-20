@@ -212,7 +212,18 @@ namespace TimeSplitters.Launcher
             if(mode.Contains("versions")){versionsPage=new NativeVersions(root,client,()=>false,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;Page("VersionsHost");}
             if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}
             if(mode.Contains("game-data"))Find<Expander>("GameDataExpander").IsExpanded=true;
-            await Task.Delay(350);var visual=(Control)Content;visual.Measure(new Size(1152,772));visual.Arrange(new Rect(0,0,1152,772));using(var bitmap=new RenderTargetBitmap(new PixelSize(1152,772),new Vector(96,96))){bitmap.Render(visual);bitmap.Save(output);}Close();
+            if(mode.Contains("download")){
+                var snapshot=new TransferSnapshot{Phase="Downloading",Bytes=(long)(22.2*1048576),Total=(long)(84.5*1048576),BytesPerSecond=1.7*1048576};
+                Label("ReleaseTitle","Available: v0.3.1-alpha.1");Label("ReleaseDescription","Available to install. Open Home to install the game runtime.");Label("UpdateStateLabel","CHECKED");
+                Label("TransferDetails",snapshot.Summary);Find<Control>("TransferDetails").IsVisible=true;
+                Find<ProgressBar>("UpdateProgress").Value=snapshot.Percent;Find<Control>("UpdateProgress").IsVisible=true;
+                Find<Control>("PauseDownloadButton").IsVisible=true;Find<Control>("UpdateButton").IsVisible=false;Find<Control>("CheckButton").IsVisible=false;
+            }
+            int width=mode.Contains("compact")?1000:1152,height=mode.Contains("compact")?720:772;
+            Width=width;Height=height;
+            await Task.Delay(350);var visual=(Control)Content;visual.Measure(new Size(width,height));visual.Arrange(new Rect(0,0,width,height));
+            if(mode.Contains("scrolled")){var scroll=Find<ScrollViewer>("HomeCardsScroll");scroll.Offset=new Vector(0,scroll.Extent.Height);await Task.Delay(100);}
+            using(var bitmap=new RenderTargetBitmap(new PixelSize(width,height),new Vector(96,96))){bitmap.Render(visual);bitmap.Save(output);}Close();
         }
     }
 }

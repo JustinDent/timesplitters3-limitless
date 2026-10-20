@@ -1,5 +1,41 @@
 # Measured progress
 
+## Launcher download status spacing (2026-10-20)
+
+Prepared on `codex/launcher-download-spacing` from main `9324a7d`, in the commit
+carrying this entry. The download summary, channel selector and progress bar
+were siblings assigned to the same grid row in `tools/launcher/Launcher.xaml`.
+Long transfer text therefore covered the channel label and dropdown. A shared
+vertical stack now places the channel section, wrapping summary and progress
+bar in order, with the action row below. Windows WPF and generated native Mac
+layout consume this same change; no download or installation policy changes.
+
+Local validation: macOS 27.0.1 (26A434), ARM64, pinned .NET SDK 8.0.426,
+Avalonia 11.3.22, Python 3.13.16. The signed native build passes 22 launcher
+regression groups, the translocation startup UI check and eight shared UI groups.
+All three shared layout/theme tests and nine compatibility-policy tests pass.
+New offline download previews were visually inspected at 1152 x 772 and
+1000 x 720, including the compact view scrolled to the bottom: channel controls,
+two-line transfer text, progress bar and pause button no longer overlap.
+The minimum-size window uses the existing card scrollbar to reach the pause
+button. Preview commands are documented in `docs/mac-launcher.md`.
+
+The first Windows CI attempt (run 39378565086) stopped before compilation:
+`launcher-release.py` decoded the UTF-8 GitHub event using Windows CP1252, which
+rejects a byte in the PR body's curly quotes. Event parsing now specifies UTF-8.
+A regression invokes the real plan command with an unescaped Unicode event and
+simulated CP1252 default; it reproduces the failure before the fix and passes
+afterward. All 24 release-policy tests pass locally; the existing workflow runs
+this suite on both hosts.
+
+The read-only launcher `--check` against the existing development checkout was
+attempted but cannot start its missing `.venv/bin/python`; this task does not
+recreate or change that separate environment. Windows/native Mac CI and package
+checks are pending at implementation; exact-revision results will be recorded
+in the PR. Windows visual inspection, a live download and the installed release
+are not validated by these synthetic previews. No game session, personal-file
+changes, merge or release publication. MAC-021 retains wider delivery gaps.
+
 ## Mac launcher translocation recovery (2026-10-19)
 
 Prepared on `codex/mac-launcher-translocation` from main `b7a0630`, in the commit
@@ -12644,6 +12680,44 @@ it remains intact. No personal settings, saves or private texture pack were
 changed. This corrects Windows package layout, not runtime gameplay or native
 Mac distribution. MAC-021 records the host boundary and MAC-053 retains the
 separate Discord acceptance work.
+
+## Native Mac alpha.1 distribution — 2026-10-20
+
+Branch `release/macos-alpha1` packages the native game from the existing
+`v0.3.1-alpha.1` game source (`5db4efc`); packaging and bundled launcher changes
+are recorded separately and do not retag or replace the Windows release.
+
+- Mac mini: macOS 27.0.1 arm64, Apple Clang 21, Python 3.12.12; verified US XBE,
+  pinned runtime/SDL/SDK and MoltenVK. Recreated the copied, broken virtual
+  environment with pinned requirements; preserved the old environment and cache.
+- Native rebuild/regeneration passed three CTests and renderer/input/settings/
+  debug checks. Vulkan reported its known primitive-restart capability warning;
+  no validation errors were reported. Personal saves/settings were isolated.
+- The real ZIP installs and verifies all 61 files on fresh and personal-file
+  fixtures; both installed app signatures and portable dependency hashes pass.
+  Launcher 1.2.21 supplies portable Vulkan loading. All 23 native launcher
+  groups and eight shared UI groups pass. Windows launcher regression suites
+  pass; 102 Python checks and ten subtests pass on Windows (the preceding
+  101-check revision also passed on Mac).
+- A 95.22-second relocated probe on Apple M4 passes: at least 5,100 completed
+  guest frames and sampled 8,700 successful host presents (5,260 guest and 3,440
+  interpolated); normal exit 0, no native fault or shader compilation failure.
+  These counters do not measure display scanout or whole-game performance.
+  Dyld traces show bundled crypto, Vulkan loader, MoltenVK and DXC; none loads
+  from Homebrew or the development SDK. Personal settings remain unchanged.
+  The final capture shows the rendered pause/options menu; complete gameplay
+  and full visual fidelity remain unverified.
+- Alpha.1 native ZIP: 88,570,219 bytes, SHA-256
+  `e462fbabc6ebda3fc411b533da9a98a904d2913796855f828e6f7cb4ca352483`.
+  Game source is `5db4efc`; packaging source is `339fe94`, with the actual
+  launcher source recorded separately in its receipt. Its actual deployment
+  target requires macOS 27.0+; it is ad-hoc signed, without notarization.
+  Mac ZIP/checksum/build provenance are added to the existing alpha.1 release.
+  The Windows assets and release tag are unchanged.
+- Cloud-provider Finder metadata prevented signing under the Mac Desktop.
+  The generated bundle and release staging use a local cache instead; generated
+  bundle metadata is normalized before signing, with source artwork preserved.
+  Source changes remain on this focused branch for review; main is not merged.
 
 
 ## 2026-10-20: launcher texture installation and OneDrive path repair
