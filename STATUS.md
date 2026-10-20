@@ -6,6 +6,16 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Broader frame-time work now targets a measured GPU flush polling cost.
+  A bounded profile of `dee6170` records 2,531 main-thread samples in the
+  original D3D submit routine and 5,182 in memory queries. A shared PFB
+  acknowledgement now replaces only the audited flush-bit poll's worker
+  scheduling delay. All 32 controlled original-submit comparisons preserve
+  guest memory/register outputs and drain calls, with one poll versus nine
+  in the delayed-ack control. The shared suite passes 143 tests. Full build
+  and live performance validation remain pending; no FPS gain is claimed
+  from the fixture.
+  [Frame-time work](docs/native-high-refresh-regressions.md#gpu-flush-polling-overhead).
 - Latest built executable `dee6170` passes the full supported Windows Release
   build and a 120-second isolated native-144 gameplay check, including movement,
   firearm handoff/animation, ammunition use, pause/resume and fresh presents.

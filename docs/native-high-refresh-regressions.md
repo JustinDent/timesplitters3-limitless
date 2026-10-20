@@ -445,6 +445,55 @@ so this does not establish a reduction in overall CPU time. The narrower
 chain reduction supports the redundant-query diagnosis, while whole-run
 variation and remaining render/update costs still require investigation.
 
+## GPU flush polling overhead
+
+The user deferred the encounter-specific playtest reports and requested
+broader experience improvements. A new 120-second native-144 movement/firing/
+pause replay profiles the `dee6170` executable without capture or effects/entity
+tracing. It passes all smoke checks. Its complete 200-Hz sampling report contains
+20,573 main-thread samples, 16,400 marked on-CPU: 5,182 leaves in
+`NtQueryVirtualMemory` and 2,531 in `sub_003D6690`. These totals include menus
+and loading. Folded wrapper symbol names do not establish which source helper
+performed a memory query. The active Story window averages 138.672 CPU updates/s,
+p95 9.005 ms, p99 10.3017 ms, with 1x time, while the older user session remains
+open. Logs/evidence use `native-experience-profile.log` and the
+`native-144-experience-profile` prefix under the isolated high-refresh directory.
+
+Following the original complete 0x3D6690–0x3D673F routine identifies its PFB
+flush handshake: set bit 0x10000 at device MMIO base +0x100410, then poll until
+cleared, before writing DMA_PUT and running the existing drain helper. The
+runtime already models this bit as immediately acknowledgeable because the
+host renderer owns the actual work. Its background NV2A worker nevertheless
+sleeps between idle passes, leaving the title to busy-wait for scheduling.
+
+`pc_gpu_flush_guest.h` now acknowledges that same bit directly at the poll,
+only for the supported register address 0xFD100410. Atomic AND preserves other
+bits even when they changed after the observed read. No DMA pointer, completion
+fence, interrupt status, renderer call, drain helper or guest clock is changed.
+The original routine continues through its original submission sequence. This
+shared host-model optimization applies to original-60 and native updates.
+Compiler-specific atomics implement the same operation on MSVC and GCC/Clang.
+It does not claim to wait for actual GPU completion.
+
+The additive patch supplies generic `RECOMP_TEST_MEM_U32_AT`, an identity by
+default, only for a 32-bit memory TEST operand. The title numeric policy selects
+site 0x3D66D0. Byte/word tests, register tests and comparisons retain their
+original translation. The full original submit routine is exercised in
+`tests/native_gpu_flush.c`, including both source-buffer choices, existing
+submitted-state branch, enabled/disabled drain loop, alternate register address
+and original/native modes. All **32** comparisons retain byte-identical guest
+memory, volatile/callee-saved register outputs and drain counts. The controlled
+worker clears the bit after eight reads; the old path needs nine polls and the
+new exact-register path needs one. Unknown sites/addresses and a clear observed
+bit retain their original behavior. Hardware scheduling/rendering services are
+controlled here; this is not a frame-rate benchmark.
+
+The focused original-code test passes. The timing, float/vehicle translation,
+CI-scope and backlog suite passes **143 tests** in 68.46 seconds
+(`logs/native-gpu-flush-shared.log`). Full patch-upgrade checks, supported
+Windows generation/build, a matched live comparison and actual Mac execution
+remain pending at this checkpoint. The user's interactive session stays open.
+
 ### Authored camera-track sampling
 
 The original switch table maps camera mode 27 to `0xCD691`. Its float track

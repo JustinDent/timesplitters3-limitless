@@ -3109,6 +3109,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   stack-fragment cases were added to `src/native/prompt_selftest.inc` but
   require an actual host run. This source change applies to both fixed-60 and
   native-refresh paths; it does not alter text formatting or wrapping.
+- **PFB flush polling:** The shared `src/pc_gpu_flush_guest.h` acknowledges
+  only the audited US D3D flush poll at 0x3D66D0 for register 0xFD100410,
+  atomically clearing the same busy bit as the existing NV2A worker. The
+  additive `native-gpu-flush-poll` patch supplies an identity-default memory
+  TEST hook; the title policy selects this one site. Both compiler adapters
+  perform the same atomic AND, with no second Mac behavior model. Original
+  submit fixtures preserve all guest memory/register results and drain calls
+  across 32 controls; 143 shared tests pass on Windows. Full Windows build,
+  live performance comparison and actual Mac compilation/runtime remain
+  pending. Source is part of this commit on `feature/native-144-fps`.
+  [Frame-time evidence](docs/native-high-refresh-regressions.md#gpu-flush-polling-overhead).
 - **Offline network-hook overhead:** `pc_network_bots_guest.inc` and
   `pc_network_bots_lobby.inc` reject ineligible guest modes/actors before reading
   host network settings. Eligible calls still read live settings; no transport
