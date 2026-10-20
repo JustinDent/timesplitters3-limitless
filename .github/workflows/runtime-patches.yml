@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
     paths:
+      - tools/texture-*.py
+      - tests/texture*
+      - tests/test_texture*
       - .github/workflows/runtime-patches.yml
       - tools/recomp-generation.py
       - tools/build-native-mac.py
@@ -281,20 +284,23 @@ jobs:
       - name: Apply shared runtime patches
         if: steps.scope.outputs.native == 'true'
         run: python tools/apply-patches.py external/ts3FPrecomp patches
-      - name: Install pinned recompiler test dependency
+      - name: Install pinned runtime and texture test dependencies
         if: steps.scope.outputs.native == 'true'
         run: |
           python - <<'PY'
           from pathlib import Path
           import subprocess, sys
-          dependency = next(line for line in Path('requirements.txt').read_text().splitlines()
-                            if line.startswith('capstone=='))
-          subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
+          pins = [line for line in Path('requirements.txt').read_text().splitlines()
+                  if line.startswith(('capstone==', 'Pillow==', 'numpy=='))]
+          subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
       - name: Test native runtime, rendering and input regressions
         if: steps.scope.outputs.native == 'true'
         run: |
           tests=(
+            tests/test_texture_runtime.py tests/texture_pack_tools.py tests/test_texture_hybrid_plan.py
+            tests/texture_archive_signatures.py tests/texture_embedded_scan.py
+            tests/texture_nonpak.py tests/texture_variants.py
             tests/test_native_mac_tools.py tests/test_native_mac_launcher.py tests/test_testing_profile.py
             tests/test_native_compiler.py tests/test_audio_timing.py
             tests/test_frame_clock.py tests/test_profile_accept.py

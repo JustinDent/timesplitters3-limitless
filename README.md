@@ -4,7 +4,10 @@
 
 Direct mouse aiming · 4K & ultrawide · Custom controls · Windows Online & LAN
 
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-launcher.svg" alt="Download the latest Windows or Mac launcher" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
+
+<sub>Direct ZIP downloads · Automatically follow the latest stable launcher release · <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes & checksums</a></sub>
 
 **[Windows setup](#windows)** · **[Mac setup](#mac-apple-silicon)** · [Launcher guides](#guides--support) · [Multiplayer](docs/multiplayer.md) · [Build from source](docs/building.md)
 
@@ -24,15 +27,16 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Windows Online & LAN
 
 ## Start playing
 
-Choose your platform below. Both launchers are available from the
-[latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).
-Download the ZIP matching your computer: `windows-x64` or `macos-arm64`.
+Use the Windows or Mac download button above to get the latest stable launcher
+ZIP for your computer, then follow its setup steps below. See the
+[latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest)
+for release notes and checksums.
 
 ### Windows
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **Download the launcher.** Open the [latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest) and download its `TimeSplitters-Launcher-…-windows-x64.zip` asset. |
+| **01** | **[Download the Windows launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip).** This downloads the latest stable Windows x64 launcher ZIP directly. |
 | **02** | **Extract and open.** Extract the whole ZIP to a writable folder, keeping `Bin` and `Support` together. Open **TimeSplitters Launcher.exe**. |
 | **03** | **Install the game runtime.** Set **Update channel → Preview**, then choose **Install release**. The launcher downloads and verifies the published PC runtime. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
@@ -80,7 +84,7 @@ to open. Intel Macs are not supported by this native build.
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **Download the Mac launcher.** Choose `TimeSplitters-Launcher-…-macos-arm64.zip` from the [latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest). Extract the whole ZIP and keep **TimeSplitters Launcher.app** beside its **Support** folder. |
+| **01** | **[Download the Mac launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip).** This downloads the latest stable Apple Silicon launcher ZIP directly. Extract the whole ZIP and keep **TimeSplitters Launcher.app** beside its **Support** folder. |
 | **02** | **Set up the native game.** Follow the [Mac source-build guide](docs/macos.md) for developer tools, your supported US Xbox game data and the native build. Keep `default.xbe`, `pak` and `xmv` together in the checkout's `private/game` folder. |
 | **03** | **Open the launcher for your checkout.** Use the command below, replacing both example paths with your extracted app and checkout folders. Then choose **Play Game**. |
 

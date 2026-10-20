@@ -1116,7 +1116,61 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-011 — Real texture-pack gameplay coverage
 
 - **Status:** Awaiting validation
+- **Texture alpha integration (PR #198):** The mode policy in
+  `src/texture_mode.c` now shares initialization and toggle behavior, with
+  Win32 once/atomic operations and POSIX pthread/C11 atomic operations as thin
+  adapters. The common native renderer links this source through
+  `patches/zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-texture-mode-shared.patch`;
+  an explicit pack still defaults to replacements unless Classic is requested.
+  This prevents the Windows alpha from introducing unresolved mode symbols in
+  the current Mac common-renderer build. The existing PC-only F10/menu UI still
+  needs native event/settings wiring; no Mac interactive toggle parity is claimed.
+  Legacy GL remains a compressed-texture adapter and rejects RGBA or
+  alpha-incompatible replacements before upload, preserving original fallback.
+  The shared DDS/loader/mode checks in `tests/test_texture_runtime.py` and the
+  artwork-tool suites are registered in Windows/macOS CI. Real-art GPU/scene
+  acceptance and native interactive settings remain pending; portable compilation
+  and synthetic loader results do not replace those checks.
+- **Source dimension rounding (issue #74, batch 180):**
+  `tools/texture-pack.py` retains exact aspect matching by default and adds
+  explicit `--allow-one-pixel-aspect-rounding` for opaque color sources with
+  both axes >=512 and at most one long-axis pixel difference. Larger mismatch,
+  non-opaque sources, channel conversion and original-alpha overrides remain
+  rejected. Metadata records the rounding and resampling. Shared Python/Pillow
+  code needs no Mac adapter or runtime change; source is included with the
+  batch180 commit. Windows texture-tool/planner suite: 40 tests passed.
+  Mac execution remains unverified. Acceptance: run `tests/texture_pack_tools.py`
+  on Mac, confirm default rejection and opt-in metadata/encoded output, and
+  retain real-art scene checks for the consolidated validation phase.
+  See [batch 180 evidence](STATUS.md#texture-overhaul-issue-74-hybrid-batch-180).
+- **Original-alpha compilation (issue #74):** `tools/texture-pack.py` accepts
+  `--alpha-source` with its required SHA-256 to retain a verified original
+  channel while compiling new RGB artwork. Metadata records source size/hash,
+  bilinear resampling and lossy DDS caveats. Shared Python/Pillow code requires
+  no OS adapter or loader change. Source commit `ab53ce3` is on the issue #74
+  branch. Windows checks are recorded in the batch 85 STATUS entry; Mac
+  execution and real-art appearance remain unverified. Acceptance: run
+  `tests/texture_pack_tools.py`, verify original-alpha provenance and decoded
+  mask errors, then inspect cutout/material behavior in consolidated scene tests.
+- **Hybrid production tooling (issue #74, 2026-10-16):**
+  `tools/texture-hybrid-plan.py` groups the remaining artwork into material
+  batches, individual review, specialist review, corrections and visual triage.
+  It uses standard-library Python and existing private JSON reports; no Mac
+  runtime adapter is needed. Five planner tests pass on Windows; execution on
+  Mac and actual artwork scene coverage remain unverified. The planner never
+  installs art or counts unreviewed candidates as completed textures.
 - **PC behavior:** Windows loads compiled DDS replacements with matching keys/mips and bounded residency.
+- **Temporary storage accounting (issue #74, batch 172):**
+  `tools/texture-worklist.py` now counts comparison and unknown output
+  subdirectories in the 256 MiB temporary limit, reports logical/allocated
+  bytes, and exits 2 after writing diagnostics when at or above the limit.
+  Shared Python code needs no Mac adapter; Windows tests in
+  `tests/texture_pack_tools.py` cover nested comparison files, unknown folders,
+  excluded authoritative art/pack files, the boundary and CLI failure.
+  Source is included with the batch172 commit; Mac execution remains
+  unverified. Acceptance on Mac: run that test file and verify the report on
+  the local texture workspace before production. This changes no runtime or
+  gameplay behavior; scene validation remains pending.
 - **Windows build fix (2026-10-15; integrated in current `main`):**
   `src/texture_pack.c` restores the local `FILE *f` declaration used by
   `dump_original`. MSVC syntax compilation passes; no Mac adapter change is
@@ -1128,6 +1182,21 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Mac adaptation needed:** The real `private/texture-remaster/pack` directory is absent on this Mac (checked 2026-10-15); the user confirmed the textures have not yet been transferred. Obtain its existing location/copy before testing matching scenes and mapping replacement keys to captures. Do not recreate the loader or label all artwork verified.
 - **Mac acceptance checks:** Compare original/replacement mission captures, confirm expected key hits, mip behavior, eviction/fallback and the 512 MiB residency limit. Keep the 6 GiB pack budget and isolated saves; no duplicate extract.
 - **Mac implementation and evidence:** Synthetic DDS/GPU replacement and corrupt-fallback regressions passed again in this batch. Actual installed-art coverage remains pending because the real pack is unavailable on this device. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
+
+- **Issue #74 transfer (2026-10-16):** Windows F10 and the PC Settings menu now
+  carry the existing live Classic/4K switch in `src/texture_mode.c`,
+  `src/pc_controls.c`, `src/pc_settings.c` and `patches/texture-toggle.patch`.
+  Uncompressed original identities and alpha-compatible replacement formats,
+  including RGBA DDS, are handled in `src/texture_pack_format.h` and
+  `src/texture_pack.c`. Catalog, embedded/non-PAK inventory and artwork tools
+  are under `tools/texture-*.py`. These changes were transferred from
+  `codex/integrate-display-textures` to the issue #74 branch.
+  Mac still needs a native toggle adapter and real-art scene/alpha validation;
+  shared format checks and Windows tests do not establish Mac parity.
+  Acceptance: switch both ways during rendering, retain originals on invalid,
+  missing or over-budget files, preserve alpha and the 512 MiB residency cap.
+  The 232 installed local replacements are partial coverage; consolidated
+  scene testing remains deferred. See the issue #74 transfer record in STATUS.
 
 ### MAC-012 — Standalone Mac runtime distribution
 

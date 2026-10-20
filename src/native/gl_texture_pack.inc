@@ -15,6 +15,11 @@ static void native_pack_upload(GLTexture *t) {
     char path[4096];if(snprintf(path,sizeof path,"%s/%016" PRIx64 ".dds",root,key)>=(int)sizeof path)return;
     TsfpDDS dds;unsigned char *data=tsfp_pack_read(path,t->width,t->height,TSFP_PACK_RESIDENT_BUDGET-native_pack_resident,&dds);
     if(!data)return;
+    /* This legacy adapter only uploads BC formats. The common parser also
+     * accepts BGRA8; retain original fallback instead of treating it as BC3. */
+    if(dds.format==6 || !tsfp_texture_alpha_compatible(t->format,dds.format)) {
+        free(data);return;
+    }
     GLuint texture;glGenTextures(1,&texture);glBindTexture(GL_TEXTURE_2D,texture);
     GLenum format=dds.format==12?0x83f1:dds.format==14?0x83f2:0x83f3;
     unsigned w=dds.width,h=dds.height;
