@@ -6,6 +6,12 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Overlay follow-up: native mode shows its selected `target 60/120/144`
+  instead of the original console cap. Offline RTT is hidden; network RTT
+  remains available. Full patch-stack validation, Windows Release and built-in
+  checks pass (`logs/native-overlay-build.log`); the focused debug check also
+  passes with isolated runtime settings (`logs/native-overlay-debug-check.log`).
+  Actual Mac validation remains pending under MAC-058.
 - Camera mode 27 now evaluates its authored track on live fractional frames
   and selects an adjacent keyframe when the whole-tick delta is zero. A
   gate-only change still produced repeated poses; the original branch test

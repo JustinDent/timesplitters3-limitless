@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     PcDebugOptions options, readback;
     PcDebugSnapshot snapshot;
     PcSettings controls;
-    char config[MAX_PATH], log[MAX_PATH], error[320], overlay[96], *text, *before;
+    char config[MAX_PATH], runtime_config[MAX_PATH], log[MAX_PATH], error[320], overlay[96], *text, *before;
     FILE *file;
     HWND owner;
     UINT_PTR timer;
@@ -73,6 +73,9 @@ int main(int argc, char **argv)
     }
     CHECK(argc==3);
     snprintf(config,sizeof config,"%s\\debug-settings.json",argv[2]);
+    snprintf(runtime_config,sizeof runtime_config,"%s\\debug-runtime.ini",argv[2]);
+    _putenv_s("RECOMP_DISPLAY_CONFIG",runtime_config);
+    _putenv_s("TSFP_NATIVE_FPS","0");
     snprintf(log,sizeof log,"%s\\debug-runtime.err",argv[2]);
     text=load(argv[1]); CHECK(text && text[0]=='{');
     file=fopen(config,"wb"); CHECK(file);
@@ -128,7 +131,20 @@ int main(int argc, char **argv)
     pc_debug_sample(60,120);
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto"));
     CHECK(strstr(overlay,"60.0/120.0 fps") && strstr(overlay,"16.7 ms") && strstr(overlay,"E:2 W:1"));
-    CHECK(strstr(overlay,"RTT: offline"));
+    CHECK(!strstr(overlay,"RTT:"));
+    _putenv_s("TSFP_NATIVE_FPS","144");
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 144") && !strstr(overlay,"cap 60"));
+    _putenv_s("TSFP_NATIVE_FPS","120");
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 120"));
+    _putenv_s("TSFP_NATIVE_FPS","60");
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 60"));
+    _putenv_s("TSFP_NATIVE_FPS","0");
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"cap 60") && !strstr(overlay,"target"));
+    _putenv_s("TSFP_NATIVE_FPS","");
+    memset(&readback,0,sizeof readback); readback.show_latency=1;
+    pc_debug_set(&readback);
+    CHECK(!pc_debug_overlay(overlay,sizeof overlay,"60") && !overlay[0]);
+    pc_debug_set(&options);
     pc_debug_latency(2,42.5,1);
     CHECK(pc_debug_overlay(overlay,sizeof overlay,"auto") && strstr(overlay,"RTT: 42.5 ms"));
     pc_debug_snapshot(&snapshot); CHECK(snapshot.network_mode==2 && snapshot.latency_peers==1 && snapshot.latency_ms==42.5);

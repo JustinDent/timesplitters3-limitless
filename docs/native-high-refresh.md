@@ -12,6 +12,10 @@ These launch overrides do not rewrite saved graphics preferences. Normal
 `Play.cmd` retains the existing behavior. This is a development checkout entry
 point, not a launcher update for an installed release.
 
+The FPS overlay shows `target 144` (or the selected native rate) alongside
+measured FPS. Original timing still shows `cap 60`. Network RTT appears only
+when a network mode is active; offline play hides the latency readout.
+
 For a direct game launch on either host, set `TSFP_NATIVE_FPS=144` or put
 `native_fps = 144` in its isolated runtime display configuration. Supported
 values are 60, 120 and 144; absent, zero and invalid values retain original

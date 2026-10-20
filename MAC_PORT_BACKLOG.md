@@ -2966,6 +2966,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   policy are compiled by the shared title build. The Mac entry point reports
   the opt-in native rate; normal play retains main's fixed-60 default. No second
   timing model or higher-frequency console clock was introduced.
+- **Overlay follow-up:** Shared `src/pc_debug.c` reads the native rate for its
+  target label and hides offline RTT. `zzzzzzz-native-debug-target.patch`
+  links the shared overlay to runtime configuration on both hosts. Actual Mac
+  compilation and overlay display remain awaiting validation.
 - **Remaining adaptation:** Validate compilation, waitable-timer behavior,
   common Vulkan and legacy GL rendering on actual Apple Silicon. Integrate a
   native launcher selector after game-speed and pacing acceptance; the normal
