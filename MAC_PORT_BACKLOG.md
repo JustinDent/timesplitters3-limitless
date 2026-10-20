@@ -150,7 +150,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-011 | Real texture-pack gameplay coverage | Awaiting validation |
 | MAC-012 | Standalone Mac runtime distribution | Queued |
 | MAC-013 | System Link and Online multiplayer | Queued |
-| MAC-014 | Patch upgrades across Windows watermark and native overlay guards | Awaiting validation |
+| MAC-014 | Patch upgrades across Windows watermark and native overlay guards | Verified |
 | MAC-015 | Release test privileges and disposable cleanup | Awaiting validation |
 | MAC-016 | Shared pickup-range comparison fix (issue #6) | Awaiting validation |
 | MAC-018 | Story audio timing, queue retry and ADPCM resume (issue #8) | Awaiting validation |
@@ -1234,11 +1234,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   or fixture construction. `tools/apply-patches.py` eliminates a redundant dry-run
   process per staged patch, preserving full-stack validation before runtime
   writes; shared multi-file conflict/rollback tests cover this change.
-  macOS execution of this revision remains unverified.
+  The integrated revision now passes these suites on hosted macOS and Windows.
   Acceptance: full transition suite and affected scope tests pass on both hosted
   platforms. See [CI validation](STATUS.md#runtime-ci-efficiency).
 
-- **Status:** Awaiting validation
+- **Status:** Verified
 - **PC behavior:** Release preparation accepts the complete shared patch stack
   over fresh sources or an existing Windows watermark build, without losing
   unrelated runtime edits. Conflicting code still fails before runtime writes.
@@ -1269,8 +1269,12 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   Include texture-to-main-to-texture transitions and unrelated-edit preservation.
   Cross-platform CI now covers source-only transitions, record corruption,
   changed/removed patches and rollback. Native Mac build validation is separate.
-- **Mac implementation and evidence:** Shared fix present locally; macOS checks
-  and other-device synchronization remain unverified.
+- **Mac implementation and evidence:** The integrated shared loader passes the
+  complete transition suite on both hosted platforms at `d0edd6d`, including
+  historical stacks, both Git line-ending modes, unrelated edits and rollback.
+  This verifies the patch-loader scope. Separate interpolation harness failures
+  are tracked below; Windows gameplay and the user's other checkout remain
+  unverified.
 
 - **Hosted integration follow-up:** `d0edd6d` passes macOS patch/runtime/GPU/launcher
   checks. Windows patch transitions pass, but three isolated interpolation tests
