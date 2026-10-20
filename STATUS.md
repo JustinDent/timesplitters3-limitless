@@ -6,6 +6,12 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- The user reports a ship intruding into the playable canyon immediately
+  after the first mission's bridge destruction. This remains unresolved.
+  Read-only snapshots of the user's session preserve the scene's entity,
+  animation and matrix state while leaving gameplay running. The isolated
+  60/144 opening comparisons do not reach this event and cannot validate it.
+  [Bridge investigation](docs/native-high-refresh-regressions.md#bridge-crash-placement-investigation).
 - Object rocking/bounce motion has a reproduced smoothness gap: the original
   updater produces only 60 changed transforms across 144 live updates, while
   preserving the 60 FPS endpoint and speed. At a quarter-speed schedule it
@@ -13,6 +19,10 @@ published release or a full-game 144 FPS certification.
   are covered by a new fixture; its smoothness requirement is a strict
   expected failure, not a passing feature. No runtime conversion is applied
   until per-step damping, bounce and settling semantics are characterized.
+  A second fixture now verifies 72 bounce/sound/slow-motion combinations,
+  original sound parameters, catch-up and moving-object pause. It exposes
+  the original early settling check's one-tick retirement difference on
+  fractional callbacks.
   [Rocking audit](docs/native-high-refresh-regressions.md#object-rocking-and-bounce-audit).
 - The NPC firing path now has the same scoped event-timing correction in
   shared source. Its whole-tick gate previously kept projectile counts

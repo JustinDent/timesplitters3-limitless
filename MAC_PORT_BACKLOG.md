@@ -2997,8 +2997,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   repeated transforms on fractional native updates despite correct total
   displacement. No runtime fix yet; its strict expected failure remains
   separate from passing checks. Damping, impact/bounce, settling and actual
-  Mac execution remain acceptance work. See
+  Mac execution remain acceptance work. A second shared fixture now checks
+  the original bounce and impact-sound sequence across 72 configurations,
+  catch-up and pause, while exposing a one-tick settling timestamp
+  distinction. The CRT asin and audio-device boundaries are adapted in
+  that fixture; no new runtime behavior or host adapter is introduced. See
   [the rocking audit](docs/native-high-refresh-regressions.md#object-rocking-and-bounce-audit).
+- **Bridge-crash placement:** The first-mission obstruction reported on
+  Windows remains unresolved. Read-only scene snapshots and an optional
+  bounded entity trace were added to the Windows test runner; the decoder
+  has portable offline tests. No game behavior or Mac adapter changed.
+  A matching 60/144 bridge-event comparison and actual Mac validation remain
+  pending. See [the investigation](docs/native-high-refresh-regressions.md#bridge-crash-placement-investigation).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.

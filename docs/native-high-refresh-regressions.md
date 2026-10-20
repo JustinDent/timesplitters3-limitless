@@ -1050,3 +1050,86 @@ timing/audio, bounce restitution and settling, and produce a fresh transform
 for each advancing native interval. Whole-game collision coverage, actual
 scene review and Mac execution remain open. This audit does not change
 the already rebuilt NPC-weapon executable.
+
+The additional `native_object_bounce.c` fixture now follows the original
+callback through near-ground tilt clamping, floor impacts and callback
+retirement. It runs the original matrix routines, sound defaults builder
+0x45390 and positional sound builder 0x21910. The audio-device boundary is
+captured rather than played. The CRT helper 0x3C9DF8 is adapted with host
+`asin`; its entry and x87 asin-kernel bytes are verified against the XBE.
+This is not a test of the complete CRT exceptional-input machinery or
+audible output.
+
+Across 72 combinations of 60/120/144 updates, normal/quarter-speed time,
+zero/nonzero tilt and six impact flags, the original code produces the
+same impact tick sequence and byte-identical 48-byte sound parameters.
+Starting at height 0.2 and velocity -3 produces three audible impact
+requests for each enabled material, with sound IDs CDA/CDB/CDC and the
+original flag priority. Position and gain are checked against the entity.
+Six single steps and two three-tick catch-up calls also produce identical
+physics and sound payloads. A paused moving object emits no sound and
+retains its state.
+
+Settling is checked before the whole-tick loop: the normal 60 FPS case
+retires at game tick 63, while extra zero-tick callbacks retire the same
+state at tick 62 at 120/144 FPS and under quarter-speed schedules. This
+one-tick timestamp distinction is recorded, not hidden by a blanket
+cross-rate equality assertion. The fixture preserves this original
+behavior while documenting what a fractional replacement must address.
+Measurements are in `logs/native-object-bounce-measurements.log`; the
+focused checks are in `logs/native-object-bounce-audit.log`. No production
+motion conversion is included in this audit.
+
+## Bridge-crash placement investigation
+
+The user reports a later ship crash intruding into the playable canyon,
+on the way to the base entrance immediately after the bridge blows up.
+Two user screenshots show the obstruction beside the destroyed bridge.
+This is an open correctness issue; neither a cause nor a runtime fix has
+been established.
+
+The running Windows executable remains the tested `cfaef73` build with
+SHA-256 `afb5ed6a71c05f3c8a3ddc1ede825e8f2f07f4a05d39dc3901de665a35840d26`.
+The user requested continued gameplay during investigation. The saved
+`private/pipeline/ship-bridge-user-snapshot.json`, `ship-bridge-models.json`
+and `ship-bridge-static-models.json` are bounded, read-only process-memory
+observations; they do not send game input, change memory, or change saves.
+The first snapshot contains 66 entities and player position approximately
+(-88.60, -11.08, -91.54).
+
+Two debris objects have clips 2536/2537 (`crash_debris01/02`) with unchanged
+previous/current times of 1.814850 seconds. The bridge object has clip
+2550 (`bridge_collapse_`) at 4.062600 seconds and callback 0x216E00.
+Their sampled bone bases have unit lengths. These observations rule out
+neither an incorrect terminal pose nor a separate misplaced ship.
+The four sampled type-0x80 ships use ambient clips 2512–2515 and continue
+moving. A separate type-1 object at approximately (18.08, -26.12, -30.28)
+has a large bounding extent, clip zero, and model definition 0x81416728;
+its relationship to the visible obstruction still needs confirmation.
+Do not identify it solely by entity address 0x8204BB80: an earlier snapshot
+of this same pool slot contained an NPC. Pool addresses are recycled.
+The generic tracer now records type, tag and model definition explicitly,
+and the runner records the tracer's source hash for future runs.
+
+The two completed 120-second isolated opening runs,
+`60-ship-path-reference` and `native-144-ship-path-native`, each contain
+73 complete entity-list samples. Their existing smoke checks pass, but
+neither reaches the bridge event. Ambient positions at equal wall times
+have different clip phases; those differences are not evidence of a path
+regression. Both used runner SHA-256
+`1cdfe69268a9bdb55ace432c47c94503437f8ff10ed74a74c5770b615a187626`;
+they predate the tracer-hash metadata field. The subsequent
+`60-bridge-reference` run was stopped to return the game to the user and
+is incomplete, not a passing bridge comparison.
+
+Next acceptance requires identifying the visible ship's model and its
+spawn/movement/settling path, then comparing the bridge event at original
+60 Hz and native 144 Hz with isolated data. No speculative position offset
+or asset edit has been applied. Mac behavior is unverified.
+
+The offline timing, entity-trace, float/vehicle translation, audio and CI
+scope checks report 144 passed and one expected failure in 44.21 seconds
+(`logs/native-ship-audit-regressions.log`). The expected failure is the
+previously measured object-rocking cadence gap, not this ship report.
+The Mac backlog integrity check also passes. These tests validate the
+diagnostics and existing covered behaviors; they do not resolve the scene.

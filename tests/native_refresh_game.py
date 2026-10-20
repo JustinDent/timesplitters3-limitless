@@ -17,6 +17,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 from testing_profile import XBE_SHA256, prepare_run, recycle_disks, check_fixture
+from native_entity_trace import snapshot_entities
 
 
 def recycle_captures(run, tag):
@@ -109,6 +110,8 @@ def main():
                         help='bounded function and equipped-weapon tracing for the opening regression')
     parser.add_argument('--trace-camera', action='store_true',
                         help='sample live camera position/direction every half second, including the intro')
+    parser.add_argument('--trace-entities', action='store_true',
+                        help='sample the owned child entity list once a second (16 MiB limit)')
     parser.add_argument('--handoff-watch', choices=('none', 'equipped', 'loadout', 'npc-position'), default='equipped',
                         help='fixed diagnostic address to watch; none samples actors by live lookup only')
     parser.add_argument('--profile', action='store_true')
@@ -123,6 +126,8 @@ def main():
     if args.label and not re.fullmatch(r'[a-zA-Z0-9-]{1,32}',args.label):
         parser.error('--label must contain 1-32 letters, digits or hyphens')
     runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    entity_tracer_sha256=hashlib.sha256(
+        (ROOT/'tools/native_entity_trace.py').read_bytes()).hexdigest()
     if os.name != 'nt': parser.error('Windows only')
     assert hashlib.sha256((ROOT / 'private/game/default.xbe').read_bytes()).hexdigest() == XBE_SHA256
     run = ROOT / 'private/test-saves/high-refresh'
@@ -180,6 +185,7 @@ def main():
     profiler = None
     threads = []
     states=[];resources=[];native_samples=[];game_samples=[];camera_samples=[];completed=False
+    entity_samples=[];entity_bytes=0;entity_trace_limited=False
     terminated_by_runner=False
     def drain(pipe, path):
         with path.open('wb') as output:
@@ -228,6 +234,11 @@ def main():
             value=ctypes.c_int16()
             assert kernel.ReadProcessMemory(handle,address+0x10000,ctypes.byref(value),2,None)
             return value.value
+        def read_bytes(address, size):
+            values=(ctypes.c_ubyte*size)()
+            if not kernel.ReadProcessMemory(handle,address+0x10000,values,size,None):
+                return None
+            return bytes(values)
         def ammunition(actor):
             # US sub_001B67E0 / sub_001BA220: equipped loadout+0x98,
             # weapon records at actor+0xA4 and +0x1D4, reserve at +0x61E.
@@ -270,7 +281,7 @@ def main():
                     return dict(actor=actor,loadout=word(actor+0x94),
                                 animation=animation(word(actor)))
             return None
-        started=time.monotonic(); skipped=False; next_resource=0
+        started=time.monotonic(); skipped=False; next_resource=0;next_entities=30
         try:
             while time.monotonic()-started < args.seconds:
                 assert process.poll() is None, f'Game exited early: {process.returncode}'
@@ -281,6 +292,19 @@ def main():
                 elapsed=time.monotonic()-started
                 if args.capture:
                     recycle_captures(run,tag)
+                if args.trace_entities and elapsed>=next_entities and not entity_trace_limited:
+                    import json
+                    if word(0x79094c)==2:
+                        snapshot=snapshot_entities(word,read_bytes)
+                        snapshot.update(seconds=round(elapsed,4),ticks=word(0x7de318),
+                                        flags=word(0x7de458))
+                        encoded=json.dumps(snapshot)
+                        entity_bytes+=len(encoded)+2
+                        if entity_bytes<=16*1024*1024:
+                            entity_samples.append(snapshot)
+                        else:
+                            entity_trace_limited=True
+                    next_entities=elapsed+1
                 if args.trace_camera and elapsed > 30:
                     camera=word(0x7b0cc0)
                     if 0x80000000 <= camera < 0x84000000:
@@ -379,6 +403,9 @@ def main():
             resource_sampling=args.resources,presentmon_enabled=bool(args.presentmon),
             intro_skip_requested=not args.no_intro_skip,
             camera_trace=args.trace_camera,camera_samples=len(camera_samples),
+            entity_trace=args.trace_entities,entity_samples=len(entity_samples),
+            entity_tracer_sha256=entity_tracer_sha256,
+            entity_trace_limited=entity_trace_limited,
             handoff_trace=args.trace_handoff,
             handoff_watch=args.handoff_watch if args.trace_handoff else None,
             samples=len(native_samples),gameplay_samples=len(game_samples)),indent=2))
@@ -386,6 +413,8 @@ def main():
         (run/(tag+'-gameplay.json')).write_text(json.dumps(game_samples,indent=2))
         if args.trace_camera:
             (run/(tag+'-camera.json')).write_text(json.dumps(camera_samples,indent=2))
+        if args.trace_entities:
+            (run/(tag+'-entities.json')).write_text(json.dumps(entity_samples))
         if args.capture:
             recycle_captures(run,tag)
         lock.unlink(); recycle_disks(ROOT, run)

@@ -182,6 +182,10 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                  (0x238510,0x23854c),(0x2382b0,0x23833b),
                                  (0x3533f0,0x3533f6),(0x358560,0x358590),
                                  (0x35de60,0x35de66)]),
+    ('native_object_bounce.c', [(0xa84f0,0xa8a97),
+                              (0x151650,0x15178f),(0x153550,0x1535a1),
+                              (0x153650,0x1536a0),(0x153270,0x1533e0),
+                              (0x45390,0x453d0),(0x21910,0x21967)]),
     pytest.param('native_object_rocking.c', [(0xa84f0,0xa8a97),
                                             (0x151650,0x15178f),(0x153550,0x1535a1),
                                             (0x153650,0x1536a0),(0x153270,0x1533e0)],
@@ -202,13 +206,24 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name=='native_object_rocking.c':
+        if harness_name=='native_object_bounce.c':
+            # The CRT register-argument adapter enters the asin kernel:
+            # x / sqrt((1+x)*(1-x)), evaluated with FPATAN. Only this
+            # mathematical service is replaced by host asin in the fixture.
+            for address,expected in [
+                (0x3c9df8,'83ec0cdd1424e87d300000e80d00000083c40cc3'),
+                (0x3c9e29,'3d0000f03f732bd9e8d8c1d9e8d8e2dec9d9fad9f3'),
+            ]:
+                offset=config.va_to_file_offset(address)
+                assert image[offset:offset+len(bytes.fromhex(expected))].hex()==expected
+        if harness_name in ('native_object_rocking.c','native_object_bounce.c'):
             import struct
             constants='\n'.join(
                 f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                 for address in (0x475c78,0x475cc4,0x475cc8,0x475cd4,0x475cdc,
                                 0x475ce8,0x475dbc,0x4783dc,0x47d3a4,0x47d564,
-                                0x47d568,0x47d56c,0x47d570,0x47d574,0x47d578))
+                                0x47d568,0x47d56c,0x47d570,0x47d574,0x47d578,
+                                0x475d28))
         if harness_name=='native_weapon_sound.c':
             import struct
             constants='\n'.join(

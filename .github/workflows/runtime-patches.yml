@@ -177,7 +177,7 @@ jobs:
             tests/texture_nonpak.py tests/texture_variants.py
             tests/test_native_mac_tools.py tests/test_native_mac_launcher.py tests/test_testing_profile.py
             tests/test_native_compiler.py tests/test_audio_timing.py
-            tests/test_frame_clock.py tests/test_native_timing.py tests/test_profile_accept.py
+            tests/test_frame_clock.py tests/test_native_timing.py tests/test_native_entity_trace.py tests/test_profile_accept.py
             tests/test_recomp_float_joins.py tests/test_recomp_vehicle_joins.py
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_terminal_depth.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
             tests/test_xmv_stop.py tests/test_discord_presence.py tests/test_discord_macos.py tests/test_native_crash.py
