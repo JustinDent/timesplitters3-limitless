@@ -191,6 +191,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-054 | Fractional presentation targets and Windows transform setup (issue #167) | Queued |
 | MAC-055 | Persist accepted frontend Controls before quitting Settings | Awaiting validation |
 | MAC-056 | Texture-camera composition alignment (issue #49) | Awaiting validation |
+| MAC-057 | Native fractional updates at 60/120/144 FPS | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -2840,6 +2841,35 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   following U logo at 4:3 and widescreen ratios. Confirm no left black strip,
   clipped picture or shifted mask, then check normal HUD and terminal cameras.
 - **PC evidence:** See the issue #49 section in STATUS.md.
+
+### MAC-057 — Native fractional updates at 60/120/144 FPS
+
+- **Status:** Awaiting validation
+- **Behavior:** Opt-in `TSFP_NATIVE_FPS` / `native_fps` runs fresh title updates
+  and rendering at a 60/120/144 target, disables interpolation, and retains the
+  60 Hz console interrupt clock. Fractional motion deltas, integer-timer
+  remainders, pause/resume and bounded catch-up share one implementation.
+- **Source:** local development checkpoint on `feature/native-144-fps`: `pc_native_timing*.h`,
+  `pc_native_timing_guest.inc`, `pc_native_rate.h`, `pc_native_numeric.h`,
+  additive native timing/numeric/animation-scope/input/script-event/decay patches and
+  `tests/test_native_timing.py`, including execution of the original US script
+  and NPC/player dispatchers and animation-event readers. Usage is in
+  `docs/native-high-refresh.md`.
+- **Existing Mac support:** The guest hooks and numeric conversion policy are
+  compiled by the shared title build, and the Mac entry point suppresses its
+  default interpolation multiplier when native mode is requested. No second
+  timing model or higher-frequency console clock was introduced.
+- **Remaining adaptation:** Validate compilation, waitable-timer behavior,
+  common Vulkan and legacy GL rendering on actual Apple Silicon. Integrate a
+  native launcher selector after game-speed and pacing acceptance; its current
+  `--fps` option still selects the established interpolated path.
+- **Acceptance:** Run portable timing/numeric/ABI tests, then isolated Story,
+  Arcade, Challenge, split-screen, vehicle, cutscene/movie, recorded-demo and
+  network sessions at 60/120/144. Compare actual movement, animation, weapon
+  cadence, pause, saves and clock speed; measure update/present intervals
+  separately from monitor scanout and perceived smoothness. Do not claim
+  full-game or native Mac validation from the Windows first-mission run.
+- **PC evidence:** [Native high refresh development](STATUS.md#native-high-refresh-development-2026-10-20).
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 

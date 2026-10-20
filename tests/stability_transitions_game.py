@@ -24,6 +24,9 @@ from testing_profile import prepare_run,recycle_disks,check_fixture,XBE_SHA256,s
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-name',default='stability-transitions')
+    parser.add_argument('--native-fps',type=int,choices=(60,120,144))
+    parser.add_argument('--manual-start',action='store_true')
+    parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
     args=parser.parse_args()
     assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
     assert os.name=='nt'
@@ -40,6 +43,10 @@ def main():
         RECOMP_WINDOW_BACKGROUND='1',RECOMP_PC_MOUSE='1',TSFP_DISCORD_CONFIG=str(run/'discord.ini'),
         RECOMP_HLE_D3D8_DUMP=str(run/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='120',
         RECOMP_HLE_D3D8_DUMP_KEEP_LAST='3',RECOMP_FPS='5',RECOMP_INTERP_DEBUG='1')
+    if args.native_fps:
+        env.update(TSFP_NATIVE_FPS=str(args.native_fps),RECOMP_FRAME_TARGET='0',RECOMP_FRAME_INTERP='1',
+                   TSFP_NATIVE_TRACE=str(run/'native-frames.csv'))
+    if args.manual_start: replay.write_text('')
     def profiles():
         result={}
         for profile in (run/'saves/UserData/45410066').glob('*/tsftrpft'):
@@ -62,7 +69,9 @@ def main():
     def snapshot():
         pointer=word(0x761C48)
         return dict(pid=process.pid,scene=word(0x79094C),flags=word(0x7DE458),
-            paused=word(pointer)&1 if pointer else 0,mission=word(0x78AD48))
+            paused=word(pointer)&1 if pointer else 0,mission=word(0x78AD48),
+            held=word(0x6B93DC),pressed=word(0x6B93E0),previous=word(0x6B9408),
+            raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944))
     def drain(pipe,path):
         with path.open('wb') as out:
             left=4*1024*1024
@@ -103,7 +112,7 @@ def main():
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)
-        while time.monotonic()-start<600:
+        while time.monotonic()-start<args.seconds:
             assert process.poll() is None,'Unexpected game exit'
             elapsed=time.monotonic()-start
             if elapsed>=next_sample:
@@ -115,7 +124,7 @@ def main():
                 assert len(command.get('keys',[]))<=16 and 0.1<=command.get('gap',.7)<=4
                 assert 0<=command.get('wait',2.5)<=30
                 budget=len(command.get('keys',[]))*(.18+command.get('gap',.7))+command.get('wait',2.5)
-                if elapsed+budget+(22 if command.get('restart') else 0)>600:break
+                if elapsed+budget+(22 if command.get('restart') else 0)>args.seconds:break
                 if command.get('stop'):break
                 if command.get('restart'):
                     before=profiles();close()

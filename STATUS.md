@@ -1,5 +1,163 @@
 # Measured progress
 
+## Native high refresh development (2026-10-20)
+
+Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
+development checkpoint is local to this branch. This is an opt-in path, not a
+published release or a full-game 144 FPS certification.
+
+- Active goal now includes texture fluidity, smooth animations, and regression
+  verification for previously addressed bugs. The acceptance criteria are in
+  [the native high-refresh goal](docs/native-high-refresh.md#goal-and-acceptance-criteria).
+  Previous test results below describe their measured scope; they do not verify
+  every historical fix or establish full-game correctness.
+- Further no-stress comparisons isolated slow NPC translation: original 60
+  equips at 73.063 s versus native 144 at 89.578 s; comparable walk segments
+  cover 3.020 versus 1.240 world units/s. The NPC dispatcher was skipping
+  fractional frames at its `0x15EB0C` whole-tick pause gate. That exact load
+  now uses the live fractional delta. **10 native timing tests pass**, including
+  execution of the original NPC dispatcher to check elapsed timers, callback
+  cadence, pause/resume and ABI preservation. Windows Release and its built-in
+  checks pass. A 120-second native 144 test with intro skip, movement/firing
+  replay and pause/resume now passes every runner check: first firearm at
+  **72.063 s**, versus **73.063 s** in the earlier original-60 reference.
+  Matching walk-clip spans measure **3.030 versus 3.038 world units/s**
+  (0.26% difference). This repairs the skipped-intro opening regression in
+  this bounded test. A following 300-second unskipped run also restores the
+  handoff (first firearm at 182.125 s); matching original cinematic timing
+  and broader scene acceptance remain open.
+  NPC-stage executable SHA-256:
+  `614eec11e1896273a4424988893b0a298122149c494136c159c26f9f7fb9c5d5`.
+  Evidence: `native-npc-dispatch-comparison.json` and
+  `native-npc-144-handoff-validation.json` in `private/test-saves/high-refresh`;
+  build/runtime logs use `logs/native-npc-dispatch-*`.
+- The player movement audit reproduced a separate slowdown (about 2.6 versus
+  6.25 world units/s). Its exact pause gate now permits fractional updates,
+  with the adjacent per-update damping changed to preserve its original
+  half-life. The original player routine's timer/damping test passes at all
+  three target rates: **11 timing tests**, **352 recompiler tests and 87
+  subtests** (41 skips). The player build passes its Windows checks and
+  120-second original-60/native-144 stress replays. Steady walking measures
+  **6.255 versus 6.258 world units/s**, within **0.05%**; both runs consume
+  **32 rounds** with matching sampled ammunition totals and pass handoff,
+  animation and pause/resume checks. Exact shot timing, collision/acceleration
+  and other scenes/weapons remain open. Current executable SHA-256:
+  `a52dc8bbd81f92f27d203cce27ac05fec8ee9f507863106ad7831493660736b6`.
+  See `native-player-comparison.json` in the isolated high-refresh test
+  directory and `logs/native-player-*`. The same build also passes native
+  **60 and 120 FPS** replays with steady speed within 0.05% of the original
+  reference and the same final ammunition. The refreshed suites pass:
+  **91 prior-fix tests** (62.53 s), **20 patch-transition tests** (320.26 s)
+  and **11 timing tests**. These establish the recorded scope, not all
+  historical bug scenes or full-game/native-Mac correctness.
+- The combined prior-fix, timing and patch-transition suite passed **120 tests
+  in 404.79 s** before the NPC-gate addition, recorded in
+  `logs/native-script-events-regressions.log`. Full-game and Mac coverage
+  remain open.
+- **Earlier script-only repair:** initial native 144 FPS captures showed unarmed
+  hands without firearm/HUD, while the original 60 FPS reference equips weapon
+  ID 14 by about 80 seconds. Further sampling shows movement and hand animation
+  can progress in native mode, narrowing the issue to the opening handoff rather
+  than a completely frozen animator. Native timing at 60 FPS also reaches
+  firearm/HUD gameplay. A subsequent script-event repair now reaches the gun,
+  HUD and next objective at native 144, but first equips at **93.579 s** versus
+  **73.047 s** in the original reference. The stress-window handoff requirement
+  failed on that earlier build; the NPC-gate result above supersedes it.
+- The US level-script dispatcher skipped fractional frames with zero whole
+  ticks, losing animation-event crossings. Its one pause-gate load now uses
+  the live fractional delta without changing integer timers. A compiled test
+  executes the original dispatcher, first-mission handoff and event readers:
+  the old gate misses phases; the repair catches all twelve phases exactly
+  once. **Nine timing tests**, plus **352 recompiler tests and 87 subtests**
+  pass (41 skips). Windows Release build and its built-in checks pass.
+  Script-only executable SHA-256:
+  `f74f5b15364a1d742a37c6e7cd8500cf665c19ab949127329954b174e6ee6006`.
+- The earlier script-only 120-second stress run passes movement, hand-animation progress,
+  pause/resume and eventual firearm equip, but fails equip-before-stress.
+  A runner summary-key collision initially hid that failure in JSON while
+  the terminal assertion failed. New runners keep the two criteria distinct;
+  the corrected historical assessment is
+  `private/test-saves/high-refresh/native-script-events-analysis.json`.
+  See [the script-event evidence](docs/native-high-refresh-regressions.md#fractional-script-event-repair).
+- Strengthened the isolated runner with player position, body/hand/weapon clip
+  times, equipped weapon and action observations. First-mission stress checks
+  now require movement, advancing/changing hand animation and weapon ID 14;
+  Story flags or unarmed punching cannot alone pass. Timing/observation unit
+  checks pass **eight cases**. Natural-intro runs have a distinct evidence tag,
+  and new validation records identify both runner and executable hashes.
+- Existing-fix checks passed **91 tests** in 61.83 seconds for vehicle/float
+  joins, terminal depth, camera feeds, objectives health, profile/menu input,
+  audio, automatic look, texture loading, letterboxing and channel clears.
+  This is source-contract coverage, not all affected scenes at native 144 FPS.
+  The [regression record](docs/native-high-refresh-regressions.md) lists the
+  coverage and outstanding scene/platform checks.
+- A 300-second native 144 run let the cinematic finish naturally. Story-player
+  observations span 157.609 to 299.734 seconds; equipped weapon changes from
+  absent to unarmed ID 37 at 180.640 seconds and never becomes firearm ID 14.
+  The handoff failure therefore also occurs without skipping. The old runner's
+  metadata passes only its coarse scene/native/no-crash checks; separate
+  post-run handoff checks pass for original 60 FPS and fail for native 144.
+  New runner versions enforce this check for any run with at least a minute of
+  Story observations, including runs without stress inputs. Evidence is in
+  `logs/native-144-natural-intro-complete.log` and ignored
+  `private/test-saves/high-refresh/*-handoff-analysis.json`.
+- Added a shared native update clock at 60/120/144 FPS targets, fractional
+  motion deltas, remainder-carrying integer timers, pause/resume and bounded
+  catch-up. The title's update routine no longer waits for a whole console
+  tick in this mode. The console ISR remains at 60 Hz; interpolation and its
+  redraws are disabled. Normal launch behavior and personal preferences remain
+  unchanged. `Play-Native.cmd` supplies temporary launch overrides.
+- Added an optional numeric policy to the generic recompiler, with ordinary
+  x86 conversion as its default. The title policy routes floating-point reads
+  of the two frame deltas to their adjacent fractional fields. Other integer
+  reads/counters stay in original units. Frozen animation evaluation restores
+  the incoming fractional delta rather than reconstructing it from an integer.
+- A zero-tick input regression was reproduced in the US frontend: an input
+  probe observed a confirm edge on a zero-tick frame, then no edge on the next
+  whole tick. The title hook now retains the original button sampling cadence
+  and clears consumed edges between those samples. Tests cover all twelve
+  phases of 144:60, stack balance, held/released state and one delivery per
+  press. Raw mouse look remains independent of the button gate.
+- Validation host: Windows 11 Pro x64 `10.0.26300`, MSVC `19.44.35224.0`, D3D11,
+  NVIDIA RTX 4070 SUPER driver `32.0.16.1742`; desktop `3440x1440` at 144 Hz.
+  The supported XBE SHA-256 was verified, and the runtime stays pinned to
+  `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. Full Windows Release build and its
+  built-in input/settings/display/network/texture/crash-policy checks passed.
+- The broader source regression run passed **130 tests**, with one Mac-only
+  skip, before the final button hook. After that hook, **24 targeted checks**
+  passed, including native timing/edges and fresh/historical/idempotent patch
+  transitions. The final timing/statistics unit run passed all six cases.
+  Native Mac compilation, GPU/runtime checks and remote CI were not run here;
+  shared implementation is recorded as MAC-057 awaiting validation.
+- The final 120-second isolated 144-target run passed its startup, Story-state,
+  pause/resume, native-hook/no-interpolation and no-crash assertions. It replayed
+  camera turns, movement keys and firing. The final presentation report showed
+  **15,900 guest presents, zero interpolated presents, zero skipped/failed
+  presents** at its last 300-present report. The runner terminated the child
+  at its time limit; its raw process exit code is not a gameplay-test result.
+- In 7,755 unpaused Story CPU update intervals after the first 60 seconds,
+  measured mean was **137.630 updates/s** over 56.3469 seconds; interval median
+  **7.0230 ms**, p95 **9.6025 ms**, p99 **11.8535 ms**, worst **31.9153 ms**.
+  Game-clock accumulation was **1.000000 game seconds per wall second**. This
+  was a 1280x720 windowed test with CSV tracing and periodic renderer captures;
+  it does not establish constant 144 FPS, monitor scanout or input latency.
+  Earlier lighter intervals averaged about 143 FPS; the complete stressed
+  sample above is the retained performance result.
+- Local evidence: `logs/native-144-build.log`,
+  `logs/native-144-final-regressions.log`, `logs/native-144-input-regressions.log`,
+  `logs/native-144-final-game.log`, `logs/native-144-update-stats.json`, and
+  `private/test-saves/high-refresh/native-144-{frames.csv,timing.json,validation.json}`.
+  Test saves/configs were isolated and disposable disks recycled; the canonical
+  Test Lab fixture and personal data were preserved. These local files and
+  captures are ignored, not bundled in the source commit.
+- Remaining acceptance: fix the opening animation regression, visually compare
+  animation/camera and animated texture behavior with the original timing,
+  verify previous fixes, actual movement/weapon cadence and physical input,
+  other levels/modes, scripted cinematics/demos, vehicles, split-screen,
+  multiplayer synchronization and a full campaign. Source timing checks and
+  scene flags alone do not establish complete gameplay or perceptual smoothness.
+  See [usage and limits](docs/native-high-refresh.md).
+
 ## Mac launcher translocation recovery (2026-10-19)
 
 Prepared on `codex/mac-launcher-translocation` from main `b7a0630`, in the commit

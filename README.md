@@ -140,6 +140,11 @@ For a local development build, `Play-Smooth.cmd` temporarily selects 144 FPS;
 `Play-Smooth.cmd 120` selects 120 FPS. Published builds require a runtime update
 containing these changes.
 
+The `feature/native-144-fps` development branch also provides
+[`Play-Native.cmd`](docs/native-high-refresh.md) for experimental fresh game
+updates at up to 144 FPS with interpolation disabled. Game-speed and
+full-campaign validation remain incomplete; this mode is an explicit opt-in.
+
 Optional Windows [Discord Rich Presence](docs/discord-presence.md) shows the
 current game mode and session timer. Enable it in **Game settings → Discord**
 with the Discord desktop app running. Fresh installs leave it off.
