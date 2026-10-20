@@ -6,6 +6,18 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Source now supplies fractional level time to the audited screen-distortion
+  read. Direct clock stores update a shared fractional offset, explicit
+  reset/demo/network writes rebase it, and render calls only sample it.
+  Guest integer clocks are unchanged. The original-code fixture exercises
+  this implementation: native-144 repeated outputs fall from 672 to 44 of
+  1,152, matching the exact fractional probe and original tick-boundary data.
+  All nine original direct stores have ABI/rebase checks; the model covers
+  pause, skipped updates, carry across reset, catch-up and long-run drift.
+  All 146 shared checks pass. Full Windows build/live checks are pending;
+  the user's running `8893ba8` build is unchanged. Actual Mac validation and
+  complete replay/network/level lifecycle acceptance remain open.
+  [Fractional clock correction](docs/native-high-refresh-regressions.md#fractional-screen-distortion-clock).
 - An offline original-code screen-distortion audit reproduces a remaining
   visual timing limit: 672 of 1,152 native-144 mesh updates repeat over eight
   game seconds. A test-only fractional absolute-time probe reduces repeats
@@ -13,8 +25,8 @@ published release or a full-game 144 FPS certification.
   Integer pixel coordinates account for the residual quantization. Reset/
   rebase sampling, paused sampling and two player-view selections are covered
   as consumer checks; actual clock lifecycle integration is still required.
-  All 139 shared checks pass on Windows. This is evidence for the next
-  correction, not a shipped fix or GPU test.
+  All 139 shared checks passed on Windows. This was evidence for the source
+  correction above, not a GPU test.
   The interactive `8893ba8` build is unchanged.
   [Distortion audit](docs/native-high-refresh-regressions.md#screen-distortion-absolute-time-audit).
 - Current build `8893ba8` corrects a reproduced MapMaker light-preview regression:

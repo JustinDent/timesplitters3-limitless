@@ -14,7 +14,7 @@ class ObjectRockingQuantization(AssertionError):
 
 
 @pytest.mark.parametrize('source', ['native_timing.c', 'native_timing_guest.c',
-                                    'native_projectile_scope.c'])
+                                    'native_projectile_scope.c', 'native_visual_time.c'])
 def test_native_timing(source, tmp_path):
     compiler, environment = native_compiler(tmp_path)
     runtime = ROOT / 'external/ts3FPrecomp/src'
@@ -34,7 +34,7 @@ def test_native_timing(source, tmp_path):
 
 
 @pytest.mark.parametrize('encoding,helper', [
-    ('f30f2a0544794e00', 'RECOMP_I32_TO_F32'),
+    ('f30f2a0544794e00', 'RECOMP_I32_TO_F32_AT'),
     ('f20f2a0544794e00', 'RECOMP_I32_TO_F64'),
     ('db0544794e00', 'RECOMP_I32_TO_F64'),
 ])
@@ -45,8 +45,25 @@ def test_generated_numeric_conversion(encoding, helper):
     raw = bytes.fromhex(encoding)
     instructions = Disassembler().disassemble_function(raw, 0x1000, 0x1000 + len(raw))
     code = '\n'.join(Lifter().lift_instruction(instructions[0]))
-    assert helper + '(0x4E7944,' in code
+    assert helper + ('(0x1000, 0x4E7944,' if helper.endswith('_AT') else '(0x4E7944,') in code
     assert 'MEM32(0x4E7944)' in code
+
+
+@pytest.mark.parametrize('encoding,observed', [
+    ('a318e37d00', True),             # mov [absolute],eax
+    ('c70518e37d0000000000', True),   # mov [absolute],immediate
+    ('8903', False),                 # mov [ebx],eax: not a direct global
+    ('a218e37d00', False),           # mov [absolute],al: not 32-bit
+    ('64a300000000', False),         # mov fs:[0],eax: not title memory
+])
+def test_global_store_observation_scope(encoding, observed):
+    sys.path.insert(0, str(ROOT / 'external/ts3FPrecomp'))
+    from tools.recomp.disasm import Disassembler
+    from tools.recomp.lifter import Lifter
+    raw=bytes.fromhex(encoding)
+    instruction=Disassembler().disassemble_function(raw,0x1000,0x1000+len(raw))[0]
+    code='\n'.join(Lifter().lift_instruction(instruction))
+    assert ('RECOMP_STORE_GLOBAL_U32(0x1000, 0x7DE318,' in code)==observed
 
 
 def test_native_update_statistics():
@@ -174,6 +191,11 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 
 
 @pytest.mark.parametrize('harness_name,ranges', [
+    ('native_visual_time_guest.c', [(0x43595,0x4359c),(0x670e8,0x670ef),
+                                    (0x688bb,0x688c1),(0x68f8e,0x68f94),
+                                    (0x691f3,0x691f9),(0x69239,0x6923f),
+                                    (0x69265,0x6926b),(0x69325,0x6932c),
+                                    (0x357939,0x35793f)]),
     ('native_screen_distortion.c', [(0xf9700,0xf9b0b),(0xf8aa0,0xf8ac4),
                                     (0x153c20,0x153c57),(0x12010,0x12017)]),
     ('native_light_preview.c', [(0x116130,0x1163f5)]),
@@ -250,6 +272,18 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
+        if harness_name=='native_visual_time_guest.c':
+            # Execute each real direct clock store. Append RET at the next
+            # instruction; this tests store dispatch/ABI, not enclosing paths.
+            expected={0x43595:'891518e37d00',0x670e8:'891d18e37d00',
+                      0x688bb:'a318e37d00',0x68f8e:'a318e37d00',
+                      0x691f3:'a318e37d00',0x69239:'a318e37d00',
+                      0x69265:'a318e37d00',0x69325:'893518e37d00',
+                      0x357939:'a318e37d00'}
+            for start,end in ranges:
+                a,b=config.va_to_file_offset(start),config.va_to_file_offset(end-1)
+                assert image[a:b].hex()==expected[start]
+                image=image[:b]+b'\xc3'+image[b+1:]
         if harness_name in ('native_screen_distortion.c','native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
@@ -414,6 +448,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_rocking_guest.h").as_posix()}"')
                            .replace('/* LIGHT_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_light_guest.h").as_posix()}"')
+                           .replace('/* VISUAL_TIME_POLICY */',
+                                    f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
     if harness_name in ('native_light_preview.c','native_screen_distortion.c'):print(output)

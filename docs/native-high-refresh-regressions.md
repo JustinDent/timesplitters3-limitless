@@ -1518,6 +1518,59 @@ Runtime build `8893ba8` is unchanged;
 no rebuild or gameplay interruption is needed for this test-only audit.
 Actual Mac execution and live distortion visuals remain unverified.
 
+## Fractional screen-distortion clock
+
+Following the preceding reproduction, shared source now tracks the fractional
+difference between continuous elapsed level time and the original integer
+clock. `src/pc_native_visual_time.h` owns that model;
+`src/pc_native_visual_time_guest.inc` observes the six ordinary direct clock
+increments and the three direct initialization/demo/network stores through
+an additive `*-native-visual-time.patch`. Store values and integer mechanics
+are unchanged. Ordinary increments consume the live float delta at the store;
+explicit rebases clear the fractional difference, even for same-value writes.
+A branch that does not write the clock does not advance this state.
+
+The shared lifter adds a default identity policy for direct 32-bit global MOV
+stores and an instruction-address-aware integer-to-float conversion policy.
+Only stores to `0x7DE318` and the audited read at `0xF9726` use the new title
+logic. Other stores/conversions and the original inactive-native path retain
+their values. Render callbacks sample the clock; they do not accumulate time
+per view or call. A different unobserved clock value falls back to its original
+integer and rebases the next observed increment. Same-value indirect writes
+cannot be distinguished this way; the known lifecycle sites are explicit
+direct stores, but complete live lifecycle coverage remains required.
+
+The complete original distortion fixture now compares three paths: original
+whole time, an exact fractional probe, and the production store/sample policy.
+The production policy matches the probe's repeated-output counts in all six
+normal/quarter-speed 60/120/144 cases above, including **44 repeated outputs
+instead of 672 at native 144** over eight game seconds. Original whole-tick
+mesh/draw packets match exactly in those sequences. Integer pixel coordinates
+still limit very small changes. Additional original-code checks cover paused
+sampling, rebase/seek sampling and two player-view selections at the same time.
+
+`tests/native_visual_time_guest.c` executes all nine original store
+instructions from the pinned XBE, with a RET appended after each store. It
+checks exact guest integer values, stack/callee-saved/FPU state, fractional
+increments, catch-up, paused increments, same-value rebases, inactive-native
+behavior and non-target numeric reads. These slices test store dispatch;
+they do not execute the full enclosing state machines or network/replay code.
+`tests/native_visual_time.c` additionally checks skipped-update/view sampling,
+resets across a whole-tick carry, stale-positive-whole pause, mismatched or
+unknown writes, signed-clock wrap and invalid-delta fallback. Accumulating
+float deltas with a double offset has less than 0.006 tick drift over the
+synthetic one-hour 144-Hz case (under 0.1 ms). That is a model measurement,
+not a wall-clock runtime measurement.
+
+All 146 shared timing, float/vehicle-join, CI-scope and backlog checks pass on
+Windows x64/MSVC (`logs/native-visual-time-shared.log`, 71.87 seconds).
+The store slice and distortion fixture are registered in the existing shared
+native timing suite. Patch-upgrade and full Windows build/live validation
+remain pending at this source checkpoint. The user's interactive `8893ba8`
+process is unchanged. Actual Mac execution, live distortion visuals, full
+replay/network/level lifecycle behavior and world texture animation remain
+unverified; this correction does not close the full high-refresh goal.
+
 ## Bridge-crash placement investigation
 
 The user reports a later ship crash intruding into the playable canyon,

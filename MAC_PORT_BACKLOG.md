@@ -3131,7 +3131,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   No platform adapter or host cache is added. The full Windows build, 138
   shared checks, 21 patch-upgrade checks and two-minute native-144 Story smoke
   pass. Actual Mac compilation and live MapMaker visual acceptance remain pending.
-- **Screen-distortion absolute-time audit (local, test only):**
+- **Fractional screen-distortion clock (local source):**
+  `src/pc_native_visual_time.h`, `pc_native_visual_time_guest.inc`, the numeric
+  policy and additive `*-native-visual-time.patch` observe direct level-clock
+  stores without changing guest integers. Continuous increments accumulate
+  live fractional time; explicit overrides rebase even for same-value writes.
+  Only the audited distortion read at `0xF9726` samples the new time. This is
+  shared title logic with no new platform adapter. All 146 shared checks pass
+  on Windows; all nine original direct store instructions and the complete
+  original distortion mesh/draw routine are exercised. Actual Mac builds,
+  live effects and complete level/replay/network lifecycle checks are pending.
+- **Screen-distortion absolute-time audit (`4ed4779`, local):**
   `tests/native_screen_distortion.c` executes the complete original mesh/draw
   routine, original grid-size selector and sine-table initialization/helper.
   Graphics services are spies; controlled grid/viewport inputs are explicit.
