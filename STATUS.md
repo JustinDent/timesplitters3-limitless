@@ -1,5 +1,32 @@
 # Measured progress
 
+## Texture batch 192: small props and exact-alpha lamp (2026-10-20)
+
+Issue #74: eight built-in prop drafts, two accepted lamps and six held for
+invented hardware, altered mounting/grille/slot layout, brightness or alpha-to-RGB
+misalignment. Accepted sources are 1254x1254, Lanczos-resampled to 256x256 with
+full mip chains. Headlamp is DXT1; guarded warm lamp uses lossless RGBA8 with
+SHA256-verified original alpha restored after bilinear scaling. Its installed
+base alpha matches that reference byte-for-byte. Not native 4K source artwork.
+
+Checkerboard review caught displaced chain rings and green-lamp frames: restoring
+original alpha alone leaves missing RGB and is not sufficient for acceptance.
+Their drafts remain uninstalled. Inspected 32 additional original RGB/alpha
+pairs, bringing visual classification to 3,433 keys; this does not complete
+category review or uncataloged/embedded discovery.
+
+Windows offline structural checks cover 1,255 installed files: two new native
+DDS-reader passes, 1,253 unchanged prior-audited hashes, unchanged checker, and
+full Python hash/dimension/aspect/mip-byte checks. Coverage is 18.42% of
+6,812 cataloged keys; 5,453 need art and 104 drafts are held. Pack including
+metadata is 1,045,285,707 bytes (996.86 MiB), a 394,795-byte increase;
+temporary output is 164.79 MiB. Storage caps hold; 512 MiB residency policy
+is unchanged and was not runtime-measured.
+
+Private evidence: `review/hybrid-192-acceptance.json` and its linked records.
+No game launch, Mac scene check or GPU residency validation. MAC-011 remains
+Awaiting validation. This local #74 checkpoint publishes no artwork.
+
 ## Texture batch 191: correction acceptance and original triage (2026-10-20)
 
 Issue #74: eight built-in image corrections, four accepted after original and

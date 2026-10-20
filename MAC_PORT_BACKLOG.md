@@ -1115,6 +1115,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 192 (2026-10-20, commit carrying this entry): two private lamp
+  replacements, including RGBA8 with exact resampled original alpha; 1,255
+  installed and 3,433 original keys visually classified. Existing shared
+  DXT1/RGBA8 support needs no adapter change. Windows offline checks do not prove
+  Mac scene/alpha or residency behavior; status stays Awaiting validation. See
+  [batch 192 evidence](STATUS.md#texture-batch-192-small-props-and-exact-alpha-lamp-2026-10-20).
+
 - Texture batch 191 (2026-10-20, commit carrying this entry): four private DXT1
   corrections accepted; 1,253 installed and 3,401 original keys visually
   classified. Existing shared format support needs no adapter change. Windows
