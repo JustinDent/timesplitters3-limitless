@@ -46,15 +46,16 @@ namespace TimeSplitters.Launcher
             }
             Core.Require(Core.Hash(runningExecutable).Equals(files[Core.LauncherName], StringComparison.OrdinalIgnoreCase),
                 "This folder contains a different launcher build. Open the app in that folder directly, or choose the folder for this download.");
-            // Test the actual metadata directory when it already exists. A
-            // unique DeleteOnClose probe cannot replace an existing user file.
+            // Both the installation and any existing metadata directory must be
+            // writable. Unique DeleteOnClose probes cannot replace user files.
             string metadata = Core.PathIn(root, ".launcher");
             Core.Require(!File.Exists(metadata), "A file named .launcher blocks this installation. Keep it for inspection and choose another extracted launcher folder.");
-            string probe = Core.PathIn(root, (Directory.Exists(metadata) ? ".launcher/" : "") +
-                ".tsfp-write-check-" + Guid.NewGuid().ToString("N"));
             try {
-                using (var stream = new FileStream(probe, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1, FileOptions.DeleteOnClose))
-                    stream.WriteByte(0);
+                foreach (string prefix in Directory.Exists(metadata) ? new[] { "", ".launcher/" } : new[] { "" }) {
+                    string probe = Core.PathIn(root, prefix + ".tsfp-write-check-" + Guid.NewGuid().ToString("N"));
+                    using (var stream = new FileStream(probe, FileMode.CreateNew, FileAccess.Write, FileShare.None, 1, FileOptions.DeleteOnClose))
+                        stream.WriteByte(0);
+                }
             } catch (IOException) {
                 throw new IOException("This folder is read-only. Move the whole installation to a writable folder you own, then select it again.");
             } catch (UnauthorizedAccessException) {

@@ -121,6 +121,11 @@ namespace TimeSplitters.Launcher
             Reject(() => NativeInstallation.ValidateFolder(root, executable));
             File.WriteAllText(Core.PathIn(root, Core.AppPath), "plist");
             string metadata = Core.PathIn(root, ".launcher");
+            var rootMode = File.GetUnixFileMode(root);
+            try {
+                File.SetUnixFileMode(root, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+                Reject(() => NativeInstallation.ValidateFolder(root, executable));
+            } finally { File.SetUnixFileMode(root, rootMode); }
             var mode = File.GetUnixFileMode(metadata);
             try {
                 File.SetUnixFileMode(metadata, UnixFileMode.UserRead | UnixFileMode.UserExecute);
