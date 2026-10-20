@@ -2962,6 +2962,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   stack-fragment cases were added to `src/native/prompt_selftest.inc` but
   require an actual host run. This source change applies to both fixed-60 and
   native-refresh paths; it does not alter text formatting or wrapping.
+- **Offline network-hook overhead:** `pc_network_bots_guest.inc` and
+  `pc_network_bots_lobby.inc` reject ineligible guest modes/actors before reading
+  host network settings. Eligible calls still read live settings; no transport
+  or environment cache is introduced. Windows guest-dispatch and original
+  result-builder checks cover this ordering. The existing Mac fallback is
+  unchanged and covered by the portable ABI test; actual Mac play and the
+  queued MAC-013 transport remain unverified.
 - **Existing Mac support:** The guest hooks, update clock and numeric conversion
   policy are compiled by the shared title build. The Mac entry point reports
   the opt-in native rate; normal play retains main's fixed-60 default. No second

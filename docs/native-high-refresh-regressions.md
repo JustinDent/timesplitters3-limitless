@@ -525,3 +525,54 @@ Run labels are `60-natural-intro-handoff-none-camera-track` and
 `native-144-natural-intro-handoff-none-camera-track-final`. These half-second
 observations establish exercised track progression and completion, not
 per-frame visual smoothness, full cinematics or full-game acceptance.
+
+## Offline network callback overhead
+
+The previous CPU profile found repeated environment lookups in
+`pc_network_enabled`. Bot animation, bounds, activity, damage and frame hooks
+queried it before checking guest eligibility, including ordinary offline
+actors. `pc_network_bots_guest.inc` and `pc_network_bots_lobby.inc` now reject
+ineligible states/actors first. Eligible callbacks still query live settings;
+the transport and ready-file polling implementation are unchanged.
+
+The guest-dispatch fixture counts network queries across offline animation
+and combat callbacks while checking original-call count, return value, stack
+and pose argument preservation. It also switches the enabled result between
+eligible actor calls to check that it remains live. Existing host/guest bot
+behavior, movement cadence, original result-builder and native fallback tests
+pass. The compiler fixture now uses the common MSVC discovery helper rather
+than silently skipping when `cl` is absent from the shell PATH. These tests
+are registered in the Windows/macOS runtime workflow; actual Mac execution
+and network transport remain pending. The combined network, CI-scope and
+backlog selection has 71 passes in `logs/native-network-guards-tests.log`.
+The complete Windows build and built-in checks pass in
+`logs/native-network-guards-build.log`.
+
+Two isolated 120-second native-144 runs use the same runner
+`16065fa19dff50563a80b802d7b6f15789dbc032a3e0690131a1e4f9a68a35d0`,
+with walking, firing, turning, pause/resume and handoff sampling. Neither
+uses captures, profiler, resource sampling or PresentMon. Both pass all
+reported behavioral checks. Unpaused Story intervals from 85 seconds:
+
+| Measure | Before | After |
+| --- | ---: | ---: |
+| Observed duration | 34.3333 s | 34.4999 s |
+| CPU updates | 4,740 | 4,837 |
+| Mean updates/s | 138.059 | 140.203 |
+| p50 interval | 7.0444 ms | 7.0153 ms |
+| p95 interval | 9.0831 ms | 8.4934 ms |
+| p99 interval | 10.1881 ms | 9.3970 ms |
+| Maximum interval | 13.3604 ms | 10.9974 ms |
+| Game seconds / wall second | 1.0 | 1.0 |
+
+The baseline executable is
+`2389e61f7d36d789984ff3575ed26040953118c1a258ac12ae361b96e8ef0b46`
+(overlay checkpoint `a83cf05`); the revised executable is
+`a920df05eb37f18c2247ebb233a074d98cb591f8672eb7104961573705f612c7`.
+Run labels are `native-144-handoff-none-network-guards-before` and
+`native-144-handoff-none-network-guards-after`. Trace hashes, source hashes
+and validation results are retained in
+`private/test-saves/high-refresh/native-network-guards-comparison.json`.
+This single comparison is encouraging but does not establish repeatability,
+GPU/scanout timing, full-game coverage or sustained 144 FPS. The direct XNet
+dispatch still checks host settings; no persistent environment cache was added.

@@ -6,6 +6,18 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Offline actor hooks now reject ineligible guest states before checking host
+  network settings. A fresh 120-second native-144 before/after pair passes
+  movement, firing, hand-animation, pause/resume and presentation checks.
+  From 85 seconds onward, unpaused Story CPU updates average **138.059 before
+  / 140.203 after**, with p95 **9.0831 / 8.4934 ms** and p99
+  **10.1881 / 9.3970 ms**. Both game clocks advance at 1.0 seconds per wall
+  second. This is one comparison, not a repeatability or sustained-144 claim.
+  Patch validation, Windows Release/built-in checks and 71 focused network,
+  CI-scope/backlog checks pass. Final executable SHA-256:
+  `a920df05eb37f18c2247ebb233a074d98cb591f8672eb7104961573705f612c7`.
+  Evidence and remaining limits are in
+  [the regression record](docs/native-high-refresh-regressions.md#offline-network-callback-overhead).
 - Overlay follow-up: native mode shows its selected `target 60/120/144`
   instead of the original console cap. Offline RTT is hidden; network RTT
   remains available. Full patch-stack validation, Windows Release and built-in

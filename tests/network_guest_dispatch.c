@@ -18,7 +18,8 @@ static int originals,enabled;
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x); return 1; } } while(0)
 
 #ifdef _WIN32
-int pc_network_enabled(void) { return enabled; }
+static unsigned network_checks;
+int pc_network_enabled(void) { network_checks++; return enabled; }
 int pc_network_latency(double *milliseconds,unsigned *count)
 { *milliseconds=-1;*count=0;return 1; }
 void pc_debug_latency(int mode,double milliseconds,unsigned count)
@@ -139,6 +140,33 @@ int main(void)
     }
 #endif
 #ifdef _WIN32
+    {
+        /* Offline animation/combat calls must retain the original ABI without
+           reading host network settings for every actor or bone update. */
+        void (*hooks[])(void (*)(void))={pc_network_bots_guest_active,
+            pc_network_bots_guest_pose,pc_network_bots_guest_bounds,
+            pc_network_bots_guest_shot,pc_network_bots_guest_frame,
+            pc_network_bots_guest_damage};
+        uint8_t *config=(uint8_t *)memory+0x7de400;
+        unsigned i;
+        memset(memory,0,sizeof memory); network_checks=0;
+        enabled=1; /* A LAN launch still has ordinary single-player callbacks. */
+        config[0]=1;config[2]=1;memory[0x7356d8/4]=0x1000;
+        for(i=0;i<sizeof hooks/sizeof hooks[0];i++) {
+            int before=originals;
+            memory[4]=0x64743;memory[5]=0x3000;memory[6]=1;
+            g_esp=16;g_esi=0x3000;hooks[i](original);
+            CHECK(originals==before+1 && g_eax==0x11223344u && g_esp==20);
+            CHECK(memory[6]==1 && network_checks==0);
+        }
+        CHECK(!pc_network_bots_guest_actor(1) && network_checks==0);
+        CHECK(!pc_network_bots_lobby_network() && network_checks==0);
+        memory[0x76b108/4]=1;enabled=0;
+        CHECK(!pc_network_bots_guest_actor(1) && network_checks==1);
+        enabled=1;
+        CHECK(pc_network_bots_guest_actor(1)==0x1ea0 && network_checks==2);
+        memset(memory,0,sizeof memory);g_esi=0;
+    }
     {
         uint8_t *config=(uint8_t *)memory+0x78ad58;
         PcNetworkBot *bot=(PcNetworkBot *)((uint8_t *)memory+0x75fd90);
