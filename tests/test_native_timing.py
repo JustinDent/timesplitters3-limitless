@@ -174,6 +174,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 
 
 @pytest.mark.parametrize('harness_name,ranges', [
+    ('native_light_preview.c', [(0x116130,0x1163f5)]),
     ('native_script_events.c', [(0x228870,0x228b35),(0x218910,0x218aa6),
                                (0x61570,0x6160f),(0x585e0,0x5861b),(0x59cf0,0x59d14)]),
     ('native_npc_dispatch.c', [(0x15eae0,0x15f0ca)]),
@@ -247,12 +248,13 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
+        if harness_name in ('native_light_preview.c','native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
             from capstone import Cs, CS_ARCH_X86, CS_MODE_32
-            addresses=set(range(0x218630,0x218648,4) if harness_name=='native_mothership.c'
+            addresses=set(range(0x1163f8,0x116408,4) if harness_name=='native_light_preview.c'
+                          else range(0x218630,0x218648,4) if harness_name=='native_mothership.c'
                           else range(0x507d88,0x507db8,4) if harness_name=='native_ship_debris.c'
                           else range(0xf51b0,0xf51e8,4) if harness_name=='native_projectile_motion.c'
                           else range(0xf1a4c,0xf1a90,4) if harness_name=='native_projectile_coupled.c'
@@ -371,6 +373,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             assert image[end:end+6].hex()=='8b0d7c0c7b00'
             image=image[:end]+b'\xc3'+image[end+1:]
         functions={start:dict(end=end,name=f'sub_{start:08X}') for start,end in ranges}
+        if harness_name=='native_light_preview.c':
+            functions[0x116130]['name']+='_gen'
         if harness_name=='native_weapon_fire.c':
             functions[0x244f30]['name']='sub_00244F30_gen'
         if harness_name=='native_npc_weapon_fire.c':
@@ -406,8 +410,11 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_projectile_guest.h").as_posix()}"')
                            .replace('/* ROCKING_POLICY */',
                                     f'#include "{(ROOT / "src/pc_native_rocking_guest.h").as_posix()}"')
+                           .replace('/* LIGHT_POLICY */',
+                                    f'#include "{(ROOT / "src/pc_native_light_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
+    if harness_name=='native_light_preview.c':print(output)
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
     if harness_name=='native_projectile_coupled.c':

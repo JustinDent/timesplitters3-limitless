@@ -1394,6 +1394,51 @@ remains. Redundant intermediate captures and the no-longer-loaded `fc3a7ce`
 executable were removed after validation. Personal controls/display hashes
 remain unchanged. Nothing has been pushed and actual Mac validation is pending.
 
+## MapMaker random light preview
+
+The visual timing audit identifies `sub_00116130` as a light-color preview
+routine, not world texture scrolling. Its only direct call in the pinned US
+disassembly is 0xA1E8B, gated by scene 100 (MapMaker) and entity type 2.
+It selects constant, sinusoidal, square-wave or random light behavior from
+the 40-byte parameter record, writes a packed color and a float RGB table,
+then propagates that color through `sub_00115F50`.
+
+The mode-3 branch tests whole game ticks at 0x11622E. A zero value jumps to
+the color blend with XMM0 still zero, replacing the previous color with the
+dark endpoint. The complete original routine reproduces white `ffffffff`
+becoming black `ff000000` on a live 144-Hz fractional interval without any
+RNG call or deadline change. Modes 0/1/2 retain their color for that same
+clock sample. This identifies extra dark subframes, independently of any
+authored random flicker; it is not a diagnosis of the deferred gun trails.
+
+The shared wrapper in `pc_native_light_guest.h` leaves mode-3 color and its
+already-propagated model state intact until the next whole-tick decision.
+Native pause also retains it even when a stale positive whole count remains.
+Other modes, positive-whole updates and the original-60 path call the original
+routine unchanged. The caller does not consume a return value; the wrapper
+preserves its cdecl return-slot ownership and callee-saved registers. There
+is no host cache, so initialization/palette edits/slot reuse remain guest-owned;
+a new or edited random light takes effect on the next original decision tick.
+
+`tests/native_light_preview.c` executes the complete original routine and
+switch table, with deterministic RNG and a spy for downstream model updates.
+An eight-game-second reference supplies 480 decisions and 69 RNG calls.
+Native 60/120/144 at normal/quarter speed matches every packed color, float RGB
+table entry, deadline and cumulative RNG count. Native 144 holds 672 normal
+or 4,128 quarter-speed intermediate frames without introducing dark subframes;
+paused probes preserve the same state. The unpatched counterexample remains
+part of the fixture. This proves the color decision/dispatch boundary, not
+actual model upload, GPU output, complete MapMaker operation or Mac execution.
+Build and live acceptance are pending.
+
+The audit also records all nine direct writers of the absolute visual clock
+at 0x7DE318 in `private/pipeline/visual-clock-writes.asm`: ordinary increments,
+initialization, recorded playback and network synchronization. Smooth pulse
+and screen-distortion consumers still sample whole absolute time. They need
+fractional-phase support that respects those clock resets and overrides;
+globally replacing integer absolute-time reads has not been authorized by
+this evidence and is not part of this correction.
+
 ## Bridge-crash placement investigation
 
 The user reports a later ship crash intruding into the playable canyon,

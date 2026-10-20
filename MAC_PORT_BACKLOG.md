@@ -3121,6 +3121,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   overall FPS gains and stable 144 FPS are not established.
   The separate GPU-flush experiment `aef8d29` failed live Windows progress
   and was reverted by `eae18a3`; no GPU acknowledgment change remains.
+- **MapMaker random light preview (source pending build):**
+  `src/pc_native_light_guest.h` and the additive `*-native-light-preview.patch`
+  retain the guest-owned color during zero-whole-tick native intervals and
+  pause. Original code otherwise wrote the dark palette endpoint on those
+  frames. The shared original-code fixture checks exact packed/RGB-table
+  outputs, discrete deadlines, RNG and ABI at 60/120/144 and quarter speed.
+  It spies on model-color propagation; actual preview rendering is unverified.
+  No platform adapter or host cache is added. Windows build/live validation
+  and actual Mac compilation/MapMaker visual acceptance remain pending.
 - **Offline network-hook overhead:** `pc_network_bots_guest.inc` and
   `pc_network_bots_lobby.inc` reject ineligible guest modes/actors before reading
   host network settings. Eligible calls still read live settings; no transport

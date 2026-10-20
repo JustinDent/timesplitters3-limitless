@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- MapMaker random light preview has a reproduced fractional-frame regression:
+  the original mode-3 zero-whole-tick branch replaces a white preview with
+  black even while its decision timer is unchanged. Shared source now retains
+  its last color between authored decisions and during native pause. The
+  original-code fixture matches 480 original color decisions, their RGB table
+  values/deadlines and 69 RNG calls at native 60/120/144, normal/quarter speed.
+  Other light modes and original-60 behavior remain unchanged. Full build,
+  live MapMaker visual acceptance and actual Mac validation are pending.
+  [Light-preview evidence](docs/native-high-refresh-regressions.md#mapmaker-random-light-preview).
 - Latest built executable `6fc4d87` reduces duplicate VM queries during prompt
   rendering, with the same labels and protection checks. The supported Windows
   Release build, focused real-memory tests, 66 shared checks and a 120-second

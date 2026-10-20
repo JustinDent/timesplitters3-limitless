@@ -66,7 +66,7 @@ def patch_records(paths):
                    '-native-numeric-policy.patch', '-native-animation-scope.patch',
                    '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch',
                    '-native-camera-timing.patch', '-native-weapon-event-scope.patch',
-                   '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch'):
+                   '-native-npc-weapon-event-scope.patch', '-native-npc-animation-shots.patch', '-native-npc-aim-timing.patch', '-native-kind35-projectile-timing.patch', '-native-object-pause.patch', '-native-object-rocking.patch', '-native-light-preview.patch'):
         patch = next((p for p in paths if p.name.endswith(suffix)), None)
         if patch:
             paths.remove(patch)
