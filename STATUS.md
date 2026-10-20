@@ -7317,6 +7317,2752 @@ queued under MAC-021; other-device synchronization is unverified.
   The current launcher build passes 71 updater and 21 settings checks
   (`build/pr55-validation/launcher.log`). Objectives notes are appended here so
   new status entries at the top do not repeatedly conflict with this PR.
+
+## Live Classic / 4K texture toggle — October 15
+
+- F10 switches the cached original/replacement texture views without restarting
+  or reloading a level. PC Settings > 4K Textures also switches the mode and
+  shows its checkmark. Keyboard repeats are ignored; fullscreen and hidden-menu
+  shortcuts work. F10 no longer also cycles the runtime's diagnostic frame cap.
+- Play.cmd starts Classic with the installed local pack available; Play-Textures
+  starts 4K. Packaged launchers discover an optional Textures folder beside Play.
+  This session choice is independent of render resolution. Missing, invalid and
+  memory-budget-limited replacements retain Classic; original assets stay intact.
+- Windows Release build and all build-time native checks passed. Counted RHI
+  loader tests cover cached switches, unchanged original data, missing/invalid
+  DDS files, screen copies/render targets, content changes, allocation failures
+  and release. Seven fresh/upgrade/idempotence patch-stack tests passed.
+- One brief actual-runtime startup smoke check passed F10, held repeats, hidden
+  menu, fullscreen, menu selection/checkmarks, one replacement load, clean exit,
+  and personal controls/display settings preservation. Evidence is in
+  logs/texture-toggle-validation.json and logs/texture-toggle-game.err.
+- Full gameplay scene/artwork validation remains pending under the existing
+  overhaul cadence. The current partial pack and 512 MiB resident GPU budget
+  are unchanged. Disposable validation disk images were recycled after the run.
+
+## Imported texture-overhaul history for issue #74
+
+### Texture equipment batch 57 - October 16, 2026
+
+- Installed four character/equipment atlases: dark cloth/brass, partial face with yellow-striped clothing and controls, blue/white/gold uniform, and padded blue-gray armor. All original catalog payload hashes/opaque alpha checked; enlarged source comparisons, compiled DDS and repeated-boundary sheets reviewed. Final model UV, identity, lighting and functional-marking interpretation remain pending.
+- Two corrections before acceptance: dark-cloth V1 was +50.51% mean brightness; V2 restores low-key cloth/brass response, with final compiled mean -5.93% versus original. Blue-uniform V1 was too saturated; representative cloth saturation changed from original 82.57 to V1 124.91, corrected V2 91.49 (0-255 scale). Final compiled uniform brightness -0.33%. Face/equipment and padded armor brightness -3.48% and -6.34% respectively.
+- Preserved dark eye opening and separate narrow eye/glint detail, paired yellow stripes, small indicator colors, three dark uniform details, ear/skin islands and mechanical hole groupings. Small control marks are preserved as abstract shapes; no exact readable-text claim. Atlas repeat sheets do not establish seamless tiling or model alignment.
+- Six built-in image-generation calls, four selected 1254x1254 source images downsampled to 1024x1024 DXT1 with full mip chains. Not native 4K art. Superseded local V1 images and redundant V1 comparison sheets recycled; generator references, exact prompt history and focused revision sheet retained.
+- Windows x64, source f847832 with existing uncommitted texture/launcher work and concurrent float-join/runtime edits: all 230 native DDS checks, worklist hash/dimension/mip/aspect/budget checks and independent inventory pass. This batch did not rebuild or launch the game and preserves concurrent changes.
+- Coverage: 230/6,812 supported keys; 6,575 need artwork and seven drafts held. Visual classification remains 387 keys; full category, embedded/procedural and scene coverage unfinished. Pack is 384,784,477 bytes (about 367 MiB), up 2,798,496 bytes including metadata; texture workspace about 1.103 GiB. Temporary exports/reviews remain below 256 MiB. Caps remain 6 GiB on disk and 512 MiB residency.
+- Evidence: private review/equipment-57-final original/DDS and repeat sheets, selected detail/revision sheets, color metrics, original hash checks and cleanup record, plus per-key provenance and current audits. Full overhaul and runtime/display/residency validation remain pending.
+
+### Texture mechanical batch 56 - October 16, 2026
+
+- Installed four reviewed replacements: olive medical-case atlas with clipped red cross, red-striped silver panel, copper/steel machinery atlas, and circular four-quadrant steel cap. Verified every catalog payload hash and opaque alpha before compilation; original/generated/compiled/repeat sheets inspected.
+- Machinery V1 made the small oval cutout and gear-center opening polygonal. V2 restores their smooth oval/circular shapes. Selected V2 and focused correction evidence retained; superseded local V1 and redundant full draft comparison recycled. Five built-in image-generation calls, four selected sources. Ten narrow fins retained (the initial prompt said eight incorrectly; original-image review governs acceptance). Original and V2 center-fitted gear-outline spectra share the strongest frequency 67; this supports similarity but does not establish exact tooth count or UV correspondence.
+- Medical cross and latch/fastener layout preserved. Steel cap retains 16 outer holes, eight center holes and cross ribs. Silver panel keeps stripe/slot/fastener layout but is 18.58% darker on average; verify brushed-metal lighting/readability in final scene testing. Other luminance changes: +4.21%, -1.66%, +5.04%. Repeat checks are diagnostics, not a claim that these atlases tile seamlessly.
+- Three selected sources are 1254x1254 and one is 1774x887; downsampled to 1024x1024 or 1024x512 DXT1 full mip chains. Not native 4K artwork. Added 2,448,978 pack bytes including metadata; one active pack and no game-data staging copies.
+- Windows x64, source f847832 with existing uncommitted tooling: all 226 native DDS checks, worklist hash/dimension/mip/aspect/budget checks and independent inventory pass. Coverage: 226/6,812 supported keys, 6,579 need artwork and seven drafts held. Visual classification remains 387 keys; full category/embedded/procedural coverage incomplete.
+- Pack is 381,985,981 bytes (364.3 MiB) including metadata; texture workspace about 1.089 GiB. Temporary exports/reviews remain below 256 MiB. Pack cap 6 GiB and residency limit 512 MiB unchanged. No game launch or runtime build; model UV, adjacency, lighting, display and residency tests remain pending.
+- Evidence: private review/mechanical-56-final original/DDS and repeat sheets, detail/aperture comparisons, original hash checks, gear diagnostic and cleanup record; canonical per-key prompts include source resolution, generator file, revision history and resampling. This remains a partial overhaul.
+
+### Texture materials batch 55 - October 16, 2026
+
+- Generated and installed four material replacements: riveted brushed steel, ornate wood/silver cabinet atlas, steel cylinder with red lenses, and vent/control/hatch atlas. All original payload hashes and opaque channels checked; compared original, generated source, compiled DDS and repeated-boundary sheets. Four generation calls, no discarded variants or duplicate source artwork.
+- Preserved cabinet inset panels, floral trim and diamond openings; the cylinder's 15-hole staggered grid, two red lenses and lower dark aperture; and the vent's eleven upper ribs/five lower ribs and circular fittings. One-dimensional profile diagnostics support inter-rib alignment but noisy peaks are not feature counts or exact UV proof. Final model/scene sampling remains pending.
+- Luminance changes: +2.93%, -6.63%, +19.34%, +0.82%. Brighter brushed steel on the cylinder requires final lighting/glare validation; original red cues and dark openings remain distinguishable offline. Repeat checks do not claim that the atlases are seamless.
+- All four selected sources are 1254x1254. Steel surface resampled to 2048x2048, the three prop atlases to 1024x1024, DXT1 with full mip chains. Not native 4K source art. Added 4,895,649 pack bytes including metadata.
+- Classified 32 more originals, now 387 visually inspected keys. Separate alpha inspection found curved arrow segments, a partial-opacity hexagonal grid and effect masks; these remain unfinished work rather than treating their uniform RGB channels as completed textures. Archive ownership is separate from visual category.
+- Windows x64 / source f847832 with existing uncommitted texture tooling: worklist hash/size/mip/aspect/budget checks, independent inventory and all 222 native DDS checks pass. Coverage: 222/6,812 supported keys; 6,583 need artwork and seven drafts remain held. Pack is 379,537,003 bytes (about 362 MiB), below 6 GiB. Texture workspace about 1.075 GiB; temporary exports/reviews remain below 256 MiB. The 512 MiB residency setting is unchanged.
+- Evidence: private review/inventory-55.json and four owner sheets plus alpha sheet; materials-55-final original/DDS and repeat sheets, four detail sheets, metrics, original hash checks and landmark diagnostics; per-key prompts, generator references and actual source dimensions. No game launch, runtime build or duplicate game/pack staging. Scene/display/UV/animation/residency validation and broad coverage are still pending.
+
+### Texture variants batch 54 - October 16, 2026
+
+- Reviewed twelve resolution/compression variants against ten existing generated sources, then installed all twelve after original, enlarged feature, compiled DDS and repeated-boundary review. Added three amber glow variants, a flame, hand/nails, weapon equipment, clothing/gear, grated trim, partial face/uniform, corrected eye/mouth, creature torso and wall panel. No new source image copies or image-generation calls.
+- Every catalog payload for the twelve keys passed original SHA-256 verification. Multiple records sharing a key decode identically; all original and compiled alpha channels are opaque. Eye glint/iris, tooth rows, nail islands, facial openings and equipment cues checked enlarged. The weapon variant is 14.58% darker on average; darker recesses retain readable orange cues offline, with final scene lighting validation pending.
+- Source art remains 1254x1254 or 1774x887; output sizes are 256 through 2048 pixels with full mips and recorded resampling. These are not native 4K sources. The 64px glow uses 256px, and the smaller clothing atlas uses 1024px to limit storage.
+- Windows x64, source f847832 with existing uncommitted tooling: all 218 installed DDS files pass the native validator; worklist hash/dimension/mip/aspect/budget checks and independent inventory pass. No runtime rebuild, game launch or duplicate game/pack staging.
+- Coverage is 218 of 6,812 supported keys; 6,587 need artwork and seven drafts remain held. Three generation gaps remain included in unfinished work. 355 keys have visual classification; category-wide review and embedded/procedural coverage remain incomplete. Pack is 374,641,354 bytes (357.3 MiB) including metadata, below 6 GiB; texture workspace about 1.05 GiB. Runtime/model/animation/adjacency/display/residency checks remain pending; 512 MiB residency setting unchanged.
+- Evidence: private review/variants-54.json, variants-54-final metrics and three final/repeat sheets, two enlarged detail sheets, per-key prompt reuse provenance, progress.json, inventory.json, worklist.json and current native DDS audit log. This is a partial pack, not a completed remaster.
+
+### Texture overhaul: equipment batch 50 (offline)
+
+- Added skin/blue-gold hardware, soft ivory/gold material, pink hand/nail and dark tapered metal-channel atlases. The private pack now has 194 replacements (~341 MiB), within 6144 MiB. Five source payload records and all four compiled outputs are opaque.
+- Enlarged review retains hardware ring/gold notch, blue islands and three oval marks; hand retains two pale nails and skin islands; metal retains tapered/stepped channels and right cylindrical shading. Bounded blue-mark minima remain rows 13,33 and shift 54 to53. An initial wider lower window included adjacent bottom shadow; corrected diagnostics are not exact geometric centers.
+- Pale pattern remains ambiguous; soft light/dark shapes and the gold patch were preserved without inventing a material identity. Actual model assignment and sampling remain unverified. Luminance changes -6.76%, -1.16%, -7.62%, -15.00%; sharper skin folds, bright hardware and darker metal shadows need final scene/lighting review.
+- Four built-in 1774x887 sources downsampled to 1024x512 DXT1 full mip chains, adding about 1.34 MiB. These are not native 4K artwork. Recycled redundant enlarged originals; retained chosen art, exact prompts, compact atlas/repeat/detail sheets and diagnostic JSON. No gameplay launch or duplicate game/pack tree.
+- All 194 DDS files passed native format validation; worklist and independent inventory passed hashes, dimensions, full mips and storage budgets. Texture workspace ~1025 MiB; temporary originals/reviews/previews below 256 MiB. Revision f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted tooling and concurrent launcher changes; no runtime rebuild.
+- Still incomplete: 6611 keys need artwork, seven drafts need correction and three generation rejections remain explicit gaps. Final scene/model/display/residency checks deferred. Evidence: private/texture-remaster/review/equipment-50-* and progress.json.
+
+### Texture overhaul: metal panels batch 49 (offline)
+
+- Added brown weathered trim, a gray four-rib strip, green lit panel and gold highlighted panel. The active private pack now has 190 replacements (~340 MiB), within 6144 MiB. Six source payload records and all four outputs are opaque.
+- Brown middle seam remains source row37; lower lip minimum shifts row57 to58. Gray rib highlights remain rows25,37,50,63; top padding remains approximately original RGB24 and two recessed marks are retained. Green lower highlight remains row51. Gold highlight peak shifts x66 to64; dark lower trim remains row60. Profile measurements are appearance diagnostics, not exact UV/model proof.
+- Green panel originally has a black right edge; compiled mean RGB at source scale is 5.70/7.17/3.92. This small edge lift remains a final scene-check item. Average luminance changes -10.28%, -6.88%, -9.30%, -5.84%; stronger metal grain, oxide and edge contrast need final lighting checks. Repeat sheets are diagnostic rather than evidence of actual scene adjacency.
+- Four built-in 1774x887 sources downsampled to 1024x512 DXT1 with full mip chains, adding about 1.34 MiB. These are not native 4K artwork. One active pack and source art only; no duplicate game/pack trees or gameplay launches.
+- All 190 DDS files passed the existing native format validator; worklist and independent inventory passed hashes, dimensions, full mips and storage budgets. Texture workspace ~1012 MiB; temporary originals/reviews/previews remain below 256 MiB. Source revision f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted tooling; no runtime rebuild. Concurrent launcher/release changes preserved.
+- Still incomplete: 6615 keys need artwork, seven drafts need correction and three generation rejections remain explicit unfinished gaps. Final scene/model/display/residency checks deferred. Evidence: private/texture-remaster/review/metal-49-* and progress.json.
+
+### Texture overhaul: warning panels batch 48 (offline)
+
+- Added red, amber and cyan warning strips plus a green disc/bar-bank panel. The private pack now has 186 replacements (~339 MiB), within 6144 MiB. Five source payload records and all four installed outputs are opaque.
+- Classified 32 additional original keys (280 to 312), retaining archive-owner versus visual-category distinctions. New alpha-only corner/radial/rectangular masks, flame/smoke frames and translucent/cracked panels remain unfinished pending channel/blend/animation analysis. No scope exclusions added. Inventory evidence: private/texture-remaster/review/inventory-48-*.jpg and inventory-48.json.
+- All warning strips retain eight diagonal runs at source row35 and dominant horizontal frequency eight. Run starts shift <=1,2,1 source pixels; yellow mask IoU 0.8924, 0.8180, 0.9403. Green bar-bank row20 retains twelve threshold runs; one endpoint shifts one pixel. Enlarged pattern, disc, color variants and light hotspots reviewed; metrics are diagnostics, not model/UV proof.
+- Mean luminance changes -4.50%, -8.73%, +2.87%, -7.91%. Stronger lamp hotspots, finer ribbing and possible color-variant switching need final scene/animation checks. Repetition sheets do not prove actual model adjacency.
+- Four built-in 1774x887 sources downsampled to 1024x512 DXT1 with full mip chains. These smaller targets add about 1.34 MiB, not native 4K artwork. Recycled the redundant enlarged original sheet, retained compact inventory/alpha and review evidence.
+- All 186 DDS files passed native format validation; worklist and independent inventory passed hashes, dimensions, full mips and storage budgets. Texture workspace ~998 MiB; temporary originals/reviews/previews remain below 256 MiB. No game launch or runtime rebuild; revision f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted tooling.
+- Still incomplete: 6619 keys need artwork, seven drafts need correction and three generation rejections remain explicit unfinished gaps. Final scene/model/display/residency checks deferred. Evidence: private/texture-remaster/review/warnings-48-*, visual-classification.json and progress.json.
+
+### Texture overhaul: surfaces batch 46 (offline)
+
+- Added separate green and blue-gray riveted panels, a dense mechanical armor atlas and a recessed industrial panel. The private pack now has 179 replacements (~331 MiB), within 6144 MiB. Six source payload records and all four outputs are opaque.
+- Retained thirty rivets per panel; local dark-point shifts <=2px horizontal/3px vertical are diagnostic rather than exact centers. Enlarged armor comparisons retain the major three-hole housing, slot groups, four-hole white plate and lower vent banks. Recessed panel retains nine side slots per side, paired bottom controls and hazy center; tiny original lettering is unreadable and no new wording is claimed.
+- Corrected the recessed panel's new dark outer-edge seam in revision 2. Left/right edge MAE: original 5.85, v1 32.47, v2 11.64. The revised pale border is brighter than source and awaits scene verification. Final luminance changes -7.26%, -12.04%, +13.10%, -0.24%; darker paint and brighter armor metal require final lighting checks.
+- Five built-in image generations including one correction. Accepted source art is two 1774x887 and two 1254-square images, resampled to two 2048x1024 and two 2048-square DXT1 full mip chains; not native 4K artwork. Recycled superseded local panel art, replaced compile files and four redundant review images; retained prompts, generator originals and focused correction evidence.
+- All 179 DDS files passed native format validation; worklist and independent inventory passed hashes, dimensions, full mips and storage budgets. Texture workspace ~968 MiB; temporary originals/reviews/previews ~82 MiB, below 256 MiB. Revision f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted tooling; no runtime rebuild or gameplay launch.
+- Still incomplete: 6626 keys need artwork, seven drafts need correction, and two generation rejections remain explicit unfinished gaps. Consolidated scene/model/display/residency checks remain deferred. Evidence: private/texture-remaster/review/surfaces-46-final-*, surfaces-46-details.jpg, surfaces-46-correction.jpg, surfaces-46-landmarks.json and progress.json.
+
+### Texture overhaul: MapMaker batch 45 (offline)
+
+- Added four modernized MapMaker surfaces: separate red-circuit and charcoal technical walls, a silver doorway and an ON/OFF warning panel. The active private pack now contains 175 replacements (~323 MiB), within its 6144 MiB cap. No game launch or duplicate game/pack tree.
+- Eight source payload records and all four outputs are opaque. Four 1254-square built-in generated sources were resampled to 2048-square DXT1 with full mip chains; these are not native 4K artwork.
+- Offline comparisons preserve nine circular features including cropped edges, tapered insets, four large panel slots, the lower double slit and yellow doorway bands. Enlarged original labels read ON / OFF after a vertical diagnostic flip; exported UV orientation and warning icon remain as supplied.
+- Doorway black-opening component matches at original scale: bbox [90,20,166,208], 14553 pixels, centroid [128,114], IoU 1.0. Mean luminance changes -2.81%, -5.23%, +1.98%, -5.46%. Refined circuit traces, stronger paint, brighter fine edges/fasteners and darker charcoal right edge need final scene review; repeat diagnostics show no new large boundary band.
+- All 175 DDS files passed the existing native format validator. Worklist and independent inventory passed hashes, dimensions, full mips and storage budgets. Texture workspace ~947 MiB; temporary originals/reviews/previews ~81 MiB, below 256 MiB. Revision f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted tooling; no runtime rebuild.
+- Coverage remains incomplete: 6630 keys need artwork and seven drafts need correction; two generation rejections remain explicit unfinished gaps. Final scene/model/alpha/display/residency tests remain deferred under the agreed near-completion gate. Evidence: private/texture-remaster/review/mapmaker-45-* and progress.json.
+
+- Texture overhaul batch 44: four machinery/weapon textures accepted offline, bringing the local pack to 171 replacements (about 312 MiB of the 6144 MiB cap). Texture workspace about 921 MiB; original exports/reviews about 79 MiB, below the 256 MiB temporary limit. One active pack, no duplicate game copies or staging trees.
+  - Oblong plate/recesses, hub/pipe/grille machinery panel, angular weapon atlas and dark tubular atlas modernized. Enlarged comparisons checked vent counts, grille, pipes, cutouts, seam layout and red/orange markings. Main plate seam remains at source column 295; orange indicator centroid shifts under one source pixel/axis.
+  - Circular-opening threshold mixed the opening with adjacent cylinder shadow, so that measurement is explicitly inconclusive for geometry. Enlarged comparison retained; brighter cylinder separates more strongly from the opening. Overall luminance increases +5.69%, +9.51%, +6.11%, +8.57% require final scene lighting review.
+  - Six source payload records opaque; each machinery plate's duplicate payload records decode identically. All four compiled DDS files opaque. Four 1254-square built-in sources resampled to three 2048-square and one 1024-square DXT1 full mip chains. Not native 4K artwork.
+  - All 171 DDS files passed native format validation; worklist and independent inventory passed. Evidence: private/texture-remaster/review/machinery-44-1.jpg, machinery-44-repeat-1.jpg, machinery-44-details.jpg, machinery-44-opening.jpg and machinery-44-landmarks.json. Windows offline tools at f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted texture tooling. No runtime rebuild or game launch.
+  - Coverage remains incomplete: 6,634 supported keys need artwork (including two generation gaps), seven draft keys remain held, 280 keys visually classified, and non-PAK/procedural coverage remains open. Scene/model, seams, animation, lighting, display and residency validation remain deferred until near completion.
+
+- Texture overhaul batch 43: three equipment/material atlases accepted offline, bringing the local pack to 167 replacements (about 303 MiB of the 6144 MiB cap). Texture workspace about 898 MiB; original exports/reviews about 77 MiB, below the 256 MiB temporary limit. Superseded face DDS files/metadata, obsolete draft PNG and eight redundant full comparison/repeat sheets recycled; close-up rejection evidence and prompt/compile provenance retained.
+  - Light and dark leather/cloth/metal equipment versions authored independently after source comparison showed RGB MAE 27.29. Their brightness distinction is retained. Separate gray/brown/gold equipment atlas reviewed for strap rectangles, trim, fittings and folds. Accepted luminance changes +3.36%, +6.76%, -5.17%; final scene lighting/UV checks pending.
+  - Partial-face pair source RGB MAE 2.148 and matching alpha/layout supports shared artwork, but both keys remain held. Initial generation changed the upper iris blue; first correction removed the blue but broadened the pupil/lost its highlight; second correction still missed the original eye appearance. Both originals remain in use. No separate PNG copy for the lower-resolution candidate.
+  - Six 1254-square built-in outputs including two corrections. Three accepted sources resampled to two 2048-square and one 1024-square DXT1 full mip chains. Not native 4K artwork. Five source records opaque and three accepted DDS files opaque.
+  - All 167 installed DDS files passed native format validation; worklist and independent inventory passed. Evidence: private/texture-remaster/review/equipment-43-accepted-1.jpg, equipment-43-accepted-repeat-1.jpg, equipment-43-details.jpg, equipment-43-variants.jpg and equipment-43-eye-revisions.jpg. Windows offline tools at f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted texture tooling. No runtime rebuild or game launch.
+  - Coverage remains incomplete: 6,638 supported keys need artwork (including two generation gaps), seven draft keys remain held, 280 keys visually classified, and non-PAK/procedural coverage remains open. Scene/model identity, seams, animation, lighting, display and residency validation remain deferred until near completion.
+
+- Texture overhaul batch 42: four panel/prop textures accepted offline, bringing the local pack to 164 replacements (about 297 MiB of the 6144 MiB cap). Texture workspace about 878 MiB; original exports/reviews about 74 MiB, below the 256 MiB temporary limit. One active pack and no duplicate game/staging trees.
+  - Yellow riveted panel, diagonal tread plate, red/silver recessed-slot plate and green medical-case atlas modernized. Thirty rivets retained visually; slot silhouette IoU 0.9939 and red-cross silhouette IoU 0.9760 at original scale. Tread dominant frequencies retained with best local alignment at zero offset. These diagnostics supplement visual comparison and do not prove runtime UV/tiling behavior.
+  - Five original payload records and all four DDS files opaque. Tread/slot/case luminance changes -14.95%, -13.49%, -9.49%; darker materials and stronger edge highlights require final lighting review. Yellow panel edge variation increased modestly and remains flagged for scene review.
+  - Three 1774x887 and one 1254-square built-in source images resampled to three 2048x1024 and one 2048-square DXT1 full mip chains. Not native 4K artwork. Another 32 originals visually classified across four archive owners, bringing inspected classification to 280 keys; category-wide review remains unfinished.
+  - All 164 DDS files passed native format validation; worklist and independent inventory passed. Evidence: private/texture-remaster/review/panels-42-1.jpg, panels-42-repeat-1.jpg, panels-42-landmarks.json and inventory-42.json. Windows offline tools at f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted texture tooling. No runtime rebuild or game launch.
+  - Coverage remains incomplete: 6,643 supported keys need artwork (including two explicit generation gaps), five drafts remain held, and non-PAK/procedural coverage remains open. Scene/model, animation, lighting, display and residency validation remain deferred until near completion.
+
+- Texture overhaul batch 41: three character atlases accepted offline, bringing the local pack to 160 replacements (about 291 MiB of the 6144 MiB cap). Texture workspace about 856 MiB; original exports/reviews about 73 MiB, below the 256 MiB temporary limit. Redundant initial contact sheet recycled; final comparisons and source provenance retained.
+  - Red/white uniform, partial-face/armor and pale damaged-uniform atlases modernized. Enlarged rotated face comparisons, clothing boundaries, separate eye/lip regions, hair, badges and control colors reviewed. Local eye-centroid shifts below one original pixel per axis; contrast-dependent red-mark mask area increased 16.5% within the original general footprint. These diagnostics do not prove identity on animated models or exact UV seam behavior.
+  - Four source payload records for installed keys and all compiled DDS files opaque; partial-face payload variants decode identically. Two 1254-square and one 1774x887 source images resampled to two 2048-square and one 2048x1024 DXT1 full mip chains. Not native 4K artwork.
+  - One separate stained-clothing atlas, b22a38a91d990c75, was rejected by the built-in image generator at output moderation (violence; request 6aa0e4fb-3651-4d5f-bc57-862504253599). No retry or output; original remains in use. Exact prompt/rejection recorded privately. This is the second explicit generation gap and remains in needs_art, separate from held drafts.
+  - All 160 DDS files passed native format validation; worklist and independent inventory passed. Evidence: private/texture-remaster/review/characters-41-1.jpg, characters-41-repeat-1.jpg, characters-41-details.jpg and characters-41-landmarks.json. Windows offline tools at f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted texture tooling. No runtime rebuild or game launch.
+  - Coverage remains incomplete: 6,647 supported keys need artwork, five drafts remain held, classification and non-PAK/procedural coverage remain open. Model identity, seams, animation, lighting, display and residency validation remain deferred until near completion.
+
+- Texture overhaul batch 40: three equipment/architecture atlases accepted offline, bringing the local pack to 157 replacements (about 284 MiB of the 6144 MiB cap). Texture workspace about 840 MiB; original exports/reviews about 72 MiB, below the 256 MiB temporary limit. One active pack; no duplicate game copies or staging trees.
+  - Distinct yellow/silver equipment, cropped circular metal fixture, and cockpit atlas modernized. Enlarged source/compiled comparisons reviewed gauge/readout patterns, radio controls, nine-hole plate, colored controls, ports, concentric rims and UV islands. Tiny radio marks remain pixel-limited, with no exact transcription asserted. Warmer fixture corrosion and brighter perimeter require final scene lighting checks.
+  - Five original payload records opaque; the fixture's three records decode to identical top-mip pixels. Three generated sources (two 1254-square, one 1774x887) resampled to 1024-square, 2048-square and 2048x1024 DXT1 full mip chains. Not native 4K artwork.
+  - All 157 DDS files passed native format validation; worklist and independent inventory passed. Evidence: private/texture-remaster/review/equipment-40-1.jpg, equipment-40-repeat-1.jpg, equipment-40-details.jpg, equipment-40-radio.jpg and equipment-40-landmarks.json. Windows offline tools at f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted texture tooling. Supported default.xbe SHA-256 reconfirmed. No runtime rebuild or game launch.
+  - Coverage remains incomplete: 6,650 supported keys need artwork, five drafts remain held, classification and non-PAK/procedural coverage remain open. Model seams, animation, lighting, display and residency validation remain deferred until near completion.
+
+- Texture overhaul batch 39: four armor/equipment atlases accepted offline, bringing the local pack to 154 replacements (about 279 MiB of the 6144 MiB cap). Texture workspace about 824 MiB; original exports/reviews about 70 MiB, below the 256 MiB temporary limit. Two superseded local draft PNGs and a redundant repeat sheet recycled; revision prompts and rejected comparison evidence retained.
+  - Two corrections restored three equipment recesses, six green screen indicators, and the padded atlas gray-right/green-left fittings. Six 1254-square generator outputs including two revisions; four selected sources resampled to three 1024-square and one 2048-square DXT1 full mip chains. Not native 4K artwork.
+  - Enlarged original/compiled comparisons, atlas boundaries, repeat sheets, alpha and indicator colors reviewed. Green-run threshold did not reliably count the low-resolution original; visual review was used instead. Robot highlights are brighter and model/lighting validation remains pending.
+  - All 154 DDS files passed native format validation; worklist and independent inventory passed. Evidence: private/texture-remaster/review/armor-39-final-1.jpg, armor-39-final-repeat-1.jpg, armor-39-corrections.jpg and armor-39-final-metrics.json. Windows offline tooling at f847832ef3588000b6d4251de657ea34f308fac1 with existing uncommitted texture tooling; no runtime rebuild or game launch.
+  - Coverage remains incomplete: 6,653 supported keys need artwork, five drafts remain held, classification and non-PAK/procedural coverage remain open. Consolidated scene testing stays deferred until the agreed near-completion gate.
+
+- Texture mechanical batch 38: four equipment/robot atlases accepted offline; 150 installed / about 275 MiB. Twenty copper holes align within one source pixel; eight-hole circular port, copper slats and robot fittings reviewed enlarged. Isolated red disc mask IoU 0.947 and robot pale indicator 0.891. Brighter bronze/red coating and sharper edge wear require final model and lighting checks.
+- All 150 DDS files passed native validation and worklist hash, mip, aspect and budget audits. Two 1254-square and two 1774x887 built-in sources resampled to 2048-square, 1024-square, 2048x1024 and 1024x512 DXT1 with full mips. No game launches. Texture workspace about 806 MiB; 6657 supported keys need art plus five held drafts. Full overhaul and category/scene validation remain unfinished.
+
+- Texture panels/hatches batch 37: five materials accepted offline; 146 installed / about 270 MiB. Brown hatch outer/small ring fits match; silver hatch fitted center/radius differ by 0.5 source pixel and small fitting centroid by 0.34 pixel. Paired wall center seam matches. Sharper grain, rim highlights and modular edge contrast require final scene lighting/adjacency checks.
+- All 146 DDS files passed native validation and worklist hash, mip, aspect and budget audits. Four 1254-square and one 1774x887 built-in sources resampled to three 1024-square, one 2048-square and one 2048x1024 DXT1 with full mips. No game launches. Texture workspace about 789 MiB; 6661 supported keys need art plus five held drafts. Full overhaul and category/scene validation remain unfinished.
+
+- Texture metal trim batch 36: four wall/trim materials accepted offline; 141 installed / about 264 MiB. Ribbed inset keeps 60 profile peaks within one source pixel. Curved/straight yellow stripe masks have IoU 0.957/0.971; green rivet positions match within one pixel and steel trim within two. Original curved-band gap preserved; stronger edge highlights and darker steel remain final lighting/adjacency checks.
+- All 141 DDS files passed native validation and worklist hash, mip, aspect and budget audits. Four 1774x887 sources resampled to 2048x1024 DXT1 with 12 mips. No game launches. Texture workspace about 768 MiB; 6666 supported keys need art plus five held drafts. Full overhaul and category/scene validation remain unfinished.
+
+- Texture equipment batch 35: two armor/character atlases accepted offline, for 137 installed / about 258 MiB. Armor rib peaks match within one source pixel; face-eye dark masks have IoU 0.875/0.913 with centroids within 0.25 source pixel per axis. Full model identity and lighting checks remain pending. Two blue-uniform drafts held for reinterpreted small equipment labels, with one unsuccessful local correction; their DDS files retired.
+- All 137 DDS files passed native validation and worklist hash, mip, aspect and budget audits after concurrent repository merge restored texture tools. Two 1254-square sources resampled to 2048- and 1024-square DXT1. No game launches. Visual classification expanded by 32 to 248 keys; 6670 supported keys need art plus five held drafts. Texture workspace about 750 MiB; full overhaul remains unfinished.
+
+- Online source-build integration: a new network-menu entry, HTTPS browser with
+  certificate fingerprint checking, public/private rooms, compatible-only
+  listing/joining, peer credentials and leases, and a virtual-address bridge
+  using the game host's forwarded UDP port. Guests establish outbound paths;
+  the host relays guest-to-guest traffic. Two local instances used Online and
+  an HTTPS directory to join a 2/16-player lobby and enter the same Shrink match.
+  Cross-internet routing and full-match stability remain unverified. Campaign
+  co-op remains a separate future effort.
+  Automatic hosting now detects public IPv4 over HTTPS, starts/stops a local
+  directory with the bridge, reuses its certificate and offers a copyable
+  invitation containing the directory address, fingerprint and join code.
+
+- Experimental PC System Link: native framed UDP, strict build/content identity
+  checks, default-protocol discovery sockets, and XNADDR/key mapping. Two isolated
+  game instances discovered a match, joined a 2/16-player lobby, and loaded into
+  the same Thief match. This is a same-PC loopback test, not a cross-network test
+  or a completed-match validation. See [multiplayer status](docs/multiplayer.md)
+  for the later Online integration and remaining cross-network validation.
+- Texture architecture batch 34: illuminated wall, horizontal wall strip, hazard paint and carved trim accepted offline; 135 installed / about 255 MiB. Stripe pitch and phase retained, wall bright seams match at source rows 31/98, lamp bright centroid within 0.16 source pixel per axis. Carved motifs and atlas bands reviewed at enlarged scale. Stronger wear/contrast and brightness remain final scene checks.
+- All 135 DDS files passed native validation and worklist hash, mip, aspect and budget audits. Three 1254-square and one 1774x887 generated sources resampled to two 2048-square, one 2048x1024 and one 1024-square DXT1. No game launches. Texture workspace about 733 MiB; 6674 supported keys need art plus three held drafts. Full overhaul and category/scene validation remain unfinished.
+
+- Texture walls batch 33: three wall replacements accepted offline (green-gray panel and two pale marked walls), for 131 installed / about 248 MiB. The split green panel remains held after its edge correction still darkened the repeat boundary; failed DDS retired. Distinct dark marks and seam positions reviewed. All 131 DDS files passed native validation and worklist hash, mip, aspect and budget audits.
+- Three 1254-square sources resampled to two 2048-square and one 1024-square DXT1; not native 4K. No game launches. Texture workspace about 711 MiB; pack remains below 6 GiB. 6678 supported keys need art plus three held drafts, with category and final scene validation unfinished.
+
+- Texture walls/variants batch 32: four green-gray wall materials and two visually verified armor-resolution variants installed, for 128 replacements / about 242 MiB. Reused selected source artwork for armor variants without duplicate PNGs. Source comparisons RGB MAE 2.88/2.86, alpha differences zero; layouts reviewed. All 128 DDS files passed native validation and worklist audits.
+- Wall repetition and geometry checked: 32 yellow bars retain exact source-scale centers; conduit rod edge positions match. New wall sources are 1254-square, resampled to 2048-square; armor outputs 1024-square from existing sources. Final scene/lighting checks pending, no game launches. Visual inventory expanded by 64 to 216 keys. 6682 supported keys need art plus two held drafts; full overhaul remains unfinished.
+
+- Texture warning/effects batch 31: two mirrored warning panels and two fire sprites accepted offline, for 122 installed / about 230 MiB. NEVER LET FALL / INTO ENEMY HANDS text verified in diagnostic reading views; original vertical UV flip retained. Flame/explosion brightness changes -0.45%/+4.29%, luminous centroids within one source pixel per axis; animation/blend/scene checks remain pending.
+- All 122 DDS files passed native validation and worklist hash, dimension, mip, aspect and budget audits. Two 1774x887 sources compiled to 1024x512 DXT1; two 1254-square sources to 1024- and 512-square RGBA8 for smooth effect falloff, with original opaque black backgrounds. Resampled art, not native 4K. No game launches. 6688 supported keys need art plus two held drafts; full overhaul unfinished.
+
+- Texture armor/panels batch 30: four offline-reviewed replacements added (two armor atlases and two mechanical panels), for 118 installed / about 222 MiB. Native DDS and worklist hash, dimension, mip, aspect and budget audits passed. Full installed alpha audit checked 134 catalog payload records for 118 keys and found no lost/introduced transparency categories; exact shader/scene behavior still awaits final validation.
+- Built-in sources are two 1254-square and two 1774x887 images, resampled to two 1024-square and two 1024x512 DXT1 outputs. Cyan cue, black opening and small recess details reviewed; changed wear/contrast remains a final lighting check. No game launches. 6692 supported keys need art plus two held drafts; full overhaul remains unfinished.
+
+- Texture machinery batch 29: three offline-reviewed mechanical atlases added, for 114 installed replacements / about 220 MiB. All 114 DDS files passed native validation and worklist hash, mip, aspect and budget audits. Sources are 1254-square, resampled to one 2048-square and two 1024-square outputs. No gameplay launches.
+- Visual classification expanded to 152 keys with 32 additional shared, character, weapon and MapMaker-owner candidates. Wheel artwork remains held after offline checks caught a missing transparent bottom row; its opaque DDS was recycled. Radial geometry is also still held. 6696 supported keys need art plus two drafts; full scope and runtime validation remain incomplete.
+
+- Texture remainder batch 28: two more offline-reviewed replacements (mottled prop strip and creature atlas), bringing the active pack to 111 files / about 216 MiB. All 111 DDS files passed native validation; worklist hash, mip, aspect and budget audits passed. Generated 1774x887 and 1254-square art resampled to 1024x512 and 1024-square; not native 4K. No game launches.
+- Expanded appearance inventory from 96 to 120 keys: shared UI/controller symbols, alpha masks and a particle need semantic/alpha-sensitive treatment. Radial-panel revision 3 still omits intermediate geometry and remains uninstalled. 6700 keys need art plus one held draft; other encoding/coverage gaps and final scene tests remain open. Pack and review evidence stay private.
+
+### Warning markings and ring correction batch 27 (offline)
+
+- Added two numbered warning atlases and accepted revision 3 of held circular fitting 8c1c795671ee976a. 109 installed replacements. Two 1254-square and one 1774x887 sources resampled to two 1024-square and one 1024x512 DXT1, full 11 mips.
+- Read vertically flipped comparisons: 04 and Caution / weapon may / explode when hot retained. Texture outputs keep original vertically mirrored UV orientation. Small-atlas wording inferred from matching clearer label; its original fine text is not independently legible.
+- Ring revision used original alone; 256-scale inner-edge fit matches original center [101,187], radius 48. Rejected v1 was [99,178], radius 46. Visual review supports correction; fit is a heuristic, not full model proof. Failed local source recycled, generator source/prompts and prior comparison retained.
+- Mean luminance changes +2.38%, -10.90%, -10.54%; all alpha opaque. Flatter warning border shading, stronger edge wear and dark red remain final scene/model checks. No gameplay launches.
+- All 109 DDS passed native format/hash/dimension/aspect/mip audits. Pack about 215 MiB of 6144 MiB; texture workspace about 603 MiB. Temporary files below 256 MiB; redundant reading/source previews recycled.
+- Remaining: 6702 supported keys need art and one radial draft needs correction. Category-wide review, discovery and runtime validation unfinished. Evidence: private/texture-remaster/review/markings-27-1.jpg, markings-27-repeat-1.jpg, markings-27-labels-reading.png, markings-27-ring-fit.json and markings-27-metrics.json.
+
+### Weapon and organic materials batch 26 (offline)
+
+- Added two weapon atlases and two organic wall materials. Sources three 1254-square plus one 1774x887; outputs one 1024-square, one 1024x512 and two 2048-square DXT1 with full mips. Resampled, not native 4K generated art.
+- Compiled/repeated comparisons inspected: bottom-clipped fitting, six-chamber cylinder, wood-grip outline and organic macro folds/ridges retained. Fine metal relief and organic gloss need final model/scene review.
+- Mean luminance changes +2.40%, -3.18%, -17.05%, -14.55%; all alpha opaque. Darker wall materials and brighter fine highlights are explicit scene-lighting checks.
+- Organic repeats retain visible boundaries; no seamless claim. Edge MAE first material LR 9.79 to 8.40/TB 10.92 to 8.10; second LR 9.24 to 12.07/TB 5.91 to 9.09. Actual wall adjacency unverified.
+- All 106 installed DDS passed native format/hash/dimension/aspect/mip audits. Pack about 214 MiB of 6144 MiB; texture workspace about 596 MiB. Temporary originals/reviews remain below 256 MiB. Redundant source contact sheet recycled; no gameplay launches.
+- 6704 supported keys need art plus two held drafts; discovery, category review and final runtime validation unfinished. Evidence: private/texture-remaster/review/mixed-26-1.jpg, mixed-26-repeat-1.jpg, mixed-26-metrics.json. Exact prompts under private/texture-remaster/authored.
+
+### Dark metal and frame atlases batch 25 (offline)
+
+- Added four dark-metal/weapon-frame atlases. Two 1774x887 and two 1254-square sources resampled to two 1024x512 and two 1024-square DXT1 with 11 mips. Not native 4K generated art.
+- Compiled atlas/repetition and enlarged grip detail reviewed. Lower grip inset exists in original; generated border is sharper. Frame prompt miscounted three narrow grooves; original and result have two narrow recessed grooves beside longer framing lines, correction recorded with exact prompt preserved.
+- Main panel shapes, five-hole clusters and red cues retained visually. Slot mask overlap 0.9850; red-cue overlaps 0.7931 and 0.5556. d255 red threshold area is 1.561 times original: stronger tiny cues need final readability/lighting checks. Threshold masks are brightness-sensitive and do not prove UV registration.
+- Mean luminance changes -10.83%, -10.22%, +10.06%, +6.40%; all alpha opaque. Model adjacency, specular appearance and scene lighting remain pending. No gameplay launches.
+- All 102 installed DDS files passed native format/hash/dimension/aspect/mip checks. Pack about 207 MiB of 6144 MiB; texture workspace about 579 MiB. Temporary files below 256 MiB; redundant source contact sheet recycled.
+- 6708 supported keys need art plus two held drafts; category-wide review and discovery remain unfinished. Evidence: private/texture-remaster/review/weapons-25-1.jpg, weapons-25-repeat-1.jpg, weapons-25-grip-detail.png and weapons-25-metrics.json. Exact prompts retained under private/texture-remaster/authored.
+
+### Tan and silver atlases batch 24 (offline)
+
+- Added four tan/silver mechanical atlases with preserved panel boundaries, openings, fastener/slot positions and amber visual cue. Generated sources 1254-square, resampled to 1024-square DXT1 with 11 mips; not native 4K generation.
+- Compiled atlas/repetition sheets and enlarged display/vent comparisons inspected. Mean luminance changes -0.36%, +5.49%, +11.97%, +8.70%; all alpha opaque. Brighter silver, sharper bevels and material wear require final weapon-model/scene checks.
+- Amber source marks are not reliably readable numerals; original abstract segment arrangement retained without inventing digits. This is not OCR verification. Silver vent has nine main ridges in both versions; measured maxima within three original pixels, profile correlation 0.9467. Enlarged review resolved initial spacing concern.
+- All 98 installed DDS files passed native format and hash/dimension/aspect/full-mip audits. Pack about 205 MiB of 6144 MiB; texture workspace about 566 MiB. Temporary files below 256 MiB; redundant original previews recycled. No gameplay launches.
+- 6712 supported keys still need art and two held drafts need correction. Discovery/category review and final scene validation remain unfinished.
+- Evidence: private/texture-remaster/review/weapons-24-1.jpg, weapons-24-repeat-1.jpg, weapons-24-counter-comparison.png, weapons-24-vent-comparison.png and weapons-24-metrics.json. Exact prompts retained under private/texture-remaster/authored.
+
+### Weapon atlases batch 23 (offline; one held)
+
+- Added three mechanically detailed grey/blue-green atlases with preserved main openings, chip patterns and indicator positions. Two 1254-square and one 1774x887 sources resampled to two 1024-square and one 1024x512 DXT1 with 11 mips. Not native 4K generated art.
+- Actual compiled atlas/repetition sheets reviewed; all 94 installed files passed native DDS and hash/dimension/aspect/mip audits. Mean luminance differences -14.45%, -14.30%, -2.96%; sharper relief and darker metal require final model/lighting validation. All alpha opaque.
+- First atlas retained copper hole groups 6,4,4,6. Red cue threshold bounds original [112,107,125,117], replacement [112,106,125,117], overlap 0.832 and areas 110/119; heuristic only, blending still untested.
+- Held 8c1c795671ee976a: ring moved upward and became smaller. Revision also failed layout registration. Provisional DDS/metadata recycled; original stays active. Selected failed source and exact prompts retained without a duplicate revision image in the project.
+- Pack about 203 MiB of 6144 MiB; texture workspace about 552 MiB. Temporary files below 256 MiB, redundant review previews recycled. No gameplay launches.
+- 6716 keys need art plus two held drafts; full coverage, category review and discovery remain unfinished. Evidence: private/texture-remaster/review/weapons-23-accepted-1.jpg, weapons-23-accepted-repeat-1.jpg, weapons-23-accepted-metrics.json; fourth row of weapons-23-1.jpg records the held ring.
+
+### Armor and props batch 22 (offline)
+
+- Added segmented grey armor, damaged mechanical armor, dark clothing/skin atlas and circular fitting: four replacements, bringing the pack to 91. All passed native DDS and hash/dimension/aspect/mip audits.
+- Enlarged originals corrected the clothing candidate classification: brown sections are skin islands, not padding. Skin-color mask overlap 0.9912 and cyan-cue overlap 0.9417 support visual placement review; these are heuristic diagnostics, not model/identity proof.
+- Actual compiled atlas and repetition sheets reviewed. Mean luminance changes -2.58%, -18.21%, +2.92%, -6.25%; all alpha opaque. Darker clothing, sharper armor relief and skin shading require final model/scene checks. Atlas repetition does not prove seamless model adjacency.
+- Three 1254-square sources and one 1774x887 source resampled to two 1024-square, one 1024x512 and one 512-square DDS. Full mip chains; not native 4K generated art.
+- Pack about 201 MiB of 6144 MiB; texture workspace about 537 MiB. Temporary files remain below 256 MiB; redundant enlarged/contact previews recycled. No gameplay launches.
+- 6720 supported keys still need art, plus one held radial draft. Yellow panel d7bc1f2e36f004fe remains unmodified pending tiny-marking inspection. Category-wide review and discovery remain unfinished.
+- Evidence and exact prompts: private/texture-remaster/review/armor-props-22-1.jpg, armor-props-22-repeat-1.jpg, armor-props-22-metrics.json and private/texture-remaster/authored.
+
+### Machinery and indicators batch 21 (offline)
+
+- Added four distinct 1024-square DXT1 replacements: green recessed panel, paired mechanism atlases with separate pale/orange inset states, and blue-indicator machinery atlas. Generated sources 1254-square; full 11-mip outputs are resampled.
+- Compared actual compiled DDS to originals and repeated atlases; retained major island silhouettes, grille placements and indicator cues. Stronger relief and darker materials need final model/scene checks. Green pair mean luminance -17.30%/-19.50%; other panels -11.52%/-7.96%.
+- Cyan indicator threshold-mask overlap 0.9036; orange polygon 0.8057 and edge slot 0.8947. Indicator areas within about 1.3% of original; these are brightness-sensitive heuristics, not UV-mapping proof.
+- All 87 installed DDS files passed native validation and worklist audits. Pack about 199 MiB of 6144 MiB; texture workspace about 522 MiB. Temporary originals/reviews remain below 256 MiB. Recycled redundant original contact sheet.
+- Coverage remains partial: 6724 keys need art plus one held radial draft; non-PAK discovery and category review remain open. No game launches; final scene, UV, glow, brightness, display and residency testing pending.
+- Evidence: private/texture-remaster/review/machinery-21-1.jpg, machinery-21-repeat-1.jpg and machinery-21-metrics.json. Exact prompts/source provenance retained under private/texture-remaster/authored.
+
+### 2026-10-15: grey machinery batch 20 (offline)
+
+- Added two damaged structural atlases, a soot-marked panel and circular fitting.
+  Main UV boundaries, damage openings and dark features retained in compiled
+  review. Brightness changes +10.25%, +2.49%, -2.95%, -4.15%; fully opaque.
+- Enlarged source disproved an initial small-preview concern: the circular
+  fitting's hard horizontal seam already exists in the original. Center-hole
+  bounds differ by at most one original pixel in a fixed threshold ROI; final
+  model sampling and scene lighting still require validation.
+- Sources: three 1254-square, one 1774x887. DXT1 outputs: two 2048-square,
+  one 1024x512, one 512-square, full mips. Exact prompts/resampling retained.
+  Redundant preliminary fitting comparison recycled after actual DDS review.
+- All 83 DDS files passed native parsing and worklist checks. Active pack:
+  206,092,669 bytes (about 197 MiB); texture workspace about 504 MiB. Temporary
+  originals/reviews below 256 MiB. No gameplay launches.
+- Remaining: 6,728 needing art and one held radial draft. Full overhaul unfinished.
+  Private evidence: review/grey-machinery-20-1.jpg and
+  grey-machinery-20-fitting-1.jpg, corresponding repeats and metrics JSON.
+
+### 2026-10-15: container/control atlas batch 19 (offline)
+
+- Added medical container, dark green fittings and tan control-panel atlases.
+  Main islands and pickup symbols retained. Medical-cross mask IoU 0.9894,
+  area ratio 1.0107; final model mapping still requires runtime validation.
+- Mean brightness changes -8.51%, +2.71%, +6.47%. Fully opaque. Stronger wear
+  and baked shadows remain final scene-check items. Enlarged source confirms
+  three vent bars and four control-panel marks, despite erroneous five-count
+  prompt wording; output followed the actual source, recorded in provenance.
+- A radial correction attempt still omitted intermediate geometry. It remains
+  excluded, with revision prompt and generator path recorded; no extra rejected
+  PNG copied into the project. One redundant control draft comparison recycled.
+- Three 1254x1254 sources resampled to 1024-square DXT1, 11 mips. All 79 active
+  DDS files passed native parsing and worklist checks. Pack 199,973,659 bytes
+  (about 191 MiB); texture workspace about 485 MiB, temporary evidence below
+  256 MiB. No gameplay launches.
+- Remaining: 6,732 needing art and one held radial draft. Full overhaul unfinished.
+  Private evidence: review/containers-19-1.jpg, containers-19-control-1.jpg,
+  corresponding repeat sheets and metrics JSON under private/texture-remaster.
+
+### 2026-10-15: architecture batch 18 (offline; one held draft)
+
+- Added ornamental trim, a shuttered masonry window, metal slats and a hazard-
+  marked stepped panel. Main divisions and markings retained in compiled review.
+  Brightness changes +3.09%, +8.82%, +1.59%, -12.25%; all opaque. Stronger side
+  joins on slats/trim and darker hazard metal remain final scene-check items.
+- A fifth generated radial-panel draft omitted intermediate segments and changed
+  geometry. It is NOT compiled or installed; original remains active. Retained
+  exact prompt/source and comparison for correction; not counted as complete.
+- Two rectangular 1774x887 and two square 1254x1254 accepted sources resampled
+  to 2048x1024 / 2048 square DXT1 with full mips. One redundant draft comparison
+  recycled after actual DDS review; held-draft evidence retained.
+- All 76 DDS files passed native parsing and worklist integrity checks. Pack:
+  197,874,787 bytes (about 189 MiB), below 6 GiB. Texture workspace about 474 MiB;
+  temporary originals/reviews below 256 MiB. No game launches.
+- Coverage: 76 installed, 6,735 needs art, one held draft requiring correction.
+  Full overhaul and final scene/UV validation unfinished. Private evidence:
+  review/architecture-18-1.jpg, architecture-18-repeat-1.jpg,
+  architecture-18-metrics.json and architecture-18-draft-2.jpg.
+
+### 2026-10-15: rock and plaster batch 17 (offline)
+
+- Added two layered rock surfaces, one scorched rock-like impact surface and
+  cracked plaster. Main strata, crack shapes and scorch location preserved in
+  compiled review. Refined the prior provisional soil classification after
+  enlarged inspection; actual scene orientation/use still unverified.
+- Mean brightness changes +2.43%, +4.30%, -3.68%, +8.14%; all opaque. Repeated
+  boundaries reviewed. The cliff has a visible horizontal ledge boundary in both
+  original and replacement; not claimed seamless. Warmer rock hue and brighter
+  plaster remain final scene-check items.
+- Four built-in generated sources are 1254x1254, resampled to three 2048 square
+  and one 1024 square DXT1 outputs, full mips. Exact prompts retained privately.
+- All 72 DDS files passed native parsing and worklist integrity checks. Pack:
+  189,483,829 bytes (about 181 MiB), within 6 GiB. Texture workspace about 448 MiB;
+  temporary originals/reviews remain below 256 MiB. No gameplay launches.
+- 6,740 known supported keys still need art. Other encodings and final runtime
+  validation remain unfinished. Private evidence: review/mineral-surfaces-17-1.jpg,
+  mineral-surfaces-17-repeat-1.jpg and mineral-surfaces-17-metrics.json.
+- Global git whitespace check found unrelated control/settings/script edits;
+  those files were not modified by this artwork batch.
+
+### 2026-10-15: intact panels and trim batch 16 (offline)
+
+- Added four intact concrete panels and one green industrial trim atlas. Retained
+  the distinct bright right-edge variant rather than sharing artwork across two
+  nearly identical source textures. Main seams, notches and slots reviewed.
+- Concrete brightness changes +2.36% to +4.41%; green trim -15.73%. Its grille
+  is coarser/darker, with stronger metal highlights; final model/lighting checks
+  remain pending. All textures opaque. Repeated boundaries visually reviewed.
+- Three 1254x1254 sources resampled to 2048 square; two 1774x887 sources to
+  2048x1024 and 1024x512. Actual source sizes and exact prompts retained.
+- Added tools/texture-review.py for consistent, aspect-preserving compiled DDS
+  comparisons, repeated-boundary sheets and brightness/alpha metrics. Maximum
+  16 inputs and four rows per page, refuses overwrite; does not auto-approve art.
+  Five real assets reviewed and overwrite/invalid-key rejection checked.
+- All 68 DDS files passed native parsing and worklist integrity checks. Pack:
+  180,393,850 bytes (about 172 MiB), within 6 GiB. Texture workspace about 424 MiB;
+  temporary originals/reviews remain below 256 MiB. No gameplay launches.
+- 6,744 known supported keys still need art. Full overhaul and final runtime
+  validation unfinished. Private evidence: review/wall-trim-16-1.jpg,
+  wall-trim-16-2.jpg, wall-trim-16-repeat-1.jpg, wall-trim-16-repeat-2.jpg and
+  wall-trim-16-metrics.json under private/texture-remaster.
+
+### 2026-10-15: damaged concrete artwork batch 15 (offline)
+
+- Added five related concrete wall textures: broken reinforcement panel, two
+  blue-striped damaged walls and two impact-damaged strips. Compiled comparison
+  retains main panel seams, stripe placement and damage silhouettes; material
+  grain and fracture relief are stronger. All remain fully opaque.
+- Mean brightness changes range from -6.68% to +2.94%. Repeated boundary review
+  shows stronger bottom trim and visible joins; final assembled wall continuity
+  remains pending. These modular panels are not claimed to tile seamlessly.
+- Three 1254x1254 and two 1774x887 built-in generated sources resampled to 2048
+  square / 2048x1024 DXT1, with 12 mips. Exact prompts and provenance retained.
+- All 63 installed DDS files passed native parsing and worklist checks. Pack:
+  170,254,737 bytes (about 162 MiB), below 6 GiB. Texture workspace about 397 MiB;
+  temporary originals/review evidence stays below the 256 MiB allowance.
+- No game launches. 6,749 known supported keys still need artwork; full overhaul
+  and scene validation unfinished. Evidence under private/texture-remaster/review:
+  damaged-concrete-15-1.jpg, damaged-concrete-15-2.jpg,
+  damaged-concrete-repeat-15.jpg and damaged-concrete-15-metrics.json.
+
+### 2026-10-15: localized error-screen artwork batch 14 (offline)
+
+- Added all five verified XBE disc-error images: English, French, German,
+  Italian and Spanish. Actual compiled DDS comparisons preserve exact wording,
+  punctuation, diacritics and line breaks; glyph strokes are slightly heavier.
+  Threshold line bounds stay within two original pixels. All remain opaque.
+- Built-in generated sources are 1254x1254, resampled to 1024x1024 BGRA8 with
+  11 mip levels. Minor background residuals (1/255 at the border) and non-red
+  antialias values are recorded; these are not exact two-color reproductions.
+- All 58 installed DDS files passed native parsing and worklist integrity checks.
+  Active pack: 159,067,011 bytes (about 152 MiB), below the 6 GiB cap.
+  Texture workspace is about 364 MiB; temporary originals/reviews about 38 MiB.
+- No game launches. Runtime display verification remains pending. Coverage is
+  58 installed of 6,812 known supported keys, with 6,754 still awaiting art.
+  Other encodings and procedural assets remain open; full overhaul unfinished.
+- Private evidence: review/error-screens-14-1.png, review/error-screens-14-2.png
+  and review/error-screens-14-metrics.json under private/texture-remaster,
+  with exact prompts beside authored sources.
+
+### Non-PAK scope discovery and XBE integration � October 15
+
+- Scanned all 11 non-PAK files (121,733,539 bytes) read-only: three Xbox
+  executables, six movie files and two analysis JSON sidecars. No payload copies
+  were extracted. Found 19 texture-header-shaped matches and 164 image-container
+  signatures; signatures alone do not establish a texture or its runtime use.
+- Verified five complete 512�512 DXT1 sections in the pinned game executable:
+  `xbreadfail_en/fr/ge/it/sp`, containing localized disc-read error text. The
+  language dispatch references their names, copies the section, calls wrapper
+  0x18a30 at 0x236dc, and reaches texture loader 0x18390. Section bounds, header,
+  payload hashes and runtime identities are now part of catalog validation.
+- Catalog schema 3 includes five additional keys: 6,812 unique keys, 7,147
+  header/payload records and 31,186 source spans. All five need artwork; the pack
+  stays at 53 replacements and about 125 MiB. Remaining known artwork: 6,759.
+- Five tiny executable matches and nine unknown-format movie matches were not
+  promoted. XPR/JPEG signature hits, other encodings and procedural assets remain
+  open investigations. No claim of complete discovery or scene validation.
+- 37 offline tests passed before the final rescan regression was added; the
+  updated non-PAK suite passes all 8 tests (38 total tests across the four suites).
+  Live catalog regeneration, worklist and inventory checks passed. No game
+  launches, runtime changes or duplicate extraction/staging trees occurred.
+- Private evidence: `nonpak-scan.json`, `nonpak-research.json` and
+  `review/nonpak-xbe-candidates.jpg`. Catalog regeneration now retains the five
+  verified executable sections; archive rescans do not mistake them for PAK data.
+
+### Particle and glow batch 13 � October 15
+
+- Added amber glow, flame, white streak and soft white rectangular glow textures.
+  Original and replacement alpha are fully opaque; black-surround color behavior
+  is retained. Actual particle blending and animation still need runtime review.
+- Used lossless BGRA8 to avoid block-compression gradient bands: two 512�512,
+  one 512�256 and one 256�256 outputs, with full mip chains. Sources are
+  1254�1254 or 1774�887 and resampled. Actual DDS output was visually compared.
+- Mean luminance changes: +5.2%, -6.2%, -9.2%, +0.6%; brightness centers shift
+  less than 1.4% of each canvas axis. Amber edges have small 1�2/255 residuals
+  versus original zero; other edge peaks generally decrease. Final overdraw,
+  animated shape and blend validation remain pending; no exact-black claim.
+- All 53 DDS files passed native parsing and worklist checks. Active pack:
+  131,102,186 bytes (about 125 MiB), within the 6 GiB cap. Texture workspace:
+  about 334 MiB; temporary originals/review images remain below 38 MiB.
+  No game launches, duplicate extracts or staging copies were created.
+- Coverage: 53 installed, 6,754 supported keys awaiting art. Private evidence:
+  `review/particles-13.jpg` and metrics JSON; built-in generation source art,
+  exact prompts and real source dimensions remain under `authored/`.
+
+### Character material batch 12 � October 15
+
+- Added two character atlases with refined white/blue uniform fabric, leather
+  and hair detail. Main facial identities and island layouts were compared to
+  enlarged originals. Outputs are 1024�1024 opaque DXT1 with 11 mips, resampled
+  from 1254�1254 built-in generated sources.
+- Mean luminance changes are +3.9% and -9.9%. Dark-region mask IoU is 0.810 and
+  0.916; thin island-edge differences remain. These metrics include dark material
+  as well as gaps, so final model/face mapping and edge continuity are still
+  required. Offline visual review does not prove exact in-game registration.
+- The dark-uniform atlas `12360a460f281067` remains unfinished and uses original
+  art: built-in generation rejected its output with a sexual moderation category.
+  The rejection and exact prompt are recorded privately; it was not retried or
+  installed. Other asset work can continue.
+- All 49 DDS files passed native parsing and worklist checks. Active pack:
+  127,255,179 bytes (about 121 MiB). Texture workspace is about 326 MiB, with
+  temporary originals/reviews below 38 MiB. Four disposable enlarged/cropped
+  review images were recycled; no game launches or duplicate extracts occurred.
+- Coverage: 49 installed, 6,758 supported keys awaiting artwork, including the
+  rejected asset. Private evidence: `review/character-materials-12.jpg` and
+  metrics JSON. Source artwork and exact prompts remain under `authored/`.
+
+### Teal machinery batch 11 � October 15
+
+- Added five related green/grey machinery panels, preserving main curves, vents,
+  hatches and orange indicator locations. All are 1024�1024 opaque DXT1 with
+  11 mip levels, resampled from 1254�1254 generated sources.
+- Reviewed the actual compiled DDS alongside originals. Fine relief and vent
+  details are more pronounced; mean luminance is 7.6�14.0% below the source.
+  Final model alignment, lighting and edge continuity remain pending. These
+  shaped UV panels are not intended as arbitrary seamless environment tiles.
+- Orange threshold masks retain 0.930�1.017 of original area with 0.698�0.926
+  intersection-over-union. This is a glow-sensitive review aid, not proof of
+  exact geometry alignment. Visual comparison retains the original indicator
+  locations; final scene validation remains required.
+- All 47 installed DDS files passed native parsing and worklist checks. Pack:
+  125,855,924 bytes (about 120 MiB), within the 6 GiB cap. Texture workspace:
+  about 318 MiB. Temporary originals/reviews remain below 37 MiB. No game
+  launches, duplicate extracts or staging copies were created.
+- Coverage: 47 installed, 6,760 supported keys awaiting art. Private comparison:
+  `review/teal-machinery-11.jpg`, with corresponding metrics JSON. Built-in
+  generation artwork, exact prompts and source sizes remain under `authored/`.
+
+### Industrial wall batch 10 � October 15
+
+- Recorded appearance-based categories and authoring constraints for the existing
+  96-key candidate set in private `visual-classification.json`: 42 environment,
+  19 props, 20 weapons, 5 characters, 3 character/prop ambiguities, 4 effects,
+  2 spherical reflection maps and 1 uncertain material. These labels guide
+  authoring; scene usage and category-wide review remain unfinished. Reflection
+  maps need mapping-aware work rather than ordinary flat-surface edits.
+- Added three grey/blue industrial wall panels with modern galvanized finish,
+  worn paint and fine surface detail. Band positions, vent placement, main seams
+  and stepped panel notches remain aligned with the originals. Fine vent bars
+  and relief are more pronounced and remain a final scene-review item.
+- Compiled two 2048�2048 and one 2048�1024 DXT1 textures with full mip chains.
+  Actual generated sources are 1254�1254 and 1774�887, resampled for output.
+  Compared the actual DDS against originals and 2�2 repeats; alpha stays opaque.
+  Mean luminance changes are +2.5%, -9.3% and -0.9%. Modular seams and repeated
+  motifs remain visible; these are not claimed seamless.
+- All 42 DDS files passed native parsing and worklist validation. The active
+  pack is 122,357,794 bytes (about 117 MiB), within the 6 GiB cap. The texture
+  workspace is about 298 MiB; original exports and review output remain below
+  37 MiB. No game launches, duplicate extracts or release staging occurred.
+- Coverage: 42 installed, 6,765 supported keys awaiting art. Private evidence:
+  `review/industrial-panels-10.jpg`, `review/industrial-repeat-10.jpg` and metrics
+  JSON. Built-in generation artwork and exact prompts remain under `authored/`.
+  Final scene, lighting and modular-wall continuity validation remain pending.
+
+### Canyon material batch 09 � October 15
+
+- Added a sandstone tile and two cliff/ledge surfaces, retaining major fractures
+  and formations with finer stone grain. Two 2048�2048 and one 2048�1024 DXT1
+  outputs have full mip chains. Source art is 1254�1254 or 1774�887 and resampled.
+- Actual compiled DDS was compared with originals and in 2�2 repeats. Mean
+  luminance changed -3.5%, +7.8% and +9.7%. Alpha stays fully opaque. Repeated
+  motifs and joins remain visible, particularly the ledge's vertical repeat;
+  edge mismatch metrics increased with finer detail. These are not claimed
+  seamless. Final scene mapping, lighting and repeat visibility remain pending.
+- All 39 DDS files passed native parsing and worklist validation. Pack size is
+  115,365,549 bytes (about 110 MiB), within the 6 GiB cap. Texture workspace is
+  about 280 MiB; temporary originals/review output remains below 36 MiB.
+  No game launches, duplicate extracts or release staging copies were created.
+- Coverage: 39 installed, 6,768 supported keys awaiting artwork. Private evidence:
+  `review/canyon-surfaces-09.jpg`, `review/canyon-repeat-09.jpg` and the metrics
+  JSON. Exact built-in generation prompts and source dimensions are in `authored/`.
+
+### Weapon material batch 08 � October 15
+
+- Added three opaque weapon textures with modern metal finish while retaining
+  original atlas islands, fittings and color cues. Compiled output sizes are
+  1024�512 and two 1024�1024, DXT1 with complete mip chains. Generated sources
+  are 1774�887 and 1254�1254; outputs are resampled.
+- Reviewed the actual compiled DDS against originals. All 36 installed textures
+  passed native parsing, hashes, dimensions, aspect and mip-chain checks.
+  Mean luminance falls 6.2%, 12.6% and 15.2% for these three assets; model lighting
+  balance remains a final scene-validation item. No game launches occurred.
+- Active pack: 108,373,323 bytes (about 103 MiB), within the 6 GiB cap.
+  Texture workspace: about 262 MiB; original exports/review images: about 34 MiB,
+  within the 256 MiB temporary-output limit. No duplicate game or staging copies.
+- Coverage: 36 installed, 6,771 supported keys still awaiting art. The full
+  overhaul remains unfinished. Private comparison and metrics are in
+  `review/weapon-materials-08.jpg` and `review/weapon-materials-08-metrics.json`;
+  exact built-in generation prompts and source sizes remain under `authored/`.
+
+### Interface and panel batch 07 — October 15
+
+- Added a 256×256 loading-disc icon and two 512×512 panel textures. All three use
+  fully mipmapped lossless BGRA8 to preserve smooth gradients and icon alpha.
+  Generated sources are 1254×1254 and resampled; no native 4K claim applies.
+- The disc's alpha mask has 0.98194 intersection-over-union with the original at
+  its original size. Its center and corners remain fully transparent. Compiled
+  output was inspected on black, white, grey and colored backgrounds. Panel
+  borders and opaque alpha remain intact; mean luminance changes are within 4%.
+- Visually classified the 68 interface-owner keys: 65 scene previews, one editor
+  preview, one promotional illustration and one loading icon. The 66 previews
+  remain unfinished and are planned for matching-scene capture after world art
+  production. The illustration still needs artwork; UI inside shared archives
+  remains to classify. See private `interface-art-plan.json`.
+- All 33 installed DDS files passed native parsing and worklist checks. Pack size
+  is 106,623,969 bytes, about 102 MiB. The full texture workspace is about 252 MiB;
+  original exports and review/preview images total about 33.4 MiB, below the
+  256 MiB temporary-output limit. No game launches or duplicate extracts occurred.
+  Final loading-animation, panel usage and scene validation remain pending.
+- Private evidence: `review/interface-panels-07.jpg`, its metrics JSON and
+  `review/disc-alpha-07.jpg`. Artwork and exact built-in generation prompts remain
+  under `authored/`. Coverage is 33 installed and 6,774 keys awaiting artwork.
+
+### Shared surfaces batch 06 — October 15
+
+- Added a tire tread, weathered five-board wood surface and riveted steel sheet
+  found in both shared level archives and MapMaker tilesets. Original component
+  layouts, opaque alpha, compiled DDS output and repeated-tile previews were
+  inspected offline. Tire output is 1024×1024; wood and steel are 2048×2048, all
+  fully mipmapped DXT1 resampled from 1254×1254 generated sources.
+- All 30 installed DDS files passed native parsing and worklist checks. The pack
+  is 103,476,570 bytes, about 99 MiB; the texture workspace is about 243 MiB.
+  Average luminance changes are -9.4% for the tire, +12.9% for wood and -5.3% for
+  steel. Their model fit, scene lighting and tiling remain final-test items.
+  No gameplay launches occurred. Coverage is 30 installed and 6,777 needing art.
+- Added a conservative variant-review tool to avoid redundant source artwork.
+  It compared 4,203 eligible original textures against 27 existing references,
+  preserving aspect/format/size compatibility, and found no further proposals.
+  Three tests cover small compression differences, palette/alpha mismatches and
+  shifted texture islands. Similarity never automatically approves or installs art.
+- Private evidence: `review/shared-surfaces-06.jpg`, its metrics and repeated-tile
+  preview, plus `variant-candidates.json`. Sources and exact prompts are retained
+  under `authored/`; no duplicate game data or temporary build trees were created.
+
+### Embedded artwork batch 05 — October 15
+
+- Added three new generated materials for embedded cutscene textures: a blue-steel
+  light panel, matching vent/mechanical panel and red rocky ground. The atlas
+  regions and original light cues remain aligned in compiled DDS comparisons.
+  All three use 2048×2048 DXT1 with full mip chains, resampled from 1254×1254 art.
+- A 512×512 embedded character atlas shares the layout of the previously reworked
+  256×256 atlas. Its face/ear, clothing and hardware landmarks match visually;
+  normalized original RGB mean absolute differences are 3.4–4.1 on a 0–255 scale.
+  Reused the existing generated artwork for its 1024×1024 replacement, retaining
+  one source image and recording both runtime identities and reuse evidence.
+- Reviewed actual DDS pixels, opaque alpha and repeated ground tiles. The ground
+  retains a visible large-scale repeated motif, also present in the original.
+  Mean luminance changes range from -9.0% to +7.6%; scene material balance and
+  character-model fit remain pending final validation. No gameplay was launched.
+- All 27 installed DDS files passed native parsing and worklist validation.
+  The pack occupies 97,183,396 bytes, about 93 MiB, and the full texture workspace
+  is about 226 MiB. Coverage remains 27 of 6,807 keys, with 6,780 awaiting art.
+  Private comparisons: `review/embedded-art-05.jpg`, `review/red-ground-repeat.jpg`
+  and `review/character-resolution-variants.jpg`; prompts remain under `authored/`.
+
+### Embedded catalog integration — October 15
+
+- Integrated all 1,672 verified embedded source references. The catalog now holds
+  7,142 header/payload records and the worklist deduplicates them to 6,807 runtime
+  keys: 23 installed and 6,784 needing artwork. The original top-level sources
+  still represent 6,297 keys; embedded containers add 510. Multiple header/payload
+  variants can share one base-level identity and require only one replacement.
+- Import rechecks every archive SHA-256, parent archive-index entry, texture
+  header, payload hash, container reference and calculated runtime key. Inventory
+  checks embedded byte spans and table references; it continues to mark the rest
+  of each container as unclassified. Missing scan records cannot silently remove
+  previously integrated sources on catalog regeneration.
+- Twenty-seven offline tests pass, including truncated payloads, changed pixels,
+  mismatched dimensions/identity, broken table references and rescanning a catalog
+  that already includes embedded sources. No runtime code or gameplay changed.
+- Planned DDS payload is 3,208,165,560 bytes, about 2.99 GiB. This is a production
+  estimate rather than completed art; category classification, other asset
+  encodings, non-PAK data and procedural textures remain open work. The active pack
+  stays at about 84 MiB. Catalog and research reports stay private.
+
+### Embedded texture discovery — October 15
+
+- A read-only scan covered all 78,081 entries in 403 PAK archives, scanning
+  3,841,760,562 entry bytes at every byte offset for the verified header pattern.
+  It rediscovered all 29,509 cataloged top-level occurrences and found 1,672 nested
+  occurrences. There were no compressed entries to skip. Archive SHA-256 hashes
+  and candidate header/base-payload hashes are retained in the private report.
+- All 1,672 candidates have references in their containers' 16-byte texture
+  records. The pinned executable's relocation routine at `0x8e3e0` uses flag
+  `0x10000000`, adds the container base to the texture offset, and walks records
+  to a `0xffffffff` terminator. The loader call at `0x89e5f` reaches wrapper
+  `0x18a30` and texture loader `0x18390`; instruction bytes and targets are checked.
+- All 691 unique base images decoded and have recorded RGBA hashes. A bounded
+  contact sheet shows coherent atlases, effects, masks and a diagnostic image.
+  Of these identities, 181 already exist in the catalog and 510 are additional.
+  Catalog/worklist integration remains next, with potential known scope of 6,807
+  keys. Container references do not establish that every asset appears in play.
+- Twenty-four offline tests pass. Only compact JSON evidence and one contact
+  sheet were written; there were no bulk exports, artwork additions or game
+  launches. The active pack remains 23 textures, about 84 MiB. Other header
+  formats, non-PAK assets and procedural textures remain discovery limitations.
+  Evidence: private `embedded-scan.json`, `embedded-decode-research.json`, and
+  `review/embedded-candidates.jpg`.
+
+### Material and atlas batch 04 — October 15
+
+- Reworked the held machinery and character drafts against the original UV layouts.
+  Revision 2 retains the principal cap/vent positions, ear and cropped face regions,
+  clothing boundaries and fittings in offline side-by-side comparisons. Installed
+  both at 1024×1024 and a new four-panel steel surface at 2048×2048. All three use
+  fully mipmapped DXT1 and retain the originals' opaque alpha.
+- Reviewed actual compiled DDS pixels and a repeated metal-panel preview. The
+  character is approximately 6.6% darker on average; the panel surface 11.4% darker.
+  Scene material balance and character-model fit remain explicit final-test items.
+  Offline comparisons cannot establish how UV seams look on animated models.
+- All 23 installed DDS files passed native parsing and the worklist's hash,
+  dimension, aspect, mip and storage checks. Pack size is 88,093,427 bytes, about
+  84 MiB; the texture workspace is about 201 MiB after recycling superseded local
+  drafts and redundant comparison images. Selected sources and prompts remain.
+- There were no gameplay launches or runtime code changes. Coverage is 23 of
+  6,297 supported keys, with 6,274 awaiting artwork. The full overhaul and embedded
+  asset discovery remain unfinished. Private evidence: `review/material-atlas-04.jpg`,
+  its metrics JSON and `review/recessed-panels-repeat.jpg`.
+
+### Sky and effects batch 03 — October 15
+
+- Added two storm skies and two luminance effects: a glow sprite and square grid
+  mask. Corrected effect drafts against the original layouts before installation.
+  Final comparisons use the compiled DDS pixels, not just generated source art.
+- The two small effects use fully mipmapped lossless BGRA8 DDS because BC1
+  introduced visible gradient banding. The compiler and native parser now support
+  this format; channel normalization preserves luminance and alpha-only semantics.
+  The runtime's existing 24 MiB per-file and 512 MiB residency limits remain.
+- The active pack contains 20 replacements and occupies 83,897,396 bytes, about
+  80 MiB of the 6 GiB budget. The texture workspace is approximately 192 MiB.
+  Rejected local drafts and superseded compressed effect files were recycled.
+- Seventeen Python tests, the Windows Release build and native regression suites
+  passed. All 20 actual DDS files passed native parsing and the offline worklist
+  audit. Comparisons and metrics are retained under private `review/sky-effects-03`.
+- No gameplay launches occurred. Sky projection/wrap and effect blend brightness
+  remain pending scene checks. Coverage remains partial: 6,275 keys need art and
+  two drafts require review, out of 6,297 supported keys. Embedded asset discovery
+  is still incomplete. Sources are 1254×1254 or 1774×887, resampled at compilation.
+
+### Uncompressed replacement loader support — October 15
+
+- The host texture loader now keys swizzled A8R8G8B8, A8, L8 and A8L8 level-zero
+  bytes in addition to DXT1/3/5. Render targets, screen copies, unsupported formats
+  and invalid dimensions remain excluded. Guest texture data is not rewritten.
+- Replacement DDS files remain compressed and fully mipmapped. Alpha-bearing
+  originals reject DXT1 replacements; opaque L8 can use DXT1. Alpha-only masks
+  use white RGB and preserve their alpha channel, matching the existing shader
+  alpha-only handling. Optional raw dumps use tagged `.tsft` files rather than
+  incorrectly identifying swizzled pixels as compressed DDS.
+- The Windows Release build and native regression suites passed. Fifteen Python
+  offline tests passed, including alpha-only BC3 encoding. Native identity checks
+  on one original payload of each new format matched the offline catalog keys.
+  Those four temporary fixtures totaled 537,664 bytes and were recycled.
+- The refreshed catalog/worklist now includes 6,297 supported keys: 16 installed,
+  two held drafts, and 6,279 awaiting art. All known cataloged formats have a
+  supported decoding/key path, but embedded asset discovery remains incomplete.
+  The 750 new uncompressed keys retain a pending scene-validation status.
+- No gameplay launch was performed. This is compiled loader support and offline
+  validation, not proof that every effect, UI or material renders correctly.
+  Build evidence: `logs/texture-formats-build.log`; key evidence is recorded in
+  private `format-runtime-validation.json`. Pack remains about 64 MiB.
+
+### Uncompressed texture decoding — October 15
+
+- Located the original texture loader at guest address `0x18390`. Its switch
+  reads archive format at header offset 20; the table at `0x185b0` maps archive
+  formats 0 through 7 to Xbox formats `[12,14,6,5,15,25,0,26]`. The new offline
+  `tools/texture-formats.py` verifies the pinned executable SHA-256, dispatch
+  instruction bytes and all eight case immediates before using this mapping.
+- The 753 previously unknown-format payloads decode as 38 A8R8G8B8, 434 A8,
+  155 L8 and 126 A8L8 images. All payload source hashes were checked and decoded
+  RGBA hashes recorded. They produce 750 candidate base-level identities; three
+  additional payloads share an identity. These candidates are not promoted into
+  the supported runtime catalog yet.
+- Sixteen small samples were visually inspected, showing coherent sky images,
+  transparency masks, glow/noise textures and UI icons. One contact sheet and
+  compact JSON research records are retained; no bulk PNG export was made.
+- Thirteen offline tests pass, including rectangular Morton ordering, channel
+  order, alpha/luminance semantics, truncated input and wrong-executable rejection.
+  Runtime integration and identity/alpha verification remain next steps. The
+  active pack is unchanged at 16 replacements; no gameplay launches occurred.
+
+### Environment texture batch 02 — October 15
+
+- Added weathered steel panels, wind-shaped sand, horizontal weathered trim and
+  plaster over metal panels. Source comparisons and repeated-tile previews were
+  inspected offline; all four await scene-specific runtime checks. No game
+  launch, new game-data copy or packaged ZIP was needed.
+- One major sand surface uses 4096-square DDS; two materials use 2048-square and
+  the panel strip uses 2048x1024. These resample three 1254-square generated sources
+  and one 1774x887 source. Exact prompts and review notes accompany each source.
+- All 16 installed replacements pass the format, dimensions, aspect, full mip
+  chain and hash audit. Active pack: 67,117,865 bytes (about 64 MiB), below 6 GiB.
+  The texture workspace, including source artwork, is about 168 MiB. There are
+  5,529 supported keys awaiting art, two held drafts and 753 unsupported payloads.
+- Evidence: private `review/environment-batch-02.jpg`, per-asset prompt records,
+  `worklist.json`, and `progress.json`. The existing early gameplay evidence
+  applies only to its recorded keys, not this newly added batch.
+
+### Texture production audit and offline batch — October 15
+
+- `tools/texture-inventory.py` checked catalog references against all 403 P5CK
+  archives: 78,081 entries, including 29,509 cataloged texture occurrences.
+  The 48,572 other entries are unclassified, not presumed texture-free.
+  Embedded texture discovery and four unsupported format families remain open.
+- Private `inventory.json` assigns shared keys to provisional production groups
+  without duplicating outputs. The 6144 MiB budget is allocated as 3584 MiB for
+  levels/shared assets, 768 characters, 512 weapons, 384 MapMaker, 256 interface,
+  and 640 reserve. These are ceilings, not completed content; archive ownership
+  does not prove visual category (effects and props may be embedded/shared).
+- All 753 unsupported payloads match plausible 8-, 16- or 32-bit base/mip byte
+  counts. This is only a decoding lead: channel order, memory layout and runtime
+  identity are not established and support has not been enabled.
+- Added one sand material after source and repeated-tile visual review. The
+  1254-square generated source was resampled to 2048-square DXT1 with complete
+  mips. Pack total: 12 replacements, 48,940,325 bytes (about 47 MiB). The new
+  machinery draft changed vent details and remains excluded pending correction.
+- Ten offline tool tests passed; all installed DDS files passed their format,
+  hash, aspect and mip audit. No gameplay launches or game-data copies were
+  made for this batch. The new sand texture awaits scene-specific verification.
+- Coverage remains 5,533 supported keys awaiting art, two held drafts, twelve
+  installed replacements and 753 unsupported payloads. The goal remains active.
+
+- Read the supplied desktop Xbox ISO without modifying it; extracted 412 files.
+- Confirmed the US executable, title ID `45410066`, entry point `0038024D`,
+  XDK 5849 and the expected SHA-256 documented in `README.md`.
+- Identified 379 Xbox library symbols, including six upstream manual symbols.
+- Generated 15,838 C function bodies with zero reported translation failures,
+  totaling 2,507,843 lines across 16 chunks plus support files.
+- Built `build/windows/Release/futureperfect_recomp.exe` with Visual Studio
+  2022 / MSVC 19.44.35224 for Windows x64.
+- Compiled and loaded FFmpeg 8.1 movie support.
+- Fixed native profile device paths that bypassed `RECOMP_SAVE_DIR`, and
+  preserved the fix in `patches/save-routing.patch`. Ten native path regression
+  checks pass, including asset routing and switching between save directories.
+- Added player-1 keyboard/mouse controls: normalized WASD movement, Windows raw
+  relative mouse motion, direct camera-angle updates, mouse buttons and wheel,
+  editable sensitivity/invert-Y settings, focus-loss clearing and cursor
+  capture/release. The launcher loads `config/pc-controls.json`.
+- Preserved the host integration and camera wrapper in `patches/pc-controls.patch`;
+  the generated original `sub_000D2B80` body remains available as `_gen`.
+
+## Texture overhaul moved to issue #74 - October 16, 2026
+
+- Active branch: `74-enhancement-gfx-overhaul-to-modernize-textures`, based on
+  current main `d430e8b`. Transferred the texture portions of `fcee85c` and
+  `8f789ad` from `codex/integrate-display-textures`; preserved current launcher,
+  controls, networking, release and documentation changes on main.
+- Includes live Classic/4K selection, uncompressed identity/alpha handling,
+  embedded/non-PAK catalog tools, inventory/category budgets, DDS compilation,
+  comparison sheets, variant discovery, tests and historical texture evidence.
+  Artwork, originals, the active pack, settings and saves remain private in the
+  same checkout. The earlier branch is retained as a recovery reference.
+- Latest private artwork batch 58 accepts the vent and banded steel surface:
+  both source images are 1254x1254, resampled to 1024x1024 and 2048x2048 DXT1.
+  Compiled comparisons and repetition sheets were inspected offline; stone and
+  rusted-panel drafts remain held for edge correction. No native 4K-source claim.
+- Current catalog: 7,147 payload records, 6,812 supported keys, 232 installed,
+  6,571 needing art and nine held drafts. Embedded discovery/category review
+  remain incomplete. The 232 assets are a partial preview, not a full remaster.
+- Pack including metadata: 388,280,874 bytes (370.29 MiB), under the 6 GiB cap.
+  Source art stays in the existing approximately 1.125 GiB texture workspace;
+  original exports/review evidence remain about 106 MiB, below the 256 MiB limit.
+- Fresh MSVC native DDS validation passed all 232 installed files. Native
+  counted-resource loader tests passed classic/4k/implicit/missing modes,
+  cached switching, original preservation, invalid files, allocation failure,
+  screen-copy/render-target exclusion and resource cleanup. Worklist hashes,
+  dimensions, mip chains, aspect ratios and disk budget passed.
+- No game launch or full runtime rebuild was performed for this transfer.
+  Existing runtime evidence remains historical; final scene/UV/alpha, display,
+  residency and Mac checks are still pending under the 90% validation gate.
+- Transfer checks: 38 texture-tool tests passed, then all 14 patch-stack tests
+  passed after updating branch-switch fixtures to model main without the toggle.
+  This covers fresh/upgrade/idempotent stacks, LF/CRLF round trips and preservation
+  of unrelated edits. The complete main patch stack remains compatible.
+
+## Texture props batch 59 - October 16, 2026
+
+- Continued on issue #74 branch from `21926c8`. Four new offline-reviewed
+  replacements: brass cylinder/caps atlas, slotted bronze lid, two-pin steel
+  equipment strip and recessed industrial wall panel. Ring retains eight holes;
+  panel retains four outer fasteners per side and corner brackets. All four
+  original and compiled alpha channels are fully opaque.
+- Three square sources are 1254x1254 and the rectangular source is 1774x887.
+  Compiled DXT1 outputs are two 1024x1024, one 1024x512 and one 2048x2048 with
+  full mip chains. All are resampled; these are not native 4K generated sources.
+- Two additional built-in generation calls attempted held stone/rust repeat
+  corrections. Both failed offline review and remain uninstalled. Retained
+  original V1 sources, prompts, generator references and comparison evidence;
+  recycled 7.04 MiB of unsuccessful local V2 copies.
+- All 236 installed DDS files pass native format validation and worklist
+  hash/dimension/mip/aspect/budget checks. Inventory refreshed: 7,147 payloads,
+  6,812 supported keys, 6,567 needing art and nine held drafts. Existing gaps,
+  unclassified categories and discovery scope remain open.
+- Pack: 392,826,981 bytes (374.63 MiB),
+  adding 4.34 MiB this batch. Texture workspace
+  allocation is approximately 1.141 GiB;
+  original exports and review outputs total 107.34 MiB,
+  below the 256 MiB temporary limit. One active pack, no duplicate game or build.
+- Private evidence: `review/props-59-final-1.jpg`, repeat sheet and metrics,
+  `review/props-59-native-audit.txt`, `review/props-59-acceptance.json`,
+  `review/props-59-cleanup.json` and `review/surfaces-59-source-metrics.json`
+  under `private/texture-remaster`. Exact prompts accompany each source.
+- No runtime rebuild or game launch. Model UV/lighting, scene adjacency,
+  1080p/4K/ultrawide rendering, residency and full-pack stability remain pending
+  the existing near-completion gate. This is a partial preview, not a full remaster.
+
+
+### Texture overhaul batch 60 - machinery (issue #74)
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures`; no game launches.
+- Added three offline-reviewed machinery replacements: steel mechanism/vent atlas,
+  circular disc, and industrial atlas with corrected vertical ULTRANET lettering.
+  Actual compressed DDS comparisons, repeat sheets and lettering crop were reviewed.
+  The cable-panel draft remains excluded because its small ochre marking changed;
+  its eight center louvers match the original (the initial prompt miscounted ten).
+- All 239 installed DDS files passed the native format validator and the worklist's
+  hash, mip-chain, dimensions, aspect-ratio and 6 GiB budget checks on Windows x64.
+  Model UV sampling, scene appearance and runtime residency remain unverified for
+  this batch. This is asset-only work; no runtime code or binaries changed.
+- Selected 1254-square generated sources were resampled into two 2048-square and
+  one 1024-square DXT1 textures; these are not native 4K source images.
+- Catalog remains 6,812 supported keys: 239 installed, 6,563 awaiting art and ten
+  held drafts. Reviewed 32 further candidates with native alpha checks, bringing
+  provisional visual classifications to 451; category-wide review is incomplete.
+- Pack: 399,120,159 bytes (380.63 MiB). Texture workspace at audit: 1,245,492,034
+  allocated bytes (1.16 GiB). Superseded V1 art was recycled with provenance and
+  comparison evidence retained; no game copies or packaging trees were created.
+- Private evidence: `review/machinery-60-final-1.jpg`,
+  `review/machinery-60-final-repeat-1.jpg`, `review/machinery-60-lettering-final.jpg`,
+  `review/machinery-60-final-metrics.json`, `review/machinery-60-native-audit.txt`,
+  and `review/inventory-60-alpha.jpg` under `private/texture-remaster`.
+  Artwork and pack remain ignored/local. Consolidated playtesting stays deferred.
+
+
+### Hybrid texture production adopted - issue #74 (2026-10-16)
+
+- User approved individual redesigns for prominent assets plus faithful batch
+  enhancement for simpler materials. Added `tools/texture-hybrid-plan.py` and
+  documented the policy in AGENTS and the texture guide. Eight-asset queues group
+  classified environments by material/occurrence; unclassified assets, sensitive
+  categories and held drafts remain separate. Routing never approves artwork.
+- Five planner tests pass on Windows x64: sensitive/unknown routing, installed
+  and held precedence, bounded deterministic batches, fixed-budget overflow and
+  duplicate-key rejection, and batch-size bounds. No runtime code changed or
+  game rebuild was required. MAC-011 records portable tooling and unverified Mac
+  execution/scene coverage.
+- Two built-in image-generation batches produced 14 sources; nine passed offline
+  source and actual compressed-DDS review. Five failed drafts remain excluded:
+  a riveted panel's bright repeat frame, changed tread arrangement and shifted
+  bottom fittings in three similar metal-panel variants. Three compiled rejected
+  files and metadata were retired after recording hashes and keeping evidence.
+  Do not treat hybrid-62-final-2.jpg as installed coverage: it records rejections.
+- Added four square 1024x1024 and five landscape 1024x512 DXT1 replacements.
+  Source art is 1254x1254 or 1774x887, resampled for encoding; not native 4K art.
+  Stronger highlights and the dark circuit material's -16.56% mean luminance
+  remain explicit final-scene appearance checks. No new asset is runtime-verified.
+- All 248 retained DDS files passed the native format validator and worklist
+  hashes, dimensions/aspect ratios, full mip chains and pack-budget checks.
+  Catalog: 6,812 supported keys, 248 installed, 6,549 awaiting art, 15 held.
+  Reviewed 32 additional originals/alpha channels: 483 visual classifications.
+  Category-wide review is incomplete; 6,315 keys remain in visual triage.
+- Active pack: 403,669,138 bytes (384.97 MiB), up only 4,548,979 bytes this turn.
+  Texture workspace at audit: 1,306,285,021 allocated bytes (1.22 GiB), including
+  source art; originals/review/preview files total 115.38 MiB. One active pack,
+  no extra game extraction, release staging tree or gameplay capture was created.
+- Private evidence: `review/hybrid-61-final-*`, `review/hybrid-62-final-*`,
+  `review/hybrid-61-62-native-audit.txt`, both batch prompt/generated records,
+  `review/hybrid-62-retired.json`, and `review/inventory-61-*` under
+  `private/texture-remaster`. Private artwork remains local and ignored.
+- Branch: `74-enhancement-gfx-overhaul-to-modernize-textures`, based on `fdfac3f`.
+  Supported Xbox executable SHA-256 reverified. Zero game launches; consolidated
+  playtesting remains deferred until 90% audited scope and category review.
+
+
+### Hybrid texture batch 63 - metal and surface materials (issue #74)
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` at `70d19b5`.
+  Added eight replacements after original/source and actual-DDS comparisons,
+  including 2x2 repetition and opaque-channel checks. No game launches or rebuild.
+- Materials include divided and yellow-striped panels, worn steel, muted metal,
+  polished trim, two small band atlases and a gray gridded surface. Small bottom
+  fittings retained their original variant-specific locations. Mean luminance
+  changes of -14.69% for the striped wall and -20.91% for worn steel remain explicit
+  final-scene brightness checks. Stronger grid detail also needs scene review.
+- Six 1774x887 and two 1254x1254 generated sources were resampled into five
+  1024x512, one 512x256, one 512x512 and one 2048x2048 full-mip DXT1 texture.
+  These are generated enhancements, not native 4K sources or verified game scenes.
+- All 256 retained DDS files passed the native format validator and the worklist
+  hash, mip-chain, size/aspect and fixed 6 GiB budget checks on Windows x64.
+  Supported catalog: 6,812 keys; 256 installed, 6,541 awaiting art, 15 held drafts.
+- Reviewed 64 additional originals and all 34 nonopaque alpha channels. The 547
+  provisional visual classifications now distinguish more reticles, warning and
+  grenade symbols, particle masks and robot atlases from environmental materials.
+  All-category review is unfinished; 6,251 keys remain in visual triage.
+- Pack: 408,479,691 bytes (389.56 MiB), including metadata.
+  Texture workspace audit: 1,340,936,887 allocated bytes
+  (1.25 GiB). Originals/reviews/previews: 118.76 MiB, below 256 MiB.
+  No duplicated game data, pack, ZIP or release staging. Private art stays local.
+- Private evidence under `private/texture-remaster`: `review/hybrid-63-final-*`,
+  `review/hybrid-63-native-audit.txt`, source/prompt/generated records and
+  `review/inventory-63-*` RGB/alpha sheets. Consolidated scene validation remains
+  deferred to 90% audited coverage and completed category review.
+
+
+### Hybrid texture batch 64 - terrain and industrial materials (issue #74)
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` at `2bb5564`.
+  Added 16 replacements after original/source/actual compressed-DDS comparisons,
+  opaque-channel checks and 2x2 repeat review. No game launches or runtime rebuild.
+- Materials cover concrete, scratched metal, dirt, rock, sandstone, brickwork,
+  gray stone wall, two tile grids and a five-stone atlas. Broad original layout
+  retained; fine detail and local contrast enhanced. Rusted brown panel mean
+  luminance changed -12.65%; other changes range -8.32% to +0.77%. Final scene
+  brightness, adjacency and material appearance remain unverified.
+- Sixteen 1254x1254 sources were resampled to ten 1024x1024 and six 2048x2048
+  full-mip DXT1 files. These are generated enhancements, not native 4K sources.
+- All 272 retained DDS passed native format validation and worklist hashes,
+  mip chains, dimensions/aspect and fixed 6 GiB budget checks on Windows x64.
+  A missing source field in new private provenance records was corrected before
+  the successful worklist audit. No tooling/runtime source changed.
+- Catalog: 6,812 supported keys; 272 installed, 6,525 awaiting art, 15 held drafts.
+  Reviewed 80 additional originals and 14 nonopaque alpha channels. There are now
+  627 provisional visual classifications; category-wide review remains unfinished.
+  Queue: seven material candidates, 140 individual and 207 specialist reviews,
+  15 corrections and 6,171 keys requiring visual triage.
+- Pack including metadata: 432,256,545 bytes (412.23 MiB),
+  increased by 23,776,854 bytes. Texture workspace at audit:
+  1,442,399,162 allocated bytes (1.34 GiB).
+  Originals/reviews/previews: 131.57 MiB, below 256 MiB. Private art
+  remains local; no duplicate game, pack, ZIP or release staging was created.
+- Private evidence: `review/hybrid-64-final-*`, `review/hybrid-64-native-audit.txt`,
+  `review/hybrid-64-acceptance.json`, batch source/prompt records, and inventory-64
+  RGB/alpha sheets under `private/texture-remaster`. Consolidated scene testing
+  remains deferred until 90% audited coverage and completed category review.
+
+
+### Hybrid texture batch 65 - materials and equipment (issue #74)
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` at `d3f1f01`.
+  Generated 16 sources; accepted seven material and seven individually prompted
+  equipment/weapon textures after actual compressed-DDS and 2x2 repeat review.
+  Original payload hashes and supported US XBE SHA-256 reverified on Windows x64.
+- New art includes a framed grille, riveted panels, peeling wall, railway ballast,
+  star carpet, polished metal, leather/metal equipment, weapon atlas, cylindrical
+  highlights, machinery panels and a circular vent. Preserve model/scene checks
+  for the final phase; finer grille detail and highlights remain runtime-unverified.
+- Two drafts held and excluded: purple reflection band peak shifted from row 38
+  to row 32 at original 64-pixel scale; rusted armor panel brightness increased
+  54.02%. Kept source art, prompts and evidence; removed four rejected pack files
+  (DDS and metadata) after recording hashes and validating contained paths.
+  Review sheets 2 and 4 include rejected drafts, not exclusively installed art.
+- Accepted carpet mean luminance changed -21.47%; brighter metal changes reach
+  +14.41%. Final scene validation must check dark carpet visibility and highlights.
+  Twelve 1254-square and four 1774x887 sources were generated. Accepted outputs:
+  eight 1024-square, two 512-square, three 1024x512 and one 2048x1024 full-mip DXT1.
+  All were resampled; none is a native 4K generated source.
+- All 286 retained DDS passed native format and worklist hashes, complete mips,
+  dimensions/aspect and fixed-budget checks. Catalog: 6,812 supported keys,
+  286 installed, 6,509 awaiting art and 17 held drafts. Classification remains
+  627 provisional keys; 131 individual, 207 specialist and 6,171 visual-triage
+  items remain, with no currently classified material batch candidates.
+- Pack: 440,653,149 bytes (420.24 MiB), including metadata,
+  up 8,396,604 bytes. Texture workspace at audit:
+  1,509,938,424 allocated bytes (1.41 GiB).
+  Original/review/preview files: 134.98 MiB, below 256 MiB. No duplicated
+  game extract, pack, ZIP or staging directory. Private art stays local.
+- Evidence under `private/texture-remaster`: `review/hybrid-65-final-*`, native
+  audit, acceptance and retirement records, highlight profile, source/prompt files.
+  Zero gameplay launches or rebuilds; no runtime/tooling code changed. Consolidated
+  playtesting remains deferred to 90% audited coverage and completed category review.
+
+
+### Hybrid texture batch 66 - characters and shared armor (issue #74)
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` at `73919dd`.
+  Added 15 character/equipment replacements after original/source/actual-DDS
+  comparison, opaque-channel checks and repeated-edge inspection. Supported XBE
+  SHA-256 and original catalog payload hashes verified on Windows x64.
+- Art covers white fur and gold accessories, cloth/skin trim, coat and trousers,
+  gray/orange uniform, primate fur, dark leather equipment, shared gray armor and
+  four small robot atlases. Character identity, model UV seams and all new scene
+  appearance remain runtime-unverified; no gameplay or game rebuild occurred.
+- Fifteen sources generated; fourteen selected. Held eye/accessory draft
+  `d5b07a49859a271d` because the iris became excessively saturated cyan-blue.
+  Source/prompt/evidence retained; rejected DDS and metadata removed after hash
+  recording and contained-path validation. Review sheet 1 includes that rejection.
+- One selected armor source serves both `47ec02a8b3aaebee` and `7b988340e93f849a`.
+  Original resolution-variant comparison: RGB MAE 2.625, p95 7, alpha error zero;
+  original layouts and both actual DDS versions visually reviewed. One source PNG
+  retained. This is offline-approved reuse, not proof of model rendering.
+- Generated sizes: nine 1774x887 and six 1254x1254. Accepted full-mip DXT1 outputs:
+  four 1024x512, six 1024x1024, one 2048x2048 and four 512x256, all resampled.
+  Not native 4K source artwork. Shared armor luminance increases 19.31%/19.68%;
+  two leather atlases increase 14.65%/14.18%. Final checks must cover highlights,
+  eyes, emblems and exact UV alignment in the character models.
+- All 301 retained DDS passed native format and worklist hash, mip-chain,
+  dimensions/aspect and fixed-budget checks. Catalog: 6,812 supported keys;
+  301 installed, 6,493 awaiting art, 18 held. Visual classification remains 627
+  provisional keys; 115 individual, 207 specialist and 6,171 visual-triage items.
+- Pack including metadata: 449,399,857 bytes (428.58 MiB),
+  up 8,746,708 bytes. Texture workspace at audit:
+  1,567,022,125 allocated bytes (1.46 GiB).
+  Original/review/preview files: 137.84 MiB, below 256 MiB. No duplicate
+  game extract, pack, ZIP or staging tree. Artwork remains private/local.
+- Private evidence: `review/hybrid-66-final-*`, native audit, acceptance/retirement
+  and variant-check records, original-selection metadata and source/prompt files.
+  Consolidated playtesting remains deferred to 90% audited scope and completed
+  category review. No runtime or tooling source changed this batch.
+
+
+## Texture overhaul hybrid batch 67 — offline equipment review
+
+- Continued issue #74 on `74-enhancement-gfx-overhaul-to-modernize-textures`, starting from `cfffe0a`. Verified supported US XBE and original payload hashes; no runtime/source changes or gameplay launches.
+- Generated eight equipment drafts; accepted five after original/compiled-DDS and 2x2 repeat review: worn equipment, olive machinery and yellow/red/blue circuit panels. Held three for grip-pattern pitch, added panel fittings/bevels and maker-plate markings. Original game textures remain active for held keys; rejected DDS/metadata removed with recorded hashes, source art/provenance retained privately.
+- Four generated sources are 1254 square and four are 1774x887. Accepted full-mip DXT1 outputs: one 2048 square, one 1024 square and three 1024x512. All are resampled; no native 4K claim. Accepted luminance changes range from -8.68% to +15.82%; final model/scene lighting and seams remain unverified.
+- All 306 retained DDS pass native format validation and worklist hash, dimensions/aspect, mip and cap checks. Coverage: 306 installed / 6,812 supported keys, 6,485 needing art and 21 held drafts. The 627 provisional classifications and unresolved embedded/procedural scope remain open. Offline installation is not full-game visual validation.
+- Active pack: 453,946,549 bytes (432.92 MiB) / 6 GiB, including metadata; batch adds 4,546,692 bytes. Texture workspace at audit: 1,600,297,394 allocated bytes (1.49 GiB); original exports/review/preview: 146,229,407 bytes / 256 MiB. Free disk: 137,601,146,880 bytes. No duplicate game, staging or archive created; saves/settings unchanged.
+- Private evidence: `review/hybrid-67-final-*.jpg`, metrics, native audit, retirement hashes and acceptance record under `private/texture-remaster`. Artwork remains local/ignored. Existing shared DDS path is unchanged; Mac artwork/scene validation remains pending. Consolidated playtesting stays deferred to the established near-completion gate.
+
+
+## Texture overhaul hybrid batch 68 — metal surfaces and inventory
+
+- Continued issue #74 on `74-enhancement-gfx-overhaul-to-modernize-textures`, starting at `04ae123`. Verified supported US XBE and original payload hashes. No runtime/source changes or game launches.
+- Visually classified 64 more original textures with decoded alpha ranges, bringing provisional classification to 691 keys. Masks, interface, effects and reflections stay in specialist review; classification is not completed artwork or proven scene usage.
+- Accepted eight compressed-DDS replacements: pale silver panel, three-light panel, recessed grid, louver, blue slats, vertical vent, rusty tapered apertures and brown circular fitting. Reviewed original/DDS comparisons and 2x2 repetition. Louver slot concern resolved by measured profiles: 12 slots on both, center deviations at most one original pixel. No failed drafts added this batch.
+- Seven sources are 1774x887 and one is 1254 square. Outputs are seven 1024x512 and one 512 square, full-mip DXT1; all resampled, not native 4K. Brown fitting luminance rises 18.51%; other changes range -8.65% to +1.17%. Scene lighting, UV adjacency and mapped tiling remain pending.
+- All 314 retained DDS pass native format validation and worklist hash, dimensions/aspect, mip and cap checks. Coverage: 314 installed / 6,812 supported keys, 6,477 needing art and 21 held drafts. Unresolved embedded/procedural scope remains open; no full-remaster claim.
+- Active pack: 456,572,573 bytes (435.42 MiB) / 6 GiB including metadata; batch adds 2,626,024 bytes. Texture workspace at audit: 1,634,636,828 allocated bytes (1.52 GiB). Original exports/review/preview: 149,403,778 bytes / 256 MiB; free disk: 137,182,937,088 bytes. No game copies, archives or staging trees created; personal saves/settings unchanged.
+- Evidence remains ignored/local under `private/texture-remaster/review/hybrid-68-*`, including original triage, compressed DDS/repeat sheets, metrics, slot profiles, native audit and acceptance. Shared DDS path unchanged; Mac artwork/scene validation pending. Consolidated playtesting remains deferred to the existing near-completion gate.
+
+
+## Texture overhaul hybrid batch 69 — broader material production
+
+- Continued issue #74 from `acadffc`; verified supported US XBE and original payload hashes. Classified 64 additional originals/alpha ranges: 755 provisional classifications total, with all unresolved coverage retained.
+- Accepted 15 material replacements across metal, concrete, stone, wood and leather after actual-DDS and 2x2 repeat review. Held gold panel `220cc5080517b5db` for added corner screws/frame changes; original stays active. Retired only its compiled DDS/metadata with recorded hashes; source art remains private.
+- Generated six 1254-square and ten 1774x887 sources. Accepted full-mip DXT1 outputs: two 512-square, two 1024-square, one 2048-square and ten 1024x512. All resampled, not native 4K. Accepted luminance changes -13.98% to +16.59%; final mapped lighting, adjacency and repetition remain pending. Pattern profiles supplement the visual checks for repeated ribs and rivets.
+- The main checkout switched externally to issue-17 during generation. Created the minimal `build/texture-74-source` worktree on the existing #74 branch, sharing the single artwork/game folder by explicit paths. Re-encoded all 16 drafts in memory with #74's encoder and confirmed byte-identical DDS outputs; color channel metadata recorded. Validation and this commit use #74; concurrent branch and edits preserved. Keep subsequent texture source work in this worktree while that concurrent work continues.
+- All 329 retained DDS pass native format and #74 worklist hash, dimensions/aspect, mip and cap checks. Coverage: 329 installed / 6,812 supported keys; 6,461 need art and 22 drafts need correction. Installed/offline-reviewed does not establish scene validation or full remaster completion.
+- Pack: 464,620,511 bytes (443.10 MiB) / 6 GiB including metadata, +8,047,938 this batch. Texture workspace at audit: 1,705,656,196 allocated bytes (1.59 GiB); temporary original/review/preview: 155,260,377 bytes / 256 MiB. Separate minimal source checkout: 2,684,911 bytes; no duplicated private art/game/build. Free disk: 137,629,822,976 bytes.
+- Zero game launches; saves/settings untouched. Evidence is ignored/local under `private/texture-remaster/review/hybrid-69-*`. Shared runtime unchanged; Mac scene/art validation remains pending. Consolidated playtesting remains deferred to the near-completion gate.
+
+
+## Texture overhaul hybrid batch 70 — equipment material production
+
+- Continued issue #74 from `b8a4327` in the minimal `build/texture-74-source` worktree, sharing the authoritative private artwork/game paths. Other checkout preserved. Supported US XBE and original payloads verified; no gameplay launches or runtime/tooling changes.
+- Generated 16 drafts and accepted 13 after original/actual-DDS and 2x2 repeat review. Held three: changed bracket lettering, changed white weapon marking, and added rotor fasteners. Originals remain active for held keys; retired only their compiled DDS/metadata with recorded hashes, preserving source/provenance.
+- Eleven generated sources are 1254-square and five 1774x887. Accepted full-mip DXT1 outputs: six 1024-square, four 1024x512, one 512-square, one 2048-square and one 2048x1024. All resampled, not native 4K. Accepted luminance changes -5.72% to +21.26%; mapped brightness and UV adjacency remain pending. Slot/coil profile diagnostics supplement the offline visual review.
+- All 342 retained DDS pass native format and worklist hash, dimensions/aspect, mip-chain and cap checks. Coverage: 342 installed / 6,812 supported keys; 6,445 need art and 25 drafts need correction. Visual classification remains 755 provisional keys; full category and unresolved embedded/procedural coverage remain open.
+- Active pack including metadata: 474,589,415 bytes (452.60 MiB) / 6 GiB, +9,968,904 this batch. Texture workspace at audit: 1,767,689,868 allocated bytes (1.65 GiB); original/review/preview files: 158,403,381 bytes / 256 MiB. Free disk: 137,342,664,704 bytes. No duplicate game, pack, ZIP or staging tree; personal saves/settings untouched.
+- Private evidence: `review/hybrid-70-*`, including compressed comparisons, repetition, metrics, pattern profiles, native audit, retirement hashes and acceptance record. Artwork stays ignored/local. Shared DDS path unchanged; Mac scene/art verification pending. Consolidated playtesting stays deferred to the near-completion gate; this remains a partial offline-reviewed pack.
+
+
+## Texture overhaul hybrid batch 71 — machinery and effects triage
+
+- Continued issue #74 from `db8a296` in `build/texture-74-source`, sharing the single authoritative private artwork/game folder. Verified supported US XBE and original payload hashes; no runtime/tooling changes or gameplay launches.
+- Generated 14 material/equipment drafts; accepted 13 after actual-DDS and 2x2 repeat review. Held brass casing `7ee7018cb8e3a39a` for changed reflection bands. Original remains active; retired only its DDS/metadata with recorded hashes and retained source/provenance. Similar receiver `470d6c6497546120` failed color-similarity reuse thresholds; stamped-text atlas `dc35c80ac987baa2` remains for specialist treatment.
+- Eight generated sources are 1254-square, six 1774x887. Accepted full-mip DXT1 outputs: three 512-square, two 1024-square, two 2048-square, five 1024x512 and one 512x256. All resampled, not native 4K. Accepted luminance changes -8.92% to +21.51%; vehicle atlas +21.51%. Final scene brightness, mapped seams and detail remain pending. Repetitive profile frequencies agree for sampled rivets, vents, louvers and treads; this supplements visual review, not scene validation.
+- Classified 32 additional originals using visible color and decoded alpha: 787 provisional classifications total. These effects, reticles, masks and interface shapes require specialist review. All 355 retained DDS pass native format and worklist hash, dimensions/aspect, mip and cap checks. Coverage: 355 installed / 6,812 supported keys; 6,431 need art and 26 drafts need correction. Full-category and unresolved embedded/procedural coverage remain open.
+- Pack including metadata: 483,946,646 bytes (461.53 MiB) / 6 GiB; +9,357,231 this batch. Texture workspace at audit: 1,822,735,910 allocated bytes (1.70 GiB); original/review/preview files 162,128,360 bytes / 256 MiB. Free disk 137,074,503,680 bytes. No duplicate game, pack, archive or staging tree; saves/settings untouched.
+- Evidence stays ignored/local under `private/texture-remaster/review/hybrid-71-*`: originals/alpha triage, generation prompts, compressed comparisons, repeat sheets, metrics, pattern profiles, variant decision, native audit, retirement hashes and acceptance. Shared DDS path unchanged; Mac scene/art validation pending. Consolidated playtesting remains deferred to the established near-completion gate.
+
+
+## Texture overhaul hybrid batch 72 — specialist interface alpha review
+
+- Continued issue #74 from `6cfff18` in the isolated source worktree with explicit shared artwork/game paths. Verified supported US XBE and original payload hashes. No runtime/tooling changes or gameplay launches.
+- Generated eight interface-mask drafts; accepted zero. Actual DXT5 alpha review exposed changed glyph scale, stroke/opacity, negative gaps, ruler ticks, extra marks, panel placement and bracket baseline. The closest glowing corner still shifted the right-edge profile relative to the top, risking modular seams. All eight originals remain active. Retired only candidate DDS/metadata with recorded hashes; preserved source/provenance and specific correction targets.
+- Original format is verified A8 (Xbox format 25). Compiled using alpha semantics so white RGB does not hide alpha errors. Measured alpha mass ratios 0.22-1.68 and alpha64 silhouette overlap 0.20-0.82; format compatibility alone did not qualify any draft. Six sources are 1254-square, one 1774x887 and one 887x1774; candidate dimensions 128-256 per axis, all resampled. No native-4K claim.
+- Inspected 32 additional opaque originals: 819 provisional classifications total, with ten environment-material candidates now available. Continue material production and defer exact UI correction to specialist batches. Coverage remains 355 installed / 6,812 supported keys; 6,423 need art, 34 held drafts. Full category/scene review and unresolved embedded/procedural scope remain open.
+- All 355 retained DDS pass native format and worklist hash, dimensions/aspect, mip-chain and cap checks. Pack unchanged at 483,946,646 bytes (461.53 MiB) / 6 GiB. Texture workspace at audit: 1,825,513,207 allocated bytes (1.70 GiB); original/review/preview files 163,250,400 bytes / 256 MiB; free disk 134,966,263,808 bytes. No duplicate game/pack, archive or staging tree; saves/settings untouched.
+- Evidence is private/local under `review/hybrid-72-*`: verified selection, transparent generation prompts, compiled-alpha comparisons/metrics, held reasons, retirement hashes, candidate and retained native audits, and triage sheets. Shared DDS path unchanged; Mac scene validation remains pending. Playtesting stays deferred to the near-completion gate.
+
+
+## Texture overhaul hybrid batch 73 — environment material production
+
+- Continued issue #74 from `d734d78` in `build/texture-74-source`, sharing the single private artwork/game folder. Verified supported US XBE and all ten original payload hashes and opaque channels. No runtime/tooling changes or game launches.
+- Accepted ten materials after original/actual-DDS and 2x2 repeat review: rusted panels, pale panel, scrap metal, brown molding, wall mounting lip, dark double panel, pale concrete, banded concrete and stone tiles. No new held drafts. Existing UI corrections stay incomplete and originals remain active for those keys.
+- Seven generated sources are 1254-square, three 1774x887. Accepted full-mip DXT1 outputs: six 1024-square, one 2048-square and three 1024x512. All resampled, not native 4K. Luminance changes -4.83% to +9.26%; scrap shifts toward warmer rust (mean RGB 91.33/93.64/99.99 to 95.03/88.09/83.60). Final scene color, lighting and UV adjacency remain pending.
+- Stone grout minima align at source x84/x172 and y87/y173; top trim keeps dominant repetition frequency 54. Pattern measurements supplement reviewed sheets and do not establish runtime seam behavior. Concrete holes and upper marks visually checked against source.
+- All 365 retained DDS pass native format and worklist hash, dimensions/aspect, mip and cap checks. Coverage: 365 installed / 6,812 supported keys; 6,413 need art and 34 drafts need correction. Classification remains 819 provisional keys. Full-category and unresolved embedded/procedural coverage remain open.
+- Pack including metadata: 491,991,443 bytes (469.20 MiB) / 6 GiB, +8,044,797 this batch. Texture workspace at audit: 1,873,489,335 allocated bytes (1.74 GiB); original/review/preview files 166,702,470 bytes / 256 MiB. Free disk 134,719,901,696 bytes. No duplicate game/pack, archive or staging tree; saves/settings untouched.
+- Evidence stays private/local under `review/hybrid-73-*`: verified selection, prompts, compiled comparisons, repetition, metrics, feature/pattern checks, native audit and acceptance. Shared DDS path unchanged; Mac scene validation remains pending. Consolidated playtesting remains deferred to the near-completion gate.
+
+## Texture hybrid batch 74: character and equipment atlas production
+
+- Source tools: issue #74 branch `74-enhancement-gfx-overhaul-to-modernize-textures`, base `108a7af`, Windows x64, shared source checkout `build/texture-74-source`; authoritative private art remains in the main project. Concurrent issue-17 work preserved.
+- Pinned supported US XBE and selected catalog payload hashes checked before original export; original alpha is opaque for all twelve selected keys.
+- Installed ten offline-approved replacements: `5fee9f04eab08992`, `6aa486cb72b96bfd`, `4a771e9180d9e045`, `2ff59899ffc1ad54`, `989ba43c180bb790`, `0fde6ed26dbdb7d7`, `141676ea5835f51d`, `d35e27e9d2839bab`, `f85c4e7d87a81055`, `5916532bea0f65e0`.
+- Accepted ten character/equipment atlases after original-versus-compiled DDS, repeat sheets and targeted detail review. Existing UV island orientation/coverage and opaque alpha retained; final mapped scene appearance remains unverified.
+- Two drafts held: 90181f75b2978276 badge gains an incorrect raised inner border; 28346cd221a64a88 face gains stronger wrinkles and altered lip shading. Removed only their four compiled DDS/metadata files after exact path/hash verification. Originals remain active; source drafts retained for correction.
+- Twelve generated sources: six 1254-square, four 1774x887 and two 887x1774. Ten accepted DXT1 full-mip outputs: two each at 1024-square, 512-square, 1024x512, 512x1024 and 512x256. All resampled, not native 4K.
+- Accepted mean luminance changes range from -9.81% to +11.83%; stronger metallic highlights and fabric microdetail require eventual scene review. Rib counts/spacing, mechanical apertures, green indicator and face atlas placement inspected offline. Repeat views of atlases are diagnostic, not evidence of seamless mapped adjacency.
+- All 375 retained DDS pass native format and worklist hash/dimension/aspect/full-mip/cap checks. 6401 keys need artwork; 36 drafts held. Visual classifications remain 819 provisional keys, with 5979 keys still in visual triage. Full category, embedded/procedural coverage and scene validation remain open.
+- No game launches or runtime/tooling changes. Shared DDS path unchanged; Mac scene validation remains pending. One active private pack; no duplicate private data, archive or staging tree. Artwork remains local/ignored and saves/settings untouched.
+- Storage at audit: active pack 495,317,649 bytes (472.37 MiB), including metadata, under 6 GiB; this batch adds 3,326,206 bytes. Texture workspace 1,916,778,887 logical / 1,916,778,887 allocated bytes (1.79 GiB). Temporary originals/review/previews 169,504,086 bytes (161.65 MiB), under 256 MiB. Free disk 134,477,381,632 bytes. These are texture-workspace measurements, not whole-project totals.
+- Private evidence: `review/hybrid-74-selection.json`, `hybrid-74-final-*`, `hybrid-74-details.jpg`, `hybrid-74-retired.json`, `hybrid-74-native-audit.txt`, `hybrid-74-acceptance.json`; refreshed worklist, hybrid plan, inventory and progress. Only this progress record is tracked.
+
+## Texture hybrid batch 75: weapon and equipment atlas production
+
+- Source tools: issue #74 branch `74-enhancement-gfx-overhaul-to-modernize-textures`, base `094da0c`, Windows x64, source checkout `build/texture-74-source`; authoritative private art remains in the main project. Concurrent checkout work preserved.
+- Supported US XBE SHA-256 and all sixteen selected catalog payload hashes verified before original export. All originals and generated sources have opaque alpha.
+- Added eleven offline-approved keys: `51c5764a9f508075`, `6248b2fbe26534b9`, `470d6c6497546120`, `b44ba3f45d32abcc`, `0cc1bb991450f4e6`, `0cde9bc92ec13a8f`, `14273563419860f2`, `149894461d25dd1b`, `3fff1f1267d08d2b`, `5257e5c4375e4186`, `7209c6fb7d243979`.
+- Accepted eleven weapon/equipment atlases after source-versus-compiled DDS, four repeat sheets and targeted detail review: dark cylinder and receiver, brass double panel and rim, three wood grip/stock surfaces, cracked wood/olive hardware, yellow component, gold/blue equipment and yellow equipment variant.
+- Five held drafts remain incomplete: circular assembly 5a5398ad59c0c66f is +128.08% brighter; bronze panel 6b155a1de1bc3634 is +45.39%; mechanism 4f9d301a17dc6866 shifts/reconstructs lower-right fitting; 6970d358c57872cb loses emblem notches and alters display; e466e4017a3c9949 is +48.08% brighter with changed port/panel details. Exact hashes/paths recorded before removing only their ten compiled DDS/metadata files. Original game textures remain active.
+- Sixteen generated sources: eleven 1254-square, four 1774x887 and one 887x1774. Accepted DXT1 full-mip outputs: six 1024-square, three 1024x512, one 512x1024 and one 512-square. All resampled, not native 4K.
+- Accepted mean luminance changes -10.70% to +23.68%; material sheen differs and requires final scene validation. Cylinder reflection profile remains centered at original column 175. Dominant cropped pattern frequencies match for checkered grip and both carved wood stocks (sign-equivalent FFT pair accepted); these are diagnostic checks, not mapped seam proof.
+- Yellow component original has four groups of three bars, twelve total. Prompt incorrectly requested eight, but actual generated/compiled output retains original twelve; enlarged source/output review governs acceptance. Gold/blue grille and yellow variant emblem reviewed separately. Repeat atlas sheets do not establish seamless model adjacency.
+- All 386 retained DDS pass native format and worklist hashes/dimensions/aspect/full-mips/cap checks. 6385 supported keys still need art and 41 drafts are held; 819 provisional classifications, 5979 visual-triage keys, 114 individual and 292 specialist queue entries. Unclassified, embedded/procedural coverage and full category/scene validation remain open.
+- No game launches or runtime/tooling changes. Shared DDS path unchanged; Mac scene validation pending. Single local private pack, no duplicate game/extract/archive/staging. Source art/provenance retained privately; saves/settings untouched.
+- Storage at audit: active pack 501,091,102 bytes (477.88 MiB), including metadata, under 6 GiB; batch adds 5,773,453 bytes. Texture workspace 1,973,530,313 logical / 1,973,530,313 allocated bytes (1.84 GiB). Temporary originals/review/previews 174,337,625 bytes (166.26 MiB), under 256 MiB. Free disk 133,734,461,440 bytes. Texture-workspace totals are not whole-project totals.
+- Private evidence: `review/hybrid-75-selection.json`, `hybrid-75-final-*`, `hybrid-75-details.jpg`, `hybrid-75-detail-counts.jpg`, `hybrid-75-pattern-diagnostics.json`, `hybrid-75-grille-diagnostics.json`, `hybrid-75-retired.json`, `hybrid-75-native-audit.txt`, `hybrid-75-acceptance.json`. Worklist, hybrid plan, inventory and progress refreshed and reconciled against retained pack. Only progress documentation is tracked.
+
+
+## Texture hybrid batch 76: grouped environment material production
+
+- Issue #74 branch `74-enhancement-gfx-overhaul-to-modernize-textures`, base `bfe2c57`, Windows x64 source checkout `build/texture-74-source`; single authoritative private artwork folder shared with main project. Concurrent checkout work preserved. Supported US XBE and selected original payload hashes verified before generation.
+- Classified 32 additional opaque originals; 851 provisional visual classifications. Produced and accepted fourteen environment materials after source/compiled DDS comparison, four repeat sheets and enlarged structural detail review. No new held drafts.
+- Accepted concrete panels, molded walls, cracked/layered surfaces, blue-gray door atlas, olive vent panel, rusted riveted rails, tan wallpaper, wavy steel braces and bamboo. Existing UV layouts, baked lighting cues and opaque alpha retained offline; final scene appearance remains unverified.
+- Fourteen generated sources: nine 1254-square and five 1774x887. Full-mip DXT1 outputs: eight 1024-square, one 2048-square, four 1024x512 and one 2048x1024. All resampled; the two 2048-wide outputs are upscaled from smaller generated sources, not native 4K.
+- Mean luminance changes range -5.92% to +22.56%; olive vent panel has the largest increase and requires final scene brightness review. No scene-level color/lighting validation claimed.
+- 72867f9cad388e77 prompt incorrectly called for three rounded flutes. Enlarged original/output review confirms two rounded flutes and adjacent stepped edge; classification corrected and original prompt preserved with review note. Architectural rail groups also inspected at larger scale.
+- Bamboo and wallpaper cropped dominant frequencies match and all five sampled profiles have zero best cyclic shift. Rivet and wavy-steel dominant harmonics differ; enlarged comparisons resolve twelve upper rivets and seven wavy braces. Banded FFT is supplementary, not geometric proof. Repeat sheets do not establish actual mapped adjacency.
+- All 400 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/cap checks. 6371 supported keys need art; 41 drafts remain held. Queue: 5947 visual triage, 128 individual and 296 specialist. Full categories, embedded/procedural gaps and scene coverage remain unfinished.
+- No game launches or runtime/tool changes. Shared DDS path unchanged; Mac scene validation remains pending. One active private pack, no duplicate game/pack/archive/staging; source artwork remains local and ignored. Saves/settings untouched.
+- Storage at audit: pack including metadata 512,283,917 bytes (488.55 MiB) / 6 GiB; batch adds 11,192,815 bytes. Texture workspace 2,041,176,085 logical / 2,041,176,085 allocated bytes (1.90 GiB). Temporary originals/review/previews 180,989,044 bytes (172.60 MiB) / 256 MiB; free disk 131,927,351,296 bytes. These are texture-workspace measurements, not whole-project totals.
+- Private evidence under `review/hybrid-76-*`: triage/selection, prompts, compiled and repeat comparisons, structural details, pattern diagnostics, native audit and acceptance. Worklist, hybrid plan, inventory and progress refreshed and reconciled. Only progress documentation is tracked.
+
+
+## Texture hybrid batch 77: individual equipment and garment atlases
+
+- Issue #74 branch `74-enhancement-gfx-overhaul-to-modernize-textures`, base `e60b17d`, Windows x64 source checkout `build/texture-74-source`. Supported US XBE SHA-256 and eight original payload hashes verified; all selected originals and generated sources have opaque alpha. Concurrent checkout work preserved.
+- Generated eight individually inspected equipment/weapon/garment drafts and accepted seven after original-versus-compiled DDS, two repeat sheets and enlarged detail review. Wood/metal atlas, blue-striped housing, blue garment, dark mechanism, gray angular housing, gray/red controls and red housing accepted offline; scene appearance pending.
+- Held 700acb4d380ae3c3: grip changes to substantially coarser diagonal diamonds and tiny colored receiver/edge markings are lost or changed. Exact candidate DDS/metadata paths and hashes recorded before removing only those two files. Original remains active; source and prompt retained for focused correction.
+- Eight generated sources: six 1254-square, one 1774x887 and one 887x1774. Seven accepted full-mip DXT1 outputs: four 1024-square, two 2048-square and one 512x1024. All resampled; the 2048-square outputs are upscaled from 1254-square, not native 4K artwork.
+- Accepted mean luminance changes -16.24% to +16.69%; blue garment is darker and gray angular housing brighter/warmer. Clothing fasteners/buckle, brass-strip counts, mechanical circles and red housing ring openings reviewed at enlarged scale. Final material sheen, color, lighting and mapped seams require scene verification; repeat views of atlases are diagnostic only.
+- All 407 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/cap checks. 6363 supported keys need artwork; 42 held drafts. Provisional classifications remain 851; queue has 5947 visual-triage, 120 individual and 296 specialist entries. Full-category, embedded/procedural and scene coverage remain open.
+- No game launches or runtime/tool changes. Shared DDS path unchanged; Mac scene validation pending. Single active local private pack, no duplicate game/pack/archive/staging; source artwork stays ignored and local. Personal saves/settings untouched.
+- Drive free space fell from 131916271616 bytes before the batch to about 48725544960 bytes at audit, while texture workspace grew only about 34 MiB. A read-only project directory scan is saved in review/hybrid-77-project-storage.json; build allocates about 15.73 GB and private about 6.66 GB (decimal), with sparse logical sizes larger. The drive-wide change is unexplained and is not attributed to this batch. No unrelated files removed.
+- Storage at audit: active pack including metadata 521,026,048 bytes (496.89 MiB) / 6 GiB; adds 8,742,131 bytes. Texture workspace 2,075,505,930 logical / 2,075,505,930 allocated bytes (1.93 GiB). Temporary originals/review/previews 182,820,262 bytes (174.35 MiB) / 256 MiB. Texture-workspace totals are not whole-project totals.
+- Private source art saved in `private/texture-remaster/authored/*-hybrid-v1.png`; built-in imagegen prompts in `review/hybrid-77-prompts.json` and per-asset provenance. Other private evidence under `review/hybrid-77-*`: selection, comparisons, repeat sheets, details, retirement, native audit, storage scan and acceptance. Worklist, hybrid plan, inventory and progress refreshed/reconciled. Only progress documentation is tracked.
+
+
+## Texture hybrid batch 78: material classification and production
+
+- Issue #74 branch `74-enhancement-gfx-overhaul-to-modernize-textures`, base `14acadd`, Windows x64 source checkout `build/texture-74-source`. Supported US XBE SHA-256 and selected source payload hashes verified before generation. All selected original/generated alpha is opaque; concurrent checkout work preserved.
+- Inspected 32 additional opaque originals and recorded provisional visual classifications, bringing reviewed keys to 883. Reflection/effect maps, control-panel labels and character atlases remain in specialist or individual queues. Classification is not completion.
+- Generated and accepted sixteen environment materials after original/compiled DDS, four repeat sheets and selected structural/profile review: green light panel, red/white arc and bands, tread steel, olive vent, stained concrete, angular concrete frame, blue-gray stripe panel, two riveted plates, two green-gray panels, curved dark metal, brushed silver metal, brickwork and large cream vent. No new held drafts.
+- Sixteen generated sources: ten 1254-square and six 1774x887. Full-mip DXT1 outputs: five 512-square, three 1024-square, two 2048-square, five 1024x512 and one 2048x1024. All resampled; the three 2048-wide outputs are upscaled from smaller generated sources, not native 4K artwork.
+- Mean luminance changes range -19.36% to +10.99%; olive vent and tread are darker, angular concrete brighter. Structure and color cues accepted offline; final scene lighting, material sheen and UV adjacency remain unverified.
+- Pattern diagnostics support visual review: bottom grille frequency 32 retained, tread shares diagonal spectral peaks (+/-11,+/-14), dense rivets share 32/16 harmonics, brick vertical profile retains dominant frequency 23. Plain rivet plate retains visible count/placement although rust shifts dominant spectral strength. Numeric frequency is not an automatic acceptance test or scene proof.
+- Curved metal highlight peak remains at source row 91 with zero best profile shift. Brushed silver brightest column changes 205 to 199, best normalized shift -2; broad band placement accepted with small profile difference recorded. Stripe and painted-band profiles have zero best shift; their brightest pixels differ due to grain. Repeat atlas views do not establish actual mapped adjacency.
+- All 423 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/cap checks. 6347 supported keys need art, 42 held drafts; queue has 5915 visual triage, 127 individual, 303 specialist and two remaining material candidates. Full-category, embedded/procedural and scene coverage remain unfinished.
+- No gameplay launches or runtime/tool changes. Shared DDS path unchanged; Mac scene validation pending. Single active private pack, no duplicate game/pack/archive/staging; source art/provenance remain ignored and local. Personal saves/settings untouched.
+- Storage at audit: active pack including metadata 532,744,286 bytes (508.06 MiB) / 6 GiB; batch adds 11,718,238 bytes. Texture workspace 2,149,950,790 logical / 2,149,950,790 allocated bytes (2.00 GiB). Temporary originals/review/previews 188,426,312 bytes (179.70 MiB) / 256 MiB; disk free 48,161,325,056 bytes. Texture-workspace totals are not whole-project totals.
+- Private source art in `private/texture-remaster/authored/*-hybrid-v1.png`; built-in imagegen prompts in `review/hybrid-78-prompts.json` and per-key provenance. Evidence under `review/hybrid-78-*`: triage, selection, compiled comparisons, repeat sheets, pattern/detail/profile checks, native audit and acceptance. Worklist, hybrid plan, inventory and progress refreshed/reconciled. Only progress documentation is tracked.
+
+
+## Texture hybrid batch 79: materials, equipment and character atlases
+
+- Issue #74 branch `74-enhancement-gfx-overhaul-to-modernize-textures`, base `36c3715`, Windows x64 source checkout `build/texture-74-source`. Supported US XBE and twelve source payload hashes verified; originals/generated sources opaque. Concurrent checkout work preserved.
+- Generated twelve hybrid material/equipment/character drafts; accepted eleven after original/compiled DDS, three repeat sheets, enlarged face/equipment details and functional-cue checks. Accepted six-strip light panel, carved stone molding, dark machined atlas, medical box, two tan garments, hair/skin/cloth atlas, gray/blue uniform/face atlas, stone disc, red/silver mechanism and gray mechanism atlas.
+- Held control panel 9946e3336d16bb64: red indicator is dimmer and gains a grid pattern. With identical source-scale thresholds, red core falls 206 to 121 pixels and green core 186 to 153; this supports the visual readability concern, not a claim of exact physical light area. Original stays active. Only its DDS/metadata removed after exact path/hash verification; source art and provenance retained.
+- Twelve generated sources: eight 1254-square, three 1774x887 and one 887x1774. Eleven accepted DXT1 full-mip outputs: two 512-square, four 1024-square, one 2048-square, three 1024x512 and one 512x1024. All resampled; 2048-square mechanism is upscaled from 1254-square, not native 4K artwork.
+- Accepted mean luminance changes -13.35% to +20.94%; dark machined atlas is darker overall despite sharper blue highlights, while large gray mechanism is brighter. Clothing folds, identity/UV boundaries and equipment layouts accepted offline. Final mapped identity, color, lighting and material sheen remain unverified.
+- Medical cross source-scale threshold bounds exactly match [100,26,162,92], with centroid difference below 0.01 pixel. Light panel has six bright row runs at the original positions; two runs narrow by one source pixel at the chosen threshold. These are diagnostic checks alongside visual review, not runtime proof.
+- Control vent original/output have seven bars; prompt incorrectly requested five. Preserved original prompt and recorded correction in provenance. Matching vent geometry does not resolve the held indicator treatment. Repeat views of atlases are diagnostic, not mapped-adjacency evidence.
+- All 434 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/cap checks. 6335 supported keys need artwork; 43 held drafts. Classification remains 883 provisional keys; queue 5915 visual triage, 117 individual and 303 specialist. Replenish material candidates through original inspection. Full-category, embedded/procedural and scene coverage remain open.
+- No game launches or runtime/tool changes. Shared DDS path unchanged; Mac scene validation pending. One active private pack, no duplicate game/pack/archive/staging; source artwork stays ignored/local. Personal saves/settings untouched. Drive free space returned to about 130.41 GB (decimal) at audit; unrelated drive activity remains unattributed.
+- Storage at audit: active pack including metadata 540,090,602 bytes (515.07 MiB) / 6 GiB; batch adds 7,346,316 bytes. Texture workspace 2,197,892,324 logical / 2,197,892,324 allocated bytes (2.05 GiB). Temporary originals/review/previews 191,031,117 bytes (182.18 MiB) / 256 MiB; disk free 130,408,751,104 bytes. Texture-workspace totals are not whole-project totals.
+- Private source art in `private/texture-remaster/authored/*-hybrid-v1.png`; built-in imagegen prompts in `review/hybrid-79-prompts.json` and per-key provenance. Evidence under `review/hybrid-79-*`: selection, compiled/repeated comparisons, details, functional diagnostics, retirement hashes, native audit and acceptance. Worklist, hybrid plan, inventory and progress refreshed/reconciled. Only progress documentation is tracked.
+
+### Texture hybrid batch 80: reviewed resolution variants (issue #74)
+
+- On `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `494ebb4`, Windows x64. Compared 4,382 eligible originals against 434 installed references; six proposals accepted after enlarged original/compiled DDS and repeat review. Installed 6 variants, bringing the offline-approved pack to 440; runtime scenes pending.
+- Reused existing source artwork for brown fur/skin, metal equipment, dark uniform/equipment/face, and three cutscene garment/hair/skin atlases. No new source images or copies. All six compiled hashes equal their reviewed references; source sizes/resampling remain recorded. Three 1254-square and three 887x1774 sources; outputs two 1024-square, one 2048-square, three 512x1024.
+- All 440 DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. Six originals remain opaque; luminance changes -16.14% to +9.18%. UV/identity and cues accepted offline; mapped scene fidelity is unverified. Repeat sheets are diagnostic, not adjacency proof.
+- Pack 545,336,915 bytes (520.07 MiB), including metadata, below 6 GiB; added 5,246,313 bytes. Texture workspace 2,207,289,466 allocated/logical bytes; exports/reviews 195,155,119 bytes below 256 MiB. Free drive space 130,501,058,560 bytes at audit. No duplicate game/pack/staging or personal-save/settings changes.
+- Remaining: 6,329 need art; 43 held drafts; 889 provisional visual classifications; 5,909 visual-triage, 117 individual and 303 specialist keys. Full category, embedded/procedural and scene coverage remain open. No game launches; near-completion testing gate unchanged. Shared DDS path unchanged; Mac scene validation pending.
+- Private evidence: `review/hybrid-80-variant-candidates.json`, `hybrid-80-variants-1.jpg`, two detail sheets, two final/repeat pairs, metrics, native audit and acceptance JSON. Artwork/provenance remain ignored and local.
+
+### Texture hybrid batch 81: twelve material replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `f0d2c44`, Windows x64. Inspected 32 opaque originals; generated and accepted 12 material/crate replacements, bringing the offline-approved pack to 452. Runtime scene validation remains pending.
+- Inspected 32 previously unclassified opaque originals. Generated and accepted twelve replacements: dark grained panel, ochre plaster/stone, brushed metal, lit rock, brass molding, tread/riveted steel, bronze strip, pale concrete, two stone slabs, olive crate, dark grass and four-screw metal plate. Other candidates retain individual or specialist routing.
+- Built-in imagegen produced five 1254-square and seven 1774x887 sources. All resampled downward to five 1024-square and seven 1024x512 DXT1 full-mip outputs. No native 4K claim; source art and exact prompts retained locally.
+- All twelve original/compiled comparisons, three repeated views and enlarged hardware details accepted offline. Mean luminance changes -16.82% bronze to +10.81% crate. Broad material palettes and structures retained; mapped lighting, metallic sheen and grass density remain scene-validation items.
+- Initial visual concern about moved concrete anchors was disproved at source scale: four dark-region centroid differences <=0.5 pixel; dark threshold core areas grow from 1-2 to 6-7 pixels with sharper recesses. Four corner plate screw dark-region centroid differences <0.3 pixel. These threshold measurements supplement visual review, not geometric proof.
+- Rock retains eight light-bar profile peaks at source rows [51,71,93,117,138,161,184,204], versus original [51,71,93,118,138,161,184,204]. Tread/rivet and crate cross-brace/hinge layouts reviewed in enlarged comparisons. Repeat views retain existing edge divisions; they do not establish actual scene adjacency or seamlessness.
+- All 452 retained DDS pass native format and worklist hashes, dimensions, aspect, full-mip and budget audits. 6317 need art, 43 held drafts unchanged, 921 provisional classifications. Queue: 5877 visual triage, 131 individual and 309 specialist. All-category, scene and embedded/procedural coverage remain unfinished.
+- No game launches or runtime/tool changes. Shared DDS path unchanged; Mac scene validation pending. One private pack; no duplicate game/pack/ZIP/staging; personal saves/settings untouched. Temporary outputs remain below 256 MiB.
+- Storage at audit: pack 551,285,713 bytes (525.75 MiB) including metadata / 6 GiB; batch adds 5,948,798 bytes. Texture workspace 2,262,363,472 allocated/logical bytes (2.11 GiB); temporary originals/review/previews 200,882,134 bytes (191.58 MiB) / 256 MiB. Free disk 130,147,004,416 bytes. Workspace figures are not whole-project totals.
+- Private sources `authored/*-hybrid-v1.png`, exact prompts `review/hybrid-81-prompts.json` and per-key provenance. Evidence `review/hybrid-81-*`: four triage sheets, three compiled/repeat pairs, hardware details, anchor/light diagnostics, metrics, native audit and acceptance. Worklist, hybrid plan, inventory and progress reconciled; only this progress documentation tracked.
+
+### Texture hybrid batch 82: seven equipment/prop replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `562190a`, Windows x64. Seven new offline-approved replacements, one held, 459 installed total.
+- Generated eight individually reviewed prop/equipment drafts; accepted seven: horizontal metal trim atlas, three-slot dark steel plate, brass-handled dark wooden door, gray vented equipment atlas, red/white striped paint, inset dark panel with cylindrical fitting, olive diagonal equipment atlas.
+- Held b2d963f371d58a1a: stronger orange rust and +34.76% mean luminance change the original dark steel treatment. Original remains active. Removed only its DDS and metadata after resolved-path/hash checks; source, prompts and review retained for correction. No retry this batch.
+- Eight built-in imagegen sources: seven 1254-square and one 1774x887. Seven accepted full-mip DXT1 outputs: two 512-square, three 1024-square, one 2048-square and one 1024x512. All resampled; 2048-square atlas is upscaled from 1254-square, not native 4K art.
+- Reviewed two compiled comparison sheets, two repeat sheets and enlarged vents/slots/bar details. Accepted mean luminance changes -11.50% to +20.28%; fitting panel has stronger wear highlights. Broad UV islands and functional shapes accepted offline, mapped lighting/material sheen still unverified.
+- Red stripe column runs exactly match [0,15], [32,47], [112,127] at original 128px width. Three-slot dark runs match except third begins at 128 versus 129 at 256px width. Equipment horizontal vent diagnostic peaks match exactly; vertical profile differs at one secondary peak by one source pixel. Profiles include secondary highlights and are not rib counts or automatic approval.
+- Olive atlas original/output have three upper bars; prompt incorrectly requested four. Exact original prompt preserved and review correction recorded. Threshold aperture measurements for held steel panel also contain nearby dark material and do not establish circle geometry; hold decision follows appearance and luminance review.
+- All 459 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. Remaining 6309 need art, 44 held drafts; provisional classification 921 unchanged. Queue 5877 visual triage, 123 individual, 309 specialist. Full category, scene and embedded/procedural coverage remain unfinished.
+- No gameplay launches or runtime/tool changes. Shared DDS path unchanged; Mac scene validation pending. One active private pack, no duplicate game/pack/archive/staging; artwork stays ignored/local and personal saves/settings untouched. Temporary files remain below 256 MiB.
+- Storage at audit: pack 556,882,111 bytes (531.08 MiB) including metadata / 6 GiB; added 5,596,398 bytes. Texture workspace 2,296,270,973 allocated/logical bytes (2.14 GiB); temporary originals/review/previews 202,967,836 bytes (193.57 MiB) / 256 MiB; disk free 132,098,547,712 bytes. Texture totals are not whole-project usage.
+- Private evidence `review/hybrid-82-*`: exact prompts, selection, compiled/repeat sheets, details, functional diagnostics, retirement hashes, native audit and acceptance. Sources `authored/*-hybrid-v1.png`; canonical per-key provenance records support correction routing. Worklist, hybrid plan, inventory and progress reconciled. Only progress documentation tracked.
+
+### Texture hybrid batch 83: eleven material/architecture replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `c96366e`, Windows x64. Eleven additions, one held, 470 installed/offline-approved total; runtime scenes remain unverified.
+- Inspected 32 previously unclassified opaque originals. Generated twelve material/architectural drafts; accepted eleven: two molding strips, blue-green equipment atlas, paired blue-gray panels, concrete seam panel, framed sliding door, building atlas, weathered wall molding, pitted concrete, framed slat grate and orange brick.
+- Held eabd63635e9221d0: dense fine scratched grid became strong coarse masonry-like seams and mean luminance fell 27.69%. Original remains active. Only compiled DDS/metadata removed after exact path/hash checks; authored source/prompts/reviews retained for correction.
+- Twelve built-in imagegen sources: six 1254-square, six 1774x887. Eleven accepted DXT1 full-mip outputs: one 512-square, three 1024-square, one 2048-square, six 1024x512. All resampled; brick 2048-square is upscaled from 1254-square, not native 4K art.
+- Reviewed three original/compiled and three repeat sheets plus enlarged red vent, grate, building-window and held-grid details. Accepted luminance changes -16.19% brick to +8.21% grate. Atlas partitions, openings, color cues and material layouts accepted offline; scene appearance, brick darkness and material sheen remain pending.
+- Concrete seam darkest row changes 80 to 79 at original 128px scale. Grate upper-left eight highlight peaks match exactly; lower-row highlight peak shifts include an 8px change around an irregular slat, reviewed visually with the original dark gap and edge locations. Profile peaks are not slat counts or exact geometry.
+- Red-vent threshold centroid differs about 0.76 original pixel; threshold bounds expand into adjacent reddish frame pixels ([28,86,55,115] to [22,82,55,116]). The frame/vent visual layout and color cue were reviewed separately. Stronger rib relief remains an in-scene review item; threshold bounds are not physical vent bounds.
+- All 470 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. 6297 keys need art and 45 drafts held; 953 provisional visual classifications. Queue 5845 visual triage, 139 individual and 313 specialist. Full category, scene and embedded/procedural coverage remains incomplete.
+- No game launches or runtime/tool changes. Shared DDS path unchanged; Mac scene validation pending. One active private pack, no duplicate game/pack/archive/staging; artwork local/ignored and personal saves/settings untouched. Temporary outputs below 256 MiB.
+- Storage at audit: pack 564,053,673 bytes (537.92 MiB) including metadata / 6 GiB; adds 7,171,562 bytes. Texture workspace 2,354,605,156 allocated/logical bytes (2.19 GiB); temporary originals/review/previews 208,295,553 bytes (198.65 MiB) / 256 MiB; free disk 131,773,374,464 bytes. These are texture totals, not whole-project totals.
+- Private evidence `review/hybrid-83-*`: four triage sheets, exact prompts/selection, three compiled/repeat pairs, details, functional diagnostics, retirement hashes, native audit and acceptance. Source art `authored/*-hybrid-v1.png`, canonical per-key provenance retained. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
+
+### Texture hybrid batch 84: seven character/equipment replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `7b7d130`, Windows x64. Seven additions, one held, 477 installed/offline-approved total; runtime scenes remain unverified.
+- Eight individual character/equipment drafts generated; seven accepted: blue shirt/ear/sleeve, pale olive machine, dark two-circle receiver/grille, damaged gray housing, tan marked skin/hair/cream cloth, blue trimmed garment and olive four-fastener fitting.
+- Held ce909c4ca5a0a0b4: trigger guard shifted right/down and receiver boundaries drifted. Original remains active; only compiled DDS/metadata removed after exact resolved-path/hash checks. Source, exact prompts and reviews retained for focused correction.
+- Eight built-in imagegen sources: one 887x1774, four 1774x887 and three 1254-square. Seven accepted full-mip DXT1 outputs: one 512x1024, three 1024x512, one 512-square, one 1024-square and one 2048-square. All resampled; housing upscaled from 1254-square, not native 4K art.
+- Reviewed two original/compiled and two repeat sheets, plus enlarged trigger, shoulder markings and grille comparisons. Accepted luminance changes -19.91% dark receiver to +22.84% damaged housing. Broad atlas partitions, markings, hair direction, trim, openings and color cues accepted offline; material sheen, skin tone and brightness remain scene-validation items.
+- Grille intensity profiles contain extra secondary highlights in the new source; they are not rib counts or exact geometry proof. Manual crop comparison reviewed recurring slot spacing and overall opening boundaries. Repeat sheets do not establish seamless mapped adjacency for these atlases.
+- All 477 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. 6289 keys need art and 46 drafts held; 953 provisional classifications unchanged. Queue 5845 visual triage, 131 individual, 313 specialist. Full category, scene and embedded/procedural coverage remains incomplete.
+- No game launches or runtime/tool changes. Shared DDS path unchanged; Mac scene validation pending. Single active private pack, no duplicate game/pack/archive/staging. Artwork local/ignored and personal saves/settings untouched. Temporary outputs below 256 MiB.
+- Storage at audit: pack 569,125,795 bytes (542.76 MiB) including metadata / 6 GiB; adds 5,072,122 bytes. Texture workspace 2,385,919,555 allocated/logical bytes (2.22 GiB); temporary originals/review/previews 209,725,641 bytes (200.01 MiB) / 256 MiB; free disk 131,651,829,760 bytes. Texture totals are not whole-project totals.
+- Private evidence `review/hybrid-84-*`: exact prompts/selection, two compiled/repeat pairs, detail crops, functional diagnostics, retirement hashes, native audit and acceptance. Sources `authored/*-hybrid-v1.png`; canonical per-key provenance retained. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
+
+### Texture hybrid batch 85: original-alpha compilation and seven surfaces (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `52f6946`, compiler commit `ab53ce3`, Windows x64. Seven additions, one held, 484 installed/offline-approved total; runtime scenes remain unverified.
+- Inspected RGB and alpha for 32 additional originals; classification now 985 keys. Generated eight material drafts; accepted seven: four gray slabs, dark framed metal, seven dark window bays, pale scratched metal, weathered brown strip, alternating blue/gray grid and pale paired panel rows.
+- Held 882032900617d989: rock draft has a rounded RGB cutout and missing corner coverage. Original alpha restoration cannot repair missing color or tiling. Original remains active. Removed only compiled DDS/metadata after exact resolved-path/hash checks; authored source/prompts/reviews retained.
+- Compiler commit ab53ce3 adds optional verified original-alpha conversion with required SHA-256, aspect/channel/format checks, independent RGB resampling and alpha provenance. Generated alpha is not used in this batch. Original exported pixels were verified against catalog payloads before compilation. Defaults and runtime loaders unchanged.
+- 31 offline compiler/planner tests pass on Windows, including lossless/compressed channel routing, stale hashes, missing arguments, wrong aspect, absent alpha and unsupported channel/format rejection with no output writes. BC3 fixture max error 23/255 is documented; it is not a visual approval threshold.
+- Eight built-in imagegen sources: four 1254-square and four 1774x887. Seven final outputs: three 1024-square and four 1024x512; all generated RGB downsampled. Original alpha bilinearly enlarged, lower mips Lanczos. Five RGBA8 and two DXT5 full-mip outputs; no native 4K art claim.
+- Initial DXT5 lower-mip alpha errors reached 38/255 among retained drafts. Five surfaces converted to RGBA8 after exact-path/hash retirement of candidate encodings; final decoded alpha matches expected resampled original at every mip exactly. Two retained DXT5 surfaces have max all-mip errors 9/255 (slabs) and 15/255 (pale metal); top-mip means 0.54/255 and 0.40/255. Masks and dark/light composites reviewed; alpha usage remains scene-unverified.
+- Reviewed original/compiled and repeat sheets before/after format choice plus alpha diagnostics. Tile counts, panel boundaries, seven window bays, stain placement and material cues accepted offline. Final RGB luminance change -8.89% weathered strip to +17.64% window bays; sheen, fine relief, mapped adjacency and scene alpha effects pending.
+- All 484 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. 6281 keys need art, 47 held drafts; queue 5813 visual triage, 142 individual, 326 specialist. Full category, scene and embedded/procedural coverage remains incomplete.
+- No game launches. Shared offline tooling needs no Mac adapter; Mac execution and artwork scene validation pending in MAC-011. Single active private pack, no duplicate game/pack/archive/staging; source art local/ignored and personal saves/settings untouched. Temporary outputs remain below 256 MiB.
+- Storage at audit: pack 590,803,529 bytes (563.43 MiB) including metadata / 6 GiB; adds 21,677,734 bytes. Texture workspace 2,437,213,640 allocated/logical bytes (2.27 GiB); temporary originals/review/previews 215,227,589 bytes (205.26 MiB) / 256 MiB; free disk 131,450,015,744 bytes. Texture totals are not whole-project totals.
+- Private evidence `review/hybrid-85-*`: RGB/alpha triage sheets, exact prompts/selection, candidate and accepted compiled/repeat comparisons, alpha composites, candidate/final all-mip alpha metrics, retirement hashes, native audits and acceptance. Sources `authored/*-hybrid-v1.png`, canonical provenance retained. Worklist, hybrid plan, inventory and progress reconciled. Tracked changes are compiler/tests/docs/progress only.
+
+### Texture hybrid batch 86: five equipment replacements with mask review (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `4dfd911`, Windows x64. Five additions, three held, 489 installed/offline-approved total; runtime scenes remain unverified.
+- Generated eight individually reviewed equipment drafts from the classified queue. Accepted five: circular socket/rectangular inset atlas, riveted cross-braced girder, radial toothed fitting, brown rung/rail strip and pale circular drum/fitting.
+- Held 007e952dabb45daf for colored RGB edge contamination around the opening and +41.99% original-alpha-weighted brightness; held 5052dd08245abc4a for drifting rib spacing/phase and +31.67% weighted brightness; held 89c3c70c89c865a4 for shifted ribs/lower strips and clipped pale end cap after original alpha. Originals remain active. Only candidate DDS/metadata removed after exact resolved-path/hash checks; sources/prompts/reviews retained.
+- Eight built-in imagegen sources: four 1254-square and four 1774x887. Five accepted outputs: two 1024-square, two 512-square and one 1024x512. All generated RGB downsampled. Four full-mip RGBA8 cutout assets use verified original alpha, one full-mip DXT1 asset is opaque. No native 4K art claim.
+- Original exported pixels rechecked against catalog payloads. Accepted RGBA8 alpha matches bilinear original at the top mip and recursive Lanczos at every lower mip exactly. Opaque circular asset retains opaque top-mip alpha. Technical alpha retention does not prove mapped color alignment or shader semantics.
+- Reviewed two compiled comparison and two repeat sheets, original-alpha sheet, two dark/light original-versus-compiled composite sheets and enlarged rib crops. Full-canvas RGB luminance is misleading for formerly gray transparent unused regions; original-alpha-weighted diagnostic changes for accepted assets range +0.23% rung strip to +26.17% radial fitting. Material sheen and mapped lighting remain scene checks.
+- Smoothed rib intensity minima and visual crops expose spacing drift in held strips. These profiles include secondary highlights and are not exact geometry counts. Accepted socket/inset partitions, two girder X braces, radial silhouette, slot/rung structure and drum rim reviewed with original masks; scene adjacency and cutout appearance remain unverified.
+- All 489 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. 6273 keys need art, 50 drafts held; classification remains 985. Queue 5813 visual triage, 134 individual, 326 specialist. Full category, scene and embedded/procedural coverage remains incomplete.
+- No game launches or source-tool/runtime changes. Shared original-alpha compiler ab53ce3 unchanged; prior 31 compiler/planner tests retained as evidence, not rerun for artwork-only additions. Mac real-art scene validation pending. Single active private pack, no duplicate game/pack/archive/staging; artwork local/ignored and personal saves/settings untouched.
+- Storage at audit: pack 602,692,008 bytes (574.77 MiB) including metadata / 6 GiB; adds 11,888,479 bytes. Texture workspace 2,469,629,528 allocated/logical bytes (2.30 GiB); temporary originals/review/previews 217,072,587 bytes (207.02 MiB) / 256 MiB; free disk 131,322,777,600 bytes. Texture totals are not whole-project totals.
+- Private evidence `review/hybrid-86-*`: original alpha, exact prompts/selection, compiled/repeat and composite sheets, rib detail/profiles, visible-region metrics, final alpha-mip audit, retirement hashes, native audit and acceptance. Sources `authored/*-hybrid-v1.png`; canonical provenance retained. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
+
+### Texture hybrid batch 87: six held drafts corrected (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `c4cebb0`, Windows x64. Six additions, 495 installed/offline-approved total; runtime scenes remain unverified.
+- Seven new built-in imagegen corrections and one reused wheel source reviewed. Six prior holds resolved: olive wheel, brown framed inset, dark circular mechanism, bronze riveted atlas, four-hole gray steel atlas and fine scratched grid. Two revisions remain held.
+- Riveted strap panel 5ffb12de4fe0f43e overcorrected brightness (-37.54%); arrow panel 3e671a5cc072ddc1 lost small original dash/label markings above the yellow stripe. Originals remain active. Removed only candidate DDS/metadata after exact path/hash checks; correction sources and prompts retained.
+- All eight selected sources are 1254-square. Six accepted full-mip outputs: one 512-square DXT1, three 1024-square DXT1, one 2048-square DXT1 and one 1024-square RGBA8 wheel. Steel atlas upscaled from 1254-square; other accepted RGB downsampled. No native 4K source claim.
+- Original exports match verified catalog payloads for all eight keys. Wheel alpha exactly matches bilinear original enlargement and recursive Lanczos at all eleven mip levels, retaining the transparent final row. Generated opaque wheel RGB reused without new generation.
+- Reviewed two original/compiled and two repeat sheets, enlarged arrow and four-hole steel comparisons, and all-mip wheel alpha. Four holes, original lower small circle, seven ringed mechanism apertures, bronze four openings/two slots and major panel boundaries reviewed. Accepted RGB luminance changes -9.41% to +26.45%; sheen, fine relief, UV adjacency and mapped lighting remain scene checks.
+- All 495 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. 6273 keys need art, 44 drafts held; 985 provisional classifications unchanged. Queue 5813 visual triage, 134 individual and 326 specialist. Full categories, scenes and embedded/procedural coverage remain incomplete.
+- No game launches, source-tool or runtime changes. Prior compiler/planner tests retained; no artwork-only test rerun. Mac scene validation pending. Single private pack; no duplicate game, pack, ZIP or staging. Personal saves/settings untouched.
+- Five superseded failed source copies removed from project after exact SHA-256 matching against retained generator recovery files, reclaiming 16,771,703 bytes. Accepted art, failed current drafts, prompts, reviews and recovery originals preserved.
+- Storage at audit: pack 613,356,397 bytes (584.94 MiB) including metadata / 6 GiB; adds 10,664,389 bytes. Texture workspace 2,487,036,465 allocated/logical bytes (2.32 GiB); temporary originals/review/previews 219,389,911 bytes (209.23 MiB) / 256 MiB; free disk 131,168,124,928 bytes. Texture totals are not whole-project totals.
+- Private evidence `review/hybrid-87-*`: exact prompts/selection, compiled/repeat and detail comparisons, source verification and wheel alpha-mip audit, candidate/source retirement hashes, native audit and acceptance. Canonical and versioned provenance plus pre-correction prompt backups retained. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
+
+### Texture hybrid batch 88: sixteen material replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `21d43f1`, Windows x64. Sixteen additions, 511 installed/offline-approved total; runtime scenes remain unverified.
+- Inspected 32 further opaque originals from verified catalog payloads; 1,017 keys now provisionally classified. Control displays, precise lettering, characters and weapon atlases remain separate from routine material production.
+- Sixteen built-in imagegen sources accepted offline: pale wall strips, green-gray plaster, gray aggregate, bronze riveted strip, stepped-groove concrete, paired metal panels, irregular stone paving, dark striped wall, worn plaster, light chipped aggregate, brown oxidation, pale center-seamed concrete, dark wood, green framed metal and two mottled metal surfaces. No held drafts added in this batch.
+- Sources comprise nine 1774x887 landscapes and seven 1254-square images. All generated RGB downsampled into nine 1024x512 and seven 1024-square full-mip DXT1 replacements. Original and compiled top-mip alpha are fully opaque. No native 4K artwork claim.
+- Reviewed four original/compiled comparison sheets and four repeat sheets. Paving divisions, bronze alternating rivets, stepped grooves, angular stripe, center seam, wood grain/joins and panel trim remain recognizable at original-relative positions. Relief and fine wear are stronger on several surfaces; mapped appearance and lighting still require scene validation.
+- Accepted full-canvas luminance changes range -10.48% brown oxidation to +2.43% trimmed metal. Edge metrics were reviewed alongside repeated images; some originals already contain deliberate borders and directional shading, so numerical edge equality alone is not a seamlessness criterion. No scene adjacency claim from repeat sheets.
+- All 511 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. 6257 keys need art and 44 prior drafts remain held. Queue: 5781 visual triage, four batch candidates, 143 individual and 329 specialist. Full category, scene and embedded/procedural coverage remains unfinished.
+- No game launches, source-tool or runtime changes. Existing compiler tests retained; artwork-only batch checked through native DDS and offline visual audits. Mac artwork scene validation pending. One active private pack, no duplicate game, pack, ZIP or staging; personal saves/settings untouched.
+- Storage at audit: pack 621,404,635 bytes (592.62 MiB) including metadata / 6 GiB; adds 8,048,238 bytes. Texture workspace 2,562,315,285 allocated/logical bytes (2.39 GiB); temporary originals/review/previews 224,627,579 bytes (214.22 MiB) / 256 MiB; free disk 130,777,354,240 bytes. Texture totals are not whole-project totals.
+- Private evidence `review/hybrid-88-*`: triage and classifications, exact prompts/selection, compiled/repeat comparisons, functional diagnostics, native audit and acceptance. Source art `authored/*-hybrid-v1.png` with canonical per-key provenance. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
+
+### Texture hybrid batch 89: fifteen environment replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `e3bc569`, Windows x64. Fifteen additions, 526 installed/offline-approved total; runtime scenes remain unverified.
+- Inspected 32 additional opaque originals from verified catalog payloads; classification reaches 1,049 keys. Selected four previously queued materials and twelve newly inspected surfaces. Reflection, scene-image, controls, lettering and sensitive equipment remain separately queued.
+- Fifteen built-in imagegen drafts accepted offline: corrugated metal, dark center-striped wall, olive trim, paired shaded panels, inset black marble, brushed metal atlas, brickwork, split masonry, dark jagged rock, gold-trimmed marble, pale rock, weathered white plaster, rusty blue-gray metal, fine ground cover and ochre plaster with broken base.
+- Held 13e0cd434ca21cf4: narrow original vertical divisions are weakened or omitted, including left-of-center strips. Major dark seams alone do not preserve the original pattern. Original remains active. Candidate DDS and metadata removed after exact resolved-path/hash checks; source, exact prompt and review retained for correction.
+- Sixteen generated sources: fourteen 1254-square and two 1774x887. Fifteen accepted full-mip DXT1 outputs: eleven 1024-square, two 1024x512, one 512-square masonry and one 2048-square rock. Rock upscaled from 1254-square; remaining RGB downsampled. All original/compiled top-mip alpha opaque. No native 4K source claim.
+- Reviewed four compiled comparison sheets, four repeat sheets and enlarged vertical-strip detail. Column luminance profiles support the held seam decision but also detect grain and corrosion; extrema are not exact geometry counts. Accepted corrugation cadence, baked dark bands, trim positions, marble insets, masonry transitions and broad rock/ground patterns reviewed offline.
+- Accepted luminance changes range -9.75% shaded panels to +26.95% blue-gray metal. Inset black marble is +22.21% and has stronger edge relief; blue-gray metal is brighter while retaining wear placement. These material-lighting changes, repeating adjacency, rock relief and ground-cover scale remain explicit scene checks.
+- All 526 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. 6241 keys need art, 45 held drafts; queue 5749 visual triage, four batch candidates, 155 individual and 333 specialist. Full categories, scenes and embedded/procedural coverage remain unfinished.
+- No game launches, source-tool or runtime changes. Existing compiler tests retained; offline native DDS checks and visual audits used for this art-only batch. Mac artwork scene validation pending. One active private pack, no duplicate game, pack, ZIP or staging; personal saves/settings untouched.
+- Storage at audit: pack 632,772,769 bytes (603.46 MiB) including metadata / 6 GiB; adds 11,368,134 bytes. Texture workspace 2,639,910,022 allocated/logical bytes (2.46 GiB); temporary originals/review/previews 231,422,431 bytes (220.70 MiB) / 256 MiB; free disk 130,381,619,200 bytes. Texture totals are not whole-project totals.
+- Private evidence `review/hybrid-89-*`: triage/classifications, exact prompts/selection, compiled/repeat and strip detail comparisons, seam profiles, functional diagnostics, retirement hashes, native audit and acceptance. Source art `authored/*-hybrid-v1.png`, canonical per-key provenance retained. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
+
+### Texture hybrid batch 90: twelve material and machinery replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `aacd007`, Windows x64. Twelve additions; 538 installed/offline-approved total. Runtime scenes remain unverified.
+- Four environment panels/molding and eight individually reviewed machinery/prop atlases accepted. No additional held drafts. Classification remains 1,049 keys.
+- All twelve original/compiled comparison and repeat rows visually reviewed; three enlarged mechanical details inspected.
+- Pipe classification/prompt said four incorrectly. Original shows five main horizontal highlight bands plus a lower partial band, retained by the compiled texture. Exact generation prompt retained unchanged; source image controls acceptance.
+- Ladder rungs, circular assembly holes/rivets, gray equipment slots/eight circles/triangular windows, rib stacks, lamp inset and plaque relief reviewed at original-relative positions.
+- Material detail and local highlights are stronger. Scene lighting, mapped UV appearance and adjacency remain pending. No launch.
+- Possible sibling 122caee769fd7eb4 reuse deferred: low RGB difference alone is insufficient to establish matching UV/functional content. No replacement installed for this key.
+- Twelve built-in imagegen sources: eight 1254-square and four 1774x887; downsampled RGB into five 1024-square, three 512-square and four 1024x512 full-mip DXT1 replacements. Original/compiled alpha opaque. No native 4K source claim.
+- Accepted luminance changes range -10.60% ladder to +9.88% gray equipment atlas. Offline approval does not establish scene appearance.
+- All 538 DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks; 6229 need art, 45 held corrections. Full category, scene and embedded/procedural coverage remains unfinished.
+- Storage at audit: pack 638,197,263 bytes (608.63 MiB) including metadata / 6 GiB; adds 5,424,494 bytes. Texture workspace 2,685,965,594 allocated bytes (2.50 GiB); temporary originals/review/previews 234,132,617 bytes (223.29 MiB) / 256 MiB. These are texture totals, not whole-project totals.
+- No launches, runtime/tool changes, duplicate game, pack, ZIP or staging. Saves/settings untouched. Existing compiler tests retained; art-only work validated offline. Private evidence `review/hybrid-90-*`, source art and exact prompts retained. Worklist, inventory, hybrid plan and progress reconciled; only progress documentation tracked.
+
+### Texture hybrid batch 91: sixteen environment replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `d7d7873`, Windows x64. Sixteen additions; 554 installed/offline-approved total, scenes pending. No new held drafts.
+- Inspected 32 additional opaque catalog-verified originals; classifications reach 1081. Selected sixteen environment materials; mechanical grids, window/door frames, vents, equipment, wooden stock, decorative trim, landscape, uncertain lattice and reflection remain separately queued.
+- Sixteen built-in imagegen sources accepted offline: pale marble, chipped plaster, gray molding, plaster with dark base, rusty blue-gray metal, gold-trimmed black marble, split mossy stonework, dark olive metal, horizontally coursed masonry, stained concrete, dark brown weathered wall, blue-banded metal, red bricks, ochre-over-pale plaster, layered stone strip and muted mottled wall.
+- Reviewed four original/compiled comparison sheets and four repeat sheets. Major veins, chipped boundaries, molding grooves, gold-strip positions, stone divisions, masonry courses, central concrete pit, blue band and brick layout retain original-relative placement. No proof of mapped scene adjacency from repeated images alone.
+- Luminance changes range -16.36% olive metal to +30.54% black marble. Black marble veins/gold are brighter, with stronger relief; dark brown wall +13.30%. These, fine-grain scale, tiling and surface shading remain explicit scene checks.
+- Sixteen generated sources: eleven 1254-square and five 1774x887. All RGB downsampled into nine 1024-square, two 512-square and five 1024x512 full-mip DXT1 replacements. Original/compiled top-mip alpha opaque. No native 4K source claim.
+- No game launches or runtime/tool changes. One private active pack; no duplicate game, pack, ZIP or staging. Personal saves/settings untouched. Full category, scene and embedded/procedural coverage remains unfinished.
+- All 554 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. Counts {'needs_art': 6213, 'installed': 554, 'draft_requires_review': 45}; routing {'batch_candidate': 3, 'correction': 45, 'individual_review': 157, 'installed': 554, 'specialist_review': 336, 'visual_triage': 5717}. Existing compiler tests retained for this art-only batch.
+- Storage at audit: pack 646,595,009 bytes (616.64 MiB) including metadata / 6 GiB; adds 8,397,746 bytes. Texture workspace 2,761,407,337 allocated/logical bytes (2.57 GiB); temporary originals/review/previews 240,271,846 bytes (229.14 MiB) / 256 MiB. These are texture totals, not whole-project totals.
+- Private evidence `review/hybrid-91-*`, authored sources and exact per-key prompts retained. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
+
+### Texture hybrid batch 92: eight material and prop replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `361e405`, Windows x64. Eight additions; 562 installed/offline-approved total. Runtime scenes pending; no new held drafts.
+- Three queued materials and five individually reviewed props accepted: rusty corrugation, pale streaked metal, mossy cracked rock, curved mechanical frame, riveted plate, shuttered window facade, blue door pair and gray equipment atlas. Classification remains 1081 keys.
+- Eight built-in imagegen sources: six 1254-square and two 1774x887; all RGB downsampled into five 1024-square, one 512-square and two 1024x512 full-mip DXT1 replacements. Original/compiled top-mip alpha opaque; source sizes/resampling recorded. No native 4K source claim.
+- Reviewed two enlarged original sheets, two compiled comparisons, two repeat sheets and targeted window/frame/equipment details. Corrugation cadence, rock cracks, bright bent pipes, frame rivet row, plate perimeter, window cross-mullions/slats, door hinges and equipment vents/slots/perforations retain original-relative placement.
+- Equipment stamp 80171 visually matches the original after normalized-coordinate enlargement. First fixed-coordinate equipment crop targeted the wrong region because original is 512-square; superseded by hybrid-92-equipment-panel.jpg and hybrid-92-equipment-stamp.jpg. Full-size catalog verification passed before compilation.
+- Accepted luminance changes range -8.74% riveted plate to +7.53% equipment atlas. Materials have stronger fine relief and highlights; mapped appearance, tiling adjacency, lighting and memory remain runtime checks.
+- No launches or source-tool/runtime changes. Existing compiler tests retained for this art-only batch. One private active pack; no duplicate game, pack, ZIP or staging. Personal saves/settings untouched. Full categories, scenes and embedded/procedural coverage remain unfinished.
+- All 562 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. Remaining {'needs_art': 6205, 'installed': 562, 'draft_requires_review': 45}; queue {'correction': 45, 'individual_review': 152, 'installed': 562, 'specialist_review': 336, 'visual_triage': 5717}.
+- Storage at audit: pack 650,968,643 bytes (620.81 MiB) including metadata / 6 GiB; adds 4,373,634 bytes. Texture workspace 2,797,037,332 allocated/logical bytes (2.60 GiB); temporary originals/review/previews 243,790,935 bytes (232.50 MiB) / 256 MiB. These are texture totals, not whole-project totals.
+- Private evidence `review/hybrid-92-*`, authored sources and exact per-key prompts retained. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
+
+### Texture hybrid batch 93: sixteen material and panel replacements (issue #74)
+
+- Branch `74-enhancement-gfx-overhaul-to-modernize-textures`, source base `7b0b2b7`, Windows x64. Sixteen additions; 578 installed/offline-approved total. Runtime scenes pending; no new held drafts.
+- Inspected 32 additional opaque originals verified against catalog payloads; classifications reach 1113. Thirteen materials and three individually reviewed panels accepted. Controls, facial atlases, reflection/utility images, roundel, mechanisms and ambiguous effects remain separately queued.
+- Accepted dark red material, green-gray concrete, chipped green boards, ochre/blue-gray plaster, green-over-white peeling wall, brushed framed plate, dark recessed panel strip, stone blocks, pale chipped metal, mossy stonework, floor tiles, blue grooved metal, green-brown stained wall, vented pale wall, pale mottled plaster and brown-gray material.
+- Sixteen built-in imagegen sources: thirteen 1254-square and three 1774x887. All RGB downsampled into twelve 1024-square, one 512-square and three 1024x512 full-mip DXT1 replacements. Original/compiled top-mip alpha opaque. No native 4K source claim.
+- Reviewed four original/compiled comparison sheets, four repeat sheets and enlarged board-joint, vent and grooved-metal details. Original-relative board joints/fasteners, frame hardware, recessed panels, material boundaries, stone/tile grid and vent slats remain recognizable. Repeated images alone do not prove scene adjacency.
+- Luminance changes range -16.61% dark red material to +8.15% ochre plaster. Fine relief and local highlights are stronger; brightness, material scale, tiling and mapped appearance remain scene-validation items.
+- No launches or source-tool/runtime changes. Existing compiler tests retained for this art-only batch. One private active pack; no duplicate game, pack, ZIP or staging. Personal saves/settings untouched. Full categories, scenes and embedded/procedural coverage remain unfinished.
+- All 578 retained DDS pass native format and worklist hash/dimensions/aspect/full-mip/budget checks. Remaining {'needs_art': 6189, 'installed': 578, 'draft_requires_review': 45}; queue {'correction': 45, 'individual_review': 160, 'installed': 578, 'specialist_review': 344, 'visual_triage': 5685}.
+- Storage at audit: pack 660,589,723 bytes (629.99 MiB) including metadata / 6 GiB; adds 9,621,080 bytes. Texture workspace 2,873,984,680 allocated/logical bytes (2.68 GiB); temporary originals/review/previews 251,329,066 bytes (239.69 MiB) / 256 MiB. Reclaim verified reproducible export headroom before the next batch. These are texture totals, not whole-project totals.
+- Private evidence `review/hybrid-93-*`, authored sources and exact per-key prompts retained. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
+
+
+### Texture issue #74: hybrid batch 94, props and focused corrections
+
+- Six replacements accepted offline: four new individual props and two repaired drafts. Total **584 / 6,812** supported keys; **6,185** need artwork and **43** held drafts remain. Classification remains 1,113 provisional reviews. Full overhaul is unfinished.
+- Accepted metallic inset, six-cap mechanism, machine hatch, olive roundel panel, restored narrow-strip surface and repaired indicator atlas. Two control atlases remain held for altered tiny port/display details; original game textures stay active for them.
+- Eight built-in imagegen sources (six 1254-square, two 1774x887); six retained resampled DXT1 full-mip outputs (four 1024-square, one 512-square, one 1024x512). No native 4K source claim. Two comparison sheets, two repeat sheets, four correction details and explicit indicator diagnostics reviewed; all 584 DDS passed native/worklist audits. Scene appearance remains unverified.
+- Retired 240 reproducible reference PNGs, **32.01 MiB**, with catalog/hash/pixel recovery evidence and exact-path checks. Authored sources/provenance, working game, saves/settings preserved. Pack **663,913,649 bytes (633.16 MiB / 6144 MiB)**; texture workspace measured **2,871,182,423 bytes (2.67 GiB)** logical/allocated; temporary reference/review **210.84 MiB / 256 MiB**. No duplicate game, ZIP or staging.
+- Private evidence: `private/texture-remaster/review/hybrid-94-*`, per-source prompts and `progress.json`. All artwork remains ignored/local. No runtime/tool changes, no game launches; previous compiler checks retained. Continue on `74-enhancement-gfx-overhaul-to-modernize-textures`, preserving concurrent root-checkout work. Mac/scene validation remains pending.
+
+
+### Texture issue #74: hybrid batch 95, original-alpha materials
+
+- **587 / 6,812** supported replacements installed and approved offline. Added leaded glass, blue-gray window grid and chain-link mesh; five other drafts held for brightness or RGB edge defects. **6,177** need art and **48** drafts need correction. Inspected 32 more RGB/alpha originals; provisional classification reaches **1,145**. Full overhaul remains unfinished.
+- Eight built-in imagegen sources: seven 1254-square, one 1774x887. Three retained outputs use existing lossless RGBA8 (two 512-square, one 1024-square) after DXT5 showed significant opacity quantization in small mips. Every pixel in all **31 retained mip levels** exactly matches expected RGBA with verified original alpha. These are resampled assets, not native 4K art.
+- Comparison, repeat, alpha/composite and edge reviews complete for retained files; original-relative window divisions and fence intersections preserved. Five held drafts have no active DDS. Their artwork/provenance remains available; original game textures remain active. Alpha identity alone does not prove RGB edge alignment. Scene appearance, lighting and transparency remain unverified.
+- All **587** retained DDS pass native/worklist audits. Pack **672,305,297 bytes (641.16 MiB / 6144 MiB)**; texture workspace measured **2,911,074,240 bytes (2.71 GiB)** logical/allocated; temporary exports/reviews **218.57 MiB / 256 MiB**. Source art is included in workspace usage. No duplicate game/pack/ZIP/staging; saves/settings untouched.
+- Private evidence: `private/texture-remaster/review/hybrid-95-*`, exact per-key prompts and progress. Retired initial DXT5 files by exact parent/hash checks. No runtime/tool change and no launches; existing tests retained. Continue on issue #74 while preserving concurrent source work. Mac/scene validation remains pending.
+
+
+### Texture issue #74: hybrid batch 96, materials and panels
+
+- **602 / 6,812** supported replacements installed and approved offline; **15** added, one access-panel draft held for four added fasteners. **6,161** need artwork and **49** drafts remain held. Inspected 32 more originals, bringing provisional classification to **1,177**. Full overhaul remains unfinished.
+- Accepted stone, brick, plaster, timber door, metal panel/trim, rock, vented panel, concrete and road/verge materials. Sixteen built-in imagegen sources: ten 1254-square and six 1774x887. Retained fifteen full-mip DXT1 outputs: seven 1024-square, one 512-square, six 1024x512 and one 2048-square wall. The 2048 wall is upsampled from 1254-square; no native 4K source claim.
+- Four comparisons, four repeat sheets and three enlarged detail sheets reviewed; original alpha stays opaque. All **602** retained DDS pass native/worklist checks. Accepted mean luminance changes **-14.30% to +7.54%**; scene lighting, tiling, material scale and mapped appearance remain pending. Existing bright borders on pale plaster retained and flagged for later scene-use review.
+- Pack **682,275,373 bytes (650.67 MiB / 6144 MiB)**. Texture workspace measured **2,990,408,418 bytes (2.79 GiB)** logical/allocated, including authored sources. Temporary exports/reviews **225.85 MiB / 256 MiB**. No duplicate game/pack/ZIP/staging. Only held DDS/metadata retired after exact parent/hash checks; art/provenance and saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-96-*`, prompts and progress. No game launches or runtime/tool changes; previous compiler tests retained. Work stays on #74; concurrent source work preserved. Mac/scene validation pending.
+
+
+## Texture overhaul issue #74: hybrid batch 97
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a327327`, using the isolated source checkout and one ignored private pack. Inspected 32 more opaque originals; 1,209 provisionally classified keys.
+- Generated and accepted sixteen material/panel replacements with built-in image generation. Nine 1254-square and seven 1774x887 authored sources downsampled to nine 1024-square and seven 1024x512 full-mip DXT1 files; no native 4K claim.
+- Reviewed four comparisons, four repeat sheets and enlarged vent detail. Preserved major UV divisions, grid/course patterns, trim and joints. Mean luminance changes -12.45% to +6.37%; local contrast/material scale and scene adjacency remain runtime checks.
+- All 618 installed/offline-approved replacements pass native DDS and worklist validation. Still 6,145 need art and 49 drafts need correction; the full overhaul remains unfinished. No new game launches, runtime edits or shared-tool changes. Playtesting stays deferred until the near-completion gate.
+- Pack including metadata: 691,022,687 bytes (659.01 MiB), below 6 GiB. Texture workspace: 3,066,077,378 logical and 3,066,077,378 allocated bytes. Temporary originals/reviews: 243,245,392 bytes (231.98 MiB), below 256 MiB. Free disk at audit: 127,800,561,664 bytes. No duplicate game, ZIP or staging copy created.
+- Private evidence: `review/hybrid-97-acceptance.json`, `hybrid-97-functional-audit.json`, `hybrid-97-native-audit.txt`, `hybrid-97-selection.json` and exact authored prompt records. Artwork remains local and ignored; this commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 98
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `1fbe154`. Inspected 32 more catalog-verified opaque originals; 1,241 provisionally classified keys. Faces, text, reflection-like and ambiguous bright textures remain separately queued.
+- Accepted sixteen material replacements: plaster/concrete, olive paint, blue barrel, molding, rusty sheet, streaked wall, ground, brick/base wall, mottled surface, tiles, timber, fractured rock and mossy stone wall. Thirteen 1254-square and three 1774x887 built-in imagegen sources downsampled to eleven 1024-square, two 512-square and three 1024x512 full-mip DXT1 files. No native 4K claim.
+- Four comparisons and four repeat sheets reviewed for original-relative joints, ribs, fasteners, courses, grid, trim and shading. Mean luminance changes -15.86% to +7.01%; ground scale, local relief, lighting and existing bright wall borders remain scene checks.
+- All 634 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,129 need art and 49 held drafts need correction; full overhaul unfinished. No game launches or shared-tool/runtime changes. Near-completion testing gate retained.
+- Pack: 700,119,509 bytes (667.69 MiB / 6144 MiB). Texture workspace: 3,131,448,476 logical/allocated bytes (2.92 GiB). Temporary exports/reviews: 236,384,605 bytes (225.43 MiB / 256 MiB). Free disk at audit: 127,412,867,072 bytes.
+- Reclaimed 13,965,689 bytes from 140 old decoded opaque reference PNGs after catalog payload, exact pixel, resolved-parent and SHA256 verification. Excluded alpha-source dependencies and recent batches 90-98. Kept recovery recipes, authored art, prompts, reviews, game files, saves and settings. No duplicate game/pack/ZIP/staging.
+- Private evidence under `private/texture-remaster/review/hybrid-98-*`, including selection, acceptance, functional/native audits, reference recovery manifest and exact authored prompt records. This commit records progress; artwork stays local and ignored.
+
+
+## Texture overhaul issue #74: hybrid batch 99
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `66328a8`. Inspected 32 catalog-verified opaque originals; 1,273 provisionally classified keys. Faces, labels, previews, effects and ambiguous materials remain queued.
+- Accepted sixteen material/prop replacements including masonry, plaster, rubble, ground, alternating paving, braced crate, double metal panel and marble trim. Eleven 1254-square and five 1774x887 built-in imagegen sources downsampled to eight 1024-square, three 512-square and five 1024x512 full-mip DXT1 files. No native 4K claim.
+- Four comparisons, four repeat sheets and three enlarged crate/panel/marble detail sheets reviewed. Original-relative divisions, courses, openings, brace, corner fittings, latch and molding retained. Mean luminance changes -9.65% to +6.73%; local relief, lighting, material scale and scene adjacency remain runtime checks.
+- All 650 installed/offline-approved DDS pass native and worklist validation. Still 6,113 need art and 49 drafts need correction; full overhaul unfinished. No game launches, runtime changes or shared-tool edits. Near-completion testing gate retained.
+- Pack: 707,992,997 bytes (675.19 MiB / 6144 MiB). Texture workspace: 3,206,699,870 logical/allocated bytes (2.99 GiB). Temporary exports/reviews: 243,571,476 bytes (232.29 MiB / 256 MiB). Free disk at audit: 128,358,879,232 bytes. No duplicate game/pack/ZIP/staging. Saves and settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-99-*`, exact prompts, authored sources and progress. Artwork remains ignored/local; this commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 100
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `7b6f0b1`. Selected eight previously classified originals: four material candidates and four individual props. Classification remains 1,273 keys.
+- Accepted wainscoting, plaster, masonry strip, layered stone wall, shuttered windows, wooden hatch, ornate relief and metal door. Six 1254-square and two 1774x887 built-in imagegen sources downsampled to five 1024-square, one 512-square and two 1024x512 full-mip DXT1 files. No native 4K claim.
+- Two comparisons, two repeat sheets and four enlarged details reviewed. Major divisions and functional placements retained; studs and relief are more pronounced. Mean luminance changes -14.14% to +5.89%. Scene mapping, lighting, material scale and adjacency remain unverified.
+- All 658 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,105 need art and 49 drafts need correction; full overhaul unfinished. Zero new game launches, runtime changes or shared-tool edits. Playtesting remains deferred to the near-completion gate.
+- Pack: 712,366,655 bytes (679.37 MiB / 6144 MiB). Texture workspace at worklist audit: 3,241,918,728 logical/allocated bytes (3.02 GiB). Temporary exports/reviews: 246,454,153 bytes (235.04 MiB / 256 MiB). Free disk at audit: 128,133,189,632 bytes. No duplicate game/pack/ZIP/staging; saves and settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-100-*`, exact prompts, authored art and progress. Artwork remains local and ignored; this commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 101
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `3b85fcd`. Inspected 32 catalog-verified opaque originals; 1,305 provisionally classified keys. Faces, labels, equipment and ambiguous effects remain separately queued.
+- Accepted sixteen material/prop replacements including stained walls, recessed panels, tartan, molding, riveted plates, gravel, plaster, masonry, brick/stone patch and wood end grain. Eleven 1254-square and five 1774x887 built-in imagegen sources produce seven 1024-square, three 512-square, one 2048-square and five 1024x512 full-mip DXT1 files. The 2048-square concrete panel is upsampled from 1254-square; no native 2K/4K claim.
+- Four comparisons, four repeat sheets and four enlarged details reviewed. Main divisions, folds, stripe, molding, rivet rows, patch boundary and ring focus retained. Mean luminance changes -10.95% to +13.67%; local relief, exact hardware spacing, scene lighting, scale and adjacency remain scene checks.
+- All 674 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,089 need art and 49 drafts need correction; full overhaul unfinished. Zero game launches, runtime changes or shared-tool edits. Near-completion testing gate retained.
+- Pack: 722,337,312 bytes (688.87 MiB / 6144 MiB). Texture workspace at audit: 3,317,984,772 logical/allocated bytes (3.09 GiB). Temporary exports/reviews: 253,204,287 bytes (241.47 MiB / 256 MiB). Free disk at audit: 127,513,735,168 bytes. No duplicate game/pack/ZIP/staging; saves and settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-101-*`, exact prompts, authored sources and progress. Corrected one mistyped identifier before successful generation; all 32 triage identifiers verified against the catalog. Artwork remains local and ignored; this commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 102
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a40d2e9`. Selected eight previously classified individual props/weapon surfaces; verified original payload hashes, exact reference pixels and opaque alpha. Classification remains 1,305 keys.
+- Accepted broken window, gold/silver atlas, olive door, aircraft markings, faceted teal panel, crate/cabinet atlas, mechanical panel and wooden weapon grip. Seven 1254-square and one 1774x887 built-in imagegen sources downsampled to four 1024-square, three 512-square and one 1024x512 full-mip DXT1 files. No native 4K claim.
+- Two comparisons, two repeat sheets and eight enlarged individual details reviewed. Main silhouettes, grille rows, hinges/knob, roundel/tricolor, angled facets, atlas islands/braces, insets and grip fittings retained. Mean luminance changes -9.69% to +1.21%; model UV mapping, local relief, checkering scale, markings and scene lighting remain runtime checks.
+- All 682 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,081 need art and 49 drafts need correction; full overhaul unfinished. Zero game launches, runtime changes or shared-tool edits. Near-completion testing gate retained.
+- Pack: 726,011,912 bytes (692.38 MiB / 6144 MiB). Texture workspace at audit: 3,341,796,029 logical/allocated bytes (3.11 GiB). Temporary exports/reviews: 248,756,093 bytes (237.23 MiB / 256 MiB). Free disk at audit: 127,328,124,928 bytes.
+- Reclaimed 7,835,754 bytes from 180 old opaque reference PNGs after payload, decoded-pixel, resolved-parent and SHA256 checks. Excluded alpha dependencies and recent batches 90-101; recovery recipes and review evidence retained. No duplicate game/pack/ZIP/staging; saves, settings, source artwork and original game data preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-102-*`, exact prompts, authored sources, recovery manifest and progress. Artwork remains local and ignored; this commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 103
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `15705eb`. Retried eight held drafts from verified originals; six accepted and two still held. Classification remains 1,305 keys.
+- Accepted dark riveted atlas, rusty sheet, four teal panels and three brushed-metal strip variants. Dark atlas brightness now +4.72%; rust-sheet top/bottom edge MAE improves to 7.45 (original 4.33, previous draft 25.99). Teal panel now has the original four corner marks/four hinges; its -18.63% mean brightness remains a scene-review item.
+- Two comparisons, two repeat sheets, eight enlarged details and original-fitting sheet reviewed. Three strip-fitting run endpoints differ by at most one original pixel, supported by manual detail review. Reflections/top edges are stronger; scene mapping, lighting, scale and adjacency remain unverified.
+- Four 1254-square and four 1774x887 built-in imagegen sources; six retained full-mip DXT1 outputs comprise two 1024-square, one 512-square and three 1024x512. No native 4K claim. Prior artwork and prompts retained.
+- Held pale arrow panel still loses tiny marking strokes and changes rails; blue sheet retains bright repeat perimeter (edge MAE 25.27 versus original 1.08). Their DDS/metadata files were retired after resolved-parent and SHA256 checks; art and review evidence retained.
+- All 688 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,081 need art and 43 drafts need correction; full overhaul unfinished. Zero game launches, runtime changes or shared-tool edits. Near-completion testing gate retained.
+- Pack: 728,636,800 bytes (694.88 MiB / 6144 MiB). Texture workspace at audit: 3,372,430,551 logical/allocated bytes (3.14 GiB). Temporary exports/reviews: 251,880,394 bytes (240.21 MiB / 256 MiB). Free disk at audit: 126,942,121,984 bytes. No duplicate game/pack/ZIP/staging; saves and settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-103-*`, exact prompts, authored corrections, fitting audit and retirement record. Artwork remains local and ignored; this commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 104
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `55d6f2d`. Inspected 32 catalog-verified opaque originals; 1,337 provisionally classified keys. Screens, faces, effects, reflections, weapons and ambiguous surfaces remain separately queued.
+- Accepted sixteen replacements: ten environmental materials and six individual props, including concrete/walls, gridded windows, riveted beam/panel, metal fittings, masonry, tread, brick/perforated strips and industrial vent. Twelve 1254-square and four 1774x887 built-in imagegen sources produce eleven 1024-square, one 512-square and four 1024x512 full-mip DXT1 files. All downsampled; no native 4K claim.
+- Four comparisons, four repeat sheets and nine enlarged details reviewed. Main divisions and hardware/pattern counts retained; exact texel or spacing equivalence is not claimed. Concrete perimeter exists in the original. Mean luminance changes -14.00% to +8.15%; windows -13.77% and tread -12.63%. Stronger surface relief, darker tones, scene lighting, scale and adjacency remain scene checks.
+- All 704 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,065 need art and 43 drafts need correction; discovery/category coverage and full overhaul remain unfinished. Zero game launches, runtime changes or shared-tool edits. Near-completion playtesting gate retained.
+- Pack: 737,908,406 bytes (703.72 MiB / 6144 MiB). Texture workspace at audit: 3,446,795,618 logical/allocated bytes (3.21 GiB). Temporary exports/reviews: 259,808,559 bytes (247.77 MiB / 256 MiB). Free disk at audit: 126,097,854,464 bytes. Inspect/reclaim reproducible temporary references before the next batch approaches its cap. No duplicate game/pack/ZIP/staging; saves and settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-104-*`, exact prompts, authored sources and progress. Artwork remains local and ignored; this commit records progress only. Mac scene validation remains pending alongside Windows scene validation; no platform behavior changed.
+
+
+## Texture overhaul issue #74: hybrid batch 105
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `ce8d08d`. Eight catalog-verified opaque originals from the individual queue inspected. Classification remains 1,337 keys; clarified radial-mechanism description to include faint vertical teeth visible in the original.
+- Accepted seven replacements: ribbed lamp panel, olive fasteners, radial mechanism, pointed blue-silver panel, double metal door, stepped metal strips and faceted cap/cylinder atlas. One mechanical atlas held because small circular-emblem strokes/arc segmentation need focused correction/review; its DDS/metadata retired after exact path/hash checks, artwork retained.
+- Five 1254-square and three 1774x887 built-in imagegen sources. Seven retained full-mip DXT1 outputs: three 1024-square, one 512-square and three 1024x512. All downsampled; no native 4K claim. Two comparisons, two repeat sheets, eight enlarged asset details and one complete emblem crop reviewed.
+- Main layout, fastener arrangement, radial components, pointed recess/fitting, trim, stepped strips and quadrant divisions retained; exact texel/tooth-spacing equivalence not claimed. Accepted luminance changes -9.26% to +10.90%. Radial ridges/red field, relief and reflections are stronger; material scale, scene lighting, UV use and adjacency remain deferred checks.
+- Retired 340 reproducible old opaque original PNGs, reclaiming 6,037,418 bytes after catalog-payload hash, exact decoded RGBA, resolved-parent and file-hash verification. Alpha dependencies and recent selections protected; recovery manifest, source artwork and comparison evidence retained.
+- All 711 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,057 need art and 44 drafts need correction; discovery/category coverage and full overhaul unfinished. Zero game launches or shared-tool/runtime changes; near-completion playtesting gate retained.
+- Pack: 741,232,918 bytes (706.89 MiB / 6144 MiB). Texture workspace at audit: 3,469,836,277 logical/allocated bytes (3.23 GiB). Temporary exports/reviews: 256,824,828 bytes (244.93 MiB / 256 MiB). Free disk: 125,942,497,280 bytes. No duplicate game/pack/ZIP/staging; saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-105-*`, exact prompts, authored sources, recovery manifest and progress. Artwork remains local/ignored; this commit records progress only. Mac and Windows scene validation remain pending; no platform behavior changed.
+
+
+## Texture overhaul issue #74: hybrid batch 106
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `0a0c49a`. Inspected 32 catalog-verified opaque originals; provisional visual classification now covers 1,369 keys. Lettering, identity-sensitive atlases, interface imagery and uncertain surfaces remain separately queued.
+- Accepted sixteen replacements: twelve environment materials and four individual panels. Includes stained walls/plaster, cobblestone, brushed metal, inset and ornate panels, slotted panels, rust, fastened concrete, wood boards and chipped orange paint.
+- Seven 1254-square and nine 1774x887 built-in imagegen sources. Six 1024-square, one 512-square and nine 1024x512 full-mip DXT1 outputs. All downsampled; no native 4K claim. Four comparisons, four repeat sheets and six enlarged details reviewed.
+- Main UV divisions, slots, wood joints, original corner fittings and six concrete fasteners retained. Ornamental motifs reinterpreted with stronger relief; exact motif pitch/texel equivalence not claimed. Luminance changes -10.42% to +16.65%; darker material contrast, near-black wall staining and stronger reflections/relief remain deferred scene checks.
+- All 727 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,041 need art and 44 drafts need correction; full overhaul and category/scene coverage remain unfinished. Zero game launches or shared-tool/runtime changes; near-completion playtesting gate retained.
+- Pack: 748,756,914 bytes (714.07 MiB / 6144 MiB). Texture workspace at audit: 3,538,803,030 logical/allocated bytes (3.30 GiB). Temporary exports/reviews: 263,159,720 bytes (250.97 MiB / 256 MiB). Free disk: 125,261,328,384 bytes. Recycle redundant reproducible triage sheets before the next large batch. No duplicate game/pack/ZIP/staging; saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-106-*`, exact prompts, authored sources and progress. Artwork remains local/ignored; this commit records progress only. Mac and Windows scene validation remain pending; no platform behavior changed.
+
+
+## Texture overhaul issue #74: hybrid batch 107
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `17e9a2a`. Eight catalog-verified opaque originals inspected from existing queues; classification remains 1,369 keys.
+- Seven accepted: silver plates, red fitting atlas, crossed-trim panel, pale rock, stacked metal strips, eroded brown wall and nested riveted straps. Blue-gray mechanical atlas held because two small insets became multi-slat vents; DDS/metadata retired after exact path/hash verification, artwork retained for correction.
+- Seven 1254-square and one 1774x887 built-in imagegen sources. Seven retained full-mip DXT1 outputs: four 1024-square, two 512-square, one 1024x512. All downsampled; no native 4K claim. Two comparisons, two repeat sheets and eight enlarged details inspected.
+- Main divisions, seams, four plate corners, fitting contours, rock clefts/patches, masonry strip and strap paths retained. Crossed trim retains three original horizontal lines despite imprecise prompt wording. Exact rivet spacing/texel equivalence not claimed. Luminance changes -12.64% rock to +21.97% masonry; warmer wall, darker rock clefts, brighter straps and stronger metal relief remain scene-review items.
+- Retired 44 redundant original-only triage JPEGs before batch 90, reclaiming 6,351,651 bytes after verifying catalog/decoded source recovery and exact resolved-parent/file hashes. Recovery manifest, selection records, artwork, final comparisons/repeats and alpha sheets retained.
+- All 734 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,033 need art and 45 drafts need correction; full overhaul, discovery/category coverage and scene validation unfinished. Zero game launches or shared runtime/tool changes; near-completion playtesting gate retained.
+- Pack: 752,256,180 bytes (717.41 MiB / 6144 MiB). Texture workspace at audit: 3,566,640,305 logical/allocated bytes (3.32 GiB). Temporary exports/reviews: 260,370,955 bytes (248.31 MiB / 256 MiB). Free disk: 125,270,286,336 bytes. No duplicate game/pack/ZIP/staging; saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-107-*`, exact prompts, authored sources, recovery manifest and progress. Artwork remains local/ignored; commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
+
+
+## Texture overhaul issue #74: hybrid batch 108
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `67a9d05`. Retried eight held drafts from verified originals; five accepted, three still held. Classification remains 1,369 keys.
+- Accepted rotor atlas, fine tooth-grid atlas, gray-green tread, dark olive four-panel sheet and blue-gray panel atlas. Original rotor rim marks retained without prior invented circular fasteners; blue-gray insets retain simple rectangles/internal marks instead of vents. Olive-panel horizontal edge MAE 11.75 versus original 9.92; excessive right-edge darkening resolved offline.
+- Two comparisons, two repeat sheets, eight enlarged details and one registered grip crop inspected. Grip dominant frequencies +/-13 horizontal and +/-19 vertical match original; tread peaks (+10,-4),(-10,+4),(+/-20,0) match original. Diagnostics support visual review, not exact texel or scene-mapping equivalence.
+- Eight 1254-square built-in imagegen sources. Five retained full-mip DXT1 outputs: three 1024-square, one 512-square, one 2048-square. Grip output resampled upward from 1254-square; no native 2K/4K claim. Prior art and prompt history retained.
+- Held cool reflection peak at row 35 versus original 38, brass row 34 versus original 39; both lower dark bands row 47 versus 52 at original 64-pixel scale. Stone edge MAE 32.45/22.51 versus original 15.74/14.21. All three remain incomplete; six DDS/metadata files retired after exact path/hash verification, artwork retained.
+- Accepted luminance changes -5.98% to +1.80%. Stronger relief, tread shadows, edges and local contrast remain scene-review items. All 739 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,033 need art and 40 drafts need correction; full overhaul/category/scene coverage unfinished. Zero game launches or shared runtime/tool changes.
+- Pack: 757,327,163 bytes (722.24 MiB / 6144 MiB). Texture workspace at audit: 3,600,897,424 logical/allocated bytes (3.35 GiB). Temporary exports/reviews: 264,624,347 bytes (252.37 MiB / 256 MiB). Free disk: 125,084,114,944 bytes. Recycle redundant reproducible review files before next large batch. No duplicate game/pack/ZIP/staging; saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-108-*`, exact prompts, authored corrections, gradient/pattern audits and progress. Artwork remains local/ignored; commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
+
+
+## Texture overhaul issue #74: hybrid batch 109
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a02d811`. Inspected 32 catalog-verified opaque originals; 1,401 keys provisionally classified. Labels, gauges, weapon atlases and ambiguous imagery remain separately queued.
+- Fifteen materials/panels accepted offline, covering masonry, plaster, metal bands/covers, concrete trim, panel grid and wood insets. One olive trim held because its broad reflection weakened and mean luminance fell 22.96%; DDS/metadata retired after exact path/hash checks, art retained.
+- Initial four generated outputs recovered from disk after interrupted tool response and visually matched to originals/prompts; no duplicate generation. Ten 1254-square and six 1774x887 built-in imagegen sources. Fifteen retained full-mip DXT1 outputs: seven 1024-square, two 512-square, five 1024x512 and one 2048-square. Pale grid resampled upward from 1254-square; no native 2K/4K claim.
+- Four comparisons, four repeat sheets and six selected enlarged details reviewed. Main masonry courses, five vent slots, dentil row, wood insets/notches, grid lines/fasteners and bottom fitting retained. Exact texel equivalence not claimed. Accepted brightness changes -14.98% to +13.21%; stronger relief, mortar contrast, orange hue and grid mottling remain deferred scene checks.
+- Retired 28 redundant triage JPEGs (5,672,882 bytes) and 96 reproducible opaque original PNGs (10,487,332 bytes), with verified catalog/decoded-RGBA recovery, resolved-parent and file-SHA256 checks. Recovery records, alpha dependencies, recent selections, source art and final comparison evidence retained.
+- All 754 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,017 need art and 41 drafts need correction; full overhaul, discovery/category coverage and scene validation unfinished. Zero game launches or shared runtime/tool changes; near-completion playtesting gate retained.
+- Pack: 767,122,486 bytes (731.59 MiB / 6144 MiB). Texture workspace at audit: 3,660,276,668 logical/allocated bytes (3.41 GiB). Temporary exports/reviews: 257,315,983 bytes (245.40 MiB / 256 MiB). Free disk: 125,295,374,336 bytes. No duplicate game/pack/ZIP/staging; saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-109-*`, exact prompts, authored art, recovery manifests and progress. Artwork remains local/ignored; commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
+
+
+## Texture overhaul issue #74: hybrid batch 110
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `2e9bb1a`. Eight previously classified equipment/architectural panels individually reworked from catalog-verified opaque originals; all eight accepted offline. Classification remains 1,401 keys.
+- Accepted teal hinged doors, rusty braced doors, illuminated olive cabinet, vented blue-gray equipment panel, angled olive panel, illuminated architectural frame, red mechanism atlas and gold/orange sleeve. Two comparison sheets, two repeat sheets, eight enlarged details and one registered vent crop inspected.
+- Door fittings/bracing, paired green indicators, opaque white opening, four white ring segments and main atlas divisions retained. Vented equipment crop has matching 14/28 dominant frequency peaks, supporting pitch review without claiming exact texel or scene equivalence. Brightness changes -10.70% to +18.46%; stronger reflection/relief, rusty warmth, red saturation and material grain remain final scene-review items.
+- Seven 1254-square and one 1774x887 built-in imagegen sources, downsampled to seven 1024-square and one 1024x512 full-mip DXT1 outputs. No native 4K claim. Exact prompts and artwork remain private; no duplicate game/pack/staging created.
+- All 762 installed/offline-approved replacements pass native DDS and worklist checks. Corrected a BOM in eight prompt records before successful worklist audit. Still 6,009 need art and 41 drafts need correction; full overhaul/category/scene coverage unfinished. Zero game launches or shared runtime/tool changes; near-completion testing gate retained.
+- Pack: 772,369,956 bytes (736.59 MiB / 6144 MiB). Texture workspace at audit: 3,694,663,928 logical/allocated bytes (3.44 GiB). Temporary exports/reviews: 261,379,767 bytes (249.27 MiB / 256 MiB). Free disk: 125,123,239,936 bytes. Recycle redundant reproducible review files before next large batch. Saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-110-*`, authored sources/prompts and progress. Commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
+
+
+## Texture overhaul issue #74: hybrid batch 111
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `6cc3758`. Inspected 32 catalog-verified opaque originals; 1,433 keys provisionally classified. Generated eleven environment materials and three individual panels; thirteen accepted offline, one held.
+- Accepted tile grid, brick/base, gravel, circular grate, bordered marble, olive mottled surface, plaster, rusty paint, seamed concrete, dry grass, flaked plaster, pale masonry and four-inset silver panel. Brass louver/disc atlas held for +37.43% mean brightness and stronger reflection/relief; DDS/metadata retired after exact path/hash checks, artwork retained.
+- Four comparison sheets, four repeat sheets and six selected enlarged details inspected. Main courses, seams, border, grate/grid, crack-patch positions and four purple insets retained; exact texel/scene equivalence not claimed. Accepted brightness changes -6.45% to +17.75%; material contrast, roughness and color changes remain deferred scene checks.
+- Fourteen 1254-square built-in imagegen sources; thirteen downsampled full-mip DXT1 outputs, ten 1024-square and three 512-square. No native 4K claim. Exact prompts and artwork remain local/private.
+- Retired 98 reproducible old opaque original PNGs (3,629,159 bytes), with catalog/decoded-RGBA recovery and all resolved-parent/file-SHA256 checks. Recovery records, alpha dependencies, recent references, artwork and final review evidence retained. No triage JPEGs matched the retirement range; zero removed.
+- All 775 installed/offline-approved replacements pass native DDS and worklist checks. Still 5,995 need art and 42 drafts need correction; full overhaul/category/scene coverage unfinished. Zero game launches or shared runtime/tool changes; near-completion testing gate retained.
+- Pack: 779,892,198 bytes (743.76 MiB / 6144 MiB). Texture workspace at audit: 3,762,244,913 logical/allocated bytes (3.50 GiB). Temporary exports/reviews: 266,383,504 bytes (254.04 MiB / 256 MiB). Free disk: 124,556,144,640 bytes. Recycle redundant reproducible review files before next large batch. No duplicate game/pack/ZIP/staging; saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-111-*`, authored sources/prompts, recovery manifest and progress. Commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
+
+
+## Texture overhaul issue #74: hybrid batch 112
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `198bb0c`. Eight held drafts retried from catalog-verified opaque originals; three accepted, five still held. Classification remains 1,433 keys.
+- Accepted olive trim with restored broad reflection (+2.00% mean brightness), brass louver/disc with restrained shading (-6.87%, previously +37.43%), and green-screen equipment atlas with rectangular ports and rectilinear lower-right island (-3.51%). Main UV divisions retained; fine relief and scene appearance remain pending validation.
+- Two comparison sheets, two repeat sheets and eight enlarged details inspected. At original 64-pixel scale, cool reflection peak row 33 versus 38, lower dark row 45 versus 52; brass peak row 31 versus 39, lower dark row 43 versus 52. Both remain held. Radial atlas still omits intermediate boundaries. Stone edge MAE 22.78/21.03 versus original 15.74/14.21; riveted plate 16.04/13.13 versus 0.00/1.08; both remain held for repeat corrections.
+- Five 1254-square and three 1774x887 built-in imagegen sources. Three retained downsampled full-mip DXT1 outputs: one 1024-square, one 1024x512, one 512x256. No native 4K claim. Prior art and prompt history retained.
+- Retired ten held DDS/metadata files after all exact resolved-parent/SHA256 checks. Retired 117 reproducible older opaque original PNGs (7,852,542 bytes; one selected reference regenerated from verified catalog afterward, net 7,803,824 bytes), with catalog/decoded-RGBA recovery verification and path/hash checks. Recovery records, alpha dependencies, recent references, artwork and final evidence retained.
+- All 778 installed/offline-approved replacements pass native DDS and worklist checks. Still 5,995 need art and 39 drafts need correction; full overhaul/category/scene coverage unfinished. Zero game launches or shared runtime/tool changes; near-completion testing gate retained.
+- Pack: 781,029,880 bytes (744.85 MiB / 6144 MiB). Texture workspace at audit: 3,779,370,018 logical/allocated bytes (3.52 GiB). Temporary exports/reviews: 261,459,586 bytes (249.35 MiB / 256 MiB). Free disk: 121,601,974,272 bytes. No duplicate game/pack/ZIP/staging; saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-112-*`, authored corrections/prompts, recovery manifest and progress. Commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
+
+
+## Texture overhaul issue #74: hybrid batch 113
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `3154cb3`. Individually edited eight catalog-verified opaque character atlases with built-in imagegen; six accepted offline and two held. Provisional classification remains 1,433 keys.
+- Accepted two male face atlases, swept brown hair, tan ear/skin, three-button garment and mixed stubble/metal-strip atlas. Main texture islands, eye openings, eyebrows, unused gaps, buttons and strip divisions retained on visual comparison. Two comparison sheets, two repeat sheets and all eight enlarged details inspected, including complete portrait atlases. Exact texel equivalence and scene adjacency not established.
+- Held compact hair/grid atlas for missing oval stem and changed grid spacing/rows; held complex facial atlas for ear-opening and eye/mouth drift. Four DDS/metadata files removed after exact resolved-parent/SHA256 checks. Original game textures remain active for held keys; generated art and prompts retained for correction.
+- Sources: five 1774x887, two 887x1774 and one 1254-square. Six retained downsampled full-mip DXT1 outputs: four 1024x512 and two 512x1024. No native 4K claim. Accepted mean luminance changes -12.45% to +3.93%; pores, eyebrow/stubble sharpness, hair contrast, warmer skin and garment sheen remain scene-review items.
+- All 784 installed/offline-approved replacements pass native DDS and worklist checks. Still 5,987 need art and 41 drafts need correction. Full overhaul/category/scene coverage unfinished; zero game launches. Near-completion testing gate retained. No shared runtime/tool or platform behavior changes; Windows/Mac scene validation pending.
+- Pack: 783,130,492 bytes (746.85 MiB / 6144 MiB). Texture workspace at audit: 3,803,910,283 logical/allocated bytes (3.54 GiB). Temporary exports/reviews: 263,848,688 bytes (251.63 MiB / 256 MiB). Free disk: 121,157,996,544 bytes. Recycle reproducible temporary outputs before another large batch; no duplicate game/ZIP/staging, saves/settings preserved.
+- Artwork, exact prompts, review evidence, retirement manifest and progress remain local under ignored `private/texture-remaster`; this commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 114
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `731ad1d`. Inspected 32 catalog-verified opaque originals; 1,465 keys now provisionally classified. Generated twelve environment materials and four individual panels with built-in imagegen; fifteen accepted offline, one held.
+- Accepted rubble, red brick, earthy rock, scraped plaster, framed wood, split stone, weathered plaster, horizontal stone trim, olive rusty trim, vertical pale trim, mottled stone, concrete shadow atlas, twin wood panels, four-bolt plate and brick/stone masonry. Grille panel held for changed fine line spacing; its two DDS/metadata files retired after exact parent/hash checks, art retained.
+- Four comparison sheets, four repeat sheets and eight enlarged details inspected. Main seams, courses, trim, fasteners and shadow regions preserved on visual comparison. Brick profile retains dominant bin 14 and harmonics 28/29; grille profile diverges. Pattern metrics are supporting diagnostics, not proof of exact texel or scene equivalence. Grain/relief, edge contrast, warmer wood and brightness changes (-8.58% to +7.71%) remain scene-review items.
+- Thirteen 1254-square and three 1774x887 source images; fifteen retained downsampled full-mip DXT1 files: ten 1024-square, two 512-square and three 1024x512. No native 4K claim. Artwork and exact prompts remain private.
+- Retired 75 reproducible old opaque reference PNGs (5,660,999 bytes), with catalog/decoded-RGBA recovery records and all resolved-parent/file-SHA256 checks. Temporary output briefly reached 268,496,252 bytes, 60,796 above 256 MiB; production stopped and additional verified reference cleanup restored the cap before review continued. Final comparison evidence, source art, alpha dependencies, saves and settings retained.
+- All 799 installed/offline-approved replacements pass native DDS/worklist checks. Still 5,971 need art and 42 drafts need correction; full overhaul/category/scene coverage unfinished. Zero game launches or shared runtime/tool changes; near-completion gate retained. Windows/Mac scene validation pending.
+- Pack: 791,527,706 bytes (754.86 MiB / 6144 MiB). Texture workspace at audit: 3,873,265,716 logical/allocated bytes (3.61 GiB). Temporary exports/reviews: 266,155,312 bytes (253.83 MiB / 256 MiB). Free disk: 116,300,247,040 bytes. Recycle temporary references before another large batch; no duplicate game/pack/ZIP/staging.
+- Private evidence: `private/texture-remaster/review/hybrid-114-*`, authored sources/prompts, recovery manifests and progress. This commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 115
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `888756c`. Generated eight individual metal/wood assets from the catalog-verified existing queue with built-in imagegen; six accepted offline, two held. Classification remains 1,465 reviewed keys; no new coverage claimed from routing.
+- Accepted silver panel trio with hazard stripe, repeating chevron tread, peeling double wood panels, wood wedge atlas, curved wood stock/diamond inset and brass/copper/steel mechanism atlas. Two dark equipment panels held for +53.69% and +64.38% mean-luminance changes; vent/rivet correspondence must be rechecked after correction. Four candidate DDS/metadata files retired after all resolved-parent/hash checks, sources retained.
+- Two comparison sheets, two repeat sheets and eight full-aspect details inspected for panel slots, tread bands/bolts, seams, insets and atlas boundaries. Accepted luminance changes -2.95% to +20.78%; increased grain, highlights and silver-panel edge contrast remain scene-review items. Silver-panel left/right edge MAE 6.10 to 39.61 requires adjacency attention. Offline visual review is not exact texel equivalence or scene validation.
+- Sources: four 1254-square, three 1774x887 and one 887x1774 images. Six full-mip opaque DXT1 replacements retained: three 1024x512 and one 1024-square downsampled, one 1024x2048 tread and one 2048-square mechanical atlas upsampled. No native 4K claim. Exact prompts, actual source sizes and resampling remain recorded privately.
+- Recycled 40 redundant original-only contact sheets (5,931,591 bytes), after catalog/decoded-RGBA recovery verification and all resolved-parent/file-SHA256 checks. Final comparisons/repeats/details, authoritative original payloads, generated art and recovery records retained. Temporary outputs stayed below 256 MiB this batch.
+- All 805 installed/offline-approved replacements pass native DDS/worklist checks. Remaining: 5,963 need art and 44 drafts need correction. Full category/discovery/scene coverage unfinished. Zero game launches or shared runtime/tool changes; 512 MiB residency cap, near-completion testing gate and personal saves/settings preserved. Windows/Mac scene validation remains pending.
+- Pack: 797,473,093 bytes (760.53 MiB / 6144 MiB). Texture workspace at audit: 3,904,035,579 logical/allocated bytes (3.64 GiB). Temporary exports/reviews: 264,081,304 bytes (251.85 MiB / 256 MiB). Free disk: 116,123,303,936 bytes. Recycle reproducible temporary references before the next large batch; no duplicate game/pack/ZIP/staging.
+- Private evidence: `private/texture-remaster/review/hybrid-115-*`, authored sources/prompts, recovery manifest and progress. This records progress only; full overhaul remains active.
+
+
+## Texture overhaul issue #74: hybrid batch 116
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `981528f`. Inspected 32 catalog-verified opaque originals; 1,497 keys now provisionally classified. Eight were remaining eligible end-of-queue assets with at least three occurrences; 24 came from the two-occurrence queue. Alpha, small assets and specialist content remain in scope. Generated eight environment materials and six individual atlases with built-in imagegen; eleven accepted offline, three held.
+- Accepted snowy slab, concrete, narrow brickwork, ornate trim, ocher earth, strapped wood, carved wall, red-striped paint, silver rib/hex component, brown equipment panel and four-opening window surround. Held mechanical atlas for extra tube joints, sci-fi panel for changed small plate markings, and pale panel for altered perforation geometry. Six held DDS/metadata files retired after exact parent/hash checks; art retained.
+- Four comparisons, four repeat sheets, fourteen enlarged details and four diagnostic crops inspected. Main seams, slots, courses, ornamental bands and openings retained in accepted drafts. Sci-fi panel has three light bars and matching lower-grille dominant bin 30, but plate-marking drift remains. Pattern diagnostics are not exact UV or scene validation. Contrast, stronger grain/relief, warmer wood, red saturation and luminance changes (-11.01% to +16.95%) remain scene-review items.
+- Ten 1254-square, three 1774x887 and one 887x1774 generated sources. Eleven downsampled full-mip opaque DXT1 replacements retained: eight 1024-square, two 1024x512 and one 512x1024. No native 4K claim. Actual source sizes, resampling and exact prompts saved privately.
+- Recycled 55 redundant repeat-presentation sheets from 17 older fully accepted batches (23,548,098 bytes), after catalog/decoded-RGBA and DDS/source recovery verification plus all resolved-parent/file-SHA256 checks. All final comparisons, selected detail evidence and source art retained. Historical progress records annotate retired presentation references; recovery manifest records exact source hashes. Temporary outputs remained below 256 MiB.
+- All 816 installed/offline-approved replacements pass native DDS/worklist checks. Remaining: 5,949 need art and 47 drafts need correction. Full category/discovery/scene coverage unfinished. Zero game launches or shared runtime/tool changes; near-completion testing gate, 512 MiB residency cap and personal saves/settings preserved. Windows/Mac scene validation pending.
+- Pack: 804,120,391 bytes (766.87 MiB / 6144 MiB). Texture workspace at audit: 3,946,047,186 logical/allocated bytes (3.68 GiB). Temporary exports/reviews: 249,582,180 bytes (238.02 MiB / 256 MiB). Free disk: 115,728,343,040 bytes. No duplicate game/pack/ZIP/staging.
+- Private evidence: `private/texture-remaster/review/hybrid-116-*`, authored sources/prompts, retirement/recovery manifest and progress. Full overhaul remains active.
+
+
+## Texture overhaul issue #74: hybrid batch 117
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `7514afb`. Eight held drafts retried; four accepted offline and four still held. Classification remains 1,497 keys.
+- Corrected two over-bright dark panels: blue-gray equipment panel now -4.68% mean luminance versus original (previous +53.69%); three-slot riveted panel -6.81% (previous +64.38%). Main vent/fixture/slot layouts retained. Mechanical atlas removes added bottom-tube joints, retaining the principal joint near 64% (-3.54% luminance). Sci-fi panel retains three lights and understated abstract plate marks instead of invented lettering (-7.46%). Stronger microdetail/edge contrast still require scene review.
+- Two comparisons, two repeat sheets and eight enlarged details inspected. Four held drafts still fail fidelity: enlarged perforation holes; missing upper grille lines/changed lower cadence; thin oval stem restored but net grid thickness/registration altered; face atlas changes eye/lip/ear details and net grid. These do not count as complete.
+- Six 1254-square and two 1774x887 built-in imagegen sources. Four retained downsampled full-mip DXT1 outputs: three 1024-square and one 1024x512. No native 4K claim. Prior artwork and prompt versions retained. Eight held candidate DDS/metadata files safely retired after all resolved-parent/SHA256 checks.
+- All 820 installed/offline-approved replacements pass native DDS and worklist checks. Still 5,949 need art and 43 drafts need correction. Full overhaul/category/discovery/scene coverage remains unfinished. Zero game launches; near-completion testing gate retained. No shared runtime or tool changes; Mac and Windows scene validation pending.
+- Pack: 806,569,365 bytes (769.20 MiB / 6144 MiB). Texture workspace at audit: 3,972,878,045 logical/allocated bytes (3.70 GiB). Temporary exports/reviews: 252,375,505 bytes (240.68 MiB / 256 MiB). Free disk: 115,334,217,728 bytes. One active pack; no duplicate extracts/ZIPs/staging. Saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-117-*`, authored correction sources/prompts and progress. Commit records progress only; artwork stays local and ignored.
+
+
+## Texture overhaul issue #74: hybrid batch 118
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `7ccd419`. Classified 32 catalog-verified opaque originals from the two-occurrence/min128 queue; 1,529 keys now classified. Alpha, smaller assets, specialist imagery and unknown assets remain in scope. Generated ten environment surfaces and two individual prop panels with built-in imagegen; ten accepted, two held.
+- Accepted riveted quarter-ring/brickwork, six-board crate face, jagged rock, fluted pale wall, four-recess metal panel, four-hole concrete, cracked plaster, gray wood paneling, golden strapped wood and worn brickwork. Held ornate shutters for altered louver cadence/fan ornament, and blue-striped equipment door for turning a subdued painted mark into exposed metallic hardware. Four held DDS/metadata files retired after exact parent/hash checks; artwork retained.
+- Three comparison sheets, three repeat sheets, twelve enlarged details and three diagnostic crops inspected. Main UV divisions, seams, bolts, holes and recesses retained on accepted comparisons. Noisy louver profile extrema do not establish exact counts. Fine grain/relief and scene adjacency remain unverified. Luminance shifts -13.85% to +24.45%; brighter brickwork/plaster and stronger rust/rock relief need scene checks. Fluted-wall edge MAE 6.06/8.33 to 17.50/15.51; concrete left/right 9.59 to 21.26: pending adjacency concerns, not seamlessness claims.
+- Eleven 1254-square and one 1774x887 source images. Ten retained downsampled full-mip opaque DXT1 replacements: eight 1024-square, one 512-square and one 1024x512. No native 4K claim. Prompts, actual source sizes, source hashes and resampling recorded privately.
+- Recycled 41 reproducible older opaque reference PNGs (2,251,840 bytes), verified against catalog payload/decoded RGBA and every resolved-parent/file-SHA256 before removal. Recent references and alpha dependencies protected; originals in game data, authored art and final evidence preserved. Temporary texture outputs remained below 256 MiB.
+- All 830 installed/offline-approved replacements pass native DDS/worklist checks. Remaining: 5,937 need art and 45 drafts need correction. Full category/discovery/scene validation unfinished. Zero game launches or shared runtime/tool changes; 512 MiB residency cap, near-completion testing gate and personal saves/settings preserved. Windows/Mac scene validation pending.
+- Pack: 812,691,793 bytes (775.04 MiB / 6144 MiB). Texture workspace at audit: 4,029,425,391 logical/allocated bytes (3.75 GiB). Temporary exports/reviews: 258,904,439 bytes (246.91 MiB / 256 MiB). Free disk: 115,049,431,040 bytes. One active pack; no duplicate game/ZIP/staging.
+- Private evidence: `private/texture-remaster/review/hybrid-118-*`, authored sources/prompts, reference-recovery manifest and progress. Commit records progress only; full overhaul remains active.
+
+
+## Texture overhaul issue #74: hybrid batch 119
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `e5baf5a`. Eight already-classified opaque originals verified against catalog payloads and decoded RGBA; seven individual panels and one environment door authored. Classification remains 1,529 keys.
+- Seven accepted offline: multipart metal atlas, orange-striped twin-inset door, brass mechanical atlas, dark steel/red housing, double recessed wooden door, angled wood structural atlas and diagonal silver panel. Main UV regions, openings, recesses and hardware groups retained. Gray-blue geometric panel held because lower-left thin horizontal bands and rectangular shading patches were flattened; original-scale crop confirms the loss. Two held DDS/metadata files retired after all parent/hash checks; source and prompt retained.
+- Two comparisons, two repeat sheets, eight enlarged details and one band crop inspected. Accepted mean luminance changes -14.18% to +16.56%; brass -0.04%, multipart metal +13.03%, orange door -4.68%, angled wood +5.46%, silver panel -4.82%. Dark exposure, stronger grain/edge contrast, brass highlights and atlas adjacency remain scene-validation items; repeat sheets do not prove actual scene mapping.
+- Seven 1254-square and one 1774x887 built-in imagegen sources. Seven retained downsampled full-mip opaque DXT1 replacements: six 1024-square and one 1024x512. No native 4K claim. Exact prompts, source hashes and resampling saved privately. Hybrid-118 prompt-set quoting reconciled with the unchanged exact generation records.
+- All 837 installed/offline-approved replacements pass native DDS/worklist checks. Still 5,929 need art and 46 drafts need correction. Full category/discovery/scene coverage unfinished. Zero game launches or shared runtime/tool changes; near-completion testing gate and 512 MiB residency cap retained. Windows/Mac scene validation pending.
+- Pack: 817,239,639 bytes (779.38 MiB / 6144 MiB). Texture workspace at audit: 4,062,130,789 logical/allocated bytes (3.78 GiB). Temporary exports/reviews: 261,931,890 bytes (249.80 MiB / 256 MiB). Free disk: 114,943,606,784 bytes. Recycle reproducible review output before the next large batch. One active pack; no duplicate game/ZIP/staging; saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-119-*`, authored sources/prompts and progress. Commit records progress only. Full overhaul remains active.
+
+
+## Texture overhaul issue #74: hybrid inventory batch 120
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `135fecf`. Inspected 32 smaller textures and 32 additional nonopaque textures through eight paired RGB/alpha-composite sheets. Catalog payloads and decoded RGBA hashes verified. Classified 64 new keys; 1,593 now visually classified. No new artwork or installed replacements in this inventory pass.
+- New classifications: 27 effects, 12 effect/utility, 9 props, 6 uncertain materials, 4 UI, 3 interface/utility and 3 environment. 56 have nonopaque alpha; eight are opaque, and one has constant partial alpha 84. White/black RGB alone can hide icons, rings, masks or effects encoded in alpha. Recorded alpha ranges and preservation constraints; opaque fire/flare blend modes, shader masks, readable UI and uncertain assets retain specialist obligations. Routing is not completion.
+- Safely retired four redundant original triage sheets (545,264 bytes) and sixteen redundant repeat sheets (6,680,557 bytes) from five fully accepted older batches. Catalog/RGBA recovery and DDS/source hashes verified, followed by all resolved-parent/file-SHA256 checks. Final comparisons, selected detailed evidence, source art and original game data retained. Historical progress references annotate retired presentations.
+- Current audited catalog: 7,147 payloads / 6,812 supported keys; the original 753 unsupported payloads have offline decoder support, with runtime scene validation pending. Verified nested textures and five XBE error-screen sections are integrated; broader archive, unknown encoding and procedural discovery remains open. No full coverage claim.
+- Pack unchanged: 837 installed/offline-approved textures. Every DDS hash matches the previous progress record; refreshed worklist dimensions/aspect/mip/format/hash checks, planner and inventory pass. Native DDS evidence retained from hybrid-119; no redundant native rerun or gameplay launch. Still 5,929 need art and 46 drafts need correction. Full category/discovery/scene validation unfinished; 512 MiB residency limit and near-completion testing gate retained.
+- Pack: 817,239,639 bytes (779.38 MiB / 6144 MiB). Texture workspace at audit: 4,057,974,413 logical/allocated bytes (3.78 GiB). Temporary exports/reviews: 257,688,084 bytes (245.75 MiB / 256 MiB). Free disk: 114,939,904,000 bytes. No duplicate games, packs, ZIPs or staging; saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-120-*`, updated visual classification/planner, recovery manifests and progress. No shared runtime/tool changes; no new Mac adaptation. Windows/Mac scene validation remains pending. Full overhaul stays active.
+
+
+## Texture overhaul issue #74: hybrid alpha batch 121
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a474cfc`. Eight individually authored nonopaque originals verified against catalog/RGBA evidence. Two accepted offline; six held. Classification remains 1,593 keys.
+- Accepted green leaf and nine-pane window using verified original-alpha PNGs in the existing compiler. Original masks are bilinearly resized and DXT5-compressed: mean alpha error 1.0028/255 and 0.7109/255, maxima 32 and 13. Not bit-exact alpha; glass retains partial opacity. Original-alpha-weighted luminance changes +10.23% and -0.47%. Veins, frame grain, glass blending, edge appearance and distant mips remain scene-validation items.
+- Held feather, rope and torn wood for visible colored/dark edge contamination; equipment atlas for altered grille pattern; scrollwork and foliage for RGB drift against original cutout contours. Twelve held DDS/metadata files retired after all exact resolved-parent/SHA256 checks. Generated artwork and prompts retained; no failed draft counts as complete.
+- Two RGB comparisons, two repeat sheets and eight original/generated/compiled checkerboard details reviewed. Alpha-preserving compilation does not establish RGB registration. Generated-alpha coverage diagnostics are not automatic pass/fail rules because original opaque black regions can be intentional. Future corrections must cover the original mask footprint and inspect hidden RGB at soft edges before compilation.
+- Four 1254-square and four 1774x887 built-in transparent imagegen sources. Two retained downsampled full-mip DXT5 textures: one 256-square and one 1024-square. No native 4K claim. Exact prompts, source hashes, alpha-source hashes, generated alpha ranges and resampling recorded privately. Accepted alpha-source PNGs remain protected compiler dependencies.
+- All 839 installed/offline-approved replacements pass native DDS/worklist checks. Still 5,921 need art and 52 drafts need correction. Full category/discovery/scene coverage unfinished. Zero game launches or runtime/tool changes; 512 MiB residency limit and near-completion testing gate retained. Windows/Mac scene validation pending.
+- Pack: 818,727,200 bytes (780.80 MiB / 6144 MiB). Texture workspace at audit: 4,081,339,837 logical/allocated bytes (3.80 GiB). Temporary exports/reviews: 260,171,001 bytes (248.12 MiB / 256 MiB). Free disk: 114,395,357,184 bytes. One active pack; no duplicate games, ZIPs or staging; saves/settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-121-*`, authored sources/prompts, alpha masks and progress. Commit records progress only. Full overhaul remains active.
+
+
+## Texture overhaul issue #74: hybrid batch 122
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `6861099`. Diagnosed colored cutout fringes in low-opacity authored RGB; opacity-aware resizing did not resolve them, so the compiler is unchanged. One transparent edit still failed. A second built-in imagegen opaque color-bleed plate succeeds with the verified original mask reapplied using the existing compiler options.
+- Torn wood `90972e1be16763c9` accepted offline after RGB, repetition and full-output alpha-composite review. Principal ridge/splinter layout retained and conspicuous colored halos removed; stronger grain contrast and distant mip behavior await scene review. Threshold counts are diagnostics, not visual acceptance criteria. Other cutout layout failures remain held.
+- Two 1774x887 authored sources retained privately, accepted output downsampled to 1024x512 full-mip DXT5. Original-alpha error versus bilinear reference: MAE 0.798189/255, max 29, 0.704575% of pixels above 16. Weighted luminance +4.53%. Original-mask policy does not imply lossless DDS alpha or native 4K artwork.
+- All 840 installed/offline-approved replacements pass native DDS and worklist audits; planner and inventory refreshed. 51 held keys and 5,921 needing art remain, classification unchanged at 1,593. Full overhaul, discovery gaps and scene validation remain unfinished. Zero gameplay launches; near-completion gate retained. No runtime/tool change or Mac adapter requirement; actual Windows/Mac appearance remains pending.
+- Pack: 819,427,301 bytes (781.47 MiB / 6144 MiB). Texture workspace at audit: 4,090,379,429 logical and allocated bytes (3.81 GiB). Temporary exports/reviews: 261,497,680 bytes (249.38 MiB / 256 MiB). Free disk: 114,328,350,720 bytes. One active pack; original game, saves and settings preserved.
+- Private evidence: `private/texture-remaster/review/hybrid-122-*`, authored versioned sources/prompts and progress. Authoring guidance updated in `docs/textures.md`; artwork remains private. No full-pack or source duplication.
+
+
+## Texture overhaul issue #74: hybrid batch 123
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `4721624`. Inspected/classified 32 more catalog-verified opaque originals, now 1,625 provisional classifications. Text-heavy graphics, transit map, painting and uncertain shader assets remain separate review work; small/alpha textures remain in scope.
+- Twelve built-in imagegen drafts produced; eleven accepted offline: slab grid, exposed brick/plaster, interlocking pavement, ochre rock, dark trim, olive boards, worn plaster, wood door, rough dark ground, silver hatch and perforated wall. Held the oval mechanism because it loses the isolated fastener below its housing near original pixel (66,123). Two held DDS/metadata files safely retired; all source art/prompts preserved.
+- Three comparison sheets, three repeat sheets and twelve enlarged details reviewed. Main UV divisions, panel/board layouts, handle/lock and perforated strip retained in accepted drafts. Mean luminance changes range from -14.46% door to +23.17% rock. Slab left/right edge MAE 7.49 to 21.24; perforated wall 16.64 to 29.72. Stronger grain, relief, highlights and boundary shading require scene-distance/adjacency validation; repeat sheets do not prove seamlessness on every model.
+- Eight 1254-square and four 1774x887 generated sources; eleven accepted downsampled full-mip DXT1 outputs (eight 1024-square, three 1024x512). All original/compiled candidate alpha remains opaque. No native 4K claim.
+- All 851 installed/offline-approved replacements pass native DDS and worklist audits; planner and inventory refreshed. 5,909 still need art and 52 drafts need correction. Discovery/category/scene gaps remain; full overhaul unfinished. Zero gameplay launches; no runtime/tool change. Windows/Mac scene checks and near-completion gate remain pending.
+- Recycled 16 older original-only contact sheets (2,406,716 bytes) after catalog/RGBA recovery checks and all resolved-parent/SHA256 checks. Selections, classifications, final comparisons and original game retained. Pack: 826,074,599 bytes (787.81 MiB / 6144 MiB); texture workspace 4,143,281,467 logical/allocated bytes (3.86 GiB). Temporary output at audit 266,660,053 bytes (254.31 MiB / 256 MiB); free disk 114,049,458,176 bytes. Saves/settings untouched; no duplicate game/ZIP/staging.
+- Evidence stays private under `private/texture-remaster/review/hybrid-123-*`, authored PNG/prompts and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 124
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `6985ca8`. Inspected/classified 32 additional catalog-verified opaque originals, now 1,657 provisional classifications. Weapon, character, interface and effect/utility candidates remain separate review work; small/alpha assets remain in scope.
+- Sixteen built-in imagegen drafts produced; fifteen accepted offline: metal relief atlas, oxidized panel, mechanical grille, concrete, damaged wall, brushed-metal panel, masonry trim, ivory tiles, ochre stone, turquoise paint/rust, wood door, riveted panel, slotted wall, stone relief and pale grille. Held metal trim `1ff921cfd492469d`: focused crop shows the far-right small fastener remains, but has moved downward and weakened. Two candidate DDS/metadata files safely retired; all artwork/prompts retained.
+- Four comparison sheets, four repeat sheets, sixteen enlarged details and two focused crops reviewed. Mechanical grille diagnostic finds 25 interior peaks in both original/compiled original-scale strip, supporting close spacing; rusty panel retains five large holes per band and ivory tiles retain a 5x5 grid. Accepted mean luminance changes -5.01% to +21.60%; stronger grain, relief/highlights and door brightness need final scene checks. Mechanical grille left/right edge MAE 25.48 to 39.80; slotted wall 57.81 to 69.69; door top/bottom 3.40 to 25.47. Repeat evidence does not establish seamlessness on all models.
+- Fourteen 1254-square and two 1774x887 generated sources. Fifteen accepted downsampled full-mip DXT1 outputs: twelve 1024-square, two 512-square and one 1024x512. Candidate original/compiled alpha remains opaque. No native 4K claim.
+- All 866 installed/offline-approved replacements pass native DDS and worklist audits; planner/inventory refreshed. 5,893 need art and 53 drafts need correction. Audited supported scope remains 6,812 unique keys with discovery/category/scene gaps; full overhaul unfinished. Zero game launches; no runtime/tool changes. Windows/Mac scene validation and near-completion gate remain pending.
+- Safely retired 105 older redundant enlarged comparison JPGs (16,855,915 bytes), preserving final comparison sheets and source/game/selection provenance with recovery hashes. Pack: 835,170,857 bytes (796.48 MiB / 6144 MiB). Texture workspace at audit: 4,199,979,189 logical/allocated bytes (3.91 GiB); temporary output 259,255,682 bytes (247.25 MiB / 256 MiB); free disk 109,204,045,824 bytes. Saves/settings untouched; no duplicate extracts/ZIPs/staging.
+- Evidence and prompts stay private under `private/texture-remaster/review/hybrid-124-*`, `authored/` and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 125
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `d52e030`. Inspected/classified 32 more catalog-verified opaque originals, now 1,689 provisional classifications. Characters, text and uncertain effects remain separate review work; classification is not full category/scene coverage.
+- Fifteen built-in imagegen sources produced; fourteen accepted offline: decorative wood, terracotta plaster, floral wallpaper, tread plate, dark wall atlas, vent panel, curved metal slot panel, curved stone atlas, layered rock, curved grille panel, pale concrete, dark stone trim, wood door and ornate trim. Held `229b8d9a4a3c8111`: gray lower-left atlas region lost its broad shadow/gradient. Its actual UV usage is unverified; treating it as unused was unsupported. Two candidate DDS/metadata files safely retired, preserving source/prompt/evidence.
+- Four comparison sheets, four repeat sheets and fifteen enlarged details reviewed. Main floral layout, door hardware/plank direction, vent slats, curved islands and seams retained in accepted drafts. Mean luminance changes -10.22% to +19.01%; stronger highlights/grain and door brightness await final scene checks. Curved grille edge MAE rises left/right 19.89 to 49.21 and top/bottom 42.94 to 70.48; curved metal left/right 41.71 to 66.84. Repeat sheets do not prove seamlessness on every model.
+- Nine 1254-square and six 1774x887 sources retained. Fourteen accepted downsampled full-mip DXT1 outputs: eight 1024-square and six 1024x512. Original/compiled candidate alpha remains opaque; no native 4K claim.
+- All 880 installed/offline-approved replacements pass native DDS and worklist audits; planner/inventory refreshed. 5,878 need art and 54 drafts need correction. Scope remains 6,812 supported unique keys plus discovery/category/scene gaps. Zero game launches; no runtime/tool changes. Windows/Mac scene validation and near-completion gate remain pending; full overhaul unfinished.
+- Safely retired 24 older redundant enlarged comparison JPGs (4,291,914 bytes), preserving final comparisons, selections, original game, artwork and recovery hashes. Pack: 842,868,461 bytes (803.82 MiB / 6144 MiB). Texture workspace at audit: 4,261,439,547 logical/allocated bytes (3.97 GiB); temporary output 263,461,870 bytes (251.26 MiB / 256 MiB); free disk 108,656,508,928 bytes. Personal saves/settings untouched; no duplicate extracts/ZIPs/staging.
+- Artwork/prompts and evidence remain private under `private/texture-remaster/authored`, `review/hybrid-125-*` and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 126 corrections
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `f993841`. Reverified eight held opaque originals against catalog payload/RGBA hashes; rebuilt missing disposable exports from authoritative game data. Classification remains 1,689 provisional keys.
+- Eight built-in imagegen corrections produced; five accepted offline: pale arrow/yellow-stripe panel without invented side fasteners, blue-mark panel, panel atlas with restored thin bands/rectangular shading, oval mechanism with restored separate bottom fastener, and rusty atlas with restored gray-field gradient. Previous draft artwork and prompt snapshots retained; resolved records preserve the failure history.
+- Three remain held. Silver reflection peaks at row 33 versus original 38; brass at 32 versus 39. Their lower dark minima are both 44 versus original 51/52. Profiles average luminance at original 64x64 scale across x14..57. Green-inset trim still loses the separate far-right small fastener, confirmed in an enlarged original-scale crop. Six failed DDS/metadata files safely retired; no failed correction counted as complete.
+- Two comparison sheets, two repeat sheets, eight enlarged details and focused references reviewed. Accepted mean luminance changes -5.49% to +7.98%; stronger grain/highlights require final scene checks. Restored panel atlas edge MAE left/right 83.15 to 92.36 and top/bottom 19.35 to 31.18; blue panel top/bottom 57.95 to 73.70. Repeat evidence does not establish all model adjacency or seamlessness.
+- Six 1254-square and two 1774x887 sources generated. Five accepted downsampled full-mip DXT1 outputs: two 1024-square, two 512-square and one 1024x512. All original/compiled candidate alpha remains opaque; no native 4K claim.
+- All 885 installed/offline-approved replacements pass native DDS and worklist audits; planner/inventory refreshed. 5,878 need art and 49 held drafts need correction. Scope remains 6,812 supported unique keys plus discovery/category/scene gaps. Zero game launches; no runtime/tool changes. Windows/Mac scene validation and near-completion gate remain pending; full overhaul unfinished.
+- Safely retired 25 older redundant enlarged comparison JPGs (4,222,204 bytes), retaining final comparisons and recovery hashes. Pack: 844,968,479 bytes (805.82 MiB / 6144 MiB). Texture workspace at audit: 4,284,755,115 logical/allocated bytes (3.99 GiB); temporary output 261,989,711 bytes (249.85 MiB / 256 MiB); free disk 108,512,960,512 bytes. Artwork, original game, personal saves/settings preserved; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-126-*`, versioned/canonical authored prompt records, source PNGs and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 127
+
+- Continued on the #74 branch from f63e2c1. Inspected/classified 32 more catalog-verified opaque originals, now 1,721 provisional classifications. Character identity, text and uncertain shader uses remain specialist work; category/scene coverage is unfinished.
+- Twelve built-in imagegen sources produced; eleven accepted offline: weathered sheet, twin-vent hatch, rusty riveted strip, silver machinery recess, olive arrow/stripe wall, stone blocks, cracked plaster, pale door atlas, blue-striped hatch, shadowed rock and pale riveted sheet. Held 26ff884bf5a373a8 because the pale vertical divider around original x126 is weakened/recolored into rust shading. Two failed candidate DDS/metadata files safely retired; source/prompt/review retained.
+- Three comparison sheets, three repeat sheets, twelve enlarged details and two focus crops reviewed. Initial suspicion of an added corner hole on blue-striped hatch was not substantiated: the original already has a dark corner cutout. Main cracks, joints, twelve-rivet layout, arrow/stripe and machinery islands retained in accepted drafts; stronger grain, bevels and highlights require scene checks.
+- Accepted luminance changes -8.10% to +11.79%. Silver machinery left/right edge MAE 1.18 to 10.33; olive panel 1.16 to 8.91; rock 20.32 to 31.19; door 91.02 to 110.48. Repeat evidence does not establish all model adjacency or seamlessness.
+- Six 1254-square and six 1774x887 sources retained. Eleven accepted downsampled full-mip DXT1 outputs: five 1024-square, one 512-square and five 1024x512. Alpha remains opaque; no native 4K claim.
+- All 896 installed/offline-approved replacements pass native DDS and worklist audits; planner/inventory refreshed. 5,866 need art and 50 held drafts need correction. Scope remains 6,812 supported unique keys plus discovery/category/scene gaps. Zero game launches; no runtime/tool changes. Final Windows/Mac scene validation and near-completion gate remain pending; full overhaul unfinished.
+- Safely retired 26 older redundant enlarged review JPGs (4,277,409 bytes), retaining final comparisons and recovery hashes. Pack: 850,392,443 bytes (811.00 MiB / 6144 MiB). Texture workspace at audit: 4,335,447,609 logical/allocated bytes (4.04 GiB); temporary output 264,345,234 bytes (252.10 MiB / 256 MiB); free disk 108,199,550,976 bytes. Artwork, original game, personal saves/settings preserved; no duplicate extracts/ZIPs/staging.
+- Private artwork/prompts: authored/*-hybrid127-v1.png, canonical prompt records and review/hybrid-127-prompt-set.json. Evidence: review/hybrid-127-* and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 128
+
+- Continued on the #74 branch from fc53ce9. Inspected/classified 32 more catalog-verified opaque originals, now 1,753 provisional classifications. Full category/scene coverage remains unfinished.
+- Twelve independent built-in imagegen requests attempted, eleven sources returned, eight accepted offline: bamboo slats, aged plaster/timber, pale metal panel, X-braced hatch, masonry, inset wood, ribbed cylinders and vertical planks. Three held: sci-fi weapon label glyphs changed; grip medallion decorative strokes drifted; red metal field lost broad dark shading. Six failed candidate DDS/metadata files safely retired; artwork/prompts/reviews retained.
+- Separate generation gap 30a7da52dde92c62: built-in service rejected output with illicit moderation category (request 67f55563-4077-42be-8f42-f59cd8c73105). No output, retry or rephrasing; original stays in use. It remains unfinished, not an accepted replacement. Four explicit generation gaps now recorded.
+- Three comparison sheets, three repeat sheets, eleven enlarged details and four focus crops inspected. Red-field x65..114/y38..95 mean grayscale rises 22.18 to 38.68 (+74.41%), confirming broad-shading loss despite whole-image change +8.57%. Grip full-medallion focus and rotated weapon-label comparison document the other failures.
+- Accepted luminance changes -2.20% to +7.97%. Pale panel left/right edge MAE 27.71 to 54.91; bamboo top/bottom 6.79 to 22.35; masonry left/right 14.63 to 23.51. Stronger relief/grain/highlights await scene-distance checks; repeat sheets do not prove all mapped adjacency or seamlessness.
+- Seven 1254-square and four 1774x887 sources retained. Eight accepted downsampled full-mip DXT1 outputs: five 1024-square and three 1024x512. Candidate alpha opaque. Failed weapon candidate upsampled to 2048-square then removed; no native 2K/4K claim.
+- All 904 installed/offline-approved replacements pass native DDS and worklist audits; planner/inventory refreshed. 5,855 need art and 53 held drafts need correction. Scope remains 6,812 supported unique keys plus discovery/category/scene gaps. Zero game launches; no runtime/tool changes. Final Windows/Mac scene validation and near-completion gate remain pending; full overhaul unfinished.
+- Retired 138 verified-reproducible opaque original exports (9,365,291 bytes), protecting held/recent references and original-alpha dependencies; catalog payload/RGBA and all resolved-parent/SHA256 checks passed. Initial 4 MiB detail cleanup had only 1,115,498 eligible bytes and made no changes. Pack: 854,940,869 bytes (815.34 MiB / 6144 MiB). Texture workspace at audit: 4,372,229,116 logical/allocated bytes (4.07 GiB); temporary output 261,747,881 bytes (249.62 MiB / 256 MiB); free disk 108,191,662,080 bytes. Original game, artwork, saves/settings and recovery evidence preserved; no duplicate extracts/ZIPs/staging.
+- Private artwork/prompts: authored/*-hybrid128-v1.png, canonical/rejected prompt records and review/hybrid-128-prompt-set.json. Evidence: review/hybrid-128-* and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 129 corrections
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `f748fc3`. Eight held opaque corrections completed and reviewed; catalog payload/RGBA references verified. Classification remains 1,753 provisional keys; no new category coverage claim.
+- Three accepted offline: rusty blue hatch with restored pale divider, red panel with restored broad dark shading, and brass mechanism atlas with corrected small/radial fittings. Original-scale detail checks resolve the initial concern about the mechanism loop; lower-right radial silhouette and coverage compared directly. Previous source artwork and failure history retained.
+- Red panel problem ROI x65..114/y38..95 grayscale mean: original 22.1755, corrected 23.5121 (+6.03%), previous draft 38.6769 (+74.41%). Whole-image luminance +10.57%; hatch -1.43%, mechanism -0.62%. Fine grain, metallic highlights and stronger local contrast await scene-distance validation.
+- Five drafts remain held for clothing grid thickness/intersections, grille line registration/frequency, perforation shapes/distribution, shutter louver pitch/phase, and rivet-plate boundaries/darkening. Grille bottom molded detail already exists in the original. Rivet-plate edge MAE LR 0 to 15.04 and TB 1.08 to 14.64; mean luminance -16.08%. Ten failed candidate DDS/metadata files safely retired after resolved-parent/hash checks; all source art preserved.
+- Two comparison sheets, two repeat sheets, eight enlarged details and eight original-scale focus comparisons inspected. Accepted hatch edge MAE LR 53.64 to 60.65, TB 84.64 to 100.95; red panel LR 77.23 to 64.64, TB 98.58 to 100.31; mechanism LR 15.04 to 12.74, TB 19.59 to 22.26. These diagnostics do not prove mapped adjacency or seamlessness.
+- Built-in imagegen produced four 1254-square and four 1774x887 sources. Three accepted outputs downsampled to one 1024-square and two 1024x512, DXT1 with full mip chains; original/compiled alpha opaque. No native 4K claim.
+- All 907 installed/offline-approved replacements pass native DDS/worklist audits; planner/inventory refreshed. 5,855 need art and 50 held drafts require correction. Audited catalog remains 6,812 supported unique keys / 7,147 payloads, with noncatalog discovery/category/scene gaps. Zero game launches; no runtime/tool changes. Full overhaul and Windows/Mac scene validation remain incomplete; near-completion gate not reached.
+- Pack 856,340,697 bytes (816.67 MiB / 6144 MiB). Texture workspace at audit 4,402,439,459 logical/allocated bytes (4.10 GiB); temporary output 265,134,321 bytes (252.85 MiB / 256 MiB); free disk 108,028,887,040 bytes. Personal saves/settings and original game preserved; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-129-*`, canonical/versioned prompt records, retained source PNGs and progress. Commit records progress only; other-device synchronization unverified.
+
+
+## Texture overhaul issue #74: hybrid batch 130
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `0051df3`.
+- Inspected 32 catalog-verified opaque originals: twelve prop, seven environment, seven interface, four reflection, one character and one effect/utility classification. 1785 provisional classifications now recorded. Corrected stale classification summary text (previously 1465 despite 1753 records) to match current records; classification is not full category or scene approval.
+- Twelve independent built-in imagegen sources produced. Eleven accepted offline: twin-slot vent, curved riveted plate, fractured rock, gray wall tiles, pipe/cable strip, gray block masonry, mottled gray metal, wood/rivet strip, ribbed panel atlas, silver curved reflection and weathered paneled door.
+- Golden carved stone 384fc0ce4033ef03 held: whole-image luminance +28.67%, middle-band original-scale x0..255/y90..173 mean grayscale 39.5404 to 55.0421 (+39.20%). Broad middle shadow depth is lost despite motif positions being retained. Two failed candidate DDS/metadata files retired after all resolved-parent/SHA256 checks; source artwork and prompts preserved.
+- Three comparisons, three repeat sheets, twelve enlarged details and four original-scale focus comparisons inspected. Vent retains two sets of six slots; tile divisions, riveted strips, masonry courses, cable routes and pipe supports, inset rectangles and wood strip hardware reviewed against originals. Sharper grain, relief edges and metallic glints remain subject to scene-distance validation.
+- Silver reflection main mean-gray row peak remains row 96 in both original and compiled after original-scale resampling, measured across x40..239; full-image luminance +0.38%. Original broad lower reflection retained; fine brushed grain is stronger. Door lock plate focus preserves keyhole/round opening placement and principal plate layout; fine ornament detail reinterpreted. Plate mean grayscale 72.8448 to 73.6058; whole door +16.98% luminance. Brighter door paint requires final scene lighting review.
+- Accepted luminance changes -7.01% to +16.98%. Rock edge MAE LR 14.05 to 25.45, TB 15.12 to 31.41; masonry LR 20.86 to 30.66, TB 31.88 to 46.51; door TB 62.27 to 83.83. Twin vent LR 5.73 to 6.31, TB 5.93 to 5.19. These edge and repeat diagnostics do not establish all mapped adjacency or seamlessness.
+- Eight 1254-square and four 1774x887 generated source PNGs retained. Eleven accepted downsampled DXT1 full-mip outputs: seven 1024-square and four 1024x512. Original/compiled alpha opaque. Actual source sizes/resampling recorded; no native 4K claim.
+- Retired 47 older redundant enlarged detail JPGs totaling 6986793 bytes, preserving final comparison sheets, source artwork, held-draft detail evidence, game/catalog references and recovery hashes. All resolved parents and file hashes verified before removal. No game assets, personal settings/saves or source art removed.
+- All 918 installed/offline-approved replacements pass native DDS/worklist audits. 5843 need art and 51 held drafts require correction; four previously moderated generation gaps remain unfinished and were not retried. Planner/inventory refreshed. Audited scope remains 6812 supported unique keys / 7147 payloads plus noncatalog discovery/category/scene gaps.
+- Zero game launches; no runtime/tool changes. Shared source retains 512 MiB replacement residency cap; actual scene residency/fallback remains pending final testing. Full overhaul unfinished and near-completion gate not reached. Other-device synchronization and scene/hardware validation unverified.
+- Pack 862,638,473 bytes (822.68 MiB / 6144 MiB). Texture workspace at audit 4,450,922,047 logical/allocated bytes (4.15 GiB); temporary output 265,913,472 bytes (253.59 MiB / 256 MiB); free disk 107,755,659,264 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-130-*`, authored source PNGs and prompt records, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 131
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `6395e7c`.
+- Inspected 32 catalog-verified opaque originals: eleven prop, ten environment, three reflection, three effect/utility, two interface, two uncertain material and one uncertain weapon/prop classification. 1817 provisional classifications now recorded; full category and scene review remains unfinished.
+- Twelve independent built-in imagegen sources produced. Eleven accepted offline: striped dimpled steel plate, gray radial reflection, brass emblem, concrete wall, cyan-lit machinery atlas, brick/plaster, bark, inset wooden panel, pale trim atlas, riveted wood strap and teal bracket plate.
+- Brown vent 4211c8da02ba7770 held: whole-image luminance +17.08%; left/right edge MAE 33.67 to 79.02; rightmost 8px mean grayscale 58.4189 to 73.2510. Broad framing is brighter and more contrasty than original. Four framed compartments remain present; compartment loss is not the rejection reason. Two failed candidate DDS/metadata files retired after all resolved-parent/SHA256 checks; source artwork and prompts preserved.
+- Three final comparisons, three repeat sheets, twelve enlarged details and four original-scale focus comparisons reviewed. Dimple positions, safety stripe framing, grille spacing, central machinery cylinders, brick/plaster silhouettes, wood insets, trim joints, strap rivets and four teal brackets compared to original references. Reflection and emblem silhouettes retained; sharper relief, glints and material detail still require scene-distance review.
+- Focused striped plate check confirms staggered dimples retained: original-scale inset grayscale mean 103.2030 to 102.9206. Its generation prompt incorrectly described four corner bolts; visible original and generated reference retain the two prominent diagonal fasteners. Record original references as authoritative, not the mistaken wording. Cyan machine grille row profiles retain repeated slot spacing; cropped grayscale mean 25.0163 to 27.2331. Opaque alpha does not establish emissive/blend semantics.
+- Gray radial reflection focus retains converging rays and dark lower region, with stronger ray contrast; original-scale cropped grayscale mean 156.6169 to 154.7918. Overall luminance -1.66%, top/bottom edge MAE 84.99 to 96.43. Final scene/shader validation remains pending.
+- Accepted whole-image luminance changes -6.68% to +8.75%. Striped panel edge MAE LR 0 to 3.18 and TB 0 to 2.11; bark LR 44.34 to 52.44, TB 34.69 to 30.39; pale trim LR 21.29 to 32.94, TB 57.24 to 52.13. Repeat/edge diagnostics are not proof of seamlessness or all mapped adjacency.
+- Eight 1254-square and four 1774x887 generated sources retained. Eleven accepted downsampled opaque DXT1 full-mip outputs: eight 1024-square and three 1024x512. Actual source sizes and resampling recorded; no native 4K claim.
+- Retired 96 older reproducible decoded reference PNGs totaling 6246465 bytes. Catalog payload and decoded RGBA hashes verified before all resolved-parent and file-SHA256 deletion checks. Retained original game/catalog, source artwork, selected review sheets, held-draft references and recovery metadata. No original game assets or personal settings/saves removed.
+- All 929 installed/offline-approved replacements pass native DDS/worklist audits. 5831 need art and 52 held drafts require correction; four previously moderated generation gaps remain unfinished and were not retried. Planner/inventory refreshed. Scope remains 6812 supported unique keys / 7147 payloads plus noncatalog discovery/category/scene gaps.
+- Zero game launches; no runtime/tool changes. Shared source retains 512 MiB replacement residency cap; actual scene residency/fallback remains pending. Full overhaul unfinished and near-completion gate not reached. Other-device synchronization and scene/hardware validation unverified.
+- Pack 869,285,771 bytes (829.02 MiB / 6144 MiB). Texture workspace at audit 4,499,909,936 logical/allocated bytes (4.19 GiB); temporary output 267,382,842 bytes (255.00 MiB / 256 MiB); free disk 107,499,507,712 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-131-*`, authored source PNGs and prompt records, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 132
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `648e76a`.
+- Inspected 32 catalog-verified opaque originals: twelve environment, twelve prop, five character, one uncertain weapon/prop, one effect/utility and one sky/environment classification. 1849 provisional classifications now recorded; full category and scene review remains unfinished.
+- Twelve independent built-in imagegen sources produced. Eleven accepted offline: small hazard panel, gravel/rocky soil, carved stone relief, four-fastener rusty plate, sliding machine door, twin glowing lenses, dry grass, pipe opening/reflection atlas, tall dark rusty metal, diamond-striped hatch and stepped wood molding atlas.
+- Ornamental carpet 42230f8daae97f32 held: full-image luminance -22.84%; original-scale red-field crop x80..159/y60..109 mean grayscale 113.3270 to 81.9665 (-27.67%). Original red field and ornament values become too dark and the weave too contrasty. Two candidate DDS/metadata files retired after all resolved-parent/SHA256 checks; source artwork and prompt retained for correction.
+- Three final comparisons, three repeat sheets, twelve enlarged details and four original-scale focused comparisons inspected. Compared gravel pale-stone distribution, stone relief silhouettes/scaled curls and border, four corner fasteners, door atlas partitions and tabs, twin lens positions, pipe circles/reflection, grass distribution, hatch diamonds and bolts, and stepped wood molding/highlight against originals. Fine detail reinterpretation does not establish exact pixel identity or scene approval.
+- Small hazard panel focus confirms stripe widths and existing faint vertical panel joints remain aligned; the sharper joints were checked against original-scale references. Hazard-band grayscale mean 77.6967 to 78.2891. Machine-door top-panel mean 137.0708 to 143.7318, with stronger brushed-metal highlights; top/bottom edge MAE 102.67 to 35.46. Broad side panels and central dark recess retained; scene lighting/adjacency remains pending.
+- Twin lenses retain green-white centers and peripheral glow; focused mean grayscale 197.6291 to 181.6745. Lens edges are more defined and need final in-game emissive/blend review. Opaque alpha does not establish shader semantics. Pipe retains black opening and right-side curved reflection, with stronger ring highlights; full-image luminance +8.23%.
+- Accepted full-image luminance changes -14.78% to +8.23%. Grass edge MAE LR 30.34 to 40.82, TB 31.24 to 43.87; gravel LR 37.59 to 40.42, TB 44.40 to 47.37; wood molding LR 43.37 to 66.87, TB 32.98 to 48.81. Repeat/edge diagnostics do not establish seamlessness or all mapped adjacency.
+- Seven 1254-square, four 1774x887 and one 887x1774 generated sources retained. Eleven accepted downsampled opaque DXT1 full-mip outputs: six 1024-square, one 512-square, three 1024x512 and one 512x1024. Actual source sizes/resampling recorded; no native 4K claim.
+- Recycled 65 reproducible decoded reference PNGs (4001629 bytes), 21 redundant enlarged/repeat review images (3605613 bytes), and 33 older repeat sheets (12634015 bytes). All resolved parents and SHA256 hashes checked before removals; reference pixels also verified against catalog-checked game decoding. Final comparisons, original game/catalog, authored sources, metrics and recovery records retained. Historical batch presentation retirements annotated; no personal settings/saves removed.
+- All 940 installed/offline-approved replacements pass native DDS/worklist audits. 5819 need art and 53 held drafts require correction; four previously moderated generation gaps remain unfinished and were not retried. Planner/inventory refreshed. Scope remains 6812 supported unique keys / 7147 payloads plus noncatalog discovery/category/scene gaps.
+- Zero game launches; no runtime/tool changes. Shared source retains 512 MiB replacement residency cap; actual scene residency/fallback remains pending. Full overhaul unfinished and near-completion gate not reached. Other-device synchronization and scene/hardware validation unverified.
+- Pack 875,059,257 bytes (834.52 MiB / 6144 MiB). Texture workspace at audit 4,536,168,127 logical/allocated bytes (4.22 GiB); temporary output 255,835,116 bytes (243.98 MiB / 256 MiB); free disk 107,227,541,504 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-132-*`, authored source PNGs and prompt records, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 133 corrections
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `7ac61b8`.
+- Eight previously held opaque drafts corrected and reviewed; no new classification. 1849 provisional classifications, 6812 supported unique keys and 7147 supported catalog payloads remain the audited scope. Noncatalog discovery/category/scene gaps remain.
+- Four corrections accepted offline: golden metal panel restores its separate small far-right fastener; carved ocher stone restores the broad middle shadow; brown vent restores muted frame shading; carpet restores its lighter coral-red field. Prior source artwork, prompts and failure history preserved.
+- Stone middle-band original-scale grayscale mean 39.5404 to 38.3184, versus previous failed 55.0421. Carpet red-field crop mean 113.3270 to 112.4300, versus previous failed 81.9665. Vent rightmost 8px mean 58.4189 to 52.5479, versus previous failed 73.2510. Fastener focus x210..255/y75..104 shows both the larger and separate smaller right fittings again. These focused checks supplement full comparison review.
+- Four corrections remain held: missing/simplified intermediate radial lines, grip medallion stroke changes despite closer lower marks, and two misregistered reflection maps. Reflections measured explicitly with original-scale Pillow-L row profiles across x14..57: silver bright peak 38 versus 36 and lower trough 51 versus 48; brass bright peak 38 versus 33 and lower trough 52 versus 46. Current grayscale method supersedes earlier approximate brass peak 39 wording. Band width/curvature and lower structures still differ.
+- Two final comparisons, two repeat sheets, eight enlarged details and eight focused original-scale comparisons inspected. Original references verified against catalog payload and decoded RGBA hashes before generation. No automated brightness/profile diagnostic substitutes for visual review or final scene validation.
+- Accepted full-image luminance changes: golden fitting panel -4.81%, stone +5.23%, vent -9.80%, carpet +0.71%. Edge MAE LR/TB: fitting panel 20.10/36.15 to 17.30/29.87; stone 11.57/42.93 to 19.06/39.00; vent 33.67/10.25 to 40.40/13.06; carpet 104.14/126.09 to 132.43/129.46. Edge metrics and repeat sheets do not establish seamlessness or all mapped adjacency.
+- Five 1254-square and three 1774x887 built-in imagegen source images retained. Four accepted opaque DXT1 full-mip outputs downsampled to one 1024-square and three 1024x512. Original/compiled alpha opaque. Actual source sizes/resampling recorded; no native 4K claim.
+- Eight failed candidate DDS/metadata files retired after all resolved-parent/SHA256 checks. All source artwork, prior/current prompt provenance, original game and personal settings/saves preserved. One active pack; no duplicate extract, ZIP, staging tree or additional game build.
+- All 944 installed/offline-approved replacements pass native DDS/worklist audits. 5819 need art and 49 held drafts require correction; four previously moderated gaps remain unfinished and were not retried. Planner/inventory refreshed. Zero game launches and no runtime/tool changes. 512 MiB replacement residency cap retained; actual scene residency/fallback unverified. Full overhaul and scene/platform validation remain incomplete; near-completion gate not reached.
+- Pack 876,809,187 bytes (836.19 MiB / 6144 MiB). Texture workspace at audit 4,565,683,315 logical/allocated bytes (4.25 GiB); temporary output 259,340,920 bytes (247.33 MiB / 256 MiB); free disk 107,069,952,000 bytes.
+- Private evidence: `review/hybrid-133-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
+
+
+## Texture overhaul issue #74: hybrid batch 134
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `f708ce3`.
+- Inspected and provisionally classified 32 catalog-verified opaque originals across environment, prop, character, interface, effect/utility, reflection and uncertain-material categories. 1881 classified keys now recorded; this does not establish full category or scene review.
+- Twelve independent built-in imagegen sources produced. Nine accepted offline: brown cliff, pale concrete, horizontal bark, twin-lamp industrial door, studded copper-brown inset, cracked scroll-bordered stone, nested stone molding, peeling green twin panels and brown machinery grille. Three held: red vent, eye/mouth atlas and light cone; originals remain active for held keys.
+- Three final comparisons, three repeat sheets, twelve enlarged details and five original-scale focused comparisons inspected. Original source pixels reverified against catalog-checked game decoding. Preserved broad fractures, joint positions, grain direction, frame geometry, stud distribution, carved borders, chipped areas and panel/slot layout; fine detail reinterpretation does not establish exact pixel identity or scene approval.
+- Red vent held for +27.08% full-image luminance and stronger bright rust/rib contrast. Original-scale grayscale 37.8427 to 47.7809 (+26.26%). Eye/mouth atlas held for broad new highlights, stronger veins and altered small lower gray UV island; eye-region grayscale 133.4171 to 146.8236 (+10.05%).
+- Light cone held for changed footprint/falloff and +34.83% full-image luminance; original-scale grayscale 38.2202 to 51.4538 (+34.62%). The stronger diagonal core and compressed contour banding need correction and format reassessment. Opaque alpha does not establish shader/blend semantics.
+- Twin-lamp door retains lamp positions, two long raised strips, seams and fasteners. Sharper frame and darker surrounding metal: full-image luminance -12.04%; top 48-row grayscale 199.6919 to 178.3464, body crop 110.8084 to 96.8300. Lamp centers remain bright; emissive response, baked shading and scene adjacency remain pending.
+- Prompt correction: 540ccadc53c9f7ed was initially described as five bars. Original-scale review confirms FOUR complete bolted bars plus thin upper/lower channels. Generated grille follows the observed reference structure; recorded description corrected, no five-bar claim retained.
+- Accepted full-image luminance changes -13.37% to +12.63%. Cliff edge MAE LR 12.14 to 18.15 and TB 37.27 to 47.78; repeat reviews retain broad repeated structure but do not prove seamlessness or mapped adjacency. Material identities for the studded inset and some triage assets remain provisional.
+- Eight 1254-square and four 1774x887 generated sources retained. Nine accepted downsampled DXT1 full-mip outputs: seven 1024-square and two 1024x512. Actual source sizes and resampling recorded; no native 4K claim.
+- Recycled 25 older redundant repeat-review JPGs (10570358 bytes) after all resolved-parent/SHA256 checks; final comparisons, sources, metrics and recovery records retained. Six held candidate DDS/metadata files also retired after all checks. No source art, game assets, personal settings or saves removed.
+- All 953 installed/offline-approved replacements pass native DDS and worklist audits. 5807 still need art; 52 held drafts require correction. Four previously moderated generation gaps remain unfinished and were not retried. Planner/inventory refreshed. Scope remains 6812 supported unique keys / 7147 payloads plus noncatalog discovery, category and scene gaps.
+- Zero game launches; no runtime/tool changes. Shared code retains the 512 MiB replacement residency limit; scene residency, fallback and final 1080p/4K/ultrawide validation remain pending. Full overhaul unfinished and near-completion gate not reached. Other-device synchronization unverified.
+- Pack 882,406,759 bytes (841.53 MiB / 6144 MiB). Texture workspace at audit 4,606,174,120 logical/allocated bytes (4.29 GiB); temporary output 256,276,034 bytes (244.40 MiB / 256 MiB); free disk 106,445,672,448 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-134-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 135
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `d4cee5b`.
+- Inspected and provisionally classified 32 catalog-verified opaque originals across environment, prop, character, interface, effects, reflections and uncertain materials. 1913 classified keys now recorded; category and scene review remains unfinished.
+- Twelve independent built-in imagegen sources produced. Nine accepted offline: interlocking stone blocks, pale stained wall, cyan-lit industrial door, pale golden folds, black marble, wood/metal crate panel, worn pink-gray surface, mossy brick wall and blue-gray panel atlas. Three held: gray recessed-square material, ornate barred windows and blue energy ring; original textures remain active for held keys.
+- Three final comparisons, three repeat sheets, twelve enlarged details and five original-scale focus comparisons inspected. Original pixels reverified against catalog-checked decoding. Reviewed joint topology, panel boundaries, markings, grain direction, vein structure, plank seams, fastener positions and repeated appearance. Fine detail reinterpretation does not establish exact pixel identity or scene approval.
+- Gray recessed square 56b57510b7d51249 held: fine gray grain became coarse deep ridges and stronger bevels, with changed dark surround. Full-image luminance -13.15%; original-scale grayscale 95.4180 to 82.9414. Material identity remains uncertain and the draft must not define it.
+- Ornate windows 592f40c07d941cfd held: lower small hooks/inner curls and bottom curved strokes differ from original ironwork. Top/lower focused grayscale +16.94%/+15.40%. Window openings and frames alone do not establish faithful ornament.
+- Blue ring 5a77cb6ec7d1746a held: black center retained closely but bright knots intensified. Full-image luminance +12.17%; original-scale max-RGB >220 pixel count 1579 to 5779. Central black runs (max RGB <=3) x60..194 to59..195; y60..194 unchanged; central 64-square max RGB remains zero. These diagnostics do not prove full-shape or blend equivalence; restore hotspot distribution/falloff.
+- Cyan-lit door accepted offline with light-region grayscale 123.0109 to 121.6002 (-1.15%); hazard crop 89.5485 to 103.0434 (+15.07%) retains diagonal marking layout with sharper wear. Full-image luminance +7.10%. Emissive response and final scene lighting remain pending.
+- Golden-fold center crop grayscale 218.6627 to 210.3391 (-3.81%); vertical fold structure retained with stronger fine grain and a slightly wider dark center near the bottom. Exact material/scene use remains provisional. Accepted batch full-image luminance ranges -7.21% to +7.10%; repeat/edge metrics do not prove seamlessness or mapped adjacency.
+- Eight 1254-square and four 1774x887 sources retained. Nine accepted downsampled DXT1 full-mip outputs: four 1024-square, one 512-square, four 1024x512. Actual source size and resampling recorded; no native 4K claim.
+- Recycled 30 older redundant repeat-review JPGs (12584747 bytes) after all resolved-parent/SHA256 checks; final comparisons, sources, metrics and recovery records retained. Six held candidate DDS/metadata files retired after all checks. No source art, original game assets, personal settings or saves removed.
+- All 962 installed/offline-approved replacements pass native DDS and worklist audits. 5795 still need art; 55 held drafts require correction. Four previously moderated generation gaps remain unfinished and were not retried. Planner/inventory refreshed. Audited scope remains 6812 supported unique keys / 7147 payloads plus noncatalog discovery, category and scene gaps.
+- Zero game launches; no runtime/tool changes. Shared source retains the 512 MiB replacement residency cap; scene residency, fallback and 1080p/4K/ultrawide validation remain pending. Full overhaul unfinished and near-completion gate not reached. Other-device synchronization unverified.
+- Pack 886,780,997 bytes (845.70 MiB / 6144 MiB). Texture workspace at audit 4,643,549,615 logical/allocated bytes (4.32 GiB); temporary output 250,898,167 bytes (239.28 MiB / 256 MiB); free disk 106,213,736,448 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-135-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 136 corrections
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `c0f4934`.
+- Eight previously held opaque drafts corrected using built-in imagegen; no new visual classifications. Audited scope remains 6812 supported unique keys / 7147 catalog payloads, with 1913 provisional visual classifications. Noncatalog discovery, category and scene coverage remain incomplete.
+- Two corrections accepted offline: rust-red vent retains its vertical members, dark recesses and cropped edge with finer oxidation; gray inset square restores fine low-relief grain, shallow outline and central black spot. Exact gray material identity remains provisional. Vent full-image luminance -13.52%; gray -2.74%, with original-scale grayscale mean 95.4180 to 92.7856. Scene appearance remains pending.
+- Six corrections remain held. Eye brightness improves (eye crop grayscale -0.69%, full-image luminance -1.77%) but small flat atlas island gains a beveled rim and altered lower-left boundary. Window lower center stem and hooks/curls remain changed; focused grayscale +9.26%. These shape defects prevent installation.
+- Light cone is now 19.72% dimmer, with contracted outer fan and visible compiled contour banding. Energy-ring bright max-RGB>220 pixels decrease from prior failed 5779 to 3791 but still exceed original 1579; central 64-square stays black. Full-image ring luminance +4.33% does not establish hotspot equivalence. Both remain held.
+- Reflection maps remain held: original-scale grayscale profiles averaged across columns14..57 measure silver peak38 to34/trough51 to47 and brass peak38 to34/trough52 to46. Band width, curvature and left strips also differ. Repeated image-only attempts have not preserved registration; next correction must use a more constrained editing strategy rather than reuse this failed full-map prompt.
+- Two comparison sheets, two repeat sheets, eight enlarged details and focused atlas-island/eye/window views inspected. Original references reverified against catalog decoding and hashes; all eight original and compiled alpha ranges opaque. Repeat sheets and edge statistics are diagnostics, not proof of seamlessness or mapped scene adjacency.
+- Six 1254-square and two 1774x887 generated sources retained with canonical, prior and versioned prompt records. Two accepted DXT1 full-mip outputs downsampled to 1024x512 and 512-square. Actual source dimensions and resampling recorded; no native 4K claim.
+- Twelve rejected candidate DDS/metadata files safely retired after all resolved-parent and SHA256 checks. Source artwork and correction history retained; stale held-draft latest-attempt fields updated. No original game assets, saves or settings changed; one active pack, no duplicate extraction/build/ZIP/staging.
+- All 964 installed replacements pass native DDS/worklist audits. 5795 need art and 53 held drafts need correction. Planner and inventory refreshed; four previously moderated gaps were not retried. 512 MiB replacement residency cap retained, actual scene residency/fallback unverified.
+- Zero game launches and no runtime/tool changes. Full overhaul and representative scene/platform/1080p/4K/ultrawide validation remain incomplete; near-completion gate not reached. Continue hybrid material production from existing triage cursor 5be5ec38bdd947b1, with specialist corrections kept separate.
+- Pack 887,306,433 bytes (846.20 MiB / 6144 MiB). Texture workspace at audit 4,663,931,149 logical/allocated bytes (4.34 GiB); temporary output 253,431,836 bytes (241.69 MiB / 256 MiB); free disk 106,108,067,840 bytes.
+- Private evidence: `review/hybrid-136-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
+
+
+## Texture overhaul issue #74: hybrid batch 137
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `6fbb27a`.
+- Visually inspected and provisionally classified 32 catalog-verified opaque originals across environment, prop, character, weapon/equipment, interface, effects and uncertain material categories. 1945 keys now classified; category and scene review remains incomplete. Audited scope remains 6812 supported unique keys / 7147 catalog payloads plus noncatalog discovery gaps.
+- Sixteen independent built-in imagegen sources accepted offline: paired pale panels, mottled olive surface, gray panel with lower track, cyan-lit cabinet, fractured rock, concrete slab strip, rusty corrugated sheets, scuffed blue-green panel, grainy tiled-top wall, broken plaster/lath, dark grille, riveted brown panel, gray louvered panel, rectangular stone border, circular metal/brick inset and pale folded material. No new held drafts in this batch; 53 existing held drafts remain unfinished.
+- Inspected four final comparisons, four repeat sheets, sixteen enlarged details and five focused comparisons. Original decoded RGBA verified against catalog payloads. Reviewed seam/fold/fracture layout, atlas boundaries, panel crops, fasteners, vent banks, light bars, plaster islands and circular rim/brick joints. Fine surface detail is a modern reinterpretation; exact material identity remains provisional for the mottled and folded surfaces.
+- Cyan cabinet retains five upper, eleven middle and five lower light bars on visual review. Center-strip grayscale mean 132.4610 to 118.5563 (-10.50%); glow is more restrained, full-image luminance -4.57%. Stored green-channel row profiles show original glow merges some middle bars at threshold 200, so binary threshold-run counts alone cannot establish bar count. Final scene emissive response remains pending.
+- Focused checks: grille center/side grayscale +4.38%/-6.41%, gray upper louvers -5.38%, lower pale panel -7.61%, exposed plaster/lath center -8.11%. Structural boundaries remain visible; finer surface relief and contrast require final scene review. All original/compiled alpha opaque.
+- Full-image luminance ranges -12.54% to +0.44%. Rock edge MAE LR/TB increases 15.07/15.17 to 30.80/34.35 with sharper mineral detail; repeat sheets inspected without obvious new coarse discontinuity. Other edge/brightness metrics retained per key. Offline repetition does not establish seamlessness or every mapped adjacency.
+- Twelve 1254-square and four 1774x887 generated sources retained. Accepted DXT1 full-mip outputs downsampled to ten 1024-square, two 512-square and four 1024x512. Source sizes and resampling recorded; no native 4K claim.
+- Recycled 30 older redundant repeat-review JPGs totaling 12494401 bytes (11.92 MiB), after all resolved-parent/reparse/SHA256 checks. Final comparison sheets, source artwork, prompts, metrics and recovery records retained. No source art, game assets, personal saves or settings removed. One active pack, no duplicate extracts/builds/ZIPs/staging.
+- All 980 installed replacements pass native DDS/worklist audits. 5779 still need art; 53 held drafts require correction. Planner and inventory refreshed. Four previously moderated gaps were not retried. 512 MiB residency cap retained; actual scene residency and fallback remain unverified.
+- Zero game launches; no runtime/tool changes. Full overhaul and scene/platform/1080p/4K/ultrawide validation remain incomplete; near-completion gate not reached. Continue hybrid production from opaque >=2-occurrence/min128 triage cursor 65ba7f86b3509361, with specialist corrections kept separate. Other-device synchronization unverified.
+- Pack 896,053,749 bytes (854.54 MiB / 6144 MiB). Texture workspace at audit 4,728,121,489 logical/allocated bytes (4.40 GiB); temporary output 250,428,564 bytes (238.83 MiB / 256 MiB); free disk 105,723,666,432 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-137-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 138
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `c1ccbab`.
+- Visually inspected and provisionally classified 32 catalog-verified opaque originals across environments, props, characters, weapon/equipment atlases, interface, reflection and effects/utility categories. 1977 keys now classified; full category and scene review remains incomplete. Audited scope remains 6812 supported unique keys / 7147 catalog payloads plus noncatalog discovery gaps.
+- Fourteen independent built-in imagegen sources accepted offline: leafy stone wall, staggered vertical gray panels, mottled material, perforated equipment supports, paired pink panels, grainy wall with tiled top, pale upper-banded panel, 4x4 gray tiles, mossy craggy rock, bronze pipe panel, elongated diamond material, horizontal wood, pale plaster and dark fractured rock. Two new held drafts remain unfinished; no rejected candidate remains in active pack.
+- Inspected four final comparisons, four repeat sheets, sixteen enlarged details and six focused comparisons. All sixteen original decoded RGBA images verified against catalog payloads; all original and compiled alpha opaque. Reviewed block/board seams, panel/pipe/vent alignment, fracture silhouettes, tile grid, repeated pattern pitch and broad shading. Fine material detail is a modern reinterpretation; uncertain material identities remain provisional.
+- Equipment central panel retains four vent groups of four columns by four rows on focused comparison. Focus grayscale +10.84%; full luminance +14.38%. Bronze panel focused right plate retains four fasteners and louver placement, grayscale +15.02%; full luminance +15.43%. Gray tile full luminance +14.30%; 4x4 grid and dark upper gradient retained. Accepted with final scene contrast review pending.
+- Held 692448037726fcb2: small control cluster merges separated red markings, shifts blue indicator to green/cyan and changes small left indicators. Held 6f689dc7c7a3c8fe: peeling-wall full luminance +36.27%, upper-half grayscale +84.55%; dark upper shading and restrained flake contrast lost. Preserve original gameplay cues and broad shading in corrections. Both source PNGs, prompts, metrics and comparisons retained; four rejected candidate DDS/JSON files safely retired after all parent/reparse/SHA256 checks.
+- Accepted full-image luminance ranges -5.69% to +15.43%. Repetition and edge metrics inspected; existing shaded/bordered nonseamless textures remain explicitly nonseamless. No obvious new coarse edge discontinuity on accepted comparisons; repeat checks do not establish every mapped adjacency. Original-scale diamond grayscale -0.22%; elongated staggered rhythm retained, exact surface usage pending scene review.
+- Nine 1254-square and seven 1774x887 generated sources retained. Accepted DXT1 full-mip outputs downsampled to six 1024-square, one 512-square and seven 1024x512. Actual source sizes and resampling recorded; no native 4K claim. No additional image generation in the final review turn.
+- All 994 installed replacements pass native DDS/worklist audits. 5763 still need art; 55 held drafts require correction. Planner and inventory refreshed. Four previously moderated gaps were not retried. 512 MiB residency cap retained; actual scene residency and fallback remain unverified.
+- No old presentation cleanup needed for this batch; temporary output remains under 256 MiB. One active pack; no duplicate extracts/builds/ZIPs/staging. Authoritative original game assets, source art, personal saves and settings preserved.
+- Zero game launches; no runtime/tool changes. Full overhaul and scene/platform/1080p/4K/ultrawide validation remain incomplete; near-completion gate not reached. Continue hybrid production from opaque >=2-occurrence/min128 triage cursor 704e5bd94fb33437, with specialist corrections kept separate. Other-device synchronization unverified.
+- Pack 902,877,541 bytes (861.05 MiB / 6144 MiB). Texture workspace at audit 4,798,714,251 logical/allocated bytes (4.47 GiB); temporary output 258,473,428 bytes (246.50 MiB / 256 MiB); free disk 105,469,222,912 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-138-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 139
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `b9a80b3`.
+- Visually inspected and provisionally classified 32 catalog-verified opaque originals across environments, props, characters, weapon/equipment atlases, interface, reflection and effects/utility categories. 2009 keys now classified; full category and scene review remains incomplete. Audited scope remains 6812 supported unique keys / 7147 catalog payloads plus noncatalog discovery gaps.
+- Fifteen independent built-in imagegen sources accepted offline: dark brick wall, riveted inset metal panel, gray recessed-panel atlas, gray wall/trim, four-socket plate, ornate bronze louvers, dark cliff with foliage, paired green-gray equipment panels, cracked concrete, worn pale plaster, gray vent/slot panel, blue-gray plaster exposing brick, vertically banded wall, streaked slab wall and ochre cliff. One new held draft remains unfinished.
+- Inspected four final comparisons, four repeat sheets, sixteen enlarged details and six focused comparisons. All sixteen originals verified byte-for-byte as decoded RGBA against catalog payloads; original and compiled alpha opaque. Reviewed UV subdivisions, socket patterns, vent/louver spacing, rivet rows, ornament placement, crack/brick layout and broad shading. Fine materials and ornament details are modern reinterpretations; final scene fidelity remains pending.
+- Four socket plates preserve three-over-two slots in each upper plate and two-over-three in each lower plate. Focused left upper/lower grayscale +2.73%/-7.32%. Gray equipment atlas circular fitting/recess grayscale +6.58%/+7.92%; positions and bevel boundaries retained. Ornate louver focused grayscale -11.96%; three paired horizontal forms and side ornament strips retained.
+- Paired green-gray grille focus grayscale -13.47%; dividers, row spacing and dark cutouts retained. Gray twin-vent focus +8.27%; slots, screw positions and long lower slot retained. Full-image accepted luminance ranges -12.89% to +7.42%. Contrast and material response still require consolidated scene validation.
+- Held 74743caa92022bf4: angled machine hardware layout remains recognizable, but pale worn metal darkens/browns excessively (full luminance -19.40%, upper plate grayscale -22.34%, rivet strip -21.84%). Restore broad pale wear and separation from dark recesses without shifting rivets or diagonal boundaries. Source PNG, prompt, metrics and comparisons retained; rejected DDS/JSON removed only after all parent/reparse/SHA256 checks.
+- Repetition and edge metrics inspected. Gray equipment atlas left/right edge MAE rises 56.61 to 109.30; opposite atlas edges contain different islands and are not a seamless material. It is accepted for atlas layout, not seamless tiling; mapped edge adjacency remains pending. Green-gray paired panel left/right edge MAE 0 to 5.48 with fine wear; no obvious new coarse seam on repeat sheet. Other mapped adjacency and seam claims remain unverified.
+- Twelve 1254-square and four 1774x887 generated sources retained. Accepted DXT1 full-mip outputs downsampled to twelve 1024-square and three 1024x512. Actual source sizes and resampling recorded; no native 4K claim. Built-in imagegen edit mode used independently for all sixteen assets.
+- Recycled 19 older redundant repeat-review JPGs from batches 130-136 totaling 8461043 bytes (8.07 MiB), after all resolved-parent/reparse/SHA256 checks. Main comparison sheets, source artwork, prompts, metrics and recovery records retained. Authoritative original game assets, personal saves and settings preserved. One active pack; no duplicate extracts/builds/ZIPs/staging.
+- All 1009 installed replacements pass native DDS/worklist audits. 5747 still need art; 56 held drafts require correction. Planner and inventory refreshed. Four previously moderated gaps were not retried. 512 MiB residency cap retained; actual scene residency and fallback remain unverified.
+- Zero game launches; no runtime/tool changes. Full overhaul and scene/platform/1080p/4K/ultrawide validation remain incomplete; near-completion gate not reached. Continue hybrid production from opaque >=2-occurrence/min128 triage cursor 787969fba3da53ee, with specialist corrections kept separate. Other-device synchronization unverified.
+- Pack 912,323,335 bytes (870.06 MiB / 6144 MiB). Texture workspace at audit 4,865,727,957 logical/allocated bytes (4.53 GiB); temporary output 260,242,780 bytes (248.19 MiB / 256 MiB); free disk 105,116,016,640 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-139-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 140 corrections
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `19ebc0f`.
+- Eight previously held opaque drafts corrected using built-in imagegen edits of their prior high-resolution sources, with catalog originals and selected enlarged reference crops. Six corrections accepted offline; two remain held. No new visual classifications. Audited scope remains 6812 supported unique keys / 7147 catalog payloads and 2009 provisional classifications; noncatalog, category and scene coverage remain incomplete.
+- Accepted peeling-wall correction restores the dark upper field and restrained flake brightness. Upper-half original-scale grayscale is now +16.16% (previous +84.55%), lower half -14.32%, full-image luminance -7.66%. Panel divisions and major peeling regions retained. Scene shading remains pending.
+- Accepted angled machine metal restores pale wear and hardware separation. Upper plate grayscale +6.26%, rivet strip +23.19%, full-image luminance +16.78%; prior upper plate was -22.34%. Rivet rows, diagonal plate boundary, slot and circular fittings retained; contrast/specularity still require scene review.
+- Accepted face/hair atlas correction removes invented deep radiating mouth creases while preserving UV islands, mouth/nose position, eye strip and hair layout. Focused mouth grayscale -1.40%, full-image luminance -9.97%. Accepted accessory/eye atlas restores a muted blue-gray iris and retains oval pupil, lower reflection and accessory islands; eye-region grayscale -10.48%, full-image luminance -2.97%. Character identity on the mapped models remains pending runtime review.
+- Accepted gray panel restores irregular dense dark streaks instead of invented oval perforations. Narrow-strip grayscale -4.80%, full-image luminance -1.90%; rails, slabs and bolts retained. Accepted blue shutters retain six leaf outlines, divisions, louver counts and lower ornaments. Sampled upper/lower dark-gap rows across all six leaves differ by at most one original pixel in eleven sections and at most two in the fifth lower section. The initial shared-window probe duplicated one original gap in leaf5; follow-up used its actual shifted rows and a separately inspected crop. This is approximate registration, not pixel-perfect equivalence or scene proof.
+- Held 692448037726fcb2: colors improve, but red strokes remain enlarged/merged and the blue vertical cue becomes a short horizontal mark; cluster grayscale +30.81%. Held 4ead7440c40cd852: flat island loses shiny bevel but changes brown-gray fill and lower stepped silhouette; crop grayscale +40.13%. Eye brightness is close (-2.54%); the remaining island defect prevents installation. Preserve source art and history for constrained correction; do not repeat unchanged full-map prompts.
+- Inspected two final comparisons, two repeat sheets, eight enlarged details, eight focused comparisons and the extra fifth-leaf crop. All eight originals reverified byte-for-byte against catalog-decoded RGBA, with payload/decoded hashes and opaque alpha. All candidate compiled alpha ranges opaque. Repeat sheets and edge metrics inspected; existing atlas/nonseamless boundaries are retained, not advertised as seamless. Actual mapped adjacency and scene appearance remain unverified.
+- Five 1254-square and three 1774x887 generated source PNGs retained. Accepted DXT1 full-mip outputs downsampled to three 1024-square, one 512-square and two 1024x512 files. Actual source dimensions, resampling, prompts and prior/versioned correction records saved. No native 4K artwork claim.
+- Four rejected candidate DDS/metadata files retired only after all resolved-parent, reparse-point and SHA256 checks. No redundant old presentation cleanup needed within this batch. One active pack; no duplicate game extracts, builds, ZIPs or staging trees. Original game assets, personal saves and settings preserved.
+- All 1015 installed replacements pass native DDS/worklist audits. 5747 still need art and 50 held drafts need correction. Planner and inventory refreshed. Four previously moderated gaps were not retried. The 512 MiB residency limit remains; actual scene residency and fallback remain unverified.
+- Zero game launches; no runtime/tool changes. Full overhaul and representative scene/platform/1080p/4K/ultrawide validation remain incomplete. Near-completion gate is not reached. Continue hybrid material production from opaque >=2-occurrence/min128 triage cursor 787969fba3da53ee, with specialist corrections separate. Other-device synchronization unverified.
+- Pack 915,297,745 bytes (872.90 MiB / 6144 MiB). Texture workspace at audit 4,894,138,420 logical/allocated bytes (4.56 GiB); temporary output 263,772,947 bytes (251.55 MiB / 256 MiB); free disk 105,585,082,368 bytes.
+- Private evidence: `review/hybrid-140-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
+
+
+## Texture overhaul issue #74: hybrid batch 141
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8e00139`.
+- Visually inspected and provisionally classified 32 catalog-verified opaque originals across environment, prop, weapon, character/equipment, interface and effect/utility categories. 2041 keys now classified. Recomputed classification summary fields from all records: before this batch they still reported 1977 despite 2009 actual records. Counts now agree with the 2041 unique records; full category and scene review remains incomplete. Audited scope remains 6812 supported unique keys / 7147 catalog payloads plus noncatalog discovery gaps.
+- Fifteen independent built-in imagegen sources accepted offline: gray-brown brick, gray mottled banded material, ochre sandstone masonry, wooden boards, stained gray block wall, turquoise-accented riveted panel, gray corner molding, pale worn horizontal-band material, pale vertical panels, olive metal grid, layered tan rock, gray-green streaked material, architectural rectangular trim, pale veined stone stripe and small two-panel surface. One new paired-plate draft held for shading correction.
+- Inspected four final comparison sheets, four repeat sheets, sixteen enlarged details and six focused comparisons. All sixteen originals verified byte-for-byte as decoded RGBA against catalog payloads, with recorded payload/decoded hashes. Original and compiled alpha opaque. Reviewed UV boundaries, mortar and board courses, frame widths, hardware positions, panel divisions and major rock fissures. Fine material detail is a modern reinterpretation; mapped scene appearance remains pending.
+- Wooden boards retain five upper and five lower nail locations; focused upper/lower grayscale -0.18%/+2.23%. Gray metal panel retains its staggered fastener layout, clipped corners and turquoise frame accents; central region grayscale +4.32%. Corner molding retains four round outer forms and central angular shapes in the small lower-left cluster, grayscale +0.25%; exact object function remains provisional.
+- Olive metal grid retains two columns and four rows, seam positions and fine rivet rhythm; focused seam grayscale -6.17%. Small two-panel lower section preserves its divider and recess outlines, grayscale -7.54%. Accepted full-image luminance ranges -11.46% to +7.15%. Exact material response, contrast and fine detail still require consolidated scene validation.
+- Held 7f54bfac6994bde2: paired metal plates lose their original lighting difference, upper crop grayscale -17.62% and lower +40.39%, despite full-image luminance +0.77%. Restore stronger original upper illumination and subdued lower plate without moving rivets, ovals or recesses. Source PNG, prompt, metrics and comparisons retained. Two rejected candidate DDS/JSON files removed only after all resolved-parent/reparse/SHA256 checks.
+- Repeat sheets and edge statistics inspected. Olive grid left/right edge MAE increases 27.82 to 52.03 with stronger edge rivet contrast; the original already has asymmetric boundary rivets. Broad panel pitch is retained, but mapped boundary appearance remains pending. Turquoise panel edge MAE remains small (left/right 0 to 1.23, top/bottom 0 to 3.29). Existing atlas and shaded nonseamless boundaries are not claimed seamless. No obvious new coarse discontinuity in accepted repeat comparisons; actual scene adjacency remains unverified.
+- Ten 1254-square and six 1774x887 generated sources retained. Accepted DXT1 full-mip outputs include seven 1024-square, one 512-square, six 1024x512 and one 2048-square. The layered rock request aimed for 4096 but returned 1254-square; its 2048 output is upsampled, explicitly recorded, and not native 2K/4K art. The other fourteen accepted outputs are downsampled. Actual source sizes, resampling and prompts saved.
+- Recycled 20 redundant older final-repeat JPGs from batches 61, 62, 85, 95 and 137-139 totaling 7652112 bytes (7.30 MiB), after all resolved-parent/reparse/SHA256 checks and verification that primary comparison sheets remain. Source artwork, provenance, metrics and recovery records retained. One active pack; no duplicate game extracts/builds/ZIPs/staging. Original game assets, personal saves and settings preserved.
+- All 1030 installed replacements pass native DDS/worklist audits. 5731 still need art; 51 held drafts require correction. Planner and inventory refreshed. Four previously moderated gaps were not retried. The 512 MiB replacement residency cap remains; actual scene residency and fallback unverified.
+- Zero game launches; no runtime/tool changes. Full overhaul and scene/platform/1080p/4K/ultrawide validation remain incomplete; near-completion gate not reached. Continue hybrid production from opaque >=2-occurrence/min128 triage cursor 815f195432810024, with specialist corrections separate. Other-device synchronization unverified.
+- Pack 925,267,836 bytes (882.40 MiB / 6144 MiB). Texture workspace at audit 4,966,377,587 logical/allocated bytes (4.63 GiB); temporary output 266,365,603 bytes (254.03 MiB / 256 MiB); free disk 105,200,091,136 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-141-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 142
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `252ac6a`.
+- Visually classified 32 additional opaque candidates (at least two catalog occurrences, minimum 128 pixels) through cursor 8a7b680d08a46bca. Classification now has 2,073 unique records and matching summary counts. Text/UI, weapons, characters, sky/effects and uncertain atlases remain in specialist queues; routing is not completion.
+- Generated 16 sources with built-in image_gen: nine 1254x1254 and seven 1774x887. Accepted 15 offline: seven 1024x1024, two 512x512 and six 1024x512 DXT1 mipmapped replacements. All accepted sources were downsampled; no native 4K source or 4K output claimed for this batch.
+- Reviewed all four compiled comparison sheets, four repeat sheets, 16 individual comparisons and seven focused crop comparisons. Re-decoded all 16 originals from catalog payloads and matched dimensions/RGBA bytes; originals and compiled drafts remain fully opaque. Preserved broad material layouts, rail/seam positions, major crack paths, yellow stripe and hardware placement. Scene UV appearance and actual adjacency remain unverified.
+- Accepted industrial panel 8300f7b5b20f956f retains its stepped plates, yellow stripe and hardware; stripe-region grayscale +0.33%. Accepted vertical machine panel 8352c99c5bd22b57 retains left fasteners, staggered center rivets, right long recess and two central fasteners; center strip grayscale -14.14%, right region -10.55%. Recessed slot 83a3d6c19c4e5772 retains four corner fasteners and lower staggered strip; focused grayscale -2.58% and -5.31%.
+- Accepted olive wall 820aee6b20d9c826 retains central vertical division and horizontal rails, with stronger edge definition; upper rail grayscale -7.28%, sampled lower region -18.51%, full luminance -12.93%. Mossy boards retain joint layout and moss distribution; upper-region grayscale -2.78%. Cracked plaster 84f97ffc5f3973f0 retains major crack paths; focused upper crack region +17.85%, full luminance +15.52%. Accepted full-image luminance ranges from -12.93% to +15.52%.
+- Held 831ceabae6c2d679 for palette/exposure correction: four staggered hole rows remain but pale gray/brass shifted to saturated yellow-gold and dark recesses. Full luminance -18.31%; upper row grayscale -20.61%, lower region -17.93%. Removed only its two compiled candidate files after resolved-parent/reparse/SHA256 checks; original, generated source and review/provenance retained. It is not installed or counted complete.
+- Repeat reviews preserve broad rhythm, but sharper edge detail increases some edge differences: gray blocks left/right MAE 15.84 to 31.24 and vertical machine panel 49.46 to 72.67. These offline comparisons do not prove scene adjacency; mapped seams and lighting require consolidated runtime validation.
+- Safely recycled 61 redundant older presentation images totaling 12,843,713 bytes (12.25 MiB), after resolved-parent/reparse/SHA256 checks. Kept primary comparisons, necessary held-draft evidence, metrics, source art and provenance. Cleanup manifest records retained primary sheets.
+- All 1,045 installed replacements pass native DDS and worklist audits; planner/inventory refreshed. 5,715 need artwork and 52 drafts require correction. Audited supported scope remains 6,812 unique keys / 7,147 catalog payloads, with noncatalog discovery/category/scene gaps; full overhaul unfinished.
+- Zero game launches; no runtime/tool changes. Shared code retains the 512 MiB replacement residency limit; actual scene residency/fallback and Windows/Mac scene/platform/1080p/4K/ultrawide validation remain pending. Near-completion gate is not reached. Other-device synchronization unverified.
+- Pack 932,616,484 bytes (889.41 MiB / 6144 MiB). Texture workspace at audit 5,033,017,015 logical/allocated bytes (4.69 GiB); temporary output 263,517,805 bytes (251.31 MiB / 256 MiB); free disk 104,795,901,952 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-142-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 143
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8598e6f`.
+- Visually classified 32 additional opaque candidates (at least two occurrences, minimum 128 pixels) through cursor 94c815a9ceddb08e. Classification now contains 2,105 unique records with matching counts. Printed clippings/labels, character faces/eyes, skies, uncertain reflective materials and lit machinery remain in specialist queues. Classification is not completion.
+- Generated 16 sources with built-in image_gen: nine 1254x1254 and seven 1774x887. Accepted 15 offline: eight 1024x1024, one 512x512 and six 1024x512 DXT1 mipmapped replacements. All accepted sources were downsampled; no native 4K source or 4K output claimed for this batch.
+- Reviewed four compiled comparison sheets, four repeat sheets, all 16 detail comparisons and nine focused crop comparisons. All 16 originals were independently decoded from catalog payloads and matched saved original RGBA bytes and dimensions. Originals and compiled drafts have fully opaque alpha. Scene mapping and actual adjacency remain unverified.
+- Accepted fluted bronze panel 8bedb92c03a38d49 preserves four long flutes on each side, five shorter center flutes, five central fasteners, square inset and perimeter fittings. Lower-flute grayscale -4.42%, center fastener region -6.46%, full luminance +0.14%. Dark double-inset panel retains inset rectangles and rivets. Brown wood panel retains nested bevels and corner miters.
+- Accepted horizontal timber 8cdac4162dd9fb22 preserves upper knots, beam divisions and dark lower section; upper grayscale -9.42%, lower -17.91% (29.44 to 24.17), full luminance -11.40%. Concrete blocks preserve mortar layout; cobbles retain diagonal boundaries and chipped lower-right region; small concrete crease remains narrow and in place.
+- Accepted blue hatch 8d9dd99e73459d00 preserves four faint outlined fittings, yellow stripe, upper slot, side hinges and bottom strip; focused grayscale -8.46%. Dark elongated panel 8e0fd9e0fba378a8 preserves highlight, left vertical line and sloped inset outline with stronger grain; highlight grayscale -9.58%, lower field -22.12%, full luminance -15.66%. Scene lighting still requires validation.
+- Accepted rounded vent 9083473970bf9440 retains eight horizontal ribs and top/bottom rivet rows; focused grayscale -9.90%. Hinged panel 92776b031c2c39dd preserves two horizontal strap regions, four hinge fittings, small oval fitting, perimeter rivets and right square recess; hinge-region grayscale +5.25%, oval fitting -2.71%. Blue modular panel retains upper notches, vertical divisions, handles and dense lower grille (focused grayscale -2.09%); three-group vent retains two slots per group (focused -1.46%).
+- Held 91b0e9401f9209c3 for exposure correction: broad board joints remain but full luminance +26.90%, pale strips +29.97%/+29.91% and dark wood sample +24.20%. Restore original dim gray/brown exposure and softer transitions while keeping seams and fasteners. Removed only its two compiled files after resolved-parent/reparse/SHA256 checks; source PNG, original, review and provenance retained. Not installed or counted complete.
+- Accepted full-image luminance ranges from -15.66% to +1.96%. Repeat patterns were reviewed; stronger edge detail increases some boundary differences, including concrete-block left/right MAE 13.83 to 27.33 and rounded vent 50.38 to 76.45. These measurements and 2x2 sheets do not prove scene adjacency or final mapped seams.
+- Safely recycled 65 accepted-only older detail enlargements from batches 125-136, totaling 10,972,170 bytes (10.46 MiB), with all resolved-parent/reparse/SHA256 and retained-primary checks completed before deletion. Primary comparison sheets, authored sources, metrics, provenance and held-draft evidence remain.
+- All 1,060 installed replacements pass native DDS and worklist audits; planner/inventory refreshed. 5,699 need art and 53 drafts require correction. Audited scope remains 6,812 supported unique keys / 7,147 catalog payloads, with noncatalog discovery/category/scene gaps. Full overhaul unfinished.
+- Zero game launches; no runtime/tool changes. Shared code retains the 512 MiB replacement residency cap; actual scene residency/fallback and representative Windows/Mac scene/platform/1080p/4K/ultrawide validation remain pending. Near-completion gate not reached. Other-device synchronization unverified.
+- Pack 940,489,422 bytes (896.92 MiB / 6144 MiB). Texture workspace at audit 5,096,896,364 logical/allocated bytes (4.75 GiB); temporary output 261,378,971 bytes (249.27 MiB / 256 MiB); free disk 104,419,393,536 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-143-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 144 corrections
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8821d73`.
+- Corrected eight held opaque drafts with built-in image generation; accepted two after offline review and retained six as unresolved. Installed/offline-approved coverage is now 1,062 of 6,812 supported unique catalog keys; 51 held and 5,699 still need artwork. This is not a completed remaster.
+- Accepted 831ceabae6c2d679: four staggered perforation rows, borders and highlights retained; desaturated pale gray/brass restored. Full luminance -3.45% versus original (previous -18.31%); upper/lower focus -3.51%/-4.40%.
+- Accepted 91b0e9401f9209c3: vertical board/joint placement and pale weathered strips retained. Full luminance +14.70% versus original, improved from +26.90%; pale-strip samples +16.92%/+15.42%, dark strip +10.50%. Residual brightness is documented for scene review; broad muted weathered appearance accepted offline.
+- Held paired riveted plates: full luminance +30.28%, lower plate +44.95% grayscale. Five crop-guided label/marking corrections remain held for changed stroke shapes; the weapon atlas also gained an unrelated white stripe. Enlarged original crop guidance did not reliably preserve markings, so do not repeat the same full-atlas correction strategy unchanged.
+- Reviewed two primary sheets, two 2x2 repeat sheets, eight full detail comparisons and eight focused comparisons. Re-decoded all eight originals from catalog payloads and verified RGBA bytes and opacity. Repeat sheets and edge metrics do not prove in-scene adjacency.
+- Generated five 1254x1254 and three 1774x887 sources. The two accepted 1774x887 sources were downsampled to 1024x512 DXT1 with mipmaps; these are not native 4K textures. Source artwork, prompts, previous prompt backups and correction evidence remain private.
+- Native format/mip validation passed for all 1,062 installed DDS files; worklist, hybrid planner and inventory audits passed. Removed 12 rejected compiled files after resolved-parent and SHA256 verification, preserving source artwork.
+- Retired 21 redundant accepted-only detail enlargements from batches 140/141 (3,475,033 bytes); primary comparison sheets, source artwork and provenance retained. One active pack; no game copies, ZIPs or staging trees created.
+- No runtime/source behavior changed and no gameplay launched. Residency limit remains 512 MiB. Final scene/category/embedded-asset coverage, 1080p/4K/ultrawide, memory and fallback validation remain pending; broader inventory gaps remain in scope.
+- Pack 941,189,626 bytes (897.59 MiB / 6144 MiB). Texture workspace at audit 5,122,794,576 logical/allocated bytes (4.77 GiB); temporary output 262,415,011 bytes (250.26 MiB / 256 MiB); free disk 104,233,201,664 bytes.
+- Private evidence: `review/hybrid-144-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
+
+
+## Texture overhaul issue #74: hybrid batch 145
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `b87ef83`.
+- Visually triaged 32 more opaque multi-use keys, advancing this queue cursor to 9dd333792cb1534c and classification to 2,137 unique keys. Character atlases, warning text, interface graphics and uncertain light/reflection assets remain routed for individual or specialist work. Classification is not completion.
+- Generated 16 material/prop replacements; accepted 14 offline: rusted metal, architectural stone, painted wood door, two rock surfaces, sci-fi panel, four-band vent, mottled corrosion, pale fastened panel, tile grid, riveted sheet, bracket panel, concrete inset and carved stone frieze. Coverage is now 1,076 installed/offline-approved of 6,812 supported unique catalog keys; 53 held and 5,683 need art.
+- Reviewed four primary sheets, four 2x2 repeats, 16 full detail comparisons and nine focused comparisons. Re-decoded all 16 originals from catalog payloads and verified stored RGBA bytes and opaque alpha. Edge/repeat checks are offline diagnostics, not proof of in-scene adjacency.
+- Focused review retained stone molding recess cadence, three orange hazard strokes and two five-hole clusters, four vent bands, central fastener pattern, eight-by-four tile grid, sixteen bracket sections and carved relief motifs. Accepted full-image luminance changes range -7.24% to +11.67%; stone lower molding focus is +23.41% despite full +8.84%, recorded for scene review. Tile edge MAE rises from 3.75/2.50 to 10.32/12.84; grid alignment retained, scene tiling still pending.
+- Held 99d721182139c2c8: teal door hardware focus +50.43% grayscale and altered pale lower-edge pixels. Held 9a6926b7f278e627: diagonal machinery full luminance +19.34% and indicator focus +32.38%, with overemphasized pale scratches. Four rejected compiled files removed after resolved-parent and SHA256 verification; artwork and failure records retained.
+- Actual generated sources: twelve 1254x1254 and four 1774x887. Installed ten 1024x1024 and four 1024x512 DXT1 textures with mipmaps, all downsampled. The held machinery trial was resampled from 1254x1254 to 2048x2048 and removed; it is not native 2K or 4K artwork.
+- Native format/mip validation passed for all 1,076 installed DDS files; worklist, hybrid planner and inventory audits passed. Retired 48 redundant accepted detail enlargements/repeat sheets (11,226,077 bytes), preserving primary comparisons, failed-draft details, source artwork and provenance.
+- No runtime behavior changes or gameplay launches. One active pack, 6144 MiB pack cap and 512 MiB residency limit preserved. Category/scene coverage, embedded/procedural/unclassified inventory gaps and final 1080p/4K/ultrawide, memory and fallback validation remain unfinished. No duplicate game extracts, ZIPs or staging trees created; other-device synchronization unverified.
+- Pack 949,586,274 bytes (905.60 MiB / 6144 MiB). Texture workspace at audit 5,188,433,699 logical/allocated bytes (4.83 GiB); temporary output 261,155,217 bytes (249.06 MiB / 256 MiB); free disk 103,592,374,272 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-145-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 146
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8a9da2f`.
+- Visually classified the next 32 catalog keys; 2,169 unique keys are now provisionally classified. Corrected the stale classification scope string to match its records. Text-heavy labels/posters, character atlases, consoles, reflections, sky/effect and utility textures remain in specialist review; this routing does not count as completion.
+- Generated 16 independent sources with built-in image generation: nine 1,254 x 1,254 and seven 1,774 x 887. Accepted 13 offline: five 1,024-square, one 512-square and seven 1,024 x 512 DXT1 replacements, all downsampled from the recorded sources. These are not native 4K assets.
+- Accepted stone/concrete trim, stepped gray and blue-gray panels, fastened wall panels, riveted trim, stone tile grid, rusty grille, diagonal-riveted corrosion, dark granular surface, pale framed panel, grooved green-gray panel, industrial grille structure and cobblestones. Original palette, principal UV divisions, openings and structural patterns retained in offline review; scene appearance remains unverified.
+- Held three drafts outside the active pack: a22f516f7128e3fa shadowed columns (+37.23% overall luminance), a41b635043754d5b scorched panel (+76.69%; opening-surround grayscale +114.49%), and a509aa32186892ff louver panel (+17.21%; central-frame grayscale +25.70%). Restore subdued shading/metal highlights before accepting them. All source artwork, prompts and failure evidence retained; six compiled DDS/metadata files retired after resolved-parent and SHA-256 verification.
+- Reviewed four original/DDS comparison sheets, four 2 x 2 repeat sheets, all sixteen detailed comparisons and seven focused comparisons. All sixteen originals were re-decoded from authoritative catalog payloads and matched cached RGBA bytes, dimensions and opaque alpha exactly. Opaque alpha does not prove shader blend semantics.
+- Accepted full-image luminance changes range from -14.14% to +2.82%. The rusty grille retains its slot pattern after detailed comparison (focus grayscale -11.02%); industrial grille focus +14.69% remains a scene-check item. Stone trim left/right edge MAE rises 9.30 to 25.68 and cobbles top/bottom 9.29 to 19.15; repeat layouts remain aligned offline but actual adjacency and seam visibility need scene validation. Dark granular surface remains -14.14% darker and visibly repeats, as its original does; review in its actual scene.
+- Reclaimed 10,088,396 bytes (9.62 MiB) by retiring 152 regenerable cached original PNG exports of previously installed textures. Each was re-decoded and RGBA-verified against authoritative game data before all resolved-parent/SHA-256 checks and deletion. Game files, source artwork, review evidence, saves and settings were preserved; the retirement manifest records recovery.
+- Native DDS audit passed for all 1,089 installed replacements; worklist, hybrid queue and broader asset inventory refresh passed. Coverage is 1,089 installed/offline-approved, 56 held drafts and 5,667 still needing artwork out of 6,812 supported unique keys. All 7,147 cataloged payloads are format-supported, but broader embedded/noncatalog/procedural discovery and complete category review remain unfinished.
+- No game launches or runtime changes. The existing 512 MiB replacement residency limit is unchanged. Consolidated scene, memory, fallback and 1080p/4K/ultrawide validation remain deferred until the coverage/category gate; no full-remaster or campaign-completion claim.
+- Pack 955,710,442 bytes (911.44 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,246,690,166 logical/allocated bytes (4.89 GiB); temporary output 259,585,122 bytes (247.56 MiB / 256 MiB); free disk 103,248,834,560 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-146-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 147 corrections
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `3996edf`.
+- Completed eight focused corrections of held drafts using built-in image generation, preserving the full overhaul scope. No new visual-triage keys this batch: 2,169 provisional classifications remain; category and scene coverage are unfinished.
+- Four corrections accepted offline: a22f516f7128e3fa shadowed columns, a41b635043754d5b scorched riveted panel, d437d76b03372483 dark translucent glass and 1ac9102ec850a11f semi-transparent tile grid. Installed total is 1,093; held drafts fall from 56 to 52, with 5,667 keys still needing art. Four older draft records moved to resolved history (54 resolved total); all earlier prompts and source versions retained.
+- All eight generated source sizes recorded: seven 1,254 x 1,254 and one 1,774 x 887. Four accepted assets are downsampled to 1,024 x 1,024 (two DXT1, two DXT5 with verified original alpha). No native 4K claim; source detail and resampling remain explicit.
+- Compared two full original/DDS sheets, two 2x2 repeat sheets, all eight details, three focused grayscale comparisons and five original-alpha composites on both dark and light backgrounds. Re-decoded all eight originals from authoritative catalog payloads and verified exact RGBA bytes and dimensions before authoring.
+- Column luminance is now -9.76% versus original (previous +37.23%); focus grayscale -5.91%. Scorched panel is +7.35% (previous +76.69%), upper focus +6.75%, opening-surround +20.31% (previous +114.49%). Structural divisions, black opening and subdued hardware retained offline; residual local brightness remains a final scene-check item.
+- Glass original-alpha-weighted luminance improves from the previous 26.14 to 12.08 versus original 10.50 (+15.09%); four-pane layout and opacity pattern retained. Tile-grid weighted luminance 108.48 versus original 113.07 (-4.06%); the full-canvas RGB coverage failure is resolved. Neither accepted alpha source has generated near-zero alpha overlapping original opaque pixels. DXT5 original-mask mean absolute alpha error is 0.61/255 for glass and 1.27/255 for tiles (max 9/13); original-alpha preservation includes bilinear resampling and lossy DDS compression, not bit-exact alpha.
+- Held the louver correction because recesses became too dark (-25.28% left, -27.75% right grayscale); center frame is closer at -9.66%. Held bronze frame for +28.84% alpha-weighted brightness and remaining cutout contamination. The plaster/lath and brick patches also remain held for colored feathered-edge RGB after original-alpha compilation.
+- Diagnosed colored edges at compiled resolution against equally resized original references: saturated red/yellow pixels above alpha 64 are 38 for bronze frame, 431 for plaster/lath and 28 for brick patch; all original references have zero under the same diagnostic. Counts above alpha 8 are 38/1,794/628. These diagnostics support the visual fringe finding, not a generic automatic acceptance threshold. Explicit edge-preservation prompts still failed; do not repeat this full-atlas transparent regeneration strategy unchanged.
+- Removed eight rejected trial DDS/metadata files only after all resolved-parent, byte-size and SHA-256 checks. Kept source artwork, canonical/versioned prompts, original-alpha provenance and failure comparisons. No duplicate game extracts, ZIPs, staging trees or game launches.
+- Native DDS validation passed for all 1,093 active replacements. Worklist, hybrid queue and broader inventory refreshed; catalog scope remains 6,812 supported unique keys/7,147 payloads with embedded/noncatalog/procedural discovery gaps. Pack cap 6,144 MiB and replacement residency 512 MiB unchanged. Consolidated scenes, memory, fallback and 1080p/4K/ultrawide testing remain deferred; no full remaster or campaign completion claim.
+- Pack 959,907,981 bytes (915.44 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,276,122,854 logical/allocated bytes (4.91 GiB); temporary output 264,002,089 bytes (251.77 MiB / 256 MiB); free disk 102,210,797,568 bytes.
+- Private evidence: `review/hybrid-147-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
+
+
+## Texture overhaul issue #74: hybrid batch 148
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `428fa92`.
+- Visually classified 32 additional opaque textures, reaching 2201 distinct reviewed keys. Character, reflection, effect and detailed atlas candidates remain separate specialist work; routing does not count as completion.
+- Eight built-in image-generation edits produced seven offline-approved replacements and one held bronze-trim draft. Installed coverage is 1100/6812 supported keys (16.15%); 5659 need art and 53 drafts require correction. Broader embedded/procedural discovery and category/scene coverage remain unfinished.
+- Actual generated sources: five 1254x1254 and three 1774x887 images. Accepted DDS outputs: four 1024x1024, two 1024x512 and one 512x512, all DXT1 with complete mip chains. Resampling is recorded; these are not native 4K sources.
+- Compared original and compiled primary/repeated sheets plus targeted detail views. Preserved plaster/baseboard divisions, rock massing, three board seams, stone channels and rivet layout. Riveted-panel top/bottom row counts remain 16 each; square-plate edge and interior rivet placement retained. Accepted brightness change ranges from -14.37% to +13.32%; wider rust-panel top strip is -20.70%, requiring scene review alongside the brighter boards and rock contrast.
+- Held b0b30cafb2de7114: lower bronze band is 25.15% darker and browner at original scale; full texture is 20.48% darker. Its compiled DDS/metadata were retired with resolved-parent, size and SHA256 checks; source and correction evidence retained.
+- Original catalog RGBA verified for all eight inputs. All 1100 installed DDS files passed native loader-format checks and worklist hashes/dimensions/mip-chain/metadata checks; planner and inventory refreshed. Opaque alpha remains 255. Tiling sheets preserve broad edge layout, but actual scene adjacency remains untested.
+- Retired 14 verified regenerable original PNG cache files (1017807 bytes) and 31 redundant accepted detail enlargements (4635933 bytes), retaining original game data, source art, provenance, primary comparisons, metrics and recovery manifests.
+- Zero game launches. The 90% plus all-categories-reviewed runtime gate remains unmet; 512 MiB runtime residency limit unchanged. No runtime source changes or other-device verification.
+- Pack 963,582,015 bytes (918.94 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,309,431,252 logical/allocated bytes (4.94 GiB); temporary output 264,565,209 bytes (252.31 MiB / 256 MiB); free disk 102,021,873,664 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-148-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 149
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8cf672d`.
+- Worked eight previously classified specialist candidates from hybrid-148: carved wood, stained glass, ornate armor, character equipment, two instrument atlases, keyboard panels and a stone window facade. Classification remains 2201 distinct keys; other categories and scenes remain unfinished.
+- Six new replacements passed offline review, with two held drafts. Installed coverage is 1106/6812 supported keys (16.24%); 5651 still need artwork and 55 drafts require correction. Supported catalog remains 7147 payloads; broader embedded/procedural discovery gaps remain explicit.
+- Actual built-in generated sources: six 1254x1254 and two 1774x887. Accepted DXT1 outputs are four 1024x1024 and two 1024x512, all resampled with complete mip chains. Held ornate armor trial used a 2048x2048 output resampled from 1254x1254; it was removed and is not native 2K artwork. No native 4K claim.
+- Primary, repeated and focused original-scale comparisons checked carved motif placement, stained-glass leading and colored regions, character face/eye/lip placement and eye emblems, equipment island silhouettes, yellow/orange cues, label/photo composition, keyboard grid and facade geometry. Opaque alpha remains 255 for all eight sources and trial DDS files.
+- Keyboard diagnostic at original-scale rows 42, 46, 50 and 54 found identical bright-run boundaries to the original at threshold 60. Bottom-row threshold differences reflect local shading and remain covered by manual review; this narrow scan is not proof of whole-atlas equivalence. The 3-column by 5-row side keypad and main grid were reviewed visually.
+- Accepted mean-brightness changes range from -7.53% to +10.75%. Stone-facade dentil strip is +23.59% and window surround +21.41%; geometry and dark aperture remain aligned, with those brighter highlights explicitly queued for scene review. Character eye/lip and emblem regions remain aligned offline; model mapping and all scene appearances are untested.
+- Held a9c600b2a328659c for altered medallion engraving and increased metallic highlights (full +16.57%, right ornament +19.87%). Held aa71b08852505897 for reinterpreting the right instrument inset as a circular bright-rimmed opening; preserve the original inner contour before installation. Four failed DDS/metadata files retired with resolved-parent, size and SHA256 checks; private sources and evidence retained.
+- All eight input originals were re-decoded from the catalog and matched byte-for-byte RGBA. All 1106 installed DDS files passed native format and worklist hash/dimension/mip/metadata checks. Refreshed inventory and hybrid plan. No gameplay launch or runtime code change; 512 MiB residency unchanged and the 90% plus all-categories-reviewed runtime gate remains unmet.
+- Retired ten redundant repeat-review sheets from batches 144-146 (4237816 bytes), keeping primary comparisons, metrics, source art and provenance. Preflight storage measured separately from pack size with Windows GetCompressedFileSizeW. Artwork remains private; no other-device verification.
+- Pack 967,080,715 bytes (922.28 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,338,372,329 logical/allocated bytes (4.97 GiB); temporary output 264,912,071 bytes (252.64 MiB / 256 MiB); free disk 101,850,939,392 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-149-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: inventory batch 150
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `fd1782c`.
+- Reviewed 64 additional originals: 32 small assets and 32 single-use 128-256px assets. Classification now covers 2265 distinct keys. The new set includes 18 interface, 8 effect, 7 prop and 4 character records plus explicitly uncertain/utility, environment, reflection, weapon and alpha-bearing cases. Classification is not artwork completion.
+- New routing keeps reticles, skull/status icons, glow/noise/gradient utilities, weapon-package text, transparent diagrams, character faces and cutout surfaces out of ordinary material enhancement. Ambiguous identity/function remains explicit; functional flat-color and alignment-template assets are not silently exempted or counted as complete.
+- Checked exact decoded base-level RGBA (dimensions and alpha included) for all 6812 supported keys after verifying source payload SHA256. Found 6811 distinct decoded images: only keys 07668686f216d3d9 and e79e131a7d27d3d9 match. Both remain uninstalled; their encoded DXT1 base data differs. No runtime keys were collapsed and no artwork reuse or extra coverage was claimed. Mip/per-use semantics remain outside this equality audit.
+- Retired 72 original-only triage sheets from older batches after re-decoding 576 corresponding catalog keys and checking available cached exports and recovery hashes. Reclaimed 9797547 bytes (9.34 MiB). All paths were resolved under review and size/SHA256 checked before deletion; selections, classifications, game assets, source artwork and comparative reviews remain.
+- Worklist hash/dimension/mip/metadata checks, hybrid queue and full inventory refreshed. Queue now has 37 material-batch candidates, 432 individual-review candidates, 649 specialist-review candidates, 4533 awaiting visual triage, 55 corrections and 1106 installed replacements.
+- No new artwork or pack changes in this inventory pass. Installed/offline-approved coverage remains 1106/6812 (16.24%); 5651 keys need art and 55 drafts need correction. Catalog has 7147 supported payloads, but 48572 unclassified archive entries and broader embedded/procedural coverage remain open.
+- Zero gameplay launches. Native loader-format result from hybrid-149 remains the latest native audit of this unchanged pack; this pass did not rerun it. The 90% plus all-categories-reviewed gate is unmet; 6144 MiB pack budget and 512 MiB runtime residency remain unchanged. Other-device synchronization unverified.
+- Pack 967,080,715 bytes (922.28 MiB / 6144 MiB). Texture workspace at audit 5,331,433,168 logical bytes and 5,331,433,168 Windows GetCompressedFileSizeW allocated bytes (4.97 GiB); temporary output 257,921,010 bytes (245.97 MiB / 256 MiB); free disk 101,882,597,376 bytes.
+- Private evidence: `review/hybrid-150-*`, visual classification, inventory and progress. Commit records progress only; no game or artwork files published.
+
+
+## Texture overhaul issue #74: hybrid batch 151
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `3fbea3d`.
+- Continued the in-progress hybrid-151 batch after revalidating the clean #74 branch at 3fbea3d. Previous texture work made progress by producing 11 drafts; reused those existing outputs without regenerating or recompiling them.
+- Twelve built-in image-generation attempts yielded 11 sources: eight 1254x1254, two 1774x887 and one 887x1774. All actual dimensions and resampling are retained in private prompts and pack metadata. No native-4K claim: accepted output is three 1024x1024, three 512x512, two 1024x512 and one 512x1024 DXT1 texture with full mip chains.
+- Accepted nine offline: pale peeling plaster 024df14b1fa8aa42, paired cross-grooved shields 02793f8d46ab7f1c, checker ribbed metal 02b7d6140f042067, paired lockers 02cd8fdee2fcf669, olive equipment pouch 02d03568bd5ca1fe, rusted narrow strip 0445f59aad76ba2d, blue-green equipment atlas 0591e288fb55726f, industrial hazard-striped door 05c642e63fb33576, and aged green ribbed-side panel 05dba64c7d9dbf5f.
+- Reviewed all 11 original/compiled primary comparisons, all three 2x2 repeat sheets, all 11 original-scale focus comparisons, and the control-panel detail. Repetition checks do not establish actual scene adjacency. Preserved shield orientations and crosses, alternating rib grid, four vents per locker, pouch strap/snaps, dark strip stain, equipment shadow islands, two rows of five door holes, hazard direction and hinge layout. The hazard-strip region is +21.14% mean grayscale with unchanged warning direction; require scene review of contrast. Ribbed tile -12.55% and green panel -12.99% overall luminance retain the original broad value pattern; runtime appearance remains pending.
+- Held two drafts: 01b143734763cc7e studded door is +27.10% overall luminance and +49.04% grayscale in the hinge/wood region; 0386c56fd58df6b4 control panel rewrites digits and switch symbols. Removed only their four trial DDS/metadata files after checking every resolved parent, byte size and SHA-256. Retained generated source art, prompts and review evidence. Held drafts count as incomplete.
+- Character face 00c739bc487633f6 remains unfinished: image tool rejected the input (moderation_blocked, request 6ee2b427-f653-405e-a11c-b109b99cc151). No retry or alternative route; no replacement or completion credit.
+- All 11 reviewed originals match verified catalog payloads pixel-for-pixel as decoded RGBA and have fully opaque alpha. All 1115 installed DDS files passed the native format audit; worklist, hybrid planner and full inventory refreshed successfully with hashes, dimensions, formats, mip chains and metadata checks.
+- Coverage: 1115 installed/offline-approved of 6812 supported unique catalog keys (16.37%), 57 held drafts, 5640 needing artwork; 7147 catalog payloads and zero unsupported catalog payloads. Broader embedded/non-texture archive classification remains unfinished. Visual classification remains 2265 keys; existing exact-base-RGBA duplicate audit is not proof of mip or per-use equivalence.
+- No gameplay launch. Full scene, transparency, fallback, memory/residency and 1080p/4K/ultrawide runtime validation remain pending; 512 MiB residency cap is unchanged. Continue bounded hybrid production and focused corrections; all categories and the >=90% offline gate remain required before consolidated playtesting.
+- Pack 970,755,895 bytes (925.78 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,375,083,287 logical/allocated bytes (5.01 GiB); temporary output 263,004,525 bytes (250.82 MiB / 256 MiB); free disk 101,656,809,472 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-151-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 152
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `4002735`.
+- Previous goal turn made progress: hybrid-151 installed nine reviewed replacements and passed the all-pack audit. Revalidated clean #74 source at 4002735 before hybrid-152.
+- Produced 12 independent built-in image-generation drafts grouped around stone/concrete; inspected every original and alpha first. Nine simple materials used the material lane; stair-edge, carved wall and cliff atlases received individual geometry constraints. Eleven actual source images are 1254x1254 and one is 1774x887. All sources and prompts remain private, with actual dimensions and resampling recorded.
+- Accepted eight offline: pale green fractured rock 0abdef281e8a4c85, mossy fractured rock 106cc2d78485a7bd, stone stair-edge atlas 3875b01d1d04430d, mottled gray stone 413b2c0a7514694c, paired concrete slabs 453437e7e84deff9, craggy rock 45a00ba2405827e4, beige stone with shading transition 476c90b520c5cd21 and pale speckled stone 50cae08b2f38b57e. Seven 1024x1024 and one 512x512 DXT1 outputs with full mip chains; all downsampled from generated sources, not native 4K.
+- Reviewed all 12 primary original/compiled comparisons and all 12 original-scale focus comparisons, plus all three 2x2 repetition sheets. Preserved stair step layout, gold edging and baked light bands, concrete slab joint locations, large rock fractures/cavities and the beige horizontal shading transition. Repeat sheets are offline diagnostics, not proof of scene adjacency. Green fractured rock is -15.48% overall luminance and -18.53% grayscale in the lower region; original green identity and fracture pattern remain, with contrast flagged for scene validation. Mossy rock is -11.78%; other accepted full-image changes range from -3.84% to +7.26%.
+- Held four: af0f95b675bd46ea charcoal rock is -29.43% overall luminance; 0af9d3b7076524b4 rewrites a rectilinear central band into mineral striations; 489d0f5a6c76f884 carved wall is +28.81% overall and about +30% across ornament/middle shading; 6b5a16e136fd46da cliff is +24.29% overall and +58.14% grayscale at the upper silhouette region. Their eight DDS/metadata trial files were removed only after all resolved-parent, size and SHA256 checks; source artwork and evidence remain for correction.
+- Reclassified 0af9d3b7076524b4 from environment to material_uncertain based on the original-scale central-band review. Material identity/scene function remain unresolved. Classification still covers 2265 unique keys; this is a correction to an existing record, not additional coverage.
+- Before production, verified 325 cached original PNG exports against freshly decoded catalog RGBA and source-payload SHA256, then safely retired those regenerable exports with a resolved-parent/hash manifest. Reclaimed 12756916 bytes (12.17 MiB) before exporting current references as needed. Original game archives, catalog, authored source art and primary comparison evidence remain untouched.
+- All 12 current references match verified catalog payloads pixel-for-pixel as RGBA, with opaque alpha. All 1123 installed DDS files passed the native format audit; refreshed worklist hashes/dimensions/mips/metadata, hybrid queue and full inventory passed.
+- Coverage is 1123/6812 supported catalog keys (16.49%), with 61 held drafts and 5628 needing artwork. Catalog has 7147 supported payloads; broader embedded/non-texture discovery remains unfinished. No new moderation failures this batch; previously blocked keys remain unfinished and were not retried.
+- Zero game launches. All scene-specific visual, transparency, fallback, memory and render-mode validation remains pending. Keep the 6144 MiB pack budget, 512 MiB residency limit and 256 MiB temporary budget. The >=90% offline coverage and all-categories-reviewed gate remains unmet. Other-device synchronization unverified.
+- Pack 975,828,597 bytes (930.62 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,421,159,797 logical/allocated bytes (5.05 GiB); temporary output 258,664,450 bytes (246.68 MiB / 256 MiB); free disk 101,182,087,168 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-152-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 153
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `aa2cac5`.
+- Previous goal turn made progress: hybrid-152 installed eight reviewed replacements, corrected a classification and recycled verified original-image cache exports. Revalidated the clean #74 branch at aa2cac5 before hybrid-153; checked Windows allocated/logical storage and free space before generation.
+- Inspected eight opaque character/weapon candidates and attempted eight independent built-in image-generation edits. Seven sources were produced, all 1254x1254; compiled output is 1024x1024 DXT1 with full mip chains. Actual source sizes and downsampling are retained in private prompts and metadata; no native-4K claim.
+- Accepted four offline: clothing/equipment atlas 04ccc072c089488b, white-haired character/equipment atlas 46a776963e8eb294, uniform/face atlas 62bfdc97a80cad04 and creature clothing/skin atlas 2ade1756aaffab73. Their overall luminance changes are -4.41%, +0.88%, -6.76% and -5.49% respectively.
+- Reviewed all seven primary comparisons and all seven original-scale focus comparisons, plus both 2x2 repeat sheets. Focus checks covered garment seams and flat unused fields, rotated face/lip/eyelid/ear features, hairline, chest emblems, the creature eye and existing tattoo/skin marks. Original-scale features and broad UV layout passed offline review; model-specific identity, seams and scene appearance remain unverified. Repeat diagnostics do not establish actual adjacency on a model.
+- Held three weapon drafts: 0d3d07703d111e1b changes inverted stamp glyphs/spacing and darkens the label-band grayscale by 25.78%; 0f33916275785636 changes subtle stamped text into different raised-looking strokes; 578e13e21ff348a7 turns small rectilinear grille openings into larger round holes and darkens the lower-right reflective region by 28.30%. Retired six trial DDS/metadata files only after all resolved-parent, size and SHA256 checks. Their authored sources and comparisons remain for correction.
+- Reclassified 04ccc072c089488b from weapon to character_or_prop after inspecting its garment seams and clothing islands. Character/equipment association remains provisional until scene/model usage is confirmed. Classification still covers 2265 distinct keys; no new coverage claimed from this correction.
+- Partial face 26588bddfa0086d5 remains unfinished: image generation rejected output with violence moderation category, request 79e0fdb9-dd63-47dc-9f77-d30f9c5ba358. No retry or alternate route; no artwork installed and no completion credit. Other previously moderated keys were excluded from selection.
+- All seven generated-asset references were re-decoded from catalog payloads and verified pixel-for-pixel as RGBA, with fully opaque alpha. All 1127 installed DDS files passed native format checks. Refreshed worklist hashes/dimensions/mips/metadata, hybrid queue and full inventory passed.
+- Coverage is 1127/6812 supported catalog keys (16.54%), with 64 held drafts and 5621 needing artwork. Catalog includes 7147 supported payloads; broader embedded/non-texture discovery and category review remain unfinished. Source artwork, original game files, settings and saves remain private.
+- No gameplay launch. Consolidated model/scene, transparency, memory/residency, fallback and 1080p/4K/ultrawide validation remains pending. The >=90% offline coverage plus all-categories-reviewed gate is unmet; 6144 MiB pack, 512 MiB residency and 256 MiB temporary limits remain unchanged. No cleanup was needed during this batch. Other-device synchronization remains unverified.
+- Pack 978,627,093 bytes (933.29 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,449,537,345 logical/allocated bytes (5.08 GiB); temporary output 262,547,983 bytes (250.39 MiB / 256 MiB); free disk 101,033,865,216 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-153-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: inventory batch 154
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `83a4d50`.
+- Reviewed 64 additional originals: 32 small frequently reused assets and 32 single-use 128-256px assets. Classification now covers 2329 distinct keys. Catalog payload and decoded RGBA provenance remain in the selection manifest; classification is not artwork completion.
+- New classifications: {'interface': 7, 'material_uncertain': 5, 'effect_or_utility': 6, 'prop_or_effect': 2, 'prop': 13, 'reflection': 1, 'effect': 5, 'character_or_prop': 2, 'environment': 11, 'interface_or_utility': 3, 'prop_or_weapon': 2, 'weapon': 2, 'character': 3, 'interface_or_prop': 1, 'environment_alpha': 1}. Warning/sign text, ammunition/status icons, flat-color utility tiles, gradients, fire, reflections, scene images and identity-sensitive character/weapon atlases retain specialist or individual review. Uncertain functions and mappings remain explicit; no functional assets were exempted or counted complete.
+- Retired 12 redundant older repeat sheets from batches 147, 148, 149, 151 and 152, reclaiming 5622171 bytes (5.36 MiB). The cleanup manifest records resolved-parent and SHA256 checks; primary comparisons, metrics, selections, source artwork and game assets remain. No additional deletion during finalization.
+- Worklist hash/dimension/mip/metadata checks, hybrid queue and archive inventory refreshed. Queue: {'batch_candidate': 33, 'correction': 64, 'individual_review': 443, 'installed': 1127, 'specialist_review': 676, 'visual_triage': 4469}. Broad discovery remains open: 48572 unclassified archive entries, plus unresolved embedded/other encoding and procedural coverage.
+- No new artwork or pack changes in this inventory pass. Installed/offline-approved coverage remains 1127/6812 (16.54%); 5621 keys need art and 64 drafts need correction. The catalog contains 7147 supported payloads; broader coverage is not complete.
+- Zero gameplay launches. Hybrid-153 remains the latest native loader-format audit of this unchanged pack; it was not rerun this pass. The 90% plus all-categories-reviewed gate remains unmet. Pack budget 6144 MiB and runtime residency limit 512 MiB remain unchanged. Other-device synchronization and runtime scenes remain unverified.
+- Pack 978,627,093 bytes (933.29 MiB / 6144 MiB). Texture workspace at audit 5,447,268,442 logical bytes and 5,447,268,442 Windows GetCompressedFileSizeW allocated bytes (5.07 GiB); temporary output 260,225,779 bytes (248.17 MiB / 256 MiB); free disk 101,049,389,056 bytes.
+- Private evidence: `review/hybrid-154-*`, visual classification, inventory and progress. Commit records progress only; no artwork/game files published. No runtime or platform implementation change; Mac adaptation is not needed for this inventory-only record, and Mac validation remains pending.
+
+
+## Texture overhaul issue #74: hybrid batch 155
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a82d269`.
+- Produced eight independent environment-material edits with built-in image generation from catalog-verified originals. Seven accepted offline, one held for correction; no generation failures. Classified inventory remains 2329 distinct keys. Previous goal turn made inventory and cleanup progress; this pass advances installed artwork.
+- Generated source sizes: five 1254x1254 squares and three 1774x887 wide textures. Compiler resampled the accepted sources to five 1024x1024 and two 1024x512 DXT1 textures with full mip chains. These are generated-source dimensions, not native 4K artwork. Canonical prompts, source PNGs and resampling metadata remain private.
+- Accepted 07127c0fddc10231 tan brick wall (-4.63% mean luminance), 0a10913ab7032fc6 pink-gray fractured rock (+2.95%), 0a5d646a70bc00bb corrugated rusty metal (-1.98%), 0a66b4cf78594934 gray stone slabs (+2.48%), 0acd29e96a5e4753 blue-gray brick strip (-7.56%), 0b1ba5aaaf22a224 gray-green wall with rusty top trim (-3.45%), and 0811570442da97c9 rubble/pale-strip atlas (-1.62%). Preserved brick courses, main cracks, rib spacing, slab joints, pale horizontal band, upper trim border and large-rubble/small-gravel regions in offline comparisons.
+- Reviewed both primary before/after sheets, both 2x2 repeat sheets and eight focused crop sheets. Focus checks: brick recess -7.25%, main rock crack +1.18%, corrugated upper ribs -0.22%, stone crack region +6.07%, blue-brick pale band -7.38%, wall top trim +1.48%, rubble pale strip -5.69%. Fully opaque alpha retained. Existing repeated trim/atlas boundaries are retained; repetition diagnostics are not proof of actual scene adjacency. Finer grain raises some edge-difference metrics; scene checks remain required.
+- Held 0bbbff4e2abf27e5 weathered metal strip: overall luminance -19.13%, pale band -18.12%, bottom trim -17.55%, with darker rusty color and stronger repeated vertical edge lines. Removed only its compiled DDS and metadata after all resolved-parent, non-reparse, size and SHA256 checks. Source artwork, prompt and review evidence remain for correction; original game texture remains fallback.
+- Re-decoded all eight originals from catalog payloads, verified SHA256 and exact RGBA against reference exports. Native loader-format audit passed all 1134 installed DDS files; refreshed worklist hash/dimension/mip/metadata checks, hybrid queue and full inventory. Coverage is 1134/6812 supported keys (16.65%), with 5613 needing art and 65 held drafts. The 7147 catalog payloads are supported, but broader embedded/procedural discovery and 48572 unclassified archive entries remain open.
+- No gameplay launch. Consolidated scene/model, transparency, residency, fallback and 1080p/4K/ultrawide validation remains pending. The >=90% offline coverage plus all-categories-reviewed gate is unmet; 6144 MiB pack, 512 MiB residency and 256 MiB temporary limits remain unchanged. No additional review-cache cleanup needed this batch. No runtime/platform implementation change; other-device artwork synchronization and scene validation remain unverified.
+- Pack 982,825,417 bytes (937.30 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,486,777,071 logical/allocated bytes (5.11 GiB); temporary output 264,378,805 bytes (252.13 MiB / 256 MiB); free disk 100,815,908,864 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-155-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 156
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `d67214b`.
+- Produced eight independent built-in image edits of catalog-verified panel, door and trim originals. Five accepted offline, three held for correction. Seven drafts compiled for review; the eighth was held before compilation because its source aspect and padding violated the original UV layout. Classified inventory remains 2329 keys.
+- Actual generated sources: five 1254x1254 squares, two 1774x887 wide images, and one 2170x725 trim image. Accepted sources were resampled to four 1024x1024 and one 512x256 DXT1 files with full mip chains. Small gray panel was compiled at 256x128 only for review, then removed. The incorrect trim was never resampled or installed. No source is described as native 4K art; prompts, source PNGs and resampling records remain private.
+- Accepted 063fea74536bf822 framed metal/brick panel (+2.04% mean luminance), 06f590f98c394c16 riveted gray panel with vent (+0.59%), 0710f88ee0df73f2 brown riveted plates (-4.80%), 077e856cfa766f39 ornate metal door (+6.82%) and 599750d3162e65c4 radial-braced panel (-12.80%). Primary and focused comparisons preserve frame/brace placement, rivet rows, vent, ornamental scrollwork/flower, side hardware and central boss/ribs. The radial panel remains darker and needs scene-context contrast review.
+- Reviewed two primary comparison sheets, two 2x2 repeat sheets and seven focused crop sheets. Focus luminance changes: framed panel -0.02%, vent -8.52%, gray-panel rivet strip -0.50%, brown rivet strip -3.70%, ornate central decoration +3.77% and side detail +6.10%, radial boss -11.34%. Fully opaque alpha retained. Repeated panel/door boundaries are intentional source features; offline repeats do not prove scene adjacency or full runtime fidelity.
+- Held 0b3b536722b9cbcf wooden door: +78.89% overall luminance and +92.66% central focus, substantially lifting original dark stained shading. Held 1d9cc085d9626931 small gray panel: inset border shifts at right/lower UV landmarks and original broad tonal bands become mottling (-12.85% mean luminance). Held 78e78637715da38f trim: generated 2170x725 with black padding instead of an edge-to-edge 4:1 layout. Original game textures remain fallback; none count as complete.
+- Removed only the two failed compiled drafts and their metadata (four files) after checking all resolved parents, non-reparse attributes, sizes and SHA256 hashes. Retained all three source drafts/prompts/review evidence. Before production, also retired 30 redundant full-texture detail views from completed batches 151-153, reclaiming 5389170 bytes (5.14 MiB); original/DDS primary sheets, focus crops, metrics, selections, source artwork and game data remain.
+- All eight references were catalog-verified at preflight; seven compiled candidates were re-decoded and exact-RGBA checked again during final review. Native loader-format audit passed all 1139 installed DDS files; worklist hash/dimension/mip/metadata checks, hybrid queue and inventory passed. Installed/offline-approved coverage is 1139/6812 supported keys (16.72%); 5605 need art and 68 drafts need correction. Catalog has 7147 supported payloads, while 48572 unclassified archive entries and broader embedded/procedural discovery remain open.
+- No gameplay launch. Consolidated scene/model, transparency, residency, fallback and 1080p/4K/ultrawide validation remains pending; >=90% offline coverage plus all-categories-reviewed gate is unmet. Pack budget 6144 MiB, residency limit 512 MiB and temporary limit 256 MiB remain unchanged. No runtime/platform implementation change; Mac scene validation and other-device artwork synchronization remain unverified.
+- Pack 985,711,869 bytes (940.05 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,514,984,490 logical/allocated bytes (5.14 GiB); temporary output 262,153,667 bytes (250.01 MiB / 256 MiB); free disk 100,612,423,680 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-156-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: inventory batch 157
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `6ec96cc`.
+- Reviewed 64 additional catalog-verified originals: 32 small reused assets and 32 single-use 128-256px assets. Classification now covers 2393 distinct keys. Each selection retains catalog payload SHA256, decoded RGBA hash and alpha range. Classification is routing evidence, not completed artwork.
+- New classifications: {'prop': 13, 'effect': 4, 'prop_or_weapon': 4, 'interface_or_utility': 5, 'environment': 13, 'character': 3, 'interface': 8, 'prop_or_effect': 1, 'character_or_prop': 3, 'environment_alpha': 2, 'material_uncertain': 2, 'reflection_or_effect': 1, 'effect_or_utility': 2, 'interface_or_effect': 1, 'reflection_or_environment': 1, 'interface_or_prop': 1}. Ordinary stone, metal and wood surfaces expand the production queue; warning stencils, weapon outlines, targeting symbols, menu text, monitor diagrams, character atlases, light/glow masks and flat-color or gradient utilities remain under specialist/individual review. Ambiguous identity and function remain explicit.
+- Refreshed worklist hash/dimension/mip/metadata checks, hybrid queue and archive inventory. Queue: {'batch_candidate': 36, 'correction': 68, 'individual_review': 467, 'installed': 1139, 'specialist_review': 697, 'visual_triage': 4405}. The catalog contains 6812 supported keys and 7147 supported payloads, but 48572 unclassified archive entries and broader embedded/other-encoding/procedural discovery remain open.
+- No new artwork or pack changes in this inventory pass. Installed/offline-approved coverage remains 1139/6812 (16.72%); 5605 keys need art and 68 drafts need correction. Native loader-format audit from hybrid-156 remains applicable to the unchanged pack and was not rerun.
+- No gameplay launch or cleanup this pass. Temporary original/review output remained below 256 MiB, one active pack remains below 6144 MiB, and the 512 MiB runtime residency limit is unchanged. The >=90% offline coverage plus all-categories-reviewed gate is unmet. Scene, hardware and other-device validation remain pending.
+- Pack 985,711,869 bytes (940.05 MiB / 6144 MiB). Texture workspace at audit 5,517,976,124 logical bytes and 5,517,976,124 Windows GetCompressedFileSizeW allocated bytes (5.14 GiB); temporary output 265,094,308 bytes (252.81 MiB / 256 MiB); free disk 100,597,227,520 bytes.
+- Private evidence: `review/hybrid-157-*`, visual classification, inventory and progress. Commit records progress only; no artwork/game files published. No runtime or platform implementation change; Mac adaptation is not needed for this inventory-only record, and Mac validation remains pending.
+
+
+## Texture overhaul issue #74: hybrid batch 158
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `3831f5f`.
+- Produced and accepted eight independent environment-material edits using built-in image generation from catalog-verified originals. No held drafts or generation failures in this batch. Classification remains 2393 reviewed keys; previous inventory pass expanded this production queue.
+- All eight generated source images are 1254x1254. Compiler resampled five to 1024x1024 and three to 512x512 DXT1 replacements with full mip chains. Actual source sizes and resampling are recorded; these are not native 4K images. Authored PNGs, exact prompts and provenance remain private.
+- Accepted 0cb61dc37f34da08 dark mossy rock (-4.97% mean luminance), 0cfa3e647a8face5 pale crystalline rock (+3.77%), 0d611601954847ec rusty green-gray panel (-13.29%), 0d7ad5091e4e1435 pale metal with recessed seam (+0.71%), 0dc94ff187685bf6 paired speckled metal strips (-2.78%), 0e4b4080f66af995 cracked plaster (-3.25%), 0efdb06a1c1bb067 mossy stone brick wall (-2.84%) and 1007e2bbd4a0a45a shaded metal surface (-0.99%).
+- Reviewed both primary before/after sheets, both 2x2 repeat sheets and eight focused crop sheets. Major rock fissures, panel seam/notch, lower trim, dents, black vertical gap, plaster crack network, brick courses and broad diagonal shading remain aligned offline. Opaque alpha retained. The rusty panel is darker and more brown in the draft than its original; retained crack/trim layout passes offline review but contrast/color must be checked in its scene. Fine detail and edge contrast changes remain subject to runtime appearance review.
+- Focused luminance changes: mossy-rock top -4.13% and bottom -6.19%; pale rock fracture +3.68%; rusty panel lower trim -9.97%; pale metal seam +3.63% and dents -0.22%; black-gap strip -2.81%; plaster cracks -4.88%; mossy brick top/bottom approximately -1.86%; shaded metal dark region +5.90% and pale region -4.49%. Repetition tests retain original trim/shading boundaries and do not prove actual scene adjacency.
+- Before generation retired 19 redundant review images: 15 full-texture detail views from completed batches 155-156 and four repeat sheets from 153/155. Reclaimed 4394300 bytes (4.19 MiB), after all resolved-parent, non-reparse, size and SHA256 checks. Primary comparisons, focus crops, metrics, selections, source artwork, game assets and user data remain; no compiled draft was removed this batch.
+- Re-decoded all eight originals from catalog payloads and verified exact reference RGBA and payload SHA256. Native loader-format audit passed all 1147 installed DDS files; refreshed worklist hash/dimension/mip/metadata checks, hybrid queue and archive inventory. Installed/offline-approved coverage is 1147/6812 supported keys (16.84%); 5597 need art and 68 drafts need correction. The catalog has 7147 supported payloads; 48572 unclassified archive entries and broader embedded/procedural discovery remain open.
+- No gameplay launch. Consolidated scene/model, transparency, memory/residency, fallback and 1080p/4K/ultrawide validation remains pending. The >=90% offline coverage plus all-categories-reviewed gate is unmet. Pack budget 6144 MiB, residency limit 512 MiB and temporary limit 256 MiB remain unchanged. No runtime/platform implementation change; Mac scene validation and other-device artwork synchronization remain unverified.
+- Pack 989,735,991 bytes (943.89 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,553,340,253 logical/allocated bytes (5.17 GiB); temporary output 265,578,625 bytes (253.28 MiB / 256 MiB); free disk 99,796,377,600 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-158-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: hybrid batch 159 archive coverage audit
+
+- Continued from `ffe24d3` on `74-enhancement-gfx-overhaul-to-modernize-textures`.
+- Added a read-only standard-signature scan for uncataloged P5CK entries. All 403 archive hashes and sizes match the prior embedded-scan corpus; exact cataloged top-level identities are skipped. Embedded containers remain in scope. No extractions or catalog mutations.
+- Scanned 48,572 uncataloged entries containing 3,250,041,122 bytes; skipped 29,509 cataloged top-level entries. No compressed entries were encountered. 383 entries contain 1,486 signatures: 29 DDS matches all fail header checks, and 1,457 JPEG matches all fail entry-bounded Pillow decoding. No PNG, XPR0 or XPR1 signatures found. No valid new candidate or catalog key was established.
+- All entries and all signature/decoder outcomes were counted. Every hit entry is retained; five per-signature sample lists exceed the 32-sample display limit. Aggregate decoder counts include these unsampled offsets. Decoder resource limits are explicitly unverified rather than rejected.
+- 17 targeted regression tests pass: entry boundaries, DDS payload bounds, JPEG success/truncation, decoder resource limits, exact catalog exclusions, embedded containers, compressed-entry skips, report truncation, hash/set drift and catalog preservation. Python 3.12.14; Pillow 12.2.0; Windows-11-10.0.26300-SP0.
+- Refreshed installed-file hashes, dimensions, full mip chains and metadata through texture-worklist.py. All 1,147 installed replacements remain unchanged. The previous native loader-format audit from batch 158 remains the native evidence; no new native audit or gameplay launch was needed for this research-only tool.
+- Catalog remains 6,812 supported keys / 7,147 supported payloads: 1,147 installed, 68 held for correction, 5,597 needing artwork. Signature absence and decoder rejection do not prove entries texture-free. Other encodings, embedded/procedural coverage and scene-specific validation remain open; no scope was excluded or marked complete.
+- One active pack, 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary cap retained. No game copy, generated artwork, save, settings or build change. Research script is platform-neutral Python; tested on Windows only. No PC runtime feature or Mac adapter was introduced.
+- Pack 989,735,991 bytes (943.89 MiB); texture workspace at worklist audit 5,553,876,401 logical / 5,553,876,401 allocated bytes (Windows GetCompressedFileSizeW). Temporary output 265,584,596 bytes (253.28 MiB); free disk 99,882,307,584 bytes. Private research report 507,197 bytes, SHA256 `31c7c5d68c1199db98277fec91b4f5eb706344aa320cf96d4e0e36cd595dee15`.
+- Reproduce with `python tools/texture-archive-signatures.py --game <game-directory> --root <texture-remaster-directory>`. Requires the existing catalog and embedded-scan corpus baseline. Private evidence remains local; source and tests are tracked.
+
+
+## Texture overhaul issue #74: hybrid batch 160
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a68400d`.
+- Produced eight independent stone, metal and wood material edits using built-in image generation from catalog-verified originals; accepted six offline and held two for brightness/tone correction. Classification remains 2393 reviewed keys. Previous batch 159 closed the standard-signature archive scan gap without adding catalog keys; other encodings and procedural discovery remain open.
+- Generated source sizes are six 1254x1254 and two 1774x887 images. Accepted six square sources compiled as five 1024x1024 and one 512x512 DXT1 replacements with full mip chains. The two wide sources compiled for review at 512x256 and 1024x512, then were removed from the active pack by reversible quarantine. Actual source sizes, exact prompts and resampling are recorded; these are not native 4K images.
+- Accepted 46f91fb440dc4cf6 rough wall with metal rails (+2.33% mean luminance), 0ff029773b766770 riveted silver panel (-4.74%), 6fcc7675dd0c1079 cracked stone with carved frieze (+10.00%), a2d0f61de05068d3 carved ancient stone atlas (-2.10%), 04ae01452d8b90de sixteen-tile stone grid (-1.78%) and 409ba2b0a96e21d8 inset wood panel (-7.84%).
+- Reviewed both primary before/after sheets, both 2x2 repeat sheets and eight focused crop sheets. Accepted assets retain rail positions, rivet borders, carved motifs, principal crack junctions, the atlas black corner and relief divisions, the four-by-four tile grid, and inset wood borders. Opaque alpha retained. Carved stone has stronger fine-grain contrast and a brighter central field; retain a scene-contrast check. Repeated sheets do not prove actual scene adjacency or campaign appearance.
+- Focused grayscale changes: wall rail +4.85%; riveted borders -7.00% and -5.88%; carved frieze -0.90% with central cracked area +11.67%; relief atlas upper figure -2.26% and lower motif -5.28%; tile grout junction -0.95%; wood inset border -7.78% and lower gap -10.93%. These diagnostics support manual comparisons and do not replace scene review.
+- Held b3f834e8f09aa4d1 ribbed slats: -20.97% overall luminance, -21.07% focused grayscale, too dark with stronger ridge contrast. Held 1060966d5584f4d6 curved metal strip: -15.98% overall, upper-edge focus -20.12%, lower edge -15.95%, with muted blue-gray shifting brown/green. Both retain source art and review evidence for correction and are not counted installed.
+- Before generation safely retired 24 redundant review images (20 detail images from batches 148, 149 and 158 that have preserved focus crops, and four repeat sheets from 156/158), reclaiming 5543084 bytes. All resolved-parent, non-reparse, size and SHA256 checks passed before removal. Primary comparisons, focus crops, metrics, selections, source art and user data were preserved.
+- Automatic approval review blocked the combined rejected-DDS deletion command without a more specific reason; it did not execute. No deletion retry was made. A separately validated reversible move preserved the four rejected DDS/metadata files (438058 bytes) in private review, with destination SHA256 checks. Their storage counts toward the 256 MiB temporary budget; future cleanup requires permitted action.
+- Re-decoded all eight originals from catalog payloads and verified reference RGBA and payload SHA256. Native loader-format audit passed all 1153 installed DDS files. Refreshed worklist hash/dimension/full-mip/metadata checks, hybrid queue and archive inventory. Installed/offline-approved coverage is 1153/6812 supported keys (16.93%); 5589 need art and 70 drafts need correction. The catalog has 7147 supported payloads; 48572 unclassified archive entries and broader discovery remain open.
+- No gameplay launch. Consolidated scene/model, transparency, memory/residency, fallback and 1080p/4K/ultrawide validation remains pending. The >=90% offline coverage plus all-categories-reviewed gate is unmet. Pack budget 6144 MiB, residency limit 512 MiB and temporary limit 256 MiB remain unchanged. No runtime/platform implementation change; Mac scene validation and other-device artwork synchronization remain unverified.
+- Pack 993,409,445 bytes (947.39 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,585,259,406 logical/allocated bytes (5.20 GiB); temporary output 265,113,926 bytes (252.83 MiB / 256 MiB); free disk 99,725,651,968 bytes. One active pack; no duplicate extracts/ZIPs/staging.
+- Private evidence: `review/hybrid-160-*`, authored source PNGs and prompts, and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: inventory batch 161
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `4b93ad9`.
+- Reviewed 64 additional catalog-verified originals: 32 small reused assets and 32 single-use 128-256px assets. Classification now covers 2457 distinct keys. Each selection retains catalog payload SHA256, decoded RGBA hash and alpha range. Contact sheets were decoded directly from authoritative archives; no standalone original PNG cache was written this pass. Classification is routing evidence, not completed artwork.
+- New classifications: {'prop': 11, 'interface': 12, 'prop_or_weapon': 5, 'effect_or_utility': 4, 'environment_alpha': 4, 'effect': 9, 'reflection_or_effect': 2, 'interface_or_utility': 2, 'material_uncertain': 2, 'character': 1, 'environment': 8, 'interface_or_prop': 4}. Ordinary stone, metal and wood surfaces expand the production queue; warning stencils, weapon outlines, targeting symbols, text, technical diagrams, character atlases, light/glow masks and flat-color or gradient utilities remain under specialist/individual review. Ambiguous identity and function remain explicit.
+- Refreshed worklist hash/dimension/mip/metadata checks, hybrid queue and archive inventory. Queue: {'batch_candidate': 28, 'correction': 70, 'individual_review': 494, 'installed': 1153, 'specialist_review': 726, 'visual_triage': 4341}. The catalog contains 6812 supported keys and 7147 supported payloads, but 48572 unclassified archive entries and broader embedded/other-encoding/procedural discovery remain open.
+- No new artwork or pack changes in this inventory pass. Installed/offline-approved coverage remains 1153/6812 (16.93%); 5589 keys need art and 70 drafts need correction. Native loader-format audit from hybrid-160 remains applicable to the unchanged pack and was not rerun.
+- Previous goal turn 160 made concrete progress with six accepted textures. This inventory turn continues that production workflow. No gameplay launch or cleanup this pass. Temporary original/review output remained below 256 MiB, one active pack remains below 6144 MiB, and the 512 MiB runtime residency limit is unchanged. The >=90% offline coverage plus all-categories-reviewed gate is unmet. Scene, hardware and other-device validation remain pending.
+- Pack 993,409,445 bytes (947.39 MiB / 6144 MiB). Texture workspace at audit 5,586,460,567 logical bytes and 5,586,460,567 Windows GetCompressedFileSizeW allocated bytes (5.20 GiB); temporary output 266,262,863 bytes (253.93 MiB / 256 MiB); free disk 99,724,779,520 bytes.
+- Private evidence: `review/hybrid-161-*`, visual classification, inventory and progress. Commit records progress only; no artwork/game files published. No runtime or platform implementation change; Mac adaptation is not needed for this inventory-only record, and Mac validation remains pending.
+
+
+## Texture overhaul issue #74: hybrid batch 162
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `4606643`.
+- Produced eight independent metal, stone, plaster and wood edits with built-in image generation from catalog-verified originals. Seven pass offline review; one dark-rock draft is held for correction. Classification remains 2457 keys; the previous inventory pass expanded this production queue.
+- Source images are six 1254x1254 and two 1774x887 PNGs. Accepted sources compile as four 1024x1024, one 512x512 and two 1024x512 DXT1 replacements with full mip chains. All source dimensions, resampling, prompts and provenance remain private; these are not native 4K images.
+- Accepted 114823c9ed38527a hazard-striped metal panel (-2.74% mean luminance), 114f54a9ae83f73b ribbed metal (-3.37%), 12d774361907f212 riveted blue-gray plate (-3.46%), 1569b0b97a35cd7b red scraped metal panels (-5.42%), 14d358f79af354f1 sandy stone (+0.51%), 1525d6461606a2d3 flaking plaster with raised strip (+7.10%), and 152333e7189338c7 pale weathered wood planks (-6.42%).
+- Reviewed two primary sheets, two repeat sheets and eight focused crop sheets. Accepted assets retain the hazard-stripe count/angle and vertical divider, rib orientation, rivet-border layout, red panel seams and scrape regions, sandy diagonal bands and pits, plaster strip, and horizontal plank gaps. All alpha is opaque. Warning-stripe focus is 15.67% brighter while overall panel luminance is slightly lower; preserve a scene-contrast check. Rivet and fine-grain contrast is stronger; scene/model appearance remains untested.
+- Focused grayscale differences: ribbed center -1.29%; plate upper border -2.68% and left -6.76%; red panel seams -8.11% and -8.80%; sandy central pits +1.45% and lower-right recess -0.41%; plaster strip +3.82% and left flaking +2.29%; wood -6.50%. Repetition diagnostics do not establish scene adjacency.
+- Held 135bd593fc33141a mossy rock: +26.60% overall luminance, visible upper stone +23.55% grayscale; lower near-black region increases from 0.97 to 1.70 grayscale mean. Restore original low-key shading and black boundary before installation. Its source and comparisons remain, with no rejected DDS written to disk.
+- Automatic approval review blocked deletion of 128 regenerable original PNG exports (12334157 bytes), without a more specific reason. All 128 remain and their hashes were rechecked; zero bytes reclaimed. No alternate deletion or relocation was attempted. The proposed recovery manifest records exact payload and decoded RGBA hashes.
+- Used the existing texture-pack encoder in memory for all eight drafts, then created compact WebP quality-80 diagnostic sheets. The initial quality-85 encoded-size preflight refused to write because it would leave insufficient audit headroom; no review output was written by that attempt. All source PNGs were retained unchanged. Final sheets/metrics total 1154423 bytes and were budget-checked together before writing. Accepted DDS files were later compiled by the normal CLI and match the reviewed in-memory DDS SHA256 exactly.
+- Re-decoded all eight original payloads and verified exact RGBA against the reference PNGs. Native format audit passes all 1160 installed DDS files; refreshed worklist hashes/dimensions/mip/metadata checks, hybrid queue and archive inventory. Catalog remains 6812 supported keys / 7147 payloads: 1160 installed/offline-approved (17.03%), 5581 need art and 71 drafts require correction. Other encodings, 48572 unclassified archive entries and procedural coverage remain explicit gaps.
+- No gameplay launch. The >=90% offline coverage plus every-category-reviewed gate remains unmet. Scene, memory/residency, fallback, 1080p/4K/ultrawide and other-device validation remain pending. No runtime/platform changes; Mac validation is unverified. One active pack; 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary cap unchanged. Subsequent batches must avoid additional disk review output while cleanup remains blocked and temporary headroom is this small.
+- Pack 997,083,479 bytes (950.89 MiB / 6144 MiB). Texture workspace at audit 5,618,962,155 logical/Windows GetCompressedFileSizeW allocated bytes (5.23 GiB). Temporary output 268,241,324 bytes (255.81 MiB / 256 MiB); free disk 99,246,714,880 bytes. No duplicate extracts or packaging.
+- Private evidence: `review/hybrid-162-*`, source PNGs, prompts and progress. Commit records progress only.
+
+
+## Texture overhaul issue #74: inventory batch 163
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `5b08b97`.
+- Reviewed 64 additional catalog-verified originals: 32 small reused assets and 32 single-use 128-256px assets. Classification now covers 2521 distinct keys. Each selection retains catalog payload SHA256, decoded RGBA hash and alpha range. All eight contact sheets were decoded directly from authoritative archives, emitted as PNG buffers through nodeRepl.emitImage and reviewed in this conversation. Zero contact-sheet images or standalone original PNG exports were written to disk. The memory-review manifest retains each PNG SHA256, selection SHA256, renderer SHA256, Python 3.12.14/Pillow 12.2.0 versions and exact reproduction command; logs/triage-hybrid163.py remains available. Classification is routing evidence, not completed artwork.
+- New classifications: {'effect': 8, 'interface': 16, 'interface_or_utility': 6, 'environment': 18, 'prop_or_effect': 1, 'environment_alpha': 2, 'reflection_or_utility': 1, 'effect_or_utility': 2, 'interface_or_effect': 1, 'prop': 5, 'interface_or_prop': 3, 'prop_or_weapon': 1}. Ordinary stone, metal and wood surfaces expand the production queue; warning stencils, weapon outlines, targeting symbols, text, technical diagrams, character atlases, light/glow masks and flat-color or gradient utilities remain under specialist/individual review. Ambiguous identity and function remain explicit.
+- Refreshed worklist hash/dimension/mip/metadata checks, hybrid queue and archive inventory. Queue: {'batch_candidate': 38, 'correction': 71, 'individual_review': 508, 'installed': 1160, 'specialist_review': 758, 'visual_triage': 4277}. The catalog contains 6812 supported keys and 7147 supported payloads, but 48572 unclassified archive entries and broader embedded/other-encoding/procedural discovery remain open.
+- No new artwork or pack changes in this inventory pass. Installed/offline-approved coverage remains 1160/6812 (17.03%); 5581 keys need art and 71 drafts need correction. Native loader-format audit from hybrid-162 remains applicable to the unchanged pack and was not rerun.
+- Previous goal turn 162 made concrete progress with seven accepted textures. This inventory turn continues that production workflow while avoiding new image files. No gameplay launch or cleanup this pass. Previously denied deletion was not retried, and all blocked-deletion files remain untouched. Temporary original/review output remained below 256 MiB, one active pack remains below 6144 MiB, and the 512 MiB runtime residency limit is unchanged. The >=90% offline coverage plus all-categories-reviewed gate is unmet. Scene, hardware and other-device validation remain pending.
+- Pack 997,083,479 bytes (950.89 MiB / 6144 MiB). Texture workspace at audit 5,619,049,576 logical bytes and 5,619,049,576 Windows GetCompressedFileSizeW allocated bytes (5.23 GiB); temporary output 268,280,512 bytes (255.85 MiB / 256 MiB); free disk 99,231,617,024 bytes.
+- Private evidence: `review/hybrid-163-*`, visual classification, inventory and progress. Commit records progress only; no artwork/game files published. No runtime or platform implementation change; Mac adaptation is not needed for this inventory-only record, and Mac validation remains pending.
+
+
+## Texture overhaul issue #74: hybrid batch 164
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `496b010`.
+- Produced eight independent environment-material edits using built-in image generation and catalog-verified existing originals. Six passed offline review and were installed; two remain source-only correction drafts. The previous inventory goal turn made concrete progress by classifying 64 keys; the intervening repository explanation did not change texture state.
+- Actual generated source dimensions: four 1254x1254 and four 1774x887 PNGs. Accepted output: two 1024x1024 and four 1024x512 DXT1 files, with full mip chains. All are resampled, not native 4K artwork. Exact prompts, source dimensions, output dimensions and provenance remain private.
+- Accepted 6c1af5f22db98720 gold-green carved frieze (-0.96% mean luminance), 6dc10609b44f3221 red peeling wall and Greek-key border (-7.39%), 76dc2ed4c9c8920b peeling blue-gray tiled wall (+5.30%), acdc2c3c2bdf194c carved stone trim atlas (+9.13%), af74f2ef7121301e ivy wallpaper (+1.15%), and 0f5ec744f036b528 gold-lattice wallpaper (+5.15%).
+- Reviewed two primary, two repeated-layout and four focused comparison sheets (two assets per focus sheet), all rendered from actual DXT1 bytes in memory. Frieze dividers/flower placement, Greek-key count and border placement, principal tile joints and flaking regions, stone atlas boundaries, ivy stem/motif placement and lattice crossings remain recognizable and aligned in the inspected comparisons. Fine relief and leaf contrast increased; stone lower atlas grayscale is +12.86% and requires a scene contrast check. These offline repeat/crop checks do not establish scene adjacency or model appearance.
+- Held 7d34791a1cba1217 industrial panels: -21.59% overall luminance with upper-left -20.76% and lower-right -24.21% grayscale; restore blue-gray midtones and vent/panel separation. Held 7efcacd7a7ca08b7 wall/ceiling edge: +20.91% overall luminance, upper region +20.27%, wall +21.38%; restore subdued wall and dark ceiling exposure. No rejected DDS was written to disk.
+- All eight references were re-decoded from authoritative catalog payloads and compared for exact RGBA with existing PNG exports. Actual source alpha and decoded DDS alpha are fully opaque. Accepted CLI-compiled DDS hashes exactly match the in-memory encodings inspected before installation. Native format audit passes all 1166 installed DDS files; each audit chunk records its output hash and count, and the summary binds the complete DDS filename/hash set. Raw native output was consumed in memory rather than saved as another large log.
+- Eight rendered PNG diagnostic buffers total 5803509 bytes, with zero raster review files saved. The small memory-review manifest records each buffer hash, reproduction arguments, renderer/selection hashes and Python/Pillow versions. No new original exports, duplicate game extracts, ZIPs, staging trees or cleanup attempts. Previously blocked-deletion files remain untouched. Necessary source art and compact metadata were retained.
+- Refreshed worklist hashes/dimensions/mips/metadata, hybrid queue and archive inventory. Queue: {'batch_candidate': 30, 'correction': 73, 'individual_review': 508, 'installed': 1166, 'specialist_review': 758, 'visual_triage': 4277}. Catalog: 6812 supported keys / 7147 payloads; 1166 installed/offline-approved (17.12%), 5573 need artwork and 73 drafts need correction. Visual classification remains 2521 keys. Other encodings, 48572 unclassified archive entries and procedural/embedded discovery remain open.
+- No gameplay launch. The >=90% offline coverage and every-category-reviewed gate is unmet. Final scene, memory/residency, fallback, stability, 1080p/4K/ultrawide and other-device checks remain pending. No runtime/platform code change; Mac scene validation remains unverified. One active pack; 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary cap unchanged.
+- Pack 999,883,135 bytes (953.56 MiB / 6144 MiB); added 2,799,656 bytes. Texture workspace at audit 5,648,756,412 logical and 5,648,756,412 Windows GetCompressedFileSizeW allocated bytes (5.26 GiB). Final temporary output 268,334,444 bytes (255.90 MiB / 256 MiB); free disk at audit 44,096,827,392 bytes.
+- Private evidence: `review/hybrid-164-*`, source PNGs, prompts and progress. This commit records progress only; artwork and game files stay private.
+
+
+## Texture overhaul issue #74: inventory batch 165
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8e55e51`.
+- Reviewed 64 more catalog-verified original textures: 32 small reused assets and 32 single-use 128-256px assets. Classification now covers 2585 distinct keys. Eight contact sheets were decoded from authoritative archives, rendered as PNG buffers and inspected in memory; zero review image files or original PNG exports were written. Selection records retain exact catalog payload and decoded RGBA SHA256 hashes, dimensions and alpha. The compact memory-review manifest records all eight buffer hashes, renderer/selection hashes, tool versions and reproduction command. Classification is routing evidence, not completed artwork.
+- Added categories: {'prop': 8, 'effect': 7, 'interface': 15, 'interface_or_effect': 1, 'environment': 16, 'effect_or_utility': 4, 'environment_or_prop': 3, 'reflection_or_utility': 2, 'interface_or_utility': 1, 'prop_or_character': 1, 'prop_or_effect': 2, 'environment_alpha': 1, 'character': 2, 'environment_sky': 1}. Sixteen ordinary environment materials cover corroded strips, tread plate, gray panels, stone, riveted metal, striped green metal, bricks and damp masonry. Maps, diagrams, challenge text, medical markings, gauges, phone digits, weapon icons, alpha fan blades, character parts, electrical wiring, sky imagery, reflection gradients and unknown utility textures remain under individual/specialist review. No uncertainty was treated as completion.
+- Refreshed worklist hash/dimension/mip/metadata checks, hybrid queue and archive inventory. Queue: {'batch_candidate': 46, 'correction': 73, 'individual_review': 529, 'installed': 1166, 'specialist_review': 785, 'visual_triage': 4213}. Catalog remains 6812 supported keys / 7147 payloads. The 48572 unclassified archive entries and broader embedded/other-encoding/procedural discovery remain open.
+- Installed/offline-approved coverage stays at 1166/6812 (17.12%); 5573 keys need art and 73 drafts require correction. The complete current DDS filename/hash set matches the native audit from hybrid-164, which passed all 1166 files; no redundant native audit was run for this classification-only pass.
+- Previous goal turn 164 made concrete progress with six accepted textures and two correction drafts. This inventory pass expands the production queue without new image files. No gameplay launch or cleanup attempt; previously denied deletions were not retried. One active pack stays under 6144 MiB, temporary texture output stays under 256 MiB, and the 512 MiB residency limit is unchanged. The >=90% offline coverage and all-categories-reviewed gate is unmet. Scene, hardware, memory/fallback and other-device validation remain pending.
+- Pack 999,883,135 bytes (953.56 MiB / 6144 MiB). Texture workspace at audit 5,648,841,694 logical and 5,648,841,694 Windows GetCompressedFileSizeW allocated bytes (5.26 GiB). Final temporary output 268,371,678 bytes (255.94 MiB / 256 MiB); free disk at audit 96,530,452,480 bytes.
+- Private evidence: `review/hybrid-165-*`, classification, inventory and progress. Commit records progress only; artwork/game files stay private. No runtime/platform change or Mac adapter needed for inventory-only work; Mac validation remains unverified.
+
+
+## Texture overhaul issue #74: correction batch 166
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `81fab48`.
+- Produced eight bounded correction edits using built-in image generation with both the authoritative original and previous draft. Four passed offline review and were installed; four remain held. Old source artwork, prompts and failure history are preserved. Resolved draft count rises from 54 to 58; current correction queue falls from 73 to 69.
+- Actual source dimensions: five 1254x1254 and three 1774x887 PNGs. Accepted output is two 1024x1024 and two 1024x512 DXT1 files with full mip chains, all resampled. These are not native 4K sources. Exact prompts, original and prior-draft references, sizes and resampling remain private.
+- Accepted 1060966d5584f4d6 curved blue-gray metal strip (-2.36% overall luminance; upper/lower grayscale -14.01%/-5.96%), 7efcacd7a7ca08b7 wall/ceiling edge (-0.72%; ceiling +13.47%, wall -2.21%), 489d0f5a6c76f884 ocher carved wall (-4.51%; middle -5.17%, lower ornament +0.57%), and 6b5a16e136fd46da cliff strip (-8.75%; upper -3.34%, remainder -10.31%). Curved rim, ceiling rails, masonry divisions/carved paths, cliff form and ground boundary remain recognizable in the inspected UV comparisons. Residual local rim/ceiling contrast and cliff shading require final scene checks.
+- Held b3f834e8f09aa4d1 ribbed metal: +13.37% overall, upper/lower +11.49%/+15.66%, with original dark side shading lost. Held 135bd593fc33141a mossy rock: +33.41% overall, upper +27.79%, lower near-black mean 0.97 to 2.23. Held 7d34791a1cba1217 industrial panels: +53.84% overall, upper-left +72.63%, lower-right +52.48%. Held af0f95b675bd46ea charcoal rock: +43.00% overall, upper/lower +38.73%/+46.73%. Percentage-directed image edits overshot or failed these tone targets; do not repeat the same unconstrained correction approach. No rejected DDS was saved.
+- Reviewed two primary, two repeated-layout and four focused sheets covering all eight actual DXT1 encodings. All eight catalog originals match existing reference PNG RGBA exactly; source and compiled alpha remain opaque. The accepted CLI DDS hashes exactly match inspected in-memory encodings. Eight PNG diagnostic buffers totaled 5534021 bytes; zero raster review files or original exports were created. Compact review metadata records reproducible commands, renderer/selection hashes and per-image hashes.
+- Native format audit passes all 1170 installed DDS files; compact summary binds the complete DDS filename/hash set and chunk output hashes. Worklist hashes/dimensions/mips/metadata, hybrid queue and archive inventory refreshed. Queue: {'batch_candidate': 46, 'correction': 69, 'individual_review': 529, 'installed': 1170, 'specialist_review': 785, 'visual_triage': 4213}. Catalog remains 6812 supported keys / 7147 payloads: 1170 installed/offline-approved (17.18%), 5573 need art and 69 require correction. Classification remains 2585 keys. The 48572 unclassified archive entries, other encodings and procedural/embedded coverage remain open.
+- Previous goal turn165 made concrete progress with 64 classifications. No gameplay launch or cleanup attempt this pass; denied-deletion files remain untouched. One active pack, 6144 MiB pack cap, 512 MiB runtime residency limit and 256 MiB temporary cap are unchanged. The >=90% offline coverage and all-categories-reviewed gate is unmet. Scene, hardware, memory/fallback, 1080p/4K/ultrawide and Mac validation remain pending. No runtime/platform implementation change.
+- Pack 1,001,982,587 bytes (955.57 MiB / 6144 MiB); added 2,099,452 bytes. Texture workspace at audit 5,675,237,756 logical and 5,675,237,756 Windows GetCompressedFileSizeW allocated bytes (5.29 GiB). Final temporary output 268,417,259 bytes (255.98 MiB / 256 MiB); free disk at audit 92,923,473,920 bytes.
+- Private evidence: `review/hybrid-166-*`, source PNGs, prompts and progress. Commit records progress only; artwork/game files stay private.
+
+
+## Texture overhaul issue #74: inventory batch 167
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `22df9b4`.
+- Completed the saved 128-texture inventory review: 64 small reused originals and 64 single-use originals. All selected payload and decoded RGBA hashes, dimensions and alpha were verified against the catalog. Classification now covers 2713 distinct keys; classification is routing evidence, not completed artwork.
+- Sixteen contact sheets were inspected in memory (4261943 PNG bytes total); zero new raster review files or original PNG exports. The compact manifest binds page hashes, renderer, selection and reproduction commands. Categories: {'effect': 17, 'effect_or_utility': 6, 'environment': 32, 'interface': 22, 'prop_or_effect': 4, 'environment_alpha': 5, 'prop_or_environment': 3, 'reflection_or_utility': 4, 'environment_or_prop': 7, 'prop_or_weapon': 3, 'interface_or_utility': 4, 'weapon': 1, 'interface_or_effect': 1, 'prop': 12, 'interface_or_prop': 2, 'character': 4, 'prop_or_character': 1}. Thirty-two environment materials expand production; signs, labels, portraits, maps, weapon details, transparent surfaces and effects retain individual/specialist routing.
+- Safely recycled ten distinct redundant batch160 presentation JPGs (2597272 bytes) after path, size, hash and retained-evidence validation. Two primary sheets, eight focus sheets, all source artwork, provenance and metrics remain. This reduces project-folder usage; files in the Recycle Bin do not imply equivalent disk-space recovery. All 128 previously blocked original exports still match their hashes, and the two held DDS/metadata pairs remain untouched.
+- Refreshed worklist hash/dimension/mip/metadata checks, hybrid queue and archive inventory. Queue: {'batch_candidate': 78, 'correction': 69, 'individual_review': 576, 'installed': 1170, 'specialist_review': 834, 'visual_triage': 4085}. Catalog remains 6812 supported keys / 7147 payloads. The 48572 unclassified archive entries and broader other-encoding, embedded and procedural discovery remain open.
+- Installed/offline-approved coverage remains 1170/6812 (17.18%); 5573 keys need art and 69 drafts require correction. The complete current DDS filename/hash set matches the native audit from hybrid-166, which passed all 1170 files. No redundant native audit or gameplay run was performed for this inventory-only pass.
+- Batch167 expands the reviewed inventory and reduces redundant presentation storage; the preceding production batch166 added four accepted corrections. One active pack, the 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary cap remain. The >=90% offline coverage and all-categories-reviewed gate is unmet; scene, hardware, memory/fallback, display modes and Mac validation remain pending.
+- Pack 1,001,982,587 bytes (955.57 MiB / 6144 MiB). Texture workspace at audit 5,672,801,485 logical and 5,672,801,485 Windows GetCompressedFileSizeW allocated bytes (5.28 GiB). Final temporary output 265,899,199 bytes (253.58 MiB / 256 MiB); free disk at audit 92,929,699,840 bytes.
+- Private evidence: `review/hybrid-167-*`, classification, inventory and progress. Artwork/game files stay private. No runtime/platform change or Mac adapter needed for inventory-only work; Mac validation remains unverified.
+
+
+## Texture overhaul issue #74: hybrid batch 168
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `f6d6bd7`.
+- Produced eight square stone/masonry edits with built-in image generation from catalog-verified originals. Five passed offline review and were installed; three remain source-only correction drafts. The preceding goal turn made concrete progress by finalizing 128 classifications and bounded presentation cleanup.
+- Actual generated source dimensions: eight 1254x1254 PNGs. Accepted outputs are four 1024x1024 and one 512x512 DXT1 files, all resampled with full mip chains. These are not native 4K sources. Source images, exact original-referenced prompts, sizes and resampling are retained privately.
+- Accepted 1855021e3857a269 marble (+3.47% mean luminance), 19366889a7383f2f gray/ocher rock (+8.01%), 1bb11015fb0aba02 mauve stone (-6.96%), 204b59ff44119b97 three-by-three stone tiles (-1.12%), and 26dfcd4254d09f1d irregular masonry (+0.87%). Panel seam heights and principal veins, broad rock color regions, lower-right stone fissure, tile grid and individual masonry block arrangement remain recognizable in the inspected comparisons. Ocher rock lower-half grayscale is +10.72%; retain a final scene color/contrast check. Surface grain and local relief are stronger. Repeated-layout checks do not prove actual scene adjacency.
+- Held 173e92ac84bec18b stacked wall: -9.49% overall luminance plus simplified/displaced block divisions and mortar paths, especially lower courses. Held 1dddb2384b83a989 fractured mossy slabs: -13.22% overall and -15.12% lower-half grayscale; restore gray-green midtones/moss visibility. Held 1eafa4458fb6ea97 red brick: -16.59% overall, upper/lower -16.81%/-15.13%; restore subdued burgundy brightness. No rejected DDS files were written.
+- All eight original references were re-decoded and verified against catalog payloads and exact exported RGBA. Source and decoded DDS alpha remain fully opaque. Two primary, two repeat and four focus sheets of actual DXT1 encodings were inspected in memory. The five installed DDS hashes exactly match reviewed encodings. Native format audit passes all 1175 installed DDS files and binds their complete filename/hash set; this does not establish GPU residency or scene correctness.
+- Eight PNG diagnostic buffers totaled 8860825 bytes, with zero raster review images saved. Eight small original exports added 729561 bytes. Compact manifests preserve renderer/selection hashes, reproduction arguments, buffer hashes and Python/Pillow versions. No duplicate game extracts, ZIPs, staging trees or cleanup attempts. Previously denied-deletion files remain untouched.
+- Refreshed worklist hashes/dimensions/mips/metadata, hybrid queue and archive inventory. Queue: {'batch_candidate': 70, 'correction': 72, 'individual_review': 576, 'installed': 1175, 'specialist_review': 834, 'visual_triage': 4085}. Catalog remains 6812 supported keys / 7147 payloads: 1175 installed/offline-approved (17.25%), 5565 need art and 72 require correction. Classification remains 2713 keys. Other encodings, 48572 unclassified archive entries and procedural/embedded discovery remain open.
+- No gameplay launch. The >=90% offline coverage and every-category-reviewed gate is unmet. Scene, memory/residency, fallback, stability, 1080p/4K/ultrawide and other-device checks remain pending. No runtime/platform code change; Mac scene validation remains unverified. One active pack; 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary cap unchanged.
+- Pack 1,004,956,417 bytes (958.40 MiB / 6144 MiB); added 2,973,830 bytes. Texture workspace at audit 5,708,073,771 logical and 5,708,073,771 Windows GetCompressedFileSizeW allocated bytes (5.32 GiB). Final temporary output 266,681,817 bytes (254.33 MiB / 256 MiB); free disk at audit 92,694,777,856 bytes.
+- Private evidence: `review/hybrid-168-*`, source PNGs, prompts and progress. This commit records progress only; artwork and game files stay private.
+
+
+## Texture overhaul issue #74: hybrid batch 169
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `167c49a`.
+- Produced eight original-referenced metal material edits with built-in image generation. Five passed offline review and were installed; three remain source-only correction drafts. Previous batch168 made concrete progress with five accepted stone/masonry materials. No gameplay launch.
+- Actual generated source dimensions: four 1254x1254 and four 1774x887 PNGs. Accepted outputs: two 512x512 and three 1024x512 DXT1 files, all resampled with full mip chains. These are not native 4K sources. Exact prompts, source dimensions, original references and resampling are retained privately.
+- Accepted 16599af354e7e1b6 inset wall panel (-6.78% mean luminance), 16f3f47413d7d6dc riveted plate with lower band (-7.41%), 1cb1c8656d6e9349 plain riveted plate (-5.74%), 1d4f6be934b048af green/yellow plate (-3.31%), and 1f6b1a8a7afc28bf silver paired panels (-4.41%). The inset and twin slots, perimeter rivet placement, distinction between banded/plain variants, yellow stripe boundaries, silver center seam and cloudy highlight remain recognizable in original-scale and repeated comparisons. Rivet relief is stronger. Lower-band grayscale is -11.46%; yellow stripe +4.78% and lower green region -9.22%. Retain final scene contrast checks for these local differences.
+- Held 18953e170ed4d7e7 brushed panel: -10.08% overall, lower strip/fittings -20.83%, with pale fitting extent reduced. Restore exposure and fitting size/visibility. Held 1e6b025463876be8 dark brown plate: -20.19% overall, upper/lower -19.02%/-21.17%; restore dim midtones without crushing rivets. Held 25d0b6ee88f924b3 angular plate: -10.25% overall and right-region -16.51%; restore right-region exposure and softer shadow boundary. No rejected DDS files were written.
+- All eight reference images were re-decoded from catalog-verified payloads and matched exported RGBA exactly. Source and compiled alpha remain opaque. Two primary, two repeat and four focus sheets of actual DXT1 bytes were inspected in memory. Five installed DDS hashes exactly match the inspected encodings. Native audit passes all 1180 installed DDS files and binds the complete filename/hash set; scene adjacency, GPU residency and appearance in-game remain unverified.
+- Eight diagnostic PNG buffers totaled 4643956 bytes with zero raster review files saved. Eight small original reference exports added 304552 bytes. Compact evidence preserves reproduction arguments, renderer/selection hashes, buffer hashes and Python/Pillow versions. No duplicate extracts, ZIPs, staging trees or cleanup attempt. Previously denied-deletion files remain untouched.
+- Refreshed worklist hashes/dimensions/mips/metadata, hybrid queue and archive inventory. Queue: {'batch_candidate': 62, 'correction': 75, 'individual_review': 576, 'installed': 1180, 'specialist_review': 834, 'visual_triage': 4085}. Catalog remains 6812 supported keys / 7147 payloads: 1180 installed/offline-approved (17.32%), 5557 need art and 75 require correction. Classification remains 2713 keys. Other encodings, 48572 unclassified archive entries and embedded/procedural discovery remain open.
+- No gameplay launch. The >=90% offline coverage and every-category-reviewed gate remains unmet. Final scene, memory/residency, fallback, stability, 1080p/4K/ultrawide and other-device checks remain pending. No runtime/platform implementation change; Mac scene validation remains unverified. One active pack; 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary cap unchanged.
+- Pack 1,006,357,391 bytes (959.74 MiB / 6144 MiB); added 1,400,974 bytes. Texture workspace at audit 5,735,106,439 logical and 5,735,106,439 Windows GetCompressedFileSizeW allocated bytes (5.34 GiB). Final temporary output 267,038,903 bytes (254.67 MiB / 256 MiB); free disk at audit 92,542,943,232 bytes.
+- Private evidence: `review/hybrid-169-*`, source PNGs, prompts and progress. This commit records progress only; artwork and game files stay private.
+
+
+## Texture overhaul issue #74: hybrid batch 170
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `d4eb72f`.
+- Produced eight original-referenced wood/wall edits with built-in image generation. Five passed offline review and were installed; three remain source-only correction drafts. Previous batch169 made concrete progress with five accepted metal materials. No gameplay launch.
+- Actual generated source dimensions: five 1254x1254 and three 1774x887 PNGs. Accepted outputs: three 1024x1024 and two 1024x512 DXT1 files, all resampled with full mip chains. These are not native 4K sources. Source artwork, original references, exact prompts and resampling remain private.
+- Accepted 15a428729f30bc6e painted horizontal wood (-3.86% mean luminance), 15c6186ad0e661f4 inset wood panel (-6.98%), 2802e77595df9658 carved scrollwork trim (-2.93%), 157c61b49e561392 faint medallion wall (+9.64%), and 268b24a191188014 aged plaster (+4.69%). Plank divisions/chipped regions, inset bevels and narrow right ornament, scroll paths and lower rectangles, partial circular motifs and central strip, plaster weathering and lower rails remain recognizable in focused original-scale comparisons. Inset wood is warmer, carved relief and wall motif contrast are stronger; retain scene checks for these differences. Repeated-layout inspection does not establish scene adjacency.
+- Held 18c5f1b007cd075e dark olive wood: -18.81% overall, upper/lower -18.81%/-18.98%; restore subdued streak visibility. Held 248cf4aba9720e6f vertical wood: strong orange/high-contrast grain shift despite overall -7.90%; restore muted reddish-brown palette. Held 158b715c74790863 cream vent: louvers extend into the original lower plain gray area and alter slat spacing/extent; restore geometry despite acceptable +2.99% overall luminance. No rejected DDS was persisted.
+- All eight originals were re-decoded from catalog-verified payloads and matched exported RGBA exactly. Source and decoded DDS alpha remain opaque. Two primary, two repeat and four focused sheets of actual DXT1 bytes were reviewed in memory. Accepted CLI DDS hashes exactly match inspected encodings. Native format audit passes all 1185 installed DDS files and binds the complete filename/hash set; GPU residency and in-game scene appearance remain unverified.
+- Eight diagnostic PNG buffers totaled 5675360 bytes with zero raster review files saved. Eight small original reference exports added 443593 bytes. Compact manifests retain reproduction arguments, renderer/selection hashes, buffer hashes and Python/Pillow versions. No duplicate extracts, ZIPs, staging trees or cleanup attempt; previously denied-deletion files remain untouched.
+- Refreshed worklist hashes/dimensions/mips/metadata, hybrid queue and archive inventory. Queue: {'batch_candidate': 54, 'correction': 78, 'individual_review': 576, 'installed': 1185, 'specialist_review': 834, 'visual_triage': 4085}. Catalog remains 6812 supported keys / 7147 payloads: 1185 installed/offline-approved (17.40%), 5549 need art and 78 require correction. Classification remains 2713 keys. Other encodings, 48572 unclassified archive entries and embedded/procedural discovery remain open.
+- No gameplay launch. The >=90% offline coverage and every-category-reviewed gate remains unmet. Final scene, memory/residency, fallback, stability, 1080p/4K/ultrawide and other-device checks remain pending. No runtime/platform implementation change; Mac scene validation remains unverified. One active pack; 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary cap unchanged.
+- Pack 1,009,156,467 bytes (962.41 MiB / 6144 MiB); added 2,799,076 bytes. Texture workspace at audit 5,762,389,679 logical and 5,762,389,679 Windows GetCompressedFileSizeW allocated bytes (5.37 GiB). Final temporary output 267,534,648 bytes (255.14 MiB / 256 MiB); free disk at audit 92,388,966,400 bytes.
+- Private evidence: `review/hybrid-170-*`, source PNGs, prompts and progress. This commit records progress only; artwork and game files stay private.
+
+
+## Texture overhaul issue #74: inventory batch 171
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `e5bb75b`.
+- Completed 128 original-texture inventory reviews: 64 small reused assets and 64 single-use assets. Catalog payload hashes, decoded RGBA hashes, dimensions and alpha were checked. Classification now covers 2841 distinct keys; routing does not count as completed artwork.
+- Sixteen contact sheets were inspected in memory (3704316 PNG bytes); zero new raster review files or original PNG exports. Page hashes, renderer, selection and reproduction commands are retained. Categories: {'effect': 13, 'environment': 23, 'environment_alpha': 6, 'environment_or_prop': 4, 'prop_or_effect': 7, 'interface': 13, 'effect_or_utility': 8, 'interface_or_utility': 12, 'reflection_or_utility': 10, 'prop_or_environment': 2, 'prop': 15, 'interface_or_effect': 3, 'interface_or_prop': 2, 'character': 6, 'prop_or_weapon': 4}. Twenty-three opaque environment materials expand production. Six alpha-bearing environment assets and all text, UI, character, mechanical, effect and uncertain assets retain individual/specialist review.
+- Recycled sixteen original-only contact sheets from batches154/157 (2267843 bytes) after reconstructing all sixteen byte-for-byte in memory from retained archives and selection records, then checking resolved paths, sizes and hashes. Source art and all before/after/focus comparisons remain. This reduces project-folder usage; Recycle Bin contents do not imply equivalent free-disk recovery. All 128 previously blocked PNG exports remain hash-identical, and both held DDS/metadata pairs remain untouched.
+- Refreshed worklist hash/dimension/mip/metadata checks, hybrid queue and archive inventory. Queue: {'batch_candidate': 77, 'correction': 78, 'individual_review': 635, 'installed': 1185, 'specialist_review': 880, 'visual_triage': 3957}. Catalog remains 6812 supported keys / 7147 payloads; broader other-encoding, embedded and procedural discovery remains open.
+- Installed/offline-approved coverage remains 1185/6812 (17.40%); 5549 keys still need art and 78 drafts require correction. The complete DDS filename/hash set matches hybrid-170 native validation, which passed all 1185 files. No redundant native audit or game launch was performed for this inventory-only pass.
+- The preceding repository-choice response made no texture-state progress. This continuation verified pending cleanup, completed the saved batch171 inventory and updated authoritative classifications. Batch170 had made production progress with five accepted replacements. One active pack, 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary limit remain. The >=90% offline coverage and all-categories-reviewed gate is unmet; scene, hardware, memory/fallback, display mode and Mac validation remain pending.
+- Pack 1,009,156,467 bytes (962.41 MiB / 6144 MiB). Texture workspace at audit 5,860,362,591 logical and 5,860,362,591 Windows GetCompressedFileSizeW allocated bytes (5.46 GiB). Final temporary output 265,343,704 bytes (253.05 MiB / 256 MiB); free disk at audit 93,108,862,976 bytes.
+- Private evidence: `review/hybrid-171-*`, classification, inventory and progress. Artwork/game files stay private. No runtime/platform change or Mac adapter needed for inventory-only work; Mac validation remains unverified.
+- Expanded storage audit found a separate comparison deliverable omitted by the legacy originals/review/preview subtotal: 100,081,850 bytes (95.45 MiB), preserved with hashes for all 47 files. Conservatively including it raises review/comparison storage to about 348.5 MiB, ABOVE the 256 MiB temporary limit. No new artwork production until aggregate cleanup is resolved; source, active pack, user data and the separate comparison deliverable are preserved. Details: review/hybrid-171-storage-scope.json.
+
+
+## Texture overhaul issue #74: storage batch 172
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `060624a`.
+- Restored the 256 MiB aggregate temporary-output limit including the complete separate comparison deliverable. The preceding batch171 made progress by classifying 128 originals and identifying the accounting gap; this pass fixes that gap and reclaims redundant output.
+- Verified and recycled 234 historical original/DDS comparison JPEG caches (92077305 bytes). Each reproduced byte-for-byte in memory. 168 used unchanged installed DDS; 66 used historical source art encoded only in memory. Retained 32 nonmatching historical sheets, representative complete batches64/160, all focus/correction views, other named comparisons, source artwork and provenance. The recovery manifest binds JPEG hashes, original hashes, metrics, source/encoder/renderer evidence and 653 current compiler/source snapshots. No deleted JPG was counted as replaceable merely because it looked similar.
+- Compressed 94 historical native-audit logs losslessly: 9232886 raw bytes to one 831863-byte retained archive; every member was decompressed and SHA-verified before recycling its raw copy. Combined gross reduction from these raster/log changes is 100478328 bytes (95.82 MiB), before added recovery metadata. Recycled files may still occupy the Windows Recycle Bin; project-folder reduction is not the same as newly freed disk capacity.
+- All 47 separate comparison-report files remain byte-identical. All 128 previously denied original PNG exports remain hash-identical; both held DDS/metadata pairs remain. Original game assets, source artwork, personal saves/settings and the single active pack were not modified. No new raster previews, game extracts or game ZIPs were made.
+- Updated tools/texture-worklist.py to count every output subdirectory except authored and pack, while excluding root-level catalog/provenance records. Comparison and unknown future staging folders now contribute to logical/allocated temporary totals. At or above 256 MiB the CLI writes its report then exits 2 to stop a checked production chain. Tests cover the exact boundary, nested comparison files, unknown output folders, retained-source exclusions and the nonzero CLI outcome. All 33 tests in texture_pack_tools.py and test_texture_hybrid_plan.py pass on Windows; git diff --check passes.
+- Worklist, hybrid queue and archive inventory refreshed. Coverage unchanged: 1185/6812 installed/offline-approved (17.40%), 78 held drafts, 5549 needing art; 2841 visually classified keys. Pack remains 1009156467 bytes (962.41 MiB / 6144 MiB). Current DDS filename/hash set still matches hybrid-170 native audit: 1185 pass, zero failed. Other-encoding/embedded/procedural discovery remains open.
+- No game launch or runtime/platform change. The 512 MiB residency limit and >=90% offline coverage plus every-category-reviewed gate remain unchanged and unmet. Consolidated scene, display-mode, memory/fallback, stability and Mac checks remain pending. Shared Python accounting needs no Mac adapter; Mac execution is unverified and MAC-011 records acceptance checks.
+- Final aggregate temporary output including comparison: 266,115,892 bytes (253.79 MiB / 256 MiB), headroom 2,319,564 bytes. Texture workspace at audit: 5,761,070,759 logical and 5,761,070,759 Windows allocated bytes (5.37 GiB); free disk 93,143,248,896 bytes.
+- Private cleanup/recovery evidence: `review/hybrid-172-*`. Artwork/game files remain private. The complete overhaul remains unfinished.
+
+
+## Texture overhaul issue #74: hybrid batch 173
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `c097344`.
+- Produced eight metal/panel edits with built-in image generation. Four passed offline review and were installed; four remain uninstalled correction drafts. Previous batch172 made progress by restoring storage compliance and fixing aggregate accounting. This batch launched no game.
+- Actual generated source sizes: five 1774x887, one 1254x1254, one 1983x793 and one 2172x724 PNG. Accepted outputs are three 1024x512 and one 256x256 DXT1 files, LANCZOS-resampled with complete mip chains. No native 4K claim. The two wide-strip sources have wrong aspect ratios and black padding and were never DDS-encoded.
+- Accepted dd6c4bb54a0cfd1f shallow X-braced gray square (-0.80% mean luminance), 2b3a42e05b03ff92 green riveted plate (-1.89%), 313077eef0f510c3 paired framed metal panels (-2.81%), and 31602d1a3b4d3e0e ribbed olive wall (-6.25%). Focused original-scale checks retained brace intersection/horizontal join, perimeter fastener arrangement, paired panel borders and rib divisions. Fine corrosion and edge contrast are stronger; scene appearance remains pending. Repeated panels were inspected without claiming scene adjacency or seamless material boundaries.
+- Held 9306e5e946137bc5 blue steel: -22.27% overall with upper/lower focus -19.59%/-24.01%, losing original midtones. Held dafe4ad1852bd920 gray plate: -14.89% overall and -14.33%/-15.32% upper/lower, with stronger scratch/edge contrast. Held b77d763e4e066408 and d01be368de803349: generated 1983x793 and 2172x724 rather than original 4:1, with black top/bottom padding. Do not retry the unchanged wide-strip prompt strategy; resolve full-bleed normalized layout before compiling. No rejected DDS persisted.
+- All eight original payloads and exported RGBA were verified, with opaque alpha. Six eligible drafts were encoded only in memory; seven primary/repeat/focus PNG buffers (2684863 bytes) were inspected without raster files. Saved review metadata equals the inspected in-memory metadata. Accepted CLI DDS hashes match those encodings exactly. Native audit passes all 1189 installed files, binding the complete filename/hash set.
+- The pre-write aggregate guard detected concurrent scene captures from the separate user-authorized Use Upscaling for 4K Textures chat. It stopped review-file creation; diagnostic review continued in memory. That chat removed its transient frame dumps. This batch then recycled 58 additional full-texture detail JPGs (7500652 bytes), each reproduced byte-for-byte from retained original/installed or historical source data. All focus crops, source art, comparison deliverable and recovery records remain; previously denied files remain unchanged. Recycle Bin contents do not imply equivalent free-disk recovery. The other chat owns its scene evidence; its runs do not validate these new textures.
+- Refreshed worklist, hybrid queue and archive inventory. Queue: {'batch_candidate': 69, 'correction': 82, 'individual_review': 635, 'installed': 1189, 'specialist_review': 880, 'visual_triage': 3957}. Coverage is 1189/6812 installed/offline-approved (17.45%), 5541 needing art and 82 correction drafts; classification remains 2841 keys. 7147 cataloged payloads are supported, while broader other-encoding, embedded and procedural discovery remains open.
+- Pack cap 6144 MiB, residency limit 512 MiB and aggregate temporary cap 256 MiB remain. No runtime/platform implementation changed; Mac checks remain unverified. The >=90% offline coverage and every-category-reviewed gate remains unmet. Consolidated scene, UV/alpha, 1080p/4K/ultrawide, memory/fallback, stability and other-device validation remain pending.
+- Pack 1,010,251,033 bytes (963.45 MiB / 6144 MiB), added 1,094,566 bytes. Texture workspace at audit: 5,785,828,064 logical and 5,785,828,064 Windows allocated bytes (5.39 GiB); free disk 92,972,015,616 bytes. Final aggregate temporary output including comparison: 265,270,660 bytes (252.98 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid173-v1.png`, `review/hybrid-173-*`, progress and catalog. Artwork/game files remain private; the overhaul is incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 174
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `47ade81`.
+- Produced eight stone/concrete edits with built-in image generation; five installed after offline review, three held for correction. The previous interaction answered the repository provenance question and did not advance texture coverage; this continuation verified the pending batch174 cleanup and exported inputs before generating artwork. No game launch.
+- Actual sources: two 1774x887 and six 1254x1254 PNGs. Accepted outputs: one 1024x512 and four 1024x1024 DXT1 files, LANCZOS-resampled with complete mip chains. Source sizes and resampling are retained; these are not native 4K art.
+- Accepted 1a433aa391cb32c3 concrete/rail (-6.79% mean luminance), 26355c8e34ed3c0b layered mauve rock (-9.04%), 275e477b4077405c 3x3 brown tiles (-6.58%), 2ba19766c5c4cd48 pale ridged rock (-0.13%), and 2cc97602e1c1f97d mossy masonry (-1.41%). Rail placement, geological fractures, tile divisions, rock ridges and masonry joints remain recognizable. The mossy wall pale-region/dark-region focus changes are -2.35%/+2.01%; its original dark lower-right area remains. Stronger material detail and tile edge contrast require later scene confirmation.
+- Held 20473bcd85d2ce0a stone wall: +19.35% brightness and warmer orange cast (upper/lower +21.34%/+17.51%). Held 2565337589800516 gravel: -14.47%, warmer brown and harder granular contrast (left/right -15.34%/-13.68%). Held 28c776b9d1c460d0 pale panel: newly emphasized top/bottom border creates a horizontal repeated seam absent from original; +3.80% mean brightness does not override the visual failure. No rejected DDS persisted.
+- Verified all eight original catalog payloads, exported RGBA, source aspect and opaque alpha. Reviewed two primary, two 2x2-repeat and four focus PNG buffers (7710099 ephemeral bytes); zero raster review files written. Repetition checks do not prove scene adjacency. Accepted installed DDS hashes equal the reviewed memory encodings. All 1194 installed files pass the native format/dimensions/mip checker; this does not validate GPU memory or gameplay.
+- Recycled eight exact-reconstructable batch161 original-only contact sheets (1109534 bytes) after byte-for-byte verification. Retained selection, source archives, all authored artwork, original exports and before/after/focus evidence. Previously denied files remain unchanged. Recycle Bin removal from the project is not equivalent to freeing physical disk. The separate comparison folder remains included in the temporary budget and untouched by this batch.
+- Coverage: 1194/6812 supported unique keys installed/offline-approved (17.53%), 5533 needing art, 85 correction drafts, 2841 classified. Catalog has 7147 supported payloads; other encodings, embedded and procedural coverage remain open. Refreshed queue: {'batch_candidate': 61, 'correction': 85, 'individual_review': 635, 'installed': 1194, 'specialist_review': 880, 'visual_triage': 3957}.
+- Pack cap 6144 MiB, replacement residency limit 512 MiB and aggregate temporary cap 256 MiB remain unchanged. No runtime/platform code changed. Mac scene checks and consolidated 1080p/4K/ultrawide, transparency, memory/fallback and stability tests remain pending. The >=90% coverage and every-category-reviewed gate is unmet; a full campaign playthrough is separate.
+- Pack 1,013,399,631 bytes (966.45 MiB / 6144 MiB), added 3,148,598 bytes. Texture workspace at audit: 5,823,235,195 logical and 5,823,235,195 Windows allocated bytes (5.42 GiB); free disk 92,839,399,424 bytes. Aggregate temporary output: 267,781,607 bytes (255.38 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid174-v1.png`, `review/hybrid-174-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul issue #74: inventory batch 175
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8cc68cf`.
+- Previous batch174 made production progress by installing five reviewed replacements and recording three correction drafts. This pass completed 128 more original-texture inventory reviews: 64 small reused assets and 64 single-use assets. Classification increased from 2841 to 2969 distinct keys; classification is not artwork completion.
+- Sixteen original-only checkerboard contact sheets were reviewed in memory (3869728 ephemeral PNG bytes). Zero new PNG exports or raster review files. Retained selection, decoded RGBA/payload hashes, dimensions, alpha ranges, renderer hash and page hashes permit reproduction from original archives. Categories: {'environment': 27, 'interface': 34, 'environment_or_prop': 12, 'interface_or_effect': 2, 'prop_or_weapon': 7, 'effect_or_utility': 8, 'effect': 8, 'interface_or_prop': 7, 'character': 10, 'environment_alpha': 2, 'prop': 8, 'interface_or_utility': 2, 'reflection_or_utility': 1}.
+- Twenty-seven opaque environment materials add stone, metal, wood and trim candidates. Character portraits, weapon icons, challenge-card text, signage, radar, photographs, emblem graphics, face/clothing atlases, translucent fence/surface patterns and effects retain specialist or individual review. Uncertain mixed atlases stay explicitly uncertain. Solid magenta/red utility-looking images remain in scope; base-color resemblance does not prove redundancy or justify exclusion.
+- Refreshed worklist, hybrid plan and archive inventory. Queue: {'batch_candidate': 88, 'correction': 85, 'individual_review': 684, 'installed': 1194, 'specialist_review': 932, 'visual_triage': 3829}. All installed DDS filenames and SHA-256 hashes still match the native batch174 audit, which passed 1194 files. No redundant native test or gameplay run for inventory-only work.
+- Installed coverage remains 1194/6812 supported unique keys (17.53%); 5533 need art and 85 drafts need correction. Catalog remains 7147 supported payloads. Other encodings, embedded assets, unclassified archive entries and procedural coverage remain open; no full-coverage claim.
+- One active pack remains below 6144 MiB. The 512 MiB residency limit and aggregate temporary limit of 256 MiB remain; comparison output is counted. No deletion or new source artwork this pass. Previously denied files remain unchanged. Physical texture workspace accounting includes source art. This turn wrote small provenance/classification records only.
+- No runtime/platform source changed; no Mac adapter needed for this inventory pass. Mac scene validation remains unverified. The >=90% offline coverage and every-category-reviewed gate remains unmet. Consolidated scene, UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability checks remain pending; full campaign playthrough is separate.
+- Pack 1,013,399,631 bytes (966.45 MiB / 6144 MiB). Texture workspace at audit 5,823,386,245 logical and 5,823,386,245 Windows allocated bytes (5.42 GiB); free disk 93,695,979,520 bytes. Aggregate temporary output 267,852,067 bytes (255.44 MiB / 256 MiB).
+- Private evidence: `review/hybrid-175-*`, classification, inventory and progress. No game files or artwork published; full overhaul remains incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 176
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `b98f509`.
+- Previous batch175 made inventory progress with 128 classifications. This batch produced eight metal edits with built-in image generation: five passed offline review and were installed; three remain correction drafts. No game launch.
+- Actual sources: five 1774x887 and three 1254x1254 PNGs. Accepted outputs: three 1024x512 and two 1024x1024 DXT1 files, LANCZOS-resampled with complete mip chains. Actual source sizes and resampling are recorded; these are not native 4K images.
+- Accepted 37ab1d84b2083088 corrugated rusted metal (+10.67% mean luminance), 3822047a14598af9 recessed structural plate (+1.86%), 3f278510a166a5ef diamond tread (-1.20%), 401f8b6be1ff10ce paired olive panels (-3.92%), and 4050e9719b17e585 two-fastener plate (-6.47%). Focus review retained corrugation pitch, dark channel layout, tread orientation/repeat, painted stripe positions and paired fasteners. Corrugation is somewhat brighter with stronger corrosion; tread bevels are sharper and lower olive panels darker. These accepted material changes still need scene confirmation.
+- Held 3721b4c3cf0f4efb framed gray panel: shifted vertical divisions, thickened border and lost lower tabs despite mean +5.38%. Held 3cb682329022ae10 flare plate: upper band +38.14% and overall +12.67%, excessive rivet/edge contrast; preserve flare while restoring upper values. Held 37928b8bee8024e8 scratched panel: -11.81% overall, left/right -11.56%/-12.28%, stronger pitting/scratch contrast. No rejected DDS persisted.
+- All eight source payloads/exported RGBA, opaque alpha and aspect ratios verified; supported US XBE SHA verified before generation. Two primary, two repeated and four focused PNG buffers (4952491 ephemeral bytes) reviewed without raster files. Repeated textures do not prove scene adjacency. Accepted installed DDS hashes exactly match the inspected memory encodings. Native format/dimensions/mip audit passed all 1199 installed files; GPU memory and gameplay remain untested this batch.
+- Recycled twenty original-only contact sheets from batches145/146/148/150, totaling 2803629 bytes, after reconstructing each byte-for-byte from retained original archives and selection records. The first verifier stopped on the older layout before mutation; the corrected verifier reproduced all twenty with their original layouts. All source art, original exports, selected before/after/focus evidence and denied files remain. Recycle Bin usage is not equivalent to freed disk capacity. Eight new originals total 425588 bytes; comparison folder included in aggregate temporary accounting and untouched.
+- Coverage is 1199/6812 supported keys installed/offline-approved (17.60%), 5525 needing art and 88 correction drafts. Classification remains 2969 keys; 7147 cataloged payloads are supported. Refreshed worklist, hybrid queue and archive inventory. Broader other-encoding, embedded and procedural discovery remains open.
+- Pack cap 6144 MiB, residency limit 512 MiB and aggregate temporary cap 256 MiB remain. No runtime/platform implementation changed; no new Mac adapter required, Mac scene checks still unverified. The >=90% offline-coverage/every-category-reviewed gate remains unmet. Consolidated scene, UV/alpha, 1080p/4K/ultrawide, memory/fallback and stability tests remain pending; full campaign playthrough is separate.
+- Pack 1,015,849,185 bytes (968.79 MiB / 6144 MiB), added 2,449,554 bytes. Texture workspace at audit: 5,848,418,268 logical and 5,848,418,268 Windows allocated bytes (5.45 GiB); free disk 93,194,076,160 bytes. Aggregate temporary output: 265,536,028 bytes (253.23 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid176-v1.png`, `review/hybrid-176-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul issue #74: correction batch 177
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `4284b6a`.
+- The preceding hardware question produced no texture-state progress; revalidated the current branch, pending sources and clean revision, then finished the pending eight-source correction batch. Four corrections passed offline visual review and were installed; four remain held. Resolved drafts rise from 58 to 62; active correction queue falls from 88 to 84. No game launch.
+- Built-in image generation used each original plus its rejected draft, with original local colors and geometry authoritative. Actual sources: five 1774x887 and three 1254x1254 PNGs. Accepted outputs: one each 1024x1024, 512x512, 1024x512 and 512x256 DXT1 with complete mip chains, LANCZOS-resampled. These are not native 4K images. Prior source artwork, exact prompts and failure history are preserved.
+- Accepted 2565337589800516 gravel (+10.44% overall luminance; left/right grayscale +9.83%/+10.24%): granular distribution retained, brighter grain and restrained neutral-brown detail. Accepted 28c776b9d1c460d0 pale panel (-2.85%; face -3.36%, right border +3.17%): invented horizontal edge strips removed, original right border retained. Accepted 37928b8bee8024e8 scratched olive plate (-6.62%; halves -5.50%/-7.85%): broad central illumination/right dark edge recovered and scratch heights retained, with sharper fine wear. Accepted dafe4ad1852bd920 gray plate (-4.47%; upper/lower -3.62%/-5.11%): pale field and thin perimeter restored; stronger fine scratches remain. These material changes need final scene confirmation.
+- Held 20473bcd85d2ce0a wall: still uniformly pale, +13.26% overall and reduced uneven shading/black edge gaps. Held 3721b4c3cf0f4efb framed panel: shifted divisions and missing lower tabs despite -1.53% overall. Held 3cb682329022ae10 flare plate: upper band overshot dark by -18.70%, outlined rivets/slots persist; flare focus -1.20%. Held 9306e5e946137bc5 blue plate: overshot bright +20.28%, excessive rivet/rust contrast. Do not repeat unchanged prompts; geometry and broad shading need more constrained corrections. Rejected DDS files were never persisted.
+- Eight originals match catalog-decoded RGBA; all sources have exact aspect and opaque alpha. Two primary, four focused original-scale and two repeated-layout sheets reviewed from actual DDS encoding in memory, totaling 5205023 ephemeral bytes; zero raster review files or original exports created. Installed CLI hashes match the inspected encodings. All 1203 installed DDS pass the native format/dimensions/mip checker; this does not validate GPU residency or gameplay.
+- No cleanup was performed this pass. The separate comparison directory present at batch start is no longer present at the final audit; its removal was external to this batch. Aggregate accounting includes every extant subdirectory except authored and pack. All denied-deletion reference files and historical sources remain unchanged.
+- Coverage: 1203/6812 supported keys installed/offline-approved (17.66%), 5525 need art, 84 require correction. Classification remains 2969 keys, supported catalog 7147 payloads. Worklist, hybrid queue and archive inventory refreshed. Other encodings, embedded/procedural assets and broad discovery remain open.
+- Pack cap 6144 MiB, runtime residency limit 512 MiB and aggregate temporary cap 256 MiB unchanged. No runtime/platform code changed; no new Mac adapter needed, Mac validation remains unverified. The >=90% offline-coverage/all-categories-reviewed gate remains unmet. Scene UV/alpha, 1080p/4K/ultrawide, memory/fallback and stability testing remain pending; full campaign playthrough is separate.
+- Pack 1,017,162,201 bytes (970.04 MiB / 6144 MiB), added 1,313,016 bytes. Texture workspace at audit: 5,769,066,621 logical and 5,769,066,621 Windows allocated bytes (5.37 GiB); free disk 93,113,380,864 bytes. Aggregate temporary output: 156,431,438 bytes (149.18 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid177-v1.png`, `review/hybrid-177-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul issue #74: inventory batch 178
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `7b592d0`.
+- Previous batch177 made correction progress by installing four reviewed replacements and retaining four failed drafts. This pass completed 128 more original-texture inventory reviews: 64 small reused assets and 64 single-use assets. Classification increased from 2969 to 3097 distinct keys; classification is not artwork completion.
+- Sixteen original-only checkerboard contact sheets were reviewed in memory (3700576 ephemeral PNG bytes). Zero new PNG exports or raster review files. Retained selection, decoded RGBA/payload hashes, dimensions, alpha ranges, renderer hash and page hashes permit reproduction from original archives. Categories: {'interface': 34, 'environment_or_prop': 6, 'environment_alpha': 11, 'effect_or_utility': 6, 'reflection_or_utility': 3, 'interface_or_prop': 16, 'environment': 22, 'prop_or_weapon': 14, 'prop': 7, 'character': 4, 'effect': 1, 'reflection': 2, 'character_or_prop': 2}.
+- Twenty-two environment candidates add metal, stone, wood, molding, wallpaper and sky surfaces. Thirty-four interface assets include character portraits, weapon silhouettes and challenge cards; eleven alpha surfaces include fences, grass and translucent strips. Sixteen text/schematic assets and fourteen mechanical atlases retain individual review, along with character, prop and uncertain mixed atlases. Uniform black, gray and orange images remain in scope; appearance does not prove redundancy or justify exclusion.
+- Refreshed worklist, hybrid plan and archive inventory. Queue: {'batch_candidate': 102, 'correction': 84, 'individual_review': 747, 'installed': 1203, 'specialist_review': 975, 'visual_triage': 3701}. All installed DDS filenames and SHA-256 hashes still match the native batch177 audit, which passed 1203 files. No redundant native test or gameplay run for inventory-only work.
+- Installed coverage remains 1203/6812 supported unique keys (17.66%); 5525 need art and 84 drafts need correction. Catalog remains 7147 supported payloads. Other encodings, embedded assets, unclassified archive entries and procedural coverage remain open; no full-coverage claim.
+- One active pack remains below 6144 MiB. The 512 MiB residency limit and aggregate temporary limit of 256 MiB remain; all extant temporary subdirectories are counted. No deletion or new source artwork this pass. Previously denied files remain unchanged. Physical texture workspace accounting includes source art. This turn wrote small provenance/classification records only.
+- No runtime/platform source changed; no Mac adapter needed for this inventory pass. Mac scene validation remains unverified. The >=90% offline coverage and every-category-reviewed gate remains unmet. Consolidated scene, UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability checks remain pending; full campaign playthrough is separate.
+- Pack 1,017,162,201 bytes (970.04 MiB / 6144 MiB). Texture workspace at audit 5,769,217,702 logical and 5,769,217,702 Windows allocated bytes (5.37 GiB); free disk 93,124,018,176 bytes. Aggregate temporary output 156,501,653 bytes (149.25 MiB / 256 MiB).
+- Private evidence: `review/hybrid-178-*`, classification, inventory and progress. No game files or artwork published; full overhaul remains incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 179
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `e01dcdc`.
+- Previous batch178 made inventory progress with 128 classifications. This batch produced eight stone/metal edits with built-in image generation; six passed offline review and were installed, two remain correction drafts. No game launch.
+- Actual sources: seven 1254x1254 and one 1774x887 PNG. Accepted outputs: five 1024x1024 and one 1024x512 DXT1 with complete mip chains, LANCZOS-resampled. These are not native 4K images. Exact original references, prompts, actual dimensions and resampling remain private.
+- Accepted 42a5c18f15ae69af eight-panel olive metal (+0.35% mean luminance; upper +3.84%, bottom -2.74%), 435dfce508d82797 layered gray surface (-3.25%; halves -2.89%/-3.87%), 43abc755dcfc5ebf pitted concrete (-3.85%; halves -2.02%/-5.76%), 458d47aab3757410 blue-gray metal blocks (-0.30%; upper/lower -1.44%/+0.47%), 45cbf2bedd7c5a12 green diamond-braced panels (-7.79%; upper-left -2.17%, center -7.40%), and 482e3ecb83c60898 aggregate/ochre strip (+4.52%; aggregate +8.42%, lower +3.51%). Panel grids, major seam paths, brace locations and aggregate-band heights retained. Fine scratches, seams and hardware highlights are stronger; green panel is darker and aggregate coarser. These accepted material changes still require scene checks.
+- Held 416f40e0843e22f9 ocher surface: muted tan-pink changes to saturated golden orange despite +0.96% overall luminance. Held 4841360e073b2448 reddish rock: red-orange shift and hardened mineral contrast weaken original muted mauve-brown appearance and curved lower striation, despite -4.78% overall. Brightness agreement does not prove color/shape fidelity. Rejected DDS files were never persisted.
+- Direct original inspection corrected 42a5c18f15ae69af classification from six panels to eight (two columns/four rows); count correction retained in classification provenance. All eight original catalog payloads match exported RGBA exactly; aspect and opaque alpha verified. Supported US XBE hash verified before generation.
+- Two primary, four original-scale focused and two repeated-layout PNG buffers reviewed in memory, totaling 7831100 ephemeral bytes; no raster review files saved. Eight new original PNG references total 678017 bytes. Accepted CLI DDS hashes match inspected in-memory encodings. Native format/dimensions/mip audit passes all 1209 installed DDS files; no GPU memory or gameplay claim.
+- Coverage is 1209/6812 supported keys installed/offline-approved (17.75%), 5517 needing art and 86 correction drafts; resolved historical drafts remain 62. Classification remains 3097 keys, catalog 7147 supported payloads. Worklist, hybrid queue and archive inventory refreshed. Other encodings, embedded/procedural discovery and broader archive coverage remain open.
+- No cleanup this pass; prior denied files, source artwork, original archives, saves and settings preserved. Pack cap 6144 MiB, residency limit 512 MiB and aggregate temporary cap 256 MiB unchanged. No runtime/platform implementation changed; no new Mac adapter required, Mac scene validation remains unverified. The >=90% offline-coverage/all-categories-reviewed gate remains unmet. Consolidated scene UV/alpha, 1080p/4K/ultrawide, memory/fallback and stability validation remain pending; full campaign playthrough is separate.
+- Pack 1,021,010,423 bytes (973.71 MiB / 6144 MiB), added 3,848,222 bytes. Texture workspace at audit: 5,804,781,511 logical and 5,804,781,511 Windows allocated bytes (5.41 GiB); free disk 92,910,788,608 bytes. Aggregate temporary output: 157,232,019 bytes (149.95 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid179-v1.png`, `review/hybrid-179-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 180
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `73a9576`.
+- Previous batch179 made production progress with six accepted stone/metal replacements. This batch reviewed eight individual mechanical prop/atlas edits made with built-in image generation: four accepted and installed, four held for corrections. No gameplay launch.
+- Actual generated sources: five 1774x887, one 1773x887 and two 1254x1254 PNGs. Accepted output is two 512x256, one 512x512 and one 1024x1024 DXT1 with complete mip chains. All are LANCZOS-resampled; these are not native 4K images. Exact prompts, references, dimensions and encoding evidence remain private.
+- Accepted 360afbca67d9f7b9 segmented casing (-2.06% overall luminance; upper/lower grayscale -2.78%/-0.76%), 44451cb14c363ab5 green-indicator apparatus (-5.29%; halves -4.79%/-7.35%), 4b8a82485c9b8535 red-indicator console (-8.41%; plate -10.34%, indicator/vent half -5.22%), and 45bc2b3bf9d38285 brushed-metal disc (-3.63%; upper reflection -6.55%, center -3.31%). Atlas islands, existing indicators, rib directions, screw positions, disc diameter and broad reflections remain recognizable in reviewed original-scale comparisons. Metal wear, vent contrast and machining marks are sharper; console plate is darker. Actual mesh/scene appearance remains unverified.
+- Held 33ca8845ef79d9d5 equipment atlas: -15.41% overall with darker fields and overly hard recess/grille detail. Held 35e50354c1f11b48 ribbed atlas: -9.91%, stronger red strips and upper slot/lower-island contrast. Held 3694f1cf9bdf7844 folded housing: central opening becomes too rectangular, local focus -15.98%, whole -9.78%. Held 46e86c70c616208a corrugated atlas: -26.28%, fold visibility reduced and invented stitched-like seam emphasis. Rejected DDS files were never persisted.
+- Source 360afbca67d9f7b9 is 1773x887, one long-axis pixel short of exact 2:1. Initial exact-aspect preparation omitted it; after reviewing the full source, final offline preparation recorded the one-pixel discrepancy and rerendered all eight candidates. The production compiler then correctly refused the mismatch without an explicit option; no DDS was written by that failed attempt.
+- Added --allow-one-pixel-aspect-rounding to shared tools/texture-pack.py. Defaults remain exact; opt-in accepts at most one long-axis source pixel only when both source axes are at least 512, color is opaque, and no channel conversion or original-alpha override is requested. No crop/padding is performed. Installed metadata records the one-pixel exception and LANCZOS resampling. Tests cover default rejection, landscape/portrait acceptance with exact expected DDS bytes/provenance, larger mismatch, small images, transparency and luminance rejection. Windows texture-tool/planner suite: 40 passed. MAC-011 records shared implementation, no adapter requirement and pending Mac execution.
+- All eight originals match catalog-decoded RGBA and are opaque. Final two primary, four focused original-scale and two repeated-layout review buffers total 3309321 ephemeral PNG bytes; no raster review files were written. Earlier preliminary seven-asset buffers were superseded by the final complete review. Atlas repetition is not a mesh mapping test. Eight new original references total 151631 bytes. Installed compiler DDS hashes match reviewed in-memory encodings. Native format/dimension/mip audit passed all 1213 installed DDS files.
+- Coverage: 1213/6812 supported keys installed/offline-approved (17.81%), 5509 need artwork and 90 are held drafts. Historical resolved drafts remain 62; classification remains 3097; supported catalog 7147 payloads. Worklist, hybrid queue and archive inventory refreshed. Broader other-encoding, embedded/procedural and archive discovery remain open.
+- No cleanup this pass; previously denied files, game archives, source art, saves and settings retained. Pack cap 6144 MiB, runtime residency 512 MiB and aggregate temporary cap 256 MiB unchanged. No runtime code or game build changed. The >=90% offline coverage/every-category-reviewed gate remains unmet. Consolidated scene UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability tests remain pending. Mac source-tool execution and real-art appearance remain unverified; full campaign playthrough is separate.
+- Pack 1,022,061,430 bytes (974.71 MiB / 6144 MiB), added 1,051,007 bytes. Texture workspace at audit: 5,831,995,557 logical and 5,831,995,557 Windows allocated bytes (5.43 GiB); free disk 92,633,391,104 bytes. Aggregate temporary output: 157,440,673 bytes (150.15 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid180-v1.png`, `review/hybrid-180-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul issue #74: inventory batch 181
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `e551d07`.
+- The preceding question about Mac hardware did not change the texture pack. Revalidated batch180 progress, pack bytes and the complete 1213-file DDS hash set, then committed/pushed batch180 source and progress as e551d07. This pass completed 128 additional original-texture inventory reviews: 64 small reused assets and 64 single-use assets. Classification increased from 3097 to 3225 distinct keys; classification is not artwork completion.
+- Sixteen original-only checkerboard contact sheets were reviewed in memory (4154944 ephemeral PNG bytes). Zero new original PNG exports or raster review files. Retained selection, decoded RGBA/payload hashes, dimensions, alpha ranges, renderer hash and page hashes permit reproduction from original archives. Categories: {'interface': 28, 'environment': 35, 'effect_or_utility': 7, 'effect': 2, 'environment_or_prop': 6, 'environment_alpha': 13, 'interface_or_prop': 15, 'character': 7, 'character_or_prop': 6, 'reflection_or_utility': 3, 'prop_or_weapon': 5, 'prop': 1}.
+- Thirty-five environment records include wood paneling, metal, concrete, molding, sky and wallpaper. Twenty-eight interface assets include character portraits and weapon icons; the interface records also include a font atlas, and fifteen interface/prop records include technical labels, timer/control panels, notes and pictorial art. Thirteen transparent surfaces include lattice, ornament, grass, cracked panes and fading material strips. Seven character and six character/prop records preserve anatomy, garment, hair and atlas identity for individual review. Faint effects, uncertain reflections and flat graphics remain in scope; ambiguous roles are explicitly recorded and not treated as blank or redundant.
+- Refreshed worklist, hybrid plan and archive inventory. Queue: {'batch_candidate': 129, 'correction': 90, 'individual_review': 795, 'installed': 1213, 'specialist_review': 1012, 'visual_triage': 3573}. All installed DDS filenames and SHA-256 hashes still match the native batch180 audit, which passed 1213 files. No redundant native test or gameplay run for inventory-only work.
+- Installed coverage remains 1213/6812 supported unique keys (17.81%); 5509 need art and 90 drafts need correction. Catalog remains 7147 supported payloads. Other encodings, embedded assets, unclassified archive entries and procedural coverage remain open; no full-coverage claim.
+- One active pack remains below 6144 MiB. The 512 MiB residency limit and aggregate temporary limit of 256 MiB remain; all extant temporary subdirectories are counted. No deletion or new source artwork this pass. Previously denied files remain unchanged. Physical texture workspace accounting includes source art. This turn wrote small provenance/classification records only.
+- No runtime/platform source changed in batch181; no Mac adapter needed for this inventory pass. Mac scene validation and the batch180 shared compiler check on Mac remain unverified. The >=90% offline coverage and every-category-reviewed gate remains unmet. Consolidated scene, UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability checks remain pending; full campaign playthrough is separate.
+- Pack 1,022,061,430 bytes (974.71 MiB / 6144 MiB). Texture workspace at audit 5,832,149,408 logical and 5,832,149,408 Windows allocated bytes (5.43 GiB); free disk 92,631,265,280 bytes. Aggregate temporary output 157,511,128 bytes (150.21 MiB / 256 MiB).
+- Private evidence: `review/hybrid-181-*`, classification, inventory and progress. No game files or artwork published; full overhaul remains incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 182
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `348f28e`.
+- Previous batch181 completed 128 additional original inventory reviews and expanded the classified queue. This pass produced eight independent weathered panel/surface edits with built-in image generation; six passed offline review and were installed, two remain correction drafts. No game launch.
+- Actual generated sources: five 1254x1254, two 1774x887 and one 887x1774 PNG. Accepted outputs: three 1024x1024, two 1024x512 and one 512x512 DXT1 with complete mip chains. All accepted sources were LANCZOS-resampled; these are not native 4K images. Every source matches its original aspect exactly; no aspect-rounding option was needed. Exact prompts, references, source dimensions and resampling are recorded privately.
+- Accepted 4c94cf039f1e340e blue-black riveted panel (+7.09% mean luminance; left/right grayscale +9.52%/+4.24%), 4c9e40b457e8f40d pale paired panels (-2.45%; upper/lower -1.84%/-2.93%), 4d3f3644ee120afe metal panel over wood (+3.08%; metal +3.75%, wood +0.14%), 4e2ae2146e2ca1ed diagonal-braced panel (-6.42%; halves -7.00%/-5.85%), 530048dfa6f8ee96 vertical ribbed wall (-0.03%; main panel -1.65%, narrow base +12.06%), and 55951b2af065a1db worn gray-green sheet (-3.33%; upper/lower -3.39%/-3.04%). Primary seams, braces, panel boundaries, rib spacing and broad wear placement are retained in offline comparisons. Blue oxidation, rivet definition, surface grain and red paint wear are stronger; the ribbed base is locally brighter. These accepted material differences require later scene checks.
+- Held 4fccb82b9239938e tall riveted plate: -11.58% overall, upper/lower -12.02%/-11.43%; original pale gray visibility is reduced and rivet outlines harden. Held 4ff3d83e9e3a6bda red barrel: +14.81% overall, red band +14.93% grayscale and upper silver +12.96%; paint and reflections become too bright/contrasty. Preserve the drafts for local-value corrections; neither rejected DDS was persisted.
+- All eight originals match catalog-decoded RGBA, with exact aspect and opaque alpha. Supported US XBE SHA-256 verified before generation. Two primary, four original-scale focused and two repeated-layout PNG buffers reviewed in memory, totaling 5958346 ephemeral bytes; no raster review files saved. Eight new original PNG references total 450937 bytes. Repeated layouts are not mesh/scene adjacency proof. Accepted production CLI DDS hashes match the reviewed in-memory encodings. Native format, dimensions and mip audit passed all 1219 installed DDS files.
+- Coverage: 1219/6812 supported unique keys installed/offline-approved (17.89%), 5501 needing art and 92 correction drafts. Historical resolved drafts remain 62; visual classification remains 3225 keys; catalog remains 7147 supported payloads. Worklist, hybrid queue and archive inventory refreshed. Other encodings, embedded/procedural discovery and broader archive coverage remain open; full overhaul incomplete.
+- No cleanup this pass. Previously denied files, original game archives, source art, saves and settings preserved. One active pack remains below 6144 MiB; residency limit 512 MiB and aggregate temporary cap 256 MiB unchanged. All extant temporary subdirectories are included. No duplicate staging or game extracts.
+- No runtime/platform implementation changed; no new Mac adapter required. Mac tool/scene validation remains unverified. The >=90% offline coverage/every-category-reviewed gate remains unmet. Consolidated scene UV/alpha, 1080p/4K/ultrawide, memory/fallback and stability validation remain pending; full campaign playthrough is separate. No redundant source tests or game rebuild for this artwork-only batch.
+- Pack 1,025,035,840 bytes (977.55 MiB / 6144 MiB), added 2,974,410 bytes. Texture workspace at audit: 5,861,618,596 logical and 5,861,618,596 Windows allocated bytes (5.46 GiB); free disk 92,463,947,776 bytes. Aggregate temporary output: 158,034,352 bytes (150.71 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid182-v1.png`, `review/hybrid-182-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 183
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a355d7e`.
+- Previous batch182 installed six reviewed metal/panel replacements and retained two correction drafts. This pass produced eight independent wood, concrete and wallpaper edits using built-in image generation; six passed offline review and were installed, two remain correction drafts. No game launch.
+- Actual generated sources: five 1254x1254 and three 1774x887 PNG. Accepted outputs: five 1024x1024 and one 1024x512 DXT1 with complete mip chains. All accepted images were LANCZOS-resampled; these are not native 4K images. Every source matches original aspect exactly. No aspect-rounding exception was needed. Exact prompts, original references, source dimensions and resampling remain private.
+- Accepted 4b9b1da7488deadc inset wood panel (-4.70% mean luminance; inner field grayscale -4.92%, upper frame region -1.82%), 4bc917f7fe3a9b08 pale concrete (+2.69%; upper +7.17%, lower bright strip -1.50%), 4dc020252e0c70e8 concrete molding (+4.91%; upper band +0.52%, lower face +6.06%), 5106506f50edde44 gray block wall (+9.31%; upper/lower +7.38%/+11.51%), 51851ec48db8e316 wood/vertical-strip atlas (-4.07%; wood islands -4.98%, strip/right region -2.55%), and 52af28565fda4257 weathered boards (-3.31%; left/right -3.00%/-3.74%). Frame bounds, construction lines, block joint layout, atlas islands, strip placement and major knots remain recognizable in offline comparisons. Wood is warmer, bevels/cracks and pores are sharper, and block faces are brighter. These accepted material changes require later scene checks.
+- Held 4dcf9f81229b83e6 wallpaper: +26.87% overall luminance, border +13.85% grayscale and main field +28.66%; ivory/pattern becomes too bright and warm. Held 54d9b228ce63667c horizontal wood panel: -9.56% overall, inner -9.23%, upper molding region -11.96%; layered molding profile becomes more rounded/deep and shading changes. Restore local tones and original molding definition in correction work. Neither rejected DDS was persisted.
+- All eight originals match catalog-decoded RGBA and are opaque; supported US XBE hash verified before generation and again at finalization. Two primary, four original-scale focus and two repeated-layout review buffers total 6406402 ephemeral PNG bytes. No raster review files saved. Eight new original PNG references total 555393 bytes. Repeat previews are not proof of mesh mapping or scene adjacency. Accepted CLI DDS hashes match reviewed in-memory encodings. Native format, dimensions and mip audit passed all 1225 installed DDS files.
+- Coverage: 1225/6812 supported keys installed/offline-approved (17.98%), 5493 need art and 94 drafts require correction. Historical resolved drafts remain 62; classification remains 3225; catalog remains 7147 supported payloads. Worklist, hybrid queue and archive inventory refreshed. Other encodings, embedded/procedural assets and broader archive coverage remain open; full overhaul incomplete.
+- No cleanup this pass. Previously denied files, original game assets, source art, personal saves and settings preserved. Single pack cap 6144 MiB, residency limit 512 MiB and aggregate temporary cap 256 MiB unchanged. All extant temporary directories count toward the limit. No duplicate staging or game extracts.
+- No runtime/platform source changed; no new Mac adapter required. Mac tool and scene validation remain unverified. The >=90% offline coverage/every-category-reviewed gate remains unmet. Consolidated scene UV/alpha, 1080p/4K/ultrawide, memory/fallback and stability checks remain pending; full campaign playthrough is separate. No redundant source tests or game rebuild for this artwork-only batch.
+- Pack 1,028,884,062 bytes (981.22 MiB / 6144 MiB), added 3,848,222 bytes. Texture workspace at audit: 5,893,139,723 logical and 5,893,139,723 Windows allocated bytes (5.49 GiB); free disk 92,048,580,608 bytes. Aggregate temporary output: 158,659,349 bytes (151.31 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid183-v1.png`, `review/hybrid-183-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul issue #74: correction batch 184
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `6128469`.
+- The preceding hardware question did not change texture state. Revalidated the clean issue branch and pending sources, then completed offline review of eight corrections. Four were accepted and installed; four remain held. Resolved drafts increase from 62 to 66 and active drafts fall from 94 to 90. No game launch.
+- Built-in image generation used the original plus rejected draft for each correction, with original geometry and broad shading authoritative. Actual sources: six 1774x887, one 887x1774 and one 1254x1254 PNG. Accepted outputs: 512x256, 512x1024, 1024x1024 and 1024x512 DXT1, LANCZOS-resampled with complete mip chains. These are not native 4K artwork. Previous sources, exact prompts and correction history are preserved.
+- Accepted 33ca8845ef79d9d5 equipment atlas: gray fields recovered, +5.93% overall luminance; upper/lower grayscale +3.87%/+8.98%. Opening and grille layout retained; stronger fine rim contrast still needs scene confirmation. Accepted 4fccb82b9239938e riveted plate: +1.28% overall, upper/lower +0.30%/+2.21%; restored gray field and retained rivet layout with finer scratches. Accepted 4ff3d83e9e3a6bda barrel wrap: +6.10% overall, red band +5.08%, upper silver +4.75%; reflection bands and red paint footprint preserved with restrained wear. Accepted 4dcf9f81229b83e6 wallpaper: +8.21% overall, border/main +4.01%/+8.75%; subdued ivory restored, lattice and floral placement retained.
+- Held 35e50354c1f11b48: -18.83% overall, red stripes and rims remain too strong; gray/blue local values still too dark. Held 3694f1cf9bdf7844: -3.83% overall but central opening remains an incorrect hard rectangle. Held 46e86c70c616208a: stitching removed and folds recovered, but -12.12% overall and excessive ridge contrast remain. Held 54d9b228ce63667c: -7.58% overall, molding remains deeper/rounder and glossier than original thin frame layers. Future corrections must change those specific defects; no unchanged prompt retries. Rejected DDS files were not persisted.
+- Eight original PNGs match catalog-decoded RGBA; all generated sources have exact aspect and opaque alpha. Reviewed two primary, four focus and two 2x2 repeated-layout sheets from actual DDS encodings in memory: 3,663,122 ephemeral bytes, zero review raster files or new original exports. Repetition does not prove scene adjacency. Installed CLI hashes match inspected encodings; all 1229 installed DDS pass native format/dimensions/mip checks. GPU residency and scene behavior remain unvalidated.
+- No cleanup was needed or performed. Temporary accounting includes every texture subdirectory except authored and pack. Historical source artwork and denied-deletion reference files remain intact. No duplicate extracts, pack or staging trees created.
+- Coverage: 1229/6812 supported keys installed/offline-approved (18.04%), 5493 need art and 90 require correction. Classification remains 3225 keys; supported catalog contains 7147 payloads. Worklist, hybrid queue and archive inventory refreshed. Other encodings, embedded/procedural assets and broader discovery remain open.
+- Caps unchanged: 6144 MiB pack, 512 MiB runtime replacement residency and 256 MiB aggregate temporary output. No runtime/platform code changed; no new Mac adapter required, Mac validation remains unverified. The >=90% offline coverage/all categories reviewed gate is unmet. Scene UV/alpha, 1080p/4K/ultrawide, memory/fallback and stability testing remain pending; full campaign playthrough is separate.
+- Pack 1,030,371,846 bytes (982.64 MiB / 6144 MiB), added 1,487,784 bytes. Texture workspace at audit: 5,918,180,883 logical and 5,918,180,883 Windows allocated bytes (5.51 GiB); free disk 91,667,390,464 bytes. Aggregate temporary output: 158,748,133 bytes (151.39 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid184-v1.png`, `review/hybrid-184-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul issue #74: inventory batch 185
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `9881aa7`.
+- Completed 128 additional original-texture inventory reviews after the four accepted corrections in batch184. Revalidated clean source revision 9881aa7 and current storage; classification increases from 3225 to 3353 distinct keys. This pass reviews 64 small reused textures and 64 single-use textures. Classification is not artwork completion.
+- Sixteen original-only checkerboard contact sheets were reviewed in memory, totaling 3,860,807 ephemeral PNG bytes. No new original PNG exports or raster review files. Selection metadata preserves catalog payload/decoded RGBA hashes, dimensions, alpha ranges, renderer hash and reviewed page hashes for reproduction.
+- New classifications: 36 environment, 26 interface/prop, 16 interface, 10 character/prop, 9 transparent environment, 8 environment/prop, 6 props, 6 effects, 6 uncertain effect/utility, 2 characters, 2 prop/weapon and 1 reflection/utility. Materials include wood, metal, stone, plaster, skies and decorative trim. Identity-sensitive portraits, atlas pieces, labels, glyphs, warnings, state indicators and printed pictures remain under individual/specialist review. Mirrored or inverted markings retain their authored orientation. Faint gradients and ambiguous effects remain in scope, not excluded as blank.
+- Refreshed worklist, hybrid plan and archive inventory. Routing now has 149 material batch candidates, 90 corrections, 859 individual reviews, 1040 specialist reviews, 3445 visual-triage keys and 1229 installed. Thirty-six newly classified environments expand the batch candidate queue; routing is not visual approval.
+- Installed coverage remains 1229/6812 supported keys (18.04%); 5493 need art and 90 drafts require correction. The supported catalog remains 7147 payloads. Verified that every installed DDS filename and SHA-256 still matches the complete batch184 native audit, which passed all 1229 files. No redundant native checker or gameplay run for inventory-only changes. Other encodings, embedded/procedural assets and broader archive discovery remain open.
+- One active pack remains below 6144 MiB. Runtime residency limit remains 512 MiB and aggregate temporary output below 256 MiB, counting all subdirectories except authored and pack. Physical texture workspace accounting includes source art. No source artwork generation, deletion, duplicate extracts or staging copies this pass; denied-deletion references remain unchanged.
+- No runtime/platform code changed; no new Mac adapter required. Mac validation remains unverified. The >=90% offline-coverage/every-category-reviewed gate is unmet. Consolidated scene UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability testing remain pending; a full campaign playthrough is separate.
+- Pack 1,030,371,846 bytes (982.64 MiB / 6144 MiB). Texture workspace at audit 5,918,336,425 logical and 5,918,336,425 Windows allocated bytes (5.51 GiB); free disk 91,661,201,408 bytes. Aggregate temporary output 158,818,688 bytes (151.46 MiB / 256 MiB).
+- Private evidence: `review/hybrid-185-*`, classification, inventory and progress. No game files or artwork published; full overhaul remains incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 186
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `05f1b28`.
+- Continued from completed inventory batch185 on clean revision 05f1b28. Verified supported US XBE, physical storage and eight reviewed opaque originals, then generated eight independent material edits with the built-in image tool. Four pass offline review and are installed; four are held for targeted correction. No game launch.
+- Actual generated sources: six 1254x1254 and two 1774x887 PNGs, all exact original aspect with opaque alpha. Accepted outputs: two 1024x1024, one 512x512 and one 1024x512 DXT1 with complete mip chains, LANCZOS-resampled. No aspect-rounding allowance used; these are not native 4K images. Exact prompts, all eight source images and provenance remain private.
+- Accepted 5a5aba6c972b2e0a pale slabs: -1.06% overall luminance; upper/lower grayscale +0.73%/-2.25%; horizontal seam positions and broad mottled highlight retained with fine pores. Accepted 5c55e04ebfb8be4b pale brick: +1.35% overall, halves +1.15%/+1.54%; staggered brick coordinates retained with stronger fine mineral texture. Accepted 5d612af4a2fd3b9e vertical timber: -9.62% overall, halves -10.31%/-9.35%; board widths and seam positions retained, darker fine grain and stronger fiber relief require scene confirmation. Accepted 6058bd1c89139295 peach plaster: +1.83% overall, halves +2.84%/+2.11%; broad peach mottling and low-contrast swirls retained with fine trowel detail.
+- Held 57f2174039ab70a2 rusty plate: overly orange coloring, bright rivet rims and deeper inset relief; +8.94% overall. Held 5a09a8f939a6f7a1 mossy rock: lower half +22.22% despite upper +1.49%, reducing broad lower shadow; overall +9.73%. Held 5a0b7c864de30058 horizontal timber: -19.99% overall, lost pale worn fiber values. Held 5c67d33685e287b1 sandstone: +12.07%, excessive orange saturation and stronger seam relief. Preserve these drafts and change the specific color/local-shading defects in future correction prompts. Rejected DDS files were never persisted.
+- Eight originals match catalog-decoded RGBA. Two primary, four focused original-scale and two repeated-layout sheets reviewed from actual DXT1 encoding in memory, totaling 7,762,821 ephemeral bytes. Repetition is not proof of scene adjacency. Eight original PNG references total 658,530 bytes; no review raster files saved. Installed CLI hashes match inspected encodings. All 1233 installed DDS pass native format/dimensions/mip validation; GPU residency and gameplay remain unverified.
+- Coverage: 1233/6812 supported keys installed/offline-approved (18.10%), 5485 need art and 94 drafts need correction. Classification remains 3353 keys, supported catalog 7147 payloads. Worklist, hybrid queue and archive inventory refreshed. Other encodings, embedded/procedural assets and broader discovery remain open; no full-coverage claim.
+- No cleanup or duplicated pack/game/staging trees. Historical artwork and denied-deletion reference files remain intact. Source art is included in physical texture workspace accounting. Pack cap 6144 MiB, runtime residency limit 512 MiB and aggregate temporary cap 256 MiB unchanged.
+- No runtime/platform source changed; no new Mac adapter required. Mac validation remains unverified. The >=90% offline-coverage/every-category-reviewed gate remains unmet. Consolidated scene UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability checks remain pending; a full campaign playthrough is separate.
+- Pack 1,032,296,530 bytes (984.47 MiB / 6144 MiB), added 1,924,684 bytes. Texture workspace at audit: 5,951,331,038 logical and 5,951,331,038 Windows allocated bytes (5.54 GiB); free disk 91,451,752,448 bytes. Aggregate temporary output: 159,547,103 bytes (152.16 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid186-v1.png`, `review/hybrid-186-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul issue #74: hybrid batch 187
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a19b934`.
+- Continued from completed batch186 on clean issue revision a19b934. Verified supported US XBE, physical storage and eight opaque originals, then generated eight independent built-in image edits. Six pass offline review and are installed; two remain held for targeted correction. No game launch.
+- Actual generated sources: six 1254x1254 and two 1774x887 PNGs, all exact original aspect and opaque alpha. Accepted outputs: five 1024x1024 and one 1024x512 DXT1 with complete mip chains, LANCZOS-resampled. No aspect-rounding allowance used. These are not native 4K images. All source art, exact prompts and provenance remain private.
+- Accepted 56e391ab7c1d60dd pale metal lip panel: -0.60% overall luminance; lip/lower focus -0.65%/-0.44%; broad pale reflection, perimeter and lip height retained with fine brushing. Accepted 57dfbc664a3b349d divided cladding: +3.39%, left divider/crossbar +1.91%/+3.32%; divider positions and widths retained with fine mineral grain. Accepted 58b9ce684fa0e398 brown banded panel: -2.97%, main/band -1.51%/-3.37%; bands retained, stronger fine wear and warmer brown detail. Accepted 58ea8d179d0abd4c four-hole copper plate: -6.18%, left/right -7.63%/-5.86%; hole centers and reflection positions retained with finer scratches. Accepted 5971e2d9bd335dbb weathered pale sheet: +1.34%, halves +0.83%/+1.85%; lower pale wear, streaks and left fitting retained. Accepted 5ce131f698d67ad9 rusty three-flap panel: -0.38%, flap/lower-band -0.27%/-2.07%; flap outlines and rivets retained with sharper fine corrosion. Material contrast still needs consolidated scene confirmation.
+- Held 5d0cfb53524b4233 gold riveted sheet: narrower stronger reflection bands and excessive raised rivet relief; overall -5.97%, strap/right -6.48%/-6.81%. Restore original broad smooth highlight and subdued rivets. Held 5ec58cfd004fdacf slatted door: overall -9.13%, window/latch band -9.55%, lower panels -11.90%, with overly hard slat outlines. Restore pale gray-blue fields and softer edges. Retain drafts and use specific changed correction prompts; rejected DDS files were never persisted.
+- Eight original PNG exports total 573,011 bytes and match catalog-decoded RGBA. Reviewed two primary, four focused original-scale and two repeated-layout sheets from actual encoded DDS in memory, totaling 6,225,929 ephemeral bytes. No raster review files saved. Repetition does not prove scene adjacency. Installed CLI hashes match inspected encodings. All 1239 installed DDS pass native format/dimensions/mip checks; GPU residency and gameplay remain unverified.
+- Coverage: 1239/6812 supported keys installed/offline-approved (18.19%), 5477 need art and 96 drafts require correction. Classification remains 3353 keys; supported catalog 7147 payloads. Worklist, hybrid queue and archive inventory refreshed. Other encodings, embedded/procedural assets and broader discovery remain open.
+- No cleanup, duplicate game extracts, active packs or staging trees created. Historical artwork and denied-deletion references remain intact. Physical texture workspace accounting includes source art. Pack cap 6144 MiB, runtime replacement residency limit 512 MiB and aggregate temporary cap 256 MiB unchanged.
+- No runtime/platform source changed; no new Mac adapter needed, Mac validation remains unverified. The >=90% offline-coverage/every-category-reviewed gate is unmet. Consolidated scene UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability checks remain pending; a full campaign playthrough is separate.
+- Pack 1,036,144,752 bytes (988.14 MiB / 6144 MiB), added 3,848,222 bytes. Texture workspace at audit: 5,982,457,535 logical and 5,982,457,535 Windows allocated bytes (5.57 GiB); free disk 91,285,053,440 bytes. Aggregate temporary output: 160,191,362 bytes (152.77 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid187-v1.png`, `review/hybrid-187-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul issue #74: correction batch 188
+
+- Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `d1401bc`.
+- The preceding hardware question changed no texture state. Revalidated the clean issue #74 branch and storage, then generated and reviewed eight held-draft corrections. Three accepted and installed; five remain held. Resolved drafts rise from 66 to 69, active drafts fall from 96 to 93. No game launch.
+- Built-in image generation used each original as the sole edit reference, with defect-specific prompts. Actual source PNGs: four 1254x1254 and four 1774x887. Three accepted outputs are 1024x1024 DXT1 with complete mip chains, LANCZOS-resampled from 1254x1254; these are not native 4K artwork. Previous sources, prompt backups and correction history are preserved.
+- Accepted 5a09a8f939a6f7a1 mossy rock: +3.92% overall luminance, upper/lower grayscale -1.06%/+9.88%. Large fractures and broad lower darkness retained; finer moss/rock grain. Accepted 5c67d33685e287b1 sandstone: +6.36% overall, upper/lower +5.21%/+8.65%; three-block layout and joints retained, warmth and fine grain increased modestly. Accepted 5ec58cfd004fdacf slatted door: +2.41% overall, window/latch band +0.44%, lower panels -0.39%; pale field values restored, panel/window/latch positions retained. Stronger fine edge contrast requires later scene confirmation.
+- Held 57f2174039ab70a2 rusty plate: broad values recovered but bright rivet rims and deep inset relief persist. Held 5a0b7c864de30058 timber: correction overshot to +27.48% overall; fields and fibers too bright. Held 5d0cfb53524b4233 gold sheet: narrow reflection bands, yellow cast and raised rivet rims remain. Held 35e50354c1f11b48 equipment atlas: field brightness recovered, but yellow edge marking beside the blue inset/black strip was changed to pale metal. Held 46e86c70c616208a folded atlas: -10.37% overall and excessive rib highlight contrast remain. Retain these specific defects for future focused corrections; no unchanged retries. Held DDS outputs were not persisted.
+- Eight original PNGs match catalog-decoded RGBA; sources preserve exact aspect and opaque alpha. Reviewed two primary, four focus and two repeated-layout sheets from actual DXT1 encodings in memory: 5,891,925 ephemeral bytes, zero raster review files or new original exports. Repetition is not proof of scene adjacency. Installed CLI DDS hashes match inspected encodings; all 1242 installed files pass native format/dimensions/mip acceptance. GPU residency and scene behavior remain unvalidated.
+- No cleanup was necessary or performed. Temporary accounting covers all texture subdirectories except authored and pack. Historical source artwork and denied-deletion references remain intact. No duplicate game extracts, pack or staging trees created.
+- Coverage: 1242/6812 supported keys installed/offline-approved (18.23%), 5477 need art and 93 require correction. Classification remains 3353 keys; supported catalog contains 7147 payloads. Worklist, hybrid queue and inventory refreshed. Other encodings, embedded/procedural assets and broader discovery remain open.
+- Caps unchanged: 6144 MiB pack, 512 MiB replacement residency, 256 MiB aggregate temporary output. No runtime/platform code change or new Mac adapter required; Mac validation unverified. The >=90% offline coverage/all categories reviewed gate remains unmet. Scene UV/alpha, 1080p/4K/ultrawide, memory/fallback and stability checks remain pending; full campaign playthrough is separate.
+- Pack 1,038,243,624 bytes (990.15 MiB / 6144 MiB), added 2,098,872 bytes. Texture workspace at audit: 6,011,438,021 logical and 6,011,438,021 Windows allocated bytes (5.60 GiB); free disk 90,987,274,240 bytes. Aggregate temporary output: 160,278,210 bytes (152.85 MiB / 256 MiB).
+- Private source art/prompts and evidence: `authored/*-hybrid188-v1.png`, `review/hybrid-188-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
+
+
+## Texture overhaul alpha PR preparation — 2026-10-19
+
+- Prepared the issue #74 source alpha from `514ea67` on `74-enhancement-gfx-overhaul-to-modernize-textures`; added `docs/texture-alpha.md` with the private batch188 pack snapshot, public source scope and remaining validation gates. No artwork or game files added to Git.
+- Windows x64 / Python 3.12: 70 texture compiler, hybrid planner, archive-signature, embedded-scan, non-PAK and variant tests passed. Four patch tests also passed in that initial run; ten patch fixture setups failed because the source worktree has no duplicate `external/ts3FPrecomp`. Reran the complete patch suite with its runtime fixture pointed at the existing pinned `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845` checkout: all 14 passed. No upstream copy or game build was created.
+- Fresh MSVC compilation of the DDS parser and texture loader/toggle tests passed. DDS parser checks passed; loader tests passed in classic, 4k, missing-pack and implicit modes with synthetic RHI resources. The initial toggle invocation omitted required fixture/mode arguments and stopped at argc validation; corrected invocations passed. These are offline native tests, not GPU or game validation.
+- Read-only merge simulation against current `origin/main` identified conflicts in MAC_PORT_BACKLOG.md, STATUS.md, src/pc_controls.c, tests/test_patch_updates.py, tools/playable-launch.ps1 and tsfp.ps1. The alpha PR is a draft and requires integration before merge; neither branch was merged or rebased.
+- No runtime source changed during PR preparation, no game launch, no new pack copies or packaging trees. MAC-011 remains awaiting validation for native toggle adaptation/real-art scenes. The full overhaul remains unfinished and issue #74 stays open.
 ## Issue #25 investigation (2026-10-17)
 
 Source base `33fc619`, Windows x64, branch
@@ -9719,3 +12465,12 @@ this source merge does not publish a release or validate Windows gameplay.
 Logs: `logs/renderer-promotion-{patches,contracts,launcher}.log`; source hash
 baseline: `logs/renderer-promotion-runtime-before.json`. No personal data or
 concurrent worktree changes were included.
+
+
+## Texture alpha main integration — 2026-10-19
+
+- Integrated main at `0bf9672` into the issue #74 branch for PR #198, preserving current launcher/crash paths, build targets, themes, historical patch migrations, both STATUS histories and MAC-011 records. The user authorized merging the source alpha while keeping issue #74 open. No closing reference is used.
+- Made texture mode initialization/toggling shared with thin Win32 and POSIX synchronization adapters, and linked it into the native common renderer through a separate reproducible patch. This prevents unresolved mode symbols after current main adopted the common Mac texture loader. The native F10/settings adapter remains pending; existing explicit-pack defaults are preserved. Legacy GL now safely rejects RGBA and alpha-incompatible replacements instead of interpreting accepted RGBA bytes as BC3.
+- Registered DDS/parser/loader mode, compiler, inventory, hybrid-planner and variant checks in Windows/macOS CI, with pinned Pillow installation and texture-tool change routing. Tests compile actual loader/mode code, exercise all four initial modes with synthetic RHI resources, and syntax-check Windows controls/settings. MAC-011 records remaining interactive/native visual validation.
+- Windows validation on the integrated tree: 131 texture/native/storage/CI-selection/backlog checks passed; 34 complete patch-transition/tracking checks passed against the existing pinned upstream (20 transition and 14 tracking tests). PowerShell parsing passed for tsfp.ps1 and both texture/playable launch scripts. Diff whitespace check passed with CRLF treated as line endings. Hosted checks are pending at this local record; local Windows results do not establish Mac execution or GPU/gameplay fidelity.
+- No game launch, artwork generation, private-pack change, game-data copy or distributable build. Private artwork remains local; the pack snapshot stays at 1242 supported keys approved offline, 93 held drafts and 5477 needing art. The full overhaul is incomplete.

@@ -1,0 +1,8 @@
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -80,4 +80,5 @@
+         target_sources(xbox_d3d8 PRIVATE
+             "${TSFP_NATIVE_DIR}/renderer_rhi_sdl.c" "${TSFP_NATIVE_DIR}/renderer_host_sdl.c"
++            "${TSFP_NATIVE_DIR}/../texture_mode.c"
+             "${TSFP_NATIVE_DIR}/../texture_pack.c")
+         target_include_directories(xbox_d3d8 PRIVATE "${TSFP_NATIVE_DIR}" "${TSFP_NATIVE_DIR}/..")

@@ -56,6 +56,8 @@ def snapshot(tree):
 
 def test_fresh_checkout_and_repeated_build(checkout):
     assert installer.apply_patches(checkout, PATCHES)
+    assert '"${TSFP_NATIVE_DIR}/../texture_mode.c"' in (
+        checkout / 'src/d3d/CMakeLists.txt').read_text()
     complete = snapshot(checkout)
     assert installer.apply_patches(checkout, PATCHES) == []
     assert snapshot(checkout) == complete
@@ -106,6 +108,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
+        if patch.name.endswith('-texture-mode-shared.patch'):
+            continue  # Depends on the common native renderer added by migration.
         if patch.name.endswith(('-discord-presence.patch', '-shared-renderer-host.patch', '-shared-vulkan-mac.patch', '-shared-native-renderer.patch', '-shared-interpolation-depth.patch', '-shared-present-metrics.patch', '-native-launcher-services.patch', '-shared-screen-copy-clipping.patch', '-vulkan-portability-swizzle.patch', '-shared-interpolation-capture.patch')):
             continue  # These changes depend on later native/display or feedback blocks.
         if patch.name in ('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-white-flash-overlay.patch',
@@ -146,7 +150,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
             continue  # Requires the display wrapper, absent in this historical state.
         if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch')):
             continue  # Depends on native/shared renderer context added by the full migration below.
-        if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
+        if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'texture-toggle.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
             apply(checkout, patch.name)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')
@@ -197,8 +201,20 @@ def texture_branch_patches(tmp_path):
     return patches
 
 
+def main_branch_patches(tmp_path):
+    """Model main without the optional active toggle, regardless of this branch."""
+    patches = tmp_path / 'main-patches'
+    patches.mkdir()
+    for patch in PATCHES.glob('*.patch'):
+        if patch.name != 'texture-toggle.patch':
+            shutil.copyfile(patch, patches / patch.name)
+    shutil.copytree(PATCHES / 'legacy', patches / 'legacy')
+    return patches
+
+
 @pytest.mark.parametrize('crlf', [False, True])
 def test_switch_from_texture_branch_to_main_and_back(checkout, tmp_path, crlf):
+    main_patches = main_branch_patches(tmp_path)
     texture_patches = texture_branch_patches(tmp_path)
     installer.apply_patches(checkout, texture_patches)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
@@ -206,7 +222,7 @@ def test_switch_from_texture_branch_to_main_and_back(checkout, tmp_path, crlf):
     if crlf:
         for name, content in snapshot(checkout).items():
             (checkout / name).write_bytes(content.replace(b'\r\n', b'\n').replace(b'\n', b'\r\n'))
-    assert installer.apply_patches(checkout, PATCHES)
+    assert installer.apply_patches(checkout, main_patches)
     cmake = (checkout / 'src/input/CMakeLists.txt').read_text()
     assert 'texture_mode.c' not in cmake
     assert 'pc_controls.c' in cmake
@@ -214,25 +230,26 @@ def test_switch_from_texture_branch_to_main_and_back(checkout, tmp_path, crlf):
     assert 'tsfp_texture_sync_bindings' not in (checkout / 'src/d3d/d3d8_device.c').read_text()
     assert 'unrelated local edit' in manual.read_text()
     complete = snapshot(checkout)
-    assert installer.apply_patches(checkout, PATCHES) == []
+    assert installer.apply_patches(checkout, main_patches) == []
     assert snapshot(checkout) == complete
     # The same legacy patch can become active again on the texture branch.
     shutil.copytree(PATCHES / 'legacy', texture_patches / 'legacy')
     assert installer.apply_patches(checkout, texture_patches)
     assert 'texture_mode.c' in (checkout / 'src/input/CMakeLists.txt').read_text()
     assert installer.apply_patches(checkout, texture_patches) == []
-    assert installer.apply_patches(checkout, PATCHES)
+    assert installer.apply_patches(checkout, main_patches)
     assert snapshot(checkout) == complete
 
 
 def test_modified_legacy_patch_rejects_switch_without_writes(checkout, tmp_path):
+    main_patches = main_branch_patches(tmp_path)
     installer.apply_patches(checkout, texture_branch_patches(tmp_path))
     source = checkout / 'src/d3d/d3d8_device.c'
     source.write_bytes(source.read_bytes().replace(b'tsfp_texture_is_4k()',
                                                  b'custom_texture_is_4k()'))
     before = snapshot(checkout)
     with pytest.raises(RuntimeError, match='conflicts with the runtime checkout'):
-        installer.apply_patches(checkout, PATCHES)
+        installer.apply_patches(checkout, main_patches)
     assert snapshot(checkout) == before
 
 
