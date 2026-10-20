@@ -74,7 +74,7 @@ foreach ($reference in @('PresentationCore.dll','PresentationFramework.dll','Win
     $commonArguments += '/reference:' + (Join-Path $framework "WPF\$reference")
 }
 $commonSources = @((Join-Path $source 'Core.cs'), (Join-Path $source 'LauncherPlatform.cs'), (Join-Path $source 'DownloadTransfer.cs'), (Join-Path $source 'ReleaseNews.cs'), (Join-Path $source 'ReleaseClient.cs'),
-    (Join-Path $source 'SelfUpdate.cs'), (Join-Path $source 'TexturePack.cs'), (Join-Path $source 'TextureDownload.cs'), (Join-Path $source 'LauncherVersion.cs'), (Join-Path $source 'WindowTheme.cs'))
+    (Join-Path $source 'SelfUpdate.cs'), (Join-Path $source 'UpdateRestart.cs'), (Join-Path $source 'TexturePack.cs'), (Join-Path $source 'TextureDownload.cs'), (Join-Path $source 'LauncherVersion.cs'), (Join-Path $source 'WindowTheme.cs'))
 $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Bootstrap',
     ('/out:' + (Join-Path $Output 'TimeSplitters Launcher.exe'))) + $commonSources + @((Join-Path $source 'Bootstrap.cs'))
 & $compiler @arguments
@@ -129,7 +129,7 @@ if ($Test) {
         (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'),
         (Join-Path $project 'tests\launcher_updates.cs'))
     $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher_crashes.cs'), (Join-Path $project 'tests\launcher_settings.cs'), (Join-Path $project 'tests\launcher_maintenance.cs'), (Join-Path $project 'tests\launcher_downloads.cs'), (Join-Path $project 'tests\launcher_news.cs'), (Join-Path $project 'tests\launcher_versions.cs'), (Join-Path $project 'tests\launcher_startup.cs'))
-    $testArgs += @((Join-Path $project 'tests\launcher_sessions.cs'), (Join-Path $project 'tests\launcher_shared_ui.cs'), (Join-Path $project 'tests\launcher_textures.cs'))
+    $testArgs += @((Join-Path $project 'tests\launcher_sessions.cs'), (Join-Path $project 'tests\launcher_shared_ui.cs'), (Join-Path $project 'tests\launcher_restart.cs'), (Join-Path $project 'tests\launcher_textures.cs'))
     $testArgs += @(('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml'),
         ('/resource:' + (Join-Path $Output 'launcher.ico') + ',launcher.ico')) + $bannerArguments + $logoArguments
     & $compiler @testArgs

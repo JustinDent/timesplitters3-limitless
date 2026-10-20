@@ -44,20 +44,40 @@ namespace TimeSplitters.Launcher
         }
         public static void Handoff(string root)
         {
-            string helper=Core.PathIn(root,".launcher/mac-self-helper");LauncherPlatform.CopyFile(Environment.ProcessPath,helper);File.SetUnixFileMode(helper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
-            var info=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};info.ArgumentList.Add("--apply-self");info.ArgumentList.Add(root);info.ArgumentList.Add(Environment.ProcessId.ToString());Process.Start(info);
+            StartHelper(root,".launcher/mac-self-helper","--apply-self");
+        }
+        public static void HandoffGame(string root,bool rollback=false)
+        {
+            Core.Require(!LauncherPlatform.Checkout(root),"Release updates cannot overwrite a developer checkout.");
+            Core.Require(!Core.GameRunning(),"Close the game before changing the installed release.");
+            StartHelper(root,".launcher/mac-update-helper",rollback?"--rollback-game":"--apply-game");
+        }
+        static void StartHelper(string root,string name,string action)
+        {
+            string helper=Core.PathIn(root,name);Directory.CreateDirectory(Path.GetDirectoryName(helper));
+            LauncherPlatform.CopyFile(Environment.ProcessPath,helper);File.SetUnixFileMode(helper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
+            var info=new ProcessStartInfo(helper){UseShellExecute=false,WorkingDirectory=root};info.ArgumentList.Add(action);info.ArgumentList.Add(root);info.ArgumentList.Add(Environment.ProcessId.ToString());Process.Start(info);
             HandingOff=true;((IClassicDesktopStyleApplicationLifetime)Application.Current.ApplicationLifetime).Shutdown();
+        }
+        public static int ApplyGame(string root,int parent,bool rollback,bool probe=false)
+        {
+            try { return UpdateRestart.ApplyGame(root,parent,rollback,()=>Restart(root,probe,"game-update-preview.png")); }
+            catch(Exception e){LauncherLog.Write(root,e.ToString());return 1;}
+        }
+        static void Restart(string root,bool probe,string preview)
+        {
+            if(probe){
+                var app=new ProcessStartInfo(Core.PathIn(root,Core.LauncherName)){UseShellExecute=false,WorkingDirectory=root};
+                foreach(var arg in new[]{"--render-preview",Core.PathIn(root,preview),"--root",root,"--skip-self-update"})app.ArgumentList.Add(arg);
+                using(var process=Process.Start(app)){if(!process.WaitForExit(20000)){process.Kill(true);process.WaitForExit(3000);throw new IOException("Restarted launcher preview timed out.");}Core.Require(process.ExitCode==0,"Restarted launcher preview failed.");}
+            } else Process.Start(LauncherPlatform.RestartInfo(root));
         }
         public static int Apply(string root,int parent,bool probe=false)
         {
             try{SelfUpdate.WaitForParent(parent);using(var guard=new FileStream(Core.PathIn(root,".launcher/mac.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None)){
                 Core.RecoverLauncher(root);SelfUpdate.InstallPending(root);
             }
-            if(probe){
-                var app=new ProcessStartInfo(Core.PathIn(root,Core.LauncherName)){UseShellExecute=false};app.ArgumentList.Add("--render-preview");app.ArgumentList.Add(Core.PathIn(root,"self-update-preview.png"));app.ArgumentList.Add("--root");app.ArgumentList.Add(root);
-                using(var process=Process.Start(app)){if(!process.WaitForExit(20000)){process.Kill(true);return 1;}return process.ExitCode;}
-            }
-            var info=new ProcessStartInfo("/usr/bin/open"){UseShellExecute=false};info.ArgumentList.Add("-n");info.ArgumentList.Add(Core.PathIn(root,"TimeSplitters Launcher.app"));info.ArgumentList.Add("--args");info.ArgumentList.Add("--skip-self-update");Process.Start(info);return 0;
+            Restart(root,probe,"self-update-preview.png");return 0;
             }catch(Exception e){LauncherLog.Write(root,e.ToString());return 1;}
         }
     }

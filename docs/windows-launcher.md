@@ -484,7 +484,11 @@ Install/Update click. Downloading and verification happen before the launcher
 closes. A copy of the launcher runs as `.launcher/update-helper.exe`, waits for
 the old process, acquires the per-installation mutex, verifies the staged files
 again, and installs. Both update and rollback refuse while any game process is
-running. The launcher also blocks a second instance for the same folder.
+running. It then automatically reopens the installed launcher; game repair uses
+the same flow. The transaction/result/restart ordering is shared with Mac in
+`UpdateRestart.cs`, with per-host locks and process startup. Relaunch skips one
+startup update check, including when installation fails, to avoid retry loops.
+The launcher also blocks a second instance for the same folder.
 
 Every replaced file is backed up before any installed file is changed. A
 `.launcher/transaction/journal.json` records which files originally existed.

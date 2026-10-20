@@ -1572,6 +1572,20 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Automatic restart after game updates (2026-10-20, commit carrying this
+  entry on `codex/launcher-update-restart`):** Windows already used a copied
+  updater to close/apply/reopen; Mac applied game packages inside the old UI
+  process, leaving replaced launcher code active. Both helpers now use shared
+  `tools/launcher/UpdateRestart.cs`; installation locks and relaunch commands
+  remain in `LauncherPlatform.cs`. Native install, repair and restore route
+  through `NativeStartup.HandoffGame`. Mac self-update and game-update restarts
+  retain the selected installation root, including translocated app launches.
+  Native regressions, shared success/failure/restore tests and an actual packaged
+  helper replacement/restart/render pass locally. Windows CI is pending at
+  implementation, with shared and separate-process regressions in its existing
+  launcher workflow. No gameplay or browser-download delivery claim; status
+  remains Awaiting validation for wider delivery work.
+  [Evidence](STATUS.md#automatic-launcher-restart-after-updates-2026-10-20).
 - **Download status spacing (2026-10-20, commit carrying this entry on
   `codex/launcher-download-spacing`):** The Windows source layout placed channel
   controls, transfer text and the progress bar in one grid row; the generated

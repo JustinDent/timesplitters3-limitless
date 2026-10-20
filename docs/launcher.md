@@ -64,8 +64,11 @@ release is published. Launcher and game versions are separate.
 Use **Check updates**, review **Release notes**, then select **Update release**
 when offered. Close the game before installing updates or restoring a previous
 release. The launcher downloads and verifies an update before applying it and
-preserves imported data, saves and existing settings. It may restart during
-installation. Leave room for staging and one rollback snapshot in addition to
+preserves imported data, saves and existing settings. On Windows and Mac, the
+launcher closes after preparation and automatically reopens after installation,
+so Play always uses the newly installed launcher. Repairs and restoring a previous
+game use the same restart flow. Cancelling a download does not restart it.
+Leave room for staging and one rollback snapshot in addition to
 the installed game; optional textures also need their own space.
 
 Launcher updates are checked separately at startup. **Open installed launcher**

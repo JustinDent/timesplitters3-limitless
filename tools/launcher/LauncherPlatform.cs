@@ -1,5 +1,7 @@
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 namespace TimeSplitters.Launcher
 {
     // Filesystem/package names are host adapters. Validation, transactions,
@@ -10,6 +12,18 @@ namespace TimeSplitters.Launcher
         // Keep every other reparse tag (including unknown tags) rejected.
         public static bool IsCloudTag(uint tag) { return (tag & 0xFFFF0FFFu) == 0x9000001Au; }
 #if MACOS
+        public static IDisposable AcquireUpdateLock(string root)
+        {
+            return new FileStream(Core.PathIn(root, ".launcher/mac.lock"),
+                FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
+        }
+        public static ProcessStartInfo RestartInfo(string root)
+        {
+            var info = new ProcessStartInfo("/usr/bin/open") { UseShellExecute = false, WorkingDirectory = root };
+            foreach (var arg in new[] { "-n", Core.PathIn(root, "TimeSplitters Launcher.app"),
+                "--args", "--skip-self-update", "--root", root }) info.ArgumentList.Add(arg);
+            return info;
+        }
         public static bool IsCloudPlaceholder(string path) { return false; }
         public const string AssetSuffix = "macos-arm64";
         public static string SessionLog(string tag){return "logs/native-play.err";}
@@ -37,6 +51,24 @@ namespace TimeSplitters.Launcher
         }
         public static void Executable(string path) { if(OperatingSystem.IsMacOS() && File.Exists(path) && (path.EndsWith("/futureperfect_recomp") || path.EndsWith("/TimeSplitters.Launcher") || path.EndsWith(".command"))) File.SetUnixFileMode(path,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute|UnixFileMode.GroupRead|UnixFileMode.GroupExecute|UnixFileMode.OtherRead|UnixFileMode.OtherExecute); }
 #else
+        sealed class UpdateLock : IDisposable
+        {
+            readonly Mutex mutex;
+            public UpdateLock(string root)
+            {
+                mutex = new Mutex(false, Core.MutexName(root));
+                bool locked;
+                try { locked = mutex.WaitOne(30000); } catch (AbandonedMutexException) { locked = true; }
+                if (!locked) { mutex.Dispose(); throw new IOException("Another launcher is using this installation. No update was applied."); }
+            }
+            public void Dispose() { mutex.ReleaseMutex(); mutex.Dispose(); }
+        }
+        public static IDisposable AcquireUpdateLock(string root) { return new UpdateLock(root); }
+        public static ProcessStartInfo RestartInfo(string root)
+        {
+            return new ProcessStartInfo(Core.PathIn(root, Core.LauncherName), "--after-self-update")
+                { WorkingDirectory = root, UseShellExecute = true };
+        }
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
         struct AttributeTag { public uint Attributes, Tag; }
         [System.Runtime.InteropServices.DllImport("kernel32.dll", CharSet=System.Runtime.InteropServices.CharSet.Unicode, SetLastError=true)]
