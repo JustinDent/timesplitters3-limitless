@@ -1,5 +1,49 @@
 # Measured progress
 
+## Texture batch 236: one corrected rock replacement, seven drafts held (2026-10-20)
+
+Eight held drafts received focused built-in image-generation corrections using
+both the original and prior draft. One accepted offline and installed:
+5a36920fc7ba5ff6, ochre/russet layered rock. The correction reduces excessive
+orange saturation and dark crack contrast while retaining major stone shapes
+and lower layers. Mean luminance is now +4.43% against original. Full,
+2x2-repeat and original-grid comparisons pass; scene lighting remains pending.
+
+Seven remain held. 23fd69d9622c963f improves ridge count but is too dark
+(-16.67%) with overly regular crests. 648fc36fa0f6b674 improves brightness
+(+4.39%) but retains regularized pinholes and loses coarse patch structure.
+72a2e193429c2555 restores the lower fastener but still shifts atlas strips and
+slot placement. 7709fa9251037bfa partly restores the bottom margin but keeps
+the lower border too low. Tonal corrections overshot on 9cfe890aa1f2e6b3
+(+10.97%), c1ecaaa3b7498a15 (+21.22%) and d1d8fd564e8fc2de (-13.64%).
+None of these seven installed. Do not repeat the same two-reference/relative
+brightness prompts: their failure evidence requires a different correction
+approach. Prior drafts/provenance are preserved and no failed work is counted
+complete; the rest of the production queue remains available.
+
+Actual sources: four 1254x1254 and four 1774x887. Installed rock: 512x256,
+LANCZOS downsampled from 1774x887 without crop/color/alpha edits; not native
+4K art. Eight source files total 24,615,946 bytes. All eight verified
+original references reused, with no new exports or deletion attempts. Five
+RAM-only comparison sheets avoid 1,478,224 raster bytes and replay exactly.
+One new Windows native parser check passes; prior 1,434 DDS hashes and checker
+identity match existing evidence. All 1,435 installed files pass a fresh Python
+format/metadata/dimensions/aspect/mip/hash audit. Queue/progress refreshed:
+1,435 installed, 5,241 needing art, 136 held; 6,121 classified, 691 unclassified.
+Private evidence: review/hybrid-236-acceptance.json, decisions, memory-review,
+selection, prompts, generation receipts and native-audit.
+
+Pack including metadata: 1,137,325,450 bytes (1084.64 MiB),
+up 87,956 bytes, below 6144 MiB. Temporary snapshot:
+268,061,834 bytes, below 256 MiB with 373,622 bytes headroom.
+Texture workspace including source art: 7,157,700,426 bytes;
+free disk snapshot: 86,295,736,320 bytes. Allocation helper equals
+logical size; it is not independent physical-allocation proof. One active pack;
+no duplicate game/build/staging, gameplay, runtime changes, publication or
+personal save/settings edits. Residency remains 512 MiB. MAC-011 stays
+Awaiting validation; discovery, category review and consolidated scene checks
+remain unfinished. The near-completion playtesting gate is not met.
+
 ## Texture batch 235: six cliff, stone and concrete replacements (2026-10-20)
 
 Eight classified opaque materials were edited with built-in image generation.

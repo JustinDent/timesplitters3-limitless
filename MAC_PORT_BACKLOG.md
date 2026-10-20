@@ -1115,6 +1115,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 texture batch 236: one corrected ochre rock installed; seven
+  repeated layout/tonal failures remain held and need a different approach.
+  Total 1,435 installed. Fresh full Python audit and one new Windows parser
+  check pass; prior 1,434 hashes/checker identity unchanged. Eight existing
+  references reused, five RAM comparisons replay exactly. Pack 1,137,325,450
+  bytes; temporary 268,061,834 bytes, both below caps. No gameplay/runtime
+  changes. **Awaiting validation** remains for Mac GPU, mapped scenes, alpha,
+  modes and 512 MiB residency. See STATUS.md batch 236 and private acceptance.
+
 - 2026-10-20 texture batch 235: six cliff/stone/concrete replacements installed;
   two brightness/contrast failures held. Total 1,434 installed. Fresh full
   Python audit and six new Windows parser checks pass; prior 1,428 hashes and
