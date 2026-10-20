@@ -3013,6 +3013,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   The supported Windows Release build and built-in tests pass; bridge-scene
   replay and actual Mac execution remain pending. See
   [the investigation](docs/native-high-refresh-regressions.md#bridge-crash-placement-investigation).
+- **Ship debris inheritance:** The shared gate at 0x216958 now divides the
+  parent's displacement by positive fractional time even on zero-whole-tick
+  frames. The complete original-code fixture checks velocity, both model
+  branches, RNG/effect output, allocator failures, catch-up, zero time and
+  ABI, with byte-identical original 60 FPS output. No OS adapter is needed.
+  Full Windows rebuild and actual Mac execution remain pending; the current
+  interactive build includes the earlier landing fix only. See the
+  [debris check](docs/native-high-refresh-regressions.md#ship-debris-inherited-velocity).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.

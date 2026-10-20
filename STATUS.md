@@ -6,6 +6,12 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- New playtest reports remain open: pre-bridge enemies react to hits and die
+  but do not move/fire; gun trails appear about three seconds late and later
+  disappear; the plasma sniper reportedly deals no damage. These need live
+  AI, projectile collision/damage and effect-lifetime checks beyond the
+  current opening-area smoke test and isolated arithmetic fixtures.
+  [Investigation](docs/native-high-refresh-regressions.md#additional-first-mission-reports-awaiting-reproduction).
 - The ship reported in the canyon after the first bridge destruction is
   identified as the crashed mothership, model 0x53A. Its updater skipped
   fractional intervals while still applying whole-tick damping, changing
@@ -24,6 +30,13 @@ published release or a full-game 144 FPS certification.
   still requires a bridge-scene comparison before this obstruction can
   be marked resolved. Actual Mac execution remains pending.
   [Bridge investigation](docs/native-high-refresh-regressions.md#bridge-crash-placement-investigation).
+- A related ship-debris initializer underestimates inherited velocity on
+  fractional frames. Its shared division guard is now corrected, with a
+  failing-before/passing-after original-code fixture covering model choice,
+  random effects, allocation failures, zero time and catch-up. The 60 FPS
+  output is byte-identical. This additional fix is source-only while the
+  user plays the build containing the mothership landing correction.
+  [Debris check](docs/native-high-refresh-regressions.md#ship-debris-inherited-velocity).
 - Object rocking/bounce motion has a reproduced smoothness gap: the original
   updater produces only 60 changed transforms across 144 live updates, while
   preserving the 60 FPS endpoint and speed. At a quarter-speed schedule it

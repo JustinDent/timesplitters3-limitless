@@ -1235,3 +1235,66 @@ samples; this does not establish audible output at the user's device.
 An isolated bridge-scene comparison is still required before calling the
 reported obstruction resolved; actual Mac execution and full mission/
 random-effect coverage remain pending.
+
+### Ship debris inherited velocity
+
+A separate original initializer, 0x2168C0–0x216CA5, creates 30 debris
+fragments and a final effect. It derives parent velocity from the difference
+between entity+0xB4/B8/BC and entity+0xE0/E4/E8, multiplied by
+60 / elapsed game ticks. Its gate at 0x216958 skipped that division whenever
+the carried whole-tick count was zero. At 144 FPS, a parent velocity of
+(12, -24, 36) consequently contributed only (5, -10, 15) on those frames.
+This makes fragment motion depend on which frame triggers destruction.
+
+The shared numeric policy now uses positive fractional time for that
+division guard. EAX is replaced at 0x216987 before any other use.
+This does not open a periodic spawn gate: fragment count, model selection,
+random calls, effect arguments and allocation-failure behavior stay original.
+Zero-time initialization keeps the original no-division behavior; this
+one-shot event still creates fragments when invoked with zero elapsed time.
+
+`tests/native_ship_debris.c` runs the complete original routine with its
+original scalar constants and model table. The allocator and final effect
+service capture requests, and a repeatable xorshift stream supplies both
+positive and negative random values. The fixture covers both model-selection
+branches, inheritance enabled/disabled, successful/all-failed/alternating-failed
+allocations, fractional normal/quarter-speed intervals, carried zero/one ticks,
+two/six-tick catch-up and zero time. Native one-tick output is byte-identical
+to the original. Other schedules match inherited velocity within 0.0001;
+all remaining output bytes, including RNG call count and generated rotations,
+must match exactly. Parent data, guest time fields and ABI are preserved.
+The original fractional counterexample remains in the test.
+
+The new test failed at the inherited-velocity assertion before the correction
+(`logs/native-ship-debris-before.log`) and passes afterward
+(`logs/native-ship-debris-after.log`). This correction is in shared source;
+the interactive executable built from `d4c5ee8` does not yet include it.
+Full Windows rebuild, rendered debris review and actual Mac execution remain
+pending. The separately tested mothership landing fix remains in that build.
+The full shared timing, entity-trace, float/vehicle translation, audio,
+CI-scope and Mac-backlog suite passes: 147 passed and one expected failure
+in 50.69 seconds (`logs/native-ship-debris-shared.log`). The expected failure
+is still object rocking. The complete patch stack validates with zero runtime
+files changed; generated production C already has the scoped load at 0x216958.
+
+### Additional first-mission reports awaiting reproduction
+
+The user reports enemies before the bridge that react to damage and die
+but neither move nor shoot; trails from any fired gun appear about three
+seconds late, increase with additional shots, and eventually disappear;
+and the weapon described as the plasma sniper does no damage.
+These are open behavior regressions, not covered by the passing opening-area
+smoke check. Existing NPC fixtures isolate dispatcher/firing arithmetic and
+mock world/actor/projectile services; they do not prove live AI transitions,
+projectile collision, damage or trail timing.
+
+The reported build is the interactive executable with SHA-256
+`08ba9a6be1d6f078123e53e69a00254e05b6fc7f131f4e896ec4f3124c250c61`.
+The screenshot `codex-clipboard-d06e74af-098b-4c32-9dff-eaf353fcf3b4.png`
+shows several red trails near the bridge. A bounded read-only 30-second
+entity observation is saved in
+`private/pipeline/npc-trails-user-observation.jsonl`. At least one NPC moves
+during this observation; other actors include a fixed `portalnonjumper02`
+pose and `zomdeath01` poses. Actor addresses can be recycled and this
+post-bridge observation does not identify the particular pre-bridge enemy.
+Do not infer a root cause or resolution from those pose names alone.

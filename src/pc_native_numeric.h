@@ -51,6 +51,10 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
  * loses motion time while its two whole-tick damping loops still decay at
  * 60 Hz, changing the landing position. The gate register is overwritten at
  * 0x217090. Keep those separate damping-loop loads unchanged.
+ * Ship debris initialization divides a position difference by live time at
+ * 0x216972. Its guard at 0x216958 must also accept fractional intervals;
+ * otherwise the inherited velocity is scaled down by the frame's fraction.
+ * EAX is replaced at 0x216987. The spawn loop/count and RNG stay unchanged.
  * All other loads, including other reads of this same address, stay exact. */
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
@@ -62,7 +66,8 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
     if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
-         site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u) &&
+         site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u ||
+         site == 0x216958u) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
