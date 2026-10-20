@@ -1,5 +1,47 @@
 # Measured progress
 
+## Texture batch 205: fixed-region carrier resolves one narrow trim (2026-10-20)
+
+One focused built-in image-generation correction resolves the brown metal
+trim held in batch 204. A square reference canvas places the untouched
+original in normalized region [0,0.375,1,0.625], with magenta padding outside.
+The generated 1254x1254 carrier preserves both horizontal boundaries within
+0.25 generated pixels; zero magenta pixels occur inside the measured material
+region. Technical LANCZOS extraction uses that prescribed fractional UV
+rectangle, clamps interpolation to material edges and produces 1024x256.
+No artistic pixel edits or aspect-policy changes. This is a resampled
+1254x313.5 effective source region, not native 4K generated artwork.
+
+Original/compiled and repeated comparisons retain the thin upper/lower rails,
+dark edge bands and broad rust-brown mottling with finer corrosion/scratches.
+Mean luminance changes -0.94%; left/right edge MAE is 8.96 versus 5.89 original.
+Mapped surface continuity and scene appearance remain untested. One successful
+carrier does not establish correctness for the other seven held narrow trims.
+Future narrow sources still need per-output boundary/UV/edge/alpha checks.
+
+Installed one DXT1 replacement, 1024x256 with 11 mip levels. Its native Windows
+DDS parser check passes; the remaining 1,319 DDS hashes and checker match prior
+audited evidence. Full current Python metadata, format, aspect, dimensions,
+mips and hash audit passes. Compiler metadata records its already-extracted
+1024x256 input; added provenance explicitly records earlier carrier resampling.
+Worklist, hybrid queue and inventory refreshed: 1,320 installed, 131 held drafts,
+5,361 needing art. Classification remains 4,297 of 6,812 supported keys.
+
+Pack 1,081,284,999 bytes (1031.19 MiB), including metadata,
+below 6144 MiB. Temporary output 212.17 MiB below 256 MiB.
+Texture workspace including source art 6201.21 MiB
+logical/allocated by existing helper; disk free 84.42 GiB.
+Retired only the superseded rejected local draft (2,651,188 bytes), after
+hash-verifying its original tool recovery, checking no active pack references,
+and retaining selected source/carrier, prior prompt/hash and comparison evidence.
+No duplicate extracts/builds/staging/ZIPs. Residency policy remains 512 MiB;
+no new GPU measurement. Game assets, settings and saves preserved.
+
+No gameplay or Mac execution; MAC-011 Awaiting validation. Full inventory,
+other-encoding/procedural discovery, category review and final scenes remain
+unfinished. Private review/hybrid-205-acceptance.json links generation,
+carrier preparation/extraction, visual decisions, metrics and native evidence.
+
 ## Texture batch 204: narrow-trim aspect failures held for correction (2026-10-20)
 
 Eight original-referenced metal trims generated with built-in image generation.
