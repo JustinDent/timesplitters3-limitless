@@ -48,6 +48,45 @@ Do not upload ChatGPT session credentials to GitHub as a substitute.
 
 Standard-runner availability/pricing: [GitHub runner documentation](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
 
+## Subscription-based cloud repairs
+
+Codex cloud uses ChatGPT sign-in and the plan's usage allowance. It does not
+require an OpenAI API key, but its allowance is limited. Do not enable paid
+overages or an API fallback for this repository's compatibility automation.
+
+The repository's ChatGPT Codex Connector installation is restricted to this
+repository. Code Review is configured for team PRs on every push; additional
+credit use for reviews is off. A private cloud environment named
+`timesplitters-future-perfect-pc` is published with shared-source/host-adapter
+instructions and no API secrets. Its initial Linux/Python 3.12.14 setup at
+`c238ab32229fb5da6b3e618112d704f9dc6c8082` passed the 7 compatibility,
+16 release-policy and 3 shared-UI Python tests. These are portable contracts,
+not the Windows/Mac C# UI or native package tests.
+
+Automatic reviews, cloud coding and automatic repair dispatch are separate
+capabilities. The current web event-task dry run can read this repository and
+filter PR activity, but cannot directly select or launch the published coding
+environment. No event repair task is enabled yet. The documented GitHub
+`@codex` repair-request route must be verified before connecting a watcher to it.
+
+A repair watcher must restrict work to open, non-draft, same-repository PRs by
+the maintainer targeting `main`. It must wait for current-head CI, use evidence
+from failed checks or actionable compatibility findings, and deduplicate work
+by PR/head revision. Repairs start from the exact PR head, preserve its edits,
+and use a reviewable branch. Allow one repair cycle plus one follow-up correction
+per original head; stop for concurrent changes, missing access, exhausted plan
+usage or unresolved failures. Quiet runs need no status comments.
+
+Cloud repairs must obey `AGENTS.md`, preserve settings and pins, keep common
+policy shared and update adapters/backlog evidence. Do not weaken checks,
+force-push, merge, publish releases, alter protections or transfer private game
+data. Inspect both hosts' required checks on the resulting revision before
+reporting a repair successful. Visual and gameplay limits remain explicit.
+
+See OpenAI's [GitHub integration](https://learn.chatgpt.com/docs/third-party/github),
+[cloud environments](https://learn.chatgpt.com/docs/environments/cloud-environments)
+and [scheduled tasks](https://learn.chatgpt.com/docs/automations) documentation.
+
 ## Development checks
 
 Run `python -m unittest discover -s tests -p test_launcher_compatibility.py -v`
