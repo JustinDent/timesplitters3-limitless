@@ -13,8 +13,12 @@ published release or a full-game 144 FPS certification.
   at 60/120/144 updates/s; the corrected code produces 100 within float error.
   All 48 packet-rate/frame-rate/jitter/zoom cases and stale-input/focus/capture
   checks pass. This is shared Windows/Mac input policy; actual device latency
-  and Mac execution remain unverified. All 153 shared checks pass; the complete
-  patch stack verifies with no runtime changes. Production build validation is pending.
+  and Mac execution remain unverified. All 153 shared checks and seven input
+  context checks pass. Windows build `149bef9`, its built-in checks and the
+  two-minute native-144 gameplay/pause replay pass. The active gameplay window
+  averages 140.365 CPU updates/s at 1x speed alongside the user's session.
+  Their existing `3c2fcc2` session stays open; this correction is ready for
+  the next launch. Terminal-pointer cadence needs a separate audit.
   [Raw mouse cadence](docs/native-high-refresh-regressions.md#raw-mouse-packet-cadence).
 - The latest Windows build (`3c2fcc2`) passes matching 120-second original-60
   and native-144 opening gameplay replays: handoff, hand animation, movement,

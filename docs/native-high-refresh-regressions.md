@@ -84,8 +84,40 @@ camera-pose acceptance. Actual Mac execution remains pending.
 All 153 shared native timing, float/vehicle-join, CI-scope, backlog and XMV-stop
 checks pass in 69.51 seconds (`logs/native-mouse-shared.log`). The unchanged
 complete patch stack verifies with zero updated runtime files
-(`logs/native-mouse-patches.log`). Windows production build validation is
-pending at this source checkpoint.
+(`logs/native-mouse-patches.log`). Seven terminal routing, automatic-look and
+menu-mouse checks pass (`logs/native-mouse-context-checks.log`). The full
+supported Windows Release build of `149bef9` and its built-in checks pass,
+including the real host input adapter/guest-camera integration checks
+(`logs/native-mouse-build.log` / `.err`). Executable SHA-256:
+`530861ca93dd9241a1d9247a338e40495e307810b71b828c118cb3e0b9f88a94`.
+
+A 120-second native-144 isolated replay passes the opening firearm handoff,
+hand animation, movement, firing and pause/resume checks. Evidence is
+`logs/native-mouse-gameplay.log` and the `native-144-mouse-cadence` records in
+`private/test-saves/high-refresh`. Its runner hash is
+`f328225561af2c719afe184bb0299417f367572ea043cbc7636354ff187764e1`.
+After 60 seconds, 7,934 active Story CPU intervals span 56.524 seconds: mean
+140.365 updates/s, p50/p95/p99 7.0401/8.4030/9.4087 ms, maximum 35.5394 ms.
+Game and raw time both advance at 1.000000 seconds per wall second. This run
+uses sparse synthetic replay events; the independent packet fixture above,
+not this gameplay replay, establishes the dense-packet count-loss correction.
+The retained end capture shows the equipped pistol and 80 reserve / 16 loaded
+rounds. It also contains an orange streak at the top right; the deferred trail
+report is not cleared by this smoke test.
+
+The user's previous `3c2fcc2` session (PID 38248) remained responsive on its
+retained executable throughout build and validation. Thus the timing sample
+includes another running game and is not an isolated performance benchmark.
+Controls/display hashes are unchanged and the runner cleaned its disposable
+disks/lock. The normal executable is ready for the next launch; no forced
+restart occurred.
+
+Remaining input audit: `pc_terminal_mouse` consumes motion separately in
+`src/pc_terminal.h`. Its buffer-age handling and integer game-delta gate are
+unchanged by this camera fix. Existing terminal routing checks pass, but do
+not cover native fractional pointer cadence. That path needs its own
+reproduction and pause-preserving correction; neither these tests nor a high
+FPS counter establishes terminal pointer smoothness.
 
 ## Latest-build opening comparison
 

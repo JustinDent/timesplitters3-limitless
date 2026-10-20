@@ -3164,7 +3164,11 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   helper; no additional Mac adapter is needed. `tests/native_mouse_cadence.c`
   reproduces lost counts and validates 60/120/144 update rates, 125–8,000 Hz
   packets, uneven intervals, zoom/inversion and stale-input/focus/capture
-  transitions. Actual Mac execution and physical-device latency remain open.
+  transitions. All 153 shared checks, seven input context checks, the full
+  Windows build/built-in checks and a 120-second native-144 gameplay replay
+  pass for `149bef9`. Actual Mac execution and physical-device latency remain
+  open. The terminal pointer consumes its own buffer and still requires a
+  separate native timing audit.
   [Mouse cadence evidence](docs/native-high-refresh-regressions.md#raw-mouse-packet-cadence).
 - **Latest Windows integration comparison (`3c2fcc2`, local):** Matching
   original-60/native-144 opening replays pass handoff, hand animation, movement,
