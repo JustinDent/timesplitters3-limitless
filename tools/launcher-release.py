@@ -90,7 +90,8 @@ def allowed_file(name, platform):
     if platform == 'windows-x64':
         return name in ('TimeSplitters Launcher.exe', 'Bin/TimeSplitters.App.exe')
     prefix = 'TimeSplitters Launcher.app/Contents/'
-    return name in (prefix+'Info.plist', prefix+'MacOS/TimeSplitters.Launcher') or (
+    return name in (prefix+'Info.plist', prefix+'MacOS/TimeSplitters.Launcher',
+                    prefix+'_CodeSignature/CodeResources') or (
         name.startswith(prefix+'MacOS/') and name.endswith('.dylib')) or (
         name.startswith(prefix+'Resources/') and name.endswith(('.txt', '.icns')))
 
@@ -125,6 +126,7 @@ def verify_package(directory, plan, platform):
         require(set(names) == set(files) | {'Support/Launcher/manifest.json'}, 'Unmanifested package files.')
         required = ({'TimeSplitters Launcher.exe', 'Bin/TimeSplitters.App.exe'} if platform == 'windows-x64'
                     else {'TimeSplitters Launcher.app/Contents/Info.plist',
+                          'TimeSplitters Launcher.app/Contents/_CodeSignature/CodeResources',
                           'TimeSplitters Launcher.app/Contents/MacOS/TimeSplitters.Launcher'})
         require(required <= set(files), 'Missing launcher entry point.')
         for name, expected in files.items():
@@ -236,6 +238,8 @@ def publish(directory, plan, api):
         body = ('One launcher release for Windows x64 and native Apple Silicon Mac. Download the ZIP for your platform; '
                 'existing launchers select their matching update automatically. Saves and settings are preserved.\n\n'
                 + links + '\n\n' +
+                'Mac v1.2.19 users: manually replace the app and Support/Launcher/manifest.json with this release; '
+                'that older updater cannot install the newly sealed app bundle. Preserve game files, saves, settings and ISO.\n\n'
                 'The Mac app is ad-hoc signed; Developer ID signing/notarization and clean-machine installation '
                 'remain pending. No game runtime or original game data is included.\n\n' + notes.get('body', '') + '\n\n' + marker)
         release = api.call('POST', base+'/releases', {'tag_name': tag, 'target_commitish': sha,
