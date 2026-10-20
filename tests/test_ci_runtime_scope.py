@@ -111,6 +111,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tests/fixtures/launcher-patch-stacks.json'], set(scope.SUITES)),
     (['tsfp.ps1'], set(scope.SUITES)),
     (['requirements.txt'], set(scope.SUITES)),
+    (['tools/texture-pack.py'], {'native'}),
     (['.github/workflows/runtime-patches.yml'], set(scope.SUITES)),
     ([], set()),
 ])

@@ -33,7 +33,7 @@ def affected(paths, *, full=False):
                       'tools/crash-symbols.py', 'tests/test_crash_symbols.py',
                       'tools/recycle-release-work.ps1', 'tools/package-release.py'):
             selected.add('release')
-        elif path.startswith(('src/', 'tests/')) or path in (
+        elif path.startswith(('src/', 'tests/', 'tools/texture-')) or path in (
                 'tools/recomp-generation.py', 'tools/online.py', 'tools/online_theme.py',
                 'tools/crash_helper.c', 'tools/bundle_online.py', 'tools/network-identity.py',
                 'tools/build-native-mac.py', 'tools/play-native-mac.py',
