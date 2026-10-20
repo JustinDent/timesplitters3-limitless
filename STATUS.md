@@ -1,5 +1,44 @@
 # Measured progress
 
+## Texture batch 201: reused asset inventory and alpha semantics (2026-10-20)
+
+Issue #74 inventory pass: 128 previously unclassified keys, each with 2-73
+catalog occurrences, inspected from verified original payload spans. Eight
+RGB sheets and eight separate alpha sheets preserve source aspect ratio.
+Visual classification now covers 4,105 of 6,812 cataloged supported keys
+(60.26%); 2,707 remain unclassified. Classification is not artwork acceptance
+or completed category/scene validation. No new artwork generated, resampled
+or installed during this inventory-focused pass.
+
+Recorded exact-preservation requirements for the official TimeSplitters
+Future Perfect logo, checkpoint lettering, challenge-card text, controller/
+weapon badges, character portraits, technical blueprints and illustrated
+safety signs. Sky panoramas, planet imagery and scene thumbnails remain
+projection/composition-sensitive. Foliage requires original thin silhouettes
+and edge colors. Numerous apparently white/black RGB fields contain letters,
+frame geometry or effect falloff only in alpha; window/control-panel/material
+alpha values also need channel-semantic preservation. Unknown function or
+mapping remains explicit, not an invitation to add arbitrary detail.
+
+Full current worklist audit passed: all 1,311 installed DDS hashes match the
+prior audited worklist, and native parser binary is unchanged. Native evidence
+is carried forward from batch 200; no redundant native subprocess, game build
+or gameplay run. Pack remains 1,078,220,657 bytes (1028.27 MiB).
+Counts remain 5,381 needing art and 120 correction drafts. Inventory and
+hybrid production queue refreshed from the new classifications. Discovery
+of uncataloged, other-encoded and procedural assets remains incomplete.
+
+Temporary output: 205.63 MiB; texture workspace including retained source
+art: 6128.06 MiB logical/allocated by existing helper; disk free
+84.77 GiB. The 6144 MiB pack, 256 MiB temporary and unchanged 512 MiB
+residency policies remain in place; no new GPU residency measurement. No
+duplicate extracts, builds, pack copies or ZIPs. Personal data untouched.
+
+Private evidence: review/hybrid-201-acceptance.json, original payload/RGBA
+verification, per-key classification decisions, RGB/alpha sheets and hash
+continuity record. MAC-011 remains Awaiting validation: no Mac scene/GPU,
+1080p/4K/ultrawide or campaign validation occurred. Local #74 checkpoint only.
+
 ## Texture batch 200: metal patterns and baked shading (2026-10-20)
 
 Issue #74: eight independently generated metal/panel textures reviewed;
