@@ -162,6 +162,9 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_menu_motion.c', [(0x2dab30,0x2dab77),(0x2daf90,0x2db005),
                             (0x2da0e0,0x2da440)]),
     ('native_entity_velocity.c', [(0xa7360,0xa7666),(0xa7870,0xa79a2)]),
+    ('native_weapon_sound.c', [(0x45390,0x453d0),(0x21780,0x217a2),
+                              (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258)]),
+    ('native_weapon_cooldown.c', [(0x1c320c,0x1c3274)]),
 ])
 def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     import hashlib
@@ -174,8 +177,15 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     image=xbe.read_bytes()
     assert hashlib.sha256(image).hexdigest()=='3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc'
     previous=dict(vars(config))
+    constants=''
     try:
         config.configure_from_xbe(str(xbe))
+        if harness_name=='native_weapon_sound.c':
+            import struct
+            constants='\n'.join(
+                f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
+                for address in (0x475c78,0x475d28,0x475ccc,0x4785d0,0x475cd4,
+                                0x47d1f8,0x478674,0x47d01c,0x47864c))
         if harness_name=='native_camera_track.c':
             import struct
             # Execute this complete switch branch. Redirect only its three
@@ -196,6 +206,12 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             end=config.va_to_file_offset(0xceaa5)
             assert image[start:end].hex()=='8b0d44794e0085c97e0e8d742414e8208fffffa1c00c7b00'
             image=image[:end]+b'\xc3'+image[end+1:]
+        if harness_name=='native_weapon_cooldown.c':
+            # Execute the complete deferred-action cooldown branch. All its
+            # exits join here; replace only the following instruction by RET.
+            end=config.va_to_file_offset(0x1c3273)
+            assert image[end:end+6].hex()=='8b0d7c0c7b00'
+            image=image[:end]+b'\xc3'+image[end+1:]
         functions={start:dict(end=end,name=f'sub_{start:08X}') for start,end in ranges}
         translator=FunctionTranslator(image,functions)
         code='\n'.join(translator.translate_function(start,info)
@@ -205,4 +221,5 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     harness=(ROOT/'tests'/harness_name).read_text()
     policy=f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
     compile_and_run(tmp_path,harness.replace('/* NUMERIC_POLICY */',policy)
+                    .replace('/* ORIGINAL_CONSTANTS */',constants)
                     .replace('/* GENERATED_ROUTINES */',code))

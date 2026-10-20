@@ -2959,6 +2959,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   This shared numeric policy needs no second Mac implementation, but actual
   native execution remains pending. Usage is in
   `docs/native-high-refresh.md`.
+- **Weapon sound helper:** Shared `pc_native_numeric.h` accepts live fractional
+  time at the 0x1B6FF0 event guard. `tests/native_weapon_sound.c` executes the
+  original sound selector/repeat timer and both parameter builders, with a
+  mocked audio backend and RNG. No platform audio adapter changes are needed
+  for this guard; native Mac execution, audible output and enclosing weapon
+  state-machine timing remain unverified. Windows build, 58 timing/regression
+  checks, 17 fake-device audio checks and a bounded native gameplay smoke pass;
+  see [STATUS](STATUS.md) and the weapon sound regression record for limits.
+  The original deferred weapon cooldown branch also has shared 60/120/144,
+  quarter-speed, pause and catch-up coverage in `native_weapon_cooldown.c`;
+  its whole-tick subtraction already behaves correctly and is unchanged.
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.

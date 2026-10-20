@@ -6,6 +6,20 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Weapon sound helper 0x1B6FF0 now accepts events on live fractional intervals.
+  Its original-code test reproduces dropped one-shot requests before the fix
+  and verifies sound parameters, repeat duration, pause and unchanged one-tick
+  behavior afterward. **58 timing/camera/auto-look/float/vehicle checks**, **17
+  audio-adapter checks**, and Windows Release/built-in checks pass. The isolated
+  120-second native-144 movement/firing/pause run passes all reported behavior
+  checks. This was a contended run, not a performance benchmark or audible
+  parity test. Build SHA-256:
+  `0f4bc5c9b26fce5b262c18ffa53a4602d3c89fdf111fa504c56a7d7f7d6ebe3a`.
+  A separate original-code check confirms a deferred weapon cooldown already
+  expires once at the correct game tick across 60/120/144, pause and catch-up.
+  Enclosing weapon cadence/damage, cross-rate random sequences and actual Mac
+  execution remain unverified. See the
+  [weapon sound record](docs/native-high-refresh-regressions.md#weapon-sound-events-on-fractional-updates).
 - Entity post-update velocity no longer becomes zero solely because a live
   native interval has no whole tick. The original entity routine and list
   dispatcher reproduce the failure and pass with the site-specific guard,

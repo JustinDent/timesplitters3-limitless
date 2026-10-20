@@ -45,6 +45,12 @@ fractional updates even after an entity moved. This changes that guard only;
 collision response and remaining fixed-tick physics integrators still need
 separate validation.
 
+Weapon-sound requests also accept a live fractional interval. This prevents
+the sound helper from dropping an already-issued event on a zero-whole-tick
+frame, and lets its repeat timer consume fractional time when called every
+update. The enclosing firing/state-machine gates still need separate audit;
+this helper change does not establish complete weapon cadence or audio parity.
+
 The recompiler also supports an optional title numeric-conversion header.
 Future Perfect uses it to read the adjacent fractional delta when an original
 instruction converts an integer frame delta to floating point. Ordinary

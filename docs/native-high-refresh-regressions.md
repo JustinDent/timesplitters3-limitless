@@ -646,3 +646,90 @@ physics loop whose per-step integration must be understood before conversion;
 weapon routines have whole-tick gates at 0x1B6FF0, 0x1BB5FD and 0x1BD044.
 The first also advances a float duration at 0x1B7194. These observations are
 an audit queue, not proven fixes or permission to replace every integer gate.
+
+## Weapon sound events on fractional updates
+
+The original US helper `sub_001B6FF0` returns before selecting or emitting a
+sound when its integer game delta is zero, even if fractional game time is
+advancing. The native-only numeric guard now tests live fractional time at
+0x1B6FF0. The return register is overwritten before subsequent use. Paused
+updates still return; other reads and the original timing path retain their
+behavior. The repeat timer at weapon+0xFC already integrates fractional
+seconds, and its original reset-to-zero threshold behavior is preserved.
+
+`tests/native_weapon_sound.c` executes the hash-verified original helper,
+both sound parameter builders (0x21780 and 0x21FB0), and their initializer
+(0x45390). Constants come from the same verified XBE. The audio backend and
+RNG are mocked; unexpected indirect weapon callbacks fail the test. Checks
+cover fractional one-shot dispatch at 60/120/144, one backend event per
+accepted call, positional coordinates and nonpositional flags, sound ID and
+handle, original one-tick cadence, repeat elapsed time at normal/quarter
+speed, pause including a carried integer tick, catch-up and missing sounds.
+
+The original guard fails `fractional one-shot dispatch` in
+`logs/native-weapon-sound-red.log`. With the fix, 57 timing/camera/auto-look/
+float/vehicle checks pass in `logs/native-weapon-sound-regressions.log`.
+The 17 audio-adapter checks pass in `logs/native-weapon-sound-audio.log`;
+they exercise deterministic fake-device stream/buffer behavior, not audible
+output. Full patch validation, Windows x64 Release and its built-in checks
+pass in `logs/native-weapon-sound-build.log`. The compiler is MSVC
+14.44.35207 with Windows SDK 10.0.26100.0 and SDL 3.4.16; upstream remains
+pinned to d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845.
+
+The isolated 120-second native-144 run
+`native-144-handoff-none-weapon-sound` passes every reported check: Story,
+native hook, guest presents with interpolation disabled, no present failures
+or crash, movement, changing/advancing hand animation, firearm equipped,
+ammunition consumed and pause/resume. Its exit code 1 is the runner's expected
+bounded termination (`completed`, `terminated_by_runner` and `passed` are
+all true). No capture, profiler, resource sampler or PresentMon was enabled.
+The other game remained active; no FPS improvement or clean performance
+comparison is claimed. Evidence lives in `private/test-saves/high-refresh`
+and `logs/native-weapon-sound-144.log`.
+
+This build uses base source ce77aa6 plus the weapon-sound change; executable
+SHA-256 is `0f4bc5c9b26fce5b262c18ffa53a4602d3c89fdf111fa504c56a7d7f7d6ebe3a`.
+Runner SHA-256 is
+`65b94927ec6bed6e603ec219d2274e3ce3dd2a280ef023550196b20ac0486e2a`.
+The same executable was subsequently opened for the user's manual test;
+startup confirms the 144 native-update target and 3440x1440 at 144 Hz.
+That startup is not evidence of sustained 144 FPS.
+
+The helper consumes RNG before checking its repeat threshold. More live
+invocations can therefore consume more random values; cross-rate RNG sequence
+and audible parity are unverified. All three direct caller families require
+separate cadence coverage. `sub_001BB5C0` has a whole-tick gate at 0x1BB5FD,
+and `sub_00244F30` has one at 0x244FCD before duration accumulation at
+0x245094 and projectile work. `sub_001C0200` is also called by several
+weapon states; its caller's gates at 0x1C38CC/0x1C397F protect firing work.
+Do not open these gates indiscriminately: ammunition, projectile count,
+damage and random consumption need equal-duration comparisons first.
+The discrete cooldown at 0x1C3243 subtracts carried whole ticks and must not
+be replaced with a boolean. Complete weapon mechanics, other levels/modes,
+multiplayer and actual Mac execution remain pending.
+
+### Deferred weapon cooldown preservation
+
+The original branch 0x1C320C–0x1C3273 subtracts the carried whole-game-tick
+count from state+0x110, then invokes 0x1C0110 once when the counter expires
+and callback metadata is present. `tests/native_weapon_cooldown.c` executes
+these original bytes, replacing only the instruction at the final join with
+RET and mocking the completion callback. The fixture supplies the enclosing
+frame/register context; it does not run the whole player weapon update.
+
+The original and native policies both pass at 60/120/144 for delays of
+1/7/30/60 ticks, normal and quarter speed, and pause between updates. Each
+counter expires at the expected accumulated game tick and dispatches one
+completion, with no repeats afterward. Three-tick catch-up subtracts three,
+while a live zero-whole-tick update leaves this discrete counter unchanged.
+Alternate mode selection, primary fallback, missing metadata and absent
+weapons are covered. No runtime change is needed at this site. This is a
+check of a deferred action counter, not a complete firing/reload timing claim.
+The focused sound/cooldown pair passes in `logs/native-weapon-branches.log`.
+The final expanded timing/camera/auto-look/float/vehicle suite passes all 58
+checks in `logs/native-weapon-final-regressions.log` (42.49 seconds). The 66
+CI-scope/backlog contracts pass in `logs/native-weapon-sound-contracts.log`.
+The cooldown addition changes tests only, so the already-built executable
+and its runtime/build validation remain applicable.
+Source and smoke-evidence hashes are retained in
+`private/test-saves/high-refresh/native-weapon-sound-evidence.json`.

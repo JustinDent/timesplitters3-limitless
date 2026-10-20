@@ -43,6 +43,9 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
  * but its integer guard otherwise replaces velocity with zero on fractional
  * frames. Use the live game interval for that guard; its register is replaced
  * before subsequent use, and paused intervals still avoid the division.
+ * Weapon sound helper 0x1B6FF0 must accept an event on any live interval;
+ * its repeating-sound timer already integrates the fractional game delta.
+ * Its enclosing firing/state-machine gates remain separate audit sites.
  * All other loads, including other reads of this same address, stay exact. */
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
@@ -54,7 +57,7 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
     if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
-         site == 0xA75E7u) &&
+         site == 0xA75E7u || site == 0x1B6FF0u) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
