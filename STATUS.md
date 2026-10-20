@@ -1,5 +1,49 @@
 # Measured progress
 
+## Texture batch 230: two new rock materials (2026-10-20)
+
+Eight classified opaque rock/architectural materials were selected and their
+originals inspected. Two built-in edits completed: b5511215b686495d (dark
+layered rock ledge) and b7280b1edb403b08 (warm tan layered rock). Both passed
+full, 2x2-repeat and original-grid comparison and are installed. Main cavities,
+strata and fissure placement remain recognizable with finer mineral detail;
+mean luminance changes are +1.24% and +0.58%. Existing edge transitions and
+neighboring scene/lighting behavior remain unverified.
+
+The orchestration was explicitly stopped after two results to correct accidental
+binary-image logging. Six requests returned no result, remain unfinished, and
+are not counted as generated or installed. The terminated handle and exact six
+keys are in private review/hybrid-230-interruption.json. A later output-directory
+check still found only these two new images. Verify outputs before retrying;
+future generation logging must emit images or compact hints, never binary text.
+
+Actual sources: 1774x887 and 1254x1254, LANCZOS downsampled to 1024x512 and
+1024x1024 respectively. No crop, color edits, aspect change or alpha override;
+not native 4K artwork. Retained source art: 7,966,401 bytes. Three comparison
+sheets stayed in memory, avoiding 629,466 raster bytes. Reproduction from the
+verified game archives and generated art matches all metrics and sheet hashes
+exactly after retiring all eight new original PNG caches (646,524 bytes).
+Previously denied paths, game archives, source art, saves and settings untouched.
+
+Two new Windows native parser executions pass; prior 1,407 installed hashes and
+checker identity match existing evidence. All 1,409 installed files pass fresh
+Python format, metadata, dimensions, aspect, mip and hash audit. Worklist and
+hybrid queue refreshed: 1,409 installed, 5,279 needing artwork, 124 held drafts;
+6,121 classified and 691 unclassified. Routing does not count as artwork.
+
+Pack including metadata: 1,129,446,202 bytes (1077.12 MiB),
+below 6144 MiB. Temporary output: 267,617,055 bytes
+(255.22 MiB), below 256 MiB. Texture workspace
+including art: 6,986,508,134 bytes; measured disk free:
+90,292,289,536 bytes. Existing helper reports logical/allocated equally,
+not independent physical-allocation proof. One active pack; no staging copies.
+
+No gameplay or publication. Shared runtime and 512 MiB residency settings
+unchanged. MAC-011 stays Awaiting validation; native Mac GPU, mapped scenes,
+display modes, transparency and runtime residency remain unverified. Discovery,
+category review and consolidated scene validation are incomplete. Private
+review/hybrid-230-acceptance.json links provenance, decisions, checks and cleanup.
+
 ## Texture batch 229: three held material corrections resolved (2026-10-20)
 
 Eight held opaque materials received built-in image-generation corrections.
