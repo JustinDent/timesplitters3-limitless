@@ -1,5 +1,50 @@
 # Measured progress
 
+## Texture inventory batch 247: first appearance pass covers all known keys (2026-10-20)
+
+Reviewed the final 243 unclassified supported keys, e7613b36c1133c1c through
+ffc48e593c782fbe: 195 opaque and 48 nonopaque originals. Archive payload hashes,
+decoded RGBA hashes, dimensions and alpha were verified. Thirty-two separate
+RGB/alpha sheets were inspected in RAM and replayed exactly from pinned keys;
+the last page contains three assets. Private provenance retains per-key notes,
+constraints, source/decoder hashes and tool versions. Lossless round-trip checked:
+321,013 uncompressed bytes stored as 42,410-byte gzip. No original PNG exports
+or review raster files; 10,082,570 bytes of raster output avoided.
+
+Classification now covers exactly the same 6,812 unique keys as the supported
+worklist, with zero unclassified keys. This completes the known-catalog first
+appearance/alpha pass only. The inventory records known_catalog_first_pass_complete,
+while complete and all_asset_categories_reviewed remain false: uncertain use,
+category validation, embedded/procedural discovery and mapped scene coverage
+still require work. No unsupported or undiscovered assets are counted complete.
+The original objective and full-game scope remain unchanged.
+
+New constraints cover exact hazard/control text, geographic maps, photographs,
+tattoos, decorative symbols, functional checkerboards, alpha-only diagrams and
+glyphs, inverse masks, partial-alpha reflective surfaces and character identity.
+Embedded scene artwork is not current runtime evidence. Classification does not
+approve artwork, establish runtime channel use or count as an installed replacement.
+The refreshed planner has 332 batch candidates (43 groups), 2,882 individual-review
+entries, 1,980 specialist entries, 153 corrections and 1,465 installed. Planner
+routing remains provisional; inspect originals/alpha before authoring. The newer
+environment_material label currently routes to individual review and should be
+reconciled with environment before choosing subsequent material-family batches.
+
+No new art generated/installed. All 1,465 DDS hashes unchanged; fresh full Python
+format/metadata/dimensions/aspect/mip/hash audit passed. Existing native parser
+evidence remains batch 242; no new native execution. Work counts stay 5,194 needing
+art, 1,465 installed and 153 held. Pack stays 1,149,619,742 bytes (1096.36 MiB), below
+6144 MiB. Temporary snapshot: 268,092,924 bytes, below 256 MiB with 342,532 bytes
+headroom. Texture workspace including source art: 7,317,235,232 bytes; free disk:
+84,784,685,056 bytes. Allocation helper equals logical size, not independent
+physical-allocation proof. No cleanup, duplicate extracts, staging or publication.
+
+Private evidence: review/hybrid-247-review.json.gz, pinned inventory-memory.py,
+guarded inventory-apply.py and inventory-acceptance.json. Previous goal turn was
+progress (batch 246). One active pack, 512 MiB residency limit and personal data
+preserved. No gameplay; 90% installed-and-audited gate remains unmet. MAC-011 stays
+Awaiting validation for actual Mac GPU, mapped scenes, display modes and residency.
+
 ## Texture inventory batch 246: 128 additional RGB/alpha classifications (2026-10-20)
 
 Reviewed keys d966fd068ff3f72f through e7306a0f5d90ad58: 87 opaque and 41
