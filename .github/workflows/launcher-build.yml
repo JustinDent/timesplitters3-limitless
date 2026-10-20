@@ -58,7 +58,8 @@ jobs:
         with:
           name: launcher-windows
           path: |
-            build/launcher/TimeSplitters-Launcher-*.zip*
+            build/launcher/TimeSplitters-Launcher-v${{ steps.plan.outputs.version }}-windows-x64.zip
+            build/launcher/TimeSplitters-Launcher-v${{ steps.plan.outputs.version }}-windows-x64.zip.sha256
             build/launcher/launcher-update.json
             build/launcher/launcher-build-windows-x64.json
           if-no-files-found: error
@@ -112,7 +113,8 @@ jobs:
         with:
           name: launcher-macos
           path: |
-            build/macos-launcher/TimeSplitters-Launcher-*.zip*
+            build/macos-launcher/TimeSplitters-Launcher-v${{ needs.windows.outputs.version }}-macos-arm64.zip
+            build/macos-launcher/TimeSplitters-Launcher-v${{ needs.windows.outputs.version }}-macos-arm64.zip.sha256
             build/macos-launcher/launcher-update-macos-arm64.json
             build/macos-launcher/launcher-build-macos-arm64.json
           if-no-files-found: error

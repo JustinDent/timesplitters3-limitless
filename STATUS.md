@@ -1,5 +1,30 @@
 # Measured progress
 
+## Launcher single-ZIP publication (2026-10-19)
+
+Prepared on `fix/launcher-single-platform-zips` from main `bbe1709` (uncommitted).
+The shared publisher now selects one versioned ZIP per platform, its checksum,
+update manifest and source receipt: eight assets total. Windows packaging no
+longer duplicates the ZIP; both host artifact uploads use exact versioned names
+to exclude stale aliases and older builds. Generated release notes include direct
+versioned Windows/Mac download links. Existing client filenames and manifests
+are unchanged. README buttons continue to use the Latest release page.
+
+Already-published v1.2.19 assets are untouched. Its tag-specific alias links
+remain valid; versionless Latest asset links cannot survive a future release
+without aliases and must be changed to the release page or a pinned versioned
+URL. No redirect is provided by GitHub for removed assets.
+
+Windows x64 .NET Framework required-artwork build produced exactly one ZIP;
+its package manifest/checksum passed verification. All 19 Python publication
+policy tests passed, including stale-output exclusion. The actual published
+v1.2.18 client discovered and validated a read-only v1.2.19 release fixture with
+the aliases removed. Windows and native Mac regression fixtures now cover
+combined releases both with and without aliases. Both host CI checks are
+pending. No live installation, personal files or published release was modified;
+no new launcher version is published by this change. See MAC-021 for existing
+native signing and clean-machine delivery gaps.
+
 ## Issue #49 — U-Genix monitor composition (2026-10-19)
 
 Implementation `61235d1` on `49-u-genix-screen-bug`, [PR #195](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/195),

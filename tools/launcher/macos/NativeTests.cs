@@ -117,11 +117,13 @@ namespace TimeSplitters.Launcher
                     var names=new[]{"TimeSplitters-Launcher-v"+version+"-windows-x64.zip","launcher-update.json",
                         "TimeSplitters-Launcher-v"+version+"-macos-arm64.zip","launcher-update-macos-arm64.json",
                         "TimeSplitters-Launcher-windows-x64.zip","TimeSplitters-Launcher-macos-arm64.zip"};
-                    var assets=names.Select(n=>new{name=n,state="uploaded",size=100,digest="",browser_download_url=prefix+n}).ToArray();
-                    var candidate=ReleaseClient.SelectLauncher(Json.Encode(new[]{new{tag_name="launcher-v"+version,draft=false,prerelease=false,assets=assets}}),false);
-                    Need(candidate.Package.AssetName==names[2]&&candidate.ManifestUrl==prefix+names[3],"Wrong host selected from combined release");
-                    var metadata=Json.Encode(new{schema=1,version=version,size=100,sha256=new string('a',64),asset_name=names[2]});
-                    Need(ReleaseClient.VerifyLauncherMetadata(candidate,metadata).Tag==version,"Combined release metadata rejected");
+                    foreach(int count in new[]{4,6}) {
+                        var assets=names.Take(count).Select(n=>new{name=n,state="uploaded",size=100,digest="",browser_download_url=prefix+n}).ToArray();
+                        var candidate=ReleaseClient.SelectLauncher(Json.Encode(new[]{new{tag_name="launcher-v"+version,draft=false,prerelease=false,assets=assets}}),false);
+                        Need(candidate.Package.AssetName==names[2]&&candidate.ManifestUrl==prefix+names[3],"Wrong host selected from combined release");
+                        var metadata=Json.Encode(new{schema=1,version=version,size=100,sha256=new string('a',64),asset_name=names[2]});
+                        Need(ReleaseClient.VerifyLauncherMetadata(candidate,metadata).Tag==version,"Combined release metadata rejected");
+                    }
                 });
                 Test("SDK helper caps/drains one pipe and rejects failure/timeout",()=>{
                     ProcessStartInfo Helper(string script){var i=new ProcessStartInfo("/bin/sh"){UseShellExecute=false,RedirectStandardOutput=true};i.ArgumentList.Add("-c");i.ArgumentList.Add(script);return i;}
