@@ -67,3 +67,10 @@ def test_changed_cached_license_is_not_overwritten(tmp_path, monkeypatch):
     with pytest.raises(ValueError, match='differs'):
         package.prepare_licenses(cache)
     assert (cache/'notice.txt').read_bytes() == b'changed'
+
+
+def test_minimum_os_is_highest_actual_binary_requirement(monkeypatch):
+    outputs = iter(['cmd LC_BUILD_VERSION\n minos 27.0\n sdk 27.0',
+                    'cmd LC_BUILD_VERSION\n minos 26.0\n sdk 26.0'])
+    monkeypatch.setattr(package, 'run', lambda *args: next(outputs))
+    assert package.minimum_macos([Path('game'), Path('driver')]) == '27.0'

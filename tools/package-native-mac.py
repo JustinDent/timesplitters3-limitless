@@ -38,6 +38,19 @@ def system_library(name):
     return name.startswith(('/usr/lib/', '/System/Library/'))
 
 
+def minimum_macos(paths):
+    versions = []
+    for path in paths:
+        text = run('otool', '-arch', 'arm64', '-l', path)
+        match = re.search(r'\bminos\s+(\d+(?:\.\d+)+)', text)
+        if not match:
+            match = re.search(r'LC_VERSION_MIN_MACOSX\s+cmdsize\s+\d+\s+version\s+(\d+(?:\.\d+)+)', text)
+        if not match:
+            raise ValueError('Missing deployment target in Mach-O: '+str(path))
+        versions.append(tuple(int(part) for part in match[1].split('.')))
+    return '.'.join(str(part) for part in max(versions))
+
+
 def prepare_licenses(directory):
     pins = json.loads((ROOT/'config/native-mac-runtime-licenses.json').read_text())
     directory.mkdir(parents=True, exist_ok=True)
@@ -165,6 +178,7 @@ def main():
 
     copy(executable, GAME)
     libraries = bundle_libraries(executable, stage, sdk)
+    minimum = minimum_macos([stage/GAME, *sorted((stage/'Bin').glob('*.dylib'))])
     shutil.copytree(args.launcher/APP, stage/APP)
     copy(args.launcher/'Support/Launcher/manifest.json', 'Support/Launcher/manifest.json')
     copy(args.launcher/'BUILD-launcher.json', 'Support/Launcher/BUILD-launcher.json')
@@ -207,7 +221,7 @@ def main():
         'Build with tools/build-native-mac.py; package with tools/package-native-mac.py.\n')
     (stage/'README.txt').write_text(f'''TimeSplitters: Future Perfect PC {args.version} - experimental Apple Silicon build
 
-Requires an Apple Silicon Mac running macOS 26 or newer and your own supported
+Requires an Apple Silicon Mac running macOS {minimum} or newer and your own supported
 US Xbox game files. Extract the whole ZIP to a writable local folder, then open
 TimeSplitters Launcher.app (or Launch.command). Import your ISO or extracted
 default.xbe, pak and xmv with the launcher, then Play. No Homebrew, Python,
@@ -236,7 +250,7 @@ Source and third-party notices: Source and Licenses.
     manifest = dict(version=args.version, platform='macos-arm64', source_commit=release_source,
         packaging_commit=run('git','rev-parse','HEAD'),
         packaging_changes=run('git','status','--porcelain'),
-        renderer='vulkan', vulkan_driver='moltenvk', minimum_macos='26.0',
+        renderer='vulkan', vulkan_driver='moltenvk', minimum_macos=minimum,
         signing='ad-hoc; not notarized', runtime_libraries=libraries, native_build=native,
         launcher_version=json.loads((stage/'Support/Launcher/manifest.json').read_text())['version'],
         files={p.relative_to(stage).as_posix(): digest(p) for p in sorted(stage.rglob('*')) if p.is_file()})
