@@ -1,5 +1,40 @@
 # Measured progress
 
+## Texture batch 195: sixteen-asset production and repeated-feature checks (2026-10-20)
+
+Issue #74: expanded bounded production to 16 independent built-in edits;
+15 accepted offline, one knotty wood draft held because its pale weathered
+palette became orange and too clean. Accepted materials include blue painted
+wood, concrete, vented panels, ornate door, plaster, masonry/grille strip,
+mechanical sockets, brass/reflection strips, riveted plate and stone quadrant.
+Original/compiled comparisons and 2x2 diagnostic repeats checked UV boundaries,
+features, broad tone and edge continuation. Numerical profiles corroborate
+31 grille bars and 10 vent slats at near-matching positions. These checks do
+not establish actual scene adjacency, baked-reflection behavior or playability.
+
+Actual generated sources: 1254x1254 squares and 1774x887 landscapes. Accepted
+outputs are six 1024x1024, eight 1024x512 and one 512x512, Lanczos-resampled
+DXT1 with full mip chains. No native 4K claim. Fifteen new native DDS-reader
+passes plus 1,264 unchanged prior-audited hashes and the same checker cover
+1,279 installed files. Full Python hash/dimension/aspect/mip-byte audit passed.
+
+Reviewed 64 more original RGB/alpha pairs, reaching 3,625 visually classified
+keys. Text, warning graphics, labels, character atlases and alpha-dependent
+masks/effects retain specialist review. Classification is not artwork
+completion; existing uncataloged/other-encoded/procedural discovery gaps remain.
+Installed coverage is 18.78% of 6,812 cataloged keys; 5,421 need art and 112
+correction drafts remain incomplete.
+
+Pack including metadata: 1,057,751,764 bytes (1008.75 MiB), up 7,173,894 bytes.
+Temporary outputs measured 176.96 MiB. Retained source/review/pack workspace
+growth is about 63.35 MiB this batch. The 6144 MiB pack and 256 MiB temporary
+caps hold; 512 MiB residency policy is unchanged, not runtime-measured.
+
+Private evidence: `review/hybrid-195-acceptance.json` and linked generation,
+comparison, slat-profile, triage and native-audit records. No gameplay or Mac
+scene/GPU validation. MAC-011 stays Awaiting validation. Local #74 checkpoint;
+private artwork and game files remain local.
+
 ## Texture batch 194: environment materials and architectural atlases (2026-10-20)
 
 Issue #74: eight independent built-in edits accepted offline: rusty corrugated

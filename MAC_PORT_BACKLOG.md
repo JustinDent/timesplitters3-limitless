@@ -1115,6 +1115,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 195 (2026-10-20, commit carrying this entry): fifteen private
+  DXT1 replacements accepted, one wood correction held; 1,279 installed and
+  3,625 original keys visually classified. Existing shared DDS support needs
+  no adapter change. Windows structure, profile and repeat-grid checks do not
+  prove Mac scene, reflection or residency behavior; Awaiting validation. See
+  [batch 195 evidence](STATUS.md#texture-batch-195-sixteen-asset-production-and-repeated-feature-checks-2026-10-20).
+
 - Texture batch 194 (2026-10-20, commit carrying this entry): eight private
   DXT1 environment/atlas replacements; 1,264 installed and 3,561 original keys
   visually classified. Existing shared DDS support needs no adapter change.
