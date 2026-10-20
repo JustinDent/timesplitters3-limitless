@@ -83,8 +83,7 @@ namespace TimeSplitters.Launcher
             // Exists follows links and returns false for a dangling target. Inspect
             // attributes as well before creating a cache file or its atomic sidecar.
             for(string cursor=path;cursor!=null;cursor=Path.GetDirectoryName(cursor)){
-                try{Core.Require((File.GetAttributes(cursor)&FileAttributes.ReparsePoint)==0,"Linked download paths are not supported; saved files were kept.");}
-                catch(FileNotFoundException){}catch(DirectoryNotFoundException){}
+                Core.RequireUnlinked(cursor,"Linked download paths are not supported; saved files were kept.");
             }
             return path;
         }

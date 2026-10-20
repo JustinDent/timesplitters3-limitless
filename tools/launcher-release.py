@@ -292,7 +292,7 @@ def main():
     parser.add_argument('--platform', choices=PLATFORMS)
     args = parser.parse_args()
     if args.command == 'plan':
-        event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
+        event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text(encoding='utf-8'))
         plan = plan_release(event, os.environ['GITHUB_EVENT_NAME'], os.environ['GITHUB_REF'],
                             os.environ.get('LAUNCHER_VALIDATION_SHA') or os.environ['GITHUB_SHA'], os.environ['GITHUB_REPOSITORY'])
         require(not os.environ.get('LAUNCHER_VALIDATION_SHA') or not plan['publish'],

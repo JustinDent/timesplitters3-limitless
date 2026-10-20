@@ -23,6 +23,18 @@ with Windows **F10** and **PC Settings > 4K Textures**.
 This is separate from render resolution. Restart after changing pack files. Ordinary **Play.cmd** starts
 in Classic mode with the local pack available for switching.
 
+For an installed Windows launcher, the pack belongs in a normal **Textures**
+folder beside **TimeSplitters Launcher.exe**, with the keyed `.dds` files directly
+inside it. The launcher does not download the private development pack. A missing
+folder or missing replacement falls back to Classic even when Enhanced is selected.
+Directory junctions and symbolic links are rejected by installation validation.
+Windows Cloud Files folders such as OneDrive are supported by the launcher's
+cloud-tag-aware path validation; this does not permit redirected installation paths.
+On one NTFS volume, developers can install file hard links inside the normal folder
+to share the existing pack's disk space. This is a snapshot of installed keys:
+new or replaced source files require an explicit refresh, followed by a game restart.
+The game log records successful replacements as `[TEXTURE-PACK] loaded ...`.
+
 For a native Mac launch:
 
 ```sh
