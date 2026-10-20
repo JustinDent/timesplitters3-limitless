@@ -1,5 +1,51 @@
 # Measured progress
 
+## Texture batch 220: memory-only inventory review (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals in paired RGB and
+alpha sheets: 86 opaque and 42 nonopaque. All sixteen sheets inspected, with
+per-key provisional categories, visible structures and preservation constraints.
+Coverage now includes 5,353 of 6,812 supported keys; 1,459 remain unclassified.
+Classification is not replacement completion or verified scene usage.
+
+Added shared tools/texture-triage-memory.py to render bounded original review
+sheets to JSON on stdout. The caller displays the base64 JPEGs in memory and
+retains only hashes, key order, decode provenance and review notes. No diagnostic
+raster files are written. Use --root and --game with the local data directories,
+and --limit 128 for a new selection. To replay a prior review, supply its explicit
+ordered --keys; do not redirect the full raster-bearing stdout to a file.
+The private evidence record documents the exact selection and reproduction.
+Display thumbnails preserve aspect with nearest-neighbor resampling; this does
+not generate artwork or alter source/pack files.
+
+Windows validation on the actual 128-key selection: explicit-key replay
+reproduced all records and all sixteen JPEGs byte-for-byte. Invalid limit,
+duplicate keys and an unknown key each exit 2. Before/after file count, bytes,
+paths, sizes and modification-time fingerprint of the artwork root are identical
+during rendering and replay. Avoided 2,205,945 bytes of saved JPEG output; only
+compact provenance/decisions were retained. No cleanup attempted, and previously
+denied cleanup paths remain untouched.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passes all 1,392 installed DDS files. Their hashes and native checker identity
+match prior evidence; Windows parser results carried forward without a new
+parser run. 5,297 keys still need art and 123 drafts remain held. Worklist and
+hybrid plan refreshed. No artwork generation or pack/runtime/adapter change.
+
+Single pack remains 1,116,504,000 bytes (1064.78 MiB) including metadata, below
+6144 MiB. Temporary output about 254.12 MiB, with about 1.88 MiB headroom below
+256 MiB. Texture workspace including source art about 6557.38 MiB logical and
+allocated by the existing helper; disk free about 82.85 GiB. This helper result
+is not an independent filesystem-allocation audit. No duplicate game, build,
+staging or ZIP; no personal saves/settings changes or publication.
+
+The renderer uses shared Python/Pillow and needs no OS adapter. Mac execution
+is unverified. No gameplay: MAC-011 remains Awaiting validation on mapped scenes,
+GPU behavior, alpha and residency. The 512 MiB residency policy is unchanged.
+Inventory, other-encoding/procedural coverage and consolidated scene tests remain
+unfinished. Private review/hybrid-220-acceptance.json links memory-render hashes,
+per-key decisions, storage and carried-forward parser evidence.
+
 ## Texture batch 219: inventory and bounded storage audit (2026-10-20)
 
 Reviewed 128 further catalog/game hash-verified originals in paired RGB and
