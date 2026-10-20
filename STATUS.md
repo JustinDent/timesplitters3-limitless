@@ -1,5 +1,50 @@
 # Measured progress
 
+## Texture inventory batch 243: 64 additional RGB/alpha classifications (2026-10-20)
+
+Reviewed 64 previously unclassified catalog keys from bad294a72d94b172 through
+c08af71cc571abcf. Archive payload hashes, decoded RGBA hashes, dimensions and
+alpha were verified. Forty-three originals are opaque; twenty-one have nonopaque
+alpha. Eight RGB/alpha sheets were rendered and inspected only in RAM, then
+replayed exactly from a pinned selection. Renderer and decoder hashes, tool
+versions, per-key provenance and constraints remain in private evidence.
+No source artwork, compiled replacements, original PNG exports or raster files
+were generated. The in-memory sheets avoided 2,241,453 bytes of raster output.
+
+The review identifies machinery, architectural trim, materials, character fragments,
+artwork, keypad/menu graphics, signage, icons and effects while retaining uncertain
+uses as provisional. Two white-RGB assets carry detailed weapon/technical diagrams
+entirely in alpha; yellow RGB carries a numeral mask; a beige RGB swatch carries
+a small gear-like icon in alpha. Partial-opacity laboratory/access lettering,
+a flare with alpha maximum 173, a field with alpha 98–227 and an explosion with
+radial alpha 2–255 retain explicit channel constraints. Do not flatten these
+masks or reinterpret them as ordinary opaque materials. Original glyph wording,
+orientation, identity, UV divisions and gameplay cues remain specialist concerns.
+
+Classification increases from 6,121 to 6,185 unique keys with recomputed category
+counts and matching progress summaries. There are 627 unclassified keys: 626 still
+need art and one already has an installed replacement. This explains why the
+planner has 626 visual-triage entries while the inventory has 627 unclassified
+keys; installed status takes precedence in routing. Classification is appearance
+evidence, not artwork completion, full category approval or mapped-scene validation.
+The 90% installed-and-audited gameplay gate remains unmet.
+
+All 1,465 installed DDS hashes are unchanged and pass a fresh full Python
+format/metadata/dimensions/aspect/mip/hash audit. Existing Windows parser evidence
+remains batch 242; there were no new native parser executions. Queue/progress
+remain 1,465 installed, 5,194 needing art and 153 held. Pack stays 1,149,619,742
+bytes (1096.36 MiB), below 6144 MiB. Temporary snapshot: 267,920,780 bytes, below
+256 MiB with 514,676 bytes headroom. Texture workspace including source art:
+7,316,536,616 bytes; free disk: 84,862,738,432 bytes. Allocation helper equals
+logical size, not independent physical-allocation proof. No cleanup attempted.
+
+Private evidence: review/hybrid-243-inventory-evidence.json,
+hybrid-243-triage-decisions.json, pinned inventory-memory renderer, guarded
+inventory-apply script and inventory-acceptance.json. No gameplay, runtime changes,
+duplicate game/build/staging, publication or personal save/settings edits.
+One active pack and unchanged 512 MiB residency limit. MAC-011 remains Awaiting
+validation; noncatalog discovery, full category review and scene checks stay open.
+
 ## Texture batch 242: three mechanical replacements (2026-10-20)
 
 Eight classified cached references matched archive RGBA and were individually edited
