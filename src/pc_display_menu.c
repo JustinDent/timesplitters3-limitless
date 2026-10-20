@@ -10,6 +10,7 @@
 #endif
 #endif
 #include "pc_display.h"
+#include "texture_mode.h"
 #include "pc_cutscene.h"
 #ifndef _WIN32
 #include "platform/win32_compat.h"
@@ -283,6 +284,8 @@ static PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY], all_modes[PC_DISPLAY_MODE_
 static int all_mode_count, selected_aspect;
 static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static uint32_t resolution_row, aspect_row;
+static uint32_t texture_row;
+static unsigned texture_choice;
 static ULONGLONG deadline;
 static char status[192];
 #ifdef _WIN32
@@ -562,7 +565,7 @@ static void filter_modes(void)
 }
 static void labels(void)
 {
-    resolution_row=aspect_row=0;
+    resolution_row=aspect_row=texture_row=0;
     if(page==0) {
         int i;
         aspect_row=guest_call(sub_00079D60_gen,6,text_at(7,"Aspect ratio"),0u,0u,0u,0u,0u);
@@ -586,6 +589,12 @@ static void labels(void)
         fov_label();
         guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),2u,0x400u,0u,0u,FOV_DRAW_CB);
         guest_call(sub_00079710,1,1u);
+        texture_choice=(unsigned)tsfp_texture_is_4k();
+        texture_row=guest_call(sub_00079D60_gen,6,text_at(2,"Textures"),7u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        guest_call(sub_000717D0,1,text_at(3,"Classic"));
+        guest_call(sub_000717D0,1,text_at(10,"Enhanced"));
+        guest_call(sub_00075430,2,texture_row,texture_choice);
         row(3,"Apply settings"); row(4,"Reset FOV to 55");
 #ifdef _WIN32
         guest_call(sub_00079D60_gen,6,text_at(9,"Smoothness / refresh"),6u,0u,0u,SELECT_CB,0u);
@@ -645,7 +654,7 @@ static void build_menu(void)
 static void refresh(int next,int selected)
 {
     page=next;
-    resolution_row=aspect_row=0; /* Rebuild may finish on a later guest tick. */
+    resolution_row=aspect_row=texture_row=0; /* Rebuild may finish on a later guest tick. */
     guest_call(sub_00078980,1,current_menu);
     /* The guest refresh restores choices by row ID after our builder runs.
        The resolution list has changed: reapply the new list's index after
@@ -653,6 +662,11 @@ static void refresh(int next,int selected)
     if(page==0 && resolution_row && aspect_row) {
         guest_call(sub_00075430,2,aspect_row,(uint32_t)selected_aspect);
         guest_call(sub_00075430,2,resolution_row,(uint32_t)selected_mode);
+    }
+    if(page==0 && texture_row) {
+        /* Guest refresh can restore an old choice over the current F10 state. */
+        texture_choice=(unsigned)tsfp_texture_is_4k();
+        guest_call(sub_00075430,2,texture_row,texture_choice);
     }
 #ifdef _WIN32
     if(page==3 && motion_fps_row && motion_refresh_row) {
@@ -751,6 +765,16 @@ static void tick_menu(void)
 {
     GuestRegisters r; uint32_t menu=WORD_AT(g_esp+4); save_registers(&r);
     read_resolution();
+    if(page==0 && texture_row) {
+        unsigned choice=WORD_AT(texture_row+0xc8);
+        if(choice<=1u && choice!=texture_choice)
+            tsfp_texture_set_4k((int)choice);
+        /* Native arrows apply immediately. Otherwise reflect changes from
+           F10/host menus without letting a stale guest row undo them. */
+        texture_choice=(unsigned)tsfp_texture_is_4k();
+        if(choice!=texture_choice)
+            guest_call(sub_00075430,2,texture_row,texture_choice);
+    }
     if(page==0 && aspect_row) {
         unsigned aspect=WORD_AT(aspect_row+0xc8);
         if(aspect<PC_DISPLAY_ASPECT_COUNT && aspect!=(unsigned)selected_aspect) {

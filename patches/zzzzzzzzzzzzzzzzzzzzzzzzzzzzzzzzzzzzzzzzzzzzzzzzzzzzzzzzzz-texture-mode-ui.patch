@@ -1,0 +1,8 @@
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -97,4 +97,5 @@
+     if(APPLE AND TSFP_NATIVE_DIR)
+         add_library(xbox_d3d8 STATIC "${TSFP_NATIVE_DIR}/renderer_gl.c"
++            "${TSFP_NATIVE_DIR}/../texture_mode.c"
+             "${TSFP_NATIVE_DIR}/renderer_host_sdl.c" rhi.c)
+     else()

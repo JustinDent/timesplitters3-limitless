@@ -59,6 +59,12 @@ int tsfp_texture_is_4k(void)
     return mode_load();
 }
 
+void tsfp_texture_set_4k(int value)
+{
+    tsfp_texture_is_4k();
+    mode_store(!!value);
+}
+
 int tsfp_texture_toggle(void)
 {
     int after;

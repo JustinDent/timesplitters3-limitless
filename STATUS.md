@@ -12474,3 +12474,28 @@ concurrent worktree changes were included.
 - Registered DDS/parser/loader mode, compiler, inventory, hybrid-planner and variant checks in Windows/macOS CI, with pinned Pillow installation and texture-tool change routing. Tests compile actual loader/mode code, exercise all four initial modes with synthetic RHI resources, and syntax-check Windows controls/settings. MAC-011 records remaining interactive/native visual validation.
 - Windows validation on the integrated tree: 131 texture/native/storage/CI-selection/backlog checks passed; 34 complete patch-transition/tracking checks passed against the existing pinned upstream (20 transition and 14 tracking tests). PowerShell parsing passed for tsfp.ps1 and both texture/playable launch scripts. Diff whitespace check passed with CRLF treated as line endings. Hosted checks are pending at this local record; local Windows results do not establish Mac execution or GPU/gameplay fidelity.
 - No game launch, artwork generation, private-pack change, game-data copy or distributable build. Private artwork remains local; the pack snapshot stays at 1242 supported keys approved offline, 93 held drafts and 5477 needing art. The full overhaul is incomplete.
+
+## In-game Display texture choice — 2026-10-19
+
+Issue #74 source follow-up on `74-enhancement-gfx-overhaul-to-modernize-textures`,
+based on main `b0fbf37`. The existing Display settings page now has a native
+Textures choice with Classic and Enhanced values. Keyboard/controller arrows
+and the existing pointer-arrow adapter use the same guest row. Changes apply
+immediately for the current session, independently of resolution/FOV Apply.
+The row follows host F10/menu changes and survives page refresh/reopen without
+restoring stale values. No preference files are written by this control.
+
+The explicit setter and menu behavior are shared across Windows/native Mac.
+The common renderer already selects cached views from this mode. Legacy Mac GL
+now selects the cached replacement and its mip filter together from the same
+mode; a separate additive patch links the shared mode source for that backend.
+Missing replacements continue to use originals. Cocoa/F10 adapters and actual
+Mac interaction/scene checks remain pending under MAC-011.
+
+Windows offline validation: 68 passed, 1 Mac-only check skipped. This includes
+the real Display callbacks in isolated guest RAM, native DDS/loader mode tests,
+menu mouse regression fixtures, motion settings, CI routing and backlog integrity.
+All 34 patch-transition/tracking checks passed in 314.60 seconds, including fresh application, repeat builds and historical migrations. No game launch,
+art generation, pack copy, save/config modification or additional game build tree.
+The existing Windows executable has not been replaced; these changes require a
+new runtime build. Visual layout and real-art scene behavior remain unverified.

@@ -1,7 +1,7 @@
 # Texture overhaul alpha
 
 This is an early source alpha for [issue #74](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/74).
-It adds the Windows live Classic/replacement switch and the tools used to build,
+It adds the live Classic/replacement switch and the tools used to build,
 review and audit the texture overhaul. The complete remaster is still in progress.
 
 **The PR contains source, tests and documentation.** The local artwork and compiled
@@ -10,8 +10,11 @@ Original game files, saves and personal settings are not included.
 
 ## What is available
 
-- Switch between cached originals and installed replacements with **F10** or
-  **PC Settings > 4K Textures** on Windows. Texture mode and render resolution
+- In the game's **Settings / paused Options > Display settings**, use
+  **Textures: Classic / Enhanced**. The native arrows change the mode immediately;
+  **Apply settings** still controls resolution/FOV. This choice lasts for the
+  current game session. Windows also supports **F10** or
+  **PC Settings > 4K Textures**. Texture mode and render resolution
   are independent; the menu label does not mean every texture is 4K.
 - Load full-mip DXT1, DXT3, DXT5 and compatible RGBA DDS replacements. Missing,
   invalid or over-budget files fall back to originals.
@@ -59,9 +62,10 @@ checks must cover representative environments, props, weapons, characters,
 effects and UI; scene UV alignment, transparency, 1080p/4K/ultrawide modes,
 memory, fallback and stability. A full campaign playthrough is a separate check.
 
-Windows live-switch and loader checks do not prove Mac parity. The native Mac
-common renderer links the shared mode policy and retains explicit-pack loading.
-The native input/settings toggle and real-art scene validation remain pending.
+Windows live-switch and loader checks do not prove Mac parity. Windows and native
+Mac use the same in-game Display menu and mode policy. Both Mac renderer paths
+consume that policy; the separate Cocoa settings/F10 shortcut remains pending.
+Native Mac interaction and real-art scene validation remain pending.
 Legacy GL accepts compressed replacements and falls back to originals for RGBA
 replacements. Platform validation is tracked under
 [MAC-011](../MAC_PORT_BACKLOG.md#mac-011--real-texture-pack-gameplay-coverage).

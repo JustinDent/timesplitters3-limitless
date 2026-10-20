@@ -56,8 +56,9 @@ def snapshot(tree):
 
 def test_fresh_checkout_and_repeated_build(checkout):
     assert installer.apply_patches(checkout, PATCHES)
-    assert '"${TSFP_NATIVE_DIR}/../texture_mode.c"' in (
-        checkout / 'src/d3d/CMakeLists.txt').read_text()
+    # Both common RHI and legacy GL link the same live mode policy.
+    assert (checkout / 'src/d3d/CMakeLists.txt').read_text().count(
+        '"${TSFP_NATIVE_DIR}/../texture_mode.c"') == 2
     complete = snapshot(checkout)
     assert installer.apply_patches(checkout, PATCHES) == []
     assert snapshot(checkout) == complete
@@ -108,7 +109,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
-        if patch.name.endswith('-texture-mode-shared.patch'):
+        if patch.name.endswith(('-texture-mode-shared.patch', '-texture-mode-ui.patch')):
             continue  # Depends on the common native renderer added by migration.
         if patch.name.endswith(('-discord-presence.patch', '-shared-renderer-host.patch', '-shared-vulkan-mac.patch', '-shared-native-renderer.patch', '-shared-interpolation-depth.patch', '-shared-present-metrics.patch', '-native-launcher-services.patch', '-shared-screen-copy-clipping.patch', '-vulkan-portability-swizzle.patch', '-shared-interpolation-capture.patch')):
             continue  # These changes depend on later native/display or feedback blocks.

@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
     paths:
+      - src/texture_mode.*
+      - src/pc_display_menu.c
       - tools/texture-*.py
       - tests/texture*
       - tests/test_texture*

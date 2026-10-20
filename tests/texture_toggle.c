@@ -70,6 +70,11 @@ int main(int argc,char **argv)
     CHECK(images==1 && views==1 && texture.pack_bytes==24);
     cached=texture.pack_srv;cached_allocations=allocations;
     CHECK(tsfp_texture_view(&texture)==(initial?cached:texture.srv));
+    tsfp_texture_set_4k(1);tsfp_texture_set_4k(1);
+    CHECK(tsfp_texture_view(&texture)==cached);
+    tsfp_texture_set_4k(0);tsfp_texture_set_4k(0);
+    CHECK(tsfp_texture_view(&texture)==texture.srv);
+    CHECK(allocations==cached_allocations);
     for(int i=0;i<20;i++) {
         int mode=tsfp_texture_toggle();
         tsfp_texture_upload(&texture);
