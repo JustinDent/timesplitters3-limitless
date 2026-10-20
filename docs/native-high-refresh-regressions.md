@@ -1085,8 +1085,9 @@ motion conversion is included in this audit.
 The user reports a later ship crash intruding into the playable canyon,
 on the way to the base entrance immediately after the bridge blows up.
 Two user screenshots show the obstruction beside the destroyed bridge.
-This is an open correctness issue; neither a cause nor a runtime fix has
-been established.
+The initial investigation below established the scene evidence. A subsequent
+original-code reproduction identifies a timing defect and source correction,
+recorded at the end of this section; rebuilt scene verification remains open.
 
 The running Windows executable remains the tested `cfaef73` build with
 SHA-256 `afb5ed6a71c05f3c8a3ddc1ede825e8f2f07f4a05d39dc3901de665a35840d26`.
@@ -1122,10 +1123,11 @@ they predate the tracer-hash metadata field. The subsequent
 `60-bridge-reference` run was stopped to return the game to the user and
 is incomplete, not a passing bridge comparison.
 
-Next acceptance requires identifying the visible ship's model and its
-spawn/movement/settling path, then comparing the bridge event at original
-60 Hz and native 144 Hz with isolated data. No speculative position offset
-or asset edit has been applied. Mac behavior is unverified.
+At this stage, identifying the ship's model and spawn/movement/settling path
+was still pending. The later investigation below resolves that identification.
+A bridge-event comparison at original 60 Hz and native 144 Hz with isolated
+data remains required. No speculative position offset or asset edit has been
+applied. Mac behavior is unverified.
 
 The offline timing, entity-trace, float/vehicle translation, audio and CI
 scope checks report 144 passed and one expected failure in 44.21 seconds
@@ -1133,3 +1135,68 @@ scope checks report 144 passed and one expected failure in 44.21 seconds
 previously measured object-rocking cadence gap, not this ship report.
 The Mac backlog integrity check also passes. These tests validate the
 diagnostics and existing covered behaviors; they do not resolve the scene.
+
+### Mothership identification and source correction
+
+The later read-only template snapshot (`private/pipeline/ship-templates.json`)
+identifies entity 0x8204BB80 as model 0x53A. Its template name/path pointers
+resolve into the level's object-name table at offsets 0x10753 / 0x1077A:
+`INTRO_TIMESPLITTERS_MOTHERSHIP_CRASHED` / `intro/intro_mscrash`.
+The original updater at 0x217050 spawns this model at 0x2185A7 with the
+live mothership's position and orientation, then removes the moving object.
+This supersedes the earlier uncertainty about which object was the wreck.
+
+The updater's entry load at 0x217059 is only a pause gate, with its EAX
+value replaced at 0x217090. Its forces, position integration, angular motion,
+crash timer and associated shared timers use 0x4E794C, the fractional delta.
+Skipping zero-whole-tick frames therefore loses motion time. Meanwhile,
+the angular and linear damping loops consume the carried whole ticks,
+so damping becomes too strong relative to elapsed motion time. This changes
+the crash trajectory, not just its apparent frame rate.
+
+`src/pc_native_numeric.h` now allows this gate on every positive fractional
+interval in native mode. Its two damping loops and all other loads remain
+unchanged. Pause still stops the callback, original 60 Hz behavior is
+unchanged, and the original multi-tick catch-up path stays intact.
+
+`tests/native_mothership.c` runs the complete original 0x217050–0x21862F
+updater, original shared effect-timer helper 0x2157B0, vector transforms and
+scalar approach helper. It supplies a controlled airborne state, centered
+random wobble, a sine table and an effect-matrix adapter. Sound, particles,
+damage/player feedback, asset creation and deletion are bounded fixture
+services; the actual wreck-creation request is captured and checked.
+It does not exercise collision/rendering, audio output, the preceding
+combat/trigger sequence, or the full random-number stream.
+
+Normal-speed results from the same starting state:
+
+| Path | Updates/s | Changed transforms in first second | Crash seconds | Wreck X | Wreck Y | Wreck Z |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Original reference | 60 | 60 | 9.66667 | 48.60029 | -44.30268 | -119.41282 |
+| Original gate at native cadence | 144 | 60 | 26.58333 | 43.02375 | -26.25528 | -128.49136 |
+| Corrected native gate | 120 | 120 | 9.64167 | 48.28055 | -44.04354 | -119.62134 |
+| Corrected native gate | 144 | 144 | 9.64583 | 48.36892 | -44.14344 | -119.55445 |
+
+Assertions cover six 60/120/144 × normal/quarter-speed combinations:
+fresh position each advancing callback, one-second velocity within 0.005,
+position within 0.03, complete crash time within 0.05 game seconds, landing
+within 0.75 units per axis and angles within 0.05 degrees of the original.
+These tolerances allow sampled height/time thresholds at state transitions.
+The original 60 Hz result is byte-identical with the native gate enabled,
+as are separate one- through six-tick catch-up calls. Paused entity state,
+callee-saved registers, stack, FPU balance and restored clock fields are
+checked. A counterfactual run without the gate correction must still
+reproduce the late/high crash. Measurements:
+`logs/native-mothership-regression.log`.
+
+The patch stack validates without runtime-file changes, and the existing
+generated production routine already uses the scoped global-load hook at
+0x217059. No hand-edited generated C or modified game asset is involved.
+The broader native timing, entity-trace, float/vehicle translation, audio,
+CI-scope and Mac-backlog checks pass: 146 passed and one expected failure
+in 49.07 seconds (`logs/native-mothership-shared-regressions.log`).
+The expected failure remains the separate object-rocking cadence gap.
+The user's interactive game remains the previous `cfaef73` executable.
+A rebuilt Windows game and isolated bridge-scene comparison are still
+required before calling the reported obstruction resolved; actual Mac
+execution and full mission/random-effect coverage remain pending.

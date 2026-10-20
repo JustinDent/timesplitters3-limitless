@@ -6,11 +6,17 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
-- The user reports a ship intruding into the playable canyon immediately
-  after the first mission's bridge destruction. This remains unresolved.
-  Read-only snapshots of the user's session preserve the scene's entity,
-  animation and matrix state while leaving gameplay running. The isolated
-  60/144 opening comparisons do not reach this event and cannot validate it.
+- The ship reported in the canyon after the first bridge destruction is
+  identified as the crashed mothership, model 0x53A. Its updater skipped
+  fractional intervals while still applying whole-tick damping, changing
+  both crash duration and landing position. The shared source now accepts
+  every advancing interval at that updater's entry gate. The complete
+  original-routine fixture reproduces a 26.58-second crash at 144 FPS versus
+  9.67 seconds at 60 FPS; the correction restores 9.65 seconds and lands
+  within 0.24 units per axis in the normal 144 FPS case. Six native-rate /
+  slow-motion combinations, pause, ABI and exact original catch-up pass.
+  This is an offline source fix, not yet a rebuilt/scene-verified fix in
+  the user's running executable, which remains open for gameplay.
   [Bridge investigation](docs/native-high-refresh-regressions.md#bridge-crash-placement-investigation).
 - Object rocking/bounce motion has a reproduced smoothness gap: the original
   updater produces only 60 changed transforms across 144 live updates, while
