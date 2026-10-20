@@ -9096,3 +9096,26 @@ this is not a 120 FPS benchmark. Six disposable partitions were recycled
 (5,243,406,848 apparent bytes; 135,168 allocated bytes). Captures allocate
 179,600 KiB, below 256 MiB. Protected settings and controls-fixture hashes
 match the pre-existing baseline. Windows and hosted CI remain pending.
+
+### Renderer integration hosted CI and line-ending fixture (2026-10-19)
+
+Draft [PR #191](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/191)
+now reviews `codex/renderer-main-integration` against its unmerged
+`codex/shared-scene-acceptance` base. No merge into main was performed.
+At head `9940dba`, [run 39345301346](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39345301346)
+passed its macOS job: 49 scope/backlog tests; 28 patch tests (two host skips);
+228 runtime/render/input tests (18 host skips); real MoltenVK GPU contracts and
+production frame replay; 49 release tests (three host skips); and native launcher
+build/tests. This hosted run uses synthetic GPU data, not game assets.
+
+Windows passed 28 patch tests but failed the two newly added historical-stack
+fixtures before reaching runtime tests. Both appended LF bytes to a CRLF file;
+Git's configured CRLF conversion normalized the artificial mixed-ending edit,
+violating the fixture's byte comparison. The same two failures reproduced on
+Mac with `core.autocrlf=true`. The fixture now appends using the file's existing
+line ending and explicitly tests both conversion settings on both hosts while
+retaining exact source snapshots and unrelated-edit checks. All four local
+history/conversion combinations pass (46.18 seconds). The existing workflow
+already selects this test; no new workflow entry or runtime patch is required.
+Logs: `logs/renderer-integration-crlf-{repro,fixed}.log`. Windows rerun remains
+pending; the native executable and its prior scene evidence are unchanged.

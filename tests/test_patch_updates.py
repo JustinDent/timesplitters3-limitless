@@ -3,6 +3,7 @@ from pathlib import Path
 import importlib.util
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -60,8 +61,16 @@ def test_fresh_checkout_and_repeated_build(checkout):
 
 
 @pytest.mark.parametrize('history', ['pc-presentation', 'native-renderer'])
-def test_integrate_independent_presentation_stacks(checkout, tmp_path, history):
+@pytest.mark.parametrize('autocrlf', ['false', 'true'])
+def test_integrate_independent_presentation_stacks(checkout, tmp_path, history,
+                                                  autocrlf, monkeypatch):
     """Both recorded pre-integration builds migrate to identical shared code."""
+    # Exercise both hosts' Git conversion modes, including disposable staging
+    # repositories created by the installer. Preserve any other test config.
+    count = int(os.environ.get('GIT_CONFIG_COUNT', '0'))
+    monkeypatch.setenv(f'GIT_CONFIG_KEY_{count}', 'core.autocrlf')
+    monkeypatch.setenv(f'GIT_CONFIG_VALUE_{count}', autocrlf)
+    monkeypatch.setenv('GIT_CONFIG_COUNT', str(count + 1))
     histories = json.loads((ROOT / 'tests/fixtures/renderer-patch-stacks.json').read_text())
     prior = tmp_path / 'prior-patches'
     prior.mkdir()
@@ -76,10 +85,14 @@ def test_integrate_independent_presentation_stacks(checkout, tmp_path, history):
     integrated = snapshot(checkout)
     # Downgrade and re-upgrade through recorded bytes, retaining unrelated edits.
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
-    manual.write_bytes(manual.read_bytes() + b'\n/* integration-local edit */\n')
+    # Append in the file's existing style. A mixed LF/CRLF edit is normalized by
+    # Git on Windows and is not a byte-preservation fixture for unrelated code.
+    newline = b'\r\n' if manual.read_bytes().endswith(b'\r\n') else b'\n'
+    extra = newline + b'/* integration-local edit */' + newline
+    manual.write_bytes(manual.read_bytes() + extra)
     installer.apply_patches(checkout, prior)
     installer.apply_patches(checkout, PATCHES)
-    expected = integrated[Path('titles/futureperfect/src/recomp_manual.c')] + b'\n/* integration-local edit */\n'
+    expected = integrated[Path('titles/futureperfect/src/recomp_manual.c')] + extra
     assert manual.read_bytes() == expected
     integrated[Path('titles/futureperfect/src/recomp_manual.c')] = expected
     assert snapshot(checkout) == integrated

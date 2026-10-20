@@ -1196,6 +1196,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-014 — Patch upgrades across Windows watermark and native overlay guards
 
+- **Renderer integration CI (2026-10-19, PR #191):** The current common stack
+  passes hosted macOS patch transitions, runtime regressions, GPU contracts and
+  launcher checks at `9940dba`. Windows exposed a mixed-line-ending assumption
+  in the new historical-stack test. The test now appends edits in the existing
+  file style and exercises both Git conversion settings; four local cases pass.
+  This is a shared test correction, with no runtime adapter change. Windows
+  rerun is pending; prior historical unverified notes below are superseded only
+  for the native scope recorded here.
+  [Evidence](STATUS.md#renderer-integration-hosted-ci-and-line-ending-fixture-2026-10-19).
+
 - **CI efficiency follow-up (branch `ci/faster-runtime-checks`):**
   `.github/workflows/runtime-patches.yml` and `tools/ci-runtime-scope.py` select
   affected suites for PRs and main pushes; manual, patch/pin and workflow changes
