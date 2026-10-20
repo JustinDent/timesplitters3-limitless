@@ -87,7 +87,11 @@ The previous launcher remains until a successful verified startup; helpers apply
 updates after the old process exits. Original game data, saves and config are
 never launcher-update targets. Building does not publish a release.
 
-The executable has a local ad-hoc signature. Developer ID signing, notarization,
+The corrected builder signs the complete app bundle with a local ad-hoc signature.
+Mac v1.2.19 shipped only a signed executable and requires a one-time manual
+replacement when the corrected package is released; its updater rejects the new
+bundle seal. See [signing and migration details](launcher-releases.md#mac-application-signing-and-the-v1219-migration).
+Developer ID signing, notarization,
 clean-machine installation and real published upgrade/repair/rollback remain
 release acceptance checks. Local packaged install, helper-based repair/restart,
 transaction rollback and native game lifecycle checks are covered.

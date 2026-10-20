@@ -1,5 +1,33 @@
 # Measured progress
 
+## Mac launcher bundle-signing correction (2026-10-19)
+
+Prepared on `fix/mac-launcher-bundle-signing` from main `0bf9672` (implementation `72a4bb3`, PR #201).
+The reported Safari download shows macOS's damaged-app rejection. The published
+v1.2.19 ARM64 ZIP has SHA-256
+`d270928c0d63a7f85d9ee972574efadea9f1de62e891f6219a94aa9436025122`;
+all internal manifest hashes and all 10,241 main executable code-page hashes
+match. Its main executable has an ad-hoc signature, but the app contains no
+CodeResources seal and the builder never signs the assembled bundle. This is
+a concrete packaging defect consistent with the report; the user's Mac logs and
+Gatekeeper assessment have not been collected, so no sole-cause claim is made.
+
+The builder now signs nested libraries and the final app, strictly verifies the
+bundle, then creates manifests. The Mac payload allowlist accepts only the exact
+CodeResources path. Shared publication requires the seal; packaged Mac regression
+checks reject missing seals and modified plists, then verify installed/repaired
+signatures. Existing game cleanup protects the seal. Windows payload rules remain
+unchanged. Local Windows policy tests: 21 passed; Mac host CI was pending at implementation; results are recorded in
+[PR #201](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/201).
+
+The user has no Apple Developer membership. This remains ad-hoc signing, without
+Developer ID/notarization or a guarantee that Gatekeeper permits browser downloads.
+No quarantine removal/security-policy bypass is performed. v1.2.19 cannot auto-update
+to a package containing CodeResources because its old allowlist rejects that path;
+Mac users need one manual app/manifest replacement, documented in release notes.
+Future clients preserve signature files. No release is published or overwritten,
+and no personal game data is changed. MAC-021 tracks delivery validation.
+
 ## Launcher single-ZIP publication (2026-10-19)
 
 Implemented in `430cdfd` on `fix/launcher-single-platform-zips` from main
