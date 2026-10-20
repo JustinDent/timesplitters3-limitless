@@ -1,5 +1,50 @@
 # Measured progress
 
+## Texture batch 219: inventory and bounded storage audit (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals in paired RGB and
+alpha sheets: 81 opaque and 47 nonopaque. Per-key provisional categories,
+visible structure and preservation constraints cover materials, mechanical and
+organic atlases, text/signs, interface controls, scene images, reflections and
+effects. Several plain-looking RGB textures encode text or functional geometry
+in alpha; their channel semantics are explicitly retained for specialist review.
+All sixteen sheets inspected. Classification now covers 5,225 of 6,812 supported
+keys, with 1,587 still unclassified. Appearance-based routing is not replacement
+completion or verified scene usage.
+
+Checked temporary storage before output. Diagnostic JPEGs were encoded and
+measured in memory before writing, leaving space for provenance. No individual
+original PNG exports, artwork generation or pack changes. Display thumbnails
+use aspect-preserving nearest-neighbor scaling only.
+
+Storage audit identified five redundant repeated-view JPEGs from batches
+197/198/200, totaling 2,204,819 bytes. Each was reconstructed byte-for-byte in
+memory from verified original payload/RGBA and unchanged installed DDS; primary
+comparisons, focus evidence, metrics, decisions and artwork would be retained.
+The exact-path PowerShell removal was rejected by automatic approval review as
+"blocked by policy", without further reason. All five remain hash-intact;
+zero files deleted and zero bytes reclaimed. No alternate removal attempted.
+These paths and the earlier denied cleanup sets remain excluded from retries.
+Private review/hybrid-219-repeat-retirement.json records recovery and denial.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passes for all 1,392 installed DDS files. Their hashes and native checker identity
+match batch 218 evidence; Windows parser results carried forward without a new
+parser run. 5,297 keys still need art and 123 drafts remain held. Worklist/hybrid
+plan refreshed; shared formats and 512 MiB residency policy unchanged.
+
+Single active pack remains 1,116,504,000 bytes (1064.78 MiB), including metadata,
+under the 6144 MiB cap. Temporary output about 254.0 MiB, leaving about 2.0 MiB
+below 256 MiB. Texture workspace including source art about 6557.1 MiB
+logical/allocated by the existing helper; disk free about 82.85 GiB. No duplicate
+game/build/staging/ZIP, personal-data changes or publication.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior, alpha and residency. Inventory, other-encoding/procedural
+coverage and final scene tests remain unfinished. Private
+review/hybrid-219-acceptance.json links original hashes, RGB/alpha evidence,
+per-key decisions, storage and carried-forward parser audit.
+
 ## Texture batch 218: environment material production (2026-10-20)
 
 Generated twelve individual material edits from catalog/game hash-verified
