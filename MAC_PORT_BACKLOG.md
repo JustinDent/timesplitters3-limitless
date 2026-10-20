@@ -1115,6 +1115,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Batch 212 (issue #74): 128 additional original RGB/alpha classifications; no art, pack, format, runtime or adapter changes. All 1,357 installed DDS files pass current Python audit with unchanged-hash Windows parser evidence carried forward. Shared DXT1/DXT5/RGBA8 support and 512 MiB residency policy unchanged. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 212 and private review/hybrid-212-acceptance.json.
+
 - Batch 211 (issue #74): five held materials corrected and installed; three pattern corrections remain held. All 1,357 files pass current Python audit; five new Windows DDS parser passes and 1,352 unchanged-hash results carried forward. Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 211 and private review/hybrid-211-acceptance.json.
 
 - Batch 210 (issue #74): eleven metal/machinery replacements accepted offline, one draft held and 128 original RGB/alpha pairs classified. All 1,352 installed files pass current Python audit; eleven new Windows DDS parser passes and 1,341 unchanged-hash results carried forward. Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 210 and private review/hybrid-210-acceptance.json.

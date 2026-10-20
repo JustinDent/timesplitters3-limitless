@@ -1,5 +1,42 @@
 # Measured progress
 
+## Texture batch 212: original-channel inventory review (2026-10-20)
+
+Inspected 128 additional catalog-hash-verified originals through eight RGB and
+eight separate alpha contact sheets. Each decision records the source span,
+payload/RGBA hashes, actual dimensions, alpha range and visual constraints.
+No individual original exports, generated artwork or replacement installation.
+The batch contains 84 opaque and 44 alpha-bearing originals. Classification
+now covers 4,841 of 6,812 keys; 1,971 remain unclassified. This is provisional
+routing, not completion of artwork or full category/scene review.
+
+Recorded channel-sensitive cases including lattice and reticle shapes hidden
+in flat RGB, low-opacity gradients, ring and grid masks, thin foliage, window
+panes cut out in alpha despite visible RGB, and reflection-like images with
+different RGB/alpha structure. Identity-sensitive weapon/character atlases,
+inverted warning labels, posters, portraits, scene previews and carved motifs
+remain individual or specialist work. No unreadable text was reconstructed.
+Contact sheets preserve aspect with nearest-neighbor presentation only.
+
+Full current Python audit passed for all 1,357 installed DDS files: formats,
+metadata, dimensions, aspect, hashes and mip chains. All installed hashes and
+the native checker identity match batch 211, so its Windows parser evidence
+is carried forward without rerunning unchanged files. 5,333 keys need art and
+122 drafts remain held. Worklist and hybrid routing refreshed. No source,
+runtime, format or adapter changes; shared 512 MiB residency policy unchanged.
+
+Single active pack remains 1,097,915,388 bytes (1047.05 MiB), including metadata,
+under 6144 MiB. Temporary output is about 235.05 MiB, below 256 MiB, with about
+20.95 MiB headroom. Texture workspace including source art is about 6367.57 MiB
+logical/allocated by the existing helper; disk free about 83.65 GiB. No cleanup
+retried after the prior denial, and no duplicate game/build/staging/ZIP created.
+Original game data, artwork, personal saves and settings remain untouched.
+
+No game launch or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior and residency. Embedded/other-encoding/procedural discovery
+and complete category coverage remain unresolved. Private evidence is linked
+from review/hybrid-212-acceptance.json. This partial pack is not a full remaster.
+
 ## Texture batch 211: resolve material-tone failures (2026-10-20)
 
 Generated eight focused corrections from hash-verified originals. Five passed
