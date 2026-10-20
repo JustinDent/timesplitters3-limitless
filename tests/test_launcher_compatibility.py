@@ -22,8 +22,23 @@ class Compatibility(unittest.TestCase):
                 self.assertTrue(compatibility.relevant(path))
 
     def test_unrelated_game_and_docs_changes_do_not_need_launcher_builds(self):
-        for path in ('docs/macos.md', 'STATUS.md', 'MAC_PORT_BACKLOG.md', 'src/native/input_sdl.c'):
+        for path in ('docs/macos.md', 'STATUS.md', 'MAC_PORT_BACKLOG.md', 'src/native/input_sdl.c',
+                     'patches/texture-mode-ui.patch', 'tools/texture-pack.py'):
             self.assertFalse(compatibility.relevant(path))
+
+    def test_moved_packaging_and_icon_checks_still_select_their_owner(self):
+        for path in ('tools/build-game-icon.ps1', 'tests/test_game_icon.py',
+                     'tests/package_launcher.py', 'tools/package-release.py',
+                     'tools/release/ImportGame.cs', 'requirements.txt',
+                     'tests/test_launcher_startup.py'):
+            with self.subTest(path=path):
+                self.assertTrue(compatibility.relevant(path))
+
+    def test_main_push_keeps_launcher_validation_after_runtime_deduplication(self):
+        workflow = (ROOT/'.github/workflows/launcher-compatibility.yml').read_text()
+        self.assertIn('  push:\n    branches: [main]\n', workflow)
+        self.assertIn('github.event.pull_request.base.sha || github.event.before', workflow)
+        self.assertIn('0000000000000000000000000000000000000000', workflow)
 
     def test_failed_cancelled_and_skipped_builds_cannot_pass(self):
         for result in ('failure', 'cancelled', 'skipped', ''):

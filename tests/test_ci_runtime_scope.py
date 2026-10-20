@@ -73,54 +73,120 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
 
 
 @pytest.mark.parametrize('paths, expected', [
-    (['tools/launcher/MainWindow.cs'], {'launcher'}),
-    (['tools/build-mac-launcher.py'], {'launcher'}),
-    (['.github/workflows/launcher-release.yml', 'tools/launcher-release.py',
-      'tools/fetch-launcher-art.ps1', 'config/launcher-artwork.json', 'tests/test_launcher_release.py'], {'launcher'}),
-    (['config/mac-launcher-sdk.json'], {'launcher'}),
-    (['.github/workflows/launcher-build.yml', '.github/workflows/launcher-compatibility.yml',
-      'tools/launcher-compatibility.py', 'tests/test_launcher_compatibility.py'], {'launcher'}),
-    (['config/pc-discord.default.ini'], {'launcher'}),
-    (['tests/launcher_maintenance.cs'], {'launcher'}),
-    (['tests/launcher_downloads.cs'], {'launcher'}),
-    (['tests/launcher_startup.cs'], {'launcher'}),
-    (['tests/launcher_news.cs'], {'launcher'}),
-    (['tests/launcher_shared_ui.cs', 'tests/test_launcher_shared_ui.py'], {'launcher'}),
-    (['tests/launcher_crashes.cs', 'tests/launcher_sessions.cs'], {'launcher'}),
-    (['tools/crash_helper.c', 'src/pc_crash.c', 'tests/test_crash_capture.py'], {'native'}),
-    (['tools/crash-symbols.py', 'tests/test_crash_symbols.py'], {'release'}),
-    (['tools/build-game-icon.ps1', 'tests/test_game_icon.py'], {'launcher'}),
-    (['tools/publish-release.py'], {'release'}),
-    (['tools/publish-release.py', 'docs/releasing.md', 'STATUS.md'], {'release'}),
-    (['src/pc_display.c'], {'native'}),
-    (['tools/online_theme.py', 'tools/bundle_online.py', 'tools/network-identity.py'], {'native'}),
-    (['tools/build-native-mac.py'], {'native'}),
-    (['tools/test-native-mac.py'], {'native'}),
+    (['tools/launcher/MainWindow.cs'], set()),
+    (['tools/build-mac-launcher.py'], set()),
+    (['tests/test_launcher_startup.py', 'tests/package_launcher.py', 'tests/test_game_icon.py'], set()),
+    (['tools/build-game-icon.ps1', 'config/mac-launcher-sdk.json'], set()),
+    (['.github/workflows/launcher-build.yml', '.github/workflows/launcher-compatibility.yml'], set()),
+    (['tools/play-native-mac.py', 'tests/test_native_mac_launcher.py'], {'native'}),
+    (['tools/launcher/MainWindow.cs', 'src/pc_controls.c'], {'native', 'gpu'}),
+    (['src/pc_display.c'], {'native', 'gpu'}),
+    (['src/pc_display_modes.inc'], {'native', 'gpu'}),
+    (['src/native/renderer_gl.c', 'src/graphics/menu_sampling_shader.h'], {'native', 'gpu'}),
+    (['src/new_component.c', 'tests/new_test.py'], {'native', 'gpu'}),
+    (['tools/new_runtime_tool.py'], {'native', 'gpu'}),
+    (['tools/texture-pack.py', 'tests/texture_pack_tools.py'], {'native'}),
+    (['tools/texture-pack.py', 'src/texture_pack.c'], {'native', 'gpu'}),
+    (['tests/texture_toggle.c'], {'native', 'gpu'}),
+    (['tools/texture-pack.py', 'patches/texture-mode.patch'], {'transitions', 'native', 'gpu'}),
+    (['patches/legacy/old.patch'], {'transitions', 'native', 'gpu'}),
+    (['tools/test-rhi-mac.py', 'tests/rhi/CMakeLists.txt'], {'native', 'gpu'}),
+    (['tools/vulkan_sdk.py', 'config/vulkan-sdk.json'], {'native', 'gpu'}),
+    (['tools/build-native-mac.py', 'tools/native_mac_common.py'], {'native', 'gpu'}),
     (['tools/testing_profile.py'], {'native'}),
-    (['tools/vulkan_sdk.py'], {'native'}),
-    (['tools/test-rhi-mac.py'], {'native'}),
-    (['config/vulkan-sdk.json'], {'native'}),
-    (['tools/play-native-mac.py'], {'native'}),
-    (['tools/native_mac_common.py'], {'native'}),
-    (['src/pc_display_modes.inc'], {'native', 'launcher'}),
-    (['tools/release/ImportGame.cs', 'config/pc-controls.default.json'], {'launcher'}),
-    (['tools/launcher/MainWindow.cs', 'tests/test_audio_timing.py'], {'launcher', 'native'}),
-    (['tests/test_publish_release.py', 'tools/recycle-release-work.ps1'], {'release'}),
-    (['patches/legacy/old.patch'], set(scope.SUITES)),
+    (['tools/online_theme.py', 'tools/bundle_online.py', 'tools/network-identity.py'], {'native'}),
+    (['tools/crash_helper.c', 'src/pc_crash.c', 'tests/test_crash_capture.py'], {'native', 'gpu'}),
+    (['tools/publish-release.py', 'tests/test_publish_release.py', 'docs/releasing.md'], {'release'}),
+    (['tools/crash-symbols.py', 'tests/test_crash_symbols.py'], {'release'}),
+    (['tools/package-release.py'], {'release'}),
     (['tools/apply-patches.py'], set(scope.SUITES)),
     (['tests/fixtures/launcher-patch-stacks.json'], set(scope.SUITES)),
-    (['tsfp.ps1'], set(scope.SUITES)),
-    (['requirements.txt'], set(scope.SUITES)),
-    (['tools/texture-pack.py'], {'native'}),
+    (['tsfp.ps1', 'requirements.txt'], set(scope.SUITES)),
     (['.github/workflows/runtime-patches.yml'], set(scope.SUITES)),
+    (['tools/issue-forms.py', 'tests/test_issue_resolution.py'], set()),
+    (['README.md', 'docs/textures.md', 'MAC_PORT_BACKLOG.md'], set()),
     ([], set()),
 ])
 def test_scope(paths, expected):
-    assert {name for name, enabled in scope.affected(paths).items() if enabled} == expected
+    actual = scope.affected(paths)
+    assert {name for name, enabled in actual.items() if enabled} == expected
+    assert not actual['gpu'] or actual['native']
 
 
 def test_manual_and_new_branch_runs_cover_everything():
     assert all(scope.affected([], full=True).values())
+
+
+@pytest.mark.parametrize('transitions,native,release,patches,result', [
+    ('false', 'false', 'false', 'skipped', 'skipped'),
+    ('true', 'true', 'true', 'success', 'success'),
+    ('true', 'false', 'false', 'success', 'skipped'),
+    ('false', 'true', 'false', 'skipped', 'success'),
+    ('false', 'false', 'true', 'skipped', 'success'),
+])
+def test_gate_accepts_only_selected_work(transitions, native, release, patches, result):
+    assert 'passed' in scope.gate('success', transitions, native, release, patches, result)
+
+
+@pytest.mark.parametrize('bad', ['failure', 'cancelled', 'skipped', '', 'in_progress'])
+def test_required_gate_rejects_unsuccessful_selected_work(bad):
+    with pytest.raises(ValueError):
+        scope.gate(bad, 'true', 'true', 'false', 'success', 'success')
+    with pytest.raises(ValueError):
+        scope.gate('success', 'true', 'true', 'false', bad, 'success')
+    with pytest.raises(ValueError):
+        scope.gate('success', 'true', 'true', 'false', 'success', bad)
+
+
+@pytest.mark.parametrize('bad', ['', 'yes', 'TRUE', 'null'])
+def test_gate_rejects_missing_scope_outputs(bad):
+    for index in range(3):
+        flags = ['false', 'false', 'false']
+        flags[index] = bad
+        with pytest.raises(ValueError):
+            scope.gate('success', *flags, 'skipped', 'skipped')
+
+
+def test_unselected_work_cannot_hide_an_unexpected_failure():
+    with pytest.raises(ValueError):
+        scope.gate('success', 'false', 'false', 'false', 'failure', 'skipped')
+
+
+def test_parallel_workers_preserve_required_check_contract():
+    workflow = (Path(__file__).resolve().parents[1] /
+                '.github/workflows/runtime-patches.yml').read_text()
+    patches = workflow.split('\n  patches:\n')[1].split('\n  native:\n')[0]
+    native = workflow.split('\n  native:\n')[1].split('\n  patch-transitions:\n')[0]
+    gate = workflow.split('\n  patch-transitions:\n')[1]
+    for worker in (patches, native):
+        assert '    needs: plan\n' in worker
+        assert 'os: [windows-latest, macos-latest]' in worker
+    assert 'needs: patches' not in native
+    assert 'python tools/apply-patches.py external/ts3FPrecomp patches' in native
+    assert "needs.plan.outputs.gpu == 'true' && runner.os == 'macOS'" in native
+    assert 'name: Patch transitions (${{ matrix.os }})' in gate
+    assert 'needs: [plan, patches, native]' in gate and 'if: always()' in gate
+    assert 'python tools/ci-runtime-scope.py --gate' in gate
+    assert 'runs-on: ${{ matrix.os }}' in gate
+    assert 'test_compatibility_worker.py' in gate
+    for expression in ('needs.plan.result', 'needs.plan.outputs.transitions',
+                       'needs.plan.outputs.native', 'needs.plan.outputs.release',
+                       'needs.patches.result', 'needs.native.result'):
+        assert '${{ ' + expression + ' }}' in gate
+
+
+def test_launcher_build_and_moved_tests_have_one_owner():
+    root = Path(__file__).resolve().parents[1]
+    runtime = (root / '.github/workflows/runtime-patches.yml').read_text()
+    launcher = (root / '.github/workflows/launcher-build.yml').read_text()
+    for command in ('./tools/build-launcher.ps1 -Test',
+                    'python tools/build-mac-launcher.py --install-sdk --test'):
+        assert command not in runtime and command in launcher
+    for test in ('tests/test_launcher_startup.py', 'tests/package_launcher.py',
+                 'tests/test_game_icon.py'):
+        assert test not in runtime and test in launcher
+    for pin in ('pytest==', 'Pillow==', 'pefile==', 'ninja==', 'cmake=='):
+        assert pin in launcher
 
 
 @pytest.mark.parametrize('kind', ['pull_request', 'push', 'workflow_dispatch', 'new_branch'])
@@ -146,6 +212,6 @@ def test_event_routing_and_outputs(tmp_path, monkeypatch, kind):
         assert all(value == 'true' for value in result.values())
         assert not calls
     else:
-        assert result == dict(transitions='false', native='false', release='true', launcher='false')
+        assert result == dict(transitions='false', native='false', gpu='false', release='true')
         assert calls[0] == ['git', 'fetch', '--no-tags', '--depth=1', 'origin', base]
         assert calls[1] == ['git', 'diff', '--no-renames', '--name-only', '-z', base, 'HEAD']
