@@ -18,6 +18,12 @@ ROOT=Path(__file__).resolve().parents[1]
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 
 def sign_bundle(app):
+ # A generated bundle reused from Finder/cloud storage can retain metadata
+ # that codesign refuses. Strip only forbidden Finder/resource-fork attributes
+ # from this owned build output; source artwork and other attributes stay intact.
+ for path in [app,*app.rglob('*')]:
+  for attribute in ('com.apple.FinderInfo','com.apple.ResourceFork'):
+   if attribute in os.listxattr(path):os.removexattr(path,attribute)
  # Sign nested native code first, then seal the final plist/resources. A signed
  # command-line host alone is not a signed application bundle.
  for library in sorted((app/'Contents/MacOS').glob('*.dylib')):
