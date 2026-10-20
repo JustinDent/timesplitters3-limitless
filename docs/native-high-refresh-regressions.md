@@ -881,3 +881,81 @@ interpolation disabled and 3440x1440 fullscreen at 144 Hz. The earlier overlay
 fix remains included: native target replaces the misleading cap label, and
 offline sessions hide RTT. The shared firing wrapper has no host adapter;
 actual Mac compilation/execution remains unverified under MAC-058.
+
+## NPC firing event-tick scope
+
+The complete original NPC firing routine 0x1BB5C0–0x1BC64F has a direct
+whole-game-tick comparison at 0x1BB5FD and an event-timer addition using the
+float delta at 0x1BBADE. It resets its integer weapon counters and invokes
+projectile, ammunition and sound operations inside this gated transaction.
+Opening its gate would change the number of transactions; leaving fractional
+time in this gate loses elapsed event-timer and repeating-sound time.
+
+The original-code fixture reproduced these one-second measurements before
+the fix, with one projectile per invocation and a one-shot sound:
+
+| Update rate | Projectiles | Sounds | RNG calls | Weapon event timer |
+| --- | ---: | ---: | ---: | ---: |
+| Original 60 | 60 | 60 | 240 | 0.999999702 |
+| Native 120, unscoped | 60 | 60 | 240 | 0.499999851 |
+| Native 144, unscoped | 60 | 60 | 240 | 0.416666836 |
+
+Using the shared `pc_native_weapon_fire_guest` scope restores 0.999999702
+at all three rates without changing these event counts. The additive
+`native-npc-weapon-event-scope.patch` now supplies the production wrapper
+for 0x1BB5C0, ordered after the generic firing wrapper. The scope restores
+both game-time fields on return; continuous caller updates retain their
+fractional time. Original timing calls the original body unchanged.
+
+The routine already has a multiplayer bot-shot wrapper. The timing scope
+is its inner callback, preserving network capture before firing and event
+publication after the original return. The fresh-stack test now rejects
+duplicate guest function definitions, which generation alone does not
+reject. The network dispatch fixture checks the composed hooks with
+simulated Windows transport and native fallback: a carried tick publishes
+one shot, a fractional update without a whole tick and a paused interval
+publish none, and caller time/register/stack state is restored.
+All five network dispatch/results checks pass in 6.26 seconds
+(`logs/native-npc-weapon-scope-network.log`). This is an ABI/event test,
+not an actual multiplayer session.
+
+`tests/native_npc_weapon_fire.c` executes the complete original routine,
+mode lookup, sound selector and parameter builders, both ammunition helpers
+(0x1B6790/0x1B66E0), sound-position helpers, actor flag helpers, effect-state
+query and statistics eligibility/update routines from the verified US XBE.
+Projectile construction, weapon-property services, effects and final audio
+output remain mocked; the fixture uses a deterministic RNG. Unexpected
+services/indirect callbacks fail. It checks guest ABI, stack/FPU balance,
+finite projectile direction and restoration of both clock fields.
+
+The 96 configurations cover left/right weapon slots, primary/secondary/
+fallback definitions, one-shot/repeating sound, one/three projectiles,
+normal/quarter-speed schedules and actor/weapon ammunition pools. Original
+60 FPS and scoped native 120/144 agree on event count, ammo decrement,
+projectile/audio/effect/RNG counts and event/sound timer remainders. Pauses
+are interleaved; separate repeated variable-step schedules include zero,
+fractional and three-tick catch-up intervals. Invalid target/body/weapon
+exits remain inert. A retained whole tick with a zero float delta emits no
+events. Quarter-speed schedules test 15 carried game ticks per second,
+not the full in-game slow-motion state machine.
+
+The unscoped regression reproducer remains in the fixture. Its measured
+failure was recorded in `logs/native-npc-weapon-measurements.log` before
+adding the production wrapper. The final scoped parity test passes without
+an expected-failure marker (`logs/native-npc-weapon-scope-focused.log`).
+The broader timing/audio/camera/animation/CI/backlog suite reports 143
+passed in 54.62 seconds (`logs/native-npc-weapon-scope-regressions.log`).
+Full stack application passes (`logs/native-npc-weapon-scope-patches.log`).
+Generation completes in 117.2 seconds
+(`logs/native-npc-weapon-scope-generate.log`), preserving
+`sub_001BB5C0_gen` for the manual wrapper. Five targeted fresh/repeated-build,
+historical controls/Mac-stack and texture/main branch-transition checks
+pass in 139.17 seconds
+(`logs/native-npc-weapon-scope-patch-transitions.log`).
+
+This is a source-only checkpoint after `c34730c`, on Windows x64 with
+MSVC 14.44.35207. The user's open game remains the previous tested build,
+SHA-256 `1edf3c62f7f648448e8d8a3fc8050d53f00cfe2aff509bd694d349653ad55ded`.
+No new executable or gameplay test is claimed for the NPC wrapper yet.
+Full actor caller cadence, damage/collision, audible output, other weapon
+families, multiplayer and actual Mac compilation/execution remain open.

@@ -5,6 +5,8 @@ import hashlib
 import io
 import json
 import os
+import re
+from collections import Counter
 import shutil
 import subprocess
 import sys
@@ -56,6 +58,11 @@ def snapshot(tree):
 
 def test_fresh_checkout_and_repeated_build(checkout):
     assert installer.apply_patches(checkout, PATCHES)
+    # Multiple features may wrap the same guest routine. They must compose
+    # under one C definition; generation alone does not reject duplicates.
+    manual = (checkout / 'titles/futureperfect/src/recomp_manual.c').read_text()
+    wrappers = Counter(re.findall(r'\bvoid\s+(sub_[0-9A-Fa-f]+)\s*\([^)]*\)\s*\{', manual))
+    assert all(count == 1 for count in wrappers.values()), wrappers
     # Both common RHI and legacy GL link the same live mode policy.
     assert (checkout / 'src/d3d/CMakeLists.txt').read_text().count(
         '"${TSFP_NATIVE_DIR}/../texture_mode.c"') == 2
@@ -170,7 +177,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-special-weapon-overlays.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-transition-overlay.patch'):
             continue  # Requires the display wrapper, absent in this historical state.
-        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch')):
+        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch', '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch')):
             continue  # Depends on native/shared renderer context added by the full migration below.
         if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'texture-toggle.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
             apply(checkout, patch.name)
@@ -196,7 +203,7 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     old_patches.mkdir()
     for patch in PATCHES.glob('*.patch'):
         if patch.name.endswith(('-native-frame-timing.patch', '-native-interp-retirement.patch', '-native-numeric-policy.patch',
-                                '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch')):
+                                '-native-animation-scope.patch', '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch', '-native-camera-timing.patch', '-native-weapon-event-scope.patch', '-native-npc-weapon-event-scope.patch')):
             continue  # This historical Mac stack predates native timing and network wrappers.
         if patch.name not in ('zz-pc-network.patch', 'zzz-pc-online.patch',
                               'zzzzzzzzzzzzzzz-pc-network-movement.patch',

@@ -169,6 +169,16 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                              (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258),
                              (0x1b5660,0x1b567b),(0x1bc890,0x1bc988),
                              (0x244f30,0x24598e)]),
+    ('native_npc_weapon_fire.c', [(0x45390,0x453d0),(0x21780,0x217a2),
+                                 (0x21fb0,0x2201f),(0x1b6ff0,0x1b7258),
+                                 (0x1b5660,0x1b567b),(0x1bb5c0,0x1bc64f),
+                                 (0x174e0,0x17510),(0x17510,0x17531),
+                                 (0x1b6790,0x1b67d5),(0x1b66e0,0x1b673f),
+                                 (0x1b8530,0x1b8688),(0x11f780,0x11f7df),
+                                 (0x45cf0,0x45d5e),(0xa5a60,0xa5aa9),
+                                 (0x238510,0x23854c),(0x2382b0,0x23833b),
+                                 (0x3533f0,0x3533f6),(0x358560,0x358590),
+                                 (0x35de60,0x35de66)]),
 ])
 def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     import hashlib
@@ -197,6 +207,15 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 for address in (0x475c78,0x475ce8,0x475ccc,0x4785d0,0x475cd4,
                                 0x47666c,0x47cfd8,0x475d10,0x475d28,
                                 0x47d1f8,0x478674,0x47d01c,0x47864c))
+        if harness_name=='native_npc_weapon_fire.c':
+            import struct
+            constants='\n'.join(
+                f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
+                for address in (0x475c78,0x475ccc,0x475cd0,0x475cd4,0x475cdc,
+                                0x475ce8,0x475d04,0x475d18,0x475d1c,0x475d24,
+                                0x475db4,0x4765f4,0x4785d0,0x47d55c,0x47d670,
+                                0x47e2b4,0x47e2b8,0x47e2bc,0x475d28,
+                                0x47d1f8,0x478674,0x47d01c,0x47864c,0x475cc8,0x47d6a4))
         if harness_name=='native_camera_track.c':
             import struct
             # Execute this complete switch branch. Redirect only its three
@@ -226,8 +245,11 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         functions={start:dict(end=end,name=f'sub_{start:08X}') for start,end in ranges}
         if harness_name=='native_weapon_fire.c':
             functions[0x244f30]['name']='sub_00244F30_gen'
+        if harness_name=='native_npc_weapon_fire.c':
+            functions[0x1bb5c0]['name']='sub_001BB5C0_gen'
         translator=FunctionTranslator(image,functions)
-        code='\n'.join(translator.translate_function(start,info)
+        code='\n'.join(f'void {info["name"]}(void);' for info in functions.values())+'\n'
+        code+='\n'.join(translator.translate_function(start,info)
                        for start,info in functions.items())
     finally:
         vars(config).update(previous)
@@ -238,6 +260,16 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
+    if harness_name=='native_npc_weapon_fire.c':
+        rows=[dict(field.split('=',1) for field in line.split()[1:])
+              for line in output.splitlines() if line.startswith('npc_fire_audit ')]
+        assert len(rows)==6,output
+        reference=next(r for r in rows if r['fps']=='60' and r['scoped']=='0')
+        failures=[r for r in rows if r['scoped']=='1' and
+                  (r['shots']!=reference['shots'] or r['sounds']!=reference['sounds'] or
+                   abs(float(r['timer'])-float(reference['timer']))>.00001)]
+        if failures:
+            raise AssertionError(output)
     if harness_name=='native_weapon_fire.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('fire_audit ')]

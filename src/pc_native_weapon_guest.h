@@ -4,11 +4,11 @@
 #include <stdint.h>
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
-/* US sub_00244F30 is a discrete firing transaction: its whole-tick gate,
- * integer cooldowns and projectile loop must retain their original cadence.
- * Its event timers and nested sound helper must consume that same tick span,
+/* US sub_00244F30 and sub_001BB5C0 are discrete firing transactions: their
+ * whole-tick gates, integer cooldowns and projectile loops retain the
+ * original cadence. Event timers and nested sound helpers consume that span,
  * rather than just the fractional interval of the frame carrying the tick.
- * Scope this conversion to this audited transaction. Animation/movement and
+ * Scope this conversion to these audited transactions. Animation/movement and
  * other callers regain the live fractional delta on return. */
 static void pc_native_weapon_fire_guest(void (*original)(void))
 {

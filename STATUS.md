@@ -6,6 +6,18 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- The NPC firing path now has the same scoped event-timing correction in
+  shared source. Its whole-tick gate previously kept projectile counts
+  stable but advanced the event timer by only 0.417 seconds per second at
+  144 FPS. The original-code fixture verifies 96 configurations, including
+  both hands, primary/secondary/fallback modes, both ammunition pools,
+  original sound positioning/repeat timers, pause and catch-up. Source
+  generation, 143 shared checks and five targeted patch-transition tests
+  pass. Five additional network dispatch/results checks verify composition
+  with the existing multiplayer shot hook. This source checkpoint
+  is not yet in the running game: that session retains the tested `c34730c`
+  build. Full caller cadence, damage and actual Mac execution remain open.
+  [NPC timing evidence](docs/native-high-refresh-regressions.md#npc-firing-event-tick-scope).
 - Generic firing now scopes its event timers and nested sound calls to the
   carried whole-game-tick span used by its projectile gate. Fractional time is
   restored before returning to other updates. This removes the reproduced

@@ -178,3 +178,13 @@ recorded demos, multiplayer synchronization, full campaign timing, and
 perceptual smoothness remain acceptance work. A passing first-mission test
 does not establish native 144 FPS correctness across the full game. The mode
 remains opt-in while that work is incomplete.
+
+## NPC firing timing
+
+The shared native timing path also scopes the NPC firing transaction
+`sub_001BB5C0` to its carried whole-game-tick span, restoring fractional time
+before returning. Its original projectile gate and ammunition operations
+remain intact. This avoids losing event-timer and repeating-sound time on
+the fractional updates skipped by that gate. See the
+[NPC validation record](native-high-refresh-regressions.md#npc-firing-event-tick-scope)
+for source/build status and the remaining caller/damage coverage.

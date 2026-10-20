@@ -2981,6 +2981,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   actual Mac compilation/runtime,
   real damage/ammo and other weapon callers remain unverified. See
   [the regression record](docs/native-high-refresh-regressions.md#generic-firing-event-tick-scope).
+- **NPC firing event scope:** The additive `native-npc-weapon-event-scope.patch`
+  reuses `pc_native_weapon_guest.h` for US routine 0x1BB5C0. The original-code
+  fixture covers 96 configurations with original ammo and sound helper
+  operations. No new host adapter is required. Source generation, 143 shared
+  checks, five network dispatch/results checks and five targeted patch-transition
+  tests pass. The timing scope composes with the existing bot-shot hook;
+  Windows executable integration and
+  actual Mac compilation/runtime remain pending. See
+  [the NPC regression record](docs/native-high-refresh-regressions.md#npc-firing-event-tick-scope).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.
