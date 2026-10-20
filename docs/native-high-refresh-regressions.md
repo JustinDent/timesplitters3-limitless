@@ -81,12 +81,27 @@ Windows and SDL adapters also have synthetic integration cases that select
 native 144, exercise a zero-whole live interval and stale-whole pause, then
 switch back to original mode. Mac execution remains unverified. These fixtures
 do not drive a live mission terminal, measure hardware input latency, or
-establish pixel-level pointer smoothness. Production build and adapter-check
-execution are pending at this source checkpoint. All 161 shared timing,
+establish pixel-level pointer smoothness. All 161 shared timing,
 terminal/automatic-look/menu input, float/vehicle-join, CI-scope, backlog and
 XMV-stop checks pass in 77.78 seconds (`logs/native-terminal-shared.log`).
 The complete unchanged patch stack verifies with zero updated runtime files
 (`logs/native-terminal-patches.log`).
+
+The full supported Windows MSVC x64 Release build of `c4171db` passes its
+built-in checks, including the real Windows adapter's five native/original
+selection, pause and resume cases (`logs/native-terminal-build.log` / `.err`).
+Executable SHA-256:
+`85ebe7f5665eb2426b7d80438abfe59d8fe7c70584082268ae54122b57baa2ad`.
+Matching crash symbols were generated. The SDL adapter integration case is
+present in source but has not executed on Mac. No new live terminal scene or
+gameplay timing measurement was performed for this source checkpoint; the
+previous opening replay did not exercise a terminal and is not acceptance
+evidence for it.
+
+The user's PID 38248 remains responsive on the retained `3c2fcc2` executable;
+the normal executable is ready for the next launch. Controls/display hashes
+match `private/pipeline/terminal-protected-before.json`. No interactive game
+was closed, and automated checks used fixture/disposable data.
 
 ## Raw mouse packet cadence
 

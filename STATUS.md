@@ -13,8 +13,10 @@ published release or a full-game 144 FPS certification.
   frame receiving packets. Forty-two cadence/slow-motion/jitter cases and
   pause, stale-whole, ownership, scripted-pointer and gameplay-return checks
   pass. All 161 shared/regression checks pass and the complete patch stack
-  verifies unchanged. Windows and SDL adapters select the same policy. Production build
-  and live terminal acceptance remain pending.
+  verifies unchanged. Windows build `c4171db` and its built-in checks pass,
+  including the real Windows adapter's native/original-mode and pause cases.
+  The existing user session is preserved on `3c2fcc2`; the correction is ready
+  for its next launch. Live terminal acceptance and Mac execution remain pending.
   [Terminal cadence](docs/native-high-refresh-regressions.md#terminal-mouse-fractional-cadence).
 - Shared raw mouse input now rebases its empty buffer's age after consumption.
   Previously a later packet could expire fresh counts using an earlier batch's
@@ -28,7 +30,8 @@ published release or a full-game 144 FPS certification.
   two-minute native-144 gameplay/pause replay pass. The active gameplay window
   averages 140.365 CPU updates/s at 1x speed alongside the user's session.
   Their existing `3c2fcc2` session stays open; this correction is ready for
-  the next launch. Terminal-pointer cadence needs a separate audit.
+  the next launch. Terminal-pointer timing is addressed separately above;
+  live pointer acceptance remains pending.
   [Raw mouse cadence](docs/native-high-refresh-regressions.md#raw-mouse-packet-cadence).
 - The latest Windows build (`3c2fcc2`) passes matching 120-second original-60
   and native-144 opening gameplay replays: handoff, hand animation, movement,

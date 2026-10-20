@@ -3167,8 +3167,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   transitions. All 153 shared checks, seven input context checks, the full
   Windows build/built-in checks and a 120-second native-144 gameplay replay
   pass for `149bef9`. Actual Mac execution and physical-device latency remain
-  open. The terminal pointer consumes its own buffer and still requires a
-  separate native timing audit.
+  open. Terminal-pointer timing is addressed by the separate correction below;
+  live pointer acceptance remains pending.
   [Mouse cadence evidence](docs/native-high-refresh-regressions.md#raw-mouse-packet-cadence).
 - **Terminal fractional pointer cadence (local source):** Shared
   `pc_input_consume_motion` and `pc_terminal_mouse` retain fresh packet batches
@@ -3176,8 +3176,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   keeps its whole-tick gate. Windows `pc_controls.c` and SDL `input_sdl.c`
   supply the same native-rate selection. The shared terminal fixture covers
   42 timing cases plus pause/ownership/return checks. Both adapters gain a
-  synthetic integration check; actual Mac execution and live terminal-scene
-  acceptance remain pending. No separate Mac policy is required.
+  synthetic integration check. All 161 shared/regression checks, the Windows
+  build and its built-in adapter checks pass for `c4171db`; actual Mac
+  execution and live terminal-scene acceptance remain pending. No separate
+  Mac policy is required.
   [Terminal evidence](docs/native-high-refresh-regressions.md#terminal-mouse-fractional-cadence).
 - **Latest Windows integration comparison (`3c2fcc2`, local):** Matching
   original-60/native-144 opening replays pass handoff, hand animation, movement,
