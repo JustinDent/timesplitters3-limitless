@@ -163,6 +163,8 @@ namespace TimeSplitters.Launcher
             string json = await Text(url, 4 * 1024 * 1024, token).ConfigureAwait(false);
             return json.Length == 0 ? null : Select(json, preview);
         }
+        internal Task<string> ReadTextureManifest(CancellationToken token)
+        { return Text(TextureDownload.ManifestUrl,65536,token); }
         public async Task<Release> FindGame(string version, CancellationToken token)
         {
             GameVersion.Parse(version);

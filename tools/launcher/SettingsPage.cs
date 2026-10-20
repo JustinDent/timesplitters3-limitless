@@ -28,8 +28,14 @@ namespace TimeSplitters.Launcher
         public readonly Grid View;
         readonly DockPanel layout;
         readonly Border overlay;
+        readonly Border footerBorder;
         readonly TabControl tabs;
         public event Action Saved, Cancelled;
+        public event Action<int> InstallTextures;
+        public event Action CancelTextureInstall;
+        readonly TextBlock textureStatus;
+        readonly Button textureDownload, textureZip, textureFolder, textureCancel;
+        readonly string root;
         readonly GameSettings model;
         readonly TextBlock status;
         readonly Slider fov;
@@ -70,6 +76,7 @@ namespace TimeSplitters.Launcher
         static ScrollViewer Scroll(UIElement content) { return new ScrollViewer { VerticalScrollBarVisibility=ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled, Content=content, Padding=new Thickness(0,0,12,0) }; }
         public SettingsPage(ResourceDictionary resources, string root, bool preview)
         {
+            this.root=root;
             string inherited = Ui.InheritedSettings(preview);
             model=GameSettings.Load(root, inherited);
             View=new Grid { Background=PageTheme.Brush("#0B1420"), Margin=new Thickness(30,24,30,18) };
@@ -84,7 +91,7 @@ namespace TimeSplitters.Launcher
             var title=Text("Game settings",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
             var subtitle=Text("Adjust controls, display and performance before your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
             var footer=new DockPanel { LastChildFill=true };
-            var footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,16,0,0),Child=footer };
+            footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,16,0,0),Child=footer };
             DockPanel.SetDock(footerBorder,Dock.Bottom);layout.Children.Add(footerBorder);
             var actions=new StackPanel { Orientation=Orientation.Horizontal, VerticalAlignment=VerticalAlignment.Center };
             DockPanel.SetDock(actions,Dock.Right);footer.Children.Add(actions);
@@ -120,6 +127,19 @@ namespace TimeSplitters.Launcher
             reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
             bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Keyboard & mouse",Content=Scroll(controls) });
             var graphics=new StackPanel();
+            var textures=PageTheme.Section(graphics,"4K texture pack · optional","Download enhanced textures from GitHub, or install a pack you already have. Original textures remain available. Uses up to 6 GiB.");
+            textureStatus=Text(TexturePack.Summary(root),12);textureStatus.Name="TexturePackStatus";textures.Children.Add(textureStatus);
+            var textureActions=new WrapPanel();textures.Children.Add(textureActions);
+            textureDownload=Button("Download 4K texture pack");textureDownload.Name="DownloadTexturePack";PageTheme.Primary(textureDownload);
+            textureZip=Button("Install pack ZIP");textureZip.Name="InstallTextureZip";
+            textureFolder=Button("Install pack folder");textureFolder.Name="InstallTextureFolder";
+            textureCancel=Button("Cancel installation");textureCancel.Name="CancelTextureInstall";Ui.Show(textureCancel,false);
+            textureDownload.Click+=(s,e)=> { if(InstallTextures!=null)InstallTextures(0); };
+            textureZip.Click+=(s,e)=> { if(InstallTextures!=null)InstallTextures(1); };
+            textureFolder.Click+=(s,e)=> { if(InstallTextures!=null)InstallTextures(2); };
+            textureCancel.Click+=(s,e)=> { if(CancelTextureInstall!=null)CancelTextureInstall(); };
+            foreach(var button in new[]{textureDownload,textureZip,textureFolder,textureCancel}){button.Margin=new Thickness(0,8,8,0);textureActions.Children.Add(button);}
+            textures.Children.Add(Text("The launcher installs to the correct game folder. After installation, choose Enhanced in the game's Display settings. The pack is an incomplete alpha; untouched textures keep their original appearance.",12));
             var display=PageTheme.Section(graphics,"Display","Choose the game’s output size. Your desktop resolution stays unchanged.");
             var displayColumns=Columns(display);var displayLeft=Column(displayColumns,0);var displayRight=Column(displayColumns,1);
             var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height)).ToList();
@@ -205,6 +225,14 @@ namespace TimeSplitters.Launcher
             presence.Children.Add(Text("Keep the Discord desktop app open and allow activity sharing in Discord. Changes apply on your next game launch. Requires a game build with Rich Presence support.",12));
             tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
         }
+        public void TextureProgress(string message) { textureStatus.Text=message; }
+        public void TextureBusy(bool busy)
+        {
+            footerBorder.IsEnabled=!busy;
+            textureDownload.IsEnabled=textureZip.IsEnabled=textureFolder.IsEnabled=!busy;
+            Ui.Show(textureCancel,busy);
+        }
+        public void RefreshTextures() { textureStatus.Text=TexturePack.Summary(root); }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
         void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }

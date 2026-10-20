@@ -1,0 +1,35 @@
+name: Optional texture pack
+
+on:
+  pull_request:
+    paths:
+      - 'config/texture-pack.json'
+      - 'tools/texture-release.py'
+      - 'tests/test_texture_release.py'
+      - '.github/workflows/texture-pack.yml'
+  push:
+    branches: [main]
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Test packaging and publication contracts
+        run: python -m unittest discover -s tests -p test_texture_release.py -v
+      - name: Verify the optional download exists with the advertised checksums
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python tools/texture-release.py verify --remote

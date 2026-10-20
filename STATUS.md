@@ -41,6 +41,12 @@ recheck passed eight tests with one Mac-only skip. Hosted run 39380510747
 passed patch upgrades on both hosts and the Mac native regression, asset-free
 GPU and release checks; the Windows compiler failure caused both aggregate
 gates to fail. Full Mac game/visual validation remains pending (MAC-054).
+Main through `7ec77a7` is integrated. The launcher conflict retained the new
+optional texture installer while keeping high-FPS presets removed. Launcher
+compilation, shared UI, texture-install and 35 settings checks passed; 72 Python
+checks passed with one platform skip and three subtests. The full launcher
+repeat stopped at the version installer test because another game was running;
+that process was left untouched. Hosted CI will exercise the isolated suite.
 This is a source change; no release has been published.
 
 ## Launcher download status spacing (2026-10-20)
@@ -12803,3 +12809,31 @@ untouched. Local build output is build/launcher-onedrive-fix in the working root
 Mac: no adapter is required for Windows Cloud Files. The existing Mac rejection
 of filesystem links remains unchanged behind its platform adapter; native Mac
 build/interaction validation was not performed in this Windows-only repair.
+
+
+## Optional launcher texture installation (2026-10-20)
+
+Focused branch: feat/launcher-texture-install, based on main 0e1e868.
+Adds shared opt-in GitHub pack download, local ZIP/folder import, automatic runtime
+path selection, 6 GiB enforcement, DDS/mip and checksum validation, per-part rollback
+and startup recovery. Download parts are below 64 MiB and completed caches are
+removed. No game or personal settings changes are required.
+
+Windows x64/.NET Framework build compiles. Existing 109 updater tests and 9 shared
+UI groups passed; 10 initial texture installation/recovery cases passed before a
+manifest array-shape difference was found and corrected. Full final host checks
+are pending. Concurrent game sessions sometimes block the global updater guard;
+those sessions were not stopped. 43 Python tests and 39 subtests passed.
+
+Read-only pack audit: 1,242 valid DDS/metadata pairs, 989.90 MiB with sanitized
+public metadata, split into 22 bounded release assets. Source paths are stripped;
+private originals, source artwork, prompts, saves and settings are excluded.
+A Windows settings preview shows the optional download/import controls at the
+top of Graphics & resolution. No game playtest or personal installation update
+was performed. Native interaction/scene verification remains MAC-057/MAC-011.
+
+The optional compiled pack is now published as textures-v0.1.0-alpha.1: all
+22 ZIP assets and the sanitized manifest verified against GitHub SHA-256.
+config/texture-pack.json records the exact published files. Publication used one
+bounded part at a time and left no ZIP files in build/texture-publication.
+The launcher installer remains source-only until its PR and a launcher release.

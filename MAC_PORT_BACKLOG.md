@@ -191,6 +191,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-054 | Fractional presentation targets and Windows transform setup (issue #167) | Awaiting validation |
 | MAC-055 | Persist accepted frontend Controls before quitting Settings | Awaiting validation |
 | MAC-056 | Texture-camera composition alignment (issue #49) | Awaiting validation |
+| MAC-057 | Optional texture pack delivery through the launcher | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -2879,6 +2880,27 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   following U logo at 4:3 and widescreen ratios. Confirm no left black strip,
   clipped picture or shifted mask, then check normal HUD and terminal cameras.
 - **PC evidence:** See the issue #49 section in STATUS.md.
+
+### MAC-057 — Optional texture pack delivery through the launcher
+
+- **Status:** Awaiting validation
+- **Behavior:** Players explicitly download the optional GitHub texture pack or
+  select a local ZIP/folder in launcher Graphics & resolution settings. The
+  shared installer chooses the runtime's texture path, validates DDS/metadata,
+  enforces 6 GiB, preserves unrelated files and recovers interrupted replacements.
+- **Source:** `feat/launcher-texture-install` (uncommitted at entry creation);
+  `tools/launcher/TexturePack.cs`, `TextureDownload.cs`, `SettingsPage.cs`,
+  host window adapters and `tools/texture-release.py`.
+- **PC evidence:** Windows compilation, shared UI and installer tests cover
+  placement, ZIP validation, checksums, cancellation and recovery. Final results
+  are recorded in `STATUS.md`.
+- **Existing Mac support:** Uses the same service and UI; the adapter uses native
+  file/folder pickers and the existing checkout/portable texture-path policy.
+  Both host builds execute `tests/launcher_textures.cs` and shared UI contracts.
+- **Remaining validation:** Native CI build/contracts and packaged interaction;
+  verify opt-in confirmation, cancellation, installation under a portable root
+  and a source checkout, then reuse existing loader evidence. Actual Mac texture
+  scene fidelity remains under MAC-011 and the near-completion playtest policy.
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 
