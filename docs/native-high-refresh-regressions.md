@@ -1666,3 +1666,53 @@ the intended gate at 0x2B93DA, RNG-callee policy at 0x2B9478 and coefficient
 argument policy at 0x2B963F. The shared manual file contains the matching
 RNG-skip helper. This verifies integration into generated source, not a linked
 or running executable; the interactive process remains unchanged.
+
+### Beam construction and vertex output audit
+
+Source baseline `b45a799`, Windows x64, checksum-verified supported US XBE.
+`tests/native_beam_geometry.c` extends the lifetime investigation by executing
+the complete original type-32 constructor (0x104F30), geometry update
+(0x1053D0), renderer (0x141A0) and manager (0x10A760). The original renderer
+writes positions, colors/alpha and texture coordinates into a captured guest
+vertex buffer. Allocation, texture/render services, quality selection and
+random draws are controlled. A host-generated sine table substitutes the
+initialized guest trig service; original scalar constants and manager
+descriptor/switch tables come from the verified XBE.
+
+The 84 schedules cover original 60 and native 60/120/144 at normal/quarter
+speed, two/four configured strands, both 8/16-segment quality paths, and random
+values 0, 0.5 and 0.999. Each live update is followed by a zero-time update:
+age, all 0xA00 bytes of geometry and visible-vertex counts remain unchanged.
+The original vertex count/format, finite positions, register preservation,
+x87 balance and unchanged timing globals are asserted.
+
+Every schedule emits nonzero vertex alpha on its first advancing frame.
+The last nonzero-alpha frame varies with the original random strand delay:
+about 0.68–1.00 game seconds. Across rates and slow motion it agrees within
+one original 60-Hz frame. Manager retirement stays within two update intervals
+of its 1.2-game-second lifetime. Original/native 60 final geometry is
+byte-identical, and random draws occur only during construction with identical
+counts. This supplies evidence against a three-second onset delay inside
+these type-32 routines under the tested inputs; it does not identify the
+effect in the user's screenshot or justify a production timing change.
+
+The renderer is called directly in this fixture. The surrounding 0x10ADF0
+dispatcher also requires scene visibility flags, zero deferred-start time
+and the current player's visibility mask before calling it at 0x10BFBA.
+Those visibility decisions and GPU submission/resource lifetime remain
+outside this test. Other effect types and full firing-to-display behavior
+still need reproduction. Actual Mac execution is unverified.
+
+A read-only snapshot of interactive PID 25304 found zero entity/effect list
+heads while its timing continued to advance. It did not capture a shot or
+trail and does not prove gameplay correctness. The game was left running
+on build `fc3a7ce`; no input, memory writes, restart or personal-settings
+changes were performed. The separate NPC aim source fix remains unbuilt.
+
+The focused geometry run passes (`logs/native-beam-geometry.log`). With the
+additional cross-rate fade and exact native-60 assertions, timing,
+recompiler float/vehicle, CI-scope and backlog checks pass 133 tests with the
+existing object-rocking expected failure in 57.74 seconds
+(`logs/native-beam-geometry-shared.log`). The fixture is registered in the
+existing `test_native_timing.py` CI suite. No runtime code changed, so this
+audit did not require replacing the running executable.

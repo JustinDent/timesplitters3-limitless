@@ -60,6 +60,13 @@ published release or a full-game 144 FPS certification.
   read-only observation of the interactive game captured no active effects,
   so delayed trails remain unreproduced. The user's game was left running.
   [Beam evidence](docs/native-high-refresh-regressions.md#beam-manager-lifetime-audit).
+- Beam construction/geometry now has separate original-code coverage through
+  vertex output. At 60/120/144 and quarter speed, nonzero vertex alpha appears
+  on the first update; fade timing agrees within one original frame. This
+  narrows the delayed-trail investigation without resolving it: effect
+  identification, scene visibility and GPU submission remain unverified.
+  No production behavior changed and the interactive game remains running.
+  [Geometry evidence](docs/native-high-refresh-regressions.md#beam-construction-and-vertex-output-audit).
 - Projectile travel regression reproduced: the 0xF4A50 updater uses fractional
   displacement but skipped zero-whole-tick frames while age advanced normally.
   Its entry gate is corrected in shared source. The original-code fixture

@@ -3059,6 +3059,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   60/120/144 and quarter speed. Visual geometry/rendering are mocked; delayed
   trails remain open. No runtime or OS adapter change. Actual Mac execution
   remains pending. See [beam evidence](docs/native-high-refresh-regressions.md#beam-manager-lifetime-audit).
+- **Beam geometry audit:** `tests/native_beam_geometry.c` executes the shared
+  original constructor, updater, renderer and manager through vertex writes,
+  with controlled allocation, random values, trig table and rendering services.
+  Windows checks cover immediate vertex-alpha onset, fade, pause and retirement
+  at 60/120/144 and quarter speed; original/native 60 final geometry is identical.
+  No runtime or OS adapter change is required. Actual Mac execution, scene
+  visibility and GPU submission remain unverified; the user's delayed trails
+  remain open. [Geometry evidence](docs/native-high-refresh-regressions.md#beam-construction-and-vertex-output-audit).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.
