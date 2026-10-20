@@ -1115,6 +1115,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Batch 204 (issue #74): eight narrow metal drafts held for aspect/layout correction; none installed. Existing 1,319 files pass current Python audit and unchanged-hash native evidence carry-forward. No format/runtime/adapter change; shared DXT1/DXT5/RGBA8 remains. No Mac GPU, alpha, residency or scene execution; **Awaiting validation**. See STATUS.md batch 204 and private review/hybrid-204-acceptance.json.
+
 - Texture batch 203 (2026-10-20, commit carrying this entry): 128 reused
   original RGB/alpha pairs classified, total 4,297. No art, format or adapter
   change; existing 1,319-file native evidence retained through unchanged

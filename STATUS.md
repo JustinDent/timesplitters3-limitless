@@ -1,5 +1,43 @@
 # Measured progress
 
+## Texture batch 204: narrow-trim aspect failures held for correction (2026-10-20)
+
+Eight original-referenced metal trims generated with built-in image generation.
+All eight require correction and are NOT installed or counted complete.
+Originals are 256x64 (4:1); actual generated canvases are 2169x725,
+2170x725 or 2172x724 (approximately 3:1). Four have full-canvas material;
+four include near-black padding. Content bounds and visual comparison show
+that padding removal alone does not establish correct aspect/layout. The
+last trim is close to 4:1 inside its padding but recess/seam placement changed.
+No stretching, material-edge cropping or compiler-tolerance relaxation used.
+
+One actual compiler invocation rejected the aspect mismatch before writing;
+pack directory stayed unchanged. Both raw comparison sheets preserve aspect
+and are labeled as uncompiled drafts. Original hash verification, complete
+prompts, actual dimensions, source hashes and per-key correction reasons are
+retained privately. Source drafts were copied to authored; no DDS resampling.
+
+Full current Python pack audit passed: hashes, dimensions, aspect, format,
+metadata and mip chains. All 1,319 installed DDS hashes match prior audited
+records and the native checker is unchanged; batch203 native evidence is
+carried forward, with no redundant native execution. Counts: 5,361 needing art,
+132 held drafts, 1,319 installed; 4,297 keys classified. Worklist and hybrid
+queue refreshed. Corrected stale progress summary text to match 1,319 assets.
+
+Pack unchanged at 1,081,108,849 bytes (1031.03 MiB). Temporary outputs
+212.06MiB; texture workspace including retained
+art 6201.32MiB logical/allocated by the
+existing helper; disk free 84.39GiB at audit.
+6144 MiB pack cap, 256 MiB temporary cap and 512 MiB residency policy unchanged.
+No duplicate game copies/builds/staging/ZIPs; no game, save or setting edits.
+
+Next: a single fixed-region square-carrier feasibility check before another
+narrow-trim batch. This is not proof of a general generation-tool limit.
+No gameplay or Mac execution; MAC-011 remains Awaiting validation. Full
+inventory, other-encoding discovery, category review and scenes unfinished.
+Evidence: review/hybrid-204-acceptance.json, decisions, source preflight,
+compiler rejection, original verification, generation prompts and raw sheets.
+
 ## Texture batch 203: reused texture inventory and hidden alpha detail (2026-10-20)
 
 Issue #74 inventory pass: 128 previously unclassified keys, each with two
