@@ -38,6 +38,42 @@ Native macOS compilation, launcher execution and GPU/gameplay validation remain
 pending on a Mac (MAC-054). Windows checks do not establish those results.
 This is a source change; no release has been published.
 
+## Launcher download status spacing (2026-10-20)
+
+Prepared on `codex/launcher-download-spacing` from main `9324a7d`, in the commit
+carrying this entry. The download summary, channel selector and progress bar
+were siblings assigned to the same grid row in `tools/launcher/Launcher.xaml`.
+Long transfer text therefore covered the channel label and dropdown. A shared
+vertical stack now places the channel section, wrapping summary and progress
+bar in order, with the action row below. Windows WPF and generated native Mac
+layout consume this same change; no download or installation policy changes.
+
+Local validation: macOS 27.0.1 (26A434), ARM64, pinned .NET SDK 8.0.426,
+Avalonia 11.3.22, Python 3.13.16. The signed native build passes 22 launcher
+regression groups, the translocation startup UI check and eight shared UI groups.
+All three shared layout/theme tests and nine compatibility-policy tests pass.
+New offline download previews were visually inspected at 1152 x 772 and
+1000 x 720, including the compact view scrolled to the bottom: channel controls,
+two-line transfer text, progress bar and pause button no longer overlap.
+The minimum-size window uses the existing card scrollbar to reach the pause
+button. Preview commands are documented in `docs/mac-launcher.md`.
+
+The first Windows CI attempt (run 39378565086) stopped before compilation:
+`launcher-release.py` decoded the UTF-8 GitHub event using Windows CP1252, which
+rejects a byte in the PR body's curly quotes. Event parsing now specifies UTF-8.
+A regression invokes the real plan command with an unescaped Unicode event and
+simulated CP1252 default; it reproduces the failure before the fix and passes
+afterward. All 24 release-policy tests pass locally; the existing workflow runs
+this suite on both hosts.
+
+The read-only launcher `--check` against the existing development checkout was
+attempted but cannot start its missing `.venv/bin/python`; this task does not
+recreate or change that separate environment. Windows/native Mac CI and package
+checks are pending at implementation; exact-revision results will be recorded
+in the PR. Windows visual inspection, a live download and the installed release
+are not validated by these synthetic previews. No game session, personal-file
+changes, merge or release publication. MAC-021 retains wider delivery gaps.
+
 ## Mac launcher translocation recovery (2026-10-19)
 
 Prepared on `codex/mac-launcher-translocation` from main `b7a0630`, in the commit

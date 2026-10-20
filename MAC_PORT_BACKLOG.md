@@ -1571,6 +1571,20 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Download status spacing (2026-10-20, commit carrying this entry on
+  `codex/launcher-download-spacing`):** The Windows source layout placed channel
+  controls, transfer text and the progress bar in one grid row; the generated
+  native Mac UI inherited the overlap. `tools/launcher/Launcher.xaml` now stacks
+  these controls vertically so wrapping text expands the row. No OS adapter
+  is needed. `NativeWindow.cs` adds offline download previews for normal and
+  minimum sizes, including scrolled controls. Native build/regressions and
+  inspected previews pass. Initial Windows CI exposed locale-dependent event
+  decoding in `tools/launcher-release.py`; explicit UTF-8 and a CP1252 regression
+  fix that shared build prerequisite. Windows/native Mac CI remains pending at
+  implementation. The local game prerequisite check is blocked by the existing
+  checkout's missing Python environment. Live transfer and Windows visual
+  acceptance remain unverified; status remains Awaiting validation.
+  [Evidence](STATUS.md#launcher-download-status-spacing-2026-10-20).
 - **Game package compatibility correction (2026-10-20,
   `fix/launcher-compatible-discord-package`):** Windows runtime packages now
   place Discord documentation and the disabled template under `Support/Discord`.
