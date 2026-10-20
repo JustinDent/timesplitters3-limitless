@@ -34,8 +34,13 @@ and zero skipped/failed presentations. This checks policy and startup/menu
 execution, not complete weapon/level visual coverage or monitor scanout.
 Test preferences were restored to 60 afterward; personal saves were not used.
 
-Native macOS compilation, launcher execution and GPU/gameplay validation remain
-pending on a Mac (MAC-054). Windows checks do not establish those results.
+PR #216 CI exposed a stale Windows FOV fixture that still compiled removed
+Smoothness-menu controls. The fixture now verifies the remaining seven rows
+and Back navigation while retaining FOV/resolution/texture coverage. Its local
+recheck passed eight tests with one Mac-only skip. Hosted run 39380510747
+passed patch upgrades on both hosts and the Mac native regression, asset-free
+GPU and release checks; the Windows compiler failure caused both aggregate
+gates to fail. Full Mac game/visual validation remains pending (MAC-054).
 This is a source change; no release has been published.
 
 ## Launcher download status spacing (2026-10-20)

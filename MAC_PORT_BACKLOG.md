@@ -2722,9 +2722,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   is replaced with inert recorder ABI compatibility functions. Shared launcher
   UI removes timing controls and migrates old values without changing unrelated
   preferences. Native scripts reject higher targets and no longer default to 2x.
-  Historical implementation notes below are superseded. Native build, GPU and
-  launcher execution still need Mac validation; no Mac result is claimed from
-  Windows checks. See [fixed-60 validation](STATUS.md#fixed-60-fps-restoration-2026-10-20).
+  Historical implementation notes below are superseded. PR #216 hosted run
+  39380510747 passed Mac native regressions, patch upgrades and asset-free GPU
+  checks. Full Mac game/visual validation remains pending; these CI checks do
+  not establish gameplay fidelity. See [fixed-60 validation](STATUS.md#fixed-60-fps-restoration-2026-10-20).
 
 
 - **Status:** Awaiting validation
