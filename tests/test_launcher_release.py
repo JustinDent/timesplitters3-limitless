@@ -80,6 +80,33 @@ class LauncherReleaseTests(unittest.TestCase):
         self.version = patch.object(release, 'source_version', return_value=self.plan['version']).start()
         self.addCleanup(patch.stopall)
 
+    def test_plan_reads_unicode_github_event_under_windows_legacy_encoding(self):
+        event_path = self.directory/'event.json'
+        plan_path = self.directory/'plan.json'
+        body = 'Fix \u201clinked paths\u201d for \u65e5\u672c\u8a9e users'
+        event = {'pull_request': {'body': body}, 'repository': {'default_branch': 'main'}}
+        event_path.write_bytes(json.dumps(event, ensure_ascii=False).encode('utf-8'))
+        read_text = Path.read_text
+
+        def legacy_read(path, *args, **kwargs):
+            if path == event_path and not args and not kwargs.get('encoding'):
+                kwargs['encoding'] = 'cp1252'
+            return read_text(path, *args, **kwargs)
+
+        env = dict(GITHUB_EVENT_PATH=str(event_path), GITHUB_EVENT_NAME='pull_request',
+                   GITHUB_REF='refs/pull/214/merge', GITHUB_SHA=SHA,
+                   GITHUB_REPOSITORY=release.REPOSITORY, LAUNCHER_VALIDATION_SHA=SHA)
+        with patch.object(Path, 'read_text', legacy_read), \
+                patch.dict(release.os.environ, env, clear=True), \
+                patch('sys.argv', ['launcher-release.py', 'plan', '--plan', str(plan_path)]), \
+                patch.object(release, 'plan_release', wraps=release.plan_release) as planner, \
+                patch('builtins.print'):
+            release.main()
+        self.assertEqual(planner.call_args.args[0]['pull_request']['body'], body)
+        plan = json.loads(plan_path.read_text(encoding='utf-8'))
+        self.assertFalse(plan['publish'])
+        self.assertEqual(plan['source_revision'], SHA)
+
     def package(self, platform, *, extra=None, executable=True, sealed=True):
         files = ({'TimeSplitters Launcher.exe': b'bootstrap', 'Bin/TimeSplitters.App.exe': b'launcher'}
                  if platform == 'windows-x64' else {
