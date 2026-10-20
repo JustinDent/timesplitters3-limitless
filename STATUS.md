@@ -1,5 +1,31 @@
 # Measured progress
 
+## Fixed-60 settings fixture repair (2026-10-20)
+
+Committed repair in PR #219 (`0f01b2ce`), for PR #216 source head
+`b555ac8aa6597207e73c782eacbb2300dc62b3b6`. The Windows FOV fixture still
+referenced deleted motion types, rows and persistence functions after the timing
+submenu was withdrawn. It now checks the remaining guest row IDs (including
+absence of timing row 6) and preservation of the isolated runtime file instead.
+Existing FOV, texture, cancellation, atomic-failure and preview checks remain.
+Production behavior, adapters, settings and dependency pins are unchanged.
+
+Validation on macOS 27.0.1 (26A434), ARM64, Apple clang 21.0.0 and Python 3.9.6:
+the asset-free `tests/menu_mouse.c` builds with warnings as errors and passes.
+The existing missing-setting-drag mutation fails at its expected FOV assertion,
+confirming that the portable drag regression still detects a broken setter.
+Compilation was bounded to 60 seconds and execution to 10 seconds, with outputs
+under `build/compatibility-repair`; no game or personal settings were used.
+Pytest is unavailable. Direct native menu syntax compilation stops at missing
+`platform/win32_compat.h`: this snapshot has no `external/ts3FPrecomp` tree.
+These were limits of the original repair environment. PR #219 subsequently passed
+Windows and macOS native/runtime CI (run 39381646838), launcher compatibility,
+and issue-form/resolution checks. Integration with main preserves PR #216's
+seven-row count, row reset and Back-navigation assertions. The integrated Windows
+FOV fixture also passes locally with MSVC and the existing pinned runtime.
+Fresh PR CI validates the final merge before it is accepted; no gameplay was run.
+No local GPU, visual or gameplay validation is claimed. See MAC-054.
+
 ## Native launcher confirmation dialog layout (2026-10-20)
 
 Prepared on `codex/launcher-dialog-layout` from main `164c492`, in the commit

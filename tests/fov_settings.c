@@ -17,6 +17,10 @@ RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 RECOMP_TLS uint16_t g_fp_cc,g_fp_control_word;
 static int available=1,returned;
 static unsigned built_rows, built_row_count;
+static char runtime_path[MAX_PATH];
+uint32_t recomp_config_title_id(void) { return 0x45410066; }
+int recomp_settings_path(uint32_t title,char *out,size_t size)
+{ (void)title;return snprintf(out,size,"%s",runtime_path)>0; }
 static int slider_capture_enabled;
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x); exit(1); } } while(0)
 HWND xbox_D3D8Window(void) { return NULL; }
@@ -114,6 +118,8 @@ static void content(const char *expected)
 int main(int argc,char **argv)
 {
     CHECK(argc==2); CHECK(!_putenv_s("TSFP_DISPLAY_CONFIG",argv[1]));
+    snprintf(runtime_path,sizeof runtime_path,"%s.runtime",argv[1]);
+    {FILE *f=fopen(runtime_path,"wb");CHECK(f);fputs("# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n",f);fclose(f);}
     void *mem=VirtualAlloc(NULL,0x800000,MEM_COMMIT|MEM_RESERVE,PAGE_READWRITE);CHECK(mem);
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)mem;
     { /* Original and explicit 640x480 share dimensions but not saved identity. */
@@ -219,6 +225,12 @@ int main(int argc,char **argv)
     call(BACK_CB,0,0);CHECK(page==0 && built_row_count==7 && built_rows==0xbf);
     {int before=returned;call(SELECT_CB,5,0);CHECK(returned==before+1);}
     content("TSFP_DISPLAY_V1 1920 1080\n");
+    /* Display/FOV edits must leave unrelated runtime preferences untouched. */
+    {
+        char text[256]={0};FILE *f=fopen(runtime_path,"rb");CHECK(f);
+        fread(text,1,sizeof text-1,f);CHECK(!ferror(f) && feof(f));CHECK(!fclose(f));
+        CHECK(!strcmp(text,"# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n"));
+    }
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: FOV config, bounds, staging, reset, cancellation, atomic failure, preview rollback, keep, live texture choice/synchronization and guest ABI");
     return 0;

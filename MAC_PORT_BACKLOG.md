@@ -2744,6 +2744,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-054 — Fractional presentation targets and Windows transform setup (issue #167)
 
+- **Fixture repair (2026-10-20, PR #219, commit `0f01b2ce`):**
+  `tests/fov_settings.c` retained deleted motion APIs and the old timing label.
+  Its replacement checks assert the fixed-60 menu's row set and preservation of
+  unrelated runtime settings, keeping the existing FOV/texture/rollback coverage.
+  No Mac adapter is needed: shared production menu policy is unchanged. The
+  portable pointer fixture and its broken-setting-drag detection pass on Mac;
+  subsequent Windows/macOS native CI passed in run 39381646838. The integrated
+  Windows fixture also passes locally with MSVC, preserving main's stricter
+  seven-row and Back-navigation checks. Full Mac gameplay validation remains
+  pending. [Evidence and limits](STATUS.md#fixed-60-settings-fixture-repair-2026-10-20).
+
 - **Current disposition (2026-10-20, commit carrying this entry):** Withdrawn at the user's
   request. Both hosts now use fixed 60 FPS; the interpolation/prediction engine
   is replaced with inert recorder ABI compatibility functions. Shared launcher
