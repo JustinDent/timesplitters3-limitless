@@ -1115,6 +1115,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 197 (2026-10-20, commit carrying this entry): seven prior
+  material/cutout drafts corrected and installed; one wire mesh remains held.
+  1,287 installed and 3,753 keys classified. Existing shared DXT1/DXT5/RGBA8
+  support needs no adapter change. Windows offline DDS and color/mask review
+  does not verify Mac scene brightness, alpha blending, shader use or residency;
+  Awaiting validation. See [batch 197 evidence](STATUS.md#texture-batch-197-cutout-corrections-with-complete-color-coverage-2026-10-20).
+
 - Texture batch 196 (2026-10-20, commit carrying this entry): one private
   DXT5 hedge accepted offline, seven cutout/material corrections held; 1,280
   installed and 3,689 original keys visually classified. Existing shared DDS

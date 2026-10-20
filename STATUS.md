@@ -1,5 +1,55 @@
 # Measured progress
 
+## Texture batch 197: cutout corrections with complete color coverage (2026-10-20)
+
+Issue #74: eight focused built-in corrections, seven accepted offline and one
+wire-mesh draft still held. Re-authored from decoded original RGB references;
+verified original alpha remains separate and is restored at compilation.
+This fixes missing color beneath restored masks and the previous red/yellow
+matte edges, pale/chalky wood, interior stone halos and rounded panel vignette.
+Accepted: iron grille, hanging wood, cracked stone atlas, damaged grid panel,
+mottled green-gray strip, brick/plaster damage and knotty wood. The mesh still
+changes fine diamond pitch/phase and reflected blue tones; it is incomplete.
+
+Original/compiled RGB, checkerboard and 2x2 repeat diagnostics reviewed, with
+a focused mesh comparison. Corrected hanging wood alpha-weighted luminance is
++1.54% versus +19.05% in its rejected draft; knotty wood is -1.15% versus the
+original, correcting the prior orange palette. The damaged panel is +19.54%
+brighter under original-alpha weighting, recorded for later scene validation.
+No actual adjacency, blend-mode or shader-use claim follows from these views.
+
+Actual generated sources: five 1254x1254 squares and three 1774x887 landscapes.
+Accepted outputs: four 1024x1024 DXT5, one 1024x512 DXT5, one 512x512 RGBA8
+grille and one 1024x512 DXT1 wood. Full mip chains, Lanczos-resampled; no native
+4K claim. Grille base alpha equals the bilinear-resampled original byte for
+byte. Accepted DXT5 mean alpha errors are 0.261-1.207/255, maxima 12-31;
+original alpha restoration does not make compressed alpha lossless.
+
+Seven new native DDS-reader passes plus 1,280 unchanged prior-audited hashes
+and unchanged checker cover all 1,287 installed files. Full Python metadata,
+hash, dimensions, aspect and mip-byte checks passed. Reviewed 64 further
+original RGB/alpha pairs; 3,753 keys now visually classified. Text, weapon
+icons, channel-dependent masks and equipment atlases retain specialist review.
+Installed coverage 18.89% of 6,812 cataloged keys; 5,413 need art and 112
+held correction drafts remain incomplete. Other-encoded, uncataloged and
+procedural discovery gaps remain explicit. Classification is not completion.
+
+Pack including metadata: 1,066,497,759 bytes (1017.09 MiB),
+up 8,045,894 bytes. Retired eight superseded rejected source files,
+reclaiming 25,203,758 bytes from the project after checking
+containment, installed references, replacement sources and recovery hashes.
+Current sources, prior prompts/hashes, comparisons and default-tool recovery
+copies remain. No game data, current pack source, saves or settings removed.
+Temporary files measured 187.38 MiB; full texture workspace
+5994.80 MiB logical/allocated by the existing helper;
+disk free 85.34 GiB. The 6144 MiB pack and 256 MiB temporary limits hold.
+512 MiB residency policy unchanged; runtime residency not measured this batch.
+
+Private evidence: `review/hybrid-197-acceptance.json`, linked generation,
+metrics, source verification, review, native audit and retirement records.
+No gameplay or Mac scene/GPU validation; MAC-011 remains Awaiting validation.
+Local issue #74 checkpoint only. Artwork and game files remain private.
+
 ## Texture batch 196: alpha-bearing materials and mask fidelity (2026-10-20)
 
 Issue #74: reviewed eight independently generated cutout/foliage materials.
