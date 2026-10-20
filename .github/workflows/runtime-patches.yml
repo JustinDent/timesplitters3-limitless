@@ -165,7 +165,7 @@ jobs:
           from pathlib import Path
           import subprocess, sys
           pins = [line for line in Path('requirements.txt').read_text().splitlines()
-                  if line.startswith(('capstone==', 'Pillow==', 'numpy=='))]
+                  if line.startswith(('capstone==', 'Pillow==', 'numpy==', 'cmake==', 'ninja=='))]
           subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
       - name: Test native runtime, rendering and input regressions

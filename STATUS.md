@@ -12501,10 +12501,57 @@ The existing Windows executable has not been replaced; these changes require a
 new runtime build. Visual layout and real-art scene behavior remain unverified.
 
 
+
 ## 2026-10-20: focused PR validation optimization
 
 Based on main 140f53cc4c52b8aaa57b255025b64af83c72da60; branch ci/reduce-pr-validation-cost. Launcher builds and startup/package/icon tests now have one workflow owner. Known offline Python/texture inputs omit Mac GPU setup; unknown runtime inputs retain GPU coverage. Patch upgrades and native tests run in parallel on Windows and macOS, with the existing required check names retained as strict completion gates. Worker regressions remain on both hosts.
 
-Local Windows validation: focused policy/handoff tests (113 passed, 2 Windows-inapplicable skips, 43 subtests); actionlint 1.7.12 passed for all three changed workflows (shellcheck/pyflakes unavailable). Hosted Windows/Mac validation is pending on the PR. No measured speedup is claimed yet; parallel jobs add setup overhead.
+Local Windows validation: focused policy/handoff tests (113 passed, 2 Windows-inapplicable skips, 43 subtests); actionlint 1.7.12 passed for all three changed workflows (shellcheck/pyflakes unavailable). Hosted Windows/Mac runtime, patch upgrades, launchers, package verification and Mac GPU contracts passed at ae373aa on PR #209. Runtime run 39369178991 completed in 7m27s including queue time; Windows native work (3m44s) overlapped patch upgrades (6m04s). This is one observed run, not a controlled speedup benchmark. The subsequent main sync retains PR #208 replay-link coverage and its pinned CMake/Ninja dependencies; see PR #209 for current-head hosted results.
 
 CI orchestration only: no gameplay, launcher UI, OS adapter, runtime pin or dependency version changes; no Mac backlog entry is needed. No game was launched, built, copied or packaged locally; saves, settings and the texture pack are unchanged. See docs/launcher-compatibility.md for selection and manual-run scope.
+
+## Windows release replay link fix — 2026-10-20
+
+Investigated the `Publish-Release.ps1` failure on clean main `140f53c`
+(`0.3.1-alpha.1`). The game linked successfully, but `d3d8_replay` failed with
+LNK2019/LNK2001 for `tsfp_texture_is_4k`. Windows supplied its implementation
+through `xbox_input`, while replay deliberately links only the renderer. This
+was a missing target dependency, not stale generated game code.
+
+Focused branch `fix/replay-texture-mode-link` adds the shared source directly
+to standalone Windows replay through `patches/replay-texture-mode-link.patch`.
+The full input/kernel/audio dependency chain stays unnecessary. Native Mac's
+renderer already owns the same mode source; its existing build path is preserved.
+MAC-011 records this build fix and the unavailable Mac host validation.
+
+The regression in `tests/test_frame_replay.py` builds the real patched renderer
+and replay CMake targets with texture packs enabled and no input library or
+original game assets, then checks executable startup/usage. The existing
+Windows/macOS CI suite runs this file; CMake/Ninja are installed from the
+unchanged `requirements.txt` pins. The Windows-only build regression skips on
+Mac, where the production Vulkan replay/readback contract already runs.
+
+Local validation on Windows x64 (OS build 26300, MSVC 14.44.35207,
+CMake 4.4.4, Ninja 1.13.2; upstream/Python pins unchanged):
+
+- `tsfp.ps1 Build` completed successfully, including `d3d8_replay` and all
+  native build tests, isolated temporary save/config cleanup, executable
+  compatibility sealing and matching crash-symbol generation. The supported
+  US Xbox executable passed the build's SHA-256 check.
+- Replay/texture/renderer/CI-selection/backlog regressions: 87 passed, one
+  Mac-only CoreText check skipped (27.70 seconds).
+- The rebuilt production D3D11 replay rendered the synthetic 64x64 red-triangle
+  and blue-clear capture with verified pixels, one successful guest present,
+  zero failed host calls and zero malformed/unknown chunks. Settings/input/save
+  paths were isolated under `build/replay-link-smoke`; no game was launched.
+- Complete patch-transition/tracking checks: 34 passed (339.20 seconds),
+  including fresh/repeated application, historical PC/Mac migrations and
+  texture/main branch switches under both line-ending modes.
+
+Evidence: `build/replay-link-build.log`, `build/replay-link-contracts.log`,
+`build/replay-link-patches.log` and `build/replay-link-smoke/replay.log`.
+The fix is committed locally on the focused branch. Main has not been changed,
+and no release/tag has been created. Personal settings, saves and the private
+texture pack were preserved. Mac runtime/visual behavior and full-game
+playability are outside this validation.
+
