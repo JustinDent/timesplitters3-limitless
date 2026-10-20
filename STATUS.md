@@ -12505,6 +12505,6 @@ new runtime build. Visual layout and real-art scene behavior remain unverified.
 
 Based on main 140f53cc4c52b8aaa57b255025b64af83c72da60; branch ci/reduce-pr-validation-cost. Launcher builds and startup/package/icon tests now have one workflow owner. Known offline Python/texture inputs omit Mac GPU setup; unknown runtime inputs retain GPU coverage. Patch upgrades and native tests run in parallel on Windows and macOS, with the existing required check names retained as strict completion gates. Worker regressions remain on both hosts.
 
-Local Windows validation: focused policy/handoff tests (112 passed, 2 Windows-inapplicable skips, 41 subtests); actionlint 1.7.12 passed for all three changed workflows (shellcheck/pyflakes unavailable). Hosted Windows/Mac validation is pending on the PR. No measured speedup is claimed yet; parallel jobs add setup overhead.
+Local Windows validation: focused policy/handoff tests (113 passed, 2 Windows-inapplicable skips, 43 subtests); actionlint 1.7.12 passed for all three changed workflows (shellcheck/pyflakes unavailable). Hosted Windows/Mac validation is pending on the PR. No measured speedup is claimed yet; parallel jobs add setup overhead.
 
 CI orchestration only: no gameplay, launcher UI, OS adapter, runtime pin or dependency version changes; no Mac backlog entry is needed. No game was launched, built, copied or packaged locally; saves, settings and the texture pack are unchanged. See docs/launcher-compatibility.md for selection and manual-run scope.

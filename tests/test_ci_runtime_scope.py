@@ -94,6 +94,7 @@ def test_automation_is_not_scheduled_for_open_prs(filename, events):
     (['tools/vulkan_sdk.py', 'config/vulkan-sdk.json'], {'native', 'gpu'}),
     (['tools/build-native-mac.py', 'tools/native_mac_common.py'], {'native', 'gpu'}),
     (['tools/testing_profile.py'], {'native'}),
+    (['tests/native_compiler.py'], {'native'}),
     (['tools/online_theme.py', 'tools/bundle_online.py', 'tools/network-identity.py'], {'native'}),
     (['tools/crash_helper.c', 'src/pc_crash.c', 'tests/test_crash_capture.py'], {'native', 'gpu'}),
     (['tools/publish-release.py', 'tests/test_publish_release.py', 'docs/releasing.md'], {'release'}),

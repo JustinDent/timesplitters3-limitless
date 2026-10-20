@@ -31,6 +31,7 @@ CPU_TOOLS = {
     'tools/bundle_online.py', 'tools/network-identity.py',
     'tools/play-native-mac.py', 'tools/test-native-mac.py',
     'tools/testing_profile.py', 'tests/test_native_mac_launcher.py',
+    'tests/native_compiler.py',
 }
 
 
