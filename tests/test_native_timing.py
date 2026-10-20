@@ -9,6 +9,9 @@ from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
 
+class ObjectRockingQuantization(AssertionError):
+    """Measured repeated live transforms; fixture/build errors remain failures."""
+
 
 @pytest.mark.parametrize('source', ['native_timing.c', 'native_timing_guest.c'])
 def test_native_timing(source, tmp_path):
@@ -179,6 +182,11 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                  (0x238510,0x23854c),(0x2382b0,0x23833b),
                                  (0x3533f0,0x3533f6),(0x358560,0x358590),
                                  (0x35de60,0x35de66)]),
+    pytest.param('native_object_rocking.c', [(0xa84f0,0xa8a97),
+                                            (0x151650,0x15178f),(0x153550,0x1535a1),
+                                            (0x153650,0x1536a0),(0x153270,0x1533e0)],
+                 marks=pytest.mark.xfail(strict=True, raises=ObjectRockingQuantization,
+                     reason='Object rocking remains quantized to carried whole ticks')),
 ])
 def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     import hashlib
@@ -194,6 +202,13 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
+        if harness_name=='native_object_rocking.c':
+            import struct
+            constants='\n'.join(
+                f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
+                for address in (0x475c78,0x475cc4,0x475cc8,0x475cd4,0x475cdc,
+                                0x475ce8,0x475dbc,0x4783dc,0x47d3a4,0x47d564,
+                                0x47d568,0x47d56c,0x47d570,0x47d574,0x47d578))
         if harness_name=='native_weapon_sound.c':
             import struct
             constants='\n'.join(
@@ -260,6 +275,12 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
+    if harness_name=='native_object_rocking.c':
+        rows=[dict(field.split('=',1) for field in line.split()[1:])
+              for line in output.splitlines() if line.startswith('rocking_audit ')]
+        assert len(rows)==6,output
+        if any(int(r['frozen']) for r in rows if r['fps']!='60'):
+            raise ObjectRockingQuantization(output)
     if harness_name=='native_npc_weapon_fire.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_fire_audit ')]

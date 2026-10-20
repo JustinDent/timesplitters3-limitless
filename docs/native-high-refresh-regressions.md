@@ -953,9 +953,100 @@ historical controls/Mac-stack and texture/main branch-transition checks
 pass in 139.17 seconds
 (`logs/native-npc-weapon-scope-patch-transitions.log`).
 
-This is a source-only checkpoint after `c34730c`, on Windows x64 with
-MSVC 14.44.35207. The user's open game remains the previous tested build,
-SHA-256 `1edf3c62f7f648448e8d8a3fc8050d53f00cfe2aff509bd694d349653ad55ded`.
-No new executable or gameplay test is claimed for the NPC wrapper yet.
+The `cfaef73` checkpoint now passes the Windows x64 Release build and
+built-in checks with MSVC 14.44.35207
+(`logs/native-npc-weapon-scope-build.log`). Executable SHA-256:
+`afb5ed6a71c05f3c8a3ddc1ede825e8f2f07f4a05d39dc3901de665a35840d26`.
+The isolated 120-second `native-144-handoff-none-npc-weapon-event-scope`
+run passes all reported checks: Story movement, hand animation, firearm
+handoff and ammunition consumption, pause/resume, native fresh guest
+presentation with interpolation disabled, and no reported crash or failed
+presentation. The runner deliberately terminates the process at its limit
+(exit 1, `terminated_by_runner: true`). Logs are in
+`logs/native-npc-weapon-scope-144.log`; structured evidence is under
+`private/test-saves/high-refresh/`. The original verified XBE and runner
+hash `65b94927ec6bed6e603ec219d2274e3ce3dd2a280ef023550196b20ac0486e2a`
+are unchanged. The game was reopened; `logs/play-20261020-121550.err`
+confirms native 144 and fullscreen 3440x1440 at 144 Hz.
+
+The runtime reported 62.76 FPS over its first 115 seconds, including startup.
+The user reported that COD was open during this run. Treat it as contended
+behavior validation, not a clean performance benchmark or proof of a
+regression. No GPU completion or monitor scanout was measured.
+
+A second isolated 120-second run, `native-144-handoff-none-npc-weapon-cod-closed`,
+used the identical executable, XBE, runner and flags. COD was absent from
+process checks at the start and during gameplay. All reported behavior
+checks passed again. `tools/native_update_stats.py --from-seconds 85`
+compared unpaused Story CPU update intervals:
+
+| Run | Intervals | Window (s) | Mean updates/s | p50 (ms) | p95 (ms) | p99 (ms) | Worst (ms) | Game seconds / wall second |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| COD reported open | 2131 | 34.3704 | 62.001 | 14.1186 | 30.4936 | 33.3740 | 37.5897 | 1.0 |
+| COD absent repeat | 4798 | 34.6179 | 138.599 | 7.0151 | 8.9571 | 9.8945 | 19.7135 | 1.0 |
+
+The repeat's final five-second FPS samples reported 144.1 and 144.0.
+This supports resource contention as the explanation for the earlier low
+rate, without isolating every background variable or proving full-game
+performance. These are CPU update intervals in the windowed test; they
+do not measure GPU completion, monitor scanout or input latency.
+Evidence is in `logs/native-npc-weapon-cod-closed-144.log` and the matching
+`private/test-saves/high-refresh/` artifacts. No compiler or pytest work
+ran during the measured window. The interactive game was reopened afterward;
+`logs/play-20261020-122121.err` confirms native 144, interpolation disabled
+and fullscreen 3440x1440 at 144 Hz.
+
 Full actor caller cadence, damage/collision, audible output, other weapon
 families, multiplayer and actual Mac compilation/execution remain open.
+
+## Object rocking and bounce audit
+
+The callback at 0xA84F0–0xA8A97 updates an object's vertical rocking/bounce
+offset and two tilt components, then builds its transform. Its initializer
+0xA8AA0 selects a model matrix, applies an impulse and installs 0xA84F0 as
+the entity+0x16C callback (assignment at 0xA8BC5). This is a specific object
+motion path, not the general player or world collision integrator.
+
+The callback executes one fixed step per carried whole game tick. Both
+loop bounds read 0x4E7944 at 0xA8595/0xA8980; it never consumes the fractional
+game delta. Each loop uses 1/60 in vertical integration and adds fixed
+angular increments. Opening these bounds alone would accelerate the
+simulation rather than making its current motion smooth.
+
+`tests/native_object_rocking.c` executes the complete original callback,
+Euler/translation matrix builders and matrix multiplication routines from
+the verified US XBE. The fixture supplies an identity base transform per
+update and checks the resulting vertical translation against the simulated
+offset. Its free-flight start is offset 10, vertical velocity 5 and zero
+tilt. Bounce/math and impact-audio services fail if reached; this deliberately
+does not mock a collision outcome. This setup stays above the routine's
+0.3 near-ground threshold. Stack/FPU balance, non-frame callee-saved
+registers, unchanged clock fields and finite matrices are checked.
+The translator publishes framed helper EBP as frame TLS; it is not treated
+as a restored guest register by this fixture.
+
+| Updates per second | Schedule | Changed transforms | Repeated transforms | Final offset | Final velocity |
+| ---: | --- | ---: | ---: | ---: | ---: |
+| 60 | Normal | 60 | 0 | 9.546200752 | -4.523219109 |
+| 120 | Normal | 60 | 60 | 9.546200752 | -4.523219109 |
+| 144 | Normal | 60 | 84 | 9.546200752 | -4.523219109 |
+| 60 | Quarter-speed | 15 | 45 | 10.686166763 | 1.669251561 |
+| 120 | Quarter-speed | 15 | 105 | 10.686166763 | 1.669251561 |
+| 144 | Quarter-speed | 15 | 129 | 10.686166763 | 1.669251561 |
+
+The endpoints match exactly because the same number of fixed steps run.
+Ordinary pause is inert, and one three-tick catch-up call matches three
+one-tick calls. The missing native progression is recorded as a strict
+expected failure that accepts only `ObjectRockingQuantization`; compile,
+ABI and other fixture errors remain failures. Measurements are in
+`logs/native-object-rocking-measurements.log`. The broader timing, auto-look,
+float/vehicle translation, audio, CI scope and Mac backlog suite reports
+143 passed and one expected failure in 44.75 seconds, recorded in
+`logs/native-object-rocking-regressions.log`.
+
+No production change is made to this routine. A fix must preserve the
+original step's damping/acceleration, characterize tilt clamping, impact
+timing/audio, bounce restitution and settling, and produce a fresh transform
+for each advancing native interval. Whole-game collision coverage, actual
+scene review and Mac execution remain open. This audit does not change
+the already rebuilt NPC-weapon executable.

@@ -2987,9 +2987,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   operations. No new host adapter is required. Source generation, 143 shared
   checks, five network dispatch/results checks and five targeted patch-transition
   tests pass. The timing scope composes with the existing bot-shot hook;
-  Windows executable integration and
-  actual Mac compilation/runtime remain pending. See
+  Windows Release/built-in checks and the 120-second native-144 gameplay
+  check now pass on `cfaef73`. A same-build repeat with COD absent passes
+  again and averages 138.6 fresh CPU updates/s in the measured gameplay
+  window versus 62.0 earlier; this is Windows evidence only.
+  Actual Mac compilation/runtime remain pending. See
   [the NPC regression record](docs/native-high-refresh-regressions.md#npc-firing-event-tick-scope).
+- **Object rocking audit:** The shared original-code fixture demonstrates
+  repeated transforms on fractional native updates despite correct total
+  displacement. No runtime fix yet; its strict expected failure remains
+  separate from passing checks. Damping, impact/bounce, settling and actual
+  Mac execution remain acceptance work. See
+  [the rocking audit](docs/native-high-refresh-regressions.md#object-rocking-and-bounce-audit).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.

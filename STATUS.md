@@ -6,6 +6,14 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Object rocking/bounce motion has a reproduced smoothness gap: the original
+  updater produces only 60 changed transforms across 144 live updates, while
+  preserving the 60 FPS endpoint and speed. At a quarter-speed schedule it
+  changes only 15 times. The complete updater and original matrix builders
+  are covered by a new fixture; its smoothness requirement is a strict
+  expected failure, not a passing feature. No runtime conversion is applied
+  until per-step damping, bounce and settling semantics are characterized.
+  [Rocking audit](docs/native-high-refresh-regressions.md#object-rocking-and-bounce-audit).
 - The NPC firing path now has the same scoped event-timing correction in
   shared source. Its whole-tick gate previously kept projectile counts
   stable but advanced the event timer by only 0.417 seconds per second at
@@ -14,9 +22,16 @@ published release or a full-game 144 FPS certification.
   original sound positioning/repeat timers, pause and catch-up. Source
   generation, 143 shared checks and five targeted patch-transition tests
   pass. Five additional network dispatch/results checks verify composition
-  with the existing multiplayer shot hook. This source checkpoint
-  is not yet in the running game: that session retains the tested `c34730c`
-  build. Full caller cadence, damage and actual Mac execution remain open.
+  with the existing multiplayer shot hook. The Windows Release build and
+  120-second native-144 movement/firing/animation/pause checks now pass on
+  `cfaef73`; the updated game was reopened. Build SHA-256:
+  `afb5ed6a71c05f3c8a3ddc1ede825e8f2f07f4a05d39dc3901de665a35840d26`.
+  With COD absent, the same build averaged 138.6 fresh CPU updates/s versus
+  62.0 in the earlier gameplay window; the final five-second FPS samples
+  reached about 144. Both runs passed the behavior checks and maintained
+  correct game speed. This supports the user's contention explanation,
+  but does not establish sustained full-game 144 FPS. Full caller cadence,
+  damage and actual Mac execution remain open.
   [NPC timing evidence](docs/native-high-refresh-regressions.md#npc-firing-event-tick-scope).
 - Generic firing now scopes its event timers and nested sound calls to the
   carried whole-game-tick span used by its projectile gate. Fractional time is
