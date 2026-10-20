@@ -1,5 +1,51 @@
 # Measured progress
 
+## Texture artwork batch 253: four metal replacements, four correction holds (2026-10-20)
+
+Eight classified opaque metal candidates verified against archive payload/RGBA
+hashes and supported XBE. Eight new original PNG references budgeted before writing
+(194,487 bytes). Built-in image generation produced seven 1774x887 and one
+1254x1254 source, 26,512,411 bytes total. Source art and exact prompts retained
+privately. No native 4K claim: accepted outputs are three 1024x512 and one 512x256
+DXT1 with complete mips, LANCZOS downsampled without crop/color/alpha edits.
+
+Accepted f4218960905a3451 rounded riveted rail, f80e3803d392e30f olive/yellow plate,
+fad68b0c00b766f6 four-row bronze trim and 52b6cbac48204e25 beveled metal panel.
+Five full/repeat/original-grid sheets inspected in RAM, avoiding 1,378,639 bytes
+of raster output. Rivet rows, stripe height, seams and bevel arrangement reviewed;
+actual mapped adjacency, lighting and channel use remain pending. Held
+c76ad5d1c016f309 for dark/narrow reflection (-17.34% mean luminance),
+d960e620c5018345 for sharpened side reflections (+12.11%), 4c7e3f8ccc6c781a for
+changed divider/center-mark geometry, and 9ef4f11f8d40d17a for darkened broad
+reflection (-13.93%). Holds retain original fallback and do not count as complete.
+
+Retired only the eight new original exports after byte-exact PNG reconstruction,
+resolved-path/hash/size checks and exclusion of all previously denied cleanup keys.
+Recovered 194,487 bytes. All five review rasters and metadata replay exactly from
+the unchanged game archives after retirement. Source art, saves/settings and old
+cached exports preserved. No prior denied cleanup retried.
+
+Four new Windows native DDS parser checks pass. Prior 1,489 DDS hashes and checker
+identity unchanged against batch 252. Fresh full Python format/metadata/dimensions,
+aspect/mip/hash audit passes all 1,493 installed replacements. Counts: 5,154 need
+art, 1,493 installed, 165 held. Known 6,812 keys classified; classification is not
+artwork completion, category/use validation or proof of embedded/procedural coverage.
+No gameplay, builds, runtime adapters or publication. MAC-011 Awaiting validation;
+Mac GPU, scene appearance, display-mode matrix and residency remain unverified.
+
+Pack 1,159,466,244 bytes (+1,138,262), below 6144 MiB. Temporary snapshot
+268,188,079 bytes, below 256 MiB with 247,377 bytes headroom. Windows filesystem
+allocation query: 10,515 texture-workspace files, no errors, logical/allocated
+7,453,121,293 bytes, free disk 83,943,612,416 bytes. Snapshot includes source art,
+excludes Codex default outputs outside project; small metadata writes follow it.
+One active pack and 512 MiB residency unchanged; consolidated playtest gate unmet.
+
+Private evidence uses review/hybrid-253 prefix: selection.json, prompts.json,
+generation receipts, memory-review.json, decisions.json, original-export-retirement.json,
+native-audit.json, acceptance.json and physical-storage-final.json. Previous user-answer
+turn was no progress; batch252 evidence was revalidated and documented in local
+commit e1107c1 before production continued. This batch remains local on #74.
+
 ## Texture artwork batch 252: eight metal materials installed (2026-10-20)
 
 Eight opaque metal-family originals verified against archive payload/RGBA hashes;

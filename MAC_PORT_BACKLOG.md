@@ -1115,6 +1115,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 texture batch 253: four metal replacements installed, four drafts
+  held for tone/geometry correction; 1,493 installed. Fresh full Python audit and
+  four new Windows parser checks pass; prior 1,489 hashes/checker unchanged.
+  Five RAM comparisons replay exactly after retiring eight verified original
+  exports (194,487 bytes). Pack 1,159,466,244 bytes; temporary snapshot
+  268,188,079 bytes, below caps. No runtime adapters or gameplay changed.
+  **Awaiting validation** remains for Mac GPU, mapped materials/seams/light
+  channels, display modes and residency. See STATUS.md batch 253.
+
 - 2026-10-20 texture batch 252: eight metal-family replacements installed;
   total 1,489. Fresh full Python audit and eight new Windows parser checks pass;
   prior 1,481 DDS hashes/checker identity unchanged. Six RAM comparisons include
