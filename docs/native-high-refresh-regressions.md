@@ -1476,3 +1476,55 @@ The timing, CI runtime-scope and Mac-backlog checks pass 94 tests with one
 existing object-rocking expected failure in 33.61 seconds
 (`logs/native-beam-shared.log`). The new harness is included in the existing
 CI timing suite. This is audit coverage, not a delayed-trail fix.
+
+
+### NPC animation-marker shots
+
+Source baseline `b6b9311`. While tracing the non-shooting NPC report, two
+animation-event callers were found: 0x27AE14..0x27AE83 and
+0x2B9BCE..0x2B9C0C. Both query marker mask 0x200 through original 0x61570,
+then call 0x1BB5C0 and clear temporary firing flags. The marker selector
+recognizes crossed animation bounds; a rejected shot cannot be retried after
+the bounds advance. The weapon's whole-tick gate rejects a positive fractional
+interval with zero integer ticks, even when an actual one-time event reached
+it. These callers are reached through 0x27D590 in mode 0x0A; this does not
+identify the user's particular first-mission enemy or explain no movement.
+Other one-time attack transitions (0x2612FB/0x2B739D) need separate auditing.
+
+The extended `tests/native_npc_weapon_fire.c` executes original 0x61570,
+both complete event-test/call/flag-cleanup branches, and the existing full
+firing/sound chain. Only each caller branch's following state transition is
+replaced by RET. Animation lookup/table/bounds are controlled services;
+projectile construction, collision, live AI and audio output remain mocked.
+Calls enter the same manual wrapper as production, while the original firing
+body remains `_gen`. The first fixture attempt reversed the two animation
+bound outputs; correcting them restores the original-60 reference. Production
+code was not responsible for that fixture setup error.
+
+The pre-fix original-60 event produces one shot and sound; the fractional
+0.5-tick event produces neither (`logs/native-npc-animation-event-before.log`).
+A retained counterfactual using the previous transaction wrapper confirms
+that the following whole-tick frame cannot recover the event.
+
+Shared `pc_native_npc_weapon_fire_guest` recognizes only the two audited
+return sites (0x27AE66/0x2B9BF8). A positive zero-whole event gets one scoped
+firing transaction, using the existing event timer/sound scope; original live
+time is restored on return. It does not open the gate for held-fire callers,
+change the global clock, queue stale actors or alter the original damage
+amounts. Pause, even with a stale nonzero integer tick, remains blocked. The
+network wrapper remains outside this helper and receives the original caller
+stack and restored timing. The additive `native-npc-animation-shots` patch is
+ordered after the existing NPC event-scope patch; historical-stack fixtures
+exclude it along with its prerequisite when recreating old states.
+
+`logs/native-npc-animation-event-after.log` verifies one shot, one sound,
+one ammo debit and one event-timer increment for both callers with deltas
+1, 1/2, 5/12 and 5/48. An unchanged bound on the following frame produces no
+duplicate. Zero-time and invalid-target/weapon cases produce no firing or
+timer changes. Existing 96 held-fire configurations, 60/120/144, quarter speed,
+variable/catch-up schedules and pause checks continue to pass. Full stack
+application passes and updates only the manual runtime wrapper
+(`logs/native-npc-animation-event-patches.log`). Existing production generated
+C already calls the manual NPC entry with the two original return addresses;
+no generated C was edited. Windows rebuild and live confirmation, including
+the reported pre-bridge behavior, and actual Mac execution remain pending.

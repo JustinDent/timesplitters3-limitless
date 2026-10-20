@@ -20,6 +20,7 @@ enum { ACTOR=0x1000, STATE=0x3000, TARGET=0x6000, TABLE=0x8000,
        STACK=0x10000, MODE=TABLE+0x68 };
 static unsigned projectiles,sounds,effects,random_calls;
 static unsigned hand,mode,repeating,scoped;
+static int animation_fixed=1;
 static uint32_t weapon;
 static float expected_delta;
 #undef RECOMP_ICALL_SAFE_AT
@@ -54,8 +55,21 @@ UNUSED(sub_000BD0F0)
 UNUSED(sub_002B8EA0)
 UNUSED(sub_00088C60)
 UNUSED(sub_0010E700)
+/* Original event selector reads these controlled animation bounds and table. */
+enum { ANIM=0xa000, EVENT_TABLE=0xa100 };
+static unsigned event_previous,event_current,event_caller;
+void sub_00059CF0(void) { g_eax=ANIM;g_esp+=4; }
+void sub_00056FC0(void) { g_eax=EVENT_TABLE;g_esp+=4; }
+void sub_000585E0(void) {
+    MEM32(MEM32(g_esp+8))=event_current;
+    MEM32(MEM32(g_esp+12))=event_previous;
+    g_esp+=4;
+}
 /* GENERATED_ROUTINES */
-void sub_001BB5C0(void) { pc_native_weapon_fire_guest(sub_001BB5C0_gen); }
+void sub_001BB5C0(void) {
+    if(animation_fixed) pc_native_npc_weapon_fire_guest(sub_001BB5C0_gen,MEM32(g_esp));
+    else pc_native_weapon_fire_guest(sub_001BB5C0_gen);
+}
 static void call(unsigned whole,float delta)
 {
     MEM32(0x4e7944)=whole;MEMF(0x4e794c)=delta;
@@ -162,8 +176,59 @@ static void check_scoped(void)
     Snapshot before=snapshot();call(1,0);equal(before,snapshot());
     printf("PASS: scoped scope, %u NPC weapon configurations, original ammo counters and sound positions, quarter-speed schedules, pause, variable/catch-up steps and ineligible actors\n",scenarios);
 }
+static void event_frame(unsigned whole,float delta,unsigned previous,unsigned current) {
+    MEM32(0x4e7944)=whole;MEMF(0x4e794c)=delta;
+    event_previous=previous;event_current=current;
+    expected_delta=g_tsfp_native_timing_active && delta>0 && !whole?1:(float)whole;
+    g_esp=STACK;MEM32(STACK)=0x12345678;
+    g_esi=STATE;g_edi=ACTOR;g_ebx=0xabcd;g_ebp=0xdead;
+    if(event_caller) {
+        g_ebp=STATE;g_esi=ACTOR;g_ebx=0xa200;
+        sub_0027AE14();
+        assert(g_ebp==STATE && g_esi==ACTOR && g_ebx==0xa200);
+        g_ebp=0xdead;g_esi=STATE;g_ebx=0xabcd;g_edi=ACTOR;
+    } else sub_002B9BCE();
+    assert(g_esp==STACK+4 && g_fp_top==0);
+    assert(g_esi==STATE && g_edi==ACTOR && g_ebx==0xabcd && g_ebp==0xdead);
+    assert(!(MEM32(STATE+0x2c)&0x400));
+    assert(MEM32(0x4e7944)==whole && MEMF(0x4e794c)==delta);
+}
+static void check_animation_event(void) {
+    MEM16(EVENT_TABLE+6)=1;MEM16(EVENT_TABLE+8)=1;MEM16(EVENT_TABLE+10)=0x200;
+    /* Pre-fix wrapper drops the crossed marker; the following whole-tick
+     * frame cannot retry it because the animation bounds have advanced. */
+    for(event_caller=0;event_caller<2;event_caller++) {
+        prepare(1,0,0,1);animation_fixed=0;g_tsfp_native_timing_active=1;
+        event_frame(0,5.f/12,0,1);event_frame(1,1,1,1);
+        assert(!projectiles && !sounds);
+    }
+    animation_fixed=1;
+    const float deltas[]={1,.5f,5.f/12,5.f/48};
+    for(event_caller=0;event_caller<2;event_caller++) for(unsigned i=0;i<4;i++) {
+        prepare(1,0,0,1);scoped=1;g_tsfp_native_timing_active=i!=0;
+        event_frame(i?0:1,deltas[i],0,1);
+        printf("npc_animation_event delta=%.6f shots=%u sounds=%u\n",deltas[i],projectiles,sounds);
+        assert(projectiles==1 && sounds==1);
+        assert(MEM16(STATE+0x61e)==999 && MEM32(weapon+0x10c)==1);
+        assert(fabsf(MEMF(weapon+0x104)-1.f/60)<.00001f);
+        Snapshot once=snapshot();event_frame(1,1,1,1);equal(once,snapshot());
+    }
+    event_caller=0;
+    prepare(1,0,0,1);g_tsfp_native_timing_active=1;
+    event_frame(0,0,0,1);assert(!projectiles && !sounds);
+    event_frame(1,0,0,1);assert(!projectiles && !sounds);
+    for(unsigned reject=0;reject<3;reject++) {
+        prepare(1,0,0,1);
+        if(reject==0)MEM32(STATE+4)=0;
+        if(reject==1)MEM32(ACTOR+0x34)=0;
+        if(reject==2)MEM32(weapon+0x30)=UINT32_MAX;
+        Snapshot before=snapshot();event_frame(0,5.f/12,0,1);equal(before,snapshot());
+    }
+    puts("PASS: two original animation-event caller branches, dropped-event counterfactual, single shot/audio/ammo transaction, no retry duplicates, pause and rejected actors");
+}
 int main(void)
 {
+    setvbuf(stdout,NULL,_IONBF,0);
     unsigned char *memory=calloc(1,0x800000);
     const unsigned rates[]={60,120,144};
     assert(memory);g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
@@ -182,6 +247,7 @@ int main(void)
         call(0,0);assert(projectiles==before);
     }
     check_scoped();
+    check_animation_event();
     free(memory);
     puts("PASS: original NPC firing execution and scoped checks; production parity evaluated separately");
     return 0;

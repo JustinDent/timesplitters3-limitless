@@ -23,6 +23,15 @@ published release or a full-game 144 FPS certification.
   Source-only while the user plays; Windows rebuild, live sniper confirmation
   and actual Mac execution remain pending.
   [Sniper evidence](docs/native-high-refresh-regressions.md#sniper-damage-on-fractional-frames).
+- NPC animation-event firing now preserves a crossed firing marker on a
+  fractional frame. Two original caller branches discarded the marker when
+  the whole-tick weapon gate rejected it. A shared caller-specific wrapper
+  executes one transaction for that event and restores live timing; held-fire
+  callers retain their existing cadence. The original selector/caller/firing
+  chain passes shots, sounds, ammo, no-duplicate, pause and rejection checks.
+  This is not yet tied to the first-mission enemies; their movement report
+  remains open. Windows build/live verification and actual Mac execution are
+  pending. [Event evidence](docs/native-high-refresh-regressions.md#npc-animation-marker-shots).
 - Beam-manager lifetime audit passes without a runtime change: the original
   type-32 manager starts an undelayed beam on its first update and expires it
   near 1.2 game seconds at 60/120/144, including quarter-speed and paused

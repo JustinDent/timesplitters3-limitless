@@ -181,7 +181,8 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                  (0x45cf0,0x45d5e),(0xa5a60,0xa5aa9),
                                  (0x238510,0x23854c),(0x2382b0,0x23833b),
                                  (0x3533f0,0x3533f6),(0x358560,0x358590),
-                                 (0x35de60,0x35de66)]),
+                                 (0x35de60,0x35de66),(0x61570,0x6160f),
+                                 (0x2b9bce,0x2b9c0d),(0x27ae14,0x27ae84)]),
     ('native_object_bounce.c', [(0xa84f0,0xa8a97),
                               (0x151650,0x15178f),(0x153550,0x1535a1),
                               (0x153650,0x1536a0),(0x153270,0x1533e0),
@@ -297,6 +298,15 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             end=config.va_to_file_offset(0xceaa5)
             assert image[start:end].hex()=='8b0d44794e0085c97e0e8d742414e8208fffffa1c00c7b00'
             image=image[:end]+b'\xc3'+image[end+1:]
+        if harness_name=='native_npc_weapon_fire.c':
+            # Complete animation-event branch, ending before the next state
+            # transition. The event test, call and flag cleanup remain original.
+            end=config.va_to_file_offset(0x2b9c0c)
+            assert image[end:end+3].hex()=='8b4f04'
+            image=image[:end]+b'\xc3'+image[end+1:]
+            end=config.va_to_file_offset(0x27ae83)
+            assert image[end]==0x56
+            image=image[:end]+b'\xc3'+image[end+1:]
         if harness_name=='native_weapon_cooldown.c':
             # Execute the complete deferred-action cooldown branch. All its
             # exits join here; replace only the following instruction by RET.
@@ -312,6 +322,13 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         code='\n'.join(f'void {info["name"]}(void);' for info in functions.values())+'\n'
         code+='\n'.join(translator.translate_function(start,info)
                        for start,info in functions.items())
+        if harness_name=='native_npc_weapon_fire.c':
+            # Match production's manual NPC entry wrapper at both caller sites.
+            assert code.count('0x001BB5C0u, sub_001BB5C0_gen,')==2
+            code='void sub_001BB5C0(void);\n'+code.replace(
+                '0x001BB5C0u, sub_001BB5C0_gen,',
+                '0x001BB5C0u, sub_001BB5C0,')
+
     finally:
         vars(config).update(previous)
     harness=(ROOT/'tests'/harness_name).read_text()
@@ -330,6 +347,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         if any(int(r['frozen']) for r in rows if r['fps']!='60'):
             raise ObjectRockingQuantization(output)
     if harness_name=='native_npc_weapon_fire.c':
+        print(output)
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_fire_audit ')]
         assert len(rows)==6,output

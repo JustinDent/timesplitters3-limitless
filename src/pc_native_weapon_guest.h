@@ -26,4 +26,19 @@ static void pc_native_weapon_fire_guest(void (*original)(void))
     *ticks=saved_ticks;
     *delta=saved_delta;
 }
+/* These two US callers consume a crossed animation marker (0x200), then
+ * clear their firing flags on the same callback. It cannot be retried on
+ * the next whole tick. Treat that single event as one firing transaction;
+ * all held-fire callers retain their original whole-tick cadence. */
+static void pc_native_npc_weapon_fire_guest(void (*original)(void),
+                                            uint32_t return_address)
+{
+    uint32_t *ticks=(uint32_t *)((uintptr_t)0x4E7944u+g_xbox_mem_offset);
+    const float *delta=(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+    int event=g_tsfp_native_timing_active && *ticks==0 && *delta>0 &&
+              (return_address==0x27AE66u || return_address==0x2B9BF8u);
+    if (event) *ticks=1;
+    pc_native_weapon_fire_guest(original);
+    if (event) *ticks=0;
+}
 #endif
