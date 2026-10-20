@@ -1,5 +1,56 @@
 # Measured progress
 
+## Texture batch 228: six new material replacements (2026-10-20)
+
+Generated eight independently prompted opaque material edits with built-in
+image_gen from catalog/game hash-verified originals. Six accepted offline and
+installed: b77332647951a993 (vertical wood/bark), b91500009d86c674 (pale plaster),
+b9f511254b72f1fd (gray-tan granular plaster), ba6bf06901ad3351 (pink stucco),
+ae9f631c15b0e4a1 (warm tan granular material), 9cdf98c69a47ee62 (gray concrete).
+Full comparisons, 2x2 repeats and selected original-grid views retain broad
+features, UV positions and material identity while adding fine surface detail.
+Existing edge transitions are recorded; scene adjacency/lighting is unverified.
+
+Two drafts remain unfinished: b4ed22186a629045 is 14.01% darker and needs its
+cool-gray brightness restored; b9d94dbe9b75f1c6 shifts purple-gray minerals
+toward copper/red and needs palette/contrast correction. Neither installed.
+Accepted luminance changes are -7.83%, +1.99%, -4.38%, -1.41%, +4.65%, +9.05%
+in the installed-key order above. These metrics support review, not UV proof.
+
+Actual generated sources: seven 1254x1254, one 1774x887. Installed outputs:
+five 1024x1024 and one 1024x512, all LANCZOS downsampled without cropping,
+color edits or aspect change. This batch is not native 4K artwork. All eight
+generated sources retained privately (30,336,670 bytes), with exact prompts,
+source sizes and per-key decisions in authored/*-prompt.json and review/
+hybrid-228-{selection,prompts,generation,decisions,memory-review}.json.
+
+All five comparison sheets remained in memory, avoiding 2,112,842 raster bytes.
+The saved technical review script reproduces all metrics and sheet hashes
+exactly, including after removing eight newly created original PNG caches.
+Those exports matched catalog spans and decoded pixels before retirement;
+840,524 bytes reclaimed. Game archives, generated artwork, historical evidence
+and previously denied cleanup paths remain intact. Retirement proof is private
+review/hybrid-228-original-export-retirement.json.
+
+Six new Windows native parser runs pass. The other 1,398 installed DDS hashes
+and checker identity match prior evidence; all 1,404 pass fresh Python format,
+metadata, dimensions, aspect, mip and hash audit. Counts: 1,404 installed,
+5,281 needing art, 127 held drafts. Inventory stays 6,121 classified and 691
+unclassified. Current progress counts, worklist and hybrid queue refreshed.
+
+One pack is 1,122,103,298 bytes including metadata (1070.12 MiB), up 3,848,222
+bytes and below 6144 MiB. Temporary output about 255.11 MiB remains below
+256 MiB. Workspace including source art about 6622.34 MiB logical/allocated
+by the existing helper; measured free disk about 76.12 GiB. Helper allocation
+is not independent physical-allocation proof. No duplicate game/build/staging.
+
+No gameplay, personal settings/save changes, publication or runtime/adapter
+changes. MAC-011 remains Awaiting validation for Mac GPU, mapped scenes,
+transparency and 512 MiB residency. Windows parser success does not establish
+Mac GPU or scene support. Full discovery/category and consolidated scene/
+display-mode validation remain unfinished. Private review/hybrid-228-acceptance.json
+links decisions, parser checks, source provenance, cleanup and storage.
+
 ## Texture batch 227: atlas and channel-semantics inventory (2026-10-20)
 
 Reviewed 128 more catalog/game hash-verified originals: 89 opaque and 39
