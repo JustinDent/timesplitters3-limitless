@@ -1565,10 +1565,39 @@ not a wall-clock runtime measurement.
 All 146 shared timing, float/vehicle-join, CI-scope and backlog checks pass on
 Windows x64/MSVC (`logs/native-visual-time-shared.log`, 71.87 seconds).
 The store slice and distortion fixture are registered in the existing shared
-native timing suite. Patch-upgrade and full Windows build/live validation
-remain pending at this source checkpoint. The user's interactive `8893ba8`
-process is unchanged. Actual Mac execution, live distortion visuals, full
-replay/network/level lifecycle behavior and world texture animation remain
+native timing suite. All 21 patch-upgrade checks pass (399.99 seconds), and
+the regenerated game contains exactly nine direct clock-store hooks and one
+scoped distortion read. The generation fingerprint is current. Runtime source
+is committed locally as `ae410c4`; the supported Windows Release build and
+built-in checks pass, with matching crash symbols. The physical-controller
+routing subtest skips because foreground activation was refused. Executable
+SHA-256: `2c77a2aa320732d9a5b492c68c169d8104c446f5437cfc53626dbc9524dcbaab`.
+
+The 120-second native-144 Story replay passes movement, hand animation,
+firearm handoff, ammunition use, pause/resume and fresh guest-only presents.
+The reviewed final capture shows the canyon, firing weapon and HUD. Its
+7,846 active CPU intervals over 56.7008 seconds average 138.375 updates/s:
+p50 7.056 ms, p95 8.8298 ms, p99 10.1903 ms, worst 34.8258 ms, game/wall and
+raw/wall ratios 1.0. The older interactive session was still running during
+this test. These are concurrent-load CPU measurements, not isolated FPS
+improvement, stable-144, monitor scanout or live-distortion acceptance.
+
+The subsequent original-60 replay reached Story but closed around 60 seconds,
+before pause/resume and the scripted movement/fire checks. Its log records
+`window closed by the user`, exit 0, and no runner termination. Validation
+correctly reports incomplete/failed acceptance; this is not a passing
+original-60 comparison or evidence of a crash. The older interactive PID
+32624 also ended with a logged user window close. No window was relaunched.
+The temporary original image was removed only after both its PID was absent
+and the new native replay passed, with both image hashes checked. Personal
+controls/display hashes stayed unchanged. Final captures and validation
+records remain; redundant captures and disposable test disks were recycled.
+
+Evidence: `logs/native-visual-time-{shared,upgrades,generated,build,live,original60}.log`,
+the focused store/distortion logs, `private/pipeline/visual-time-build-handoff.json`,
+and `private/test-saves/high-refresh/{native-144-,60-}visual-time-*` records.
+Actual Mac execution, live distortion visuals, complete original-60 comparison,
+full replay/network/level lifecycle behavior and world texture animation remain
 unverified; this correction does not close the full high-refresh goal.
 
 ## Bridge-crash placement investigation

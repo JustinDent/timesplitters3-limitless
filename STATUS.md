@@ -6,7 +6,7 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
-- Source now supplies fractional level time to the audited screen-distortion
+- Build `ae410c4` now supplies fractional level time to the audited screen-distortion
   read. Direct clock stores update a shared fractional offset, explicit
   reset/demo/network writes rebase it, and render calls only sample it.
   Guest integer clocks are unchanged. The original-code fixture exercises
@@ -14,9 +14,15 @@ published release or a full-game 144 FPS certification.
   1,152, matching the exact fractional probe and original tick-boundary data.
   All nine original direct stores have ABI/rebase checks; the model covers
   pause, skipped updates, carry across reset, catch-up and long-run drift.
-  All 146 shared checks pass. Full Windows build/live checks are pending;
-  the user's running `8893ba8` build is unchanged. Actual Mac validation and
-  complete replay/network/level lifecycle acceptance remain open.
+  All 146 shared checks, 21 patch-upgrade checks, the full Windows build and
+  two-minute native-144 gameplay/pause replay pass. Active intervals average
+  138.375 updates/s with 1x game speed while the older interactive session is
+  also open; this is not a stable-144 or isolated performance measurement.
+  The original-60 comparison was closed before completion (normal window
+  close, exit 0) and remains incomplete. The interactive window was also closed;
+  no session was restarted, and its retained old image was removed after
+  validating the new build. Actual Mac and live distortion visual acceptance,
+  plus complete replay/network/level lifecycle checks, remain open.
   [Fractional clock correction](docs/native-high-refresh-regressions.md#fractional-screen-distortion-clock).
 - An offline original-code screen-distortion audit reproduces a remaining
   visual timing limit: 672 of 1,152 native-144 mesh updates repeat over eight
@@ -27,9 +33,9 @@ published release or a full-game 144 FPS certification.
   as consumer checks; actual clock lifecycle integration is still required.
   All 139 shared checks passed on Windows. This was evidence for the source
   correction above, not a GPU test.
-  The interactive `8893ba8` build is unchanged.
+  That audit left the then-interactive `8893ba8` build unchanged.
   [Distortion audit](docs/native-high-refresh-regressions.md#screen-distortion-absolute-time-audit).
-- Current build `8893ba8` corrects a reproduced MapMaker light-preview regression:
+- Previous build `8893ba8` corrects a reproduced MapMaker light-preview regression:
   the original mode-3 zero-whole-tick branch replaces a white preview with
   black even while its decision timer is unchanged. Shared source now retains
   its last color between authored decisions and during native pause. The
