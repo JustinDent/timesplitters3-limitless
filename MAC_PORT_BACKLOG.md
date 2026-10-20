@@ -1091,6 +1091,10 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   FFmpeg decoder with controlled time, comparing all EA-intro image/timestamp/
   PCM hashes across original 60 and native 60/120/144. GPU/audio-device output
   are mocked; this does not validate audible sync or native Mac playback.
+  Real Windows waitable-timer runs also preserve all decoded EA-intro content
+  at 60/120/144 and verify the playback timer handle is invalid after close.
+  Poll completion includes decode/test hashing; display cadence and actual
+  Mac clock/wait execution remain separate acceptance checks.
 - **PC behavior:** Windows uses FFmpeg to decode XMV movies, draws their frames and submits movie PCM audio.
 - **PC source:** Audited revision above; `external/ts3FPrecomp/src/d3d/d3d8_movie.c`, `tools/fetch-video.ps1`, `tools/build-native-mac.py`, `src/native/gl_bridge.inc`.
 - **PC validation:** [Windows validation](STATUS.md#validation) records EA/Free Radical intro decoding and PCM submissions; this is not exhaustive movie/audio fidelity.

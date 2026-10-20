@@ -15,7 +15,8 @@ MOVIE = ROOT / 'private/game/xmv/eag_e.xmv'
 
 @pytest.mark.skipif(os.name != 'nt' or not MOVIE.exists(),
                     reason='Requires Windows host movie backend and local XMV data')
-def test_real_movie_native_cadence(tmp_path):
+@pytest.mark.parametrize('live_clock', [False, True], ids=['controlled-clock', 'windows-timers'])
+def test_real_movie_native_cadence(tmp_path, live_clock):
     xbe = ROOT / 'private/game/default.xbe'
     assert hashlib.sha256(xbe.read_bytes()).hexdigest() == (
         '3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc')
@@ -28,6 +29,8 @@ def test_real_movie_native_cadence(tmp_path):
                 ROOT/'src', ffmpeg/'include']
     executable = tmp_path/'movie.exe'
     command = [compiler, '/nologo', '/O2', '/std:c11', '/DXMV_HAVE_FFMPEG']
+    if live_clock:
+        command.append('/DLIVE_HOST_CLOCK')
     command += ['/I'+str(p) for p in includes]
     command += [str(ROOT/'tests/native_movie_file.c'), str(src/'video/xmv_demux.c'),
                 str(src/'video/xmv_decode.c'), str(src/'hle/xbox_adpcm.c'),
@@ -38,13 +41,16 @@ def test_real_movie_native_cadence(tmp_path):
     environment = {k:v for k,v in env.items() if not k.startswith(('TSFP_', 'RECOMP_'))}
     environment['RECOMP_FFMPEG_DIR'] = str(ffmpeg/'bin')
     results = []
-    for rate in ('original', '60', '120', '144'):
+    for rate in (('60', '120', '144') if live_clock else ('original', '60', '120', '144')):
         result = subprocess.run([str(executable), str(MOVIE), rate], cwd=tmp_path,
                                 env=environment, capture_output=True, text=True, timeout=60)
         (tmp_path/f'movie-{rate}.log').write_text(result.stdout+result.stderr, encoding='utf-8')
         assert result.returncode == 0, result.stdout+result.stderr
         line = next(line for line in result.stdout.splitlines() if line.startswith('RESULT '))
         print(line)
+        if live_clock:
+            timing = next(line for line in result.stdout.splitlines() if line.startswith('TIMING '))
+            print(timing)
         values = dict(re.findall(r'(\w+)=(\S+)', line))
         assert 'PASS:' in result.stdout
         results.append(values)

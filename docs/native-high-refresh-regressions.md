@@ -1833,6 +1833,29 @@ This compares actual decoded content and update protocol, not real-time CPU
 usage, OS timer accuracy, audible synchronization, on-screen presentation,
 skip/input latency, attract-movie completion or full cinematic coverage.
 
+The file fixture now also builds with `LIVE_HOST_CLOCK`, using real Windows
+QueryPerformanceCounter and waitable timers without virtual-time overrides.
+All native 60/120/144 runs emit the same 88 pictures, full image/timestamp
+hashes and 511,912 PCM bytes as the controlled original-60 reference above.
+After close, the saved timer handle fails `GetHandleInformation` with
+`ERROR_INVALID_HANDLE`, and the player's timer/state fields are cleared.
+No GPU window or audio device is opened; the user's interactive game remains
+running on `b3c30cf` throughout. The two focused tests pass in 12.24 seconds
+(`logs/native-movie-windows-timers.log`).
+
+| Native target | Poll intervals | Mean (ms) | p50 (ms) | p95 (ms) | p99 (ms) | Max (ms) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 60 | 176 | 16.6547 | 16.6287 | 19.1922 | 19.5307 | 20.0750 |
+| 120 | 350 | 8.3262 | 8.5138 | 10.6537 | 10.9167 | 11.0859 |
+| 144 | 419 | 6.9374 | 7.0187 | 9.2085 | 9.5942 | 9.9869 |
+
+These are intervals between completed player polls, including actual decode
+and full-frame test hashing, measured alongside the older interactive session.
+They demonstrate bounded host polling and successful OS-timer integration,
+not isolated wake-up latency, GPU presentation, scanout or full-game frame
+pacing. This follow-up changes fixtures/documentation only; the ready game
+executable remains the validated `3c2fcc2` build.
+
 ## Bridge-crash placement investigation
 
 The user reports a later ship crash intruding into the playable canyon,

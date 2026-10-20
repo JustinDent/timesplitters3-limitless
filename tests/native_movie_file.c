@@ -3,12 +3,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-static int64_t host_counter,host_frequency=10000000,deadline;
-static unsigned creates,closes,waits,sleeps;
-static int fail_create,fail_set,fail_wait,fail_clock;
 static const char *setting;
 const char *recomp_config_lookup(const char *env,const char *key)
 { assert(!strcmp(env,"TSFP_NATIVE_FPS") && !strcmp(key,"native_fps"));return setting; }
+#ifndef LIVE_HOST_CLOCK
+static int64_t host_counter,host_frequency=10000000,deadline;
+static unsigned creates,closes,waits,sleeps;
+static int fail_create,fail_set,fail_wait,fail_clock;
 static BOOL qpf(LARGE_INTEGER *n) { n->QuadPart=host_frequency;return !fail_clock; }
 static BOOL qpc(LARGE_INTEGER *n) { n->QuadPart=host_counter;return !fail_clock; }
 static HANDLE create(void) { if(fail_create)return NULL;creates++;return (HANDLE)(uintptr_t)creates; }
@@ -26,6 +27,7 @@ static void sleep_ms(DWORD ms) { assert(ms==1);sleeps++;host_counter+=host_frequ
 #define SetWaitableTimer set_timer
 #define WaitForSingleObject wait_timer
 #define Sleep sleep_ms
+#endif
 #define TSFP_PC_CONTROLS 1
 #include "hle/hle_xmv_play.c"
 
@@ -36,6 +38,11 @@ size_t g_xbox_total_ram=sizeof guest;
 RECOMP_TLS uint32_t g_eax,g_ecx,g_edx,g_esp;
 static uint64_t image_hash=1469598103934665603ull,audio_hash=1469598103934665603ull,audio_bytes;
 static unsigned image_count;
+#ifdef LIVE_HOST_CLOCK
+static double intervals[10000];
+static int compare_intervals(const void *a,const void *b)
+{ double x=*(const double *)a,y=*(const double *)b;return (x>y)-(x<y); }
+#endif
 static uint64_t hash_bytes(uint64_t hash,const uint8_t *p,size_t n)
 { for(size_t i=0;i<n;i++)hash=(hash^p[i])*1099511628211ull;return hash; }
 int xbox_EnvSwitch(const char *name,int fallback) { return fallback; }
@@ -56,18 +63,41 @@ int main(int argc,char **argv) {
     g_xbox_mem_offset=(ptrdiff_t)guest;strcpy((char *)guest+0x1000,"d:\\xmv\\eag_e.xmv");
     uint32_t width,height,pts=0;int handle=xmv_play_open(0x1000,&width,&height);assert(handle>0);
     unsigned polls=0,status;uint64_t timestamp_hash=1469598103934665603ull;
+#ifdef LIVE_HOST_CLOCK
+    assert(setting); /* The unchanged console flip gate is outside this test. */
+    LARGE_INTEGER start,last,now,freq;
+    QueryPerformanceFrequency(&freq);QueryPerformanceCounter(&start);last=start;
+#endif
     do {
         status=xmv_play_update(handle,0,&pts);polls++;
         if(status==1)timestamp_hash=hash_bytes(timestamp_hash,(const uint8_t *)&pts,4);
+#ifdef LIVE_HOST_CLOCK
+        QueryPerformanceCounter(&now);
+        assert(polls<=10000 && now.QuadPart-start.QuadPart<freq.QuadPart*10);
+        if(polls>1)intervals[polls-2]=(double)(now.QuadPart-last.QuadPart)*1000/freq.QuadPart;
+        last=now;
+#else
         assert(polls<1000000 && host_counter<host_frequency*60);
         /* Original console path's flip wait is modeled at 60 Hz. The native
          * movie path must impose its own cap on a much faster guest loop. */
         if(status!=2)host_counter+=setting?1000:host_frequency/60;
+#endif
     } while(status!=2);
     assert(image_count>30 && audio_bytes>1000);
     printf("RESULT rate=%s polls=%u pictures=%u duration_ms=%u image_hash=%016llx timestamp_hash=%016llx audio_bytes=%llu audio_hash=%016llx\n",
         argv[2],polls,image_count,xmv_play_time(handle),image_hash,timestamp_hash,audio_bytes,audio_hash);
+#ifdef LIVE_HOST_CLOCK
+    HANDLE timer=g_movies[handle-1].pacing.timer;assert(timer);
+    unsigned n=polls-1;qsort(intervals,n,sizeof *intervals,compare_intervals);
+    double total=0;for(unsigned i=0;i<n;i++)total+=intervals[i];
+    printf("TIMING rate=%s intervals=%u mean_ms=%.6f p50_ms=%.6f p95_ms=%.6f p99_ms=%.6f max_ms=%.6f\n",
+           argv[2],n,total/n,intervals[n/2],intervals[n*95/100],intervals[n*99/100],intervals[n-1]);
+    xmv_play_close(handle);
+    DWORD flags;assert(!GetHandleInformation(timer,&flags) && GetLastError()==ERROR_INVALID_HANDLE);
+    assert(!g_movies[handle-1].pacing.timer && !g_movies[handle-1].used);
+#else
     xmv_play_close(handle);assert(creates==closes);
+#endif
     puts("PASS: real XMV decode and PCM capture completed through paced player; GPU/audio-device output mocked");
     return 0;
 }
