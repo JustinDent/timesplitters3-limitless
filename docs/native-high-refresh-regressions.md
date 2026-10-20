@@ -1799,8 +1799,39 @@ Invalid/closed handles do not wait, and close releases the timer exactly once.
 Evidence: `logs/native-movie-pacing-model.log` and
 `logs/native-movie-update.log`. These checks establish scheduling and update
 protocol behavior, not decoded image quality, audible synchronization, real
-CPU savings or human skip latency. Full patch-upgrade/shared/build checks and
-isolated real-file movie validation are pending at this source checkpoint.
+CPU savings or human skip latency.
+
+Source `3c2fcc2` passes all 152 shared timing/float/vehicle/CI-scope/backlog and
+existing movie-stop checks in 76.77 seconds (`logs/native-movie-shared.log`),
+plus all 21 complete patch-upgrade checks in 351.81 seconds
+(`logs/native-movie-patch-upgrades.log`). The supported Windows MSVC x64 Release
+build and built-in checks pass (`logs/native-movie-build.log` / `.err`).
+Executable SHA-256:
+`16ddf892fc209737f682345c5d7203945bc531a52dadb471e9f231c180c753f7`.
+The interactive PID 22536 remains on its retained `b3c30cf` executable; no
+restart or game input was performed for this validation. Personal controls and
+display hashes match the pre-build record. A redundant 274,829-byte standalone
+compiler folder remains at `build/path-tests/native-movie-file`: automatic
+approval review blocked its cleanup; no alternate deletion was attempted.
+
+`tests/test_native_movie_file.py` additionally compiles the complete Windows
+host player plus the real XMV demuxer, FFmpeg decoder and ADPCM helper against
+the local verified dependency. It reads `private/game/xmv/eag_e.xmv`, with a
+controlled host clock/wait implementation and mocked GPU/audio-device output.
+It runs windowlessly, does not touch saves/settings, and explicitly skips on
+hosts without the Windows backend or local data/dependency. The shared CI
+workflow includes this optional test; a skip does not establish real decoding.
+The local test passes in 2.14 seconds (`logs/native-movie-real-file.log`).
+
+Original 60-Hz polling and native 60/120/144 all emit 88 pictures with identical
+full BGRA sequence hash `ab1283f013e63d41`, timestamp sequence hash
+`6e7e769a7ca873f5`, and 511,912 PCM bytes with hash `84ca1802fb1feb6d`.
+Poll counts are 177/177/351/420, and modeled EOF observation times are
+2,933/2,933/2,916/2,909 ms respectively. The last picture and following EOF are
+observed at polling boundaries; picture timestamps themselves remain exact.
+This compares actual decoded content and update protocol, not real-time CPU
+usage, OS timer accuracy, audible synchronization, on-screen presentation,
+skip/input latency, attract-movie completion or full cinematic coverage.
 
 ## Bridge-crash placement investigation
 

@@ -12,8 +12,12 @@ published release or a full-game 144 FPS certification.
   waiting. Shared timing policy retains movie/audio clocks and releases its
   timer on playback close. With synthetic packet/audio backends, the actual
   movie updater delivers the same 90 timestamps and 2,880 audio bytes using
-  643 polls instead of 44,502 at native 144. Real playback/build validation
-  is pending; native Mac movie support remains MAC-009.
+  643 polls instead of 44,502 at native 144. Build `3c2fcc2`, 152 shared checks
+  and 21 patch-upgrade checks pass. A windowless real EA-intro decode produces
+  identical image/timestamp/PCM hashes at original 60 and native 60/120/144.
+  On-screen playback, audible sync and real wait/input latency remain open;
+  native Mac movie support remains MAC-009. The user's session stays on
+  `b3c30cf`; this build is ready for its next launch.
   [Movie pacing](docs/native-high-refresh-regressions.md#native-movie-polling).
 - Shared source now samples fractional level time in the second, strip-based
   screen-distortion effect (`0xF9B4B`). The complete original-code fixture
