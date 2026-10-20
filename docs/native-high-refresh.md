@@ -39,6 +39,12 @@ button-state sampling at that cadence and clears consumed edges between those
 ticks, preventing a press from disappearing before the frontend can consume it.
 Raw mouse aiming and continuous rendering do not use that button gate.
 
+The entity post-update also uses live fractional time when deriving velocity
+from position changes. Its original whole-tick guard cleared the result on
+fractional updates even after an entity moved. This changes that guard only;
+collision response and remaining fixed-tick physics integrators still need
+separate validation.
+
 The recompiler also supports an optional title numeric-conversion header.
 Future Perfect uses it to read the adjacent fractional delta when an original
 instruction converts an integer frame delta to floating point. Ordinary

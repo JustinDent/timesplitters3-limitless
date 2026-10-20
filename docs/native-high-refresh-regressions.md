@@ -576,3 +576,73 @@ and validation results are retained in
 This single comparison is encouraging but does not establish repeatability,
 GPU/scanout timing, full-game coverage or sustained 144 FPS. The direct XNet
 dispatch still checks host settings; no persistent environment cache was added.
+
+## Entity velocity on fractional updates
+
+US entity post-update `sub_000A7360` derives entity+0xF8/0xFC/0x100 velocity
+from the position difference between +0x64 and +0xEC, divided by fractional
+game delta. Its guard at 0xA75E7 instead checked the integer delta. On a live
+interval without a whole tick, it wrote zero velocity and still updated the
+previous position, losing that interval's motion from the derived velocity.
+`pc_native_global_load` now supplies a live-game-time boolean at this site
+only. The original path, other loads, integer timers and division formula
+are unchanged; a paused interval does not divide by zero.
+
+`tests/native_entity_velocity.c` executes the complete original routine
+(0xA7360–0xA7666) and its linked-entity dispatcher (0xA7870–0xA79A2), translated
+from the hash-verified US XBE. Two entities receive prescribed positions;
+collision, sector and unrelated services are mocked and unused indirect
+callbacks fail the test. This is a velocity-derivation test, not a physics
+integration or collision-response test. It checks each update at 60/120/144,
+quarter speed, pause (including a changed position with a carried integer
+tick), stationary objects, three-tick and fractional catch-up, register/stack
+balance and preservation of integer/float delta fields. It also covers the
+original behavior and neighboring/unrelated loads.
+
+Before the guard change, the test fails with native=1, whole=0, delta=0.25:
+velocity is zero instead of 0.125 (`logs/native-entity-velocity-red.log`).
+With the fix, the timing/camera/auto-look/float/vehicle/frontend/entity suite
+has 56 passes (`logs/native-entity-velocity-regressions.log`). The final focused
+test also checks finite results and passes. The full Windows Release build,
+patch validation and built-in checks pass in
+`logs/native-entity-velocity-build.log`.
+
+Same-build 120-second original-60 and native-144 runs use walking, turning,
+firing, handoff and pause/resume replay. Both pass their reported behavioral
+checks and end with pistol ammunition 16 loaded / 80 reserve. The runner now
+samples entity previous-position and velocity alongside animation; these are
+asynchronous half-second reads, not atomic per-update observations.
+Six samples in the steady forward window 86.5–89.5 seconds have median body
+speeds 6.25886 / 6.25914 units per second. Position-derived forward speeds are
+6.26610 / 6.21808, about 0.77% apart. This narrow observation does not establish
+full movement/physics parity.
+
+The native CPU update trace after 85 seconds reports 75.247 updates/s,
+p50/p95/p99 intervals 9.9746/27.0758/31.4509 ms and maximum 84.0939 ms.
+Game and raw time advance at 0.998992 seconds per wall second; long intervals
+still encounter the original bounded catch-up policy. **Do not compare this
+as a clean performance regression against the prior 140.203 run.**
+Another game process (`sp26-cod`, PID 34128) started at 10:53:37 local time,
+before both tests. A follow-up measurement found 42.875 CPU seconds over
+5.837 wall seconds and 99.76% GPU 3D-engine utilization. That measurement is
+after the tests, not a synchronized GPU trace; the overlap makes performance
+acceptance inconclusive. The process was left unchanged. A clean pacing
+retest remains required.
+
+Both runs use executable SHA-256
+`076eec0128aa55f977ee5475701797b0342c7a5cab3936e3921efb0bf7b03b34`
+and runner
+`65b94927ec6bed6e603ec219d2274e3ce3dd2a280ef023550196b20ac0486e2a`.
+Labels are `60-handoff-none-entity-velocity` and
+`native-144-handoff-none-entity-velocity`. No captures, profiler, resource
+sampler or PresentMon were enabled. Validation, source/trace hashes and the
+contention note are in
+`private/test-saves/high-refresh/native-entity-velocity-comparison.json`.
+Mac execution, collisions, other physics/weapon paths and full-game acceptance
+remain unverified.
+
+Further audit candidates remain unchanged: 0xA84F0 contains a whole-tick
+physics loop whose per-step integration must be understood before conversion;
+weapon routines have whole-tick gates at 0x1B6FF0, 0x1BB5FD and 0x1BD044.
+The first also advances a float duration at 0x1B7194. These observations are
+an audit queue, not proven fixes or permission to replace every integer gate.

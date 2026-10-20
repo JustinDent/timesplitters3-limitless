@@ -254,7 +254,9 @@ def main():
                         cycle=word(model+0x124),flags=word(model+0x128),
                         next_clip=word(model+0x12c),next_time=floats(model+0x134,2),
                         blend=floats(model+0x198,1)[0],
-                        position=floats(entity+0x64,3))
+                        position=floats(entity+0x64,3),
+                        previous_position=floats(entity+0xec,3),
+                        velocity=floats(entity+0xf8,3))
         def handoff_actor():
             # Read-only equivalent of US sub_00163730's RBS1 actor lookup.
             first,last=word(0x790950),word(0x74c37c)

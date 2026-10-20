@@ -6,6 +6,21 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Entity post-update velocity no longer becomes zero solely because a live
+  native interval has no whole tick. The original entity routine and list
+  dispatcher reproduce the failure and pass with the site-specific guard,
+  including 60/120/144, quarter speed, pause, stationary objects and catch-up.
+  **56 timing/camera/auto-look/float/vehicle/frontend/entity checks** and the
+  Windows Release/built-in checks pass. Same-build original-60/native-144
+  120-second runs pass the available behavior checks with final ammunition
+  16/80. Sampled median body speeds are 6.25886 and 6.25914 units/s.
+  **Performance remains inconclusive:** the native run averaged 75.247 CPU
+  updates/s in its measured gameplay window while another game was running.
+  A follow-up sample found that process using 99.76% of the GPU 3D engine.
+  This is not a clean regression/improvement comparison; retest pacing with
+  hardware available. Build SHA-256:
+  `076eec0128aa55f977ee5475701797b0342c7a5cab3936e3921efb0bf7b03b34`.
+  [Full scope and limitations](docs/native-high-refresh-regressions.md#entity-velocity-on-fractional-updates).
 - Offline actor hooks now reject ineligible guest states before checking host
   network settings. A fresh 120-second native-144 before/after pair passes
   movement, firing, hand-animation, pause/resume and presentation checks.

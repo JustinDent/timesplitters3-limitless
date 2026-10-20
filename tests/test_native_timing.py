@@ -161,6 +161,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
     ('native_camera_track.c', [(0xcd691,0xcdd3e)]),
     ('native_menu_motion.c', [(0x2dab30,0x2dab77),(0x2daf90,0x2db005),
                             (0x2da0e0,0x2da440)]),
+    ('native_entity_velocity.c', [(0xa7360,0xa7666),(0xa7870,0xa79a2)]),
 ])
 def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     import hashlib

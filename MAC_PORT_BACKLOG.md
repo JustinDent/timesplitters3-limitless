@@ -2953,7 +2953,11 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   and NPC/player dispatchers, animation-event readers, camera motion and
   camera-effect timer/decay/collision-call cadence and mode-27 track sampling.
   The original frontend backdrop motion and texture alternation also have
-  fractional-time coverage. Usage is in
+  fractional-time coverage. The entity post-update velocity guard at 0xA75E7
+  uses live fractional game time, with the original routine and list dispatcher
+  exercised by `tests/native_entity_velocity.c`; collision services are stubbed.
+  This shared numeric policy needs no second Mac implementation, but actual
+  native execution remains pending. Usage is in
   `docs/native-high-refresh.md`.
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.

@@ -39,6 +39,10 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
  * Their keyframe span at 0xCD851 needs an adjacent sample even when the
  * integer delta is zero; the existing fractional weight then selects the
  * pose at that clock time. Keep multi-tick spans and cut detection intact.
+ * Entity post-update at 0xA75E7 divides position change by the float delta,
+ * but its integer guard otherwise replaces velocity with zero on fractional
+ * frames. Use the live game interval for that guard; its register is replaced
+ * before subsequent use, and paused intervals still avoid the division.
  * All other loads, including other reads of this same address, stay exact. */
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
@@ -49,7 +53,8 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
         return 1;
     if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
-         site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu) &&
+         site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
+         site == 0xA75E7u) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
