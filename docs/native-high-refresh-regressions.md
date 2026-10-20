@@ -1429,15 +1429,33 @@ or 4,128 quarter-speed intermediate frames without introducing dark subframes;
 paused probes preserve the same state. The unpatched counterexample remains
 part of the fixture. This proves the color decision/dispatch boundary, not
 actual model upload, GPU output, complete MapMaker operation or Mac execution.
-Build and live acceptance are pending.
+Runtime source is committed locally as `8893ba8`. The supported Windows Release
+build and built-in checks pass; the physical-controller routing subtest skips
+when Windows refuses foreground activation. All 138 shared checks and 21
+patch-upgrade checks pass. An additional original-code check preserves the
+complete parameter record, RGB table and RNG for one/two/three-tick catch-up.
+The generated original/manual wrapper declarations and fingerprint are current.
+Executable SHA-256:
+`56c319e0f4cd6fba9d3e9a6cbea169f0927870222897f1c0a91e791808a18de7`.
+
+The 120-second native-144 Story replay passes movement, firearm handoff/hand
+animation, ammunition use, pause/resume and fresh guest-only presents. The
+reviewed final capture shows the starting canyon, weapon and ammunition HUD.
+Active CPU intervals average 136.724 updates/s, p95 9.2886 ms, p99 11.3105 ms,
+worst 51.1706 ms; game/wall ratio is 0.999979 with the existing catch-up clamp.
+This is not a performance comparison, steady-144 proof, or MapMaker acceptance.
+Actual light/model rendering in MapMaker and actual Mac execution remain open.
+Evidence: `logs/native-light-preview-{shared,upgrades,full-build,live}.log`,
+`logs/native-light-preview-fixed.log` and
+`private/test-saves/high-refresh/native-144-light-preview-*`.
 
 The audit also records all nine direct writers of the absolute visual clock
 at 0x7DE318 in `private/pipeline/visual-clock-writes.asm`: ordinary increments,
 initialization, recorded playback and network synchronization. Smooth pulse
 and screen-distortion consumers still sample whole absolute time. They need
 fractional-phase support that respects those clock resets and overrides;
-globally replacing integer absolute-time reads has not been authorized by
-this evidence and is not part of this correction.
+globally replacing integer absolute-time reads is not justified by this
+evidence and is not part of this correction.
 
 ## Bridge-crash placement investigation
 

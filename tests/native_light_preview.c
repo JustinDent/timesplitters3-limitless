@@ -102,6 +102,21 @@ int main(void) {
         printf("light fixed fps=%u slow=%u retained=%u rng=%u decisions=%u\n",
             rates[r],slow,retained,random_calls,propagations);
     }
+    /* Positive whole/catch-up intervals must remain the original function,
+     * including its whole-count-dependent random deadline calculation. */
+    for(unsigned whole=1;whole<=3;whole++) {
+        uint32_t expected[10],actual[10],expected_rgb[3];
+        setup(3);MEM32(PARAMS+44)=0;g_tsfp_native_timing_active=0;
+        step(whole,whole+.125f,47);
+        memcpy(expected,(void *)(g_xbox_mem_offset+PARAMS+40),sizeof expected);
+        memcpy(expected_rgb,(void *)(g_xbox_mem_offset+0x7ac88c),sizeof expected_rgb);
+        unsigned expected_rng=random_calls;
+        setup(3);MEM32(PARAMS+44)=0;g_tsfp_native_timing_active=1;
+        step(whole,whole+.125f,47);
+        memcpy(actual,(void *)(g_xbox_mem_offset+PARAMS+40),sizeof actual);
+        assert(!memcmp(expected,actual,sizeof expected) && random_calls==expected_rng);
+        assert(!memcmp(expected_rgb,(void *)(g_xbox_mem_offset+0x7ac88c),sizeof expected_rgb));
+    }
     puts("PASS: original light flicker decisions, RNG, colors and paused/fractional retention at 60/120/144");
     free(memory);return 0;
 }
