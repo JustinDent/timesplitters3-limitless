@@ -24,7 +24,31 @@ and issue-form/resolution checks. Integration with main preserves PR #216's
 seven-row count, row reset and Back-navigation assertions. The integrated Windows
 FOV fixture also passes locally with MSVC and the existing pinned runtime.
 Fresh PR CI validates the final merge before it is accepted; no gameplay was run.
-No Windows, GPU, visual or gameplay validation is claimed. See MAC-054.
+No local GPU, visual or gameplay validation is claimed. See MAC-054.
+
+## Native launcher confirmation dialog layout (2026-10-20)
+
+Prepared on `codex/launcher-dialog-layout` from main `164c492`, in the commit
+carrying this entry. The standalone confirmation window used Fluent default
+buttons rather than the shared launcher theme and added both actions to its
+vertical message stack. It now explicitly loads the existing shared page theme
+and places Cancel/Continue together on the right, with 100-pixel minimum widths,
+12-pixel spacing, consistent 24-pixel padding and a blue primary action.
+Error alerts use the same native window adapter. Long messages scroll above
+the action row; native title bars remain system-managed.
+
+Local validation: macOS 27.0.1 (26A434), ARM64, pinned .NET SDK 8.0.426,
+Avalonia 11.3.22, Python 3.13.16. Signed native build, 24 launcher regression
+groups, 13 texture installer checks, one startup UI check and nine shared UI
+groups pass. Inspected actual modal renders at 480 pixels wide: the reported
+install confirmation, a long scrolling confirmation and a one-button alert.
+All retain visible, aligned controls with no overlap. The new build's read-only
+prerequisite check passes against the current portable installation folder.
+
+Windows still uses its existing OS message boxes; no Windows visual change is
+claimed. Both host CI checks run for this change, with results recorded in the
+PR. No game was started, personal installation or settings changed, or release
+published by this task.
 
 ## Fixed 60 FPS restoration (2026-10-20)
 

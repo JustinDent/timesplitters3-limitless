@@ -85,7 +85,7 @@ namespace TimeSplitters.Launcher
             Label("ChannelBadge",Preview?"●  PREVIEW CHANNEL":"●  STABLE CHANNEL");
             if(render){Label("ReleaseTitle","Native Mac launcher");Label("ReleaseDescription","Preview layout · native Mac releases appear here when published.");Label("UpdateStateLabel","MAC PREVIEW");Status("Preview only · no game launched, network requests or personal files changed.");}
         }
-        async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);if(!Find<Control>("CommandCenter").IsVisible){var alert=new Window{Title="TimeSplitters",Width=480,SizeToContent=SizeToContent.Height,WindowStartupLocation=WindowStartupLocation.CenterOwner};var panel=new StackPanel{Margin=new Thickness(24)};panel.Children.Add(Text(e.Message));panel.Children.Add(Button("Close",()=>alert.Close()));alert.Content=panel;await alert.ShowDialog(this);}}}
+        async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);if(!Find<Control>("CommandCenter").IsVisible)await MessageDialog("TimeSplitters",e.Message,false).ShowDialog(this);}}
         async Task Check()
         {
             if(busy)return;int revision=++checkRevision;bool channel=Preview;Label("ReleaseTitle","Checking for updates…");
@@ -206,10 +206,39 @@ namespace TimeSplitters.Launcher
         public static Button Button(string label,Action action){var b=new Button{Content=label,Margin=new Thickness(0,4,0,8),Padding=new Thickness(16,10),HorizontalAlignment=HorizontalAlignment.Left};b.Click+=(s,e)=>action();return b;}
         public static StackPanel Heading(string eyebrow,string title,string description){var p=new StackPanel{Margin=new Thickness(30,24,30,18),Spacing=8};p.Children.Add(Text(eyebrow,11));p.Children.Add(Text(title,28));p.Children.Add(Text(description,13));return p;}
         public static ScrollViewer Scroll(Control content)=>new ScrollViewer{Content=content,HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled};
-        public async Task<bool> Confirm(string title,string text){var dialog=new Window{Title=title,Width=480,SizeToContent=SizeToContent.Height,CanResize=false,WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=Brush.Parse("#102031")};var p=new StackPanel{Margin=new Thickness(24),Spacing=12};p.Children.Add(Text(text));p.Children.Add(Button("Continue",()=>dialog.Close(true)));p.Children.Add(Button("Cancel",()=>dialog.Close(false)));dialog.Content=p;return await dialog.ShowDialog<bool>(this);}
+        static Window MessageDialog(string title,string text,bool confirmation)
+        {
+            var dialog=new Window{Title=title,Width=480,SizeToContent=SizeToContent.Height,CanResize=false,
+                WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=PageTheme.Brush("#102031"),FontFamily=new FontFamily("Arial")};
+            // Owned windows have a separate style scope. Load the same translated
+            // button templates used by the shared pages instead of Fluent defaults.
+            Ui.Theme(dialog);
+            var panel=new StackPanel{Margin=new Thickness(24),Spacing=24};
+            panel.Children.Add(new ScrollViewer{Content=PageTheme.Text(text,14),MaxHeight=360,
+                HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled});
+            var actions=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right,Spacing=12};
+            if(confirmation){
+                var cancel=new Button{Content="Cancel",MinWidth=100,IsCancel=true};
+                cancel.Click+=(s,e)=>dialog.Close(false);PageTheme.Secondary(cancel);actions.Children.Add(cancel);
+            }
+            var accept=new Button{Content=confirmation?"Continue":"Close",MinWidth=100};
+            accept.Click+=(s,e)=>dialog.Close(true);PageTheme.Primary(accept);actions.Children.Add(accept);
+            panel.Children.Add(actions);dialog.Content=new Border{Background=dialog.Background,Child=panel};
+            return dialog;
+        }
+        public Task<bool> Confirm(string title,string text)=>MessageDialog(title,text,true).ShowDialog<bool>(this);
         async Task Render()
         {
             string mode=args.First(a=>a.StartsWith("--render-"));int at=Array.IndexOf(args,mode);string output=args[at+1];
+            if(mode.Contains("confirm")||mode.Contains("alert")){
+                string message="This replaces the game runtime and restarts the launcher. Saves, game data and settings are preserved.";
+                if(mode.Contains("long"))message+="\n\n"+string.Join("\n\n",Enumerable.Repeat("Matching files will be updated. Other files are kept. You can cancel before installation begins.",8));
+                var dialog=MessageDialog(mode.Contains("alert")?"TimeSplitters":"Install v0.3.1-alpha.1?",message,!mode.Contains("alert"));
+                var shown=dialog.ShowDialog<bool>(this);await Task.Delay(350);
+                var body=(Control)dialog.Content;
+                using(var bitmap=new RenderTargetBitmap(PixelSize.FromSize(body.Bounds.Size,1),new Vector(96,96))){bitmap.Render(body);bitmap.Save(output);}
+                dialog.Close(false);await shown;Close();return;
+            }
             if(mode.Contains("settings")){ShowSettings();if(mode.Contains("graphics"))settings.SelectTab(1);if(mode.Contains("discord"))settings.SelectTab(2);}
             if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance(mode.Contains("diagnostics"));
             if(mode.Contains("versions")){versionsPage=new NativeVersions(root,client,()=>false,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;Page("VersionsHost");}

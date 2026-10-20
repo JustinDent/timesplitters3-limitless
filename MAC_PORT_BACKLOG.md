@@ -1572,6 +1572,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Native confirmation dialog layout (2026-10-20, commit carrying this entry
+  on `codex/launcher-dialog-layout`):** Windows uses native message boxes with a
+  horizontal action row. Mac's separate windows did not inherit the launcher
+  theme and stacked generic gray buttons vertically. `NativeWindow.MessageDialog`
+  now loads the shared `Ui.Theme`/`PageTheme` button templates and colors, with
+  equal minimum button widths, a right-aligned Cancel/Continue row, and bounded
+  scrolling for long text. Confirmations and error alerts reuse this native
+  window adapter; no Windows message-box or update behavior changes. Native
+  regressions, prerequisite checks and inspected short/long/error renders pass.
+  Windows/macOS CI results will be recorded in the PR; wider delivery status
+  remains Awaiting validation.
+  [Evidence](STATUS.md#native-launcher-confirmation-dialog-layout-2026-10-20).
 - **Automatic restart after game updates (2026-10-20, commit carrying this
   entry on `codex/launcher-update-restart`):** Windows already used a copied
   updater to close/apply/reopen; Mac applied game packages inside the old UI
