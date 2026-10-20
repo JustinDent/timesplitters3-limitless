@@ -1115,6 +1115,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 202 (2026-10-20, commit carrying this entry): eight standard
+  DXT1 material replacements accepted offline; four layout/lighting drafts held.
+  Total 1,319 installed and 4,169 provisionally classified keys. Shared format
+  support is already present; no adapter change. Status: Awaiting validation;
+  Windows parser/hash evidence does not validate Mac scenes, GPU memory or
+  darker material/indicator visibility. No new gameplay on either host.
+  See [batch 202 evidence](STATUS.md#texture-batch-202-metal-and-architectural-surfaces-2026-10-20).
+
 - Texture batch 201 (2026-10-20, commit carrying this entry): 128 reused
   originals classified from separate RGB/alpha review, total 4,105. No artwork,
   pack or runtime changes; no platform adapter needed. Existing 1,311-file

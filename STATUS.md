@@ -1,5 +1,47 @@
 # Measured progress
 
+## Texture batch 202: metal and architectural surfaces (2026-10-20)
+
+Issue #74: twelve independent sources generated with built-in image generation;
+eight accepted offline and installed, four held for correction. Accepted work
+covers a highlighted metal strip, two stained walls, a stepped wall panel,
+corroded metal, a four-diamond ornamental panel, a four-indicator panel and a
+framed blue-gray panel. Original UV proportions, major seams, motif locations
+and opaque alpha were reviewed with source/compiled and repeated comparisons.
+
+Held drafts change grille repetition, border/lower-panel fastener layout, or
+concentrate a broad baked light patch. They are not installed or counted as
+complete. Diagnostic profile maxima are not exact rib counts. Accepted outputs
+have mean luminance differences of -5.16% to -14.63%; their darker grain, relief,
+indicator visibility and actual scene lighting remain explicitly unvalidated.
+
+Actual sources: eight 1774x887, two 887x1774 and two 1254x1254. Accepted outputs
+are resampled: one 512x256, two 512x1024, four 1024x512 and one 1024x1024 DXT1,
+with full 10/11-level mip chains. These are not native 4K source images.
+Current full Python hash/metadata/aspect/dimension/mip checks passed. Eight new
+DDS files passed the Windows native parser; 1,311 prior files and checker hash
+are unchanged, carrying forward their native evidence. Total 1,319 installed
+of 6,812 supported keys (19.36%), with 5,369 needing art and 124 held drafts.
+
+Another 64 original RGB/alpha classifications bring provisional inventory to
+4,169 keys; 2,643 remain unclassified. Unknown transparent utility function,
+specialist masks, lettering, portraits and reflections remain open. Embedded,
+other-encoding and procedural discovery gaps are not counted as complete.
+
+Pack including metadata: 1,081,108,849 bytes (1031.03 MiB),
+adding 2,888,192 bytes. Temporary output: 209.33 MiB.
+Texture workspace including retained source art: 6173.96 MiB
+logical/allocated by existing helper; disk free 84.55 GiB at audit.
+The 6144 MiB pack and 256 MiB temporary limits hold; 512 MiB residency policy
+is unchanged and has no new GPU measurement. No duplicate extracts, builds,
+staging trees or ZIPs. Personal game, settings and saves remain untouched.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation: standard
+shared DXT1 support needs no new adapter, but Windows parser results do not
+prove Mac GPU rendering, residency or scene fidelity. Private provenance:
+`review/hybrid-202-acceptance.json`, generation, metrics, decisions, native
+audit and triage records. All artwork remains private; this is a partial pack.
+
 ## Texture batch 201: reused asset inventory and alpha semantics (2026-10-20)
 
 Issue #74 inventory pass: 128 previously unclassified keys, each with 2-73
