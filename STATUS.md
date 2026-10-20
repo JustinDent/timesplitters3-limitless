@@ -1,5 +1,56 @@
 # Measured progress
 
+## Texture batch 229: three held material corrections resolved (2026-10-20)
+
+Eight held opaque materials received built-in image-generation corrections.
+Three passed offline visual review and were installed: 209d979993479fa6
+(rusted sheet), 695e4b6e9b718e6d (dark olive-gray wood), b9d94dbe9b75f1c6
+(muted reddish/purple-gray stone). Luminance changes against originals are
+-6.27%, +3.05%, +3.20%. Full comparisons, 2x2 repeats and original-grid
+checks support material identity and broad feature placement; scene use and
+lighting remain unverified. Metrics alone do not establish UV fidelity.
+
+Five remain unfinished: b8c79e1667022feb grille row/edge alignment,
+501c00f0f9745c7c enlarged border fasteners, 03285199871fbb78 tread topology
+and tone, 6366309151b2557c masonry joint placement, and b4ed22186a629045
+charcoal stone brightness (+23.36%). None of these five drafts was installed.
+Repeated pattern failures need a revised correction approach, not automatic
+acceptance or another identical prompt cycle.
+
+Actual generated sources: three 1774x887 and five 1254x1254. Accepted rust
+and wood were LANCZOS upsampled from 1254x1254 to 2048x2048; accepted stone
+was downsampled to 1024x1024. No cropping or color edits. These are not native
+2K/4K source images. Seven completed outputs survived a tool-host interruption;
+after confirming the original handle was missing, only the missing eighth
+output was retried. Private recovery evidence records the visual subject mapping
+and lost tool metadata rather than inventing successful original tool returns.
+
+All five reviewed comparison sheets remained in memory (1,992,597 bytes
+avoided). Their metrics and raster hashes replay exactly from the game archives
+and retained generated source art, including after removing two newly recreated
+original PNG caches. Hash and decoded-pixel verification preceded retirement;
+247,584 bytes reclaimed. Six reused originals and previously denied cleanup
+paths were untouched. Private review/hybrid-229-original-export-retirement.json
+records the exact cleanup targets and result.
+
+Three new Windows native parser runs pass; 1,404 prior DDS hashes and checker
+identity match their existing evidence. All 1,407 installed files pass a fresh
+Python format, metadata, dimensions, aspect, mip and hash audit. Current counts:
+1,407 installed, 5,281 needing artwork, 124 held; 6,121 classified and 691
+unclassified. Classification is routing, not completed enhancement.
+
+Pack including metadata: 1,128,396,476 bytes (1076.12 MiB), below 6144 MiB.
+Temporary output after cleanup: 267,584,247 bytes (255.19 MiB), below 256 MiB.
+Texture workspace including source art: 6,977,451,678 bytes; measured disk free:
+90,970,755,072 bytes. The allocation helper reports logical/allocated equally;
+this is not independent physical-allocation proof. One active pack remains.
+
+No gameplay, publication, runtime/adapter changes or personal save/settings
+changes. MAC-011 remains Awaiting validation; Mac GPU, scene coverage, display
+modes, transparency and 512 MiB residency are unverified. Discovery and category
+coverage remain incomplete. Private review/hybrid-229-acceptance.json links
+prompts, source provenance, decisions, parser evidence, cleanup and storage.
+
 ## Texture batch 228: six new material replacements (2026-10-20)
 
 Generated eight independently prompted opaque material edits with built-in

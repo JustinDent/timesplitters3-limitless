@@ -1115,6 +1115,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 229: three held material corrections accepted/installed; five
+  remain held for layout/tone failures. Three new Windows native parser passes
+  plus 1,404 unchanged hash/checker evidence; all 1,407 pass fresh Python audit.
+  Generated sources were three 1774x887 and five 1254x1254; accepted rust/wood
+  upsampled to 2048-square and stone downsampled to 1024-square. No runtime or
+  host adapter changes. MAC-011 remains Awaiting validation: parser success
+  does not prove Mac GPU, mapped scenes, transparency or 512 MiB residency.
+  See STATUS.md batch 229 and private review/hybrid-229-acceptance.json.
+
 - Batch 228 (issue #74): eight opaque material edits, six accepted/installed and two held for tone/palette correction. Actual sources seven 1254-square and one 1774x887; accepted outputs five 1024-square and one 1024x512, all downsampled. Six new Windows parser passes plus 1,398 unchanged-hash results; all 1,404 DDS files pass current Python audit. Exact memory review replay survives retirement of this batch’s eight disposable original exports. No runtime/adapter changes or Mac execution. **Awaiting validation** for Mac GPU, mapped scenes, transparency and 512 MiB residency. See STATUS.md batch 228 and private review/hybrid-228-acceptance.json.
 - Batch 227 (issue #74): 128 original RGB/alpha classifications (89 opaque, 39 nonopaque), exact memory replay and lossless gzip readback verified. All 1,398 installed DDS files pass fresh Python audit with unchanged-hash Windows parser evidence carried from batch 226. No artwork, pack/runtime or adapter changes; no Mac execution. **Awaiting validation** on Mac GPU, mapped scenes, transparency and 512 MiB residency. See STATUS.md batch 227 and private review/hybrid-227-acceptance.json.
 - Batch 226 (issue #74): 128 original RGB/alpha classifications (89 opaque, 39 nonopaque), exact memory replay and lossless gzip readback verified. All 1,398 installed DDS files pass fresh Python audit with unchanged-hash Windows parser evidence carried from batch 225. No artwork, pack/runtime or adapter changes; no Mac execution. **Awaiting validation** on Mac GPU, mapped scenes, transparency and 512 MiB residency. See STATUS.md batch 226 and private review/hybrid-226-acceptance.json.
