@@ -62,6 +62,20 @@ public static class LauncherSharedUiChecks
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("texture installation is opt-in, exposes both local sources and locks during work",()=>{
+                var page=new SettingsPage(new ResourceDictionary(),root,true);page.SelectTab(1);
+                int mode=-1;bool cancelled=false;
+                page.InstallTextures+=value=>mode=value;page.CancelTextureInstall+=()=>cancelled=true;
+                Click(Find<Button>(page.View,"DownloadTexturePack"));Need(mode==0,"Download not routed");
+                Click(Find<Button>(page.View,"InstallTextureZip"));Need(mode==1,"ZIP not routed");
+                Click(Find<Button>(page.View,"InstallTextureFolder"));Need(mode==2,"Folder not routed");
+                page.TextureBusy(true);
+                Need(!Find<Button>(page.View,"DownloadTexturePack").IsEnabled,"Busy download remains enabled");
+                page.TextureProgress("Installing test pack");
+                Need(Find<TextBlock>(page.View,"TexturePackStatus").Text=="Installing test pack","Progress not shown");
+                Click(Find<Button>(page.View,"CancelTextureInstall"));Need(cancelled,"Cancel not routed");
+                page.TextureBusy(false);Need(Find<Button>(page.View,"InstallTextureZip").IsEnabled,"Installer remained disabled");
+            });
             Test("settings drafts, FOV reset, cancel and save",()=>{
                 var page=new SettingsPage(new ResourceDictionary(),root,true);page.SelectTab(1);
                 var fov=Find<Slider>(page.View,"VerticalFovSlider");var number=Find<TextBlock>(page.View,"VerticalFovValue");
