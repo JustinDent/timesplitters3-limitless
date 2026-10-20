@@ -1,5 +1,60 @@
 # Measured progress
 
+## Texture artwork batch 254: five metal surfaces installed, storage recovered (2026-10-20)
+
+Continued eight classified opaque metal-family candidates on the local #74 branch.
+Archive payload/RGBA and supported XBE hashes verified. New reference export budget
+initially refused 590,256 bytes before writing any images. Recovered headroom first:
+35 older JSON review files compacted by removing formatting whitespace only, with
+strict duplicate-key checks, semantic equality and exact raw-byte gzip recovery.
+Gross savings 321,564 bytes; recovery 132,533 bytes; net after recovery/receipt
+176,903 bytes. Recovery and all 35 current/old hashes independently reverified.
+Historical raw-byte hashes remain recoverable from the retained format backup.
+
+Two older original PNG caches (5f08f18ab6339528 and 209d979993479fa6) were absent
+from all 148 prior retirement manifests. Byte-exact archive PNG/RGBA reconstruction
+verified before guarded deletion and again afterward; recovered 713,549 bytes.
+Authoritative game, source art, pack and all prior denied cleanup targets preserved.
+Export preparation then passed: eight new original references, 590,256 bytes.
+Built-in image generation produced six 1254x1254 and two 1774x887 sources,
+27,632,521 bytes total, retained privately with prompts and source dimensions.
+
+Accepted a2205159d30e89ec mustard-olive material, a30a50e9dedb3d2b blue-gray
+corroded plate, a91a08dbd8f99a35 pale worn plates, ad69f34628c7cfdd olive-green
+riveted plate and b1c7d2ef1200aac5 twelve metal slats. Outputs: four 1024x1024
+and one 1024x512 DXT1 with mips, LANCZOS downsampled without crop/color/alpha edits;
+not native 4K art. Held a5c6cc8668ec5cda brown riveted plate (-17.06% luminance),
+ab74cc32d20a56f0 lattice (+33.13%, four fasteners per side changed to three and
+repeat/rail geometry changed), and ae87e0251c3ef6bf four-hole panel (-16.33%,
+reflection width changed). Held drafts keep original fallback and remain incomplete.
+
+Five full/repeat/original-grid comparisons inspected in RAM; 2,264,625 raster bytes
+not written. Fastener layout, seams, stain zones and slat rhythm checked offline.
+Eight new reference exports retired after byte-exact reconstruction and exact
+path/hash/size checks; recovered 590,256 bytes. All five review rasters/metadata
+replay exactly after retirement. No denied cleanup retried or game/source art removed.
+
+Five new Windows native DDS parser checks pass; previous 1,493 DDS hashes and checker
+identity unchanged against batch 253. Fresh full Python format/metadata/dimensions,
+aspect/mip/hash audit passes all 1,498 installed files. Counts: 5,146 need art,
+1,498 installed, 168 held; known 6,812 keys classified. Category/use validation,
+embedded/procedural coverage and scene appearance remain unfinished. No gameplay,
+builds, adapters or publication; MAC-011 remains Awaiting validation. Mac GPU,
+mapped materials, display modes and residency are not proven by offline audits.
+
+Pack 1,162,614,842 bytes (+3,148,598), below 6144 MiB. Temporary snapshot
+267,413,737 bytes, below 256 MiB with 1,021,719 bytes headroom. Windows filesystem
+allocation: 10,568 texture-workspace files, no errors; logical/allocated snapshot
+7,483,158,764 bytes, free disk 83,719,757,824 bytes. Includes source art; excludes
+Codex default outputs outside project, and small later metadata writes. One active
+pack and 512 MiB residency unchanged. Near-completion playtesting gate remains unmet.
+
+Private evidence uses review/hybrid-254 prefix: selection, prompts, generation,
+memory-review, decisions, native-audit, acceptance, physical-storage-final,
+json-compaction/recovery, cache-retirement, storage-recovery-verify and
+original-export-retirement records/scripts. Previous goal turn was progress:
+batch253 installed four materials, held four, audited 1,493 and committed 53ab7e8.
+
 ## Texture artwork batch 253: four metal replacements, four correction holds (2026-10-20)
 
 Eight classified opaque metal candidates verified against archive payload/RGBA
