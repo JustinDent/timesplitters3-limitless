@@ -2,13 +2,13 @@
 
 # TimeSplitters: Future Perfect
 
-Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
+Direct mouse aiming · 4K & ultrawide · Custom controls · Windows Online & LAN
 
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-launcher.svg" alt="Download the latest Windows launcher" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-launcher.svg" alt="Download the latest Windows or Mac launcher" width="280" height="52"></a>
 
-**[Quick start](#start-playing)** · [Launcher guide](docs/launcher.md) · [Multiplayer](docs/multiplayer.md) · [Build from source](docs/building.md)
+**[Windows setup](#windows)** · **[Mac setup](#mac-apple-silicon)** · [Launcher guides](#guides--support) · [Multiplayer](docs/multiplayer.md) · [Build from source](docs/building.md)
 
-<sub>Windows 10/11 x64 · Experimental PC port · Supported US Xbox game required</sub>
+<sub>Windows 10/11 x64 · Native Apple Silicon Mac · Experimental port · Supported US Xbox game required</sub>
 
 </div>
 
@@ -18,10 +18,17 @@ Direct mouse aiming · 4K & ultrawide · Custom controls · Online & LAN
 
 > [!IMPORTANT]
 > You need your own supported **US Xbox ISO or extracted game data**. Import it
-> once through the launcher; afterward, play from the launcher without the ISO.
-> Original game files are not included. No emulator or developer tools are needed.
+> through the Windows launcher, or follow the [Mac game-data setup](docs/macos.md).
+> Original game files are not included. Neither version needs an emulator.
+> Windows has a downloadable game runtime; Mac currently requires a source build.
 
 ## Start playing
+
+Choose your platform below. Both launchers are available from the
+[latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).
+Download the ZIP matching your computer: `windows-x64` or `macos-arm64`.
+
+### Windows
 
 | Step | Installation |
 | :---: | --- |
@@ -55,11 +62,63 @@ Launcher v1.2.14 adds recovery when Windows interrupts startup, with **Retry**,
   and the launcher's recovery files. Normal updates preserve existing data,
   settings and saves.
 
-Python, Git and Visual Studio are not required to play.
+Python, Git and Visual Studio are not required to play the published Windows build.
 
 </details>
 
+### Mac (Apple Silicon)
+
+The native **Mac launcher is available now** for Apple Silicon (M1 or newer).
+It shares the Windows launcher's pages, settings, release notes and diagnostics.
+The launcher app includes .NET; it does not need CrossOver, Python or the .NET SDK
+to open. Intel Macs are not supported by this native build.
+
+> [!IMPORTANT]
+> The Mac launcher download does **not** include the game runtime. A published
+> Mac game package is not available yet. Build the native game from source using
+> the guide below; the Mac launcher cannot install or run the Windows game ZIP.
+
+| Step | Installation |
+| :---: | --- |
+| **01** | **Download the Mac launcher.** Choose `TimeSplitters-Launcher-…-macos-arm64.zip` from the [latest launcher release](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest). Extract the whole ZIP and keep **TimeSplitters Launcher.app** beside its **Support** folder. |
+| **02** | **Set up the native game.** Follow the [Mac source-build guide](docs/macos.md) for developer tools, your supported US Xbox game data and the native build. Keep `default.xbe`, `pak` and `xmv` together in the checkout's `private/game` folder. |
+| **03** | **Open the launcher for your checkout.** Use the command below, replacing both example paths with your extracted app and checkout folders. Then choose **Play Game**. |
+
+```sh
+open '/path/to/TimeSplitters Launcher.app' --args --root '/path/to/timesplitters-future-perfect-pc'
+```
+
+For an existing native checkout, `./Play-Native-Mac.command` is also available;
+`./Play-Native-Mac.command --check` checks prerequisites without starting the game.
+Development checkouts disable release installation and self-updates to preserve
+your source and local builds. Keep `private/game`, `private/saves`, `config` and
+`private/native-settings` when updating the checkout.
+
+The launcher targets **macOS 12+**. The current shared Vulkan game renderer
+requires **macOS 26+**; the [Mac guide](docs/macos.md) documents the legacy OpenGL
+fallback for older systems. The app currently uses ad-hoc signing; Developer ID
+signing, notarization and clean-machine installation remain pending.
+
+**Controls:** click inside gameplay to capture the mouse, use **WASD** to move,
+and **Escape** to pause and release it. **F2** opens keyboard, mouse and graphics
+settings; **F11** toggles fullscreen. Use **Fn** with function keys if macOS
+reserves them. See the [full Mac controls](docs/macos.md) and
+[native launcher guide](docs/mac-launcher.md).
+
+**Current Mac status:** native menus, movement, mouse aiming, firing and
+pause/resume have been checked, with additional bounded first-mission, Khallos
+and Mansion scene checks recorded in [measured progress](STATUS.md).
+Experimental interpolation targets up to **120 presentations per second** while
+the game simulation stays at **60 Hz**; saved 60 FPS preferences are retained.
+Full campaign completion, save/load and complete rendering/audio fidelity remain
+unverified. Movie playback, native multiplayer and standalone game delivery
+remain unfinished. Windows 144 FPS and monitor-refresh controls are not active
+on Mac. [Track remaining Mac work →](MAC_PORT_BACKLOG.md)
+
 ## PC features
+
+Feature availability depends on the platform and installed game build. The
+Windows details below do not establish Mac parity; see [current Mac status](#mac-apple-silicon).
 
 Current Windows source adds experimental [120/144 FPS smooth motion and
 fullscreen monitor refresh controls](docs/windows-launcher.md#pre-game-settings).
@@ -94,7 +153,7 @@ story audio transitions, Khallos Express scenery rendering and multiplayer
 movement updates. The current Windows source also restores full-body ghosts
 revealed by the Ghost Gun; this is separate from the floating-skull fix. [See measured progress →](STATUS.md)
 
-### Controls and settings
+### Windows controls and settings
 
 **Game settings** in launcher v1.2.0 lets you set keybinds and graphics before
 playing. Resolution selectors use your primary display's reported modes, include
@@ -192,6 +251,9 @@ original appearance. [Full controls and display guide →](docs/windows-settings
 
 ## Multiplayer
 
+These setup instructions apply to **Windows**. Native Mac System Link and Online
+multiplayer are not implemented yet; see [the Mac backlog](MAC_PORT_BACKLOG.md).
+
 Everyone needs the same game build and matching game data. In the game, choose
 **Online / System Link → Online**.
 
@@ -218,11 +280,12 @@ the saved bot set. The host sees how many are waiting.
 
 ## In development
 
-| Texture overhaul | Native Apple Silicon |
-| --- | --- |
-| Modern materials and surfaces, with **up to 4K** on major surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit keep storage and memory bounded. | A native **ARM64** build with SDL/Cocoa, the shared Vulkan renderer on macOS 26+ (legacy OpenGL fallback), shared PC controls and an experimental **up-to-120 FPS** presentation target. |
-| **Partial local preview.** Much of the game still uses original art. Development artwork is not bundled with the public release; 4K output does not imply native 4K source detail. | **Experimental.** Visible first-level gameplay and basic combat checks have been reached. Interpolation keeps the game simulation at **60 Hz**; movies, advanced rendering, multiplayer and packaging still need work. |
-| [Texture guide →](docs/textures.md) | [Mac setup →](docs/macos.md) · [Native Mac launcher →](docs/mac-launcher.md) · [Feature backlog →](MAC_PORT_BACKLOG.md) |
+**Texture overhaul:** modern materials and surfaces, with **up to 4K** on major
+surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit
+keep storage and memory bounded. This is a **partial local preview**: much of the
+game still uses original art. Development artwork is not bundled with the public
+release; 4K output does not imply native 4K source detail.
+[Texture guide →](docs/textures.md)
 
 > [!NOTE]
 > This is an experimental port. A full campaign playthrough and complete
@@ -238,7 +301,8 @@ the saved bot set. The host sees how many are waiting.
 | [Windows launcher](docs/launcher.md) — installation, updates and recovery | [Build guide](docs/building.md) — prerequisites, setup and patch workflow |
 | [Controls & display](docs/windows-settings.md) — bindings, resolution and diagnostics | [Release publishing](docs/releasing.md) — package, validate and publish |
 | [Multiplayer](docs/multiplayer.md) — Online, invitations and LAN | [Measured progress](STATUS.md) — evidence and remaining work |
-| [Native Mac](docs/macos.md) — Apple Silicon setup and controls | [Project rules](AGENTS.md) — reproducibility and data preservation |
+| [Mac launcher](docs/mac-launcher.md) — native app, settings and diagnostics | [Native Mac build](docs/macos.md) — Apple Silicon setup, controls and validation |
+| [Mac quick start](#mac-apple-silicon) — download and current support | [Project rules](AGENTS.md) — reproducibility and data preservation |
 | [Mac renderer development](docs/macos.md#common-renderer-development-probe) — shared game renderer and asset-free checks | [Shared PC/Mac architecture](docs/shared-platform.md) — common code and adapters |
 
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
