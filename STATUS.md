@@ -12605,8 +12605,10 @@ Focused branch `fix/launcher-compatible-discord-package`, based on main
 the existing shared settings model defaults to disabled and writes that file
 when a user saves settings. README/setup pointers follow the new location.
 Existing launcher allowlists and personal-file protections remain unchanged;
-no launcher update is required. VERSION prepares v0.3.1-alpha.2 without
-restoring or modifying the removed alpha.1 release or its existing tag.
+no launcher update is required. After deleting the faulty release, the user
+explicitly requested keeping v0.3.1-alpha.1. Its original local archives and
+verification records will be retained separately; the remaining old tag must
+identify the corrected tested main commit when that version is republished.
 
 Packaging now builds/runs the Windows launcher tests. The publisher invokes
 their new `--verify-package <zip> <version>` mode on its exact completed ZIP
@@ -12622,7 +12624,7 @@ Windows x64 validation (MSVC 14.44.35207, pinned upstream/Python/tool versions):
 
 - The retained alpha.1 ZIP fails before installation with the exact reported
   `Discord-setup.txt` error (`build/discord-package-original-rejection.log`).
-- `tsfp.ps1 Build` passes with alpha.2's regenerated multiplayer identity and
+- `tsfp.ps1 Build` passes with the temporary alpha.2 validation identity and
   all native tests; supported US executable SHA-256 validation passes.
 - Focused packaging/publisher/Discord/release/CI/backlog checks: 139 passed,
   12 subtests passed (29.50 seconds).
