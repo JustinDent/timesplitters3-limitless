@@ -1,5 +1,43 @@
 # Measured progress
 
+## Texture batch 221: continued material and channel inventory (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals: 74 opaque and 54
+nonopaque. All sixteen RGB/alpha sheets were inspected in memory. Per-key notes
+cover environments, mechanical/character atlases, signage, controls, effects
+and cutouts. Several controls expose different shapes or lettering in alpha
+than in RGB; these require channel-aware specialist handling. Identity, UV
+boundaries, structural counts, readable glyphs and partial opacity remain
+explicit preservation constraints. Classification now covers 5,481 of 6,812
+supported keys, with 1,331 still unclassified; this is not replacement completion.
+
+Shared memory renderer is unchanged from ce45eb4. Explicit ordered-key replay
+reproduced every record and all sixteen JPEG hashes exactly. Artwork-root file
+count, total bytes and path/size/mtime fingerprint were unchanged during rendering
+and replay. Retained compact hashes and review notes, avoiding 2,173,038 bytes of
+saved diagnostic JPEGs. Original display uses aspect-preserving nearest-neighbor
+thumbnails only. No generation, installation resampling or cleanup attempt.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passes all 1,392 installed files. Installed DDS hashes and native checker identity
+remain unchanged; batch 220 Windows parser evidence is carried forward without
+a new parser run. 5,297 keys need art and 123 drafts remain held. Worklist and
+hybrid queue refreshed; one private active pack, no runtime or adapter change.
+
+Pack remains 1,116,504,000 bytes (1064.78 MiB) including metadata under 6144 MiB.
+Temporary output about 254.28 MiB, with 1.72 MiB headroom below 256 MiB.
+Workspace including source art about 6557.67 MiB logical/allocated by the existing
+helper; free disk about 82.84 GiB. Helper allocation is not independent physical
+disk evidence. Previously denied cleanup sets untouched. No duplicate game,
+build, staging or ZIP; no personal saves/settings changes or publication.
+
+No gameplay or Mac execution. The 512 MiB residency policy and near-completion
+playtesting gate are unchanged. MAC-011 remains Awaiting validation for mapped
+scenes, GPU appearance, alpha and residency. Other-encoding/procedural coverage,
+remaining categories and consolidated scene testing remain incomplete. Private
+review/hybrid-221-acceptance.json links review decisions, exact reproducible
+memory-sheet hashes, storage and carried-forward parser evidence.
+
 ## Texture batch 220: memory-only inventory review (2026-10-20)
 
 Reviewed 128 further catalog/game hash-verified originals in paired RGB and
