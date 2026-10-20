@@ -1,5 +1,27 @@
 # Measured progress
 
+## Fixed-60 settings fixture repair (2026-10-20)
+
+Local uncommitted repair for PR #216, controller-supplied source head
+`b555ac8aa6597207e73c782eacbb2300dc62b3b6`. The Windows FOV fixture still
+referenced deleted motion types, rows and persistence functions after the timing
+submenu was withdrawn. It now checks the remaining guest row IDs (including
+absence of timing row 6) and preservation of the isolated runtime file instead.
+Existing FOV, texture, cancellation, atomic-failure and preview checks remain.
+Production behavior, adapters, settings and dependency pins are unchanged.
+
+Validation on macOS 27.0.1 (26A434), ARM64, Apple clang 21.0.0 and Python 3.9.6:
+the asset-free `tests/menu_mouse.c` builds with warnings as errors and passes.
+The existing missing-setting-drag mutation fails at its expected FOV assertion,
+confirming that the portable drag regression still detects a broken setter.
+Compilation was bounded to 60 seconds and execution to 10 seconds, with outputs
+under `build/compatibility-repair`; no game or personal settings were used.
+Pytest is unavailable. Direct native menu syntax compilation stops at missing
+`platform/win32_compat.h`: this snapshot has no `external/ts3FPrecomp` tree.
+The repaired Windows fixture therefore still requires MSVC execution, and native
+menu compilation requires the pinned dependency in the controller's host checks.
+No Windows, GPU, visual or gameplay validation is claimed. See MAC-054.
+
 ## Fixed 60 FPS restoration (2026-10-20)
 
 Prepared on `remove-high-fps-enhancements`, based on main `5db4efc`, in the

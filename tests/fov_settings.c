@@ -89,7 +89,11 @@ static float drawn;
 void sub_000814B0(void) { uint32_t b=WORD_AT(g_esp+4);memcpy(&drawn,&b,4);g_esp+=4; }
 void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }
 void sub_00079B70(void) { returned++;g_esp+=4; }
-void sub_00079D60_gen(void) { g_eax=0x200000+WORD_AT(g_esp+8)*0x200;g_esp+=4; }
+static unsigned built_rows;
+void sub_00079D60_gen(void) {
+    unsigned id=WORD_AT(g_esp+8);CHECK(id<8);built_rows|=1u<<id;
+    g_eax=0x200000+id*0x200;g_esp+=4;
+}
 static void call(uint32_t address,int selected,unsigned buttons)
 {
     g_esp=0x700000;WORD_AT(g_esp)=0;WORD_AT(g_esp+4)=0x300000;
@@ -134,7 +138,8 @@ int main(int argc,char **argv)
     call(PC_DISPLAY_MENU_CALLBACK,0,0);CHECK(staged_fov==55);
     call(BUILD_CB,0,0);
     CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(7)),"Aspect ratio"));
-    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(9)),"Smoothness / refresh"));
+    /* The retired timing submenu used row 6; remaining controls keep IDs. */
+    CHECK(built_rows==0xbfu);
     CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(2)),"Textures"));
     CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(3)),"Classic"));
     CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(10)),"Enhanced"));
@@ -212,20 +217,14 @@ int main(int argc,char **argv)
     call(SELECT_CB,3,0);CHECK(pc_display_fov()==90 && page==2);
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));content("TSFP_DISPLAY_V2 1920 1080 90\n");
     CHECK(pc_display_set_fov(55) && pc_display_save());content("TSFP_DISPLAY_V1 1920 1080\n");
-    /* Actual guest Smoothness page: native choices, Cancel, save and reopen. */
-    call(BACK_CB,0,0);call(SELECT_CB,6,0);CHECK(page==3);
-    CHECK(WORD_AT(motion_fps_row+0xc8)==0 && WORD_AT(motion_refresh_row+0xc8)==0);
-    WORD_AT(motion_fps_row+0xc8)=3;WORD_AT(motion_refresh_row+0xc8)=2;
-    call(BACK_CB,0,0);call(SELECT_CB,6,0);CHECK(page==3 && staged_motion.fps==0);
-    WORD_AT(motion_fps_row+0xc8)=3;WORD_AT(motion_refresh_row+0xc8)=2;
-    call(SELECT_CB,2,0);CHECK(page==2 && strstr(status,"restart"));
-    {PcMotionSettings saved;CHECK(pc_motion_load(&saved));CHECK(saved.fps==144 && saved.refresh==144);}
-    call(BACK_CB,0,0);call(SELECT_CB,6,0);CHECK(WORD_AT(motion_fps_row+0xc8)==3);
-    CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_READONLY));
-    WORD_AT(motion_fps_row+0xc8)=1;call(SELECT_CB,2,0);CHECK(page==2 && strstr(status,"failed"));
-    CHECK(SetFileAttributesA(runtime_path,FILE_ATTRIBUTE_NORMAL));
-    {PcMotionSettings saved;CHECK(pc_motion_load(&saved));CHECK(saved.fps==144);}
-    content("TSFP_DISPLAY_V1 1920 1080\n"); /* Performance page never commits resolution/FOV. */
+    /* Display edits preserve runtime preferences. Fixed-60 normalization is
+     * owned by the runtime/launcher, not the resolution/FOV menu. */
+    {
+        char text[256]={0};FILE *f=fopen(runtime_path,"rb");CHECK(f);
+        fread(text,1,sizeof text-1,f);CHECK(!ferror(f) && feof(f));CHECK(!fclose(f));
+        CHECK(!strcmp(text,"# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n"));
+    }
+    content("TSFP_DISPLAY_V1 1920 1080\n");
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: FOV config, bounds, staging, reset, cancellation, atomic failure, preview rollback, keep, live texture choice/synchronization and guest ABI");
     return 0;
