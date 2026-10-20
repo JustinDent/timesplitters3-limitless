@@ -760,6 +760,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 ### MAC-005 — Multiple texture stages and shader fidelity
 
 - **Status:** In progress
+- **Final bounded acceptance (2026-10-19):** Both hosted jobs pass at `c6b01d3`.
+  The integrated executable also passes a 115.17-second opening-mission route:
+  six reviewed images retain canyon geometry, characters, weapon/HUD and
+  fire/smoke after movement/turns. The user reports the same Khallos sky on PC;
+  no additional Mac-only sky correction is justified. This completes the short
+  renderer goal, while this broader entry remains in progress. Windows gameplay,
+  exact original-console fidelity and all-scenes coverage are unverified.
+  [Final evidence and scope audit](STATUS.md#shared-renderer-final-bounded-acceptance-2026-10-19).
+
 - **Khallos PC comparison (2026-10-19):** The user reports the same muted
   grey/stretched sky at the starting train stairs on PC. No PC revision or
   matched capture was provided; this is user-reported appearance evidence.
@@ -1220,8 +1229,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   launcher checks at `9940dba`. Windows exposed a mixed-line-ending assumption
   in the new historical-stack test. The test now appends edits in the existing
   file style and exercises both Git conversion settings; four local cases pass.
-  This is a shared test correction, with no runtime adapter change. Windows
-  rerun is pending; prior historical unverified notes below are superseded only
+  This is a shared test correction, with no runtime adapter change. Windows and macOS
+  reruns now pass at `c6b01d3`; prior historical unverified notes below are superseded only
   for the native scope recorded here.
   [Evidence](STATUS.md#renderer-integration-hosted-ci-and-line-ending-fixture-2026-10-19).
 
@@ -1279,7 +1288,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Hosted integration follow-up:** `d0edd6d` passes macOS patch/runtime/GPU/launcher
   checks. Windows patch transitions pass, but three isolated interpolation tests
   need a missing config-lookup stub. The test-only correction passes all 20 local
-  renderer-host cases; Windows rerun remains pending. See
+  renderer-host cases; final Windows and macOS CI both pass at `c6b01d3`. See
   [harness linkage evidence](STATUS.md#interpolation-harness-windows-linkage-2026-10-19).
 
 ### MAC-015 — Release test privileges and disposable cleanup

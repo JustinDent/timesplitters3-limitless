@@ -9244,3 +9244,58 @@ only the integer-config stub. The shared harness now supplies the missing lookup
 stub, retaining its fail-loud behavior if configuration is unexpectedly reached.
 No runtime behavior changes. All 20 renderer-host tests pass locally on macOS
 ARM64/Clang 21 (3.22 seconds); Windows rerun remains required.
+
+
+### Shared renderer final bounded acceptance (2026-10-19)
+
+At runtime/test head `c6b01d3`, [run 39347966123](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39347966123)
+passes **both** Windows and macOS jobs. Windows: 49 scope checks, 32 patch
+transition checks, 251 runtime/render/input checks (30 host skips), 52 release
+checks, 104 isolated launcher regressions, plus the selected UI/crash suites.
+macOS: 49 scope checks, 30 patch checks (two host skips), 228 runtime/render/input
+checks (18 host skips), real MoltenVK resource/presentation/replay GPU contracts,
+49 release checks (three host skips), and 19 native launcher regression groups.
+The missing lookup-stub correction is verified on Windows. These asset-free
+host checks are not Windows gameplay or matching scene captures.
+
+An additional **115.17-second** isolated opening-mission run on acceptance
+revision `aaf926d` used the same integrated ARM64 executable (`f3e85f5c…` above).
+All BUILD.json runtime-input hashes, binary and supported-XBE hashes matched
+before launch. Host remains Apple M5 Pro/macOS 27.0.1 ARM64/Clang 21, pinned SDK
+1.4.363.0 and MoltenVK. The complete integration runtime is unchanged; BUILD.json
+retains its original `a0a89f5` plus working-tree provenance. Synthetic SDL input
+navigated the menus, skipped the introduction, moved forward, turned both ways
+and strafed. Vulkan validation stayed enabled. It exited 0 without reported
+validation errors, shader failures or native faults.
+
+Three fresh guest/intermediate pairs (frames 4782/5219/5597, blends
+0.655409880/0.567987274/0.569679921) were reviewed, six images total. Canyon walls,
+ground, debris, weapon/hand, HUD, characters and fire/smoke remain visible through
+movement and turns; the last pair shows the new-objective overlay. No disappearing
+world or new rendering defect was observed in this bounded route. The last
+counter sample has 6,774 guest and 6,126 interpolated successful presents, zero
+skips/failures; this readback/validation run is not a pacing benchmark.
+
+Evidence: `logs/shared-integrated-opening-{summary.json,err,captures.json}`,
+`logs/integrated-opening-validation.log`, and
+`private/captures/native-mac/integrated-opening-{0,1,2}-{guest,midpoint}.png`.
+Ten protected configuration/fixture paths still match their baseline. Six known
+disposable partitions were recycled (5,243,406,848 apparent / 135,168 allocated
+bytes). Captures allocate 230,772 KiB; pre-run free space was 220 GiB. No game
+extract, build tree, personal configuration or save was replaced.
+
+Goal audit against the requested bounded renderer work:
+
+| Requirement | Evidence and scope |
+| --- | --- |
+| Diagnose Khallos sky and fix demonstrated rendering defects | Source textures and independent pixel samples agree; both Mac drivers reproduce the static appearance, and the user reports the same on PC. Preserve authored motion instead of adding an unsupported Mac-only sky change. Shared affine interpolation and Vulkan swizzle/resource fixes have production-code and GPU regressions. Exact original-console fidelity is not certified. |
+| Shared implementation and Windows/macOS regressions | Shared patches/interfaces, host adapters and the final two-host CI run above; test-only CI corrections do not alter runtime behavior. |
+| Short representative geometry, lighting, transparency and effects checks | Current integrated Khallos, Mansion hall/spirit and opening-mission captures, with the earlier exterior/rain control separately versioned. No full playthrough or all-scenes claim. |
+| 60 and up-to-120 pacing while retaining the guest clock | Preselected windows measure 60.001 / 119.998 successful API presents/s; 120 mode splits into 59.999 guest + 59.999 interpolated, with no interval over 33.33 ms in those windows. Loading/readback stalls and whole-run means remain reported separately. |
+| Preserve settings, fixtures, pins, lean storage and concurrent work | Verified hashes, isolated runner paths, known partition cleanup and storage totals above; 19 unrelated duplicate files and the other chat's worktree are preserved. |
+| Focused branches, provenance and handoff | Runtime integration PR #191 depends on the unmerged renderer stack; acceptance PR #193 depends on #191. Main was not modified by this work. Other-device checkout synchronization and Windows gameplay remain unverified. |
+
+This completes the requested bounded renderer investigation and acceptance,
+not full-game certification. Broader MAC-005 shader fidelity and MAC-049 spirit
+wall-occlusion/full-angle/other-encounter coverage remain in the backlog. There
+is no demonstrated unresolved Mac-only Khallos defect in the collected evidence.
