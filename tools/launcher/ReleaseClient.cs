@@ -53,8 +53,14 @@ namespace TimeSplitters.Launcher
 
     public sealed class Release
     {
-        public string Tag, Notes, Url, AssetName, AssetUrl, ChecksumUrl, Digest;
+        public string Tag, Notes, Url, Name, Published, AssetName, AssetUrl, ChecksumUrl, Digest;
         public long Size;
+        public bool IsPreview;
+    }
+    public sealed class GameReleaseList
+    {
+        public Release[] Releases;
+        public bool HasMore;
     }
     public sealed class LauncherRelease
     {
@@ -108,7 +114,7 @@ namespace TimeSplitters.Launcher
                 GameVersion version;
                 try { version = GameVersion.Parse(tag); } catch (InvalidDataException) { continue; }
                 if (!preview && version.Pre.Length != 0) continue;
-                string expected = "TimeSplitters-Future-Perfect-PC-" + tag + "-windows-x64.zip";
+                string expected = "TimeSplitters-Future-Perfect-PC-" + tag + "-" + LauncherPlatform.AssetSuffix + ".zip";
                 object assets;
                 if (!r.TryGetValue("assets", out assets)) continue;
                 var files = ((object[])assets).Cast<Dictionary<string, object>>().ToList();
@@ -124,8 +130,9 @@ namespace TimeSplitters.Launcher
                 long size;
                 if (!long.TryParse(Json.String(asset, "size"), out size) || size <= 0 || size > 4L * 1024 * 1024 * 1024) continue;
                 if (best == null || version.CompareTo(GameVersion.Parse(best.Tag)) > 0)
-                    best = new Release { Tag = tag, Notes = Json.String(r, "body"), Url = ReleasesPage + "/tag/" + Uri.EscapeDataString(tag),
-                        AssetName = expected, AssetUrl = assetUrl, Size = size, ChecksumUrl = checkUrl, Digest = digest };
+                    best = new Release { Tag = tag, Notes = Json.String(r, "body"), Url = ReleasesPage + "/tag/" + Uri.EscapeDataString(tag), Name=Json.String(r,"name"),Published=Json.String(r,"published_at"),
+                        AssetName = expected, AssetUrl = assetUrl, Size = size, ChecksumUrl = checkUrl, Digest = digest,
+                        IsPreview = Json.Flag(r,"prerelease") || version.Pre.Length != 0 };
             }
             return best;
         }
@@ -156,6 +163,48 @@ namespace TimeSplitters.Launcher
             string json = await Text(url, 4 * 1024 * 1024, token).ConfigureAwait(false);
             return json.Length == 0 ? null : Select(json, preview);
         }
+        public async Task<Release> FindGame(string version, CancellationToken token)
+        {
+            GameVersion.Parse(version);
+            string json = await Text("https://api.github.com/repos/" + Repository + "/releases/tags/" + Uri.EscapeDataString(version), 4 * 1024 * 1024, token).ConfigureAwait(false);
+            var release = json.Length == 0 ? null : Select(json,true);
+            Core.Require(release != null && release.Tag == version, "This installed game release is not available for repair on GitHub. No installed files were changed.");
+            return release;
+        }
+        public static GameReleaseList GameVersions(string json)
+        {
+            var records = Json.Serializer().DeserializeObject(json) as object[];
+            Core.Require(records != null && records.Length <= 100,"GitHub returned an invalid game release list.");
+            var releases = new List<Release>();
+            foreach (var record in records)
+            {
+                var data = record as Dictionary<string,object>;
+                object assets;
+                if(data==null || !data.TryGetValue("assets",out assets) || !(assets is object[]) ||
+                    ((object[])assets).Any(asset=>!(asset is Dictionary<string,object>))) continue;
+                // A withdrawn, incompatible or unsafe asset must not hide the other releases.
+                try {
+                    var release = Select(Json.Encode(data),true);
+                    if (release != null && !releases.Any(r=>r.Tag==release.Tag)) releases.Add(release);
+                } catch (InvalidDataException) { }
+            }
+            return new GameReleaseList { Releases = releases.OrderByDescending(r=>GameVersion.Parse(r.Tag)).ToArray(), HasMore = records.Length == 100 };
+        }
+        public async Task<GameReleaseList> ReadGameVersions(int page,CancellationToken token)
+        {
+            Core.Require(page > 0 && page <= 10000,"Invalid release list page.");
+            string json = await Text("https://api.github.com/repos/"+Repository+"/releases?per_page=100&page="+page.ToString(CultureInfo.InvariantCulture),4*1024*1024,token).ConfigureAwait(false);
+            Core.Require(!String.IsNullOrWhiteSpace(json),"GitHub returned no release information. Try refreshing the list.");
+            return GameVersions(json);
+        }
+        public async Task<Release> FindLauncher(string version, CancellationToken token)
+        {
+            GameVersion.Parse(version);
+            string json = await Text("https://api.github.com/repos/" + Repository + "/releases/tags/launcher-v" + Uri.EscapeDataString(version), 4 * 1024 * 1024, token).ConfigureAwait(false);
+            var candidate = json.Length == 0 ? null : SelectLauncher("[" + json + "]",true);
+            Core.Require(candidate != null && candidate.Package.Tag == version, "This launcher version has not been published or is unavailable for repair. No installed files were changed.");
+            return VerifyLauncherMetadata(candidate,await Text(candidate.ManifestUrl,16384,token).ConfigureAwait(false));
+        }
         public static LauncherRelease SelectLauncher(string json, bool preview)
         {
             LauncherRelease best = null;
@@ -166,22 +215,23 @@ namespace TimeSplitters.Launcher
                 object entries;
                 if (!record.TryGetValue("assets", out entries)) continue;
                 var files = ((object[])entries).Cast<Dictionary<string, object>>().Where(a => Json.String(a, "state") == "uploaded").ToList();
-                var manifest = files.FirstOrDefault(a => Json.String(a, "name") == "launcher-update.json");
+                var manifest = files.FirstOrDefault(a => Json.String(a, "name") == LauncherPlatform.UpdateManifest);
                 if (manifest == null) continue;
                 foreach (var asset in files)
                 {
                     string name = Json.String(asset, "name");
-                    var match = Regex.Match(name, @"^TimeSplitters-Launcher-v(.+)-windows-x64\.zip$");
+                    var match = Regex.Match(name, @"^TimeSplitters-Launcher-v(.+)-" + LauncherPlatform.AssetSuffix + @"\.zip$");
                     if (!match.Success) continue;
                     string version = match.Groups[1].Value;
                     GameVersion parsed;
                     try { parsed = GameVersion.Parse(version); } catch (InvalidDataException) { continue; }
                     if ((!preview && parsed.Pre.Length != 0) || (best != null && parsed.CompareTo(GameVersion.Parse(best.Package.Tag)) <= 0)) continue;
                     long size;
-                    if (!long.TryParse(Json.String(asset, "size"), out size) || size <= 0 || size > 16 * 1024 * 1024) continue;
+                    if (!long.TryParse(Json.String(asset, "size"), out size) || size <= 0 || size > LauncherPlatform.LauncherArchiveLimit) continue;
                     string url = Json.String(asset, "browser_download_url"), manifestUrl = Json.String(manifest, "browser_download_url");
                     ValidateDownloadUrl(url); ValidateDownloadUrl(manifestUrl);
                     best = new LauncherRelease { ManifestUrl = manifestUrl, Package = new Release { Tag = version, AssetName = name,
+                        Notes=Json.String(record,"body"),Name=Json.String(record,"name"),Published=Json.String(record,"published_at"),Url=ReleasesPage+"/tag/"+Uri.EscapeDataString(Json.String(record,"tag_name")),
                         Size = size, AssetUrl = url, Digest = Json.String(asset, "digest"), ChecksumUrl = "" } };
                 }
             }
@@ -211,7 +261,78 @@ namespace TimeSplitters.Launcher
             if (candidate == null) return null;
             return VerifyLauncherMetadata(candidate, await Text(candidate.ManifestUrl, 16384, token).ConfigureAwait(false));
         }
-        public async Task Download(Release release, string destination, IProgress<double> progress, CancellationToken token)
+        public Task<KnownIssues> ReadKnownIssues(CancellationToken token)
+        { return ReadKnownIssuesWithTimeout(TimeSpan.FromSeconds(25),token); }
+        internal async Task<KnownIssues> ReadKnownIssuesWithTimeout(TimeSpan limit,CancellationToken token)
+        {
+            using(var request=CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                request.CancelAfter(limit);
+                try {
+                    var pending=ReadKnownIssuesCore(request.Token);
+                    if(await Task.WhenAny(pending,Task.Delay(Timeout.Infinite,request.Token)).ConfigureAwait(false)!=pending) {
+                        ObserveNewsFailure(pending);
+                        token.ThrowIfCancellationRequested();throw new TimeoutException("Known issues check timed out.");
+                    }
+                    return await pending.ConfigureAwait(false);
+                }finally{request.Cancel();}
+            }
+        }
+        async Task<KnownIssues> ReadKnownIssuesCore(CancellationToken token)
+        {
+            var issues=new Dictionary<long,KnownIssue>();
+            for(int page=1;page<=10;page++) {
+                token.ThrowIfCancellationRequested();
+                string json=await Text("https://api.github.com/repos/"+Repository+"/issues?state=open&labels=bug&sort=created&direction=desc&per_page=100&page="+page.ToString(CultureInfo.InvariantCulture),4*1024*1024,token).ConfigureAwait(false);
+                Core.Require(!String.IsNullOrWhiteSpace(json),"GitHub returned no issue information. Open the bug tracker or try again later.");
+                bool more;
+                foreach(var issue in KnownIssues.ParsePage(json,out more))issues[issue.Number]=issue;
+                if(!more)return new KnownIssues {Items=issues.Values.OrderByDescending(issue=>issue.Number).ToArray(),CheckedUtc=DateTime.UtcNow};
+            }
+            // Never replace a good snapshot with a partial list after an error,
+            // request cap or failure on a later page.
+            throw new InvalidDataException("Too many issue pages. View the complete bug tracker on GitHub.");
+        }
+        public Task<ReleaseNews> ReadNews(bool preview,string installedGame,string installedLauncher,CancellationToken token)
+        { return ReadNewsWithTimeout(preview,installedGame,installedLauncher,TimeSpan.FromSeconds(25),token); }
+        internal async Task<ReleaseNews> ReadNewsWithTimeout(bool preview,string installedGame,string installedLauncher,TimeSpan limit,CancellationToken token)
+        {
+            using(var request=CancellationTokenSource.CreateLinkedTokenSource(token)) {
+                request.CancelAfter(limit);
+                try {
+                    var pending=ReadNewsCore(preview,installedGame,installedLauncher,request.Token);
+                    if(await Task.WhenAny(pending,Task.Delay(Timeout.Infinite,request.Token)).ConfigureAwait(false)!=pending) {
+                        ObserveNewsFailure(pending);
+                        token.ThrowIfCancellationRequested();throw new TimeoutException("Release notes check timed out.");
+                    }
+                    return await pending.ConfigureAwait(false);
+                }finally{request.Cancel();}
+            }
+        }
+        static void ObserveNewsFailure(Task pending)
+        { pending.ContinueWith(task=>{var error=task.Exception;},TaskContinuationOptions.OnlyOnFaulted); }
+        async Task<ReleaseNews> ReadNewsCore(bool preview,string installedGame,string installedLauncher,CancellationToken token)
+        {
+            string json=await Text("https://api.github.com/repos/"+Repository+"/releases?per_page=100",4*1024*1024,token).ConfigureAwait(false);
+            Core.Require(!String.IsNullOrWhiteSpace(json),"GitHub returned no release information.");
+            var records=((object[])Json.Serializer().DeserializeObject(json)).Cast<Dictionary<string,object>>().ToArray();
+            var result=new ReleaseNews {Game=Select(json,preview),Preview=preview};
+            var launcher=SelectLauncher(json,preview);
+            if(launcher!=null)result.Launcher=VerifyLauncherMetadata(launcher,await Text(launcher.ManifestUrl,16384,token).ConfigureAwait(false));
+            result.InstalledGame=await InstalledNotes(records,installedGame,false,token).ConfigureAwait(false);
+            result.InstalledLauncher=await InstalledNotes(records,installedLauncher,true,token).ConfigureAwait(false);
+            result.CheckedUtc=DateTime.UtcNow;return result;
+        }
+        async Task<Release> InstalledNotes(Dictionary<string,object>[] records,string version,bool launcher,CancellationToken token)
+        {
+            if(String.IsNullOrEmpty(version))return null;
+            try{GameVersion.Parse(version);}catch(InvalidDataException){return null;}
+            string tag=launcher?"launcher-v"+version:version;
+            var notes=ReleaseNews.NotesFor(records,tag);if(notes!=null)return notes;
+            // Older installed releases may be outside the latest 100. No replacement version is substituted.
+            string json=await Text("https://api.github.com/repos/"+Repository+"/releases/tags/"+Uri.EscapeDataString(tag),4*1024*1024,token).ConfigureAwait(false);
+            return String.IsNullOrEmpty(json)?null:ReleaseNews.NotesFor(new[]{Json.Object(json)},tag);
+        }
+        public async Task Download(Release release, string destination, IProgress<double> progress, CancellationToken token, string cachePrefix = null)
         {
             ValidateDownloadUrl(release.AssetUrl);
             string expected = release.Digest.StartsWith("sha256:", StringComparison.Ordinal) ? release.Digest.Substring(7) : "";
@@ -223,26 +344,7 @@ namespace TimeSplitters.Launcher
                 if (!match.Success) throw new InvalidDataException("The release checksum is missing or invalid.");
                 expected = match.Groups[1].Value;
             }
-            using (var response = await http.GetAsync(release.AssetUrl, HttpCompletionOption.ResponseHeadersRead, token).ConfigureAwait(false))
-            {
-                response.EnsureSuccessStatusCode();
-                if (response.RequestMessage.RequestUri.Scheme != "https") throw new InvalidDataException("Insecure asset redirect.");
-                using (var input = await response.Content.ReadAsStreamAsync().ConfigureAwait(false))
-                using (var output = new FileStream(destination, FileMode.CreateNew, FileAccess.Write, FileShare.None, 65536, true))
-                {
-                    byte[] buffer = new byte[65536]; long count = 0; int got;
-                    while ((got = await input.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false)) > 0)
-                    {
-                        count += got;
-                        if (count > release.Size) throw new InvalidDataException("The download exceeds its published size.");
-                        await output.WriteAsync(buffer, 0, got, token).ConfigureAwait(false);
-                        progress.Report(100.0 * count / release.Size);
-                    }
-                    if (count != release.Size) throw new InvalidDataException("The release download is incomplete. Retry the update.");
-                }
-            }
-            if (!Core.Hash(destination).Equals(expected, StringComparison.OrdinalIgnoreCase))
-                throw new InvalidDataException("Checksum mismatch. The update has not been installed; download it again.");
+            await DownloadTransfer.Run(http,release,destination,expected,cachePrefix??destination+".download",progress,token).ConfigureAwait(false);
         }
     }
 }

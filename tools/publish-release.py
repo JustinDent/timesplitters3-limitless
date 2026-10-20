@@ -50,13 +50,40 @@ def github_repository(remote):
 
 def last_published(pages):
     releases = [release for page in pages for release in page]
-    published = [release for release in releases if not release['draft'] and release.get('published_at')]
+    published = []
+    for release in releases:
+        tag = release.get('tag_name', '')
+        if (release['draft'] or not release.get('published_at')
+                or not tag.startswith('v') or not SEMVER.fullmatch(tag[1:])):
+            continue
+        try:
+            version_key(tag[1:])
+        except ValueError:
+            continue
+        published.append(release)
     return releases, max(published, key=lambda release: release['published_at'], default=None)
 
 
 def digest(path):
     with path.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def game_release_path(path):
+    """Game source/runtime inputs, excluding launcher and release housekeeping."""
+    return (path.startswith(('src/', 'patches/', 'config/'))
+            or path in ('tsfp.ps1', 'setup.ps1', 'requirements.txt', 'CMakeLists.txt',
+                        'tools/build-game-icon.ps1', 'tools/launcher/IconBuilder.cs',
+                        'tools/launcher/GameMonogram.cs')
+            or path.startswith('tools/release/')
+            or path in {'tools/' + name for name in (
+                'recomp-generation.py', 'build-native-mac.py',
+                'crash_helper.c', 'crash-symbols.py',
+                'native_mac_common.py', 'play-native-mac.py', 'playable-launch.ps1',
+                'start-game.ps1', 'play.py', 'fetch-video.ps1', 'network-identity.py',
+                'bundle_online.py', 'online.py', 'online_host.py', 'online_client.py',
+                'online_transport.py', 'online_paths.py', 'lobby_server.py',
+                'texture-pack.py')})
 
 
 def check_directory(root, path, *, descendants=True):
@@ -205,19 +232,40 @@ class Publisher:
         if tagged and tagged != self.commit:
             raise ValueError('The release tag already points at a different commit; it will not be moved')
 
+    def game_pr_notes(self, generated):
+        commits = set(self.git('rev-list', f'{self.baseline}..{self.commit}'
+                               if self.baseline else self.commit).splitlines())
+        numbers = dict.fromkeys(re.findall(
+            rf'https://github\.com/{re.escape(self.repo)}/pull/(\d+)\b', generated))
+        rows = []
+        for number in numbers:
+            endpoint = f'repos/{self.repo}/pulls/{number}'
+            pr = json.loads(self.gh('api', endpoint))
+            if not pr.get('merged_at') or pr.get('merge_commit_sha') not in commits:
+                continue
+            pages = json.loads(self.gh('api', '--paginate', '--slurp', endpoint+'/files?per_page=100'))
+            files = [item for page in pages for item in page]
+            if len(files) != pr['changed_files']:
+                raise ValueError(f'Incomplete changed-file list for PR #{number}; cannot classify release notes safely.')
+            if not any(game_release_path(item[key]) for item in files
+                       for key in ('filename', 'previous_filename') if key in item):
+                continue
+            title = pr['title'].replace('\n', ' ').replace('\r', ' ')
+            title = title.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            title = re.sub(r'([\\`*_[\]])', r'\\\1', title)
+            rows.append(f'- {title} ([#{number}](https://github.com/{self.repo}/pull/{number}))')
+        changes = '\n'.join(rows) or 'No merged game-related pull requests in this release.'
+        if self.previous:
+            changes += f'\n\n**Full Changelog**: https://github.com/{self.repo}/compare/{self.previous["tag_name"]}...{self.tag}'
+        return changes
+
     def write_notes(self):
         payload = dict(tag_name=self.tag, target_commitish=self.commit)
         if self.previous:
             payload['previous_tag_name'] = self.previous['tag_name']
         generated = json.loads(self.gh('api', '--method', 'POST', f'repos/{self.repo}/releases/generate-notes',
                                        '--input', '-', payload=payload)).get('body', '').strip()
-        history = self.git('log', '--no-merges', '--format=%H%x09%s',
-                           f'{self.baseline}..{self.commit}' if self.baseline else self.commit)
-        commits = []
-        for row in history.splitlines():
-            sha, subject = row.split('\t', 1)
-            subject = subject.replace('<', '&lt;').replace('>', '&gt;')
-            commits.append(f'- {subject} ([{sha[:8]}](https://github.com/{self.repo}/commit/{sha}))')
+        generated = self.game_pr_notes(generated)
         baseline = self.previous['tag_name'] if self.previous else 'the beginning of the project'
         body = f'''TimeSplitters: Future Perfect PC **{self.tag}** for Windows 10/11 x64.
 
@@ -227,36 +275,30 @@ This is an experimental PC port. Original US Xbox game files are required and ar
 
 {generated}
 
-### Source changes
-
-{chr(10).join(commits) or 'No non-merge commits in this range; see the comparison above.'}
-
 ## Download and play
 
-**Recommended: use the [Windows launcher](https://github.com/{self.repo}/releases/latest).**
-Download and extract the launcher ZIP, then open **TimeSplitters Launcher.exe**.
-Set **Update channel → {'Preview' if self.prerelease else 'Stable'}** and choose
-**Install release**. Import your US Xbox game once using **Locate ISO** or
-**Use extracted files**, then select **Play Game**. The launcher downloads and
-verifies game releases and preserves your game data, settings and saves during updates.
+### Windows launcher (recommended)
 
-**Portable ZIP (alternative):** Download **{self.archive.name}**, extract the
-entire ZIP and run **Play.cmd**. On first launch, select your US Xbox ISO or
-extracted game folder. Preserve **Data**, **Settings** and **Saves** when upgrading.
-The companion `.zip.sha256` file verifies the portable download.
+1. [Download the Windows launcher](https://github.com/{self.repo}/releases/latest) and extract its ZIP.
+2. Open **TimeSplitters Launcher.exe**.
+3. Set **Update channel** to **{'Preview' if self.prerelease else 'Stable'}**, then select **Install release**.
+4. Import your US Xbox game using **Locate ISO** or **Use extracted files**. You only need to do this once.
+5. Select **Play Game**.
 
-Python, Git, Visual Studio and an emulator are not required to play.
+The launcher downloads and verifies updates, keeping your game data, settings and saves.
 
-## Build and validation
+### Portable ZIP (alternative)
 
-- Source: https://github.com/{self.repo}/commit/{self.commit}
-- Version: `{self.version}`; tag: `{self.tag}`.
-- Native Release build checks and Python tests passed.
-- Packaged Python/Tk, HTTPS hosting, invitations and three-peer UDP relay passed the portable check.
-- The archive was checked for corruption and against its build manifest; original game data and personal files are excluded.
+1. Download **{self.archive.name}** from **Assets** below.
+2. Extract the entire ZIP to a writable folder.
+3. Run **Play.cmd** and select your US Xbox ISO or extracted game folder when prompted.
 
-Full campaign completion and multiplayer across different internet connections remain unverified.
-Online hosts need TCP 30820 and their game UDP port (default 30821) forwarded to their PC.
+When upgrading, preserve **Data**, **Settings** and **Saves**.
+Use the companion `.zip.sha256` file to verify the download.
+
+**Requirements:** Windows 10/11 x64 and original US Xbox game files.
+Python, Git, Visual Studio and an emulator are not required. After importing the game, the ISO is no longer needed.
+
 '''
         self.notes.write_text(body, encoding='utf-8', newline='\n')
 
@@ -270,6 +312,10 @@ Online hosts need TCP 30820 and their game UDP port (default 30821) forwarded to
         for path in (self.stage, self.archive, self.checksum, self.metadata):
             if path.exists():
                 raise ValueError(f'Existing release output: {path.name}. Preserve/recycle the old output or use a new VERSION; nothing was overwritten.')
+        # An existing setup environment can predate newly pinned dependencies.
+        # Prepare the same interpreter that runs the release tests and tools.
+        self.run([self.python, '-m', 'pip', 'install', '-r',
+                  self.root/'requirements.txt'], live=True)
         tests = self.root/'build/release-tests'
         clean_pytest_current_links(self.root, tests)
         check_directory(self.root, tests)
@@ -369,7 +415,7 @@ Online hosts need TCP 30820 and their game UDP port (default 30821) forwarded to
         self.validate_remote()
         arguments = ['release', 'create', self.tag, '--repo', self.repo, '--target', self.commit,
                      '--verify-tag', '--latest=false',
-                     '--title', 'TimeSplitters: Future Perfect PC '+self.tag,
+                     '--title', 'TSFP '+self.tag,
                      '--notes-file', self.notes, '--draft', self.archive, self.checksum, self.metadata]
         if self.prerelease:
             arguments.append('--prerelease')

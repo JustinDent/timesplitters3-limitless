@@ -1,0 +1,138 @@
+--- a/src/d3d/d3d8_xbox.h
++++ b/src/d3d/d3d8_xbox.h
+@@ -623,6 +623,12 @@
+     D3DCLEAR_TARGET  = 0x01,
+     D3DCLEAR_ZBUFFER = 0x02,
+     D3DCLEAR_STENCIL = 0x04,
++    /* Host extension: preserve Xbox channel selection through capture/replay. */
++    D3DCLEAR_CHANNEL_RED = 0x10,
++    D3DCLEAR_CHANNEL_GREEN = 0x20,
++    D3DCLEAR_CHANNEL_BLUE = 0x40,
++    D3DCLEAR_CHANNEL_ALPHA = 0x80,
++    D3DCLEAR_CHANNEL_MASK = 0xF0,
+ } D3DCLEAR_FLAGS;
+ 
+ /* ================================================================
+--- a/src/hle/d3d8_xbox_map.h
++++ b/src/hle/d3d8_xbox_map.h
+@@ -23,28 +23,15 @@
+     XPT_QUADLIST, XPT_QUADSTRIP, XPT_POLYGON
+ };
+ 
+-/* Xbox D3DCLEAR_* bits: TARGET is 0xF0, one bit per channel (0x10 R, 0x20 G,
+- * 0x40 B, 0x80 A); ZBUFFER is 0x01 and STENCIL 0x02. The host layer takes the
+- * PC values. Two things are not honoured: a per-channel target mask (a target
+- * bit clears all four channels, as Cxbx-Reloaded also does) and clear
+- * rectangles, which the host dev_Clear ignores, so a rectangle-limited clear
+- * clears the whole target.
+- *
+- * Except that an alpha-only clear (0x80) clears nothing: TimeSplitters: Future
+- * Perfect resets destination alpha to 0 over its finished picture (its menus
+- * after the 3D background, its in-game hint screens after the scene), and
+- * passing that on as a whole-target clear left both black but for the text.
+- * Keeping the colour and leaving alpha uncleared is the lesser error. */
++/* Preserve per-channel clears: FP uses alpha as a temporary text mask.
++ * The standard host target flag remains a full RGBA clear; channel flags
++ * carry partial clears through both renderers and diagnostic captures. */
+ static __inline DWORD xbox_clear_flags_to_host(uint32_t xbox_flags)
+ {
+-    DWORD host = 0;
+-
+-    if (xbox_flags & 0x70)
+-        host |= D3DCLEAR_TARGET;
+-    if (xbox_flags & 0x01)
+-        host |= D3DCLEAR_ZBUFFER;
+-    if (xbox_flags & 0x02)
+-        host |= D3DCLEAR_STENCIL;
++    DWORD channels=xbox_flags & D3DCLEAR_CHANNEL_MASK;
++    DWORD host=channels==D3DCLEAR_CHANNEL_MASK ? D3DCLEAR_TARGET : channels;
++    if(xbox_flags & 0x01)host |= D3DCLEAR_ZBUFFER;
++    if(xbox_flags & 0x02)host |= D3DCLEAR_STENCIL;
+     return host;
+ }
+ 
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -27,6 +27,9 @@
+ #include <string.h>
+ /* malloc: without <stdlib.h> its pointer is truncated to int. */
+ #include <stdlib.h>
++#ifdef TSFP_PC_DISPLAY
++#include "pc_clear_rhi.inc"
++#endif
+ 
+ /* ================================================================
+  * Internal device state
+@@ -690,6 +693,9 @@
+     if (ref <= 0) {
+         /* Cleanup subsystems first */
+         up_ring_shutdown();
++#ifdef TSFP_PC_DISPLAY
++        pc_clear_shutdown();
++#endif
+         d3d8_overlay_shutdown();
+         d3d8_movie_shutdown();
+         xbox_D3D8ScreenCopyShutdown();
+@@ -845,14 +851,23 @@
+     RhiView *rtv = g_cur_rt ? g_cur_rt->rtv : g_device_state.rhi_default_rtv;
+     RhiView *dsv = g_cur_ds ? g_cur_ds->dsv : NULL;
+ 
+-    if ((Flags & D3DCLEAR_TARGET) && rtv) {
++    if ((Flags & (D3DCLEAR_TARGET | D3DCLEAR_CHANNEL_MASK)) && rtv) {
+         float clear_color[4] = {
+             ((Color >> 16) & 0xFF) / 255.0f,  /* R */
+             ((Color >>  8) & 0xFF) / 255.0f,  /* G */
+             ((Color >>  0) & 0xFF) / 255.0f,  /* B */
+             ((Color >> 24) & 0xFF) / 255.0f,  /* A */
+         };
+-        rhi_clear_color(rtv, clear_color);
++        if (Flags & D3DCLEAR_TARGET) {
++            rhi_clear_color(rtv, clear_color);
++        } else {
++#ifdef TSFP_PC_DISPLAY
++            unsigned width=g_cur_rt ? g_cur_rt->width : g_device_state.width;
++            unsigned height=g_cur_rt ? g_cur_rt->height : g_device_state.height;
++            if(!pc_clear_masked(rtv,width,height,clear_color,
++                                (Flags & D3DCLEAR_CHANNEL_MASK)>>4))return E_FAIL;
++#endif
++        }
+     }
+ 
+     if ((Flags & (D3DCLEAR_ZBUFFER | D3DCLEAR_STENCIL)) && dsv) {
+--- a/src/d3d/CMakeLists.txt
++++ b/src/d3d/CMakeLists.txt
+@@ -103,6 +103,11 @@
+ if(TSFP_PC_CONTROLS_DIR)
+     target_sources(xbox_d3d8 PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_display.c")
+     target_compile_definitions(xbox_d3d8 PRIVATE TSFP_PC_DISPLAY)
++    if(WIN32)
++        add_executable(tsfp_pc_clear_test "${TSFP_PC_CONTROLS_DIR}/../tests/pc_clear.c")
++        target_include_directories(tsfp_pc_clear_test PRIVATE "${TSFP_PC_CONTROLS_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/../hle")
++        target_link_libraries(tsfp_pc_clear_test PRIVATE xbox_d3d8)
++    endif()
+ endif()
+ 
+ if(APPLE AND TSFP_NATIVE_DIR)
+--- a/src/hle/d3d8_capture.h
++++ b/src/hle/d3d8_capture.h
+@@ -106,7 +106,8 @@
+  * version 4 cube textures and the face a render target names, version 6
+  * fixed-function lights and the material, version 7 the texels of cubes
+  * filled from memory and the stage palettes P8 textures are expanded with. */
+-#define D3D8CAP_VERSION      7u
++/* Version 8 carries per-channel colour-clear flags; older captures still read. */
++#define D3D8CAP_VERSION      8u
+ /* The oldest version the reader still accepts. A bump that only adds chunk
+  * kinds leaves an older file a valid newer one that happens not to contain
+  * them (version 6 added three; version 5 one), so it leaves this alone. A
+--- a/tests/d3d8_capture/test_main.c
++++ b/tests/d3d8_capture/test_main.c
+@@ -422,7 +422,7 @@
+         return;
+     }
+     h = d3d8cap_header(r);
+-    check(h->version == 7 && D3D8CAP_VERSION == 7, "the version is 7");
++    check(h->version == 8 && D3D8CAP_VERSION == 8, "the version is 8");
+     check(h->frame == 7 && h->width == 640 && h->height == 480, "header fields");
+     check(h->chunk_count == SNAPSHOT_CHUNKS + FRAME_CHUNKS, "chunk_count is patched in");
+ 

@@ -1,0 +1,70 @@
+--- a/src/hle/hle.h
++++ b/src/hle/hle.h
+@@ -70,4 +70,11 @@
+         return;                                                                \
+     } while (0)
+ 
++/* Scoped title compatibility overrides. Zero preserves guest render states.
++ * Render-thread only, like the shadow device. Restore the returned flags
++ * after the effect has flushed its last draw. */
++#define HLE_D3D8_EFFECT_CULL_CW 1u
++#define HLE_D3D8_EFFECT_NO_FOG  2u
++unsigned hle_d3d8_effect_override(unsigned flags);
++
+ #endif /* XBOXRECOMP_HLE_H */
+--- a/src/hle/hle_d3d8_state.c
++++ b/src/hle/hle_d3d8_state.c
+@@ -106,6 +107,19 @@
+ static uint32_t g_prev_rs[XRS_COUNT];
+ static uint32_t g_prev_tss[STAGES][STAGE_SIZE];
+ static int      g_prev_valid;
++static unsigned g_effect_override;
++
++unsigned hle_d3d8_effect_override(unsigned flags)
++{
++    unsigned previous = g_effect_override;
++    if (previous != flags) {
++        g_effect_override = flags;
++        /* The cache holds guest values. Re-emit when entering OR leaving an
++         * override even if the guest never changed its corresponding state. */
++        g_prev_valid = 0;
++    }
++    return previous;
++}
+ 
+ /* Each value is logged once. Texture operations are converted on every draw,
+  * so logging each occurrence would bury every other value under one. */
+@@ -825,6 +839,12 @@
+             continue;
+         g_prev_rs[x] = v;
+         host_value = rs_to_host(g_rs_map[i].kind, v);
++        if (g_rs_map[i].host == D3DRS_CULLMODE &&
++            (g_effect_override & HLE_D3D8_EFFECT_CULL_CW))
++            host_value = D3DCULL_CW;
++        if (g_rs_map[i].host == D3DRS_FOGENABLE &&
++            (g_effect_override & HLE_D3D8_EFFECT_NO_FOG))
++            host_value = FALSE;
+         host_SetRenderState(dev, (D3DRENDERSTATETYPE)g_rs_map[i].host, host_value);
+     }
+ 
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -579,6 +579,18 @@
+ #endif
+ }
+ 
++/* US 45410066: scope the spirit compatibility rules to the game's effect
++ * renderer and its model nodes / billboard batches, never shader hashes. */
++#include "pc_ghost_render_guest.inc"
++extern void sub_0024A1A0_gen(void);
++void sub_0024A1A0(void) { pc_ghost_render(sub_0024A1A0_gen); }
++extern void sub_0018EA90_gen(void);
++void sub_0018EA90(void) { pc_ghost_model_node(sub_0018EA90_gen); }
++extern void sub_0001D3E0_gen(void);
++void sub_0001D3E0(void) { pc_ghost_billboard_begin(sub_0001D3E0_gen); }
++extern void sub_0001D380_gen(void);
++void sub_0001D380(void) { pc_ghost_billboard_end(sub_0001D380_gen); }
++
+ recomp_func_t recomp_lookup_manual(uint32_t xbox_va)
+ {
+ #if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)

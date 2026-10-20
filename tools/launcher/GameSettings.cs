@@ -20,6 +20,8 @@ namespace TimeSplitters.Launcher
         Dictionary<string, object> document, controller, bindings;
         string runtime;
         public double Sensitivity = .10;
+        public bool DiscordEnabled;
+        public string DiscordApplicationId = "1561627743353962566";
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
@@ -35,12 +37,24 @@ namespace TimeSplitters.Launcher
             }
         }
         public bool CanAdjustFov { get { return SupportsExtendedDisplay; } }
+        public bool SupportsPresentationTarget {
+            get {
+                if(!LauncherPlatform.CanSelectPresentationTarget) return false;
+                try {
+                    string version=Core.InstalledVersion(root);
+                    return version.Length==0 || GameVersion.Parse(version).CompareTo(GameVersion.Parse("v0.3.0-alpha.2"))>0;
+                } catch { return false; }
+            }
+        }
         public bool SupportsResolution(int width, int height)
         { return DisplayMode.Valid(width,height) && (SupportsExtendedDisplay || height <= 2160); }
         public int Width, Height, Scale = 1, Anisotropy = 1, Interpolation = 1;
+        public int PresentationFps;
+        int loadedPresentationFps, loadedRefreshRate;
+        public int RefreshRate;
         public string FrameCap = "adaptive";
         public string Device { get { return Convert.ToString(controller["device"], CultureInfo.InvariantCulture); } set { controller["device"] = value; } }
-        static readonly string[] Files = { "Settings/pc-controls.json", "Settings/pc-display.ini", "Settings/runtime.conf" };
+        readonly string[] Files;
         static Dictionary<string, object> Map(object value)
         { var map = value as Dictionary<string, object>; Core.Require(map != null, "Settings contain an invalid object."); return map; }
         static byte[] Read(string path)
@@ -51,9 +65,17 @@ namespace TimeSplitters.Launcher
         public static GameSettings Load(string root, string inheritedRuntime)
         {
             var model = new GameSettings(root);
+            var Files = model.Files;
             foreach (string file in Files) model.originals[file] = Read(Core.PathIn(root, file));
             model.document = Json.Object(model.originals[Files[0]] == null ? DefaultControls() : Text(model.originals[Files[0]]));
             model.ReadController();
+            string discord = Text(model.originals[Files[3]]);
+            if (discord.Length > 0) {
+                var presence = Regex.Match(discord, @"\ATSFP_DISCORD_V1\s+([01])\s+([0-9]{1,20})\s*\z");
+                Core.Require(presence.Success, "Discord settings are invalid. No settings were changed.");
+                model.DiscordEnabled = presence.Groups[1].Value == "1";
+                model.DiscordApplicationId = presence.Groups[2].Value == "0" ? "" : presence.Groups[2].Value;
+            }
             object value;
             if (model.document.TryGetValue("launcher", out value))
             {
@@ -85,7 +107,11 @@ namespace TimeSplitters.Launcher
             var settings = ParseRuntime(model.runtime);
             model.Scale = Number(settings, "resolution_scale", 1);
             model.Anisotropy = Number(settings, "anisotropy", 1);
-            model.Interpolation = Number(settings, "frame_interp", 1);
+            model.Interpolation = Number(settings, "frame_interp", LauncherPlatform.DefaultInterpolation);
+            model.PresentationFps = Number(settings, "frame_target", 0);
+            model.RefreshRate = Number(settings, "refresh_rate", 0);
+            model.loadedPresentationFps = model.PresentationFps;
+            model.loadedRefreshRate = model.RefreshRate;
             model.Fullscreen = Number(settings, "fullscreen", 0) != 0;
             model.Vrr = Number(settings, "vrr", 1) != 0;
             model.FpsOverlay = Number(settings, "fps_overlay", 0) != 0;
@@ -93,7 +119,7 @@ namespace TimeSplitters.Launcher
             model.Validate();
             return model;
         }
-        GameSettings(string path) { root = Path.GetFullPath(path); }
+        GameSettings(string path) { root = Path.GetFullPath(path); Files = LauncherPlatform.Settings(root); }
         void ReadController()
         {
             object value;
@@ -123,6 +149,17 @@ namespace TimeSplitters.Launcher
             Core.Require(list.Count <= 4, "This profile has more than four bindings on an action; it was left unchanged.");
             while (list.Count < 4) list.Add("none");
             return list.ToArray();
+        }
+        public const int WheelUpKey = 134, WheelDownKey = 135;
+        public static int CaptureKey(int key) { return key==160||key==161?16:key==162||key==163?17:key==164||key==165?18:key; }
+        public static string BindingLabel(string token)
+        {
+            if(String.IsNullOrEmpty(token)||token=="none")return "Unbound";
+            int key=KeyCode(token);
+            switch(key){case 1:return "Mouse 1";case 2:return "Mouse 2";case 4:return "Mouse 3";case 5:return "Mouse 4";case 6:return "Mouse 5";case 8:return "Backspace";case 13:return "Enter";case 16:return "Shift";case 17:return "Ctrl";case 18:return "Alt";case 27:return "Escape";case 32:return "Space";case WheelUpKey:return "Wheel up";case WheelDownKey:return "Wheel down";}
+            if((key>=48&&key<=57)||(key>=65&&key<=90))return ((char)key).ToString();
+            if(key>=112&&key<=135)return "F"+(key-111);
+            return token.StartsWith("key:",StringComparison.OrdinalIgnoreCase)?token.Substring(4):token;
         }
         public static bool KeyAllowed(int key)
         { return key >= 0 && key <= 255 && key != 112 && key != 113 && !(key >= 120 && key <= 123) && key != 91 && key != 92; }
@@ -176,18 +213,27 @@ namespace TimeSplitters.Launcher
         { string v; int n; if (!values.TryGetValue(key, out v)) return fallback; if (Int32.TryParse(v, out n)) return n; if (v == "true" || v == "on" || v == "yes") return 1; if (v == "false" || v == "off" || v == "no") return 0; throw new InvalidDataException("Invalid runtime setting: " + key); }
         public void Validate()
         {
+            ulong discordId;
+            Core.Require((!DiscordEnabled && DiscordApplicationId.Length == 0) ||
+                (Regex.IsMatch(DiscordApplicationId, @"\A[1-9][0-9]{16,19}\z") && UInt64.TryParse(DiscordApplicationId, out discordId)),
+                "Enter the public numeric Discord Application ID (17–20 digits), or turn off Rich Presence and clear the ID.");
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
             Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
             Core.Require(SupportsResolution(Width,Height), "Choose a supported landscape resolution from 640×480, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default. Maximum: " + (SupportsExtendedDisplay ? "7680×4320." : "7680×2160 for this game release."));
             Core.Require(Scale >= 1 && Scale <= 8 && Anisotropy >= 1 && Anisotropy <= 16 && Interpolation >= 1 && Interpolation <= 4, "A graphics setting is outside the supported range.");
             Core.Require(new[] { "adaptive", "30", "60", "0" }.Contains(FrameCap), "Unsupported frame pacing option.");
+            Core.Require(new[] { 0, 120, 144 }.Contains(PresentationFps), "Choose the legacy multiplier, 120 FPS or 144 FPS.");
+            Core.Require(PresentationFps==0 || SupportsPresentationTarget || (!LauncherPlatform.CanSelectPresentationTarget && PresentationFps==loadedPresentationFps), "120/144 FPS targets require a game release newer than v0.3.0-alpha.2.");
+            Core.Require(new[]{0,120,144}.Contains(RefreshRate), "Choose the current desktop refresh rate, 120 Hz or 144 Hz.");
+            Core.Require(RefreshRate==0 || SupportsPresentationTarget || (!LauncherPlatform.CanSelectPresentationTarget && RefreshRate==loadedRefreshRate), "Monitor refresh selection requires a game release newer than v0.3.0-alpha.2.");
+            Core.Require(!LauncherPlatform.CanSelectPresentationTarget || PresentationFps == 0 || FrameCap == "adaptive" || FrameCap == "60", "120/144 FPS requires adaptive or 60 Hz game pacing.");
             Core.Require(new[] { "keyboard", "none", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "xinput:0", "xinput:1", "xinput:2", "xinput:3" }.Contains(Device), "Unsupported Player 1 input device.");
             for (int i = 0; i < 24; i++) Binding(i);
         }
         public static bool Running(string root)
         {
-            bool running = false; string exe = Core.PathIn(root, "Bin/futureperfect_recomp.exe");
+            bool running = false; string exe = Core.PathIn(root, LauncherPlatform.GamePath(root));
             foreach (var p in Process.GetProcessesByName("futureperfect_recomp")) using (p)
                 try { if (!p.HasExited && String.Equals(p.MainModule.FileName, exe, StringComparison.OrdinalIgnoreCase)) running = true; }
                 catch (InvalidOperationException) { } catch (System.ComponentModel.Win32Exception) { running = true; }
@@ -231,7 +277,10 @@ namespace TimeSplitters.Launcher
             if (!document.TryGetValue("launcher", out value)) document["launcher"] = value = new Dictionary<string, object>();
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
-            var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics) };
+            graphics["frame_target"] = PresentationFps.ToString();
+            graphics["refresh_rate"] = RefreshRate.ToString();
+            var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
+                "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n" };
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch
@@ -242,16 +291,17 @@ namespace TimeSplitters.Launcher
             foreach (string file in Files) originals[file] = Read(Core.PathIn(root, file));
             runtime = payload[2];
         }
-        public static bool HasGraphics(string root) { return File.Exists(Core.PathIn(root, Files[2])); }
         public static ProcessStartInfo StartInfo(string root)
         {
             var model = Load(root, null); model.Validate();
-            var info = new ProcessStartInfo(Core.PathIn(root, "Bin/futureperfect_recomp.exe")) { WorkingDirectory = Core.PathIn(root, "Bin"), UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
+            var Files = model.Files;
+            var info = new ProcessStartInfo(Core.PathIn(root, LauncherPlatform.GamePath(root))) { WorkingDirectory = Core.PathIn(root, "Bin"), UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true };
             foreach (string key in info.EnvironmentVariables.Keys.Cast<string>().ToArray())
                 if (key.StartsWith("RECOMP_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("TSFP_", StringComparison.OrdinalIgnoreCase)) info.EnvironmentVariables.Remove(key);
             foreach (var pair in new Dictionary<string, string> {
-                {"RECOMP_GAME_DIR","Data"}, {"RECOMP_SAVE_DIR","Saves"}, {"RECOMP_INPUT_CONFIG",Files[0]}, {"RECOMP_FFMPEG_DIR","Bin"}, {"RECOMP_DISPLAY_CONFIG",Files[2]}, {"TSFP_DISPLAY_CONFIG",Files[1]}, {"TSFP_TEXTURE_PACK_DIR","Textures"}, {"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"} }) info.EnvironmentVariables[pair.Key] = Core.PathIn(root, pair.Value);
+                {"TSFP_CRASH_DIR","Logs/Crashes"}, {"RECOMP_GAME_DIR",LauncherPlatform.Data(root)}, {"RECOMP_SAVE_DIR",LauncherPlatform.Saves(root)}, {"RECOMP_INPUT_CONFIG",Files[0]}, {"RECOMP_FFMPEG_DIR","Bin"}, {"RECOMP_DISPLAY_CONFIG",Files[2]}, {"TSFP_DISPLAY_CONFIG",Files[1]}, {"TSFP_TEXTURE_PACK_DIR",LauncherPlatform.Textures(root)}, {"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"} }) info.EnvironmentVariables[pair.Key] = Core.PathIn(root, pair.Value);
             info.EnvironmentVariables["RECOMP_TRACE_BUDGET"] = "0";
+            info.EnvironmentVariables["TSFP_DISCORD_CONFIG"] = Core.PathIn(root, Files[3]);
             // The existing XMV HLE completes skipped movies normally. Story
             // cutscenes are rendered by the game and do not use this player.
             info.EnvironmentVariables["RECOMP_XMV_PLAY"] = model.SkipStartupSplashes ? "0" : "1";
@@ -259,6 +309,9 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["RECOMP_MOUSE_INVERT_Y"] = model.InvertY ? "1" : "0";
             info.EnvironmentVariables["RECOMP_MOUSE_SENSITIVITY"] = model.Sensitivity.ToString("R", CultureInfo.InvariantCulture);
             info.EnvironmentVariables["TSFP_TEXTURE_MODE"] = "classic";
+            #if MACOS
+            NativeHost.Configure(info,root);
+#endif
             return info;
         }
     }

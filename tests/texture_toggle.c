@@ -8,6 +8,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#ifndef _WIN32
+static int _putenv_s(const char *name,const char *value) {
+    return *value ? setenv(name,value,1) : unsetenv(name);
+}
+#endif
 
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL %d: %s\n",__LINE__,#x); return 1; } } while(0)
 static int images, views, allocations, fail_view;

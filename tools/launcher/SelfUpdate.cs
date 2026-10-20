@@ -66,7 +66,7 @@ namespace TimeSplitters.Launcher
             }
             catch (Exception ex) { LauncherLog.Write(root, "Launcher manifest: " + ex.Message); return ""; }
         }
-        static Dictionary<string, string> Manifest(string text, string expected)
+        internal static Dictionary<string, string> Manifest(string text, string expected)
         {
             var metadata = Json.Object(text);
             Core.Require(Json.String(metadata, "schema") == "1" && Json.String(metadata, "version") == expected, "Launcher package version or schema mismatch.");
@@ -77,12 +77,12 @@ namespace TimeSplitters.Launcher
             foreach (var pair in (Dictionary<string, object>)hashes)
             {
                 Core.Name(pair.Key);
-                Core.Require((pair.Key == Core.LauncherName || pair.Key == Core.AppPath) && !result.ContainsKey(pair.Key), "Unexpected launcher package file.");
+                Core.Require((pair.Key == Core.LauncherName || pair.Key == Core.AppPath || LauncherPlatform.LauncherResource(pair.Key)) && !result.ContainsKey(pair.Key), "Unexpected launcher package file.");
                 string hash = Convert.ToString(pair.Value);
                 Core.Require(Regex.IsMatch(hash, "^[0-9a-fA-F]{64}$"), "Invalid launcher file checksum.");
                 result.Add(pair.Key, hash);
             }
-            Core.Require(result.Count == 2 && result.ContainsKey(Core.LauncherName) && result.ContainsKey(Core.AppPath), "Launcher package is incomplete.");
+            Core.Require(result.Count >= 2 && result.Count <= LauncherPlatform.LauncherFileLimit && result.ContainsKey(Core.LauncherName) && result.ContainsKey(Core.AppPath), "Launcher package is incomplete.");
             return result;
         }
         public static bool Complete(string root)
@@ -141,14 +141,15 @@ namespace TimeSplitters.Launcher
             }
             catch (Exception ex) { LauncherLog.Write(root, "Launcher cleanup deferred for " + relative + ": " + ex.Message); }
         }
-        public static List<Change> Unpack(string archive, string destination, string expected)
+        public static List<Change> Unpack(string archive, string destination, string expected, CancellationToken token = default(CancellationToken))
         {
+            token.ThrowIfCancellationRequested();
             Core.Require(!Directory.Exists(destination), "Launcher staging already exists.");
             using (var zip = ZipFile.OpenRead(archive))
             {
-                Core.Require(zip.Entries.Count > 0 && zip.Entries.Count <= 12, "Unexpected launcher archive layout.");
+                Core.Require(zip.Entries.Count > 0 && zip.Entries.Count <= LauncherPlatform.LauncherFileLimit, "Unexpected launcher archive layout.");
                 var manifestEntries = zip.Entries.Where(e => e.FullName == Core.SelfManifest).ToArray();
-                Core.Require(manifestEntries.Length == 1 && manifestEntries[0].Length <= 16384, "Launcher manifest is missing or too large.");
+                Core.Require(manifestEntries.Length == 1 && manifestEntries[0].Length <= LauncherPlatform.LauncherManifestLimit, "Launcher manifest is missing or too large.");
                 string text;
                 using (var reader = new StreamReader(manifestEntries[0].Open())) text = reader.ReadToEnd();
                 var hashes = Manifest(text, expected);
@@ -161,16 +162,20 @@ namespace TimeSplitters.Launcher
                     if (entry.FullName.EndsWith("/", StringComparison.Ordinal)) continue;
                     Core.Require(Core.LauncherFile(entry.FullName) && names.Add(entry.FullName), "Unexpected or duplicate launcher archive file.");
                     total += entry.Length;
-                    Core.Require(entry.Length <= 16 * 1024 * 1024 && total <= 32 * 1024 * 1024, "Expanded launcher package is too large.");
+                    Core.Require(entry.Length <= LauncherPlatform.LauncherExpandedLimit && total <= LauncherPlatform.LauncherExpandedLimit, "Expanded launcher package is too large.");
                 }
-                Core.Require(names.Count == 3, "Launcher package files are missing.");
+                Core.Require(names.Count == hashes.Count + 1, "Launcher package files are missing.");
                 Core.CheckSpace(Path.GetDirectoryName(archive), total * 2 + 16 * 1024 * 1024);
                 Directory.CreateDirectory(destination);
                 foreach (var entry in zip.Entries.Where(e => !e.FullName.EndsWith("/", StringComparison.Ordinal)))
                 {
+                    token.ThrowIfCancellationRequested();
                     string target = Core.PathIn(destination, entry.FullName);
                     Directory.CreateDirectory(Path.GetDirectoryName(target));
-                    using (var input = entry.Open()) using (var output = new FileStream(target, FileMode.CreateNew)) input.CopyTo(output);
+                    using (var input = entry.Open()) using (var output = new FileStream(target, FileMode.CreateNew)) {
+                        var buffer = new byte[65536]; int read;
+                        while ((read = input.Read(buffer,0,buffer.Length)) > 0) { token.ThrowIfCancellationRequested(); output.Write(buffer,0,read); }
+                    }
                     if (entry.FullName != Core.SelfManifest) Core.Require(Core.Hash(target).Equals(hashes[entry.FullName], StringComparison.OrdinalIgnoreCase), "Launcher file checksum mismatch.");
                 }
                 return ValidatePayload(destination, expected);
@@ -189,30 +194,33 @@ namespace TimeSplitters.Launcher
             changes.Add(new Change { Name = Core.SelfManifest, Source = Core.PathIn(payload, Core.SelfManifest) });
             return changes;
         }
-        public static async Task<bool> Prepare(string root, Release release, ReleaseClient client, IProgress<double> progress, CancellationToken token)
+        public static async Task<bool> Prepare(string root, Release release, ReleaseClient client, IProgress<double> progress, CancellationToken token, bool repair = false)
         {
             if (release == null) return false;
             string installed = InstalledVersion(root);
-            if (installed.Length > 0 && Complete(root) && GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(installed)) <= 0) return false;
+            Core.Require(!repair || release.Tag == LauncherVersion.Value, "Repair requires the currently running launcher release.");
+            if (!repair && installed.Length > 0 && Complete(root) && GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(installed)) <= 0) return false;
             if (installed.Length > 0 && GameVersion.Parse(release.Tag).CompareTo(GameVersion.Parse(installed)) < 0) return false;
             Core.Require(!Core.GameRunning(), "Close the game before installing a launcher update.");
             Core.CheckSpace(root, release.Size * 4 + 32 * 1024 * 1024);
+            Core.Require(!repair || !Directory.Exists(Core.PathIn(root, ".launcher/self-pending")), "A launcher update is already staged. Restart the launcher before repairing.");
             Core.RemoveOwned(root, ".launcher/self-pending");
             string pending = Core.PathIn(root, ".launcher/self-pending"); Directory.CreateDirectory(pending);
             try
             {
                 string archive = Path.Combine(pending, "launcher.zip");
-                await client.Download(release, archive, progress, token).ConfigureAwait(false);
+                await client.Download(release, archive, progress, token, Core.PathIn(root,".launcher/downloads/launcher")).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
-                await Task.Run(() => Unpack(archive, Path.Combine(pending, "payload"), release.Tag), token).ConfigureAwait(false);
+                await Task.Run(() => Unpack(archive, Path.Combine(pending, "payload"), release.Tag, token), token).ConfigureAwait(false);
                 token.ThrowIfCancellationRequested();
                 Core.Write(Path.Combine(pending, "release.json"), Json.Encode(new { version = release.Tag }));
-                File.Delete(archive);
+                File.Delete(archive);DownloadTransfer.Forget(Core.PathIn(root,".launcher/downloads/launcher"));
                 return true;
             }
             catch
             {
-                TryCleanup(root, ".launcher/self-pending", true);
+                if(repair) { try { Core.DiscardRepairStaging(root,true); } catch { /* Retain protected or locked staging. */ } }
+                else TryCleanup(root, ".launcher/self-pending", true);
                 throw;
             }
         }

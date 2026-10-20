@@ -8,6 +8,7 @@
 #include "recomp_types.h"
 #include "pc_display.h"
 #include "pc_cutscene.h"
+#include "d3d8_movie.h"
 #define TSFP_PC_CONTROLS
 static PcDisplayMode mode;
 static float fov_scale=1.f;
@@ -37,6 +38,16 @@ void sub_0001EFB0_gen(void)
     g_eax = 0x12345678;
     g_esp += 4;
 }
+
+int pc_display_transition_overlay(void (*original)(void))
+{ (void)original; return 0; }
+
+int pc_display_scope_mask(void (*original)(void))
+{ (void)original; return 0; }
+
+/* Footer dispatch must never intercept a cinematic rectangle. */
+void pc_display_footer_background(void (*original)(void))
+{ (void)original; CHECK(0); }
 
 #define sub_0001EFB0 filtered_rectangle
 /* PRODUCTION_WRAPPER */
@@ -78,6 +89,19 @@ static void camera_tests(void)
     fov_scale=2.f;
     const unsigned states[]={2,4,4,2}; /* Grounded, falling, falling, landed. */
     const unsigned callers[]={0xCCBED,0xCDD35};
+    /* The frontend also owns a state-2 player and uses these camera callers.
+       Change scenes without clearing that actor, as on return to the menu. */
+    const unsigned scenes[]={1,100,101,102,103,104,105,106,107,1};
+    const float settings[]={1.f,tanf(90.f*.00872664626f)/tanf(55.f*.00872664626f)};
+    for(unsigned c=0;c<2;c++)for(unsigned s=0;s<2;s++)
+    for(unsigned a=0;a<2;a++)for(unsigned i=0;i<sizeof scenes/sizeof *scenes;i++) {
+        MEM32(0x10000)=callers[c]; MEM32(0x6114)=a ? 4 : 2;
+        MEM32(0x79094C)=scenes[i]; fov_scale=settings[s];
+        MEMF(0x4384)=55.f;
+        camera_check(scenes[i]>100 ? 1.f : 1.f/fov_scale);
+        CHECK(MEM32(0x6114)==(a ? 4u : 2u) && MEMF(0x4384)==55.f);
+    }
+    MEM32(0x79094C)=1; fov_scale=2.f;
     for(unsigned c=0;c<2;c++)for(unsigned i=0;i<4;i++) {
         MEM32(0x6114)=states[i];
         MEMF(0x4384)=55.f; /* Original gameplay/weapon lens must not be rewritten. */
@@ -106,7 +130,7 @@ static void camera_tests(void)
     MEM32(0x7DE458)=0x20000000;
     camera_check(4.f/3.f); /* Story composition fits the thinner matte. */
     mode.width=3440;mode.height=1440;
-    camera_check(80.f/57.f); /* Ultrawide fits vertically, with side bars. */
+    camera_check(43.f/24.f); /* Ultrawide fills horizontally without stretching. */
     mode.width=1280;mode.height=960;
     camera_check(1);
     mode.width=1920;mode.height=1080;
@@ -282,6 +306,70 @@ int main(void)
     original_scenes();
 #endif
     camera_tests();
+    {
+        const unsigned displays[][2] = {{640,480},{1920,1080},{1920,1200},
+            {3440,1440},{5120,1440},{3840,2160},{1080,1920},{0,0}};
+        CHECK(pc_cutscene_movie_fill_width("D:\\xmv\\attract.xmv"));
+        CHECK(pc_cutscene_movie_fill_width("/xmv/ATTRACT.XMV"));
+        CHECK(!pc_cutscene_movie_fill_width(NULL));
+        CHECK(!pc_cutscene_movie_fill_width("attract.xmv.bak"));
+        CHECK(!pc_cutscene_movie_fill_width("notattract.xmv"));
+        CHECK(pc_cutscene_movie_fill_width("D:\\xmv\\eag_e.xmv"));
+        CHECK(pc_cutscene_movie_fill_width("D:\\xmv\\frd.xmv"));
+        CHECK(pc_cutscene_movie_fill_width("/xmv/EAG_F.XMV"));
+        CHECK(pc_cutscene_movie_fill_width("eag_i.xmv"));
+        CHECK(pc_cutscene_movie_fill_width("eag_s.xmv"));
+        CHECK(!pc_cutscene_movie_fill_width("eag.xmv"));
+        CHECK(!pc_cutscene_movie_fill_width("unknown.xmv"));
+        CHECK(!pc_cutscene_movie_fill_width(""));
+        for (unsigned d=0;d<sizeof displays/sizeof *displays;d++) {
+            unsigned width=displays[d][0],height=displays[d][1];
+            float w,h,aspect=height?(float)width/height:4.f/3.f;
+            d3d8_movie_rectangle(width,height,1,&w,&h);
+            CHECK(w == 2.f); /* Neither side can be left uncovered. */
+            CHECK(fabsf(w*aspect/h-4.f/3.f)<.00001f); /* Square content stays square. */
+            d3d8_movie_rectangle(width,height,0,&w,&h);
+            CHECK(w<=2.f && h<=2.f); /* Default fit mode retains the complete source picture. */
+            CHECK(fabsf(w*aspect/h-4.f/3.f)<.00001f);
+            {
+                unsigned left, right;
+                float x, y;
+                pc_cutscene_movie_crop(720,480,&left,&right);
+                CHECK(left==38 && right==42);
+                d3d8_movie_bounds(width,height,1,720,left,right,&x,&y,&w,&h);
+                CHECK(fabsf(w*aspect/h-4.f/3.f)<.00001f);
+                CHECK(y==h/2.f);
+                if(height && aspect>4.f/3.f) {
+                    /* The displayed edges sample actual picture columns,
+                     * not the encoded padding; retain square proportions. */
+                    CHECK(fabsf((-1.f-x)/w*720.f-38.f)<.0001f);
+                    CHECK(fabsf((1.f-x)/w*720.f-678.f)<.0001f);
+                } else CHECK(x==-1.f && w==2.f);
+                pc_cutscene_movie_crop(640,480,&left,&right);
+                CHECK(!left && !right);
+                d3d8_movie_bounds(width,height,1,640,left,right,&x,&y,&w,&h);
+                CHECK(x==-1.f && w==2.f);
+                d3d8_movie_bounds(width,height,0,720,38,42,&x,&y,&w,&h);
+                CHECK(w<=2.f && h<=2.f && x==-w/2.f);
+                d3d8_movie_bounds(width,height,1,720,720,1,&x,&y,&w,&h);
+                CHECK(x==-1.f && w==2.f);
+            }
+            float previous=1.f;
+            for(int phase=0;phase<=71;phase++) {
+                float zoom=pc_cutscene_camera_zoom(width,height,480,71,phase);
+                CHECK(pc_cutscene_bar_width(width,height,640,480,71,phase)==0);
+                CHECK(isfinite(zoom) && zoom>0.f);
+                if(height && aspect>480.f/338.f*4.f/3.f)
+                    CHECK(zoom>=previous-.00001f);
+                previous=zoom;
+            }
+            if(height && aspect>480.f/338.f*4.f/3.f) {
+                /* Full ultrawide aperture keeps the original horizontal lens:
+                 * no view past the edges of the opening's starfield plane. */
+                CHECK(fabsf(previous/(aspect*.75f)-1.f)<.00001f);
+            }
+        }
+    }
     free(memory);
     puts("PASS: adaptive cutscene bars, animation, other overlays and guest ABI");
     return 0;

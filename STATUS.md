@@ -1,5 +1,4681 @@
 # Measured progress
 
+## Launcher single-ZIP publication (2026-10-19)
+
+Implemented in `430cdfd` on `fix/launcher-single-platform-zips` from main
+`bbe1709`, [PR #199](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/199).
+The shared publisher now selects one versioned ZIP per platform, its checksum,
+update manifest and source receipt: eight assets total. Windows packaging no
+longer duplicates the ZIP; both host artifact uploads use exact versioned names
+to exclude stale aliases and older builds. Generated release notes include direct
+versioned Windows/Mac download links. Existing client filenames and manifests
+are unchanged. README buttons continue to use the Latest release page.
+
+Already-published v1.2.19 assets are untouched. Its tag-specific alias links
+remain valid; versionless Latest asset links cannot survive a future release
+without aliases and must be changed to the release page or a pinned versioned
+URL. No redirect is provided by GitHub for removed assets.
+
+Windows x64 .NET Framework required-artwork build produced exactly one ZIP;
+its package manifest/checksum passed verification. All 19 Python publication
+policy tests passed, including stale-output exclusion. The actual published
+v1.2.18 client discovered and validated a read-only v1.2.19 release fixture with
+the aliases removed. Windows and native Mac regression fixtures now cover
+combined releases both with and without aliases. Windows and native Mac builds,
+regressions, package validation and the complete eight-asset release check passed
+in [CI run 39360311404](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39360311404)
+at `430cdfd`. No live installation, personal files or published release was modified;
+no new launcher version is published by this change. See MAC-021 for existing
+native signing and clean-machine delivery gaps.
+
+## Issue #49 — U-Genix monitor composition (2026-10-19)
+
+Implementation `61235d1` on `49-u-genix-screen-bug`, [PR #195](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/195),
+initially based on `c238ab3` and integrated with main `988daa3`.
+The opening U-Genix monitor was reproduced independently at 1280×720:
+its left quarter was black and Crow/the subsequent U logo shifted right and
+clipped. The guest texture camera renders a 256×256 feed into the top-left
+backbuffer and copies it into a monitor texture without binding a render target.
+The existing widescreen HUD adjustment therefore incorrectly moved its 2D
+logo, scanlines and alpha mask relative to the camera geometry.
+
+The shared `pc_display_camera_feed` scope wraps original US `sub_000C8120`.
+Only enabled texture cameras receive guest-coordinate STRETCH placement.
+Guest sprite batches flush before both boundaries, and the prior placement/tag
+is restored afterward. The additive patch declares the generated wrapper so
+regeneration retains the original function. Ordinary world cameras and HUD
+layout keep their existing behavior. No game asset or generated C is edited.
+The same hook runs under `TSFP_NATIVE_DISPLAY`; existing native GL/common RHI
+placement adapters need no new platform code (MAC-056: awaiting validation).
+
+The Windows build and its built-in checks passed, including a rebuild after
+integrating main `988daa3`. Initial PR CI caught an end-of-file patch anchor
+that prevented unwinding the hook when local edits followed it. The patch now
+inserts before a stable upstream declaration, preserving appended local edits
+when migrating historical stacks; the hook behavior is unchanged.
+Twenty-one focused camera,
+UI-layout and cutscene regression cases passed, followed by all five camera
+cases with the generator-hook assertion and the backlog integrity check.
+Mutation cases detect missing scope, missing restoration and missing batch
+flushes; fixture cases cover ordinary/disabled/invalid and nested cameras.
+All 39 local patch tracking, historical upgrade and camera regressions passed
+after the anchor correction. Windows and macOS runtime CI, including the new
+regression, passed in [run 39355133510](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39355133510).
+Actual Mac game rendering remains unverified.
+
+Independent live-game verification uses the isolated unlocked Test Lab profile,
+with personal saves/configs untouched and each run capped at 150 seconds.
+The corrected Crow message fills the monitor without the black left strip
+at both 1280×720 and 3440×1440. The subsequent U logo is also correctly
+centered and fills the monitor at both resolutions. Native framebuffer dumps and draw
+captures are retained locally under `build/issue-49-before`,
+`build/issue-49-after` and `build/issue-49-ultrawide`; the first two folders
+include `monitor.png` with matched before/after views. The full patch-stack
+validation and `git diff --check` passed. The capture format does not
+record the GPU CopyRects result, so a full replay's black monitor is not visual
+validation; use the real game's framebuffer dumps. Replaying the feed's first
+44 draws does reproduce the original composition error and its placement fix.
+
+## Launcher v1.2.19 release preparation (2026-10-19)
+
+Prepared on `release/launcher-v1.2.19` from main `f53b31f`. The shared launcher
+version and both assembly attributes are 1.2.19. This release packages the
+already merged shared Windows/Mac pages and themes, native Mac adapters,
+launcher-file preservation during game updates, and Windows experimental
+presentation settings. The latter require a game newer than v0.3.0-alpha.2;
+this launcher update does not supply that runtime.
+
+Local Windows x64 .NET Framework required-artwork build and full tests passed:
+105 updater, eight shared UI groups, 28 download, 11 version, 10 startup,
+30 news, 37 settings, 20 maintenance and 14 unfinished-session checks, plus
+crash-report checks. The 16 publication-policy, seven compatibility-policy and
+three shared-layout Python tests also passed. The published v1.2.18 updater
+successfully installed the local v1.2.19 ZIP and recovered an injected failure,
+preserving isolated game, ISO, data, save, setting, texture, rollback and
+untracked fixtures. All three embedded artwork hashes match the pinned art.
+
+The dual-platform workflow must pass both real host builds and package checks
+before publication from main. Local Windows validation does not establish Mac
+execution. MAC-021 retains signing/notarization and clean-machine delivery
+gaps; MAC-054 tracks unsupported native presentation targets. No personal
+files or live game installation were used for these checks.
+
+## Shared launcher interface (2026-10-19)
+
+Source: `2ac286d`, `ee495e6` and `a0c4e14` on `codex/shared-launcher-interface`, based on `306d6dd`
+and dependent on PR #187 / #186. The concurrent primary renderer checkout is
+untouched. Local host: macOS 27.0.1 ARM64, .NET SDK 8.0.426, Avalonia 11.3.22.
+
+Both builds now compile the same settings, news, versions and maintenance pages;
+Home remains generated from the shared XAML. Shared theme values, button states
+and expander geometry feed the Mac syntax adapter, including Home; its separate
+Mac button/expander override file is removed. Mac-only duplicate page
+construction is removed. Native OS integrations and rich-text/control rendering
+remain adapters; this does not make Windows-specific OS code portable.
+
+Local checks pass: 18 native launcher regression groups, seven shared UI groups
+(settings drafts/cancel/FOV/save, binding conflicts/cancel/reassign/clear, Discord
+preservation, news selection/stale status
+and spacing, installed notes/issues, version pagination/locking, maintenance
+navigation/cancellation/repair gating), three source-mutation/compilation contracts
+and the read-only native prerequisite check. Actual Mac screenshots were reviewed
+for news, graphics, Discord, input, repair, diagnostics and Home. Initial framework
+field-width/expander/disabled-button differences were corrected by shared-theme
+translation. Evidence is retained in ignored `private/captures/launcher-shared`.
+These checks do not run the game or alter personal settings.
+
+Both real host builds and all seven shared UI groups passed in
+[release run 39324010569](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39324010569)
+on `ee495e6`: Windows Server 2025 x64 / .NET Framework 4.8 and macOS 15.7.9
+ARM64 / pinned SDK and Avalonia. Windows also passed 105 updater, 28 download,
+11 version, 10 startup, 30 news, 32 settings and 20 maintenance checks, plus
+session/crash checks. Mac passed its 18 native regression groups and actual
+packaged install, deliberate corruption, copied-helper repair, restart and render,
+preserving fixture saves/game metadata. Combined verification accepted all 12
+release assets; publication was skipped on the PR. The initial Windows run exposed
+locale-dependent layout output; explicit UTF-8 fixed it. The final Home theme
+consolidation also passes local Mac tests and collapsed/expanded visual review.
+Diagnostics retain each host's monospace font through the framework adapter.
+
+62 native-launcher/CI-selection Python checks, three source propagation contracts,
+16 release-policy cases and backlog integrity pass locally. The
+Windows package format and updater limits are unchanged; existing published
+launchers do not need a special bridge release. Developer ID/notarization and
+clean-machine delivery remain the existing MAC-021 acceptance gaps.
+
+## Dual-platform launcher release automation (2026-10-19)
+
+Source: `55d3141` and `d58bcf2` on `codex/launcher-dual-platform-release`, based on `60c3aea`
+and dependent on the native launcher in PR #186. The primary checkout and its
+concurrent renderer work are preserved. No game runtime or personal settings
+are changed. Local host: macOS 27.0.1 ARM64, Python 3.13.16.
+
+The shared publisher validates both Windows x64 and native Mac ARM64 packages,
+update manifests, permanent download aliases and source receipts. Publication
+starts with a draft and exposes neither platform until all 12 release assets
+match GitHub's digests. Sixteen offline tests pass for missing/corrupt/mixed-source
+packages, unsafe paths, permissions, version/tag/default-branch gates, failed
+uploads, retry/repair, published-asset immutability and preview/Latest policy.
+These tests use disposable fixtures and no GitHub writes. In
+[run 39319648658](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39319648658)
+both actual host builds, Mac packaged repair/restart/render and the combined
+12-asset verification passed. Publication was correctly skipped on the PR;
+no existing release was modified or new release published. Developer
+ID/notarization and clean-machine acceptance remain open.
+
+Windows Server 2025 x64 / .NET Framework 4.8: 105 updater regressions, 28 download,
+11 version-picker, 10 startup, 30 release-news, 32 settings, 14 session and 20
+maintenance checks, plus crash report discovery/export checks passed. Hosted
+macOS 15.7.9 ARM64 / pinned .NET SDK 8.0.426 / Avalonia 11.3.22: 18 native regression
+groups passed, including combined-release selection, case-independent launcher
+preservation, settings and crash export. The actual packaged app was installed,
+altered, repaired through its copied helper, restarted and rendered while
+preserving fixture saves/game metadata. Both jobs received the identical pinned
+PNG artwork and shared icon. This is launcher validation, not game-play testing.
+
+The first Windows CI run exposed a port regression in `PreserveGameFile`: legacy
+game manifests with lowercase launcher filenames bypassed the new strict package
+path predicate and removed the installed launcher during game upgrades. `d58bcf2`
+restores case-insensitive preservation while keeping package-path validation
+strict. The existing Windows upgrade/rollback regression now passes; native tests
+cover preservation, and both hosts test platform selection from one combined
+release. The Windows build, complete launcher regressions and package validation
+passed in [run 39319648658](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39319648658).
+
+The broader required CI inherited two failures from PR #186. Reused only the
+existing harness/downloader fixes from `37b4af9` and `083e57c`: identify the pinned
+SDK downloader to avoid the CDN's generic-client 403; provide fail-loud hooks for
+the full interpolation test translation unit on MSVC; compare driver paths through
+`Path`. SDK versions/checksums and game behavior are unchanged. The affected
+interpolation test, SDK tests, release policy and handoff checks pass locally:
+79 checks plus 10 subtests. A broader exploratory run gave
+94 passes and one unrelated screen-copy compile failure because the shared ignored
+upstream tree already contains the other chat's newer renderer patch; this branch's
+matching clean upstream is validated in CI, without rewinding that shared tree.
+
+## Native launcher visual spacing follow-up (2026-10-19)
+
+Source: `1a24135` on `codex/mac-launcher-visual-polish`, based on the unmerged
+native launcher port at `da926fc`. The primary checkout and its concurrent work
+were preserved. The updated app and ZIP were built from a clean source tree;
+these commits are local, with no push, main merge or other-device validation.
+
+Host: macOS 27.0.1 / ARM64, pinned .NET SDK 8.0.426 and Avalonia 11.3.22.
+This is launcher UI work; the native game remains the `356e5a3` build below.
+
+- Matched `WhatsNewPage.cs`'s 10-unit horizontal/bottom button margins and aligned
+  the release selector with both component buttons. The footer and issue actions
+  use the same spacing.
+- Adapted the transparent Windows Restore previous button face and disabled
+  opacity, removing Avalonia's gray disabled background for that control.
+- Matched `PageTheme.cs`'s compact game-data header: left chevron, transparent
+  header/body, 22-unit label column and content without the default theme box.
+- Reviewed collapsed/expanded Home and the actual What's New page captures.
+  macOS UI interaction confirmed expand/collapse, component switching and opening
+  the available/installed release selector; the disabled rollback stays disabled.
+  Captures remain under ignored `private/launcher-art/mac-*-polish.png`.
+- 16 native launcher regression groups and 12 Python launcher checks passed.
+  The read-only prerequisite check passed. The rebuilt ZIP installed, repaired
+  through the copied helper, restarted and rendered with fixtures preserved.
+  Evidence: ignored `logs/mac-launcher-visual-{build,package}.log`.
+
+Windows source and game behavior are unchanged. Comparison used the Windows
+layout/templates; a live Windows screenshot comparison was unavailable here.
+
+## Common renderer selected by normal Mac builds (2026-10-19)
+
+- **Dependency:** `codex/shared-renderer-default` starts from unmerged `42462f0`;
+  it requires the common frontend, native launcher and GPU-contract stack.
+  Main and the separate launcher worktree are unchanged.
+- **Behavior:** `tools/build-native-mac.py` defaults to `--renderer auto`.
+  macOS versions supported by the pinned SDK (currently 26+) select Vulkan,
+  compiling the same Xbox rendering frontend as PC. Older hosts keep GL and
+  `--renderer gl` remains explicit. Unknown host versions fail with guidance.
+  This removes the need to opt in for ordinary shared renderer changes while
+  retaining a documented older-host/diagnostic compatibility exception.
+- **Dependencies:** Explicit `--setup` installs the existing pinned SDK when
+  selected. Normal builds verify its receipt before patching/generation; missing
+  or changed files fail rather than silently changing renderer. Unknown existing
+  installs are preserved. No SDK/upstream/Python version changed. The manifest
+  records both requested and resolved renderer; existing binaries do not change
+  until rebuilt. Personal settings and the 60 Hz/up-to-120 policy are unchanged.
+- **Local checks:** 101 tooling, SDK, launcher and CI/backlog checks pass.
+  Normal builder invocation with `--test` selected Vulkan and passed all three
+  CTests plus real-GPU renderer/window/fullscreen, input, settings and debug
+  checks. The read-only command launcher prerequisite check passes. Host:
+  Apple M5 Pro, macOS 27.0.1 arm64, Apple Clang 21.0.0, SDK 1.4.363.0 KosmicKrisp.
+  Build provenance is `42462f0` plus this uncommitted builder change; executable
+  SHA-256 `be38a156a0e3acfe385f6dcfe9ea73f37ef936786fa2304e88ef0d9713d6c8b1`
+  matches the preceding runtime (the change selects it, not a new runtime).
+  Logs: `logs/shared-renderer-default-build.out`, `shared-renderer-default-tools.out`,
+  `shared-renderer-default-launch-check.out`.
+- **Bounded startup:** 20.14 seconds, exit 0, at least 900 guest frames and 1,800
+  accepted API presents (968 guest / 832 interpolated), zero sampled skips,
+  failures, shader compile errors, Vulkan validation errors or native faults.
+  This is startup evidence, not another gameplay or performance certification.
+  Isolated saves/controls/both display paths were used; six images recycled
+  (5,243,406,848 logical / 135,168 allocated bytes), after the native suite
+  recycled 12 images (8,192 allocated bytes). Free space before build: 223 GiB.
+- **Hosted acceptance at `a4261ee`:** Both jobs pass in
+  [run 39314716127](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39314716127).
+  Windows: 49 CI/backlog, 28 patch, 213 runtime (30 host skips, including new
+  builder tests among the passes), 52 release, 104 isolated launcher regressions,
+  crash/session checks, six startup tests/two subtests and five icon checks.
+  Mac: 49 CI/backlog, 26 patch (two skips), 200 runtime (18 skips), actual
+  MoltenVK GPU contract, 49 release (three skips) and 17 native launcher groups.
+  No source changes were needed after this validation; this follow-up records
+  the results and corrects one obsolete opt-in description.
+- **Milestone:** The published focused branch now provides shared-by-default
+  feature/settings/shader policy and the common Xbox frontend for supported
+  Macs, with thin OS/GPU adapters and both-host contracts. This completes the
+  incremental shared-architecture goal; it does not close the graphics backlog
+  or merge the stack into main.
+- **Limits:** Older-host selection is covered by portable tests, not a physical
+  older Mac. Legacy GL
+  retains its preceding complete GPU/native pass. Khallos sky distortion, movie
+  playback, some GL-only tracing hooks, full campaign/texture-pack fidelity and
+  sustained 120-present performance remain explicit gaps. The other physical
+  computer has not been synchronized or tested.
+
+## Shared screen-copy clipping and GPU contract (2026-10-19)
+
+- **Dependency:** `codex/shared-screen-copy-contract` starts from unmerged
+  integration `c553f9a`, which includes the shared renderer and launcher fixes.
+  Latest fetched main remains `ade3763`; no main merge. Existing untracked
+  files and the separate launcher worktree are preserved.
+- **Reproduction:** The production Xbox screen-copy pass copied the wrong source
+  pixels when a rectangle landed at a negative destination offset. Its clipping
+  moved the destination edge without advancing the source edge. A new real-GPU
+  test failed at pixel (0,0), blue channel 50 versus expected 56, on Apple M5 Pro
+  / macOS 27.0.1 arm64 / SDK 1.4.363.0 MoltenVK.
+- **Shared fix:** `src/graphics/screen_copy_rect.h` now supplies paired clipping
+  for Windows/common Vulkan and legacy native GL. It clips both surfaces,
+  preserves alignment and uses 64-bit intermediates for 32-bit guest inputs.
+  The runtime change is a separate reproducible patch; generated game C is
+  unchanged. Empty/fully clipped copies avoid invalid or negative viewports.
+- **GPU acceptance:** The common fixture now links production
+  `d3d8_screencopy.c` instead of an aborting feedback stub. Identical Windows
+  WARP/Mac Vulkan tests cover full copies, ten rectangle/boundary cases at 1x
+  and 2x source scales, RGBA-to-BGRA channel order, unchanged surrounding pixels,
+  restored output target/viewport and a distinct 4x2 offscreen source. Only
+  device scene discovery is supplied by the fixture. All cases pass locally
+  on MoltenVK with no validation errors (11 known primitive-restart warnings).
+  Executable SHA-256
+  `aff31947b3e1b761ff23128d9b1502ca67ed0a23e2762c35b0efadbeb432f4ec`.
+  Logs: `logs/shared-screen-copy-rhi.out`, `logs/rhi-moltenvk.json` / `.log`.
+- **Fallback/native checks:** The complete GL build and suite pass: three
+  CTests plus renderer/input/settings/debug, including existing real-GPU
+  screen-copy/scissor checks. Executable SHA-256
+  `bc3055b2c9484392619a048c3768ba8ae7ea8cd586850b94bce33b531338aa0f`.
+  Twelve test images recycled (10,486,813,696 logical bytes, 8,192 allocated).
+  Source/patch checks: 74 passed, two host skips; the one historical upgrade
+  fixture initially attempted the new patch before its deliberately excluded
+  feedback dependency. Correcting that historical subset makes the affected
+  test pass (one additional pass). Fresh complete-stack and repeat application
+  already passed. Logs: `logs/shared-screen-copy-gl-build.out`,
+  `logs/shared-screen-copy-source-tests.out`, `logs/shared-screen-copy-historical-test.out`.
+- **Integrated Vulkan suite:** The complete native common-renderer build also
+  passes all three CTests and renderer/input/settings/debug checks using pinned
+  KosmicKrisp. Current executable SHA-256
+  `be38a156a0e3acfe385f6dcfe9ea73f37ef936786fa2304e88ef0d9713d6c8b1`.
+  No validation errors; 12 known disposable images recycled (8,192 allocated
+  bytes). Log: `logs/shared-screen-copy-vulkan-build.out`.
+- **Hosted acceptance at `42462f0`:** Both jobs pass in
+  [run 39313104097](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39313104097).
+  Windows: 49 CI/backlog, 28 patch, 202 runtime passes including the real
+  WARP screen-copy contract (30 skips), 52 release, launcher/startup/icon suites.
+  Mac: 49 CI/backlog, 26 patch (two skips), 189 runtime (18 skips), actual
+  MoltenVK GPU contract, 49 release (three skips) and 17 native launcher groups.
+- **Bounded Khallos scene:** Same Vulkan executable above, source based on
+  `c553f9a` plus the screen-copy changes now committed as `42462f0`; macOS
+  27.0.1 arm64 / Apple M5 Pro / pinned KosmicKrisp. Isolated Test Lab run ended
+  at 150.21 seconds with exit 0, at least 7,800 guest frames and 13,200 accepted
+  API presents (7,724 guest / 5,476 interpolated, no skips/failures). No native
+  fault, shader compile failure or Vulkan validation error. Reviewed opening
+  train exterior, first-person weapon/objective and pause/resume. The exterior
+  sky remains stretched/radial; it is not certified fixed. Movement commands
+  were submitted after timeout and were not consumed, so this run does not
+  add movement/firing evidence. Selected captures:
+  `private/captures/native-mac/shared-khallos-opening.png` and
+  `shared-khallos-exterior.png`; receipt `logs/shared-screen-copy-khallos-summary.json`.
+  Six disposable images recycled (5,243,406,848 logical bytes / 135,168 allocated).
+  Recorded personal settings and controls fixture hashes remained unchanged.
+- **Scope limits:** These are pixel/resource contracts plus a bounded scene,
+  not proof of every title post-processing effect. Larger physical destination
+  targets, other formats and matched scene fidelity remain pending. Local source was based on `c553f9a` with this commit's changes;
+  the earlier integration gameplay evidence is not a test of this new fix.
+
+
+## Shared native runtime and launcher integration (2026-10-19)
+
+- **Dependencies:** `codex/shared-native-integration` combines published renderer
+  and acceptance stack `f2c2261` with completed launcher work `da926fc` (runtime
+  implementation `356e5a3`). The latter also brings main through `ade3763`.
+  Both source branches and the launcher worktree are preserved; main is unchanged.
+- **Build ownership:** The launcher worktree is clean, its final validation is
+  committed, and no game/build process remains. Local integrated validation can
+  resume after that completed work. The existing binary still has launcher
+  revision `356e5a3` provenance until rebuilt from this integration branch.
+- **Merge scope:** Source files merge cleanly. The STATUS conflict contains
+  independent evidence sections; both are retained below. Combined CI/backlog,
+  Discord model/Unix IPC, native crash-helper, launcher routing and SDK checks
+  pass locally: 92 passed, six Windows-only skips in 45.40 seconds, with
+  disposable data. Native GPU, packaged launcher and isolated gameplay checks
+  are pending. Log: `logs/shared-integration-source-tests.out`.
+- **Local production resource acceptance:** At `3020167`, the asset-free
+  production RHI and Xbox-factory tests pass on Apple M5 Pro / macOS 27.0.1
+  arm64, pinned SDK 1.4.363.0 with MoltenVK Vulkan 1.3. This includes linear and
+  swizzled cube/volume uploads, mip sampling and child lifetime, plus the earlier
+  shader/depth/presentation contracts. No Vulkan validation errors; nine known
+  primitive-restart warnings. Test executable SHA-256
+  `23f70c075b57697aca936e716e6bb1ce8a06252b5341b5e0e3ff0ac6fd3a0379`;
+  logs: `logs/rhi-moltenvk.json`, `.log`, `logs/shared-integration-rhi.out`.
+  This does not validate other formats or game scenes.
+- **Command launcher integration:** The app already configured Vulkan, but the
+  legacy `.command` entry point did not. It now verifies the manifest-selected
+  SDK and uses the common read-only GPU environment helper, preserving personal
+  routing, FPS preferences and GL without an SDK. Receipt hashing also supports
+  Apple's Python 3.9 without changing development pins. All 28 launcher/SDK
+  checks pass, including no writes/child launch during `--check`, corrupt-SDK
+  rejection, inherited-loader cleanup and configuration preservation. The real
+  `/usr/bin/python3` prerequisite check passes against the existing launcher
+  binary; this is not a rebuilt integration game or gameplay validation.
+
+## Integrated host validation and launcher cleanup fix (2026-10-19)
+
+- **Revision/host:** `codex/shared-native-integration` at `ad9cb0f`, macOS
+  27.0.1 arm64, Apple M5 Pro, Apple Clang 21, SDL 3.4.16, pinned Vulkan SDK
+  1.4.363.0. The completed launcher work was integrated after its exclusive
+  build use ended. Both native builds now have integration provenance; this
+  supersedes the earlier old-binary/build-ownership limitations above.
+- **Native builds:** Complete `--renderer gl --test` and
+  `--renderer vulkan --test` passes: three CTests plus renderer, input,
+  settings and debug suites for each. Both exercise window resize, fullscreen
+  and restoration; Vulkan uses KosmicKrisp. GL executable SHA-256
+  `8d9fbc162fbb7f80288f69113dd8adf750ab52422dd729fa2e3d0c443e68b13d`;
+  current Vulkan executable
+  `9fc8783af4897e9578bcf2680d212bbc22776a6ccc21b54b8de1266670cbc8fb`.
+  Logs: `logs/shared-integration-gl-build.out` and
+  `logs/shared-integration-vulkan-build.out`. Each pass recycled 12 disposable
+  images (10,486,813,696 logical bytes, 8,192 physically allocated).
+- **Bounded gameplay:** The isolated unlocked-profile runner at `ad9cb0f`
+  completed 180.19 seconds with exit 0. Reviewed captures show profile/Story
+  navigation, first-mission world/characters/weapons, movement, mouse-look,
+  firing (16 to 13 rounds), and pause/resume. Input was synthetic SDL, including
+  an explicit focus event; this is not physical-device or full-level validation.
+  No shader compilation failures, Vulkan validation errors or native fault.
+  Logs: `logs/shared-integration-gameplay.out`, `logs/native-boot-summary.json`;
+  selected evidence: `private/captures/native-mac/shared-integration-first-mission.png`
+  and `shared-integration-move-look-fire.png`. Protected settings and controls
+  fixture hashes stayed unchanged; six test disks were recycled (5,243,406,848
+  logical bytes, 135,168 allocated).
+- **Timing limit:** With validation and 1920x1080 capture enabled, the 140–170 s
+  gameplay interval measured 65.35 accepted host presents/s: 47.57 guest and
+  17.78 interpolated. Interval p95 22.38 ms, p99 50.75 ms, worst 71.98 ms.
+  These CPU presentation intervals do not measure scanout or establish stable
+  120 FPS. The whole run includes menus/loading and is not a gameplay benchmark.
+- **Launcher integration:** The local ARM64 app builds and passes all 16 original
+  regression groups at `ad9cb0f`. Isolated real-game quit and intentional fatal
+  signal checks pass: game window observed, launcher minimized/restored,
+  normal exit 0 / synthetic crash exit 134, bounded report/export validated,
+  personal settings unchanged and disposable images recycled. Logs:
+  `logs/shared-integration-launcher-{build,quit,crash}.out`.
+- **Hosted integration:** [Run 39309443027](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39309443027)
+  at `ad9cb0f` passes the Mac job, including actual production RHI/Xbox texture
+  factories, 189 runtime checks (18 skips) and 16 native launcher groups.
+  Windows passes 202 runtime checks (30 skips) and release checks, but its
+  launcher regression catches deletion of the launcher when an older game
+  manifest uses lowercase filenames. The overall Windows job fails; it must
+  be rerun after the fix below. No Windows gameplay is claimed.
+- **Cleanup fix (commit carrying this entry):** The native launcher integration
+  replaced case-insensitive preservation with strict package-name matching.
+  Restore the existing common case-insensitive preservation for the launcher
+  executable/application/manifest while retaining native resource protection.
+  Package acceptance remains strict. The existing Windows transactional pruning
+  test reproduces the failure; a new native test verifies casing protection,
+  preservation of app resources, retired-game-file removal and rollback. All
+  17 native launcher groups pass locally. Windows rerun remains pending.
+- **Hosted fix revalidation:** [Run 39311742707](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39311742707)
+  at `c553f9a` completes successfully on both hosts. Windows passes the original
+  pruning reproduction and all 104 isolated launcher regressions, plus 202
+  runtime tests (30 skips), 52 release checks, session/report/startup/icon
+  suites. Mac passes 189 runtime tests (18 skips), production RHI/Xbox GPU
+  cases and all 17 native launcher groups, including the new cleanup/rollback
+  coverage. This supersedes the pending Windows rerun above; it does not cover
+  the subsequent screen-copy branch.
+- **Remaining:** Common Vulkan remains opt-in. Broader scene fidelity, movies,
+  advanced framebuffer effects, clean-machine delivery and stable 120 presents
+  remain open; no main merge or synchronization of the other physical device.
+
+## Shared cube and volume resource contract (2026-10-19)
+
+- **Source/dependency:** `codex/shared-texture-contract` depends on unmerged
+  `296f970`, including the common renderer and hosted-validation fixes. The
+  launcher chat retains exclusive use of the local native build/runtime.
+- **Shared acceptance work:** `tests/rhi_texture_resources.h` runs through the
+  production RHI on both Windows D3D11 WARP and Mac Vulkan. It tests six cube
+  faces and three mip levels, every voxel of a 4x4x4 volume and its mip chain,
+  padded row/slice uploads, single-face/mip and boxed-slice updates with unchanged
+  neighbors, restricted-mip views, retained image references, and explicit
+  rejection of an unknown format. Sampling uses the same HLSL and expected
+  texels on both backends; cube uploads also receive direct subresource readback.
+  Pixel comparisons reject non-finite output as well as out-of-tolerance values.
+- **Initial validation:** The complete Vulkan fixture passes a local Clang syntax
+  check without modifying the shared runtime/build. All 47 CI selection/backlog
+  checks pass. GPU execution is pending a published hosted run; this does not
+  yet prove cube/volume support, Xbox resource-factory behavior or any game scene.
+- **Publication:** Commits through `4419205` are published on the focused branch.
+  [Run 39306301875](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39306301875)
+  tests the lower-level contract at `e864831`. Main remains unchanged. The
+  latest fetched main is `ade3763`; its remaining changes concern repository
+  maintenance and launcher documentation, not the renderer contract.
+- **Hosted Mac result at `e864831`:** The Mac job completes successfully on
+  macOS 26.6.2 arm64 / Apple Paravirtual GPU with the pinned SDK and MoltenVK.
+  The cube/volume GPU contract passes along with the menu, depth/stencil and
+  presentation checks. Vulkan validation reports no errors and seven known
+  primitive-restart capability warnings. The unknown-format rejection and
+  injected presentation failure are expected cases. Other checks: 47 CI/backlog,
+  26 patch (two skips), 167 runtime (18 skips), 49 release/cleanup (three skips).
+  Windows also completes successfully: 47 CI/backlog, 28 patch, 198 runtime
+  checks (including the actual D3D11 WARP cube/volume contract; 12 other tests
+  skipped), 52 release/cleanup, six startup/packaging (two subtests), five icon
+  checks and the existing launcher suites. This does not validate Xbox factories, palette or
+  compressed resources, actual title usage, fallback GL, or gameplay.
+- **Xbox factory follow-up (commit carrying this entry):** The same fixture now links the
+  production `d3d8_resources.c`. It creates Xbox cube and non-cubic volume
+  resources, requests automatic mip chains, writes through Lock/Unlock in both
+  linear and swizzled ARGB layouts, samples every face/mip and volume voxel,
+  and checks that child cube surfaces/volume levels survive parent release.
+  Palette, feedback and device-query hooks abort if reached; those paths are
+  outside this test's scope. Clang syntax and 47 CI/backlog checks pass. Actual
+  factory GPU execution passes on both hosted Mac Vulkan and Windows WARP at
+  `f2c2261` in [run 39308234267](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39308234267).
+  Both jobs finish successfully. Run 39306301875 covers only the lower-level
+  RHI cases; palette/compressed resources and title usage remain unverified.
+
+## Common renderer Mac settings acceptance (2026-10-19)
+
+- **Source/dependency:** `codex/shared-native-window-acceptance` depends on
+  unmerged `37b4af9`, with validation fixes `083e57c` integrated by `8b3866b`;
+  local working changes were tested. The acceptance commits through `24b5403`
+  are now published on that focused branch. No main merge.
+- **Coverage gap closed:** The existing Cocoa graphics-settings fixture now
+  exercises the actual common Xbox/Vulkan device as well as GL. The SDL host
+  fixture takes its window and quit callback as parameters, so both renderers
+  run the same physical-size, worker-snapshot, main-thread-event and unbind checks.
+  No second settings or event policy was introduced.
+- **Measured result:** On macOS 27.0.1 arm64 / Apple M5 Pro, the pinned SDK
+  1.4.363.0 KosmicKrisp driver passes the complete native Vulkan `--test` suite:
+  three CTests plus renderer, input, settings and debug checks. Actual scene
+  targets change from 64x64 to 1000x600, 1280x720 and 1920x1080; failed-save
+  rollback restores 1280x720 before the fixture restores 64x64. Custom modes,
+  aspect lists, FOV, Defaults, Cancel/Save/reopen and read-only save rollback pass.
+  A green triangle readback and subsequent overlay/present verify usable targets
+  after those transitions. There are no Vulkan validation errors.
+- **Isolation/evidence:** The build script validates the supported XBE and uses
+  `build/macos/path-tests` for all mutable test settings and saves. The runner
+  recycled its 12 known disposable disk images (8,192 allocated bytes versus
+  10,486,813,696 logical bytes). Logs:
+  `logs/shared-window-vulkan-build.out` / `.err`. These are programmed Cocoa
+  control tests, not physical F2 input or gameplay verification.
+- **Window transitions:** The common device passes the same SDL fixture's
+  resize/present at a 1280x720 drawable, fullscreen/present at 3024x1898, and
+  restored-window/present. The fixture waits for OS transitions, checks actual
+  flags and physical dimensions, and restores its disposable window. This is
+  API/pixel-contract evidence, not reviewed fullscreen gameplay. Final Vulkan
+  executable SHA-256:
+  `08c3244aa2fbc4fbb853bd55bd8528086c17de0ea85046bbcc5a3328d2f2f6ab`.
+- **Concurrent build limitation:** The subsequent GL restore did not complete.
+  A separate `codex/mac-launcher-parity` worktree reconfigured the shared
+  `build/macos` to its Vulkan sources during the GL build, causing mixed GL/C++
+  link inputs. Its source and new binary were preserved. Exclusive build
+  ownership must be coordinated before rerunning GL or changing that output.
+  The user explicitly gave the launcher chat priority to finish first; this
+  chat must leave the shared build and patched runtime alone until that work
+  finishes. Source work and hosted CI may continue independently. The current
+  binary is not certified as this branch's build. Broader scene
+  acceptance remains pending.
+
+## Shared platform CI validation (2026-10-19)
+
+- **Source/publication:** `codex/shared-present-metrics` at `a0c8a1a` is now
+  published, including its complete ancestor stack. The focused
+  `codex/shared-platform-validation` branch depends on that unmerged revision.
+  Main remains unchanged; the other physical computer's checkout is unverified.
+  The 19 untracked duplicate files and personal settings/saves remain untouched.
+- **First remote run:** [Run 39302357087](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39302357087)
+  manually exercises Windows and Mac at `a0c8a1a`. Mac hosted image
+  `macos-26-arm64/20261013.0424` (macOS 26.6.2, Python 3.12.10) passes 47
+  CI/backlog checks, 26 patch checks (two skips), and 166 runtime checks
+  (18 skips). Its GPU prerequisite fails downloading the pinned SDK with HTTP
+  403; no hosted Mac GPU success is claimed. Windows (MSVC 14.51.36231,
+  Python 3.12.10) passes all 28 patch checks and finishes its runtime selection
+  with 195 passes, 12 skips and two harness failures. The common renderer syntax
+  checks and D3D11 WARP shader/depth/presentation contract pass. Release and
+  launcher stages are skipped after the failed runtime step; Windows gameplay
+  remains untested.
+- **Windows harness fixes:** The GPU environment assertion now compares a
+  native `Path`, rather than expecting Unix separators on Windows. The actual
+  HLE interpolation fixture now explicitly supplies its out-of-scope hooks
+  instead of relying on Clang's dead stripping to hide unresolved symbols.
+  Those hooks abort if called; both hosts link the full fixture without dead
+  stripping and retain the existing redraw/gate/failure assertions. The hosted
+  rerun below confirms MSVC acceptance.
+- **Published rerun:** Both fixes are published at `083e57c` on
+  `codex/shared-platform-validation`.
+  [Run 39304039727](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39304039727)
+  completes the Mac job successfully: 47 CI/backlog, 26 patch (two skips),
+  167 runtime (18 skips) and 49 release/cleanup (three skips) checks pass.
+  Fresh SDK download/install succeeds, and the actual common RHI shader/menu
+  pixel, depth/stencil replay, injected presentation outcomes and swapchain
+  contracts pass on the hosted Apple Paravirtual device through MoltenVK
+  Vulkan 1.3, validation enabled. No validation errors; five known primitive
+  restart capability warnings. This is asset-free GPU validation, not campaign
+  or the user's other computer. The Windows job also completes successfully:
+  47 CI/backlog, 28 patch, 198 runtime (12 skips), 52 release/cleanup,
+  six startup/packaging (two subtests) and five icon checks pass. The release
+  launcher build and its isolated regression suites pass, including download,
+  recovery, settings, news, maintenance, crashes and unfinished sessions. Thus
+  the complete two-host workflow is green at `083e57c`; it does not contain the
+  later native window fixture or cube/volume contract and does not run gameplay.
+- **Download cause/fix:** Local HEAD and four-byte range requests reproduce
+  HTTP 403 / CDN error 1010 with urllib's generic client header. Identifying the
+  downloader as `TSFP-SDK-Setup/1.0` returns HTTP 200 / 206 and ZIP magic from
+  the same URL. Setup now sends that header, preserving version 1.4.363.0,
+  exact archive size/SHA-256 checks, installation receipt and license checks.
+  The official [SDK index](https://vulkan.lunarg.com/sdk/files.json) still lists
+  the pinned archive and checksum. The regression verifies the request and
+  rejects unpinned response bytes before any extraction or installer execution.
+- **Local checks:** On macOS 27.0.1 arm64, 59 SDK/CI/backlog checks pass after
+  the downloader fix; 76 combined renderer/SDK/CI/backlog checks pass after
+  the Windows harness fixes. The preceding full hosted-suite selection also passed locally
+  (173 passed, 11 skipped; `logs/shared-platform-full-host.out`). No game rebuild
+  is needed for these downloader/test-harness changes. Remaining native GL
+  repetition, physical interaction and broader scene acceptance are still required.
+
+## Native launcher parity completion (2026-10-19)
+
+Source: `356e5a3` on `codex/mac-launcher-parity`, depending on native runtime
+baseline `a0c8a1a` through integration `8012f22`. The primary checkout's branch
+and source edits were preserved. Both final app and game manifests record
+`356e5a34263cfeed6f9419517f9c406621379e59` with a clean source tree. The single
+ignored native build uses `--runtime-root`; its executable SHA-256 is
+`d755ff5765abbe53de5baf24a791bdf453f9f9229a712a2424010db89d87bb6c`, with matching
+dSYM UUID `88DC189B-64F2-30DF-B440-ECD35810FC4E`. No main merge, push, release
+publication or other-device execution is claimed.
+
+Host: macOS 27.0.1 (26A434), Apple Silicon ARM64; .NET SDK 8.0.426, Avalonia
+11.3.22; native game uses the existing pinned Vulkan SDK/KosmicKrisp backend.
+The supported US XBE checksum was verified before building and each game run.
+
+Implemented:
+
+- Shared Discord protocol, configuration, activity model and guest decoder with
+  Windows named-pipe and native Unix-socket host adapters. Native settings are
+  editable; missing/disabled/malformed preferences do not block the game.
+- External native fatal/hang reporter with preallocated signal notification,
+  native/Xbox registers, executable hash, PC/LR symbolication, bounded stack
+  sample and log tail. Shared hang policy handles startup, suppression, sleep
+  gaps and rearming. Native build retains matching dSYM/UUID/hash provenance.
+  Launcher discovers, opens and exports reports, restores on crash/hang, and
+  shares unfinished-session recovery and conservative successful-run cleanup.
+- Shared bounded rich Markdown parsing for WPF/Avalonia (headings, emphasis,
+  numbered/bullet lists, quotes, code, rules and safe links). Remote images and
+  markup stay inert. Native release, version-selection and maintenance pages
+  follow the Windows structure and use the shared release/repair transactions.
+
+Measured validation:
+
+- 16 native launcher regression groups pass, including corrupt package rejection,
+  transactional rollback, personal settings preservation, rich Markdown safety,
+  native crash export bounds and actual nonzero process/session log handling.
+- Eight isolated Unix-socket scenarios and the portable Discord policy test pass.
+  Ten native crash-helper tests pass: fatal capture/symbols/log tail; hang,
+  recovery/rearm and later crash; startup, unarmed, responsive, background/modal
+  suppression; and linked-root refusal. Tests never connect to real Discord.
+- Separately, the installed Discord desktop client acknowledged Rich Presence
+  during a 75-second isolated real native game session. Observed updates covered
+  Main menu, Story menu, Time to Split / Normal / Single player, Watching a
+  cutscene, In game and Paused. This is an IPC acknowledgement, not a screenshot
+  of another account's profile or certification of all multiplayer modes.
+- The real launcher/game completed both normal quit (exit 0) and intentional
+  native fatal signal (exit 134), with minimize/restore and local report export.
+  Both final-build runs observed the OS game window through CoreGraphics.
+  Reviewed captures show rendered native menus and the first mission canyon.
+  Saves came from a disposable Test Lab copy; both display configurations, controls, Discord and crash paths
+  were isolated. Personal control/display/Discord/runtime files were unchanged.
+  Virtual disks were recycled after child shutdown. The launcher and interactive
+  entry point also passed their read-only prerequisite checks. Evidence is in
+  ignored `logs/mac-launcher-e2e-{quit,crash}.json`, with the source revision and
+  executable hash. No campaign certification.
+- The actual packaged app was extracted/installed, deliberately modified, repaired
+  by its copied self-update helper after a test parent exited, restarted and
+  rendered. Manifest verification and personal/game fixtures survived the cycle.
+  This tests local delivery; no public native release was published.
+- Native runtime build, three CTests and renderer/input/settings/debug GPU/SDL
+  checks pass. Windows launcher source compiles for .NET Framework 4.8 with zero
+  warnings/errors; Windows WPF and named-pipe execution remain unavailable here.
+- Focused Python regressions: 105 passed, 9 host-specific skips, including the
+  patch suite after registering the new patch dependency in its historical-stack
+  fixture. No dependency upgrade or game-data duplication.
+- macOS UI events rejected reserved F2, captured K into a disposable binding
+  draft, and saved enabled Discord settings to the disposable installation.
+  This is OS event automation, not physical keyboard/controller playtesting.
+  Release, repair, Discord and rich-note layout captures were reviewed.
+
+Remaining release acceptance: Developer ID signing/notarization, clean-machine
+installation, published native runtime packages (MAC-012), Windows-host execution
+and broader live mode/profile checks. Native context files intentionally use a
+Mac report format; Windows minidumps are OS-specific. The renderer's broader
+campaign/visual/performance limits remain separate from launcher acceptance.
+
+## Native Mac launcher port (2026-10-19)
+
+Implemented in `c252956` on `codex/mac-launcher-parity`, based on main `ade3763`, in
+an isolated source worktree because the primary checkout had active native
+renderer edits. Those edits and its branch were preserved. The native game is
+still the primary checkout's separately built binary; the launcher is not a new
+game build and does not claim that binary matches main.
+
+Host: macOS 27.0.1 (26A434), Apple Silicon ARM64. Launcher: shared Windows
+v1.2.18 source, pinned .NET SDK 8.0.426 and Avalonia 11.3.22. The home interface
+is generated from the Windows XAML; the original released banner, backdrop,
+logo and seven-size icon were recovered unchanged from the SHA-256-verified
+public launcher-v1.2.18 ZIP. Artwork/provenance remain local under ignored
+`private/launcher-art`. Native self-contained `.app`, build provenance, license
+notices and file-hash manifest are under ignored `build/macos-launcher`.
+
+Validation:
+
+- 13 native regression groups passed: host release filtering, JSON/journal
+  compatibility, settings drafts/backups/unknown-field preservation, failed-save
+  rollback, checkout launch routing, shared binding conflicts/reserved keys/wheel
+  codes, native update/failure recovery/rollback, corrupted archives and unsafe
+  paths, symlink refusal, independent launcher updates, read-only prerequisite
+  rejection, verified/cached downloads and known-issue filtering. Fixtures were
+  disposable; no game was executed by these tests.
+- The generated Mac launcher ZIP passed extraction, transactional installation
+  and full manifest verification in a disposable installation while preserving
+  synthetic game metadata and saves. This is a local package check, not a
+  published-release upgrade.
+- The complete existing Windows launcher sources compile for .NET Framework
+  4.8 with the shared changes: zero errors/warnings. Compilation on Mac does not
+  replace the Windows WPF/runtime tests; those remain unrun on this host.
+- Existing native command-launcher tests: 12 passed. CI suite routing: 40 passed.
+  The new native tests are registered for ARM64 Mac CI; Windows retains its
+  existing runtime/launcher checks. Python compilation and `git diff --check`
+  passed.
+- Read-only native `.app --check --root <checkout>` passed, including supported
+  XBE, ARM64 executable hash and the active Vulkan SDK receipt. The existing
+  `tools/play-native-mac.py --check` also passed. The active native binary was
+  concurrently rebuilt on another focused branch; these are prerequisite
+  observations, not a stable source/build synchronization claim.
+- The built app opened through Finder/LaunchServices. Native accessibility
+  inspection confirmed the Home and settings interfaces, detected the local
+  native build and game data, and displayed that no compatible Mac release was
+  available. Native rendered Home/settings images were reviewed. No personal
+  settings were saved and no personal game session was started by this task.
+
+This is a working native launcher development port, not full one-to-one parity
+certification. Physical key/mouse capture, actual minimize/restore around an
+isolated game process, every page's layout/accessibility, clean-machine delivery,
+real published native update/repair/rollback, Developer ID/notarization and
+native crash dumps remain unverified. Rich release-note document formatting is
+simpler than WPF. Discord preferences are preserved but disabled for editing
+until native game IPC support exists. Public native runtime packages still need
+MAC-012; none were published here. See [Mac launcher usage](docs/mac-launcher.md)
+and MAC-021. Other-device execution and synchronization remain unverified.
+## Shared presentation outcomes and timing (2026-10-19)
+
+- **Source/dependency:** `codex/shared-present-metrics` depends on local unmerged
+  `3e78f7c`; tests used the task's working changes. No main merge or publication;
+  other-device synchronization and Windows execution remain unverified. The
+  existing duplicate files and personal saves/settings were preserved.
+- **Cause and fix:** The HLE counted interpolation even when its void present
+  function returned without presenting. Vulkan also returned 0 after failed
+  acquire/present. Present now reports acceptance, HLE always restores replay
+  state and counts only accepted calls, and its gate avoids stale timestamps or
+  retries within the same guest frame on failure. Vulkan retains successful
+  suboptimal presents, skips out-of-date/no-image cases, and propagates other
+  errors. These classifications follow the [Vulkan swapchain contract](https://docs.vulkan.org/refpages/latest/refpages/source/VK_KHR_swapchain.html).
+  D3D11 keeps its HRESULT, including positive statuses such as occlusion; only
+  zero counts as acceptance ([Microsoft Present documentation](https://learn.microsoft.com/en-us/windows/win32/api/dxgi/nf-dxgi-idxgiswapchain-present)).
+- **Shared instrumentation:** `src/graphics/present_metrics.h` is consumed by
+  common RHI and native GL. It records CPU intervals between successful API
+  returns and call duration, separates guest/interpolated/other kinds and retains
+  failed/skipped counts. Failures leave a gap in the next successful interval.
+  The optional CSV is capped at 20,000 rows and retains the previous column schema;
+  `TSFP_FRAME_PROFILE` is the common name, with `TSFP_NATIVE_FRAME_PROFILE` as an
+  alias. Cumulative `[PRESENT]` snapshots feed the isolated runner's lower-bound
+  counts. Neither API acceptance nor CPU call timing proves GPU completion or
+  display scanout. Legacy call-count/HLE logs now label their scope explicitly.
+- **Host/pins:** macOS 27.0.1 arm64, Apple M5 Pro, Clang 21, SDL 3.4.16;
+  SDK 1.4.363.0, KosmicKrisp Vulkan 1.4 and MoltenVK Vulkan 1.3. Same upstream
+  `d90c929` and supported XBE SHA-256
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+- **Source/GPU checks:** 33 host/isolation/statistics/replay checks pass, including
+  actual HLE redraw/gate outcomes, production recorder gaps/CSV cap, and common
+  RHI forwarding of success/status/error. The real Vulkan fixture passes on both
+  drivers, injecting present/acquire results while retaining valid real queue
+  ownership. Its expected `presentation failed: -4` line tests error propagation;
+  it is not actual device-loss/recovery validation. No Vulkan validation errors;
+  MoltenVK retains five known primitive-restart capability warnings. Native
+  Vulkan `--test` passes three CTests plus GPU, SDL and Cocoa settings/debug tests.
+  Windows registers the same common source contracts and WARP missing-swapchain
+  check, but has not executed them here.
+- **Bounded gameplay evidence:** The isolated Test Lab run ended at its
+  150.20-second limit (exit 0), with no shader compilation failures, native faults
+  or Vulkan validation errors. It logged at least 7,800 completed guest frames
+  and 10,500 accepted presents (7,832 guest, 2,668 interpolated, zero other,
+  skipped or failed in the last snapshot). The counters are independently
+  sampled, so guest completion/present snapshots need not end at the same frame.
+  Reviewed captures show Time to Split's opening, first-person weapon/HUD/world,
+  forward movement after synthetic W, and ammunition dropping 16 to 14 after
+  synthetic mouse input. The first click captured the pointer; the second fired.
+  This is SDL event injection, not physical input or full-level verification.
+- **Timing evidence:** With validation and rotating capture enabled at 1920x1080,
+  the 100–140 second reviewed gameplay interval contains 2,382 samples and averages
+  **59.53 accepted presents/s** (54.33 guest + 5.20 interpolated), median 16.62 ms,
+  p95 22.94 ms, p99 61.75 ms and worst 64.52 ms. Capture/readback is part of this
+  workload; this is not a capture-free benchmark or stable-120 result. The 10–25
+  second menu interval averages 111.28/s (58.04 guest + 53.24 interpolated), which
+  must not be reported as gameplay performance. Guest clock remains 60 Hz and
+  interpolation target remains 2x. Evidence: `logs/shared-present-summary.json`,
+  `logs/shared-present-frame-times.csv`, `logs/shared-present-windows.json`, and
+  selected `private/captures/native-mac/shared-present-first-mission.png` /
+  `shared-present-after-input.png`.
+- **Build provenance/cleanup:** Gameplay binary SHA-256 is
+  `911cac9c1136e3b56ecd82169cc41e8f3e491952f4fef3110cef3b38dcc5e162`.
+  Final source changes after that run only clarify legacy log wording and add
+  Windows-only test coverage. The runner recycled six disposable disk images
+  (135,168 allocated bytes versus 5,243,406,848 logical bytes); fixture and personal
+  data were unchanged.
+- **Final checks/default restored:** All 26 patch transition/tracking checks pass
+  (two Windows-only checks skip), including CRLF and idempotence after the final
+  patch. All 47 CI/backlog checks pass. The default GL build is restored; its full
+  native `--test` suite and read-only launcher check pass, including active/inactive
+  interpolation present results. Restored GL executable SHA-256 is
+  `6fbef111dd6c4d1f39951e43e53477eb12c661c7b0a3d62a50107d29c4abc837`.
+- **Remaining:** Windows execution, fullscreen/settings integration, offscreen
+  color replay preservation, broader scene fidelity and capture-free pacing
+  investigation remain. The successful-present measurement gap is now addressed;
+  the measured gameplay rate does not meet a stable 120 target.
+
+## Shared interpolation depth isolation (2026-10-19)
+
+- **Source/dependency:** `codex/shared-interpolation-depth` starts at local
+  unmerged `2c63fbf`; checks used this task's working changes. No main merge or
+  publication, and no changes to the other device or concurrent duplicate files.
+- **Cause and fix:** The common Xbox renderer swapped interpolation color targets
+  but reused guest depth/stencil. A replay could inherit completed-frame depth,
+  reject translucent/equal-depth draws and alter depth needed after replay.
+  `src/graphics/interpolation_depth.h` now provides common RHI scratch depth for
+  each source image/subresource. It clears depth to 1 and stencil to 0 once per
+  replay, preserves writes across target switches, retains source identity against
+  pointer reuse, and evicts entries unused in the latest replay. Depth-only formats
+  clear only depth. Allocation/view failures preserve guest resources and suppress
+  the invalid replay; bindings are restored after replay. An additive patch routes
+  common device clears and target bindings through this helper. The existing GL
+  implementation already preserves its guest depth and remains unchanged.
+- **Host/tools:** Apple M5 Pro, macOS 27.0.1 arm64, Clang 21, SDL 3.4.16,
+  pinned SDK 1.4.363.0. Same upstream `d90c929` and verified US XBE
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+  Vulkan build SHA-256 `d852a89832c96b91c204ce515a9fafd45252d84ee4fbad47b6b390b69cedfe31`.
+- **GPU evidence:** Actual common Xbox device tests pass for automatic and custom
+  depth surfaces, repeated replay without guest clears, nested-begin rejection,
+  target switching within replay, and guest color/depth/stencil/binding restoration.
+  The shared RHI pixel contract also checks fresh/reused scratch history and guest
+  depth/stencil preservation on KosmicKrisp and MoltenVK. No Vulkan validation
+  errors; MoltenVK retains its known primitive-restart capability warning.
+  Windows uses this same RHI fixture through the registered WARP test; execution
+  on Windows is still pending. This is stronger than a source-only Mac adapter
+  check, but not a substitute for Windows execution.
+- **Source/build evidence:** 15 host contracts pass, including production-helper
+  fault injection for allocation/view failures, subresource dimensions, repeated
+  lookup, eviction, source release and epoch wrap. All 26 patch transition/tracking
+  checks pass (two Windows checks skip); a legacy texture-branch include-context
+  conflict was corrected without removing transition/conflict-preservation tests.
+  All 47 CI/backlog checks pass. Native Vulkan `--test` passes three CTests plus
+  the real-device/GPU and SDL/Cocoa input/settings/debug preservation suite.
+- **Bounded scene check:** The isolated Test Lab run with 2x interpolation
+  finished at its 120.20-second limit (exit 0), with at least 6,300 guest frames,
+  no shader compilation failures, native faults or Vulkan validation errors.
+  Earlier reviewed captures showed the mission opening with terrain, sky and ship;
+  the final capture is the pause/options menu. This does not establish continuous
+  first-person play or physical input. Run evidence is
+  `logs/shared-depth-summary.json`; selected final evidence is
+  `private/captures/native-mac/shared-depth-pause-menu.png`. The runner recycled
+  six disposable disk images (135,168 allocated bytes, 5,243,406,848 logical bytes).
+- **Default restored:** Rebuilt the default GL executable and passed the read-only
+  launcher prerequisite check. GL code is unchanged by this task; its prior full
+  suite was not repeated. Restored binary SHA-256 is
+  `bc70b59b67e9fa43575941106b779d2941267fa381abb353119fd973b7c7733c`.
+- **Remaining scope:** Offscreen color-resource replay effects, accurate
+  successful-present accounting/timing, fullscreen/settings integration and
+  broader scene/physical-input/Windows checks remain. The HLE's legacy replay
+  counter increments after a void present call, so it is not yet evidence of a
+  successful host present when a backend/replay fails. This depth fix does not
+  certify 120 host presents, complete rendering fidelity or a diagnosis of the
+  originally reported disappearing world.
+
+## Common Xbox renderer on native Mac (2026-10-19)
+
+- **Source/dependency:** `codex/shared-native-renderer` starts at local unmerged
+  `4d23a6d`; validation used this task's working changes. The focused stack is
+  local, not pushed or merged into main; the other device is unverified. Existing
+  concurrent duplicate files were preserved. Upstream remains `d90c929` and the
+  verified US XBE remains `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+- **Implementation:** `--renderer vulkan` links the PC `d3d8_*` frontend into
+  the ARM64 game. Device/resources, HLSL generation, combiners, screen copies and
+  display policy are now common code in this opt-in build. Mac supplies an SDL
+  window/event/drawable adapter and CoreText bitmap callback for the common
+  overlay. The default GL build remains available. `BUILD.json` records the
+  selected renderer; the bounded runner adds pinned GPU loading without replacing
+  its isolated saves, input, runtime/PC display settings or XDG paths.
+- **Boot fixes:** The first game boot failed on vector HLSL conditionals because
+  newer DXC defaults to HLSL 2021. The common Vulkan compiler now explicitly uses
+  HLSL 2018, with a shader-cache ABI tag change and a real GPU vector-conditional
+  regression. See Microsoft's [migration guide](https://devblogs.microsoft.com/directx/hlsl-2021-migration-guide/).
+  The first mission then exposed missing Vulkan PointSize output (13 validation
+  errors in that exploratory run). Both common vertex generators now consume
+  one shared API-mapping snippet that emits Vulkan's required one-pixel output,
+  matching D3D11 point-list rasterization. Larger guest point sprites remain
+  separate work. The mapping follows [DXC's SPIR-V attributes](https://github.com/microsoft/DirectXShaderCompiler/blob/main/docs/SPIR-V.rst).
+  Validation checks now reject the runtime's actual `[VKVAL]` error prefix;
+  warnings are recorded separately, never silently counted as clean errors.
+- **Host/tools:** macOS 27.0.1 arm64, Apple M5 Pro, Clang 21, SDL 3.4.16;
+  pinned SDK 1.4.363.0. The game used KosmicKrisp Vulkan 1.4, D32S8, validation
+  enabled, explicit 60-present setting and unchanged 60 Hz guest clock.
+- **GPU/native checks:** The shared RHI menu sampling, HLSL vector conditionals,
+  one-pixel point rasterization, swapchain readback and present pass on both
+  KosmicKrisp and MoltenVK. MoltenVK reports its known warning about disabling
+  primitive restart; no validation errors. The actual common Xbox device passes
+  fixed-function triangle/point draw readback, overlay and presentation. Native
+  Vulkan `--test` also passes all three CTests and SDL/Cocoa input, capture,
+  settings/debug preservation checks. The final Vulkan self-test binary SHA-256
+  is `c5b72cd8c11bd1ff2616c68019e9b5106a097e2e117d74c7cd7604ffc982a7cf`.
+- **Bounded scene evidence:** After the shader fixes, a 150.13-second isolated
+  Test Lab run ended normally at its time limit (exit 0), logged at least 8,400
+  guest frames and no shader compilation errors, native faults or Vulkan
+  validation errors. Reviewed captures show menu/profile navigation, Time to
+  Split's opening and the first-person weapon/HUD, terrain, character and objective
+  text at 1920x1080. Selected evidence is ignored
+  `private/captures/native-mac/shared-native-first-mission-before.png`; structured
+  run evidence is `logs/shared-native-renderer-summary.json`. Gameplay binary
+  SHA-256 was `3ec653e168efcb82c13ade9dccbcc6bd015d774c452ac9f0fc21504696b5e4af`;
+  the subsequent rebuild changed patch ordering/context and provenance, not the
+  point-output algorithm. Synthetic movement/fire events were submitted, but
+  intervening pause/menu state prevents a clean attribution of their results;
+  movement/fire acceptance is therefore still pending for this renderer.
+  The six disposable partition files were recycled (5,243,406,848 logical bytes,
+  135,168 physically allocated bytes); the canonical fixture/personal data stayed
+  separate. No complete level or campaign playthrough was attempted.
+- **Source checks:** 96 adapter/CI/backlog checks pass; 26 patch transition/tracking
+  checks pass, two Windows checks skip on this host. Historical texture-branch
+  transitions initially exposed an include-context conflict in the new point
+  patch; narrowing only that context preserves both branches and restores all
+  transitions, including CRLF and conflict-preservation checks. CoreText tests
+  check real glyph pixels and invalid UTF-8, and host callback tests check copied
+  registration and output preservation. Windows WARP/MSVC and remote CI have not
+  run; shared source and Mac passes do not substitute for them.
+- **Default restoration:** Rebuilt with `--renderer gl --test`; all three
+  CTests and the full GL GPU/SDL/Cocoa regression suite pass. The one active
+  native executable is again GL, SHA-256 `6f9d0e0223b6e76ac6c04caa0a5c30b74e91a88eec7d1819eda20c08d6909af0`.
+  The final save/config/cache-isolation checks pass (23 tests), including the
+  added isolated XDG cache route. No personal launcher test was used.
+- **Remaining acceptance:** Common-renderer interpolation depth isolation and
+  truthful host-present profiling, fullscreen/settings application, targeted
+  advanced-combiner/cube/volume/movie/framebuffer scenes, texture-pack scenes,
+  physical input and audio checks, and Windows execution. The Vulkan summary
+  marks its host-present counter unavailable; 8,400 guest frames are not measured
+  host presents. No stable-120 claim. The validated GL implementation remains
+  the normal interactive build while this migration continues.
+
+## Common Vulkan backend on Mac (2026-10-19)
+
+- **Source/dependency:** `codex/shared-vulkan-mac` starts at local unmerged
+  host-interface commit `e382e50`. Validation used this task's working changes.
+  Main advanced independently from `5131d29` to `ade3763` (known-issues workflow
+  and README preview changes); comparison found no renderer overlap. This task
+  did not change main or the other device. The focused stack is not pushed.
+- **Backend:** The existing production `rhi_vulkan.c` now obtains SDL's surface
+  extensions, creates its surface through SDL and initializes volk with SDL's
+  exact loader entry point. The initial probe exposed a crash when SDL and volk
+  independently selected different loader/driver dispatch tables. Sharing the
+  loader fixes that instance-handle mismatch. Portability instance/device
+  extensions are enabled when advertised. DXC loads its macOS dylib; POSIX
+  pipeline-cache file operations use temporary-file/rename semantics. The
+  existing POSIX shader-cache stub still disables persistent caching.
+- **Reproducibility:** New optional SDK pin `config/vulkan-sdk.json` records
+  version 1.4.363.0, 396,088,200-byte archive and publisher SHA-256
+  `163431e0203c8215286a17cf393643ce6b951f77d1b4f74ab30821a1f0beb09b`.
+  The archive was verified before running the installer with `copy_only=1`;
+  no system-wide SDK installation. Installed-file hashes, licenses and version
+  manifests remain under ignored `external/vulkan-sdk`. The verified temporary
+  installer/archive were removed (about 812 MiB reclaimed); installed core uses
+  2.5 GiB physical, standalone test build 19 MiB, no game-data duplication.
+  Existing upstream, SDL, Vulkan-header/volk/VMA submodule and Python pins were
+  retained. The new validation SDK requires macOS 26+; the GL game path's
+  requirement/default is unchanged. Official provenance:
+  [SDK catalog](https://vulkan.lunarg.com/sdk/files.json) and
+  [installation guide](https://vulkan.lunarg.com/doc/view/latest/mac/getting_started.html).
+- **Real GPU contract:** `tools/test-rhi-mac.py` configures a standalone test
+  using no game data or generated game C. The production common RHI compiles
+  the shared PC HLSL through DXC, draws the same menu reconstruction fixture,
+  checks magnification/alpha/flat-color/minification expectations, and checks
+  swapchain channel order/readback/presentation. It uses pinned loader/driver
+  paths, validation layers, isolated cache/config paths and a 60-second bound.
+  Both MoltenVK and KosmicKrisp passed, exit 0, with validation enabled and no
+  validation errors. MoltenVK reports a warning that Metal cannot disable
+  primitive restart; this triangle-only contract does not establish indexed
+  strip/restart fidelity. KosmicKrisp produced no validation warnings here.
+  Logs/JSON receipts: `logs/rhi-moltenvk.*`, `logs/rhi-kosmickrisp.*`.
+- **Host/evidence:** Apple M5 Pro, macOS 27.0.1 arm64, Clang 21, SDL 3.4.16;
+  RHI reports Vulkan 1.3 through MoltenVK and 1.4 through KosmicKrisp. Probe
+  executable SHA-256:
+  `31848a34cc984d8f05761de06712d6e5bdc7a2cd3336823880bed74a8ae34131`.
+  This is an asset-free GPU result, not common-frontend gameplay or an FPS test.
+- **Checks/CI:** Initial integrity, CI scope and complete patch migration/tracking
+  selection: 75 passed, 2 host skips. Final helper/core/native-tool/backlog
+  selection: 78 passed, 1 Windows skip. Documentation/scope rerun: 53 passed,
+  1 Windows skip. The same RHI pixel fixture is registered on Windows through
+  D3D11 WARP (no swapchain on that route); Mac CI additionally installs the pinned
+  SDK and runs the standalone Vulkan contract. Remote CI and Windows execution
+  remain pending. The check fails if validation is unavailable or reports an
+  error; it does not treat a successful compile as a GPU pass.
+- **Existing game path:** Full native builder `--test` still passes all 3 CTests
+  and real-GL renderer, SDL input and Cocoa settings/debug regressions. Verified
+  supported XBE and isolated settings/saves; personal/canonical data preserved
+  and disposable partitions recycled. GL game executable SHA-256:
+  `796398454eff5ac155ac6ea00962dbc691bc2f0156a790256e16cc387fd8fa1c`.
+  No new gameplay run was needed for this opt-in backend/probe addition; the
+  earlier gameplay run remains tied to its recorded host-interface binary.
+- **Remaining integration:** The game still uses `renderer_gl.c`. Connect the
+  common Xbox frontend to the new native backend, adapt window creation and
+  overlay/font services, then validate resources, shaders, gameplay and pacing.
+  Keep missing texture/movie modes, scene fidelity, persistent cache behavior,
+  Windows execution and the MoltenVK restart warning explicit. This milestone
+  does not complete the shared-architecture goal or promise automatic parity.
+
+## Shared renderer host interface (2026-10-19)
+
+- **Source/dependency:** `codex/shared-renderer-host` depends on unmerged local
+  `1a650b5` and its earlier integration/shader/settings stack. Checks used that
+  revision plus this task's working changes; no main merge or publication.
+- **Cause and fix:** The common Xbox device implementation directly pumped
+  Win32 events and queried client rectangles, and portable display policy was
+  hidden behind a Windows guard. An additive `shared-renderer-host.patch`
+  introduces `RhiHost` callbacks with physical-pixel dimensions, explicit
+  registration lifetime and unchanged outputs on failure. Win32 retains its
+  default message pump and window query. Both the common device and current
+  native GL renderer use that interface. `renderer_host_sdl.c` owns SDL events
+  on the main thread and supplies a mutex-protected dimension snapshot to
+  workers. Portable display/compile helpers now compile on Mac; the POSIX shader
+  cache is still the existing no-cache stub. Dependency pins are unchanged.
+- **Asset-free validation:** 26 passed, 2 host-specific skips for patch migration,
+  backlog integrity and new host/core contracts; another 60 passed, 2 Windows
+  skips for CI scope, patch tracking, menu sampling and debug definitions.
+  Twelve actual common renderer translation units compile on Mac, rather than
+  replacing them with mocks. Callback tests cover copied registration, context,
+  dispatch, failed/zero-size queries and output preservation. CI registers the
+  same contracts on Windows/macOS; Windows execution remains pending.
+- **Native validation:** Full builder `--test` passed all 3 CTests and real-GPU,
+  SDL input and Cocoa settings/debug suites. The installed production SDL host
+  regression verifies physical dimensions, worker snapshot access, worker event
+  non-consumption, main-thread event consumption, unbind and rebind. Host:
+  macOS 27.0.1 arm64, Clang 21.0.0, SDL 3.4.16, OpenGL 4.1 Metal 91.7.
+  Supported XBE verified; executable SHA-256:
+  `dac2541da2193a26d89e65d72d763651d2366818bbd1400db47da07534bab872`.
+- **Bounded gameplay:** Isolated unlocked Test Lab, 120.16 seconds, time-limit
+  exit 0, `--capture --test-keys --profile-frames --fps 120`. Reviewed menu,
+  mission intro and playable first-mission terrain/weapon/HUD. Synthetic SDL
+  movement/look/fire input changed the viewpoint and magazine from 16 to 13;
+  world geometry remained visible in reviewed captures. This is not physical
+  input, complete-level or campaign certification. Retained ignored capture:
+  `private/captures/native-mac/shared-renderer-host-gameplay.png`.
+- **Timing:** The 110–119 second gameplay sample measured 119.77 host presents/s
+  (60.00 guest + 59.78 interpolated), p95 12.564 ms, worst 14.334 ms, none over
+  33.33 ms. Whole run including loading/intro averaged 105.54 host presents/s,
+  worst 421.503 ms with 10 intervals over 33.33 ms. These CPU present intervals
+  do not certify scanout or stable 120 FPS across the game. Guest clock remains
+  60 Hz. Both display configs, controls and saves were isolated; canonical
+  fixture and personal files preserved, disposable partition images recycled.
+- **Remaining work:** This is the host boundary and compile preparation, not a
+  native common-RHI GPU implementation. Mac still renders through its GL Xbox
+  frontend. Common GPU/backend selection, shader/resource integration, missing
+  texture/movie capabilities, Windows execution and scene parity remain open.
+
+## Shared feature contract (2026-10-19)
+
+`codex/shared-feature-contract` depends on local `780346f`. Root `AGENTS.md`
+now requires shared implementation by default, thin adapters and explicit
+capability/backlog exceptions; the PR checklist uses the same rule.
+`docs/shared-platform.md` records current source boundaries, the four focused
+branches, test routing and the remaining common-RHI integration milestone.
+Backlog integrity and CI scope checks pass (44 tests); documentation-only changes
+need no game rebuild. Branches are local, not pushed; main and the other computer
+were not changed. The consolidation goal remains in progress: menu shader and
+debug settings are shared, but the full native renderer is not yet behind RHI.
+
+## Shared debug setting definitions (2026-10-19)
+
+- **Source/dependency:** `codex/shared-debug-settings` starts at unmerged shared
+  shader commit `dde016d`, itself dependent on integration `bee4ed9`. Validation
+  used working changes; no changes were merged into main or pushed.
+- **Cause and fix:** Windows and Cocoa repeated debug labels, field lists and
+  save assignments. A new field could silently be omitted on Mac or reset when
+  saving. `src/pc_debug_options.def` now supplies the struct fields, persisted
+  keys, labels, capability requirements and both native dialogs. The shared JSON
+  reader/writer iterates that definition. OS controls, layout and atomic file
+  writes remain adapters. Existing keys/defaults and Windows control IDs remain
+  stable. Mac hides latency until a network provider exists and preserves its
+  saved value while editing available options.
+- **Checks:** Shared model tests include appending a new option only to a
+  disposable copy of the definition and verifying its registration, field
+  access, capabilities and unchanged unrelated values. Together with CI scope:
+  45 passed, 1 Windows-only skip. CI now includes these model checks on both
+  hosts plus a Win32 settings translation-unit compile. Windows execution and
+  a live Win32 dialog remain pending on this Mac.
+- **Native validation:** Full builder `--test` passed all 3 CTests and GPU,
+  SDL input, Cocoa settings/debug checks. Cocoa checks verify generated labels
+  and capability visibility, Cancel, Save, hidden latency preservation, backup
+  and unrelated configuration preservation, and failed-write rollback. The
+  definition change does not implement behavior for a future option; that still
+  belongs in the shared runtime or an explicit capability adapter.
+- **Host/provenance:** macOS 27.0.1 arm64, Clang 21.0.0, SDL 3.4.16,
+  OpenGL 4.1 Metal 91.7; upstream/XBE/dependency pins unchanged. Executable hash:
+  `fe8b92bf291db091c7cb54b3457a93f9bf4dbcf38a62519250826396a1312ecd`.
+  Disposable settings/save paths and cleanup used by the builder; no personal
+  settings or canonical profile writes. Existing source CRLF bytes were retained.
+  No additional gameplay run was needed for this settings-definition change.
+
+## Shared menu shader (2026-10-19)
+
+- **Source/dependency:** `codex/shared-menu-rendering` starts at unmerged
+  integration `bee4ed9`; no main merge. Checks used this branch's working changes.
+- **Change:** The PC menu Catmull-Rom/glyph reconstruction now has a single
+  shader body in `src/graphics/menu_sampling_shader.h`. HLSL/GLSL adapters map
+  resource access, vector/intrinsic names and loop hints only. Both backends use
+  the same texture-eligibility policy in `src/pc_menu_sampling.h`. The native
+  fragment path consumes it directly, retaining projected/ordinary 2D scope;
+  dependent reads, point filtering, render targets, screen copies, gameplay and
+  minification retain their original sampling. No dependency/pin or guest-clock
+  change. The rest of the native renderer still needs incremental consolidation.
+- **Asset-free checks:** OpenGL offscreen shader test passes the shared Windows
+  WARP pixel contract: magnification changes edges, flat colors and alpha plateaus
+  remain stable, glyph coverage stays bounded, and unmodified/minified results
+  remain exact. The same C fixture supplies inputs and assertions to both APIs.
+  CI runs the appropriate GPU test on Windows/macOS without game data; it does
+  not silently skip a missing GPU on the selected host. Local selection:
+  54 passed, 1 Windows-only skip (shader, UI layout, CI scope and backlog checks).
+  Windows HLSL/WARP execution is pending; a successful Mac GPU run does not
+  establish Windows rendering verification.
+- **Native checks:** Builder `--test` passes all three CTests and real-GPU,
+  SDL input, Cocoa settings/debug suites. New production binding checks cover
+  all four stages, mode 0/1/2, glyph scope, point filtering, render-target and
+  screen-copy exclusion, plus dependent reads. Host remains macOS 27.0.1 arm64,
+  Clang 21.0.0, SDL 3.4.16, OpenGL 4.1 Metal 91.7, pinned upstream `d90c929`
+  and supported US XBE. Executable SHA-256:
+  `6256f2d59c9fe9ef44d3870125a8e271c9ea13aaa10fa570068c415eb7e63c84`.
+- **Bounded run:** Isolated Test Lab, `--seconds 120 --capture --test-keys
+  --profile-frames --fps 120`, time-limit exit 0 after 120.19 seconds. Reviewed
+  player selection, main menu and mission-opening cutscene; no sampled native
+  fault. Retained ignored `shared-menu-main.png` and `shared-menu-intro.png` in
+  `private/captures/native-mac`. This run ended during the opening movie-like
+  game scene; it does not establish post-change playable gameplay, a completed
+  mission, physical input or a resolution/ultrawide visual matrix. Earlier
+  integration gameplay evidence remains explicitly tied to its earlier binary.
+  Personal/canonical data preserved; runner recycled disposable partitions.
+
+## Shared-platform integration baseline (2026-10-19)
+
+- **Source:** `codex/shared-platform-baseline`, merging current main `5131d29`
+  and the unmerged native stack ending at `f562e14`. Main has 160 newer commits;
+  the native stack contributes 12. Tests below used this merge working tree plus
+  the integration fixes, before the merge commit. Neither main nor another
+  device's checkout was changed. Historical evidence below retains its revision.
+- **Cause and fix:** Discord's Windows CMake patch and the native build-identity
+  patch extended the same native block. Apply Discord first, then identity;
+  preserve both original patch payloads and tracked-stack migration. Shared menu
+  sliders also called a FOV callback guarded only for Windows. Enable the same
+  callback and bar capture on native Mac; no second FOV implementation is added.
+  A real native menu translation-unit compile check now catches this class of
+  undefined internal callback without game assets.
+- **Backlog:** Preserve all PC and native feature entries, native evidence and
+  newer PC follow-ups. Resolve five ID collisions as MAC-049 through MAC-053,
+  retain historical aliases, and rebuild the queue. CI checks unique IDs/titles,
+  supported statuses and agreement between queue and entries on both hosts.
+- **Host/build:** macOS 27.0.1 arm64, Apple Clang 21.0.0, SDL 3.4.16,
+  OpenGL 4.1 Metal 91.7; pinned upstream `d90c929`, supported US XBE hash verified
+  by the builder. Regenerated game C with the complete patch stack, preserving
+  all dependency pins. Free disk before generation/build: 231 GiB.
+  Native executable SHA-256:
+  `3887b6cee495d9ae98307ef0d6f37eaab80ed70f782eef2a7eefeb7abc0384f9`.
+  Exact working-tree source hashes/provenance are in ignored `build/macos/BUILD.json`.
+- **Checks:** Patch/CI-selection/transition suite: 69 passed, 2 skipped.
+  Native tools, isolated Test Lab, launcher and backlog/index checks: 77 passed.
+  The native CI policy selection: 140 passed, 7 skipped. Added native menu compile,
+  pointer and index/scope checks: 50 passed, 1 Windows-only skip. Native builder
+  `--test`: all 3 CTests and real-GPU renderer, SDL input, Cocoa settings and debug
+  checks passed. Read-only interactive launcher prerequisite check passed.
+  Windows-only checks and an actual Windows build were unavailable on this host;
+  configuring the two-host CI matrix is not a completed Windows CI run.
+- **Bounded native run:** `--unlocked-profile --seconds 120 --capture --test-keys
+  --profile-frames --fps 120`, 120.17 seconds, normal time-limit termination,
+  exit 0. Synthetic menu input selected Test Lab, Story and the first mission.
+  Reviewed captures show terrain, weapon, HUD and objective after the opening
+  cinematic. Selected capture: ignored
+  `private/captures/native-mac/shared-baseline-first-mission.png`.
+  Late movement/fire commands did not establish a visible response before the
+  time limit; no new movement, firing, physical-input or campaign claim.
+  The 110–119 second interval measured 115.55 host presents/s = 59.78 guest +
+  55.78 interpolated, p95 13.792 ms, worst 20.531 ms, zero intervals above 33.33 ms.
+  This short capture-enabled sample is not stable-120 certification or scanout FPS.
+- **Preservation:** Personal saves/settings and the canonical Test Lab fixture
+  were not used for writes; bounded tests isolated both display configs, controls
+  and XDG paths, and recycled only disposable partitions. Concurrent untracked
+  duplicate files remain untouched except two duplicate `.patch` copies that
+  incorrectly joined the active stack: preserved byte-for-byte with SHA-256
+  manifest in ignored `private/recovery/shared-baseline-sync/`.
+- **Next:** Consolidate shared shader/rendering policy and settings definitions.
+  The native GL adapter still duplicates renderer semantics; this baseline does
+  not claim automatic graphics parity, resolved Khallos sky fidelity, movie,
+  cube/volume, networking or full texture-pack support.
+
+## Launcher v1.2.18 release candidate (2026-10-19)
+
+Prepared on `feature/launcher-live-known-issues`, integrating main `d63a156`
+with live Known Issues commit `2f5ca68`. Both executable versions are 1.2.18.0.
+This also includes main's Discord presence setting; it requires a compatible
+game runtime. This candidate is built locally, not published for auto-update.
+
+The Windows x64 .NET Framework required-artwork build and full launcher tests
+passed: 104 updater, 28 download, 11 version, 10 startup, 30 news, 32 settings,
+20 maintenance and 14 unfinished-session checks, plus crash-report checks.
+Three packaging tests and 42 page/state layout checks passed. The exact ZIP
+passed upgrade and injected-failure rollback through the published v1.2.17
+updater, preserving isolated game, ISO, data, saves, settings, textures,
+rollback and untracked fixtures. Embedded banner, logo and backdrop hashes
+match the private source artwork. No real game or personal data was changed.
+
+The launcher-only ZIP, checksum, update metadata, release notes and provenance
+are retained in ignored `build/launcher-release-1.2.18`. Its only contents are
+the two launch executables and launcher manifest. Native Mac execution remains
+unverified and the Known Issues adaptation is queued under MAC-021.
+
+Subsequently integrated main `ae9f86d` (vehicle-runtime fix and issue-form
+versions), preserving both progress records. Launcher source, assets and build
+script inputs are unchanged from the tested candidate; no game rebuild is
+claimed by this launcher package.
+
+## Live known issues in the launcher (2026-10-19)
+
+Implemented on `feature/launcher-live-known-issues`, based on main `a8fc545`.
+Known issues previously came only from release descriptions. It now fetches
+current open GitHub issues labeled bug, excluding PRs and other labels/states,
+and replaces its list after a complete successful refresh. The selected
+release's published limitations remain separately identified in its notes.
+Issue titles are literal text and links are constructed from validated issue
+numbers in this repository; remote HTML, URLs and issue bodies are not rendered.
+
+Requests use independent five-minute polling while What's new is visible and
+the launcher is not minimized/busy, with entry/activation checks when due and
+an immediate manual refresh. No overlapping requests; close stops the timer,
+cancels outstanding work and prevents late repaint. Pagination is bounded to
+ten 100-record pages, responses to 4 MiB, and the entire check to 25 seconds,
+including a transport that ignores cancellation. Errors or incomplete results
+retain the old list with a checked-time warning; a successful empty result is
+distinct from unavailable GitHub data. No sign-in or saved cache is required.
+
+Windows x64 .NET Framework required-artwork build passed. Thirty release-news
+checks (including eleven new issue-feed/UI/scheduling cases) and 28 existing
+download/recovery checks passed. Forty-two page/state previews at 1152x772 and
+984x681 covered live, empty and stale issue lists as well as existing launcher
+pages. Live unauthenticated access returned eight open bug reports; preview
+screenshots used that read-only snapshot. No game, saves, personal settings,
+GitHub issues or release was modified. Full updater/gameplay checks were not
+needed for this display/network change. Native Mac remains queued in MAC-021.
+
+## Issue #100 - companion jeep dismount loop (2026-10-19)
+
+Local branch `100-captain-ash-buggin-out-in-the-car`, based on main `3d0b687`;
+Validated on Windows x64, MSVC Release, pinned runtime and supported
+US XBE SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+
+Read-only sampling in Scotland the Brave reproduced Ash cycling through seated
+state 9, dismount state 13, detached state 14 and re-entry, while Cortez's player
+entity remained in the same jeep and Ash had no target. The original JNE at
+`0x002A0C4D` joins a 32-bit driver-player check and an 8-bit vehicle flag check.
+The recompiler saved each predecessor's zero flag but consumed it without
+negation, reversing the stay-mounted decision for a player driver.
+
+`recomp-zf-join-polarity.patch` gives joins with recoverable ZF on every edge an
+explicit ZF-only state, snapshots before control transfer, and uses the proper
+condition polarity for branches, SETcc, CMOVcc and LOOPcc. Unknown predecessors
+remain unknown; no carry/sign/overflow information is inferred from ZF. The
+shared original AI routine remains responsible for combat and dismounting.
+
+Executable regressions cover both incoming paths, zero/nonzero values, mixed
+comparison operations and widths, and flag-preserving blocks. An integration
+fixture recompiles the supported US mounted-AI routine in disposable RAM:
+600 player-driver decisions stay mounted; missing/non-player drivers can still
+trigger dismount, enemy acquisition still changes to combat, and vehicle flags
+retain their original effect. A separate pre-fix run reproduces state 9 -> 13.
+The upstream recompiler suite passes 352 tests plus 87 subtests (41 skips);
+36 vehicle/float-join checks and an additional no-consumer declaration check
+pass. Patch tracking/transitions, generation and CI-scope checks pass 66 tests.
+The Windows Release rebuild and built-in native tests pass. The user confirmed
+the corrected Scotland the Brave jeep encounter works: Ash stays aboard away
+from enemies and follows normally when leaving the jeep and returning.
+Harry Tipper's encounter and native macOS gameplay have not been validated.
+Before submission, integrated main `b236c16`, preserving the terminal-camera
+regression and both validation records. Patch application and 76 combined
+vehicle/float-join, terminal-depth and CI-selection tests pass after integration.
+The user gameplay confirmation above was on the pre-integration build.
+PR #174 CI follow-up: macOS checks passed at `5f6ef81`; Windows runtime
+regressions passed while release checks were still running. Integrated main
+`a8fc545` to resolve a documentation conflict; patch application and 57
+vehicle/CI-selection regressions pass. Assigned this handoff MAC-048
+to preserve the newly merged menu-fidelity entry MAC-047.
+See MAC-048 for the shared-source Mac handoff.
+
+## Launcher v1.2.17 local build (2026-10-19)
+
+Prepared on `release/launcher-v1.2.17` from main `8fe6b48` (PR #170), with
+matching launcher, assembly and file versions. Includes the approved panoramic
+banner, Home/settings/sidebar improvements, clearer update feedback, transaction
+lock recovery and immediate minimize-on-launch behavior. No game build is included.
+
+The Windows x64 .NET Framework build with `-RequireArtwork -Test` passed the
+complete launcher test run, including 104 updater, 28 download, 11 version,
+10 startup, 19 news, 30 settings and 20 maintenance checks, plus crash-report
+and 14 unfinished-session checks. Tests used the existing short temporary staging
+directory and synthetic files. Both packaged executable versions are 1.2.17.0;
+banner, logo and backdrop resource hashes match their private source files.
+The release ZIP, checksum and update metadata are retained locally under
+`build/launcher-release-1.2.17`, alongside build provenance and release notes.
+The ZIP contains only the two launch executables and launcher manifest.
+No installation, game, personal data, GitHub release or published tag was changed.
+Native Mac support remains queued in MAC-021 and MAC-046.
+
+## Windows main-menu image fidelity (2026-10-19)
+
+Main integration: rebased onto `8fe6b48`, preserving the terminal-camera depth
+fix and the combined launcher changes. The supported Windows Build and all
+**78 integrated regressions** passed, covering GPU sampling, UI/FOV, terminal
+depth, patch tracking/upgrades and CI scope. The combined executable SHA-256 is
+`431133f3aeb9cbff6ea4502d90f83acd63194f8603ae2b84765e9ad45ab43913`;
+its matching symbol archive was verified by the build. Evidence is retained in
+`logs/menu-fidelity-main-integration-{build,tests}.log`. The menu's Mac follow-up
+is MAC-047; MAC-046 belongs to launcher transaction recovery. The earlier
+source revision and executable hash below describe the initial visual checks.
+The subsequent main integration at `b236c16` retains launcher v1.2.17 and its
+release notes; that incoming change contains no game-rendering source changes.
+
+Local, uncommitted on `fix/main-menu-image-fidelity`, based on updated main
+`3d0b687`. The Windows frontend now uses clamped Catmull-Rom reconstruction
+when magnifying original background, logo, icon and glyph textures. The verified
+main-menu row painter also reconstructs A8 glyph coverage, retaining its original
+size, spacing, measurement, colour and animation. This improves edge definition;
+the original artwork's resolution still limits detail. No replacement artwork
+or texture pack was created or installed.
+
+Both fixed-function and NV2A combiner pixel paths use the same helper. The
+frontend scope resets at present; row coverage resets after its queued draw
+flush. Point-filtered stages, native-size/minified samples, depth/cube/volume
+textures, framebuffer copies, render targets and gameplay keep their existing
+sampling. `TSFP_MENU_FILTER=linear` restores the old menu path for comparison.
+The patch also applies beside the legacy texture-toggle branch's added includes.
+
+Validation on Windows 11 Pro 10.0.26300 x64, MSVC 19.44.35207, Windows SDK
+10.0.26100.0 and D3D11/NVIDIA RTX 4070 SUPER (driver 32.0.16.1742):
+
+- Supported `tsfp.ps1 Build` passed complete patch/XBE validation, native build,
+  replay checks and its existing build tests. Final executable SHA-256:
+  `813d0b7f01fae775b56e95053fdebe6ccbe88c98dec06d13d00d36d97edd8196`.
+- **62 tests passed** across the GPU sampler, UI layout, FOV/settings, full patch
+  upgrade/branch-transition and CI scope suites. After strengthening the row
+  scope assertions, **24 tests passed** across UI layout, GPU reconstruction and
+  patch tracking. The GPU fixture runs the production HLSL through D3D11 WARP,
+  checks sharper alpha edges and unchanged constant colours, bounds output to
+  avoid ringing, and verifies byte-identical native/minified sampling for both
+  artwork and glyph modes. These suite counts overlap.
+- Bounded real-game Test Lab sessions used isolated saves, controls and both
+  display configurations. Reviewed main menus at 1920x1080 and 3440x1440 show
+  the background and lettering, with original proportions and transparency.
+  The linear/cubic comparison sessions reach the same menu but have slightly
+  different animation timing; their whole-frame pixel differences are not a
+  controlled image-quality metric. Each session lasted 34 seconds. Disposable
+  partition images were recycled; the canonical profile and personal settings
+  were preserved.
+
+Evidence is local/ignored in `logs/menu-fidelity-{build-final,checks,final-regressions}.log`
+and `private/test-saves/menu-fidelity`. No full gameplay or campaign validation,
+Mac runtime test, commit, push or release was performed. Native Mac retains its
+current filtering; adaptation and acceptance checks are queued under MAC-047.
+
+## Combined launcher integration checks (2026-10-19)
+
+`integrate/launcher-polish-and-recovery` combines the visual/banner work
+(`e4f37c5`), transaction-lock recovery (`6e5e0dc`) and minimize-on-start fix
+(`4814fc4`) with main `5e89eaa`. Code merged automatically; documentation
+conflicts preserve each change and the existing terminal-camera validation.
+The transaction-lock backlog entry is MAC-046 to avoid main's MAC-045 ID.
+
+Windows x64 .NET Framework required-artwork build and the complete `-Test` run
+passed on the combined source: 104 updater, 28 download/recovery, 11 version,
+10 startup, 19 news, 30 settings and 20 maintenance checks, plus crash-report
+and unfinished-session suites. Five synthetic lifecycle checks, 36 layout
+previews and three package checks also passed. The full run used the existing
+short `%TEMP%/tsfp-visual-tests` staging directory with package metadata to avoid
+the known long-path fixture limit; binaries and logs remain ignored. No personal
+game, saves or settings were used. Private banner, logo and generated backdrop
+remain local and are embedded by release packaging. No new version was published;
+Mac execution remains unverified (MAC-021 and MAC-046).
+
+## Terminal camera depth clears (issue #47, 2026-10-19)
+
+Implemented on `47-what-lies-below-camera-visual-bug`, based on main `c006c24`.
+The user's What Lies Below / Containment Area A capture reproduces a blank
+camera feed. The captured 256x256 camera target contains 142 geometry draws,
+but replays entirely black. Injecting only a depth/stencil clear before that
+pass restores the room, door and character; this established the cause in a
+diagnostic replay before testing the rebuilt fix live.
+
+The HLE allocates a smaller host depth image when a guest depth attachment
+cannot fit a camera target. Previously these fallback images were cached only
+by dimensions and missed clears issued while the main image was bound. The
+additive `terminal-depth-clear` patch keys them by guest storage/layout plus
+host size, records independent depth/stencil clear generations, and delivers
+pending clears through `host_Clear` after binding. Repeated binds and
+colour-only clears retain occlusion; separate guest depth images stay separate.
+The existing full-frame shared-depth/ghost path is preserved. Unsupported
+texture-to-texture CopyRects were also seen in the log, but did not explain
+this camera pass and are not changed here.
+
+Windows x64 / MSVC 19.44 / D3D11: supported US XBE SHA-256 checked; complete
+patch stack applied; `tsfp.ps1 Build` succeeded including its GPU and native
+build checks. The production clear/cache regression and its deliberate
+lost-clear mutation both passed. CI and `tsfp.ps1 Test` now include that test.
+Capture and replay evidence stays ignored under `private/captures/issue-47`.
+The user tested the isolated unlocked Test Lab build and reported the camera
+feeds and controls appear to work. The new live capture at
+`private/captures/issue-47/fixed/frame000.bmp` visibly shows the Operation Room
+feed rendering its room. Its matching capture replays 546 draws with zero
+failed host calls, malformed chunks, unmapped handles or unknown chunks.
+The relevant terminal-depth, framebuffer, ghost, channel-clear, patch-tracking,
+patch-update and CI-scope suites passed: 74 tests in 130.67 seconds. Native
+macOS execution remains unverified (MAC-045).
+
+## Launcher banner composition (2026-10-19)
+
+Local follow-up on `feature/launcher-visual-polish`, based on `40b83a3` and
+dependent on its Home layout. Replaced the inset thumbnail treatment with an
+edge-to-edge composition: an original, larger title lockup over a generated
+blue/silver time-fracture background, joined to the supplied Cortez photo with
+a narrow left-edge transparency blend. The complete photo still uses uniform
+scaling without cropping; its source hash and the logo hash are unchanged.
+The original adaptive banner height is retained so Home controls stay visible.
+
+The generated 2172x724 companion backdrop and its full prompt/provenance remain
+ignored in `private/launcher-art`. `tools/build-launcher.ps1` embeds it separately
+and accepts `-BackdropPath`; required-artwork builds now reject a missing backdrop.
+Source builds may fall back to the existing gradient. All three embedded image
+streams were checked against their source SHA-256 hashes; the packaged app needs
+no external art files. Public publication has not been performed.
+
+Windows x64 .NET Framework build passed, as did 36 page/state layout previews
+at 1152x772 and 984x681, three package checks, and the missing-backdrop release
+gate. Home was visually inspected at both sizes. Broader existing suites passed
+28 download, 30 settings, 19 news and 14 read-only maintenance checks, including
+the source-build UI without the optional backdrop resource. The game-version
+suite passed its first nine checks, then the running game blocked the synthetic
+download/retry case; that suite is not claimed as passing. No personal data or
+running game was changed. Native Mac validation remains queued in MAC-021.
+
+## Launcher Home hierarchy and update states (2026-10-19)
+
+Follow-up on `feature/launcher-visual-polish`, building on local `e763ec2` rather
+than replacing its six visual improvements. Home now groups installed version,
+readiness, Play and game data in the stronger card, with a quieter update card.
+One next action uses the shared primary style: Play, install, ISO import, data
+inspection, or Retry/Resume depending on the workflow. Embedded Save/Verify
+actions retain the same primary treatment. A shorter window contracts the banner
+without cropping or modifying the original artwork.
+
+Update checks, ready/available results, download, verification, pause, failure
+and no-release states have distinct text/icon feedback. A local progress strip
+tracks downloading and is indeterminate during checks/preparation. It stops and
+resets after pause/error/result states; existing download/update guards remain.
+Reserved message/progress/action slots kept the measured normal action row fixed
+at y=586 (1152x772) and y=499 (984x681) for checking, ready, available, downloading,
+verifying and empty-release previews. Recovery uses a full-width primary action
+plus quieter repair/log links; longer exceptional messages remain scrollable.
+
+Windows x64 .NET Framework build with required artwork passed. Thirty-six
+preview/layout checks covered the original ten page/data states plus eight
+update states at both sizes. Minimum-size Home and download/pause/error renders
+were visually inspected. Current-source suites passed: 28 download/recovery,
+30 settings, 19 release-news, 11 game-version and 14 read-only maintenance checks.
+The new regression verifies progress shutdown/reset through pause, error and
+retry without starting an installation. Six transaction-maintenance checks are
+outside the read-only suite; no actual game was started/stopped or personal
+files changed. Native Mac, physical high-DPI testing and publication are not
+claimed. See MAC-021 and the ignored `build/launcher-visual-validation` evidence.
+
+## Launcher visual polish (2026-10-19)
+
+Windows x64 work on `feature/launcher-visual-polish`, based on main `c006c24`.
+Implemented all six requested visual improvements: collapsed verified game-data
+management, matching Home dropdown/softer Play button, six distinct vector
+sidebar icons, larger small labels with clearer muted-text contrast, compact
+settings rows, and a softer banner frame. Source artwork remains untouched and
+uses uniform scaling. Existing incomplete data offers inspection rather than
+import; verification changes update the default disclosure state while routine
+refreshes preserve the user's expansion choice. Home cards scroll as necessary.
+
+The .NET Framework x64 build with required original banner/logo passed.
+Twenty local preview/layout checks passed across Home (ready, expanded, missing
+and incomplete data), both Settings tabs, Repair, Diagnostics, What's new and
+Game versions at 1152x772 and 984x681 content sizes (the latter allows for the
+frame of a minimum-size 1000x720 window). The initial small-window pass caught
+clipped data actions; the scrollable Home cards fix was rebuilt and rechecked.
+Rendered pages were visually inspected; data actions were checked for reachability
+after scrolling, and verified-data expansion was checked across refreshes.
+
+Current-source regression results: 30 settings, 19 release-news, 11 game-version
+and 14 read-only maintenance checks passed. Six transaction maintenance checks
+were intentionally skipped in read-only mode while real game processes remained
+running; no updater/runtime changes require those checks for this visual work.
+No personal files or real game processes were modified. Native Mac execution,
+physical high-DPI testing and publication are not claimed. MAC-021 records the
+native UI follow-up. Prior local transaction-lock and minimize-on-start fixes
+remain on their separate branches and are not included in this branch.
+
+Ignored evidence: `build/launcher-visual-validation` contains the build, preview
+images, harness and suite logs; `build/launcher-visual-layout.log` records the
+layout pass. Test binaries used the short `%TEMP%/tsfp-visual-tests` path to avoid
+the pre-existing long-path crash-report fixture limit.
+
+## Launcher update transaction lock recovery (2026-10-19)
+
+Local Windows x64 fix based on main `c006c24`, branch
+`fix/launcher-transaction-lock`. A reported v1.2.16 game update failed at
+`Directory.Move(transaction, rollback)` after installing its payload. The log
+identifies a denied rename, not the process responsible; a sync/scanner lock
+is a possible cause, not a confirmed diagnosis. The installed game subsequently
+reported v0.3.0-alpha.2. No personal installation files were changed by this work.
+
+The shared game/repair/self-update transaction code retries only access/sharing/
+lock errors at commit, every 250 ms for five seconds. Other failures propagate
+immediately. Persistent failures retain restoration behavior and actionable
+instructions. If restoration fails too, both errors survive in the logged inner
+exception rather than losing the original update error. See MAC-046.
+
+.NET Framework x64 build with required private artwork passed. All 104 isolated
+updater checks passed, including four new regressions: a real Win32 directory
+handle blocks the old rename and then releases for successful install/rollback;
+a persistent lock times out with its journal intact; missing sources/existing
+destinations fail promptly; a locked restoration target retains both errors and
+recovers after unlocking. Synthetic saves/settings/data were preserved.
+Download (27), version selection (11), startup (10) and release news (19) checks
+also passed. Settings passed all 30 checks from a short temporary test path;
+the initial longer checkout path exceeded the crash log fixture's path limit.
+The subsequent crash-report suite stopped at its game-running guard after the
+real game was relaunched; remaining crash/session/maintenance suites were not
+completed in this run. No real game was started or stopped by these checks.
+
+Evidence: ignored `build/launcher-lock-validation.log` and build output in
+`build/launcher-lock-validation`; settings rerun used `%TEMP%/tsfp-lock-tests`.
+No native Mac execution, release publication or exact public ZIP upgrade is
+claimed for this change.
+
+## Launcher minimizes when the game process starts (2026-10-19)
+
+Windows x64 change on `fix/launcher-minimize-on-start`, based on main `c006c24`.
+The launcher now minimizes to the taskbar once its launched game process is
+running, instead of waiting for executable-path/window detection. It restores
+the previous normal/maximized state when that process exits. Failed process
+creation leaves it visible. Window detection is retained independently for
+successful-session cleanup, so a windowless clean exit cannot discard recovery
+files. This branch is independent of `fix/launcher-transaction-lock`.
+
+.NET Framework x64 compilation with required private artwork passed. Five
+isolated WPF lifecycle checks passed: normal and maximized initial states with
+delayed game windows, early nonzero exit, clean windowless exit and missing-game
+start failure. They assert immediate minimization, retained taskbar availability,
+state restoration and cleanup eligibility using synthetic files/processes.
+The lifecycle harness's reflection call now supplies the report argument added
+to MonitorGame by crash reporting. Evidence is in ignored
+`build/launcher-minimize-validation.log` and `build/launcher-minimize-lifecycle.log`.
+No real game or personal files were used; no actual gameplay, native Mac
+execution, publication or installed-launcher replacement is claimed. MAC-021
+records the native lifecycle adaptation still needed.
+
+## Launcher v1.2.16 release preparation (2026-10-19)
+
+Prepared from main `4a489af`, which includes the reviewed crash/session changes
+from PR #160 and Windows title-bar theming. The launcher assembly, file and
+update versions are now 1.2.16. This package contains only the launcher;
+unexpected-exit summaries work with existing games, while native crash dumps
+and freeze detection require the corresponding game executable/helper update.
+
+Windows x64 release compilation with required private banner/logo succeeded.
+All launcher suites passed: 100 updater, 27 download/recovery, 11 game-version,
+10 startup, 19 release-news, 30 settings, report checks, 14 session checks and
+20 maintenance checks. The first maintenance run encountered the game-running
+guard; its isolated rerun passed. Packaging, startup, window-theme and CI scope
+checks passed (45 tests plus two subtests).
+
+The exact ZIP's size, SHA-256, three-file allowlist, version and executable hashes
+were verified. The public v1.2.15 updater installed that ZIP into a disposable
+ordinary local folder, preserved save/settings/data sentinels and completed
+startup cleanup. Its existing linked-path guard rejected the initial OneDrive
+test location; no guard was bypassed. Evidence is retained locally in
+`logs/launcher-v1.2.16-*.log` and `build/launcher-publication-v1.2.16`.
+
+Publication is pending; preparation does not establish availability. Native Mac
+adaptation remains queued under MAC-044; this version bump adds no Mac adapter.
+
+## Crash logger PR review and corrections (2026-10-19)
+
+Review of PR #160 found and corrected three issues:
+
+- Windows CI's dump-free exit check failed when GUID-suffixed temporary report
+  names exceeded the path limit. A 180-character installation-root regression
+  reproduced the failure locally. Short temporary basenames now keep report
+  writes and exports within the limit when their final paths fit.
+- A second unhandled exception could return from the filter and terminate the
+  game before the first thread's dump finished. A source-only four-thread fault
+  driver reproduced the missing report. All faulting threads now wait on the
+  same bounded completion event; three repeated driver runs save a dump that
+  resolves to `tsfp_crash_test_site`. The actual game has the same concurrent
+  diagnostic mode and passes exact-symbol verification.
+- `tsfp.ps1 Build -Configuration Debug` would archive the Release executable/PDB.
+  The archive now receives the selected build directory. Distinct synthetic
+  Debug/Release contents verify that selection without requiring a second native
+  build tree. A full Debug game build was not run.
+
+Main `0c3c520` was incorporated, including required CI on every PR. Crash-helper,
+symbol and launcher-session changes select their relevant suites; source-only
+concurrent capture and symbol selection tests are included in CI.
+
+Windows x64 validation passed: **88 source/CI-scope/package/publisher checks plus
+2 subtests**; the supported native Build and its checks; full launcher build and
+existing suites plus **14 session checks**; real-game main/worker/concurrent crash
+captures with exact PDB GUID/age and expected function; all nine hang scenarios;
+and all four launcher integrations (missing helper, external kill, crash, live
+hang). Executable SHA-256:
+`c741877034ecf81dd461a6b4ccad6ae29dff319a7980704ac7d14ace0a1108d1`.
+The exact executable/PDB archive hashes were checked. Evidence is local/ignored
+in `logs/crash-review-*.log` and `logs/crash-review-validation.json`.
+
+The prior executable hashes and validation entries below are historical.
+No release or merge into main was made. Mac adapter work remains queued; source
+CI is not native Mac crash/hang validation. The documented forced-exit,
+unobserved-session, storage and frame-progress limitations still apply.
+
+## Windows unfinished-session recovery (2026-10-19)
+
+Follow-up on `feature/windows-crash-logger` in
+[PR #160](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/160).
+The Windows launcher atomically writes and flushes a session record before
+process creation, records PID/start-time identity after launch, and distinguishes
+observed clean exits, failed launches, nonzero exits, and unobserved completion.
+Startup/idle recovery defers while the recorded game remains alive. An abandoned
+session or observed nonzero exit without a matching native fatal report creates
+one bounded `unexpected_exit` report, opens Diagnostics, and supports local
+open/export without inventing a dump, exception or unknown exit code. Existing
+native fatal reports take precedence; a preceding hang does not hide an exit.
+Storage failures retain the pending incident for retry. No uploads occur.
+
+Validated on the existing Windows 11 x64 host through Windows PowerShell:
+
+- `tools/build-launcher.ps1 -Test`: full build and 100 updater, 27 transfer/recovery,
+  11 version, 10 startup, 19 news, 30 settings, 20 maintenance, and report checks
+  passed, plus **13 unfinished-session checks**. These include actual owner
+  termination with a surviving child, later child termination, PID reuse,
+  startup Diagnostics, clean/failed launches, uncertain outcomes, bounded export,
+  native-report precedence, hang then exit, storage retry, malformed records,
+  protected retention, and stale completion.
+  Both fresh/configured nonzero-exit launch probes verify a short buffered stderr
+  diagnostic reaches the fallback report; the launcher flushes it before capture.
+- Actual isolated game/launcher integrations passed for missing helper, external
+  process kill, deliberate native crash, and live hang. Fallback exports contain
+  readable/JSON summaries and a bounded log tail without `crash.dmp`; native
+  crash/hang exports continue to contain their real dumps.
+- Packaging and publisher regressions: **54 passed, 2 subtests passed**.
+- No native runtime source changed. Integration used the previously verified
+  executable SHA-256
+  `d748c090e88ff2ce04223a766f3f50d043174f56189a5f58c35e0cc7811f270a`;
+  this launcher-only follow-up did not rebuild or relabel that executable.
+
+Evidence is local/ignored: `logs/session-launcher-build.log`,
+`logs/session-package-tests.log`, and `logs/session-{exit,kill,crash,hang}-integration.log`.
+Tests use disposable installations/settings and preserve personal saves. A
+physical power-loss test was not run; interrupted ownership is tested by killing
+the isolated session owner. An unfinished record establishes lost observation,
+not a crash cause: a reboot, forced close, or normal exit after launcher
+termination can leave the same record. Only launcher-started games are tracked;
+an observed zero exit is clean, and unavailable storage can prevent tracking.
+Native Mac adaptation remains queued in MAC-044. The PR remains unmerged and no
+release was published. Main `7609d4a` was incorporated into the feature branch,
+preserving its ghost-replay fixture correction and both sets of status notes.
+The combined fixture/CI-scope/package/publisher checks passed: **80 passed,
+2 subtests passed**, recorded in `logs/session-main-integration-tests.log`.
+
+## Windows freeze detection and live launcher reports (2026-10-19)
+
+[PR #160](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/160)
+commits the implementation as `20058fa`, rebased onto main `511c686`. Post-rebase
+validation passed: 78 source/patch/Auto Lookahead/package/profile/publisher tests
+plus two subtests; a fresh supported Windows Build and native checks; deliberate
+main/worker crash captures and exact-symbol verification; all nine hang cases;
+and both real launcher crash/hang export integrations. Rebuilt executable SHA-256:
+`d748c090e88ff2ce04223a766f3f50d043174f56189a5f58c35e0cc7811f270a`.
+The matching executable/PDB archive was verified. Evidence: ignored
+`logs/crash-pr-integration-tests.log`, `logs/crash-pr-windows-build.log`,
+`logs/crash-pr-capture-tests.log`, `logs/crash-pr-hang-tests.log`,
+`logs/crash-pr-launcher-crash.log`, and `logs/crash-pr-launcher-hang.log`.
+The earlier hashes/runs below remain as historical validation records. No
+release was published and native Mac gameplay remains unverified.
+
+Extends the uncommitted Windows crash logger on `feature/windows-crash-logger`
+(base main `9c92ae8`). Windows 11 Pro 10.0.26300 x64, MSVC 19.44.35207 and
+Windows SDK 10.0.26100.0. Native game/helper build and existing build checks passed
+through Windows PowerShell `tsfp.ps1 Build`, including supported US XBE and
+complete patch verification. No generated C was edited. Final executable SHA-256:
+`bc90f453dd0e85911ebfc96e27bbf8e00c3bd57643c44125e819b234b66cb18c`.
+Matching PDB/helper hashes are in `logs/windows-hang-validation.json`; the retained
+`build/windows/crash-symbols.zip` was checked against both executable and PDB.
+
+The external helper now monitors actual game-frame boundaries. Production grace
+is 60 seconds without progress after rendering begins, or 180 seconds before the
+first frame. Background/minimized windows, modal settings/debug dialogs and
+Windows menu/resize loops suppress detection. Polling gaps over five seconds
+reset grace for sleep/resume or scheduling stalls. Each continuous stall permits
+one report attempt; actual new frame progress rearms it. It never terminates the
+game. The legacy opt-in exit timer remains separate and is not enabled.
+
+`kind=suspected_hang` reports share existing bounded retention and export files.
+Hang dumps contain native thread contexts/stacks without a synthetic exception;
+JSON exception/RIP/RSP fields are null. Xbox registers are marked as cached
+last-frame state. The launcher checks for reports during play, restores its
+window and opens Diagnostics; open/export work while a hung game remains alive.
+The real Play busy flag remains set, so release changes/repair stay blocked.
+Nothing is automatically uploaded. See [behavior and limits](docs/windows-crash-logger.md#freeze-detection)
+and MAC-044 for the queued native Mac adaptation.
+
+Validation:
+
+- Native watchdog policy regression passed: startup/active grace, one report per
+  stall, recovery, modal/background suppression and machine sleep/resume.
+- `tools/test-windows-hang.py`: all nine actual-executable cases passed: unarmed,
+  startup grace, responsive frames, inhibited observation, a brief transient,
+  sustained freeze, recovery, two separated stalls, and a hang followed by a
+  fatal crash. Tests run before game files/settings/saves open and use a short
+  test-only threshold. The sustained-freeze process stayed alive; its saved
+  thread RIP independently resolved to `tsfp_hang_test_site` with matching PDB
+  GUID/age and no exception stream. Reports for later stalls/crashes remained
+  separate. Evidence: `build/windows/hang-tests/validation.json` and
+  `logs/hang-capture-validation-final.log`.
+- Live launcher/native integration passed: a deliberate freeze opened Diagnostics
+  and exported its dump before recovery and process exit, while retaining the
+  production Play busy flag. The existing real-crash integration passed as well.
+  Evidence: `logs/hang-launcher-integration-final.log` and
+  `logs/hang-crash-launcher-regression-final.log`.
+- Full launcher suites passed: updater, download/recovery, versions, startup,
+  news, settings, maintenance and crash/hang report checks. Updated Diagnostics
+  labels were rendered and visually checked at 1152x772 in
+  `logs/hang-diagnostics-preview.png`.
+- All 14 patch-stack tests passed, including historical/repeated upgrades.
+  Existing deliberate crash/dump-symbol, normal/handled exit, retention and
+  write/helper-failure regressions passed with the final build.
+- A bounded 75-second Test Lab startup run on the initial watchdog candidate
+  produced no incident, using isolated saves/settings/crash storage; the runner
+  recycled its six virtual test disks. This does not establish focused physical
+  gameplay, long-load behavior or a full-level playthrough. Its logs are
+  `logs/hang-normal-session.log` and the isolated quick-test directory.
+
+One existing graphics replay check intermittently faulted at module offset
+`0x10fad` during build validation. Windows Application events show the same
+failure in an older `menu-footer-source` build before this change. The standalone
+four-case replay and the supported full build passed on recheck; this work does
+not claim to fix that intermittent renderer/replay problem. Final passing build
+log: `logs/hang-windows-build-confirmed-final.log`.
+
+Limits: detecting stalled frame progress is a suspected hang, not proof of a
+specific deadlock. An unusually long foreground load can be reported; a gameplay
+or audio freeze that still renders can be missed. Observation is deliberately
+suppressed in the states above, is armed at guest entry and stops at cleanup.
+No Mac execution, commit, push, merge or release publication is claimed.
+
+
+## Windows game crash logger and launcher integration (2026-10-19)
+
+Local, uncommitted work on `feature/windows-crash-logger`, based on main
+`9c92ae8`. Windows 11 Pro 10.0.26300 x64; MSVC 19.44.35207, Windows SDK
+10.0.26100.0. Supported US XBE validation and complete runtime patch application
+ran through the Windows PowerShell `tsfp.ps1 Build` workflow. No generated C was
+hand-edited. The existing untracked `frame000.d3dcap` was preserved.
+
+Implemented prestarted out-of-process minidump capture, thread-local Xbox register
+snapshot, bounded log tail, 16 MiB dump cap and five-report rotation. Only the
+final unhandled filter reports a crash; normal SEH, emulated device traps and
+watchpoints retain their handling. A missing helper allows ordinary game startup
+with a diagnostic. Direct launches use a default report directory; packaged
+launchers route reports to `Logs/Crashes`. The launcher detects new reports,
+restores its window, opens Diagnostics, and offers local open/export actions.
+No automatic upload. Player packages include the helper and exclude PDBs; exact
+executable/PDB archives are retained separately. See
+[design and commands](docs/windows-crash-logger.md), MAC-044.
+
+Measured validation:
+
+- Supported Windows build and its native input/settings/display/debug/prompt/
+  save-path/network/texture/clear/replay checks passed. Exact game executable
+  SHA-256: `55f9b3ce1cf153a38ff9654ffe37a0d23e457c3c423ffbf61318235f34100475`. Matching PDB/helper hashes
+  and source/host context are in `logs/windows-crash-validation.json`.
+- `tools/test-windows-crash.py` ran the actual executable before game/config/save
+  initialization. Both main-thread and worker-thread access violations exited
+  `0xC0000005`; their dump exception addresses independently resolved to
+  `tsfp_crash_test_site+0xE`. The checker verified the PDB GUID/age against each
+  dump RSDS record and rejected the wrong image and wrong function. Native
+  register and exception streams were captured. Guest registers are present in
+  the custom stream but pre-game tests intentionally have `guest.valid=false`;
+  these do not validate a reconstructed guest call stack.
+- Normal test exit and handled SEH produced no incident. Seven serial crashes
+  left five reports and preserved an unrelated file. Log excerpts were exactly
+  bounded to 64 KiB. Unwritable destination preserved the exception exit code;
+  missing helper made the diagnostic test return 4 without faulting. Evidence:
+  `build/windows/crash-tests/validation.json`, `logs/crash-capture-validation.log`.
+- The actual launcher launched a copied test executable/helper in a disposable
+  installation, detected the native report, announced it and exported its dump.
+  No game assets were copied or opened. Evidence: `logs/crash-launcher-integration.log`.
+- Windows launcher regression suites passed (100 updater, 27 download/recovery,
+  11 version, 10 startup, 19 news, 30 settings, 20 maintenance checks), plus crash
+  discovery/lock exclusion/export/path/metadata/UI checks. Diagnostics was rendered
+  and visually inspected at 1152x772: `logs/crash-diagnostics-preview.png`.
+- All 14 patch-stack migration checks passed, including historical/repeated
+  application. Packaging, isolated-profile and release-orchestration tests:
+  62 passed, two subtests passed; synthetic fixtures verify helper inclusion,
+  PDB exclusion and separate matching-symbol archive.
+- A bounded 30-second Test Lab launch used disposable saves/settings/crash paths
+  and produced no incident before timed termination. It is startup evidence,
+  not a completed gameplay or full-level check. Its six virtual test disks were
+  recycled by the runner; the canonical fixture and personal files were not test
+  targets. Evidence: `logs/crash-normal-session.log`.
+
+Limits: no fail-fast/forced-termination/power-loss coverage, freeze watchdog or
+new gameplay breadcrumb instrumentation. PDBs identify native and generated
+functions, not a complete original Xbox call stack. Native Mac capture is queued;
+no Mac build, device synchronization, commit, push or release publication is
+claimed. Symbol bundle: `build/windows/crash-symbols.zip`.
+
+## Ghost replay fixture access violation (2026-10-19)
+
+Implemented in this revision on `fix/ghost-replay-crash`, based on main
+`511c686`. Reproduced the
+publishing build's intermittent 0xC0000005 without game data. A temporary native
+exception probe located the fault in `d3d8_upload_mip_level`, called by texture
+UnlockRect; the faulting instruction reads a swizzled texel. The synthetic
+64x48 A8R8G8B8 texture violated the unswizzler's power-of-two requirement,
+allowing Morton addresses beyond its 12 KiB allocation. The fixture now uses
+64x64 storage while retaining swizzled format, occlusion, feedback-refresh and
+supersampling assertions. No production renderer behavior changed and the
+temporary exception probe was removed from the replay source before validation.
+
+Windows x64 / Python 3.14.2 / MSVC x64 / D3D11: 28 fixture, ghost-wrapper and
+CI-scope tests passed. Thirty complete GPU test passes (120 replay processes)
+passed all pixel assertions across 128x96, 160x90, 344x144 and 2x supersampling.
+`tsfp.ps1 Build` verified the supported US XBE and full patch stack, completed
+native build checks and executable sealing, and recycled disposable test disks.
+Actionlint and diff checks passed. The fixture contract test is included in source CI and
+publishing's full pytest suite. Windows-only GPU evidence does not establish
+native Mac rendering support; see MAC-036. No release was published.
+
+## Release Python dependency refresh (2026-10-19)
+
+The Windows publisher now installs the pinned `requirements.txt` with its own
+Python interpreter before building and testing a new package. Existing virtual
+environments could otherwise omit newly added Pillow and fail the icon tests
+late in release preparation. Installation failure stops before the build,
+packaging or publication; existing output protections remain unchanged.
+Windows x64 / Python 3.14.2: publisher and icon regressions passed together
+(52 passed, 4 skipped), including the real MSVC/CMake resource build in a
+Unicode path. All four previously failing icon tests passed. A restricted-run
+CMake configuration timed out; the normal build-tool-access rerun passed in
+5.92 seconds. `pip check` and diff checks passed.
+After transient approval-service failures, the retry created focused branch
+`fix/release-python-dependencies` from main `3c8439d` and installed the pinned
+Pillow 12.2.0 into the existing project environment. Implementation and
+validation are included in this branch revision.
+No release was prepared or published for this validation. Native Mac packaging
+is unchanged and unverified; this Windows publisher fix needs no Mac adapter.
+
+## Automatic mouse Auto Lookahead (2026-10-19)
+
+Implemented locally on `fix/mouse-auto-look-ahead`, based on main `6ad7767`.
+The US game's camera update (`sub_0025D520`, flag read at `0x25DB8F`)
+recenters pitch when movement activates Auto Lookahead. The new shared wrapper
+clears only that flag while this routine runs for local input slot zero when
+keyboard/mouse is active and mouse aiming is enabled, then restores it.
+The local slot is player +4, not the network/player ID at +0. Other local
+players, controller input and disabled mouse aiming retain the original path.
+
+The shared choice renderer presents Controls row 4 as OFF without arrows in
+both frontend and pause layouts (descriptor `0x524A40`). Its temporary drawing
+value never becomes the saved preference. The Controls draft-copy wrapper
+rejects queued mouse/keyboard changes to this automatic value while retaining
+other edits and original Accept/Cancel behavior. Controller input restores
+normal display/editing and uses the current saved preference, including OFF.
+The implementation uses a new runtime patch; generated C was regenerated,
+not hand-edited. Mac shares the adapter, pending native validation (MAC-043).
+
+Validation: Windows x64/MSVC 19.44, D3D11, supported US XBE SHA-256
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+The auto-look, terminal, menu-mouse and patch tracking/transition suites passed
+35 checks. Coverage includes idle-after-mouse behavior, switching devices,
+existing ON/OFF preferences, unrelated flag writes, guest return/register
+behavior, other players, menu filtering and queued settings changes.
+The regenerated game compiled and linked. In the isolated Test Lab session,
+Controls visibly displayed OFF with its arrows hidden; the user confirmed
+that the view stays where aimed while walking. Physical-controller switching
+and a separate pause-menu visual check remain unverified; the shared paths
+are covered by the adapter regression.
+
+Build-test limitation: `tsfp.ps1 Build` stopped in the separate
+`tests/ghost_targets.py` D3D11 replay check with access violation `0xC0000005`.
+The first run passed 128x96 then failed at 160x90; an incremental retry also
+failed. This replay executable does not link the new guest input wrappers.
+No renderer/test weakening was included. Later native build checks were not
+reached by that command; do not report the full build-test suite as passing.
+Logs: ignored `build/auto-look-tests.log`, `build/auto-look-build.log` and
+`build/auto-look-build-retry.log`. Personal saves/settings were not used.
+
+## Full-width gameplay white flashes (2026-10-19)
+
+Implemented follow-up on `152-bug-launch-title-screen-not-covering-larger-resolutions`
+(base `6ad7767`), retaining the title-screen correction. The user reports a
+4:3 white cover when facing an explosion in the first mission. Source tracing
+identified two separate fullscreen white passes: `sub_000F90D0` emits a
+textured white wash through `sub_0001FB40` (including caller `00119913`),
+while `sub_000FE990` emits an additive solid white rectangle at `000FEA07`.
+Both previously retained AUTO/proportional HUD placement.
+
+The shared `pc_display_flash_overlay` wraps only the white-wash routine;
+`pc_display_transition_overlay` now recognizes the solid flash caller. Both
+use scoped STRETCH placement with flushes before/after the draw, restore the
+previous placement/tag and keep original intensity, colour, UVs and timing.
+They exclude invalid/partial/split viewports and leave 4:3 unchanged. The new
+runtime wrapper is an additive patch; generated C is regenerated, not edited.
+
+Validation on Windows x64/MSVC/D3D11:
+- A new solid-white case reproduced the old transition-hook failure before
+  the correction. All nine shared UI fixtures/checks now pass, including a
+  white-wash fixture across nine resolutions, all 256 intensity values,
+  both guest viewport conventions and all six preceding placement modes.
+  Deferred draws before/after, original arguments and partial-view exclusions
+  are checked. The solid flash is tested with black/white/tinted alpha values
+  alongside the existing transition/loading coverage.
+- The complete patch stack applied successfully. All 29 patch-update,
+  patch-tracking and recompilation-generation checks passed; together with
+  the nine UI checks, 38 targeted checks passed. The supported Windows Release
+  build and all build checks passed, including real D3D11 feedback/depth and
+  channel-clear checks. `git diff --check` passed with the repository CRLF rule.
+  Logs: `build/white-flash-build.log`, `build/white-flash-patch-tests.log`.
+  Release executable SHA-256: `d41c029395fc4e65b70ba77da32f9788cd96ed5e1bc70d720711d63c75993497`.
+  This is a build of the base revision plus the local title/white-flash changes.
+- The user tested the rebuilt game at 3440x1440 and confirmed that the
+  white flash now covers the full screen. Mac visual validation remains
+  pending (MAC-032).
+
+## Full-width title reveal (issue #152, 2026-10-18)
+
+Implemented on `152-bug-launch-title-screen-not-covering-larger-resolutions`,
+based on main `6ad7767`. Reproduced the reported blue menu strips beside the
+launch logo at 3440x1440. The title reveal uses a textured logo and four black
+3D surround quads in US `sub_002BDA00`; the left/right outer edges retained
+their original width after the camera's horizontal field expanded.
+
+The shared `pc_display_title_matte` hook extends only the first two X
+coordinates at callers `002BDDB4` / `002BDE0A`, by the display camera factor.
+The two inner edges, top/bottom quads, logo textures, wipe, colour, depth and
+animation remain original. The helper emits inside an open primitive, so it
+does not flush or change renderer placement; it restores the arguments after
+emission. Unrelated callers, gameplay, partial/invalid viewports and 4:3/narrow
+modes retain their original geometry. The additive `title-screen-matte.patch`
+wraps the original generated vertex helper; generated C is not hand-edited.
+
+Validation:
+- All 43 selected UI/menu/FOV, patch-tracking/transition and regeneration checks
+  passed across the initial run and corrected historical-fixture rerun. The
+  historical controls-only fixture excludes the new display-dependent patch;
+  it still upgrades to and validates the complete current stack. All 14 patch
+  update checks passed on rerun.
+- The new production-code fixture checks ten resolutions/aspect ratios,
+  offscreen outer coverage, unchanged inner vertices/colour/depth, open-batch
+  preservation, stack restoration and excluded callers/viewports.
+- The supported Windows Release build and its full build checks passed. Its
+  first post-build ghost-target replay hit the previously observed intermittent
+  D3D11 access violation; a complete unchanged build/check rerun passed.
+- Five bounded live startup runs at 1280x960, 1920x1080, 1920x1200,
+  3440x1440 and 5120x1440 were captured. Visually checked the title reveal,
+  full-width black surround and subsequent player-count menu. At
+  3440x1440 the recorded outer X moved from +/-2.370000 to +/-4.246250;
+  the inner X remained +/-1.580000. Side-strip samples fell from a peak
+  channel value of 135 to 1, matching the original near-black matte.
+- Evidence is ignored under `build/issue-152-before-mask`,
+  `build/issue-152-after-*`, `build/issue-152-measurements.json`,
+  `build/issue-152-tests.log`, `build/issue-152-patch-retest.log` and
+  `build/issue-152-build-recheck.log`. Test Lab saves/configuration were isolated
+  under `private/test-saves/issue-152`; temporary virtual disks were recycled.
+
+Executable SHA-256:
+`0e5b9ea17e3f61577898b3be2e0ce9d0239a4491c908270518da02eecfad03a1`.
+The shared Mac hook is included, but native Mac visual validation remains
+pending under MAC-032. No release version bump or publication was performed.
+
+## PR #151 CI fixture correction (2026-10-18)
+
+Both Windows and macOS jobs in run 39188642901 failed to compile the shared
+UI-layout fixture and its weapon-effects/transition variants. The new
+`pc_display_aim_primitive` character-capture call had no implementation in
+these isolated placement harnesses. Added an explicit inactive-carousel stub
+in their shared fixture; the real adapter remains exercised by `menu_mouse.c`.
+The test runner now includes compiler stdout/stderr in assertion failures,
+so a missing symbol is visible instead of only a subprocess exit code.
+No production behavior or Mac adapter changed; MAC-030 remains queued.
+
+Windows x64/MSVC reproduced the three unresolved-symbol failures, then passed
+all 12 UI-layout/menu checks. The full native CI selection passed 111 checks;
+two Online theme checks could not initialize this local Python installation's
+Tcl/Tk (`init.tcl`/`tcl_findLibrary` errors). Those passed in the original Windows
+hosted run. Hosted reruns are required for final Windows/macOS CI confirmation.
+
+## Menu mouse controls and layout (issue #114, 2026-10-18)
+
+Implemented on
+`114-bug-mouse-pointer-cannot-select-some-menu-footer-elements`, based on main
+`a5d61ea`. All recent slider, resolution-label and choice-arrow follow-ups are
+tracked under [issue #114](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/114).
+The original audio-slider fix remains recorded under #115 below. The Windows audit now covers the reported lobby footer and team-selection
+paths. The eventual PR must explain the causes and fixes and distinguish
+local System Link verification from untested Internet sessions.
+The user confirmed main's Music/Sound bars work in both frontend and Pause.
+The US runtime audit found four original calls to the shared bar primitive
+`sub_000814B0`: the two audio layouts, Controls sensitivity (`sub_002EA250`),
+and the noninteractive MapMaker capacity display (`sub_0030C210`). The added
+PC Display settings FOV painter also uses that primitive. The launcher already
+uses a native WPF FOV slider; PC mouse sensitivity is a numeric settings field.
+
+Generalized the audio fix into `src/pc_menu_sliders.inc`. Sensitivity captures
+its final bar arguments inside its own painter, including translated label
+widths, and edits only the active player's original 0..1 value in 0.05 steps.
+It retains the original preview and Accept/Cancel behavior. FOV registers its
+actual 100x8 bar and edits the existing 40..100 draft/label; Apply and Back
+retain their native save/discard behavior. Shared capture keeps a drag on its
+starting bar and invalidates it for changed player/menu, resize, disabled/stale
+controls or focus loss. Other callers of the primitive remain noninteractive.
+The two new wrappers live in `menu-setting-sliders.patch`; generated C is not
+hand-edited. Mac wrappers retain pass-through drawing pending MAC-030.
+
+Validation so far: seven targeted menu, FOV/settings and display-mode tests
+passed on Windows x64/MSVC. The shared pointer cases cover four aspect ratios,
+main/Pause contexts, all four player slots, exact variable-width sensitivity
+geometry, boundaries, stable drag ownership, focus/resize/stale/disabled
+cancellation and preview calls. A mutation removing setting updates must fail.
+Production FOV capture, draft label and Back persistence are tested directly.
+The patch tracking/upgrade, generation and CI-scope suite passed 53 tests;
+the broader native renderer/input/settings suite passed 63 tests. The supported
+Windows build and its build tests passed (MSVC 14.44.35207, SDL 3.4.16, D3D11,
+supported US XBE). The user confirmed both sensitivity and FOV dragging work
+in the isolated Test Lab session (slider build watermark `683d3e5c`). Physical
+controller and native Mac validation remain pending.
+
+A subsequent screenshot exposed overlap between Resolution and long values
+such as 3440 x 1440. The first spacing attempt incorrectly supplied 440 painter
+units to a builder that expects a 0..100 percentage, hiding its row contents.
+Corrected the Display settings width from its original 55% to 75%, leaving
+confirmation/error pages at 55%. The guest constructor regression now checks
+that the centred panel stays inside the percentage canvas. This shared sizing
+scales with the existing proportional UI transform across resolutions.
+Seven focused tests and the supported Windows build/tests passed after the
+correction. A Computer Use screenshot of the rebuilt game at the isolated
+3440 x 1440 setting confirms all six rows are visible, with a clear gap between
+Resolution and 3440 x 1440. Other resolutions have not been visually checked
+for this spacing change. Personal saves and settings were preserved;
+sessions use the bounded isolated test runner.
+
+Standard type-1 choice arrows capture the native renderer's final triangle
+positions and inject one original Previous/Next action per click instead of
+Confirm (which does not change this control type). The constructor audit found
+113 callers of the shared type-1 setup, plus two custom painters (0019E970 and
+00360710) that retain the same native dispatch. Those custom painters now scope
+the owning row because their ESI register is reused during drawing. Hit tests
+cover both directions, alignment, variable-width values, disabled/hidden rows,
+held clicks, stale draws, resizing, scrolling and focus loss across four ratios.
+The eight direct arrow-primitive callers were inspected; this is not a claim
+that every decorative arrow or every screen was individually playtested.
+
+For #114, LAN/Online callbacks read logical network pad edges at 006B94D8,
+while the original mouse adapter only injected into physical pad 006B93E0.
+Clicks now use the buffer selected by the original input reader and restore
+that exact buffer after dispatch, even if a callback changes network mode.
+A local System Link session confirmed Options opens match setup and Select
+Character opens the character screen. In Capture the Bag setup, clicking the
+Friendly Fire arrow changed Off to On.
+
+The post-load team chooser has no selectable choice rows. Its parent callback
+002EDDC0 consumes raw direction/confirm edges before the child gets input.
+`src/pc_menu_team.inc` captures player one's actual team-arrow draws in
+002E4E90 and scopes clicks to that parent callback. Native code still owns team
+wrapping, readiness and network updates. Its Select/Back footer is handled at
+the same point, preventing late or double activation. No broadening of gameplay
+menu detection was needed. Menu-only WASD aliases supply the existing D-pad
+keys without changing gameplay bindings.
+
+Verification: the supported Windows build and full build tests passed twice
+with the lobby/custom-row and team wrappers. This includes the earlier flaky
+four-case ghost-target replay. Five focused pointer tests passed with the new
+team cases (physical/network input, four ratios, both directions, readiness,
+Select/Back, focus/stale/resize/changed-player guards). A live local Capture the
+Bag game on Vietnam confirmed Red -> Blue -> Red (native team values 1 -> 2
+-> 1), Select ready=1 and Back ready=0. WASD aliases are covered by the Windows
+input regression; short automated desktop key taps were not a reliable live
+keyboard check. The final menu/FOV, patch tracking/upgrade and generation run passed 35 tests;
+an additional 24 CI-scope tests passed. After a capture fast-path cleanup, the
+final rebuild encountered the known intermittent graphics replay access
+violation at 344x144 (scale 1). A full supported Build rerun passed every check,
+including all four graphics replays and strengthened WASD-to-D-pad assertions.
+The failed log is retained as `build/menu-final-build.log`, the passing rerun
+as `build/menu-final-recheck.log`; the flake was not suppressed or changed here.
+Real remote Internet sessions, additional local players,
+physical controllers and Mac adaptation remain unverified. Personal saves and
+settings remain untouched; bounded sessions use the isolated Test Lab profile.
+
+Character-selection follow-up: a live System Link test reproduced portrait
+clicks leaving Cortez selected, despite the working lobby footer. The custom
+carousel has no ordinary rows and its child fails the standard row-active test.
+`src/pc_menu_characters.inc` captures the real clipped portrait/variant quads
+inside `sub_002C4D20`, validates the current container/player-one relationship,
+and changes the native carousel selection through `sub_002C4310`. Wheel input
+browses groups without hover fighting the animation. Select/Back edges stay
+alive for the entire container dispatch so native nested callbacks retain
+preview loading, readiness, lobby updates and cancellation. The runtime wrapper
+is in `menu-character-mouse.patch`; diagnostics were removed before the final
+live test. Generated C remains untouched and native Mac handling passes through.
+
+Live verification at 3440x1440 in the isolated Test Lab System Link lobby:
+Cortez -> Harry Tipper by portrait click, Swinging Tipper by adjacent variant
+click; wheel down/up selected Jo-Beth Casey and returned to the retained variant.
+Select reached Ready, a second Select returned the new portrait to the lobby,
+and reopening retained Swinging Tipper. Previewing Jo-Beth then Back discarded
+the preview; reopening again retained Swinging Tipper. Right-click also returned
+to the lobby. The proof capture is `build/issue-114-character-lobby.jpg`.
+Regression cases cover four ratios and physical/network input destinations,
+variants/wrapping, one-shot clicks, raw footer edges, register preservation and
+stale/focus/resize/modal/player/changed-roster rejection. Additional local
+players, physical controllers and Internet sessions remain unverified.
+Validation: 59 focused menu/FOV, patch tracking/upgrade/generation and CI-scope
+checks passed. The final supported Build and every native build check passed
+(`build/menu-character-verified-build.log`). Earlier attempts encountered the
+already-recorded graphics-replay access violation, then a stuck debug-dialog
+test; that owned test process was stopped before the clean final rerun. No
+failure was suppressed. The final playable rebuild also passed all build tests
+(`build/menu-playable-build.log`), and the user confirmed the menu fixes work
+before requesting commit and push to the #114 branch.
+
+Published as PR #151, menu fix commit `067812a`. Integrating main `6d351c4`
+retained both progress records and the new Windows theme changes. The 31
+menu/FOV/CI-scope checks and the full supported Windows Build/tests passed
+after integration (`build/menu-pr-integration-build.log`).
+
+## Windows game UI theme follow-up
+
+2026-10-18, `feature/system-theme-game-ui` (implementation and validation in
+this revision), based on the unmerged
+title-bar commit `7219fec` (base main `a5d61ea`). Native PC Settings menu bar and
+popups use owned brushes and documented owner drawing, retaining native menu
+commands, state/checkmarks, mnemonic handling and F1 visibility. Dialog wrappers
+theme backgrounds, edit/static text, binding lists/headers, checkboxes and
+buttons without changing save/capture logic. Dark drawing is disabled for Light
+or high contrast. The Online browser/invitation use an isolated Tk dark theme,
+restoring the original native palette on Light/high contrast and checking for
+changes once per second. The new Python adapter is bundled and hashed in the
+network identity. Launcher interior and game rendering are unchanged.
+The modern-look revision uses Vista-derived Online layouts with rounded image
+elements, native label/padding behavior, blue checkbox indicators, and focus,
+pressed, hover and disabled states. It avoids applying a Clam control theme;
+the dark tree field alone uses its colorable field primitive. Native dialog
+custom drawing now uses rounded button/checkbox surfaces and blue accents.
+The revised Online preview was captured with example data and visually reviewed.
+
+Online captions now apply after Tk maps its native window and are checked on
+each refresh, repairing wrapper resets even when the theme has not changed.
+Real mapped browser/invitation HWND tests cover dark/light captions, re-showing
+windows and recovery after a forced native caption reset.
+
+Windows x64 build 26300 / Python 3.14.2 / MSVC x64: 49 affected theme, Online,
+host, content-identity and CI-routing regressions passed. Tests cover menu brush,
+hover/measurements/mnemonics, list/dialog colors, restoring native palettes
+(including an original clam theme), timer cleanup and bundling/identity.
+`tsfp.ps1 Build` verified the supported US XBE/patch stack, rebuilt and sealed
+the current runtime and passed its native settings/debug/input/render/network
+checks; disposable build test disks were recycled.
+The caption-fix rebuild passed on retry after an initial access-violation crash
+in the unrelated ghost-target graphics replay test; the retry passed that check
+and completed executable sealing. All 49 affected Python tests passed with
+access to the local supported XBE.
+The dark Online window and
+its taller invitation dialog keep the copy/return controls visible with the
+dark widget sizing. The actual game menu theme context/brush and both caption
+notification handlers were checked in a 35-second isolated Test Lab session;
+F1 hid/restored the toolbar without changing outer window bounds, and the
+runner recycled its disposable virtual disks. The dark Online window and
+invitation were captured with example data and visually inspected; they were
+not real online sessions and did not contact a server or change personal theme
+settings. Actionlint and diff checks passed.
+
+Automated dialog/theme tests use disposable fixtures. Human Windows Settings
+switching, high-contrast visual review and older-Windows rendering remain
+pending. No Mac appearance support or cross-device synchronization is inferred;
+see [MAC-021](MAC_PORT_BACKLOG.md#mac-021--published-release-launcher-and-pre-game-settings).
+
+## Windows title-bar theme experiment
+
+PR #149 integration: merged main `0545ebe`, preserving both validation histories
+and the new launcher Markdown renderer/version. On Windows x64, the merged
+launcher build and all isolated launcher checks passed; the native DWM
+regression and diff check also passed. No game runtime behavior changed in
+this merge, and no additional gameplay session was performed.
+
+2026-10-18, branch `feature/system-theme-title-bars`, base `a5d61ea`.
+The main launcher, bootstrap startup window and windowed game caption read
+Windows' app light/dark preference at creation and on settings/theme messages.
+WPF hooks detach on close; native APIs are resolved from System32 without new
+linker dependencies. Missing theme APIs retain standard title bars. Both paths
+request the standard light setting for high contrast. Interior palettes,
+rendering settings and caption/fullscreen styles remain unchanged.
+
+Windows x64 build 26300, Python 3.14.2, MSVC x64 / WPF .NET Framework 4.8:
+`build-launcher.ps1 -Test` compiled both executables and passed 213 checks,
+including a real-HWND light/dark/light notification regression. The native DWM
+test passed initial/explicit themes and borderless/restored-style preservation.
+`tsfp.ps1 Build` validated the supported US XBE and complete patch stack,
+refreshed generated hooks, compiled the Release game and passed native build
+checks. Disposable build test files were recycled. Actionlint and diff checks
+passed. Per-window launcher caption overrides were verified and captured from
+the isolated preview; these did not change the system theme or run an update.
+
+A bounded Test Lab session used `private/test-saves/title-theme`, with isolated
+save, controls, PC display and runtime display files. The actual game's initial
+DWM attribute matched the app preference; both WM_SETTINGCHANGE and
+WM_THEMECHANGED restored that preference after per-window test overrides.
+This tests the real handlers without changing personal Windows preferences;
+human switching in Windows Settings, high-contrast visual review and older
+Windows fallback validation remain pending. No gameplay completion claim is
+made. Native Mac behavior and other-device synchronization are unverified;
+no Mac adapter is needed for this Windows-specific DWM feature. See
+[MAC-021](MAC_PORT_BACKLOG.md#mac-021--published-release-launcher-and-pre-game-settings).
+
+## Launcher v1.2.15 release preparation (2026-10-18)
+
+Prepared from main `836aec7` after merging PR #147 with passing Windows and
+macOS source CI. The shared launcher version and assembly/file versions are
+1.2.15 so existing installations can discover the formatted release notes and
+clickable links. Game versions and What's new use the same selectable native
+Markdown view, including the known-issues section. No game version, runtime,
+installer, dependency pin or personal configuration is changed by this release.
+
+On Windows x64 / PowerShell 5.1 / .NET Framework 4.8 compiler / Python 3.12.14,
+the required-art v1.2.15 build and all 216 isolated launcher checks passed
+(100 updater, 27 downloads, 11 versions, 10 startup, 19 news, 29 settings,
+20 maintenance). All 27 Python CI-scope/packaging checks and two packaging
+subtests passed. The final clean-main ZIP upgrade/rollback, public downloads
+and discovery checks are separate publication steps, with ignored evidence in
+`build/launcher-v1.2.15-publication`. No actual game was launched or terminated;
+no personal saves/settings/ISO were used. MAC-042 remains queued for the future
+native UI; this Windows version bump needs no additional Mac adapter and does
+not establish native Mac UI or browser activation on another PC.
+
+## Formatted launcher release notes (2026-10-18)
+
+Implemented in `fef30c9` on `fix/launcher-markdown-notes`, based on main `a5d61ea`.
+Game versions previously called `ReleaseNotesText.Plain` and displayed a TextBox;
+What's new removed inline formatting and flattened links into label/URL strings.
+Both now use a shared read-only, selectable WPF FlowDocument renderer. Common
+Markdown headings, emphasis, lists, quotes and code are formatted; labeled and
+bare HTTP(S) links use native Hyperlinks and the existing browser/error action.
+No HTML/XAML parsing, remote-image loading or automatic navigation is added.
+Unsupported URI schemes and credential-bearing links stay non-navigable.
+Existing 24,000/64,000-character limits, 512-line cap, known-issue split,
+version selection, failed-refresh behavior and sidebar layout are preserved.
+Advanced GitHub Markdown extensions remain plain text; no web renderer or new
+runtime dependency is bundled. Launcher version remains 1.2.14; this does not
+publish an update or merge source into main. MAC-042 queues future native UI work.
+
+Windows x64 / PowerShell 5.1 / .NET Framework 4.8 compiler / Python 3.12.14:
+required-art launcher compilation passed. All 19 isolated news checks passed,
+including formatting, original PR link labels and explicit navigation through a
+fake browser callback, inert remote content and links on both pages/known issues.
+All 27 Python CI-scope/launcher-packaging checks and two packaging subtests passed.
+Headless WPF renders using the actual published v0.3.0-alpha.1 notes were visually
+inspected for both pages: headings, bold text, numbered/bullet lists and blue #106
+and #108 links fit, with the sidebar and scrolling retained. Logs and two renders
+remain ignored under `build/markdown-validation`.
+
+The first full local updater run correctly stopped while a real game process
+was running in another checkout. After the user closed it, the required-art build
+and all 216 launcher checks passed (100 updater, 27 downloads, 11 versions,
+10 startup, 19 news, 29 settings, 20 maintenance). No game process was terminated,
+and no personal ISO, data, saves or settings were used. The new focused formatting
+checks do not launch a browser. Physical browser activation and native Mac UI
+remain unverified.
+
+## Audio-menu mouse sliders (issue #115, 2026-10-18)
+
+Implemented on `115-bug-audio-menu-sliders-cannot-be-adjusted-with-mouse-pointer`,
+based on main `e6c68bd`. Windows x64, D3D11, MSVC 14.44.35207, SDL 3.4.16,
+the pinned runtime and supported US XBE. The tested local executable reports
+build `9eec7d5` (base plus this change); it is not a published release.
+
+The volume rows use custom painters rather than the native choice-slider path,
+so pointer selection previously highlighted the row without changing its level.
+Two reproducible painter wrappers capture the actual main/compact bar rectangles.
+The mouse adapter maps clicks and held drags to the original 0..16 staged values
+and invokes the original preview functions. It leaves profile writes to Accept
+and restores the original values through Cancel. A drag keeps ownership of its
+bar when crossing another row, and release, invalid focus, resize, disabled or
+stale controls and a replaced menu invalidate it.
+
+Validation: full `tsfp.ps1 Build` and its native build checks passed. The menu-mouse
+and patch-upgrade suite passed 18 cases, including a mutation that removes the
+volume update and must fail. Patch tracking, recompilation generation and CI
+scope suites passed another 37 cases. The slider regression exercises both
+painter layouts at 640x480, 1920x1080, 3440x1440 and 1280x1024, endpoint clamping,
+capture ownership, preview calls and cancellation cases. `git diff --check` passed.
+
+PR #146 CI exposed two missing audio-preview symbols in the isolated Windows
+FOV/settings fixture, which also compiles the menu translation unit. Added
+fail-fast stubs for those out-of-scope callbacks; the production audio paths
+remain exercised by `menu_mouse.c`. All six FOV/settings, menu-mouse and display
+mode cases passed locally after this fixture correction.
+
+Bounded real-game sessions used disposable Test Lab saves and isolated controls,
+display and runtime configuration. Before the change, dragging the Music bar
+left its value at 11. After rebuilding, GUI dragging set Music to 4 and clicking
+Sound's midpoint set it to 8, both in frontend Settings and the first mission's
+Pause menu. Screenshots and read-only process-state samples agree. Cancel restored
+11/16 in each menu; Accept committed 4/8 from Settings and 11/8 from Pause to the
+test profile, while the other profiles retained their values. Frontend checks
+included a letterboxed small window and a maximized window at configured 1280x720.
+The pause session mapped Start to middle-click only in the disposable controls
+file because the automation's brief keyboard events were not reliably sampled.
+This does not establish physical keyboard/controller testing. Automated navigation
+regressions passed; native Mac input remains unverified and queued under MAC-030.
+The test game was closed and the runner recycled its disposable disk images.
+Selected screenshots and read-only value samples remain in ignored
+`private/captures/issue-115`; personal settings, saves and the fixture were preserved.
+
+## Launcher v1.2.14 release preparation (2026-10-18)
+
+Prepared from main `c802385` after merging PR #126. Shared launcher version,
+assembly/file versions and update-package metadata are 1.2.14. This standalone
+Windows update includes the published game-version picker, complete original
+banner composition and recoverable Windows startup security interruptions from
+PR #141. The game version is unchanged. The new game icon requires a separate
+new game executable/release; this launcher ZIP cannot retrofit an installed game.
+The installer remains a separate unmerged change and is not part of this ZIP.
+
+Windows x64, .NET Framework 4.8 compiler, PowerShell 5.1 and Python 3.12.14:
+the required-art launcher build and all 212 isolated launcher checks passed
+(100 updater, 27 download/recovery, 11 version picker, 10 startup recovery,
+15 release news, 29 settings and 20 maintenance). All 56 targeted release,
+packaging and startup Python checks plus two packaging subtests passed.
+Saves/settings/ISO fixtures are isolated; no real game was launched or stopped.
+Release validation logs and assets stay ignored under build. This records
+preparation; GitHub publication and public checksum verification are separate
+steps. MAC-041 covers the picker/banner; MAC-039 explains the Windows shell
+recovery, and MAC-040 queues game-icon packaging. The version bump needs no
+native Mac adapter and establishes no native Mac execution result.
+
+## TSFP initials inside the icon rings (2026-10-18)
+
+Follow-up to `d66a1f2` in PR #126. The monogram's previous rectangular fit
+let the tall serif initials overlap the circular blue ring. The renderer now
+centers the complete glyph geometry and scales its farthest path point to an
+80-pixel radius in the 256-pixel design space. This also leaves room for the
+dark outline inside the ring's glow. All compact and source-only fallback
+sizes use this fit; the original title/subtitle artwork is unchanged.
+
+On Windows x64 with PowerShell 5.1/System.Drawing and Python 3.12.14, all five
+icon checks passed, including seven resource sizes and Windows LoadImageW.
+The required-art launcher build passed and its existing icon hash is unchanged.
+The seven-size private preview was visually inspected. The updated official-logo
+ICO SHA-256 is `ff3037c9b40de2410ac3dffe3cfe594e48e4a386b9927aaebe7244c7cdf66fdc`.
+No game was launched or release published. Native Mac icon packaging remains
+queued under MAC-040; this change adds no native Mac adapter.
+
+## Game icon serif lettering and larger subtitle (2026-10-18)
+
+Follow-up on `feature/launcher-game-versions` in PR #126, based on `c919122`.
+The compact TSFP mark now uses tall serif outlines typeset with Chequered Ink's
+Future TimeSplitters, a fan-made series-inspired typeface. It is not claimed to
+be the official logo font. The four-letter typeset shape is exported as native
+GraphicsPath geometry in `GameMonogram.cs`, with source/author attribution and
+published permission in `GameMonogram.NOTICE.txt`. No font install, download or
+font file is required to build or run the game. The original OTF and acquisition
+provenance remain ignored and local; its SHA-256 is
+`8f09bd612fec0a1aca85b3e2dcd0031d0f726240f37735330de1944bcfce1eb7`.
+
+At 128/256 sizes, the genuine title and subtitle lettering are composed from
+the unchanged 500 x 187 logo. The title retains its tall T/S descenders, while
+Future Perfect gets a separate centered line, proportionally enlarged from
+102.144 to 212 logical pixels at the 256-pixel size (about 2.1x). Arbitrary
+custom logo dimensions keep the proportional full-image fallback. The updated
+official-logo ICO SHA-256 is
+`f94398ddbaf28d33fe51d3e62090af1566d020a2d3d4ac22d4d5ed6eb21545e0`.
+The official PNG still hashes to `6f50234a380cd794fc9e82b2f1a204663c0bb741ea38fe57c2cc8f0a12aefed0`.
+The seven-size preview was visually inspected; the previous block initials
+are gone, and the subtitle is larger and readable. Game packagers carry the
+lettering attribution in `Licenses/Game-icon-lettering.txt`.
+
+Windows x64 / .NET Framework System.Drawing / PowerShell 5.1 / Python 3.12.14:
+the required-art launcher build passed; its TS icon remains byte-identical at
+`191f124e7d72e9c22d476cdf023ad38b8036680c38f298f496cfe6fcc6f2d519`.
+All 58 targeted Python checks and two packaging subtests passed, including five
+icon tests and release notes/packaging validation. A synthetic subtitle marker
+checks enlarged width and height at both large sizes. Resource linking and
+Windows LoadImageW still load every icon size without executing the stub.
+This visual refinement does not change game/runtime behavior, the banner,
+dependency pins or native Mac adapters. No actual game was launched, published
+or patched in place. The earlier 212-check launcher run is recorded below;
+this follow-up uses a fresh launcher build and targeted icon/package checks.
+Logs, source font/provenance and the current preview remain ignored under the
+existing validation/art folders. MAC-040 still queues native icon packaging.
+
+## Windows game icon for PR 126 (2026-10-18)
+
+Added in `c2db36b` on `feature/launcher-game-versions`, [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+Integration commit `272f930` merges main `78ac6a0` into this feature branch,
+retaining launcher 1.2.13, direct game launch and the startup security recovery
+from PR #141. The version-picker/banner backlog entry was renumbered MAC-041
+to preserve main's existing MAC-036 Ghost Gun entry. This does not merge PR #126
+into main or publish any game/launcher release.
+
+Host: Windows x64, .NET Framework/System.Drawing, Windows PowerShell 5.1,
+Python 3.12.14, MSVC 19.44, Windows SDK RC 10.0.26100.0, CMake 4.4.4 and
+Ninja 1.13.2. The new game icon uses the unmodified 500 x 187 wordmark at
+128/256 pixels and a compact TSFP monogram at 16/24/32/48/64. Source-only
+builds use the compact mark at all sizes. All entries retain transparent edges.
+The source PNG remains SHA-256
+`6f50234a380cd794fc9e82b2f1a204663c0bb741ea38fe57c2cc8f0a12aefed0`;
+the generated official-logo ICO is
+`7c1b53bd0e0ac954a359d93f46437afb7989cbdf4724260aed90a22e99310bcc`.
+The launcher ICO stays byte-for-byte unchanged at
+`191f124e7d72e9c22d476cdf023ad38b8036680c38f298f496cfe6fcc6f2d519`.
+The seven-size preview was visually inspected. Original art and generated
+icons/previews remain ignored and local; no source artwork was committed.
+
+`tsfp.ps1 -Action Build` generates the RC/ICO before CMake linking and executable
+identity sealing. A Windows-only CMake patch embeds the first icon resource
+group, which the pinned SDL Windows backend selects for its default window
+class. A tiny CMake/MSVC/RC executable built in a Unicode path verified all seven
+embedded payloads byte-for-byte and loaded every size using Windows LoadImageW.
+The executable was loaded as resource data only, never executed. The complete
+game executable was not rebuilt or launched; taskbar/Explorer appearance with
+a real game and other-device behavior remain unverified.
+
+Post-integration launcher build with required private artwork passed all 212
+checks: 100 updater/cleanup, 27 downloads/recovery, 11 game versions, ten startup
+recovery, 15 news, 29 settings and 20 maintenance. The combined Python run passed
+111 tests and two packaging subtests, including full patch-stack migration,
+release validation/notes, CI routing, four game-icon tests, portable startup and
+launcher packaging. The four icon tests were rerun after adding the Windows
+resource-loader assertions and passed. Tests preserve the original logo, reject
+a required missing logo without overwriting an existing icon, verify fallback
+sizes/transparency/provenance, and compare large-logo vs. small-monogram frames.
+Source-only patch fixtures share local Git objects without copying game data
+or changing the primary runtime checkout. Logs and selected evidence are in
+ignored `build/game-icon` and `build/launcher-validation`.
+
+Personal saves/settings/ISO/game data were not used or changed. Existing synthetic
+launcher process fixtures were used; no real game was terminated. Runtime pin
+and dependency pins are unchanged. Mac source/build paths remain unchanged;
+[MAC-040](MAC_PORT_BACKLOG.md#mac-040--dedicated-game-icon) queues native app icon
+packaging. A launcher-only update cannot retrofit this icon into older game
+executables; users need a matching new game build/release.
+
+## Complete original launcher banner artwork (2026-10-18)
+
+Follow-up on `feature/launcher-game-versions` in [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+The shallow header previously filled its width by cropping the supplied 4:3
+artwork, hiding most of Cortez's lower half. It now fits the complete original
+image on the right, with the original title wordmark and a blue/silver temporal
+panel filling the remaining width. The image is neither regenerated nor edited.
+The vector fallback remains available when private artwork is absent.
+
+The Windows x64/.NET Framework build with required artwork and all 198 existing
+launcher regressions passed. Home was rendered and visually inspected at
+1152×772 and 1000×720. Geometry inspection confirmed the full image fits inside
+a 349×262 display frame at both sizes (within one pixel of proportional sizing
+due to WPF layout rounding), with all edges inside the header. The launcher
+embeds the original PNG byte-for-byte with SHA-256
+`f318dac55d35da823386570c11f5cff9654e8b42963766eee54bc8a8dcd6e764`;
+the sidebar/header wordmark bytes are also unchanged. No image generation,
+game execution or personal-file changes were needed. The private preview Page
+was updated for mobile viewing; display on a physical phone remains unverified.
+
+Source: `tools/launcher/Launcher.xaml` and `Launcher.cs`. Artwork/provenance
+remain ignored under `private/launcher-art`; renders and layout checks are in
+ignored `build/launcher-validation`. [MAC-041](MAC_PORT_BACKLOG.md#mac-041--published-game-version-picker-and-banner-replacement)
+records the full-image layout requirement for a future Mac launcher. This is
+an unpublished source change; launcher version remains 1.2.12 during development.
+
+## Launcher game version picker and supplied banner (2026-10-17)
+
+Implemented in feature commit `04eaf1c` on `feature/launcher-game-versions`,
+based on main `a44784b`; [PR #126](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/126).
+Host: Windows x64, .NET Framework 4.x compiler/WPF, Python 3.12.14. No game
+runtime/source, dependency pins or Mac adapters changed. Launcher version remains
+1.2.12 for development; this feature has not been merged or published.
+
+`tools/build-launcher.ps1 -Output build/launcher-validation -RequireArtwork -Test`
+passed 198 checks: 100 updater/cleanup, 27 download/recovery, 11 game-version
+catalog/UI, 15 release-news, 25 settings and 20 maintenance checks. Tiny synthetic
+packages verified v2.0.0 → v1.1.0 downgrade and v1.1.0 reinstall, rollback,
+personal settings/saves/data/textures and ISO preservation, and preservation of
+launcher v1.2.12 even when a game package contains launcher v99.0.0. Existing
+transaction, corruption, interrupted-install and resume tests passed. No game
+was executed and personal files were not used.
+
+Catalog/UI checks covered semantic sorting, stable/preview flags, raw-record
+pagination including launcher-only pages, deduplication, invalid or foreign assets,
+checksum sidecars, rate limits, cancellation, retained choices on refresh failure,
+busy/running-game state, inert bounded notes, sidebar visibility and retained
+settings/maintenance drafts. The bootstrap forwards the versions preview route. A controller-level fake-HTTP
+check confirmed normal updates reject an older target and a failed explicit
+download retries that same older tag even after the normal candidate changes.
+All three Python launcher packaging tests also passed.
+Read-only live GitHub discovery returned seven compatible releases from
+v0.3.0-alpha.1 through v0.1.0-alpha.1; exact oldest-tag lookup retained its verified
+asset identity. Real public game ZIP downgrades and manual gameplay/save-format
+compatibility across these versions were not tested; older saves may differ.
+
+Home and Game versions previews were rendered at 1152×772 and 1000×720. The
+minimum-size images were inspected for fitting controls, readable notes, sidebar
+visibility and banner crop. The supplied 1600×1200 image is embedded byte-for-byte,
+SHA-256 `f318dac55d35da823386570c11f5cff9654e8b42963766eee54bc8a8dcd6e764`;
+the sidebar logo is also unchanged. The authoritative artwork/provenance and one
+previous-banner recovery copy stay in ignored `private/launcher-art`. Validation
+log and selected previews remain in ignored `build/launcher-validation`.
+Mac work is queued in [MAC-041](MAC_PORT_BACKLOG.md#mac-041--published-game-version-picker-and-banner-replacement).
+
+## Launcher startup security recovery (2026-10-18)
+
+Implemented in `a9b79e7` on `fix/launcher-startup-recovery`, based on main `e6c68bd` (launcher
+1.2.13), independently of pending installer/version-picker branches. Initial
+checks used uncommitted source. Host: Windows x64, .NET Framework 4.8/WPF system
+C# compiler, Windows PowerShell 5.1 and Python 3.12.14. No game source, runtime
+dependency pin, importer or Mac adapter changed; no release was published.
+
+The reported Win32 cancellation occurred in the bootstrap's final application
+launch. Startup previously logged the exception, showed a generic modal message
+and closed. It now explains a possible security prompt for native error 1223,
+offers distinct access-denied/missing-file guidance, and keeps Retry, Open
+launcher folder and View logs available. Retry repeats only application startup.
+Repeated failures remain recoverable; successful launch or closing exits normally.
+Folder-opening failures preserve the original recovery instructions. Native codes
+and exception details are retained in the log; Windows security is not bypassed.
+
+`tools/build-launcher.ps1 -Output build/startup-recovery-validation -RequireArtwork -Test`
+passed all 200 checks: 99 updater/cleanup, 27 downloads/recovery, ten new startup
+recovery checks, 15 release news, 29 settings and 20 maintenance. Synthetic launch
+and folder delegates exercised repeated cancellation followed by success, native
+vs. generic error classification, actions, close behavior, retained guidance and
+unchanged application/ISO/data/save/settings/download fixture hashes. No actual
+game or application was executed by the new tests. The full suite uses its
+existing isolated synthetic process fixtures; personal files were not used.
+All 29 Python CI-scope, portable startup preference and launcher packaging
+checks passed, plus two packaging subtests.
+
+Recovery layout was measured for text/progress/action overlap and bounds. A WPF
+render at 544 x 350 was visually inspected; all instructions and three actions
+fit. Log and selected render stay ignored in `build/startup-recovery-validation`.
+Actual SmartScreen prompts, manual first-run approval on another PC and signed
+binary behavior remain unverified. Code signing is not configured. The relevant
+Windows and Mac CI scope routes include the new regression source. Native Mac
+paths are unchanged; [MAC-039](MAC_PORT_BACKLOG.md#mac-039--recoverable-launcher-startup-security-interruptions)
+records why this Windows shell recovery needs no native adapter.
+
+## Launcher 1.2.13 version follow-up (2026-10-18)
+
+Bump the shared launcher version, assembly version and file version to 1.2.13
+for the issue #128 startup fix merged in PR #129. This keeps bootstrap, application,
+update metadata and versioned ZIP names consistent and allows a future published
+launcher update to compare newer than 1.2.12. Existing 1.2.12 references below
+record the earlier development build; the ISO importer and game version are
+unchanged. The local build includes the existing banner/logo artwork. This
+source change does not itself publish a GitHub release. MAC-037 still applies;
+version metadata requires no Mac adapter.
+
+## Issue resolution comments after PR merges (2026-10-18)
+
+Implemented on `128-fix-constrained-language-launch` in
+`Fix fresh-install launch and explain merged fixes on issues`.
+The Issue resolution notes workflow responds to PR merges into main and reads
+GitHub's closing-issue links, including links made in the Development sidebar.
+It posts the reviewed Cause and fix and Validation sections to same-repository
+issues, with a link to the merged PR. An unmerged closure, a non-default base,
+or an incidental issue mention does not generate a resolution comment. A missing
+or unchanged placeholder explanation fails clearly before writing comments.
+Reruns update only this workflow's marked GitHub Actions bot comment; human
+comments are preserved. All linked issues and comment lists are paginated.
+
+The write-enabled job checks out only trusted default-branch code. PR prose is
+read as API data, never interpolated into shell commands. Permissions are scoped
+to reading source/PR links and writing issue comments. The workflow has offline
+unit checks for publishing, skipping, pagination, duplication, updating, missing
+explanations and API errors. A read-only live check of already-merged PR #127
+correctly found issue #111 and generated the expected ghost-fix explanation;
+no GitHub comment was posted during development. This automation will become
+active after it reaches main and is not a retroactive backfill. It changes no
+PC or Mac game behavior and needs no Mac adapter. No hosted run is claimed yet.
+
+## Fresh-install launcher failure (issue #128, 2026-10-18)
+
+Implemented on `128-fix-constrained-language-launch`, based on `afb562c`,
+in `Fix fresh-install launch and explain merged fixes on issues`.
+Host: Windows x64, Windows PowerShell 5.1 and the system .NET Framework x64 C#
+compiler. The game runtime, pinned dependencies and ISO importer are unchanged.
+
+The report's log confirms a successful ISO import. Startup fails afterward in
+`Launch.ps1`: ConstrainedLanguage rejects `New-Object System.Diagnostics.ProcessStartInfo`.
+The launcher previously used this script only while `Settings/runtime.conf` was
+absent; saving graphics settings selected its native C# process path instead.
+`Play` now uses that direct path for both fresh and configured installations,
+with the same game-data verification, environment isolation, log redirection,
+window monitoring and exit status. Missing portable settings use runtime defaults;
+launch preparation does not save or overwrite settings. No security policy changes
+are requested or performed. Direct manual use of the legacy `Launch.ps1` still
+requires its existing PowerShell capabilities; Play Game no longer invokes it.
+
+Validation: the original New-Object operation reproduces the exact reported
+error in a child PowerShell session explicitly set to ConstrainedLanguage.
+The supported `tools/build-launcher.ps1 -Test` run passes 190 isolated checks
+(99 updater, 27 download, 15 release-news, 29 settings and 20 maintenance).
+The 29 settings checks also pass when the compiled test host is started from
+that constrained session. Four new cases exercise the production process/logging
+method with synthetic child executables: fresh versus configured settings and
+exit codes 0 versus 7. They verify paths with spaces, portable data/save/config
+paths, mouse and startup-video preferences, inherited override removal, stdout/
+stderr capture, status reporting, and byte-for-byte preservation of settings.
+They do not bypass the production Play action's ISO/data verification.
+Portable startup, packaging and CI-scope pytest checks pass: 28 tests and two
+subtests. Game assets, personal settings and saves were not used. These tests
+simulate the reported language restriction; they do not certify all AppLocker/
+WDAC configurations or reproduce the reporter's complete Windows installation.
+
+Local development launcher application SHA-256:
+`29b000d7f43b7dfe5ec2a353c5db4c5321534a45d4a9794d86ac2914b6b0357c`.
+The build retains version 1.2.12 and has not been published as a launcher update.
+Logs are ignored under `build/issue-128-*.log`. MAC-037 records why this Windows
+launcher fix needs no Mac adapter. No Mac execution is claimed.
+
+## Ghost Gun full-body rendering (issue #111, 2026-10-18)
+
+Implemented on `111-bug-ghosts-are-still-not-visible-with-ghost-gun`, based on
+`a44784b`, in the commit `Fix Ghost Gun humanoid rendering and target feedback`.
+Runtime pin and supported US XBE hash are unchanged. Host: Windows x64,
+MSVC 19.44, D3D11, NVIDIA RTX 4070 SUPER (driver 32.0.16.1742).
+Production executable SHA-256:
+`3b2eb5307fcd3341f35882d50f1a7428a363be78bb160dff28afcf0c00f84ee4`.
+
+The humanoid effect is the original US `sub_00121F50` path reached by
+`sub_001263A0`, not #17's floating-skull renderer. The normal model is intentionally
+hidden. Its replacement renders into a colour texture, filters/tints that image
+in place, and composites it into the scene. Two host errors prevented it:
+HLE substituted an unrelated depth buffer when changing colour targets, and
+D3D11 rejected a sampled image that was simultaneously the render target.
+
+The patch preserves the original automatic depth/stencil surface. Its full-frame
+colour target is promoted to the same physical dimensions while retaining
+logical texture coordinates; viewport/scissor and copy operations account for
+that scale. In-place 2D colour draws use one reusable snapshot refreshed before
+each draw, shared by all affected sampler stages. No ghost animation, AI,
+visibility flag, colour or shader is overridden. Temporary title diagnostic
+hooks have been removed. Native GL follow-up is tracked as MAC-036.
+
+An isolated Test Lab session in What Lies Below reproduced the actual humanoid
+model using mission template GHT2 and the real Ghost Gun pickup (item 34,
+equipped weapon 15). Test-only process-memory setup triggered the native spawn
+loop and held the actor in view; this was not a normal level playthrough.
+Live captures at 1280x720 and 3440x1440 show the red translucent body, and
+their complete draw captures replay with no failed host calls. The ultrawide
+run uses the clean production executable above, without title diagnostic hooks. This establishes the affected
+humanoid path, not every ghost encounter or Mansion's TV-room Deadwina.
+
+The supported Windows build runs a synthetic, asset-free GPU regression via
+`tests/ghost_targets.py`: 4:3, 16:9, ultrawide and 2x supersampling verify nearer
+geometry hides the effect, two successive feedback draws read fresh pixels,
+and offscreen depth writes survive returning to the scene. The normal build's
+existing checks also pass. All 34 selected patch tracking/transition, framebuffer,
+ghost-state and channel-clear tests pass (98.86 seconds); full-stack reapplication
+changes zero runtime files. Captures and logs are local and ignored under
+`build/issue-111-ghosts`; original game content is not committed.
+
+## Cutscene width fill and FPS investigation (issue #30, 2026-10-17)
+
+Implemented on `30-cutscenes-playing-at-lower-fps`, based on `cef0778`.
+Runtime pin and supported US XBE hash remain unchanged. The final Windows
+executable SHA-256 is
+`7a60881c5a71bd057d8531a7a6fad11208fa6dd2ebe9f3dc112c94de0fb896e1`.
+Host: Windows x64, MSVC 19.44, D3D11, Intel i7-13700K and NVIDIA RTX 4070 SUPER
+(driver 32.0.16.1742).
+
+`src/pc_cutscene.h` removes the vertical matte previously introduced on displays
+wider than the cinematic aperture. Both story and scripted bar paths now fill
+the width with proportional vertical cropping. Camera projection and CPU
+frustum remain matched, retaining the original horizontal aperture so the
+opening's finite starfield backdrop still covers the view. Gameplay FOV and
+the cinematic timeline are unchanged. The movie patches apply proportional
+width fill to the attract reel and all five startup logo variants. On wide
+displays, the supported 720x480 attract reel's 38 left / 42 right padded source
+columns are excluded by extending and offsetting the movie quad; 4:3 playback
+retains its original complete picture. Unknown movies retain default fit.
+Width fill necessarily crops some of the original top/bottom on wide displays;
+it does not stretch the image or change playback speed.
+
+The supported Windows Build and native build checks passed. All 49 selected
+cutscene, UI, FOV, decal, XMV stop and patch tracking/transition tests passed in
+116.57s. A repeated full-stack application changed zero runtime files. The
+cutscene fixture executes the checksum-verified original US story and scripted
+matte routines, checks camera/CPU-frustum agreement and restored guest
+arguments, and exercises 4:3, 16:9, 16:10, ultrawide, portrait and invalid
+dimensions. Mutations restoring the old movie fit or ignoring encoded padding
+fail the new regressions. Logs are in ignored `build/menu-footer`.
+
+All 20 Extras/Movies cinematics played to their natural ends at 3440x1440 in
+an isolated 1,700-second run, with frame captures and read-only camera/timeline
+sampling. This run used the identical real-time camera changes in binary
+`260f007caeaff2bf1e09fd33c9a4c04a52414414fff2e009b74184e313e7a54b`, before the
+final movie-only padding/logo follow-up. Per-movie median rates were 59.6-60.2
+FPS. The lowest one-second sample was 49.4 FPS; no movie had two consecutive
+samples below 50 FPS. Loading intervals were excluded and periodic GPU readback
+adds capture overhead. Sampled timelines advanced in real time, and moving
+camera pans reached about 60 updates/sec; stationary shots are not evidence of
+a frame-rate cap. Evidence is in ignored `build/cutscene-30-playlist` (timing
+summary, 20 completion records, timeline data and selected PNGs).
+
+The sustained low-FPS report was not reproduced on this host. These measurements
+do not establish a fix for #30's performance report or cover every in-level
+scripted event, other hardware, or a full campaign playthrough. No guest clock,
+decode cadence or audio-timing adjustment was made to mask that uncertainty.
+
+An offline audit using the production XMV demuxer/decoder decoded all six
+packaged videos (3,464 frames) without an error. The attract reel's 3,055 frames
+decoded in 2.818 CPU seconds; its source cadence is about 30 FPS. All movies
+retain their source timestamps. Encoded frame rates are distinct from the
+real-time cinematics' 60 Hz guest clock; this change does not invent frames.
+
+The final build's live 3440x1440 captures show proportional EA/Free Radical
+startup logos and the attract reel filling the width without the old side
+strips (`build/cutscene-30-recorded-final`). The bounded 245-second pass also
+completed the logos and attract reel naturally, then skipped the next reel
+with Enter and verified the title menu returned. Capture readback reduces
+the number of presented movie pictures; this run verifies framing/lifecycle,
+not smooth-playback performance. Redundant frames and disposable disk images
+were recycled. The remaining regional logo files
+were decoded offline and their selection/geometry is covered by the fixture.
+All game runs use disposable saves and explicit settings paths; the final
+movie pass also isolates APPDATA for the runtime shader cache. Personal saves,
+settings and the canonical unlocked fixture are preserved.
+
+Native Mac validation remains pending under MAC-035; native XMV playback has
+not been enabled by this work.
+
+## Required bug report answers (2026-10-17)
+
+The blank dropdowns in PR #113 were visually empty but still counted as selected
+by GitHub; the earlier preview check did not verify submission enforcement.
+`fix/required-report-identities` replaces Game version, Launcher version and
+Platform with required text inputs without `value`, `default`, or `options`.
+GitHub's documented input validation requires an answer. Users explicitly type
+an installed version or an unavailable/unknown answer rather than inheriting a
+selection. Published game/launcher versions remain a collapsed reference that
+refreshes independently and cannot populate those inputs.
+
+On Windows x64 from main `093d2a0`, all 16 issue-form tests passed, including
+refresh preservation and typed-platform labeling with case/OS-version details.
+YAML validation checks the fields' required and empty state. No game/launcher
+code or personal data changes, issue submissions, or native Mac execution are
+involved. A GitHub preview establishes rendering only; no successful blocked
+submission is claimed from that preview.
+
+## Issue form selections and enhancement handoff (2026-10-17)
+
+On Windows x64, from main base `4defe1e`, GitHub's branch previews accepted the
+bug form with empty initial game-version, launcher-version and platform choices
+and the enhancement form with only its required idea field. Required bug fields
+remain enabled. Release refresh tests preserve the empty first choices.
+
+All 15 Python issue-form checks passed. The launcher and test executable compiled
+with the .NET Framework compiler under Windows PowerShell 5.1; all 14 isolated
+read-only maintenance checks passed, including clean enhancement URLs with no
+diagnostic query, clipboard payload or paste requirement. The complete updater
+and repair test pass was stopped by its existing active-game safeguard; no game
+process was closed. No real issue was submitted, no release was published, and
+native Mac execution is not claimed. See MAC-034 in the Mac backlog.
+
+## Transition fixes integrated with main (2026-10-17)
+
+Rebased `fix/responsive-transition-overlay` onto main `4ad4c17`, preserving
+its newer network-bot, release and documentation changes. Resolved only the
+validation-history insertion conflict by retaining both entries. Windows x64
+supported build and native build tests passed (`transition-main-build.log`).
+The combined UI, FOV, menu, cutscene, patch-upgrade and bot-results selection
+passed 33 tests in 190.64s. Three guest-dispatch tests initially skipped because
+the compiler was not on the shell PATH, then all three passed in 0.31s with the
+configured MSVC environment (36 passing checks in total). Logs are
+`transition-main-regressions.log` and `transition-main-dispatch.log` in ignored
+`build/menu-footer`.
+Earlier live loading/fade captures below are from the pre-integration build;
+this integration reran build/regression checks. Native Mac remains unverified.
+
+## Responsive loading label (2026-10-17)
+
+Local, uncommitted follow-up on `fix/responsive-transition-overlay` (`fe8e253`).
+The loading-picture text at US return PC `001560E5` now uses the shared LEFT UI
+placement instead of staying in the central 4:3 area. Font sizing remains
+proportional to the output, with the original inset measured from its left edge.
+The existing shared font wrapper scopes the complete text draw and flushes before
+restoring placement; font selection, measurements, animated dots, colours and
+fade timing are unchanged. Nonmatching text, partial viewports and 4:3 retain
+their original behavior. Source: `src/pc_tutorial_ui.inc`.
+
+Windows x64 / MSVC 19.44 / D3D11: supported build/native checks passed
+(`build/menu-footer/loading-label-build.log`); seven UI tests passed in 6.25s
+and eight menu/cutscene regressions in 8.51s. The production text fixture covers
+eight output shapes, opacity, arguments/font/placement restoration, and partial,
+invalid and unrelated text fallbacks. Patch reapplication updated zero files.
+A bounded isolated Test Lab mission launch at 3440x1440 confirmed the label
+moves from x=898 to x=138 pixels, preserving its y position and glyph size.
+The measured right edge varies with the original animated dot count. Fullscreen
+fading remains intact. Selected live image, capture and metadata are retained in
+ignored `build/transition-blackout`; redundant captures and disposable test disks
+were removed. Personal saves/settings and the fixture remain unchanged.
+Executable SHA-256: `a245927c80eb0aa18569bef8dccd6027d0316b41450ce86fc6603793823146c1`.
+Native Mac validation remains pending under MAC-033.
+
+## Full-display transition fades (2026-10-17)
+
+Local, uncommitted on `fix/responsive-transition-overlay`, based on main
+`fe8e253` (which includes PR #106). Capturing repeated Main Menu / Story level
+selection transitions isolated the visible 4:3 box to the full-canvas black tint
+at US return PC `002DA715`. Its solid, six-vertex triangle list inherits a
+640x480 texture binding, so AUTO placement does not identify it as a screen
+pass and fits it into the proportional UI canvas. This is separate from the
+ordinary game fade paths.
+
+The rectangle wrapper explicitly stretches twelve full-canvas passes:
+`002DA715` / `002DA4D0` (menu tint/clear), `002BDA88` (frontend blackout),
+`002BF803` (frontend fade), `001CF429` / `001CF5E5` (game transitions),
+`00070755` (loading/startup blackout), and `0006F227`, `0006F264`, `0006F2F0`,
+`0006F381`, `0006F3AB` (story fades/tints). It accepts 640x480 and the frontend's
+inclusive viewport-plus-one 641x481 bounds.
+
+Follow-up mission-loading capture exposed a separate partial-height fade:
+`0015682D` draws from (0,71) to (640,480), beneath the loading heading. The
+original full-canvas geometry guard missed it. Its top/bottom borders at
+`00155F8E` / `00156102` and the fade now explicitly span the output width while
+keeping their authored vertical bounds. This fixes the bright side margins
+seen while the centre darkened. The loading heading retains its original
+visibility/timing; the fix does not force an earlier blackout.
+
+All fifteen known passes flush before and after submission, restoring placement
+and tag. Arguments, colour/alpha, blend state and timing remain unchanged.
+Partial/player viewports, unrelated callers, cinematic bars and original 4:3
+use the existing path. Loading bands require full canvas width and an appropriate
+top/bottom screen edge; arbitrary rectangles are not expanded.
+
+Windows x64 / MSVC 19.44 / D3D11: supported build and native build tests passed
+(`build/menu-footer/blackout-final-build.log`); supported US XBE SHA-256 verified.
+All 31 selected UI/FOV, cutscene, menu-mouse, Quit and patch upgrade regressions
+passed in 91.38 seconds (`build/menu-footer/blackout-regressions.log`). The
+production-hook fixture checks eight synthetic output sizes, all fifteen callers,
+six colour/alpha values, both full-canvas endpoint conventions, actual loading
+band geometry, deferred batches, preserved state/arguments, and invalid/partial
+viewport and unrelated-draw fallbacks. Executable SHA-256:
+`85ff9c3f3e731779ae844d655d33a62c73319c48c297e46981624685bee4ac89`.
+No temporary caller traces or diagnostic switches remain in production source.
+
+Initial bounded isolated Test Lab validation at 3440x1440 navigated into and out
+of Story four times using the application's test-input hook. Menu-state snapshots
+and reviewed live frames confirm the level list was reached and vertical tint
+seams disappeared. A same-frame GPU replay with only `002DA715` returned to AUTO
+reproduces the box; corrected placement changes both margins while leaving the
+central 4:3 menu pixels identical. Replay comparisons also passed at 640x480,
+1280x1024, 1920x1080, 1920x1200 and 2560x720; 4:3 was pixel-identical.
+
+The corrected loading path was exercised by an isolated automated mission launch
+at 1720x720 and 3440x1440. A denser 3440x1440 sequence sampled every three
+frames shows the fade reaching both margins, followed by two consecutive frames
+whose RGB extrema are all zero across all 4,953,600 pixels, then the normal
+opening cutscene. Live frames show even fading across the full width; the recorded
+three loading draws explicitly carry STRETCH placement and retain their original
+bounds and opacity. Evidence is retained in ignored `build/transition-blackout`;
+initial menu evidence is in `build/transition-overlay`. Redundant dumps and
+disposable save disks are recycled. Personal saves/settings and the canonical
+fixture were not used as writable test data. Other gameplay fades have
+disassembly/hook coverage, not exhaustive visual checks. Native Mac build and
+visual checks remain pending under MAC-033.
+
+## Game-only release PR notes
+
+2026-10-17, branch `fix/game-only-release-prs`, base `7b65782`.
+Release note candidates are checked against exact Git ancestry and merged PR
+metadata, then filtered by all changed/renamed paths. Launcher-only and
+housekeeping PRs are excluded; mixed PRs changing shared game inputs remain.
+Incomplete/truncated file metadata fails explicitly. Download instructions,
+release baseline selection, publishing safeguards and repository-wide changelog
+links are preserved. Published release notes were not edited by this task.
+
+Windows x64 / Python 3.14.2 / pytest 9.1.1: publisher tests passed 43 tests with
+four symlink-prerequisite skips. Regression coverage includes pagination,
+renames, duplicate PRs, empty results, unmerged/out-of-range PRs and misleading
+launcher titles on mixed changes. No game rebuild or gameplay test is required
+for metadata formatting. A read-only alpha.5-to-alpha.6 preview retained game
+PRs #79, #83, #84, #85, #87 and #97, excluding launcher packaging PR #75 and
+CI PR #81 alongside launcher-only releases. No published notes were modified.
+macOS execution and other-device synchronization are
+unverified; see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-distribution).
+
+
+## Lock-on and special scope effects (2026-10-17)
+
+Local, uncommitted follow-up on `fix/responsive-menu-footer`, base `0dc9fea`.
+The lock-on renderer (`00138590`) uses `lockonbox`, `custom_homing_lockon`,
+`lockoninner` and `lockontri`. Both integer box halves and all four pointer-based
+quad call sites now scale around the current target record's screen position.
+Scaling each half or orbiting piece independently would separate the pieces;
+scaling around the screen centre would move the indicator off its target.
+Only XY draw coordinates change temporarily. Target records, depth, UVs,
+colours and animation state remain untouched; guest memory is restored after
+submission and batches flush before placement changes.
+
+The separate `scopeedge` / `ring` renderer (`00137F00`) now keeps its artwork
+fitted. Its eight gradient rectangle call sites fit their inner coordinates
+but extend authored outer edges to the full output, preserving the original
+colour/alpha gradients. The framebuffer composite (`00138471`) spans the
+whole view. No opaque margin is added to this effect. Exact caller and scope
+context checks exclude other uses of the drawing primitives. Full single-player
+viewports are required; 4:3 and split-screen retain the original path.
+
+`tests/weapon_effects.c` executes the production hooks at six aspect ratios,
+checking shared target centres, both box halves, rotating quad pieces, gradient
+coverage, unchanged depth/colour, batch ordering, memory restoration and invalid
+pointer/target/caller/viewport fallbacks. All seven focused UI/FOV checks pass.
+Windows x64 / MSVC 19.44 / D3D11: the supported build and native build checks
+pass (`build/menu-footer/build-special-aim.log`). All 44 UI/FOV, cutscene,
+menu-mouse, Quit and patch tracking/transition regressions pass
+(`build/menu-footer/special-aim-regressions.log`). Executable SHA-256:
+`a1d0847644421f10c422bad792bd2379fbf86b27a70eb744d409cd0fefe2ac03`.
+Live visual verification of these two effects and Mac validation remain pending.
+Source: `src/pc_display_ui.inc`, `special-weapon-overlays.patch`; see MAC-032.
+
+## Weapon aim overlay follow-up (2026-10-17)
+
+Local, uncommitted on `fix/responsive-menu-footer`, based on main `0dc9fea`.
+The Sci-Fi Sniper now writes its original half-strength destination-alpha mask
+into the additional output area before drawing the scope. Its full-view tint
+composite (`00136856`) stretches, while the additive textured art stays fitted.
+This replaces the opaque side fills documented in the earlier capture below.
+
+Audited the verified US XBE's weapon HUD callback table and shared reticle
+callers. The three scope renderers cover the older/vintage, conventional and
+Sci-Fi scope families. Standard textured reticles (`0014CC10`), the alternate
+and turret paths (`001481E9`, `001482F7`, `00136FFC`), and the shared rotating
+zoom ring (`00135F1E`) now fit their local geometry around the actual aim point.
+Their screen position is preserved, including displaced aim. All six shared
+zoom-gauge draws have explicit left/right anchors, independent of batching or
+heuristic extent classification. The full-view aiming borders (`00138F70`)
+and red crosshair lines (`0037A9D0`) use the complete output. Unrelated primitives,
+world-space target markers, original 4:3, and split-screen are excluded.
+
+The UI regression exercises all 11 reticle/gauge callers at seven output sizes:
+640x480, 1280x1024, 1920x1080, 1920x1200, 3440x1440, 5120x1440 and 7680x4320.
+It checks projected aim-point preservation, rotated-quad geometry, edge anchors,
+deferred batch order, argument restoration, and negative caller/viewport cases.
+Sci-Fi tests verify alpha-only outer fills and the exact full-view composite
+routing; conventional coverage tests remain. Runtime changes are in the shared
+patch stack and source; Mac validation remains pending under MAC-032.
+
+Windows x64 / MSVC 19.44 / D3D11: the supported `tsfp.ps1 Build` and all native
+build checks pass. The UI/FOV, cutscene, menu mouse, Quit, patch tracking and
+transition suites pass 43 checks (`build/menu-footer/all-aim-regressions.log`).
+Build evidence: `build/menu-footer/build-all-aim.log`. Current executable SHA-256:
+`7d6258c3d6f0212b585c9a33c3b15d73214cedcc8061bf79469e1744304ce0a1`.
+The isolated game was reopened with normal input and Test Lab unlocks for a
+visual check. Sci-Fi tint and shared zoom visual confirmation are still pending;
+source audit and unit coverage do not establish a playtest of every weapon.
+
+## Objectives bars and scope masks (2026-10-17)
+
+Local, uncommitted on `fix/responsive-menu-footer`, in the isolated worktree
+below. A bounded live trace identified the two Objectives background rectangle
+call sites (`002F3AED`, `002F3B0F`) and four blue trim calls. These six draws now
+use STRETCH placement with batch flushes and restoration; the central panel,
+text, tabs and health/armor keep their current layout. Full single-player
+viewports are required; unrelated callers and split-screen bypass the fix.
+
+The circular scope routine (`00135F30`) draws four outer masks separately from
+its textured aperture. Those masks now use the aperture's proportional inner
+coordinates and the complete output's outer edges. The original rectangle
+renderer still clips to the guest viewport, so adjusting the inner coordinates
+before STRETCH avoids negative-coordinate clipping. Both axes are fitted for
+narrow ratios; original 4:3 and split-screen stay unchanged. The correction avoids indiscriminate stretching of weapon art.
+
+Follow-up identification from the XBE texture-name table found separate
+conventional (`00136B40`, `customContSniperQuarter`) and futuristic (`001364A0`,
+`customFutureSniperQuarter`) sniper renderers. Their conditional exterior fills
+can be omitted at the authored canvas edge, so changing existing rectangle
+calls alone is insufficient. All three scope groups retain CENTRE placement for their artwork. The first
+implementation explicitly blacked out the extra host canvas using STRETCH
+rectangles; the Sci-Fi variant is superseded by the translucent pass below. This also covers cases where the guest emits no outer mask. Tests
+exercise wide and narrow ratios, symmetric coverage, prior/later batch placement
+and guest stack restoration. The user's additional scope screenshot shows the
+uncovered side scenery this addresses. Captures of ordinary zoom aiming also
+confirm that path is distinct from the scoped-rifle artwork; it is not given
+opaque side masks.
+
+Windows x64 / MSVC 19.44.35224 / D3D11, pinned runtime and verified US XBE:
+`tsfp.ps1 Build` and native build checks pass. The affected UI/FOV/Quit,
+cutscene, mouse-menu and patch tracking/transition suites pass 43 distinct
+checks. Tests cover aperture alignment, mask edges, deferred batch ordering,
+stack/state restoration, caller rejection and split-screen guards. Evidence:
+`build/menu-footer/build-objectives-scope.log`, `bars-regressions.log`,
+`objectives-scope-regressions.log`. The expanded sniper hooks pass all 43
+checks (`sniper-regressions.log`); after explicit mask blend-state setup and
+restoration, all six affected UI/FOV checks and the final supported build/native
+checks also pass (`build-sniper-final.log`). Mac runtime validation is pending
+under MAC-032; the implementation uses the shared title/renderer placement ABI.
+
+A live isolated Arcade match with synthetic input equipped the conventional
+Sniper Rifle and showed its black surround covering both sides at 3440x1440.
+After reopening with normal controls, the user captured the Sci-Fi Sniper
+(2026-10-17 15:54 EDT). The reviewed frame and D3D11 replay confirm covered
+outer sides, centered scope artwork under tag `001364A0` / CENTRE, and the
+additional opaque masks in draw 81 under STRETCH. Replay reports zero failed
+host calls, malformed chunks or unmapped handles. Evidence in
+`build/menu-footer`: `scifi-sniper-after.d3dcap`, `.png`, `.log`, `.json`.
+This verifies these Windows ultrawide encounters; other ratios, the older
+rifle scope and split-screen still need live visual checks beyond unit coverage.
+
+A bounded isolated Test Lab replay reached first-mission gameplay and Tab /
+Objectives at 3440x1440. The reviewed after-capture shows both bars and blue
+trim across the full output; the panel/text and side health/armor remain in
+place. The same top/bottom sample rows previously had only about 1920 black
+pixels across a 3440-pixel window. This is synthetic input and visual evidence
+for Objectives, not scope gameplay validation. Evidence: `objectives-after-3440x1440.png`,
+`objectives-after-3440x1440.json`, `objectives-bar-pixels.json`. Disposable test
+disks were recycled after the bounded run.
+
+Release executable SHA-256:
+`c40adb4e7f4d59c0a9c4c33e6604b9da9a5d13ad72b214aafcd758c7aefe42dd`.
+
+## Responsive frontend backgrounds (2026-10-17)
+
+Local, uncommitted on `fix/responsive-menu-footer`, based on main `0dc9fea`.
+The frontend footer background and its two decorative strips now stretch to
+full display width. Exact US call sites scope placement and flush deferred
+batches before and after; labels and mouse targets stay proportional. Both
+full-canvas endpoint conventions (639/479 and 640/480) are accepted.
+
+The moving blue background is a separate 3D sheet. Its exact draw call now
+uses a temporary horizontal projection correction, applied through the guest
+projection setter and restored before subsequent draws. This fills wide output
+while preserving animation and the other menu layers' lens. Original 4:3/narrow
+output, gameplay, unrelated callers and partial viewports bypass both fixes.
+
+The main Story/Arcade list uses 25% smaller glyphs in both axes. Font scaling
+is scoped to main-menu construction/measurement and its row renderer, using
+the original font-metrics refresh routine. Deferred text batches flush before
+restoring the previous scale. Header/footer text, other menus and gameplay
+keep their existing size. Regression coverage verifies matching measurement
+and drawing scales, two-axis restoration and unrelated menu/row guards.
+
+Validation on Windows x64 with MSVC 19.44.35224 / Direct3D 11, pinned runtime
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845` and verified US XBE: the final
+`tsfp.ps1 Build` and all native build tests pass. UI, FOV and Quit regression
+checks pass 7 tests; patch tracking/transition, menu mouse and cutscene suites
+pass 36 tests, **43 total**. Coverage includes seven display sizes, both
+viewport conventions, deferred batches, state restoration and rejected callers.
+
+The background fixes were visually validated at 3440x1440, 1920x1080,
+1920x1200 and 1280x960. Final glyph scaling is checked at 3440x1440 and 1280x960
+with isolated Test Lab input replays: render the main menu, verify smaller
+Story-letter bounds against the original capture, use Select to open Story,
+and Back to return. This is synthetic menu input, not physical-device testing
+or gameplay validation. Personal saves/settings are untouched; logs are capped,
+only two BMPs rotate, and disposable test disks are recycled after each run.
+
+Source and build are isolated in `build/menu-footer-source` because concurrent
+work uses the primary checkout. Evidence in the primary checkout's
+`build/menu-footer`: `build-glyph.log`, `glyph-regressions.log`,
+`glyph-patch-regressions.log`, `validation-glyph.out`,
+`glyph-live-WIDTHxHEIGHT.json`, `glyph-pixels-WIDTHxHEIGHT.json` and
+`glyph-{main,story,back}-WIDTHxHEIGHT.png`. Earlier `blue-*` captures and
+`pixel-checks.json` document the full-width backgrounds.
+Final Release executable SHA-256:
+`865878302088f07d5f88fe1cc3ee3b44314bf60285b3eaf4e69351d681b1f756`.
+Shared native Mac hooks use existing STRETCH, font metrics and guest projection
+support; native visual/runtime validation remains pending under MAC-032.
+
+## Native fog combiner input (2026-10-17)
+
+`codex/mac-fog-rendering` depends on effects evidence `3231c8c` and the repaired
+native stack. The Mac vertex/fragment interface previously omitted the NV2A fog
+register entirely. GPU vertex programs and CPU fallback now pass the written
+fog factor through to the combiner. Unwritten fog uses the existing shared PC
+marker/threshold: fog enabled selects the sky fallback, disabled selects the
+particle fallback. A written factor still applies with fog disabled, as required
+by the title's custom blend. Fog RGB comes from the render state, independently
+of its packed alpha. Fixed vertices retain the PC shader's default factor one;
+this does not implement the full fixed-function fog-distance pipeline.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+49 actual-GPU cases pass: MAC/ILU writes, scalar fog masks, unwritten and
+post-END writes, clamping, enabled/disabled fog, indexed/unindexed draws,
+GPU/CPU paths and fixed default. All three CTests, existing GPU checks, SDL
+input and Cocoa settings/debug tests pass. Six portable spirit-wrapper,
+channel/capture and framebuffer-cache checks pass. The first combined test run
+exposed that the new fixture left TEX1 disabled for a later A8 fixture; restoring
+its prior vertex format fixed the test-state leak. No Windows code was changed;
+Windows host execution is unavailable.
+
+The verified-US-XBE isolated Test Lab runner completed 110 seconds in Khallos
+Express at target 60 and 120 seconds in the first mission at target 120. Synthetic
+SDL input moved, turned and fired; reviewed captures retain terrain/train panels,
+weapons, HUD and window glass. First-mission smoke/fire remains visible and its
+opening canyon is consistent with the earlier baseline capture. Khallos's dark,
+stretched exterior sky persists: the missing fog input was a concrete parity gap,
+but fixing it did not resolve that separate fidelity issue. Full effects parity,
+Mansion spirits and campaign completion remain unverified.
+
+The Khallos 85–105 second sample measured 59.70 host/guest presents/sec,
+p95 17.476 ms, worst 98.022 ms (two intervals over 50 ms). First mission at
+85–105 seconds measured 117.25 host presents/sec (59.65 guest + 57.60
+interpolated), p95 15.583 ms, worst 28.400 ms, none over 33.33 ms. Captures
+were enabled; these are host presents, not a stable-120 or display-scanout claim.
+
+Build evidence: `logs/native-fog-build.out` / `.err`; source `3231c8c` plus
+this branch's six renderer/test source changes, pinned upstream and verified XBE.
+Tested executable SHA-256: `a8776bf117fe7f59a497c7e2d1cdf4899802b0409b35ec3e26518946d50d3e0b`.
+Runtime evidence: `logs/native-fog-khallos-60-*`,
+`logs/native-fog-first-mission-120-*` and corresponding `.err` files.
+Selected images: `private/captures/native-mac/khallos-fog-60-after.png`,
+`fog-first-mission-before.png` and `fog-first-mission-after.png` in that directory.
+Canonical Test Lab signatures/checksums still match; disposable test disks were
+recycled. Personal settings/saves and unrelated duplicate files were preserved.
+The interactive launcher's read-only prerequisite check passes.
+
+## Native Khallos Express effects check (2026-10-17)
+
+`codex/mac-framebuffer-effects` depends on channel-clear validation `63b3177`.
+Built that exact source revision with the shared upstream/XBE pins on macOS
+27.0.1 arm64, Clang 21, SDL 3.4.16, OpenGL 4.1 Metal 91.7. The isolated Test Lab
+runner completed 180 seconds at target 60 and 120 seconds at target 120.
+Synthetic SDL events selected Khallos Express, skipped opening scenes, moved
+into the engine cab, turned and fired (ammo 8 to 7). Reviewed captures show
+solid train sides/interior panels and weapon, with separately transparent window
+glass. Exterior sky has dark/stretched areas; this is an unresolved renderer
+fidelity gap, not evidence that all effects or the whole level are correct.
+Native shader review found that the PC fog register is not populated on Mac;
+its sky/particle path needs adaptation and a separate GPU/scene check.
+
+At 60, the 95–115 second gameplay sample had 1,200 guest/host presents,
+60.00 presents/sec, p95 17.572 ms and worst 30.571 ms. At 120, the 85–105 second
+sample had 2,171 host presents, 108.55/sec (58.75 guest + 49.80 interpolated),
+p95 17.060 ms and worst 24.625 ms. Neither sample had intervals over 33.33 ms.
+These are host-present intervals with rotating captures enabled, not scanout
+measurements or proof of stable 120 FPS. One bounded draw trace was collected
+outside the 120 timing sample. Logs report no GL error or guest fault.
+
+Evidence: `logs/native-khallos-{60,120}-summary.json`, corresponding `.err`,
+`-frames.csv` and `-run.log`; selected captures
+`private/captures/native-mac/khallos-{60,120}-{before,after}.png`.
+Four shared channel/capture/framebuffer-cache checks and the native screen-copy
+GPU suite pass. Earlier first-mission effects evidence remains separately scoped.
+MAC-019 stays Awaiting validation until the remaining glow/exterior fidelity is
+reviewed; neither Windows results nor these cab views establish full parity.
+Personal saves/settings were not used; disposable partition images were recycled.
+
+## Native channel-clear GPU validation (2026-10-17)
+
+Branch `codex/mac-channel-clears` depends on the published native branch stack
+ending at `22169d9`. Added `src/native/channel_clear_selftest.inc` to the
+bounded renderer self-test. All 192 combinations of 16 channel masks (including
+no color clear) and four depth/stencil flag combinations pass on Original,
+1920x1080 and 16x16 offscreen targets. Direct GPU readback checks RGBA, depth
+and stencil, inherited empty drawing scissors, write-mask restoration, clipped
+clear rectangles, invalid rectangle pointers and preservation of the main scene
+while clearing an offscreen target. No production clear-path change was needed.
+
+Host: macOS 27.0.1 arm64, Clang 21, SDL 3.4.16, OpenGL 4.1 Metal 91.7.
+Built from `22169d9` plus the two self-test source changes, using the pinned
+upstream and verified US XBE. The complete native suite passed (three CTests,
+GPU, SDL input, Cocoa settings/debug); four portable channel-mapping/capture
+and framebuffer-cache tests also passed. Evidence: `logs/native-channel-clears-build.out`
+and `.err`, with source hashes/provenance in the local `build/macos/BUILD.json`.
+Test partition images were recycled; personal settings/saves were not used.
+Windows execution is unavailable. Lobby page cycling and title-effect fidelity
+remain pending; MAC-007 stays In progress.
+
+All eight preceding focused branches were published and their exact remote
+commit hashes verified on 2026-10-17. No merge into main was performed. The
+other computer has not been inspected, so its synchronization remains unverified.
+
+## Alpha.6 branch-stack refresh (2026-10-17)
+
+During local validation, a separate pull advanced `main` from `0dc9fea` to
+`d9c145f`. Its only changes are VERSION `0.2.0-alpha.6` and the issue-form
+release choice; AGENTS.md and runtime source are unchanged. Rebased the eight
+local focused branches onto `d9c145f` with dependent branch refs updated.
+`git range-diff` confirms all eight implementation commits are identical.
+The original commit IDs in earlier evidence below describe the binaries tested
+before that rebase, rather than claiming they were built from alpha.6.
+
+Rebuilt and reran the full native suite from rebased `941d065`: all three
+CTest suites, GPU, SDL input, Cocoa settings and debug checks pass. Reviewed
+`private/captures/native-mac/build-watermark-alpha6.png`, which reads
+`TSFP PC v0.2.0-alpha.6  40b4e7d1`, matching the generated build manifest.
+Executable SHA-256:
+`b1d932fa3f1a7d7de8607f4dae481c63dd87ee5bcfe4bff48844d57628c96526`.
+Evidence: `logs/native-alpha6-build.out` / `.err`. Host and dependency versions
+are unchanged from the tests below. The earlier bounded gameplay evidence is
+retained with its original alpha.5 provenance; it was not relabeled alpha.6.
+
+Canonical Test Lab checksums/signature verified after gameplay tests. All known
+native disposable partition images and run locks were cleaned up. Personal
+saves/settings and unrelated untracked duplicate files were preserved. The branch
+stack is committed locally, not pushed or merged into main; other-device
+synchronization is unverified. The native launcher prerequisite check passes.
+
+## Native build watermark (2026-10-17)
+
+`codex/mac-build-watermark` depends on unmerged native exit `83b50b4`. The
+host OpenGL overlay draws the shared version/build identity at the lower right,
+independently of the optional upper-left FPS line. CoreText measures its width
+and ellipsizes labels exceeding the 1024-pixel cache; narrow drawables fit the
+complete cached line. Separate fixed-size caches are released on normal SDL
+shutdown. The same existing scene-presentation function is used for ordinary
+and interpolated presents; guest scene/readback/history remains separate.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+the full native suite passed: three CTests plus GPU, SDL input and Cocoa
+settings/debug. New GPU coverage checks independent visibility with FPS off,
+text pixels and placement, narrow/long labels, resource destruction/recreation,
+and FBO/texture/scissor/pixel-unpack/PBO restoration. Existing screen-copy and
+interpolation regressions also passed. The initial test sampled the text cache
+instead of the destination FBO after a direct helper call; correcting the test's
+read target made that new assertion pass. The production draw restores both
+read/draw targets. No Windows-specific implementation changed; Windows host
+execution is unavailable here.
+
+Reviewed `private/captures/native-mac/build-watermark.png`: text reads
+`TSFP PC v0.2.0-alpha.5  6296ca9d`, matching VERSION and
+`build/macos/BUILD.json`. That manifest records source `83b50b4` plus the
+uncommitted overlay changes; executable SHA-256:
+`f7e6028db973b1a8a2879c6a9745f91881eef29a8822155a21d2ae3dfe2dcb23`.
+Evidence: `logs/native-watermark-build.out` / `.err` and the small GPU bitmap.
+Live fullscreen/window interaction and actual host-present capture review at
+60/120 remain pending; MAC-034 stays Awaiting validation. This does not verify
+native networking.
+
+## Native Quit to Desktop (2026-10-17)
+
+`codex/mac-quit-desktop` depends on unmerged native menu input `db11ff7`.
+The shared guest finalizer and confirmation callbacks now run on Mac. Confirm
+queues SDL_QUIT for the existing main-thread exit path; Cancel and Back use the
+guest's existing return callback. Other players, original Quit behavior and
+Windows WM_CLOSE behavior are preserved.
+
+The full native build/test suite passed on macOS 27.0.1 arm64 / Clang 21 /
+SDL 3.4.16 / OpenGL 4.1 Metal 91.7: three CTests plus GPU, input and Cocoa
+settings/debug checks. The SDL test verifies an actual queued quit event.
+Five portable menu/quit tests passed, including both host dispatch variants,
+safe default, Cancel/Back, failed-post retry and repeated-confirm protection.
+Evidence: `logs/native-quit-build.out`, `.err`, `logs/native-quit-shared.log`.
+
+A bounded main-menu test using synthetic SDL keys verified the visible Cancel
+default, Cancel, reopening and Back, then reopening and confirming desktop exit.
+The process exited normally after 61.21 seconds with code 0; the log contains
+three confirmation opens, two cancellations and one confirmed desktop exit,
+followed by the native window-close path. The runner reports `process_exit`
+(and its startup-smoke command returns 1 because this was deliberately early),
+not a timeout or fault. Its summary has no native fault or sampled GL errors.
+Evidence: `logs/native-quit-main-summary.json`, `logs/native-quit-main.err`,
+`logs/native-quit-main.log`, and
+`private/captures/native-mac/native-quit-cancel-default.png`.
+Saves, input, both display configs and XDG roots were runner-isolated; known test
+images were recycled after exit. Source/build provenance is `db11ff7` plus the
+uncommitted quit changes. Pause and mouse-confirm tests remain pending, so
+MAC-031 remains Awaiting validation.
+
+A subsequent 180.17-second isolated run at 1280×720, 75° FOV and the
+120-present target reached first-mission gameplay. Reviewed before/after captures
+show movement, changed camera direction and ammo dropping from 16 to 14 after
+firing. Escape pause/resume restored capture, with the world still visible.
+Pause includes Quit to Desktop. The attempted right-click/quit route supplied
+a synthetic button before its queued pointer motion had been dispatched; it
+did not establish right-click return or Pause exit and is not counted as such.
+The saved test display file was restored after the run.
+
+During seconds 110–130, 2,310 presents averaged 115.52/sec: 59.36 guest plus
+56.16 interpolated. Median host interval was 11.093 ms, p95 16.408 ms and
+p99 17.692 ms, with one 107.238 ms hitch. Across the entire run including
+loading/opening/menus, average was 93.00 host / 54.03 guest presents per second;
+it is not locked 120 FPS. At least 9,600 guest frames / 16,489 host presents
+were logged, with no sampled GL errors or native fault. These are CPU present
+intervals, not display scanout. Evidence: `logs/native-first-mission-120-*`,
+`private/captures/native-mac/native-wide-before-input.png`,
+`native-wide-after-input.png`, and `native-wide-pause.png`. Raw guest captures
+retain 640×480 storage while the actual scene is 1280×720; the presentation fits
+that wide aspect to the window. No full-level or complete visual-fidelity claim.
+
+## Native menu pointer adapter (2026-10-17)
+
+`codex/mac-menu-mouse` depends on unmerged display adaptation `e9545de` and
+its native build/renderer/Test Lab prerequisites. Enabled shared guest menu
+hit testing, footer/tab policy and button-edge handling on native builds. The
+SDL adapter publishes point coordinates, buttons and bounded/fractional wheel
+input under a mutex. Main-thread capture requests release the pointer in menus
+and restore it when returning to focused gameplay. Focus loss clears held input
+and pending wheel packets; held menu clicks remain blocked until release.
+The separate `native-menu-mode` patch enables the existing per-frame context
+hook on Mac, with regeneration through the supported builder.
+
+On the same macOS 27.0.1 arm64 / Clang 21 / SDL 3.4.16 / OpenGL 4.1 Metal 91.7
+host, the actual SDL-window test checks pointer coordinates, wheel accumulation,
+flipped direction, clamping and expiry, non-consuming hover reads, capture
+transitions, held-click suppression and focus recovery. Native GPU/settings/
+input/debug suites and three CTests passed again after regenerating and rebuilding
+with the final context-hook patch (`logs/native-menu-build.out` / `.err`).
+14 shared menu/quit/camera/UI tests passed; the Windows FOV fixture was skipped.
+Patch migration initially exposed the new dependent patch being included in a
+historical pre-display fixture. Excluded it from that historical subset; the
+upgrade scenario then passed. Remaining patch scenarios passed (26 passed,
+2 Windows-only skips on the initial run; the failing scenario passed on rerun).
+
+A 90.13-second isolated run at the 120-present target used only synthetic SDL
+pointer/button/wheel events to select 1 Player, Test Lab, Story, scroll two
+levels, return with right-click, and open Settings. Reviewed screenshots show
+the correct selected level (The Russian Connection). It logged at least 5,100
+guest frames and 5,456 successful host presents, no sampled GL errors and no
+native fault; this is not a claim of sustained 120 FPS. Evidence:
+`logs/native-menu-pointer-summary.json`, `logs/native-menu-pointer.log`,
+`private/captures/native-mac/native-menu-mouse-wheel.png`,
+`logs/native-menu-shared.log`, `logs/native-menu-patches.log` and
+`logs/native-menu-patch-recheck.log`. This binary records `e9545de` plus the
+uncommitted adapter, before the additional per-frame context patch.
+Physical input, pause/Objectives tabs/footers and the wide-ratio acceptance
+matrix remain unverified; MAC-030 stays Awaiting validation.
+
+The preceding 120.12-second 60-present baseline run reached visible first-mission
+gameplay with the canyon, weapon, HUD and tutorial panel. Across loading, menus,
+opening sequence and gameplay, 7,161 host presents averaged 59.80/sec, median
+16.644 ms, p95 18.792 ms and p99 22.701 ms; six intervals exceeded 33.33 ms.
+These are CPU intervals between successful host presents, not display scanout.
+Logged at least 6,900 guest/host frames, no sampled GL errors or native fault.
+Evidence: `logs/native-first-mission-60-summary.json`,
+`logs/native-first-mission-60-frames.csv`, `logs/native-first-mission-60.log` and
+`private/captures/native-mac/main-restored-first-mission.png`. That binary was
+built from `16a6a10` plus the display changes subsequently committed as
+`e9545de`; Git branch naming changed during the run. This establishes visible
+first-mission startup, not level completion or complete rendering fidelity.
+
+## Native display settings parity (2026-10-17)
+
+`codex/mac-display-parity` depends on unmerged Test Lab runner `16a6a10` and
+its native build/renderer prerequisites. Cocoa Graphics now exposes the shared
+aspect groups and 40–100° vertical FOV control. The guest and Cocoa menus use one
+nearest-mode helper, including an exact-match tie fix for Original versus explicit
+640×480. Custom resolutions survive opening the panel. Defaults and Cancel are
+drafts; failed persistence restores both resolution and FOV.
+
+On macOS 27.0.1 arm64, Clang 21, SDL 3.4.16 and OpenGL 4.1 Metal 91.7,
+`tools/build-native-mac.py --test` passed all three CTests and native GPU,
+SDL input, Cocoa settings and debug checks. The new actual Cocoa-modal test
+checks all aspect groups, custom 1000×600, FOV bounds/default, Cancel, Save
+1280×720 at 90°, reopen and a read-only destination failure. It restores the
+disposable file and graphics state. The same Original/640×480 regression was
+added to the Windows FOV fixture; Windows execution is unavailable on this host.
+83 shared native-compiler/runtime/UI/CI checks passed. Evidence:
+`logs/native-display-build.out`, `.err` and `logs/native-display-shared.log`.
+Build provenance records `16a6a10` plus the uncommitted source changes.
+
+These are functional Cocoa/GPU checks, not physical input or complete visual
+acceptance. The computer-control tool could not select the unbundled native
+executable, and a cached AppKit-view capture did not capture the rendered panel;
+that capture is not used as visual evidence. Live panel layout, the full ratio
+matrix, zoom, ledge/landing and authored cinematic/terminal lenses remain pending.
+MAC-022 and MAC-024 remain Awaiting validation.
+
+## Native Test Lab runner (2026-10-17)
+
+`codex/mac-test-lab` is based on unmerged renderer integration `14a0717`, which
+in turn depends on native build restoration `bab79f0`. The bounded native runner
+now accepts `--unlocked-profile` and calls shared `testing_profile.prepare_run`
+inside `private/test-saves/native-mac/unlocked`. Saves, controls, both display
+configs and both XDG roots are isolated; startup movies are skipped. Its root
+lock prevents concurrent native sessions, and its nested lock prevents resetting
+an active fixture copy. Known partition cleanup runs after child shutdown and
+on exceptional exits. Symlink redirects, unowned directories and missing/corrupt
+fixtures fail before game launch. Ordinary native test saves remain unchanged.
+
+On macOS 27.0.1 arm64 / Python 3.13.16, 60 combined routing, native-tool,
+launcher and shared-profile tests passed. Added native-specific coverage for
+fixture immutability, fresh reset, saved test-setting preservation, inherited XDG
+overrides, concurrent preparation, missing fixtures, linked destinations/XDG
+roots and cleanup-before-unlock on startup failure. Windows execution is unrun;
+shared profile implementation is unchanged. Native fixture checks are now in CI.
+
+Created a fresh seed through native menus using synthetic SDL input in the
+ordinary isolated save directory. After that 90-second run exited, the shared
+creator validated the supported XBE and signed save and made the canonical
+local Test Lab fixture. The subsequent 120.20-second unlocked-profile run at
+60 host presents reached the native Test Lab picker, Story level list and a late
+level's difficulty screen (You Take the High Road). Logged at least
+6,900 guest frames and 6,900 host presents,
+no sampled GL errors and no native fault. This is menu/navigation evidence,
+not physical-input or later-level gameplay validation.
+
+After exit, fixture checksums and runtime HMAC still matched and collectible
+flags remained zero. Run locks were released. Cleanup recycled
+6 known images (5,243,406,848 logical bytes,
+135,168 allocated bytes), preserving profiles/configs.
+Evidence: `logs/native-test-lab-driver.log`, `logs/native-test-lab-summary.json`,
+`private/captures/native-mac/test-lab-late-story.png` and
+`test-lab-unlocked-difficulty.png`. Canonical data remains ignored in
+`private/test-fixtures/unlocked`; personal saves/settings were not used.
+MAC-025 is Awaiting validation: live Arcade character/challenge availability
+and scene-specific gameplay still need checks. No full playthrough is required.
+
+## Native dependent-texture integration (2026-10-17)
+
+Focused branch `codex/mac-dependent-textures` depends on unmerged native build
+fix `bab79f0`. Reapplied only the renderer and GPU-test changes from `5cba184`:
+`gl_fragment.inc`, `renderer_gl.c`, `multitexture_selftest.inc` and
+`dependent_texture_selftest.inc` under `src/native`. Retained all current-main
+channel clears, proportional layout and viewport/scissor changes. No older
+packaging scripts, unrelated settings tests or wholesale branch merge included.
+
+On the same macOS arm64 / Clang 21 / SDL 3.4.16 / OpenGL 4.1 Metal 91.7 host,
+`tools/build-native-mac.py --test` passed: three CTests, real-GPU renderer tests,
+SDL input, Cocoa settings and debug tests. The restored 36 dependent-texture
+cases cover AR/GB chaining, input selection, signed dot mappings, linear DOT_ST
+and invalid-stage behavior through fixed FVF, GPU programs and interpreted
+vertices. Build executable SHA-256: `15f4eca72fb0f75598f0ed1781763eaf05b29e8b0f3040b481f898694a13a374`.
+This binary records `bab79f0` plus uncommitted renderer changes in BUILD.json.
+Evidence: `logs/native-dependent-build.out` and `.err`; generated identity and
+BUILD.json stay local. Native game render fidelity and remaining Xbox texture
+modes are not established by these fixtures; MAC-005 remains In progress.
+
+The preceding bounded baseline boot completed 90.14 seconds at the 120-present
+target, logging at least 5,100 guest frames and 10,104 host presents, no sampled
+GL errors and no native fault. Those are counters, not a sustained-FPS claim.
+Six disposable disk images were recycled (5.24 GB logical, 132 KiB allocated);
+menu captures and isolated metadata were retained.
+
+## Native build restoration (2026-10-17)
+
+Implemented locally on `codex/mac-native-build`, based on audit commit
+`b884c68` (unmerged documentation dependency) and main `0dc9fea`. Removed the
+obsolete platform-branch restriction while retaining Apple Silicon, XBE and
+upstream pin checks. Missing game data now has an explicit error. The build
+generates the shared content/source identity under `build/macos/generated`;
+a new final runtime patch supplies native include/version wiring. `BUILD.json`
+records that identity and uncommitted source state. This does not add multiplayer.
+Cocoa debug Save now preserves options outside its four exposed controls,
+including `show_latency`. Native tool checks are included in affected CI routing.
+
+Located the user's existing archive in Downloads, extracted one `private/game`
+with the pinned XISO tool and verified the supported US SHA-256. Kept the archive,
+recorded ignored import provenance, and removed only the temporary extracted ISO.
+Disk had about 203 GiB free before setup; the game allocates about 3.8 GiB.
+Restored Python 3.13.16, the unchanged requirements pins, upstream `d90c929` and
+its pinned SDL/XbSymbolDatabase submodules. The first Homebrew Python install
+stopped on an already-linked certificate dependency; installing Python against
+existing dependencies succeeded without replacing the existing OpenSSL.
+
+Validation: macOS 27.0.1 arm64, Apple Clang 21.0.0, SDL 3.4.16,
+OpenGL 4.1 Metal 91.7 / GLSL 4.10. Fresh setup/generation and native compilation
+succeeded. The first GPU suite exposed a stale upload-test assumption: shared
+main now applies proportional menu scaling without a camera frame. The upload
+fixture explicitly requests STRETCH; additional pixel assertions verify AUTO
+still applies the intended 16:9 proportions. No production rendering rule was
+disabled to pass the test.
+
+The corrected `tools/build-native-mac.py --test` passed all three CTests and
+renderer, input, settings and debug self-tests, including real GPU readback,
+screen copies/scissors, vertex GPU/CPU agreement, four texture stages,
+resolution/offscreen/interpolation, Cocoa save/cancel, true-latency preservation
+and atomic-write failure behavior. Test metadata/profiles were retained and
+only known test partition images recycled (10.49 GB logical capacity, 8 KiB
+allocated in that pass). The read-only launcher check passed.
+
+Source regressions: initial patch/launcher/tool suite 43 passed, two skipped;
+build-input/identity/generation suite 12 passed, one skipped; all 78 shared
+runtime/graphics/input CI regressions passed on this Mac. After CI routing
+changes, 45 routing/native-tool/launcher checks passed. Skips remain scoped to
+their existing host-specific conditions, not ignored failures. Windows build
+and hosted CI execution remain unrun here.
+
+Build evidence: `logs/native-build.out`, `.err`, `native-shared-tests.log` and
+`build/macos/BUILD.json`. Executable SHA-256 at this validation point:
+`cf3e1461975578a0a444e562d960f039f37f0fac50e647ad7c15db6988588938`.
+It contains local source changes over `b884c68`; it is not an unchanged main
+binary. An isolated 120-present-target boot visibly reached the player-count,
+profile and name-entry/storage menus using synthetic SDL keys; selected capture
+`private/captures/native-mac/build-baseline-menu.png`. These observations do not
+verify physical input, sustained 120 FPS or current-revision gameplay fidelity.
+MAC-033 remains Awaiting validation for its remaining gameplay/60–120 scope;
+MAC-003 retains its remaining physical shortcut/fullscreen checks.
+
+## Mac current-main backlog audit (2026-10-17)
+
+Source: fetched `main` and `origin/main` both resolved to
+`0dc9fea49041bdca985d372a8e5513d6cac514ac`; no pull was needed. Compared
+`d83ca5e..0dc9fea`: 133 commits (82 non-merge), 134 changed tracked files.
+Game VERSION is `0.2.0-alpha.5`; launcher source is v1.2.12. Reviewed the
+commit/change inventory, full Mac backlog, shared feature/native adapter
+boundaries and build/test wiring. This is a parity and readiness review, not
+an exhaustive correctness review of every Windows launcher line.
+
+Documentation changes are local and uncommitted on `codex/mac-backlog-audit`,
+created from that main revision under the updated focused-branch rules. Main,
+mac-port and remote branches were not modified. Eleven pre-existing untracked
+files with ` 2` in their names were preserved. Other-device checkout/build/data
+synchronization is unverified; fetching Git does not transfer ignored assets.
+
+The backlog now has 33 unique feature entries, a complete queue, explicit
+MAC-022 status and an implementation sequence. The duplicate spirit-rendering
+MAC-026 became MAC-032; the character/weapon MAC-026 and its history remain.
+Existing PC feature handoffs were retained, including all launcher follow-ups.
+New MAC-033 records native build readiness, and MAC-034 records the missing
+build-identity watermark. MAC-003 now records Cocoa debug-setting preservation.
+Documentation checks passed: unique IDs, one status per entry, exact queue
+coverage/status agreement, unchanged unrelated feature descriptions, corrected
+spirit reference and `git diff --check` with CRLF handling. Counts are 20
+Awaiting validation, 10 Queued, two In progress and one historically Verified.
+See [audit coverage and priorities](MAC_PORT_BACKLOG.md#audit-scope-and-next-work).
+
+Current integration findings:
+
+- `python3 tools/build-native-mac.py` exits with the obsolete requirement to
+  switch to `mac-port`, before setup/build writes. This conflicts with the
+  current focused-branch policy (MAC-033).
+- Shared `src/pc_debug.c` includes generated `pc_network_build.h`, but generation,
+  include-directory and version wiring are Windows-only. Clean native compilation
+  is expected to fail without this input; a full compiler reproduction was not
+  possible with the local prerequisites absent (MAC-033).
+- Cocoa debug Save initializes four of the five `PcDebugOptions` fields. The
+  shared saver writes the fifth, `show_latency`, so Save clears an existing true
+  preference. This is source-confirmed behavior, not a live UI test (MAC-003).
+- Menu mouse and desktop-exit guest implementations remain gated to Windows
+  or portable fixtures; passing the fixtures does not enable SDL/Cocoa adapters
+  (MAC-030/031). Native build-identity overlay drawing is absent (MAC-034).
+- `git log main..mac-port` retains `5cba184`, merge `b8857ba` and `1a8f4dd`.
+  The first commit's diff contains dependent-texture rendering/fixtures absent
+  from main, despite its debug-oriented title. Review that work separately from
+  the older branch's packaging/settings-test changes; no integration was made
+  during this audit (MAC-005).
+
+Local validation host: Apple Silicon arm64, macOS 27.0.1, Apple Clang 21.0.0
+(`clang-2100.3.34.2`), system Python 3.9.6. Compiled and executed five existing
+portable C fixtures directly using the POSIX commands from their Python test
+wrappers: `menu_mouse`, `quit_menu`, `terminal_mouse` (with `src/pc_input.c`),
+`ui_layout` and `tutorial_layout`. All five passed. Commands used `cc -std=c11
+-O2 -I<checkout>/src`, `-lm`, and `-Wall -Wextra -Werror` for the first three.
+Temporary executables were removed automatically. These cover pointer policy,
+guest confirmation with a mocked close callback, terminal bounds/ownership,
+placement rules and tutorial layout. They do not cover pytest mutation variants,
+generated-wrapper integration, native window-event delivery or real GPU draws.
+
+The read-only launcher prerequisite check reports missing `private/game`.
+Also absent: `.venv`, `external/ts3FPrecomp`, `build/macos`, and the unlocked
+test-profile fixture. Python 3.12+ and pinned build dependencies must be restored
+before building; no dependencies or game files were downloaded during review.
+No supported XBE was available to hash, no game executable was launched, and no
+graphics backend was exercised. Full patch/generation, native build/GPU/audio,
+physical-input, texture-pack and gameplay checks remain pending, as do current
+Windows checks. No backlog feature was newly marked Verified.
+
+## Issue #86 frontend mouse menus (2026-10-17)
+
+PR #97 CI follow-up: run `39051850942` passed on macOS, while Windows
+failed linking the isolated FOV settings fixture with 11 missing mouse-menu
+symbols. Reproduced the same LNK2019/LNK1120 failures locally on Windows x64
+MSVC 19.44.35224 at `d25b684`. Added test-only dependency stubs that fail if
+called; production settings/menu code and its assertions remain enabled.
+The FOV test now passes, and the complete Windows CI native-regression command
+passes all 80 tests (`build/issue-86-menu-mouse/ci-runtime-after.log`). Before
+fix evidence: `ci-fov-before.log`. No runtime changes, rebuild or additional
+Mac adapter work is required; MAC-030/MAC-031 remain queued. Hosted rerun `39052515524` passed on both Windows and macOS for
+commit `28871e6`. Main `860dccd` was subsequently integrated; the only conflict
+was these independent status sections, both retained.
+
+PR integration: feature commit `e18baa9` is pushed to
+`86-enhancement-use-mouse-to-control-main-menu`. Integrated main `7e8cd8d`,
+retaining both sets of validation/backlog entries and the XMV/menu test list.
+All 62 targeted integration checks passed across the initial run and corrected
+runtime rerun. The initial two XMV failures were caused by the local runtime
+still having the pre-main symbol patch; applying the complete stack updated two
+runtime files, then all 12 affected runtime/menu/UI/generation checks passed.
+Evidence: `build/issue-86-menu-mouse/pr-integration-tests.log` and
+`pr-integration-runtime-tests.log`. The full build and human confirmation below
+precede this main integration; no new binary or Mac validation is claimed.
+
+Profile footer and pause-tab follow-up (2026-10-17): profile Select, Back and
+Delete Profile now use measured spans from their centered label rows for hover
+and clicks. Disabled prompts retain their original appearance; text alignment
+and fade alpha are preserved. Pause and Tab/Objectives Options/Status headings
+now use their actual rendered bounds. The tab renderer keeps its loop index in
+a local recompiled register, so the hook reads the saved stack index instead
+of the unrelated shared EBP. Tab replacement is deferred until menu dispatch
+finishes and uses the original menu construction/transition routine.
+
+Validation: Windows x64/MSVC 19.44.35224, OpenGL, base `e942ef0` plus local
+uncommitted changes; supported US XBE hash verified. The full `tsfp.ps1 Build`
+passed. All 23 unique focused menu/UI/quit and patch-update tests passed,
+including fresh, repeated and transition patch application. A bounded isolated
+3440x1440 internal-input replay verified profile Back/Select clicks, switching
+Options to Status and back, switching from Tab/Objectives to Options, and
+confirmed Quit exiting with code 0. Reviewed captures show separate Select,
+Back and enabled Delete Profile highlights, plus the inactive tab highlight.
+Read-only menu descriptors confirm the tab changes; periodic frame dumps can
+lag the click snapshots. The user confirmed both profile footer highlights and
+Pause Options/Status mouse switching work in the reopened production build.
+Physical controller confirmation remains pending.
+
+Evidence: `build/issue-86-menu-mouse/profile-tabs-final-build.log`,
+`profile-tabs-patches.log`, `profile-tabs-live.log`, `profile-tabs-live.json`,
+`profile-hover-*-fixed.png`, and `pause-*-hover.png`. Final executable SHA-256:
+`14f033fb6e0d3f782ead68f48341be80c8c006f68582e35f85a5f2978241ce59`.
+Temporary diagnostic hooks/logging were removed; generated C was not manually
+edited. Personal saves/settings were untouched and disposable test disks were
+recycled. MAC-030 records deferred native adaptation; hosted CI is pending.
+
+Footer hover feedback (2026-10-17): enabled bottom prompts now tint light blue
+under the mouse, sharing the click handler's measured rectangles and original
+enabled/hidden checks. A read-only pointer snapshot preserves wheel packets and
+does not advance replay input during drawing. Inactive menus and invalid/unfocused
+pointers do not highlight. The text wrapper preserves fade alpha and restores
+its original colour argument after the draw. Guest UI RGB is half intensity;
+the initial full-range colour saturated to white and was corrected after an
+isolated render check. Temporary diagnostic logging was removed.
+
+Final Windows x64/MSVC 19.44.35224 OpenGL build on base `e942ef0` plus local
+changes passed the full supported `tsfp.ps1 Build`, including the formerly
+intermittent controller-prompt focus check. Nine focused menu, quit and UI tests
+pass; these cover disabled/hidden/inactive footer rejection, non-consuming hover,
+fade-alpha preservation and colour restoration. US XBE hash was verified.
+A bounded isolated 3440x1440 replay reached Story gameplay/Pause and exited
+normally after clicking Quit confirmation. Reviewed captures show only the
+hovered Select, Player Progress or Back prompt tinted on the main/level list,
+Pause and confirmation screens. Evidence: `build/issue-86-menu-mouse/hover-*.png`,
+`hover-pause.json`, `hover-final-live.log`, and `hover-final-build.log`.
+Final executable SHA-256:
+`25073e803a83ec72b17709e31bc4cb85cc474f87276a9a4b6d6a4375e948306e`.
+Personal settings/saves were untouched; disposable test disks and frame BMPs
+were recycled. MAC-030 retains native adapter work; hosted CI and physical
+controller validation remain pending. Changes remain local and uncommitted.
+
+
+Quit to Desktop follow-up (2026-10-17): added a final row after Extras in the
+main Story/Arcade menu and after the existing Quit in Pause. New shared patch
+hooks the two original layout finalizers, after all row setters, so original
+menu construction and geometry remain in charge. Windows player-one menus
+open a guest confirmation with Cancel selected; Cancel/Back restore the source
+screen, and confirmation posts WM_CLOSE to the window thread's normal exit
+path. The existing return-to-menu Quit is unchanged. Four callback addresses
+were checked against unused INT3 bytes in the supported US XBE. No generated
+source was edited. This depends on the uncommitted #86 mouse-menu work; Mac
+adaptation is queued as MAC-031.
+
+Validation: Windows x64/MSVC 19.44.35224, OpenGL, base main `e942ef0` plus local changes;
+US XBE SHA-256 verified. Supported `tsfp.ps1 Build` regenerated and compiled the
+game. Its native network/clear/texture/display checks passed, but the existing
+controller-prompt focus test again failed at lines 55/178; the full Build is
+not green. Save-path, controls, settings and debug checks passed separately.
+The 31 menu-pointer/patch-tracking/transition tests passed, and the new portable
+quit-adapter test passed after correcting identical empty test stubs that the
+MSVC linker had folded together (no production change needed). The test covers
+insertion scope, secondary-player exclusion, Cancel default, Back, invalid
+choices, failed-post retry and one-shot confirmed exit. CI includes the test.
+
+Bounded isolated input replays at 3440x1440 reached the new row in both menus,
+verified default Cancel and restoration to the original screen (Pause remained
+active), and exited with process code 0 and the normal `window closed` kernel
+log. Main confirmation was completed by keyboard; Pause confirmation by mouse.
+Read-only menu snapshots and reviewed renders show all nine main rows and seven
+Pause rows inside their panels. Physical controller testing and native Mac
+remain unverified. Executable SHA-256:
+`75964889056ef66bea23e945d45cf9472e4be8551794ee958144f28251d1f783`.
+Evidence: `build/issue-86-menu-mouse/quit-{main,pause}.json`,
+`quit-{main,pause}-runtime.err`, `quit-build.log`, and retained main/Pause PNGs.
+Disposable test disks and redundant frame dumps were recycled. Changes are
+local and uncommitted.
+
+
+Combined wheel/hover follow-up: user testing found level-list bouncing when
+scrolling and moving the pointer simultaneously. A regression reproduces hover
+reclaiming selection on the frames between wheel packets. Wheel ownership now
+lasts through continuous pointer motion until the wheel is idle for 250 ms and
+the pointer is still for 100 ms; only a subsequent move resumes hover. Clicks
+remain immediate, while screen/focus changes reset the gesture. The regression
+fails on the earlier policy and passes with the fix; a targeted mutation also
+confirms it detects the conflict. All 37 patch-tracking/transition and menu/UI
+checks pass; after the pause-coordinate follow-up, all nine focused checks pass.
+The user also reported offset pause hover. Paused input was using the active
+world viewport (e.g. 639x430) while menus render on the full UI canvas (640x480).
+Both row and footer pointer mapping now use the title's full canvas dimensions;
+the new cropped-world-viewport case fails before the correction and passes after.
+The supported Build compiles successfully but twice stops at the existing
+foreground-sensitive `pc_controls_accept_pad` assertion in the prompt test.
+The prompt test also fails separately; remaining save, input, settings and debug
+checks pass separately. This is not a full Build pass.
+Bounded isolated live tests pass: continuous up/down pointer sweeps with spaced
+wheel packets produce only the intended level sequence 1->2->3->4->5->6->7->8->7->6->5->4;
+hover selects another visible row after settling. At 3440x1440, all six pause row
+centres select their matching rows, and Controls click, its Back footer, root
+right-click resume and Tab/Objectives close all pass. The harness was corrected
+to wait for the replay's first wheel packet and reject inverted clipped rectangles
+when choosing a hover target; these were harness failures, not additional fixes.
+Current executable SHA-256: `63b18e15cd5b58686828d17fb36dab849f66023b05d17e20559d09edccb61cef`.
+Evidence in `build/issue-86-menu-mouse`: `wheel-hover-tests.log`,
+`wheel-hover-focused-tests.log`, `build-wheel-hover*.log`, `wheel-hover-*.log`,
+`wheel-hover.json`, `pause-hover.json`, and `pause-hover-live.log`.
+The user confirmed both fixes in the reopened build: scrolling while moving the
+mouse stays stable, and pause-menu hover aligns with the row under the cursor.
+This physical test confirmation does not replace the foreground-sensitive prompt
+check noted above. Changes remain local and uncommitted. Disposable captures
+and test disks were recycled.
+
+Footer/pause follow-up: visible, enabled bottom prompts now accept left-click.
+The generic, frontend-themed and pause-themed footer painters supply their actual
+text rectangles after binding translation, font scaling and layout. Packed hidden
+slots retain their original action IDs. Clicks use the existing Confirm/Back/X/Y
+actions before menu tick callbacks, preserving scoped raw controller-source edges.
+Recent rectangles must match the current menu, descriptors and output dimensions;
+stale, hidden and disabled prompts are ignored. Player-1 Start and Tab/Back menu
+flags now release the cursor and enable the shared hover/click/wheel path during
+missions. Closing the menu restores gameplay capture with held clicks suppressed.
+Text-only menus also receive a single scroll tick per wheel notch.
+
+Windows x64 / D3D11, same tools and verified US XBE as below: final supported
+Build passed every native check, including the focus-sensitive prompts test,
+and sealed the executable. The initial build again encountered that foreground
+assertion. All 36 menu/terminal/UI and patch tracking/transition regressions pass;
+eight focused checks also pass after adding hidden-slot and text-scroll cases.
+An earlier patch-test run overlapped addition of the themed-footer patch and
+failed its idempotence assertion; the complete stable-stack rerun passes.
+Footer-validation executable SHA-256: `42da85fb935ba4ca0db65ca8cf4a2160b503aa7580926864ead3387422bcb3d3`.
+Bounded isolated internal replay verifies the actual main Select footer opens
+Story, the level-list Player Progress footer opens its page, and the Back footer
+returns to main. Screenshots were reviewed and guest state recorded; this is not
+a physical-device test. Evidence: `build/issue-86-menu-mouse/build-footer-final.log`,
+`footer-final-tests.log`, `footer-live.json`, and `footer-progress.png`.
+The first pause replay verified row selection and submenu Back, but found that
+Tab/Objectives has no Back callback. The adapter now defers its original pause
+close handler until the whole menu dispatch has returned. Guards preserve
+submenu Back callbacks and death/completion/modal states. A follow-up caught the
+root container/child distinction; the nested-dispatch regression covers it.
+Escape also left the host capture preference released. Exiting menu mode now
+restores capture on the window thread, with focus loss and settings still honored.
+The final supported Build passes, including host tests for automatic recapture
+and unfocused suppression; all eight focused menu/terminal/UI checks pass.
+Earlier pause/footer executable SHA-256: `eb808fd142bb2bd33985f35ba92f3f492bdb73fe6ea72256106c87b0e985f0e5`.
+Evidence: `build-pause-final.log` and `pause-focused-tests.log` in the same folder.
+The bounded isolated live replay now passes pause hover/click into Controls,
+left-click on its rendered Back prompt, right-click to resume from root Pause,
+and right-click to close Tab/Objectives (flags return to gameplay 0x10).
+Evidence: `pause-live.json`, `pause-live-test.log`, and selected PNGs in the same
+folder. Physical-device confirmation of footer clicks, pause/Objectives controls
+and automatic recapture remains pending; the test build is reopened for it.
+Changes remain local and uncommitted; native Mac adaptation is queued in MAC-030.
+
+Wheel follow-up: frontend menus now consume bounded raw mouse-wheel notches as
+original Up/Down actions, including the Story level list, without activating a
+level. Stationary hover cannot undo wheel selection. Clicks, screen changes and
+focus loss clear queued steps; fresh keyboard/controller navigation takes over.
+Gameplay wheel bindings are unchanged. Eight focused menu/terminal/UI regressions
+pass, covering direction reversal, multiple notches, focus, transitions and clicks.
+Two bounded internal-input replays in the actual 13-level Story list passed:
+selection IDs 0->1->3->2->2 and 0->1->9->7->7. The latter reaches rows below the
+initial visible portion; both retain the same menu and stop when scrolling ends.
+This verifies internal routing; physical-wheel confirmation remains pending.
+
+The wheel follow-up compiled successfully through the supported Windows Build,
+but both attempts stopped at the existing foreground-focus assertion in
+`tests/pc_prompts.c` (pc_controls_accept_pad). Earlier native checks passed, and
+remaining save-path, controls, settings and debug checks passed when run separately.
+This is not a full Build pass. Evidence: `build/issue-86-menu-mouse/build-wheel.log`,
+`wheel-*-test.log` and `wheel-level.json`. Current wheel executable SHA-256:
+`75e61f1a56312208c4689262c931c4982448867556b3216afcb348d6c1411fa1`.
+The full Build passes and hashes below describe earlier versions of this work.
+Mac wheel integration remains queued in MAC-030; hosted CI is pending.
+
+Uncommitted on `86-enhancement-use-mouse-to-control-main-menu`, based on main
+`e942ef0`. Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 /
+CMake 4.4.4. Supported US XBE SHA-256 verified before generation and live runs.
+
+The new `menu-mouse.patch` wraps US `sub_00073750` after final menu layout,
+before the original action dispatcher. Shared pointer policy in
+`src/pc_menu_mouse.h` converts window client coordinates through presentation
+bars and proportional UI scaling. `src/pc_menu_mouse_guest.inc` tests the
+active menu's final, clipped item rectangles, reuses original selection state
+and sends fresh confirm/back actions through the original callbacks. Disabled
+items and labels are excluded. A stationary pointer leaves keyboard/controller
+selection alone; held clicks cannot activate a new screen. Windows releases
+capture for frontend menus, shows the cursor even in fullscreen, and suppresses
+selection buttons from gameplay until released. Paused in-game menus and the
+existing camera-terminal controls retain their previous behavior.
+
+The final supported Windows Build applied the complete patch stack, regenerated
+hooks, compiled the Release game and test targets, and passed every native
+build check. The input test now verifies frontend cursor handling and held-click
+suppression when returning to gameplay. An earlier build attempt encountered the
+known foreground-focus prompt assertion; the final full Build passed that test
+without changing its focus rules. Executable SHA-256:
+`3aaf99d5950ec92f8637d9f4201ab3fa62e9184040485eda665b3f94dd4b9d3b`.
+
+59 targeted tests pass: pointer/guest selection, terminal input, UI layout,
+camera/cutscene behavior, CI scope, patch tracking and historical branch
+transitions. New pointer tests include 4:3, 16:9, ultrawide, square output,
+presentation bars, disabled items, focus/held-button transitions, active-modal
+filtering and gameplay exclusion. The historical fixture omits the new patch
+until its prerequisite display wrapper is installed. Placing the wrapper within
+the file, instead of appending it, preserves unrelated trailing edits during
+patch unwind. Local Test and Windows/macOS runtime CI include the new portable
+menu regression.
+
+Bounded live runs use the isolated unlocked Test Lab fixture, both display
+configs, controls, saves and XDG paths, capped logs and rotating frame captures.
+At 1280x720 rendering in a 640x480 client window, read-only guest state and
+reviewed screenshots verify hover selects Settings, left-click opens Settings,
+and right-click returns to the main menu. A subsequent Up key selects Player
+Progress while the cursor stays over Settings, confirming keyboard coexistence.
+Internal replay provides input;
+physical mouse delivery, fullscreen interaction and a human gameplay retest
+remain pending. The first replay used render pixels instead of client pixels,
+which correctly produced no selection; the corrected replay measures the actual
+window. Logs, snapshots and selected PNGs are retained locally under
+`build/issue-86-menu-mouse`; disposable Xbox disk images are recycled.
+
+Mac input integration is queued as MAC-030 in `MAC_PORT_BACKLOG.md`. Its original
+menu path remains active; no native macOS build or physical-input check was run.
+Hosted CI is pending. No commit or push has been made for this issue.
+
+Human testing subsequently reported rapid highlight cycling on profile selection
+and the Story/Arcade main menu. A bounded read-only follow-up captured no mouse
+movement over the menu. A separate continuous-motion replay reproduced alternating
+selection between the hovered row and its neighbor when a directional key was
+held. The original dispatcher applied its repeat after mouse hover. The adapter
+now retains mouse navigation ownership between pointer samples and suppresses
+old directional repeats; a fresh direction takes over once the pointer stops.
+The added regression failed before the fix and passes afterward. All eight
+main-menu rows remain stable under the conflicting held-input replay after the
+initial fresh direction and pointer takeover. A fresh direction is intentionally
+allowed to take over while the pointer is stationary. The supported Build and
+seven focused menu/terminal/UI tests passed after this change. Confirmation that
+this resolves the user's physical-input report is still pending; the synthetic
+reproduction does not establish that their input source was a held direction.
+
+
+A further human report narrowed the remaining cycling to a click followed by a
+stationary pointer. Menu identity changes were clearing mouse ownership, allowing
+an old held direction to resume repeating in the new menu. Ownership now survives
+menu transitions; right-click Back also claims it outside selectable rows. Fresh
+directional input still takes over, invalid pointers release ownership, and held
+mouse buttons remain blocked across screens. The new regression failed at the
+first submenu update before the fix; all seven focused menu/terminal/UI tests
+pass afterward, including stationary submenu repeats, Back, fresh direction and
+focus recovery. An isolated live replay held Down, hovered Settings, clicked it,
+and left the pointer stationary: the old executable cycled through five submenu
+selections over three seconds; the corrected executable retained one selection
+throughout the same interval. Evidence is in local `transition-before.json` and
+`transition.json`. The supported Windows Build passed all native checks on rerun;
+the initial attempt again hit the existing foreground-focus assertion. This
+reproduces and fixes a transition defect, but confirmation with the user's
+physical input remains pending. The final hover/click/Back and stationary-pointer
+keyboard-takeover live replay also passed with this executable. An isolated
+600-second physical-input test was reopened at 3440x1440 for the user.
+
+
+The next physical-input capture reproduced residual cycling after mouse selection
+and Alt+Tab. It showed neutral controller axes (128), but logical controller 0
+changed from physical port 0 to invalid `0x004c8f8c` immediately after Confirm.
+US callback `sub_002D2260` scans the raw Confirm pressed edge to identify the
+controller; injecting only menu action flags left no source, so its search fell
+to -1 and read `mapping[-1]`. This invalid mapping yielded phantom Down/Left
+(`held=0x6`), including while unfocused. Earlier held-direction tests reproduced
+a real arbitration problem but missed this source defect because they selected
+the profile with Enter.
+
+`menu-mouse-source.patch` now scopes the original `sub_0007A7B0` dispatcher.
+A mouse Confirm supplies physical port 0's raw pressed edge through the original
+callbacks and restores that bit on return, preserving existing real-pad bits.
+The context nests with menu dispatches and is inactive for native Mac pending
+MAC-030. No generated C was edited. All 22 focused pointer, terminal, UI and
+patch-transition tests pass, including a mutation removing the source edge that
+must fail and checks that the edge does not leak out of the dispatcher. The full
+supported Windows Build regenerated the wrapper and passed all native checks.
+An isolated mouse-only replay selected the initial single-player row and Test Lab
+profile, reached all eight Story/Arcade menu rows, retained mapping `[0,1,2,3]`,
+and measured zero held/pressed directions and one stable selection for four
+seconds. The profile picker uses a separate overlay, so the replay clicks its
+Test Lab row using measured image/client coordinates. This corrected the first
+harness attempt, which inspected the empty parent menu instead of that overlay.
+Local evidence: `mouse-profile.json`, `physical-source-before.json`. A bounded
+fullscreen physical-input retest was reopened for click and Alt+Tab verification.
+
+
+The user confirmed both click-then-stationary and Alt+Tab-out/back cases are now
+stable in the corrected fullscreen build. The concurrent read-only capture
+retained valid controller mappings and zero directional held bits across the
+observed focus changes (`physical-source-after.json`). Changes remain local and
+uncommitted on the issue #86 branch; native Mac and hosted CI remain unverified.
+
+## Launcher v1.2.12 release preparation (2026-10-17)
+
+PR #98 is merged as `860dccd`. Branch `release/launcher-v1.2.12` raises the
+shared launcher and assembly/file versions to 1.2.12 / 1.2.12.0 for Diagnostics
+inside Repair / Verify, native tabs and View logs available in both. README and
+launcher guides identify the release version. Game VERSION and runtime code are
+unchanged; MAC-021 retains queued native launcher adaptation. This records
+preparation; publication and final package evidence are confirmed by the GitHub
+release and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+185 isolated checks (99 updater/bootstrap/cleanup, 27 downloads/recovery, 15
+release news, 25 settings, 19 maintenance). Startup, packaging, issue-form and
+CI-scope Python suites passed 43 tests with seven subtests. Three disposable
+minimize/restore/startup-failure checks passed. The actual public v1.2.11 ZIP
+upgraded to v1.2.12; installed manifests, assembly version, embedded banner/logo/
+icon, retained What's new page, tabbed maintenance area and removed Diagnostics
+sidebar entry were verified. Personal-file preservation, corruption detection,
+same-version repair and confirmed cleanup passed. Normal 1152×772 and minimum
+1000×720 repair/diagnostics, attention and busy previews were reviewed; Cancel
+and View logs remain usable, and bootstrap repair/diagnostic previews select
+the correct tab. Tests used disposable synthetic fixtures; no real game was
+launched and no personal saves, settings, game data or ISO were modified.
+Native Mac launcher execution remains unverified.
+
+## Repair / Verify and Diagnostics tabs (2026-10-17)
+
+Implemented on `feature/launcher-maintenance-tabs`, based on main `bd3f0e2`;
+implementation commit `b0f927d`, [PR #98](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/98). The Repair / Verify sidebar entry now
+hosts native Repair / Verify and Diagnostics tabs, with one shared heading and
+the same blue/silver tab style as Game settings. Diagnostics has no separate
+sidebar button. The sidebar/recovery entry opens repair by default; diagnostic
+preview arguments still select Diagnostics directly. Switching pages retains
+verification results, report text and unsaved settings drafts. Diagnostics is
+collected on first selection and through its existing Refresh action. Report
+copying and reviewed GitHub bug/enhancement drafts retain their privacy behavior.
+
+View logs is always visible in each footer, including recovery and busy states.
+Operations lock tab navigation without disabling the selected page's Cancel or
+View logs controls. Verification/report text starts at the top of its text area.
+The existing repair transactions, file preservation, update/download logic and
+game runtime are unchanged. The launcher version remains 1.2.11; this UI change
+has not been merged or published. MAC-021 records queued native Mac adaptation.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build and
+185 isolated checks passed (99 updater/bootstrap/cleanup, 27 downloads/recovery,
+15 release news, 25 settings, 19 maintenance). The maintenance UI regression
+covers both native tabs, default/explicit selection, removed sidebar entry,
+preserved results/report/settings drafts, diagnostic reporting actions, live
+log actions, locked navigation and usable Cancel/logs during operations.
+Startup/packaging/issue-form/CI-scope Python suites passed 43 tests with seven
+subtests. Normal 1152×772 and minimum 1000×720 repair/diagnostics previews, plus
+attention/busy states, were rendered and visually inspected. Bootstrap repair
+and diagnostic preview routing passed. All fixtures were disposable and
+synthetic; no actual game was launched or personal saves, settings, data or ISO
+modified. Native Mac launcher execution remains unverified.
+
+## Launcher v1.2.11 release preparation (2026-10-17)
+
+PR #93 is merged as `7ed93cb`. Branch `release/launcher-v1.2.11` raises the
+shared launcher and assembly/file versions to 1.2.11 / 1.2.11.0 for the embedded
+What's new page, including the footer cleanup. README and launcher guides now
+identify its release version. Game VERSION and runtime code are unchanged;
+MAC-021 retains queued native launcher adaptation. This records preparation;
+publication and final package evidence are confirmed separately by the GitHub
+release and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+185 isolated checks (99 updater/bootstrap/cleanup, 27 download/recovery, 15
+release-news, 25 settings and 19 maintenance). Startup, packaging, issue-form
+and CI-scope Python suites passed 43 tests with seven subtests. Three disposable
+minimize/restore/startup-failure checks passed. The actual public v1.2.10 ZIP
+upgraded to v1.2.11; installed manifests, correct assembly version, embedded
+banner/logo/icon, news page/navigation and absent redundant Home footer action,
+personal-file preservation, corruption detection, same-version repair and
+confirmed cleanup passed. Live read-only GitHub notes for game v0.2.0-alpha.5
+and launcher v1.2.10, bootstrap preview routing, normal/minimum-size pages,
+known-issues scrolling and offline retention were reviewed. The initial
+transaction run was blocked by an active game; all final local checks completed
+after that game process exited. Tests used disposable synthetic fixtures. No
+real game was launched for this release task, and no personal saves, settings,
+data or ISO were modified. Native Mac launcher execution remains unverified.
+
+## Embedded launcher What's new page (2026-10-17)
+
+Footer follow-up on the same PR: removed the redundant **Open Home** button;
+Home remains available in the sidebar. The footer now contains only Refresh
+notes and View release on GitHub. Updated documentation and the existing inert-
+content control-count assertion. Required-artwork compilation, all 15 release-
+news checks and live normal/minimum-size preview rendering passed. A broader
+updater transaction rerun stopped at the existing active-game guard; the user's
+running game was preserved. The full 185-check pass below predates this footer
+follow-up. No game/runtime behavior changed.
+
+Implemented on `feature/launcher-whats-new`, based on main `3cac654`; implementation
+commit `cfbfe6c`, [PR #93](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/93). The aligned sidebar and Home's notes
+button open an embedded blue/silver release center. Game and launcher views
+compare installed/running and available versions for the selected channel, with
+separate installed/latest notes, published titles/dates and explicit newer,
+current, older-channel, absent and unversioned states. Compatible release
+selection and launcher metadata verification remain shared with the updater.
+Older installed notes use their exact GitHub tag; unavailable/draft records
+never substitute another version's notes. Published known-issue headings are
+separated from the remaining changes. Missing sections do not claim no issues.
+Native text supports headings/bullets/code, omits images and never executes
+HTML/XAML/scripts or opens content links automatically. Long descriptions show
+a shortened notice and a link to the complete release.
+
+Requests have a 25-second bound even if transport ignores cancellation; old
+request results cannot replace a changed version/channel context. A failed
+refresh retains same-context notes in memory with their checked time. A first
+offline load offers refresh guidance. No persistent notes cache is introduced.
+Settings drafts and main-window sidebar navigation are preserved. Updates remain
+separate actions through Home or startup. The launcher version is unchanged;
+this feature has not been merged or published. MAC-021 records queued Mac
+adaptation; native Mac launcher execution remains unverified.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required build and
+185 isolated checks passed (99 updater/bootstrap/cleanup, 27 downloads/recovery,
+15 release-news, 25 settings, 19 maintenance). The news suite includes strict
+stable/preview and exact installed selection, missing/mismatched/draft releases,
+invalid metadata, cancellation/rate limits and ignored-cancellation timeout,
+bounded text/known issues, inert HTML/images, session retention and navigation
+with unchanged settings drafts. Python startup/packaging/issue-form/CI-scope:
+43 tests with seven subtests passed. Live read-only GitHub selection found game
+v0.2.0-alpha.5 and launcher 1.2.10 and their exact installed notes. Preview,
+minimum 1000×720, known-issues scroll, actual game/launcher notes and offline
+retention screenshots were inspected. Preview routing works through bootstrap.
+Only disposable synthetic fixtures were used; no actual game was launched,
+and no personal saves, settings, game data or ISO were modified.
+
+## Launcher v1.2.10 release preparation (2026-10-17)
+
+PR #91 is merged as `69204af`. The release preparation branch
+`release/launcher-v1.2.10` raises the shared launcher version and assembly/file
+versions to 1.2.10 / 1.2.10.0 for resumable downloads, transfer speed and ETA,
+and the Home, repair and startup recovery actions. Game VERSION and runtime
+code are unchanged. MAC-021 retains queued native launcher adaptation. This
+records preparation; public publication is confirmed by the GitHub release
+and its source provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+99 updater/bootstrap/cleanup, 27 download/recovery, 25 settings and 19 maintenance
+checks (170 total). Startup, packaging, issue-form and CI-scope Python suites
+passed 42 tests with seven subtests. Three disposable minimize/restore/startup-
+failure checks passed. The actual public v1.2.9 ZIP upgraded to the v1.2.10
+package; installed manifests, embedded banner/logo/icon, assembly version,
+personal-file preservation, corruption detection, same-version repair and
+confirmed cleanup passed. A public GitHub v1.2.9 download interrupted at 65,536
+bytes resumed in a new client with HTTP 206 and passed full SHA-256 verification.
+Transfer, pause and recovery previews were reviewed at normal/minimum window
+sizes, including the startup recovery window. All fixtures were synthetic and
+disposable; no real game was launched and no personal saves, settings, data or
+ISO were modified. Native Mac launcher execution remains unverified.
+
+## Resumable launcher downloads and recovery (2026-10-17)
+
+Implemented on `feature/launcher-download-recovery`, based on main `78104de`;
+implementation commit `c21df35`. Downloads use independent game/launcher cache
+slots pinned by release URL, size and expected SHA-256. They survive staging
+cleanup, cancellation and restart, including a completed verified cache when
+preparation is cancelled. Strict Range/Content-Range and optional strong If-Range
+handling prevents unsafe append; a complete SHA-256 and package validation still
+precede installation. Cache locking, metadata/path bounds, ownership checks and
+exact named-file cleanup retain unknown files and refuse redirects through links.
+Direct attribute checks also refuse dangling file/directory links before cache
+or destination creation; the junction fixture covers missing targets as well.
+Connection/read stalls are bounded to 30 seconds and ignored stream cancellation
+is handled by disposal. Full-file hashing and staging copies can be cancelled.
+
+Game updates, startup self-updates and repairs show measured speed, transferred
+bytes and ETA, with an explicit unknown estimate and separate verification/
+preparation phases. Home offers Pause/Resume and Retry/Repair/View logs recovery;
+maintenance has inline retry/log actions. Startup download failures retain Retry
+update/Open installed launcher/View logs choices, while initial offline release
+checks still enter the installed launcher automatically. The existing repaired
+file ownership/transaction behavior remains; its cancellation fixture now allows
+only the explicitly named cache entries while comparing every installed/personal
+file unchanged. MAC-021 records queued native launcher adaptation.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required build passed;
+27 isolated download/recovery checks, 25 settings and 13 read-only maintenance
+checks passed. Startup/packaging/CI-scope Python suites passed 27 tests with two
+subtests. Download fixtures cover fresh/resumed/cancelled/stalled streams, complete
+cache reuse and cancelled preparation, ignored/invalid/416 ranges, ETag changes,
+changed releases, corrupt prefixes, oversized data, unknown caches, locks/links,
+staging cleanup, ETA and recovery controls. A live GitHub launcher v1.2.9 download
+was interrupted at 65,536 bytes, resumed in a new client with HTTP 206, and passed
+its complete SHA-256; no downloaded executable was run. UI previews at 1152×772
+and minimum 1000×720, plus startup recovery, were reviewed. Full local transaction
+checks were blocked by an active game; the hosted Windows job runs the complete
+suites. Tests used disposable files and never modified personal saves, settings,
+ISOs or game data. Native Mac launcher execution remains unverified. Not published.
+
+## Launcher v1.2.9 release preparation (2026-10-17)
+
+PR #89 is merged as `1728f21`. The release preparation branch
+`release/launcher-v1.2.9` raises the shared launcher version and assembly/file
+versions to 1.2.9 / 1.2.9.0 for the cleaner settings, repair page and aligned
+sidebar. Game VERSION and runtime code are unchanged. MAC-021 retains queued
+native launcher UI adaptation. This records preparation; public publication is
+confirmed separately by the GitHub release and its build provenance asset.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: required-artwork build passed
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks. Startup,
+packaging, issue-form and CI-scope Python suites passed 41 tests with seven
+subtests. Three disposable minimize/restore/startup-failure checks passed.
+The actual public v1.2.8 ZIP upgraded to the v1.2.9 package; installed manifest
+verification, embedded banner/logo/icon, assembly version, personal-file
+preservation, corruption detection, same-version repair and confirmed cleanup
+passed. Versioned Home, Repair / Verify and both settings previews rendered.
+All fixtures were synthetic and disposable; no real game was launched and no
+personal saves, settings, data or ISO were modified.
+
+## Launcher page and sidebar polish (2026-10-17)
+
+Implemented on `feature/launcher-page-polish`, based on main `d6f0d56`; implementation commit `0f30cbe`. Repair / Verify now uses separate game/launcher cards
+with textual health badges, version/file counts, prominent verification actions
+and expandable file details. An unhealthy check expands its details; operation
+status/cancellation remain outside the scroll area. Open game folder stays below
+the cards alongside the preservation explanation.
+
+Settings retains native tab navigation with compact underlined headers, grouped
+input/mouse and key-binding cards, separate display/camera/performance/startup
+cards, and a fixed Save/Cancel footer. Custom width/height move into an expandable
+section. The shared page theme styles buttons, dropdowns/popups, entries,
+checkboxes, scrollbars, expanders and the FOV slider. Settings models, validation,
+capture/conflict prompts and save/cancel/draft semantics are retained. Sidebar
+buttons now have equal icon columns and a shared label offset instead of padded
+text; explicit accessible names preserve navigation labels. Home action alignment
+continues to use centered content through the shared button template.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: artwork-required launcher build
+passed all 99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks.
+Startup and packaging tests passed six tests with two missing-artwork rejection
+subtests. Rendered/reviewed 1152×772 and minimum 1000×720 pages, including input,
+custom resolution, lower graphics/startup sections, repair attention/details and
+busy states. An offscreen WPF smoke check verified themed dropdown expansion and
+collapse at input width, the native FOV increase command, checkbox automation,
+and custom-resolution expansion; its dropdown image was reviewed. Tests used
+synthetic disposable settings/files and never launched the real game or modified
+personal data. No game runtime/build changes. MAC-021 records queued native UI
+adaptation; native Mac launcher execution remains unverified. Not published.
+
+## Game folder action moved into Repair / Verify (2026-10-17)
+
+Follow-up on `feature/launcher-repair-diagnostics`, PR #88. Removed Game files
+from the sidebar and added **Open game folder** below the two Repair / Verify
+cards. The existing installation-folder action is retained; preview mode reports
+the action without opening Explorer, and maintenance busy state disables it.
+Updated missing-data guidance and launcher usage documentation. MAC-021 records
+the corresponding placement for a future native release launcher.
+
+Windows x64 / .NET Framework 4.8: rebuilt with required themed artwork; all
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks passed.
+Existing UI checks cover sidebar removal, page-specific folder action and busy
+state. Rendered and reviewed Home, Repair / Verify and Diagnostics previews: the
+folder action fits below the cards and the shorter sidebar remains visible.
+No game launched and no personal game files, settings or saves changed.
+Mac launcher adaptation remains queued; launcher v1.2.8 is not published.
+
+## Diagnostics to GitHub issue drafts (2026-10-17)
+
+Follow-up on `feature/launcher-repair-diagnostics` / PR #88, based on its
+`b990140` implementation; follow-up commit `e640b2f`. Diagnostics adds Report a bug and Request
+enhancement actions. `DiagnosticIssueDraft.cs` selects the matching repository
+issue form and prefills its optional diagnostics text field, with the complete
+report also copied to the clipboard. Only the displayed privacy-filtered report
+is used; symptoms, steps and enhancement descriptions remain for the reporter.
+No token, issue POST, automatic submission or automatic upload is added.
+The user explicitly opens a browser draft, reviews the form and submits on GitHub.
+
+URLs are limited to 1800 characters for the Windows browser handoff. Long reports
+use an explicit summary/paste instruction and preserve the full text on the
+clipboard; Unicode/query syntax is escaped and never silently truncated. Clipboard
+or browser failures leave the report visible with recovery instructions. Reporting
+controls are disabled during maintenance; preview actions never open GitHub.
+The bug/enhancement YAML forms share the same optional plain-text diagnostics
+field. Existing version choices and enhancement simplicity are retained.
+
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: both themed EXEs compiled and
+99 updater/bootstrap/cleanup, 25 settings and 19 maintenance checks passed.
+Added checks cover both forms, Unicode/newline/query-character round-trips,
+large-report fallback, filtered payloads and report-control busy state. Issue-form
+schema/field contract and version-refresh checks passed (15 tests, including
+five subtests). The preceding startup/packaging/CI-scope run passed 26 checks;
+only the changed form test expectation needed an update for the optional field. No actual GitHub issue was created or submitted and no
+personal clipboard was changed by tests. Live prefilling of the new field requires
+the issue templates to merge into the default branch. MAC-021 records queued Mac
+browser/clipboard adaptation; native Mac execution remains unverified. Not published.
+
+## Launcher v1.2.8 Repair/Verify and Diagnostics (2026-10-17)
+
+Implemented on `feature/launcher-repair-diagnostics`, commit `920b789`, based on main `65b6903`. Launcher/assembly version is 1.2.8. New Repair / Verify and
+Diagnostics sidebar pages stay in the existing window and retain settings drafts.
+Verification is offline/read-only against installed manifest SHA-256 hashes;
+protected settings and independent launcher files are excluded from game scans.
+Reports distinguish missing, changed, unreadable and invalid manifest cases.
+
+Repairs fetch only the exact installed game or running launcher release and
+verify the published archive digest/size, package layout and every file before
+using the existing helper/recovery flow. Game repair replaces damaged/missing
+owned runtime files and official BUILD metadata, preserving personal files,
+untracked files and the independent launcher. It retains the previous game
+rollback through separate repair transactions/backups; repair backups follow
+confirmed-game cleanup. Existing staged updates are retained. Cancellation and
+failed preparation remove only owned safe staging, preserving ISOs/links/locked
+recovery data. Interrupted repair transactions recover on startup. No game code
+or native Mac adapter changed. A live v1.2.8 launcher self-repair needs that exact
+release to be published; developer builds report its absence without downgrading.
+
+Diagnostics report versions, Windows/process/CLR information, GPU/driver, free
+space, embedded artwork, saved graphics, last verification and structured recent
+exception types. Background GPU lookup has a bounded wait and one shared in-flight
+query. Clipboard reports omit personal paths, arbitrary log messages, raw files,
+saves and ISO information; they are never automatically uploaded.
+
+Windows x64 / .NET Framework 4.8 / pinned Python 3.12.14: required-artwork builds
+passed 99 updater/bootstrap/cleanup checks, 25 settings checks and 15 maintenance
+checks. Six startup/packaging plus 20 CI-scope Python checks passed (26 total,
+including two missing-artwork subtests). Coverage includes exact-version lookup,
+corrupt/cancelled downloads, damaged runtime repair, equal-version forced launcher
+repair, preserved previous-game rollback, interrupted recovery, confirmed cleanup,
+ISO retention inside staging, report privacy and embedded navigation/drafts.
+The first local full run respected an active game guard; that game was not stopped.
+Once it was no longer running, full disposable transaction suites passed. No
+automated real-game session or personal settings/saves were used. GPU discovery
+reported NVIDIA GeForce RTX 4070 SUPER / driver 32.0.16.1742 in 54 ms.
+Home, input/graphics, Repair/Verify, Diagnostics and bootstrap previews rendered;
+new pages were visually inspected with their sidebar and theme intact. Preview
+versions/system state are explicitly sample data. Native Mac execution is
+unverified; adaptation/acceptance checks are queued in MAC-021. Not published.
+
+## Issue #50 idle-demo skipping (2026-10-17)
+
+Initial implementation and live validation on `50-cannot-skip-menu-idle-video`,
+based on main `abaf001`.
+Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 / CMake 4.4.4.
+The supported US XBE SHA-256 was verified before decoding and live testing.
+Issue #82 was merged afterward; the branch was rebased onto main `e942ef0`
+before publication, preserving both fixes. All 55 targeted tests passed after
+rebasing, including the issue #82 camera/cutscene suite. The live build
+evidence below predates this rebase; no post-rebase full game rebuild is claimed.
+
+The US movie loop at `0x30594` calls `0x445252` only when skipping is enabled
+and controller input matches mask `0x280`. That routine sets object byte
+`+0x78`; the original Update checks it at `0x445843`/`0x445853` to terminate
+packet playback/looping. The symbol had been guessed as `XMVPlaybackStart`,
+so a skip press instead entered the host player's start handler. Correct the
+US symbol to the descriptive `XMVPlaybackStop` and add the corresponding HLE
+handler. It closes the movie voice and overlay, marks EOF, keeps the guest
+object valid until Destroy, and makes repeated Stop/Update/Destroy safe.
+Original-body fallback and genuine Start handling for other titles remain.
+
+The final `xmv-stop.patch` carries runtime and symbol changes. The generation
+fingerprint now includes extra-symbol metadata. Windows Build refreshes the
+symbol scan when regeneration is required; native --generate already does so.
+The generated US thunk was inspected: `sub_00445252` calls the Stop handler
+and pops eight bytes (return address plus its one argument).
+
+50 targeted tests passed across XMV lifetime/incorrect-binding detection,
+generation invalidation, CI scope, patch tracking and full historical patch
+transitions. The HLE test compiles production code with a deterministic host
+player and checks early skip, EOF stability, a later movie, repeated cleanup,
+unavailable playback, null status output and original-body fallback/ABI.
+The deliberately restored Start binding fails the regression. The test is in
+both Windows/macOS runtime CI and the local Test command.
+
+Full patch stack applied successfully; Windows Release game and build-test
+targets compiled. Network, channel clear, texture format, display, save paths,
+controls, settings and debug checks passed. The unchanged prompt test again
+failed `pc_controls_accept_pad` at line 55 when its window failed to gain
+foreground focus, so the full Build command is not reported as passing.
+Remaining checks and executable identity sealing were completed separately.
+
+The rebuilt executable SHA-256 is
+`4f2b2eba7624293677be776253bfdd2035b9b6a7114a1cae44f995a7bfb2239f`.
+A bounded 240-second exploratory run reached the signed-in main menu but did
+not trigger an attract movie there; returning to player selection late in the
+run did not leave enough idle time. A fresh untouched title-screen run started
+`attract.xmv` at 60.56 seconds. A synthetic Enter/A press at 64.59 seconds
+closed the movie at 64.69 seconds, after 108 pictures. A separate untouched
+run started the demo at 60.50 seconds; Escape/Start at 64.55 seconds closed it
+at 64.64 seconds. Subsequent navigation reached the responsive signed-in main
+menu, verified in `title-skip-escape.png`. Startup EA/Free Radical movies both
+played and closed normally. This is internal input-model replay, not a
+physical keyboard/controller test. Test saves, controls, both display
+configs and XDG paths are isolated copies of the unlocked fixture. Personal
+settings and the canonical fixture are preserved. Logs are bounded and local
+evidence is under `build/issue-50-video-skip`.
+
+Native build/live validation is pending (MAC-029). The stop path is shared;
+this change does not implement native host XMV decoding. No full campaign or
+hosted CI result is claimed.
+
+## Issue #82 frontend FOV isolation (2026-10-17)
+
+Changes on `82-bug-fov-change-affects-the-main-menu`, based on
+main `abaf001`. Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 /
+CMake 4.4.4. Supported US XBE SHA-256 verified before generation and live runs.
+
+The main-menu/profile background uses scene 101 with a state-2 actor owning
+its camera, so the previous gameplay FOV filter accepted it. Read-only samples
+of the existing `47ac8d2` executable at 1920x1080 measured projection P0/P5
+as 1.08055234/1.92098212 at 55 degrees and 0.56249994/1.0 at 90 degrees.
+These samples reproduce the incorrect menu lens change; they are not gameplay
+validation. The retained screenshot shows the profile-name frontend screen.
+
+`gameplay_fov_scale` now follows the original US `sub_001CE9A0` signed
+scene > 100 distinction to leave frontend lenses authored. It preserves the
+existing aspect correction, cutscene framing, gameplay zoom, and falling FOV
+logic. No new runtime patch or generated-code edit is needed for this change.
+
+Ten targeted tests pass: cutscene/camera coverage, decal projection and FOV
+settings. The new cases exercise both player-camera callers, 55/90 settings,
+grounded/falling states, scenes 100 through 107, and a return to gameplay
+without clearing the actor. They check both projection and CPU frustum axes
+and preserve authored zoom and actor state. The added regression failed before
+the fix; a mutation removing the frontend guard is also required to fail.
+Existing cinematic and falling/landing checks still pass.
+
+The complete patch stack verified with zero runtime files changed. The supported
+Windows Build regenerated hooks from main and compiled the Release game and
+all test targets. Display, channel clear, textures, network, save paths,
+controls, settings and debug checks pass. The prompt test fails its foreground
+window assertion (`pc_controls_accept_pad`, line 55), also on a separate retry;
+its `SetForegroundWindow` attempt does not give the window focus. This unchanged
+input test prevents claiming an entirely passing Build command. Remaining
+build checks were run separately; executable identity sealing was completed.
+
+Rebuilt executable SHA-256: `95012110f5e15649a3b3459ffc760df6f163d0a48ff417a111aec878020993cb`.
+Two bounded 40-second live runs at 1920x1080, using the isolated unlocked Test
+Lab fixture, reach the main menu through synthetic internal key replay.
+At both 55 and 90 degrees, every read-only sample after 25 seconds has scene
+101 and projection P0/P5 = 1.08055234/1.92098212, matching the default lens.
+Reviewed screenshots show the main menu with its original background framing.
+Evidence is retained locally under `build/issue-82-menu-fov`; logs are capped,
+redundant BMPs removed and disposable virtual disks recycled. Both display
+configs, controls, saves and XDG paths were isolated. No human gameplay retest
+or full-level validation is claimed; gameplay transitions are covered by the
+camera regression harness.
+
+Mac uses the same camera source; native build/live validation is pending.
+See `MAC_PORT_BACKLOG.md` MAC-028. Hosted CI validation is pending.
+
+## Issue #17 spirit rendering (2026-10-17)
+
+Production changes are on
+`17-ghosts-in-mansion-of-madness-and-what-lies-below-are-nonvisible`, based
+on main `5548b25`. Windows x64 / D3D11 / MSBuild 17.14.40 / Python 3.12.14 /
+CMake 4.4.4; supported US XBE SHA-256 verified. The complete local patch stack
+was applied before regenerating wrappers and building both Release game and
+replay targets. Executable SHA-256:
+`47ac8d2733d448aed126bd00453dfa83ea79ac7de24fe56c2ba1fd8e80397393`.
+
+`src/pc_ghost_render_guest.inc` and the final `spirit-rendering.patch` replace
+the temporary eye/head probes. The US spirit renderer scopes clockwise
+culling to rigid model nodes; skinned ribbon trails remain two sided. Its
+two eye-billboard call sites use zero clip-space depth bias and no fog only
+for their flushed batches. Alpha blending, depth testing, depth writes and
+animation remain authored. The shared HLE override saves/restores host state
+and invalidates the guest-state cache on entry AND exit, including renderer
+exit before the eye batch ends. No shader hashes, shader string rewriting,
+geometry fingerprints, diagnostic switches or forced visibility are shipped.
+
+These are title compatibility corrections, not general Xbox semantic changes.
+The original spirit path requests no culling; back-facing skull triangles
+then overdraw the front. Its eye bias 200 is multiplied by 256 and added to
+normalized clip Z, clipping the sprites; the unwritten fog fallback also
+replaces their textured red color. The original Xbox bias conversion remains
+unresolved, so the correction is confined to these two spirit call sites.
+
+Final production capture `build/issue-17-ghosts/production-live.d3dcap` has
+252 draws: all five skull draws use clockwise culling, all 30 trail draws
+retain no culling and fog, and all ten eye/eye-trail draws have c13.w = 0,
+fog disabled and depth testing enabled. All retain blending and disabled
+depth writes. Fog and culling restore between spirits. The reviewed live
+`production-frame013.bmp` shows skull faces, wispy trails and glowing red eyes.
+Routing contains no diagnostic flags. This bounded 1920x1080 session used
+an isolated unlocked Test Lab copy, controls and both display/XDG configs;
+personal saves/settings and the canonical fixture were preserved. The log
+records normal user window closure and ExitProcess(0), not an exception.
+
+Validation: 54 distinct targeted tests passed (40 native/state-cache,
+framebuffer, channel-clear, CI routing, generation and patch-tracking tests;
+14 patch-upgrade tests, with the two spirit tests repeated). The spirit harness
+compiles the actual guest wrappers and HLE cache, checks both billboard call
+sites, rigid/skinned selection, unrelated callers, ABI preservation, flush
+ordering and state restoration; a deliberately broken cache-restore variant
+must fail. It is included in the Windows/macOS runtime CI and local Test suite.
+Full-stack patch verification changes zero runtime files. No complete game
+regression suite or hosted CI run is claimed for this validation.
+
+Before publishing, main `33fc619` was merged into the issue branch; both
+validation records were preserved when resolving the STATUS conflict.
+Full-stack patch application succeeded, followed by 39 passing spirit,
+patch-upgrade/tracking, projection and UI-layout tests. The build and live
+capture above precede this integration; the merged game was not rebuilt or
+playtested again.
+
+PR #84 CI follow-up: the first macOS ARM64 run passed patch transitions but
+both spirit harness variants failed to link `GetTickCount`, called only by
+HLE diagnostic counters. The standalone harness now supplies a deterministic
+clock on both hosts, matching the framebuffer harness, instead of relying
+on the Windows system library or linking the complete Mac compatibility layer.
+Runtime/game behavior is unchanged. All four local Windows spirit/framebuffer
+variants passed; hosted rerun validation is pending.
+
+Earlier live comparisons with #9/#21 disabled did not identify either as the
+fix for #17. A forced visibility-query probe worsened effects and was removed.
+Eye/head probes restored eye glow and reduced back-face overdraw in identical
+replays, but the user's head-opacity feedback was inconclusive. Old probes,
+captures and comparisons remain ignored investigation records outside the
+active patch stack. The production live draw states above supersede those
+probes. A synthetic old-capture replay was not pixel-identical to its earlier
+reference; it is not used as a fidelity pass.
+
+Remaining validation: original-Xbox fidelity, later ghost-girl/What Lies Below
+encounters, and native macOS GPU/interpreted-vertex paths. This is evidence for
+the Mansion entrance-hall spirits, not a claim that every encounter in #17 is
+verified. See [MAC-032](MAC_PORT_BACKLOG.md#mac-032--spirit-skull-and-eye-rendering-17).
+
+## Arcade RANK widget placement (2026-10-17)
+
+Follow-up to issue-22 commit `6485069` on
+`22-character-selection-screen-is-stretched-when-using-higher-resolutions`, as
+requested. The existing status icons were left-anchored, but the separate US
+RANK call (`0012EC8B`, from ordinal/label renderer `sub_0012EC20`) to the shared
+panel renderer `sub_0012E3F0` still inherited
+the centred 4:3 canvas. Its caption,
+ordinal and frame therefore drifted inward relative to the icons in widescreen.
+The additional runtime wrapper routes the whole widget through the shared
+`pc_display_ui` LEFT placement scope. Guest sprite batches are flushed on both
+boundaries; original scaling and vertical coordinates remain owned by the game.
+The existing guard preserves original/narrow aspects and split-screen placement.
+
+Windows x64 / Python 3.14.2 / MSVC 19.42 / D3D11: the supported
+`tsfp.ps1 -Action Build` workflow applied the complete patch stack, regenerated
+the guest hook and compiled the game. Native network/GPU-clear/texture/display
+checks passed. The first build completed all native checks, but final reruns
+stopped at the unrelated virtual-pad prompt test's foreground-window assertion
+(`pc_controls_accept_pad()`), as recorded for issue #22. Input code is unchanged.
+Final source-level UI scope/viewport checks passed 5 tests; model-projection
+checks passed 4 tests; patch application/upgrade/tracking checks passed 28 tests.
+The widget regression exercises separate caption/ordinal/frame batches, preserves
+adjacent HUD groups, excludes the timer's shared-renderer call, and checks 4:3
+and split-screen bypasses. Executable SHA-256:
+`455166dd4c885123e880e77934df9b58b1ff599973b0e3d40455db113ad9898c`.
+
+Three bounded, 55-second D3D11 Arcade Vietnam sessions used disposable Test Lab
+copies, synthetic keyboard input and isolated input/both display configurations.
+Reviewed 1920x1080, 1280x960 and 3440x1440 captures show the complete RANK widget
+above the status icons at its original left inset. At 1920x1080, its label moved
+from X=125–146 to X=45–66 in the retained 640-pixel-wide window capture: exactly
+the missing 80-pixel side-anchor offset, with the same 22-pixel text width.
+The 4:3 layout is unchanged; 4th/5th rank labels were captured. The bounded
+runtime trace confirms the actual panel caller is `0012EC8B`. Captures and logs
+remain local in `private/test-saves/issue22`; each pass recycled its known
+partition images, and the canonical fixture still verifies. Build seal/content
+verification and `git diff --check` pass. Native Mac execution and full
+split-screen/all-match-mode playtesting remain unverified.
+
+See [MAC-027](MAC_PORT_BACKLOG.md#mac-027--arcade-rank-widget-left-placement)
+for shared native support and pending Mac visual checks. Personal saves and
+settings remain separate from the isolated Test Lab validation copies.
+
+## Issue 22 model projections (2026-10-16)
+
+Branch
+`22-character-selection-screen-is-stretched-when-using-higher-resolutions`, based
+on current main `5548b25`. The existing perspective wrapper now corrects the
+fresh matrices built by US character picker `sub_002C44D0` (return `002C46EF`)
+and first-person weapon lens `sub_001B73F0` (return `001B7482`). Those builders
+bypass the world-camera hook. Horizontal scale follows the selected output
+aspect while each builder retains its own vertical lens, depth and zoom.
+Correction happens after each rebuild, including alternating frame buffers
+during character changes. Decals still copy the world camera aperture; other
+perspective builders and offscreen effects are unchanged.
+
+Windows x64 / Python 3.14.2 / MSVC 19.42 / D3D11:
+
+- Complete patch stack applied and generated sources refreshed by the supported
+  `tsfp.ps1 -Action Build` workflow. The first build completed all native checks
+  (network, real-GPU clears, textures, display, prompts, paths, controls, settings
+  and debug). The outer PowerShell redirection reported a native-stderr warning
+  about unavailable optional ABI analysis, despite the inner build/checks
+  finishing. A later incremental build produced the identical executable but
+  stopped at the prompt test's `pc_controls_accept_pad()` assertion because its
+  window was not foreground. The isolated prompt retry also lacked foreground
+  access; no input code was changed to bypass this host prerequisite.
+- Combined patch-transition/tracking, projection, cinematic and display suites:
+  **37 passed**. After strengthening non-default-aspect exclusions, all four
+  projection cases passed again. Tests compile the actual wrapper for both
+  `TSFP_PC_CONTROLS` and `TSFP_NATIVE_DISPLAY`, with/without a camera. They check
+  repeated alternating-buffer builds at original/4:3, 5:4, 16:9, 21:9 and 32:9,
+  preserve non-horizontal coefficients and guest ABI, and exclude unrelated
+  callers. Patch-test temporary staging was routed inside the workspace after
+  intermittent system-temp/file-access failures; final checks passed.
+- Bounded isolated Test Lab sessions at 1920x1080 and 1280x960 loaded Arcade
+  Vietnam, displayed character selection and first-person dual pistols. Twelve
+  rapid character changes retained the corrected lens. At 1920x1080 the sampled
+  picker X coefficient changed from `1.12042034` to `0.84031522`, exactly the
+  required 3/4 factor; Y remained `1.73205078`. Reviewed captures show proportional
+  models and weapons. At 4:3 no aspect correction is applied. World camera and
+  CPU frustum remain unchanged. Captures/timing samples are local under
+  `private/test-saves/issue22`; all six disposable disk images were recycled.
+- Built executable SHA-256:
+  `bd3532a8cf764f3062438847c67e5c382bf88ebf142e75c9f9b0bd3816ec56f6`.
+  Build seal and multiplayer content verification pass; the supported US XBE
+  hash was verified before game tests. Personal saves/settings were not used.
+
+Ultrawide coverage is a wrapper test, not a reviewed game capture. Full
+split-screen/aiming/zoom playtesting and native Mac execution remain unverified.
+See [MAC-026](MAC_PORT_BACKLOG.md#mac-026--character-picker-and-weapon-proportions-issue-22).
+
+## Runtime CI efficiency
+
+Branch `ci/faster-runtime-checks`, based on main `9f65dcc`.
+Inspected successful hosted run `38997584157`: Windows took 4m38s, including
+2m42s for patch tracking/upgrades; macOS took 1m11s. The old workflow ran all
+suites on matching pushes to every branch, including launcher-only changes.
+
+CI now runs affected suites on PRs targeting main and relevant main pushes,
+plus a complete manual run. Superseded runs on the same PR/ref are canceled.
+Launcher/publisher-only edits omit upstream checkout, patch upgrades and native
+regressions. Patch/loader/pin/workflow edits select full coverage; shared inputs
+embedded by the launcher also select its tests. Native regressions use one
+pytest session. Transition scenarios retain independent writable fixtures,
+sharing only pristine upstream bytes. The loader removes redundant dry runs
+for tracked unwinds and active applications inside the disposable validation
+tree; legacy bootstrap probes, conflict checks and rollback are retained.
+
+Windows x64 / Python 3.14.2 / pytest 9.1.1 / Git 2.47.0.windows.2:
+baseline transition suite: 27 passed in 107.81s. Final transition/routing suite:
+47 passed in 67.54s (about 37% less elapsed time, with added coverage).
+An earlier final-version pass had one disposable-fixture file-access error in
+the CRLF test; that test passed alone and the complete clean rerun above passed.
+The fixture-only optimization had no material timing gain (107.73s); reducing
+duplicate Git applications supplied the measured transition improvement.
+Combined native invocation:
+68 passed in 30.61s, including 19 CI routing tests. Actionlint 1.7.12 accepted
+the workflow, and the complete pinned upstream patch stack verified with zero
+runtime files changed. All tests used disposable source/native fixtures;
+no personal settings or saves were used, and no game was launched or rebuilt.
+Hosted execution/timing for this revision, macOS execution and other-device
+synchronization remain unverified. See [MAC-014](MAC_PORT_BACKLOG.md#mac-014--patch-upgrades-across-windows-watermark-and-native-overlay-guards).
+
+## Reusable testing profile (2026-10-16)
+
+Branch `test-profile-fast-start`, based on main `041340a`.
+`tools/testing_profile.py` created an ignored canonical Test Lab fixture from the
+fresh disposable lobby-validation profile. It sets the supported US game's
+story completion/award masks and 48 challenge grades while preserving all other
+profile bytes, including fresh collectible/pickup progress. The runtime HMAC-SHA1
+signature is regenerated; source saves and personal settings are untouched.
+
+Windows x64 / Python 3.14.2: 12 save/launcher regressions passed. Coverage includes
+signature rejection, version rejection, exact preservation outside unlock fields,
+canonical fixture protection, disposable-copy restoration, personal-save refusal,
+directory isolation and the existing startup-video option. An eight-second
+`--play` run exited at its bound, capped its logs, and recycled its known virtual
+disk images. The canonical manifest still verifies after game testing.
+
+A separate bounded D3D11 menu probe loaded Test Lab successfully, showed all three
+story difficulty completion marks, reached the late `Time To Split` mission
+briefing, and displayed unlocked Challenge sets with their awards.
+This was a compatibility test of the existing issue-21 build, SHA-256
+`0cc1e596f8f4e9de381f45c0337340a1e99c0d92270aead800d6adb6cea3c982`
+(source `f17026b`), not a build of this tools-only branch. The US XBE hash was
+verified before execution. Actual pickup collection and every individual
+character/map have not been playtested. No runtime patch or game rebuild was
+needed. Native macOS execution and other-device synchronization are unverified;
+see [MAC-025](MAC_PORT_BACKLOG.md#mac-025--reusable-unlocked-testing-profile).
+
+At the user's request, a separate Test Lab copy was added to personal saves in
+the previously unused `UserData/45410066/544553544C41` slot. Hash checks confirmed
+all pre-existing title save files and both personal controls/display settings
+were unchanged. This local copy is for manual play only; automated checks still
+use disposable copies. No personal-save game session was launched for testing.
+## Issue 21 lobby text masks (2026-10-16)
+
+- Source: lobby text-mask fix in this revision on
+  `21-online-lobby-lower-half-of-screen-is-all-white-and-unreadable`, based on
+  `041340a`; pinned upstream `d90c929` and checksum-verified US XBE. Host:
+  Windows x64 build 26300, MSVC 19.42, Python 3.14.2, CMake 4.4.4, D3D11.
+  Release executable SHA-256:
+  `0cc1e596f8f4e9de381f45c0337340a1e99c0d92270aead800d6adb6cea3c982`;
+  multiplayer identity `406bfbba`.
+- Reproduced the issue in an isolated System Link lobby: white fill covered
+  overlapping information pages. These pages draw into destination alpha,
+  then use it as a text mask. The old Xbox-to-host mapping dropped alpha-only
+  clears, leaving both background alpha and previous page masks intact.
+- Fix: preserve partial colour-clear flags, clear only selected channels through
+  an RHI pass, and retain ordinary full/depth/stencil clears. The pass leaves guest
+  state unchanged and restores its output targets/viewports. The existing Mac GL
+  clear now honours the same channel flags and restores its render state.
+  Capture version 8 records the flags; readers still accept versions 5–7.
+- Validation: complete patch-stack validation, supported Windows Release build,
+  all native build tests, and executable/content seal verification passed. The
+  new real-GPU regression passed all 15 channel masks with pixel readback,
+  unchanged unselected channels, inherited scissor ignored and output state
+  restored. Portable mapping/capture, framebuffer, shared UI and patch-transition
+  suites passed: 36 tests. The GPU test is part of the supported build; portable
+  clear/capture checks also run in `tsfp.ps1 -Action Test` and patch CI.
+- Live check: a bounded 1920x1080 System Link host lobby showed readable pages
+  without white fill or stale text, including after changing match options and
+  returning to the lobby. Backgrounds remained visible. The unmodified live
+  capture now contains three `0x80` alpha clears where the baseline capture
+  contained three zero-flag clears. Replaying the new capture succeeded with
+  no failed host calls or malformed chunks and showed the corrected panel.
+  No crash, unresolved-call or clear-setup error occurred in the live run.
+- All save/input/runtime-display/PC-display routes were isolated under
+  `private/lobby-validation`; personal settings and saves were preserved.
+  Selected before/after captures and screenshots remain ignored there. Six
+  disposable partition images were recycled: 5,243,406,848 apparent bytes but
+  only 133,632 physically allocated bytes. Profiles and metadata were retained.
+- Limits: no remote online peer, new gameplay run, Vulkan GPU run, or live
+  default/4K resolution check was performed. Native Mac build/GPU validation and
+  other-device synchronization remain unverified; see
+  [MAC-007](MAC_PORT_BACKLOG.md#mac-007--screen-copy-effects-and-image-surfaces).
+
+## Game release comparisons and readable titles (2026-10-16)
+
+Branch `fix/game-release-history-titles`, based on main `e18a381`.
+The publisher selects the most recently published valid game `v…` tag, including
+prereleases, while retaining all release records for duplicate-tag protection.
+New game titles use `TSFP v…`; manual launcher titles use `Launcher v…`.
+Release notes retain generated PR/contributor content beneath "Changes since"
+and omit the redundant "What's Changed" heading, source commit list and
+"Build and validation" section. Packaging validation and verification assets
+remain unchanged. The same cleanup was applied to published TSFP release notes.
+Download instructions use separate launcher and portable ZIP subsections with
+numbered steps, explicit update channel and a short requirements paragraph.
+Windows x64 / Python 3.14.2: publisher regressions passed 31 tests with four
+symlink-prerequisite skips. Coverage includes newer launcher releases, invalid
+tags, generated-note baseline selection and preserving the launcher Latest flag.
+No game build or runtime test was needed for this metadata change. macOS
+execution is unverified; see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-distribution).
+
+## Launcher v1.2.7 release preparation (2026-10-16)
+
+Prepared on `release/launcher-v1.2.7` from main `1140c34`, including the banner
+preservation fix merged in PR #75 (`f1011f8`). Version and assembly metadata are
+1.2.7. The release preserves valid equal-version independent launchers during
+game updates, repairs damaged equal versions, and requires artwork for future
+public game packaging. Its ZIP contains the themed launcher; a newer launcher
+version also replaces any valid fallback v1.2.6 installations affected by alpha.5.
+The published game remains v0.2.0-alpha.5; no game package is being rebuilt.
+
+Windows x64 / .NET Framework 4.8 / pinned Python 3.12.14: the required-artwork
+build compiled both EXEs and passed 99 updater/bootstrap/cleanup checks and 25
+settings checks. Six Python startup/packaging checks passed, including two
+missing-artwork rejection subtests. Home, input, graphics and bootstrap splash
+previews rendered; Home was visually inspected with banner/logo visible.
+Tests used disposable fixtures and launched no actual game or personal settings.
+MAC-021 remains queued; native Mac launcher execution is unverified. Publication
+is pending hosted checks, a clean exact-main build and public-download plus
+previous-client upgrade verification.
+
+## Launcher artwork lost after game update (2026-10-16)
+
+Fix on `fix/launcher-art-preservation`, commit `f1011f8`, based on main `5e5ca61`.
+The affected installation had game v0.2.0-alpha.5 from source `d430e8b` and
+launcher v1.2.6 binaries matching that game's BUILD.json, but differing from the
+published themed launcher. Its application was 278016 bytes; the themed release
+contains embedded artwork. Logs show launcher v1.2.6 installed before the alpha.5
+game update. `Core.InstallPending` replaced equal-version launchers, and the
+self-updater considered the resulting fallback launcher complete and current.
+
+Restored the user's launcher through `SelfUpdate.Unpack` and `Core.ApplyLauncher`
+using the verified public v1.2.6 archive (SHA-256
+`57381c968a3cf481cb0b1e728c3486935ab697e0b5ba9acce20309b82ece0867`).
+The loaded release assembly contains banner/logo resources; installed binary and
+manifest hashes match the public release. Game executable, BUILD.json and settings
+hashes were unchanged. The launcher reopened normally. An isolated preview of the
+same public binaries was visually inspected; no automated game session was run.
+
+The fix preserves a valid equal-version independent launcher during game updates;
+a damaged equal version can still be repaired by the game package. Newer versions
+continue to install, and game rollback preserves the independent launcher. Public
+game packaging now requires artwork; developer/CI fallback builds remain supported.
+Windows x64 / .NET Framework 4.8 / Python 3.12.14: 99 updater/bootstrap/cleanup
+checks, 25 settings checks, and six startup/packaging Python checks passed. The
+new regression exercises equal-version preservation, damaged-copy repair and
+rollback with disposable fixtures. Missing-banner and missing-logo build subtests
+both reject before compilation. MAC-021 tracks queued Mac release-launcher
+adaptation; native Mac execution is unverified. This fix is not published yet.
+
 ## Launcher v1.2.6 release preparation (2026-10-16)
 
 Prepared in PR #73 on `release/launcher-v1.2.6`, based on main `293295b` and
@@ -5336,3 +10012,2414 @@ queued under MAC-021; other-device synchronization is unverified.
 - Fresh MSVC compilation of the DDS parser and texture loader/toggle tests passed. DDS parser checks passed; loader tests passed in classic, 4k, missing-pack and implicit modes with synthetic RHI resources. The initial toggle invocation omitted required fixture/mode arguments and stopped at argc validation; corrected invocations passed. These are offline native tests, not GPU or game validation.
 - Read-only merge simulation against current `origin/main` identified conflicts in MAC_PORT_BACKLOG.md, STATUS.md, src/pc_controls.c, tests/test_patch_updates.py, tools/playable-launch.ps1 and tsfp.ps1. The alpha PR is a draft and requires integration before merge; neither branch was merged or rebased.
 - No runtime source changed during PR preparation, no game launch, no new pack copies or packaging trees. MAC-011 remains awaiting validation for native toggle adaptation/real-art scenes. The full overhaul remains unfinished and issue #74 stays open.
+## Issue #25 investigation (2026-10-17)
+
+Source base `33fc619`, Windows x64, branch
+`25-add-bot-support-to-online-matches`. At the initial investigation checkpoint,
+Online bots remained unimplemented.
+Read-only US XBE inspection and two bounded, isolated Test Lab localization
+probes identified the original bot editor, roster, configuration exclusion,
+and controller-oriented network sampler. Findings and acceptance gaps are in
+[the investigation record](docs/online-bots-investigation.md).
+That checkpoint made no runtime changes and performed no build or multiplayer
+bot validation. Subsequent prototype work is recorded below. No issue completion
+is claimed.
+
+## Issue #25 test prototype (2026-10-17)
+
+Uncommitted on `25-add-bot-support-to-online-matches` over `33fc619`. The host
+lobby Options flow now adds Setup Bots (experimental) to the shared match
+settings builder. It reuses the original Arcade editor, including bot sets,
+characters, teams, skill and Add/Remove. Opening the editor opts into a
+session-only match-configuration hook; there is no Debug-menu entry. The
+validated roster model preserves human IDs and limits combined character slots
+to sixteen. The original builder runs first, and guests, offline play, disabled
+sessions and invalid/empty/full rosters retain original configuration behavior.
+
+Windows 11 x64, Python 3.14.2, MSVC 19.42 (14.42.34433), SDK 10.0.22621.0,
+CMake 4.4.4, D3D11, pinned upstream/XBE and complete patch stack:
+
+- Three compiled model/guest ABI tests passed, including native fallback.
+  Checks cover host-only application, valid modes, no-op/error preservation,
+  sparse human IDs, two/four teams, count limits, invalid bot records, and
+  original register/stack behavior, and no prototype writes during an active
+  match. Final compiled checks: three passed in 0.38 seconds.
+- All fourteen patch migration tests passed after adding the new network patch
+  to the historical Mac-only fixture's exclusions.
+- Supported `tsfp.ps1 Build` regenerated game code for both new wrappers,
+  compiled/linked the Release executable and completed the native build checks.
+  The foreground-dependent virtual SDL-controller case is explicitly skipped
+  when Windows refuses foreground activation, after a bounded one-second retry.
+  Its controller-routing assertions remain required when focus is available;
+  all other prompt checks still execute. The prior two build attempts failed
+  this focus assertion. No physical-controller validation is claimed.
+- Final build log: `logs/issue25-menu-build.log`. Executable SHA-256:
+  `1d9b6d8f0f9e17eae26e490b31d4987b56ea01590316bb5285ae07af51537c9b`.
+  `tools/network-identity.py --verify --executable
+  build/windows/Release/futureperfect_recomp.exe` passed for the sealed
+  executable and local content.
+  Pre-build storage: Windows build physically allocated 0.33 GiB, apparent
+  0.33 GiB, disk free 431.5 GiB. Build test partition images were recycled by
+  the supported script after the checks.
+
+Bounded Test Lab sessions reused `private/test-saves/issue25`, isolated controls
+and both display configurations, and the runner's startup-video switch. The
+final 180-second session verified host System Link lobby entry, Options level
+and game-mode selection, the new keyboard-selectable bot row, and activation
+of the original bot editor. Its enabled roster, bot-set selector, stats and
+edit/remove prompts were visually reviewed. The first row prototype rendered
+as a nonselectable heading; the final version uses a normal button ID/flags and
+keyboard selection/activation passed. Selected evidence:
+`private/captures/issue25-lobby/bot-highlight.png` and
+`private/captures/issue25-lobby/verified-bot-editor.png`. Initial startup captures
+and two rotating periodic BMPs stayed below 24 MiB; redundant captures are
+disposable. The probes' piped error log was empty in quiet mode, so no log-based
+runtime fault assertion is made. They did not validate a spawned bot match or
+cross-peer synchronization. Known disposable partition images were recycled
+after exit; personal saves/settings and the canonical Test Lab fixture were
+unused as write targets.
+Disposable issue25 compiled/patch unit fixtures and redundant captures were
+removed after explicit path/reparse checks. Only the two reviewed menu PNGs
+listed above remain in that capture directory.
+
+The code does not add a new AI replication protocol. Working cross-peer bot
+movement, weapons, damage, deaths, respawns and scoring are not established;
+issue #25 remains incomplete. MAC-033 records deferred Mac integration. No Mac
+execution, other-device synchronization, commit, push or release was performed.
+
+
+### 2026-10-17 ? Issue #25: Arcade Bot Set and two-peer spawn investigation
+
+Local, uncommitted on `25-add-bot-support-to-online-matches`, base `33fc619`.
+Host: Windows `10.0.26300.0`, AMD64; MSVC 19.42 / SDK 10.0.22621.0,
+CMake 4.4.4, Python 3.14.2, D3D11. Supported US XBE SHA-256 was checked
+by each supported build and isolated runner; dependency pins were unchanged.
+Physical free space was 431.25 GiB during this pass. No duplicate game extract
+or build tree was created. Mac execution and other-device synchronization are
+unverified; deferred adaptation is [MAC-033](MAC_PORT_BACKLOG.md#mac-033--experimental-network-bot-setup-issue-25).
+
+- Removed the extra experimental menu button. Host match settings now run the
+  original Arcade Custom Bot Set construction below Weapon Set, original
+  selector/edit callbacks, saved-set rules and Bot Set editor. The original
+  footer draw path now shows Bots plus enabled icons. Network setup mode is
+  restored after each UI callback. The network transport flag is unchanged.
+- Found the original post-builder clear at `0x002D3947`. The host adapter now
+  runs before `sub_00356490` broadcasts the final configuration and before
+  `sub_000658D0` copies it into pending load state. Guests use the host roster.
+- The actor-activity predicate accepts AI slots at `0x000D8E5D` (actor update)
+  and the HUD character-list call sites, while controller initialization and
+  network serializers retain their original human-only activity checks.
+  The original host AI authority check remains intact.
+- MSVC shared model / Windows guest ABI / native fallback checks and complete
+  patch migration checks: **17 passed in 161.10s**. Tests cover the late-clear
+  reproduction, pre-serialization bytes, slot limits, roles, disabled/native
+  paths, actor/HUD slot bounds, controller exclusion and ABI preservation.
+  Full supported Windows builds and affected native checks passed; disposable
+  `build/path-tests` images were recycled. Final build log:
+  `logs/issue25-final-build.log`; multiplayer identity verification passed.
+
+Two bounded isolated Test Lab runs used `private/test-saves/issue25` and
+`private/test-saves/issue25-client`, explicit controls plus both display paths,
+loopback peers `127.0.0.2` / `.3`, capped runner logs and rotating captures.
+The canonical fixture and personal saves/settings were not edited. The second
+run used executable SHA-256
+`2d3726b191f5abd98ee3c26f63888051a82cb4adc7fab67ecd0ad18f149036c7`.
+It reached a shared ready lobby and loaded **2 humans / 6 bots** on both peers,
+including matching broadcast, pending and live configuration. After countdown,
+all six host bot positions changed; every guest bot position remained zero
+through the remaining approximately two minutes. See
+`logs/issue25-actor-pair.log`. Earlier configuration-only evidence is in
+`logs/issue25-pair-probe.log`. Allocation/counts alone do not establish spawning.
+
+**Failed acceptance:** guest AI state replication is missing. Synchronized
+LAN/Online bot gameplay remains unfinished. Guest-visible bots, attacks,
+bidirectional damage, deaths, respawns, scores, rematches, disconnects and the
+Online bridge have not passed acceptance. Do not report issue #25 as complete.
+The selected menu evidence is
+`private/captures/issue25-lobby/host/arcade-bot-set.png`; the gameplay capture
+contains the host view/radar, not a reviewed close-up of every bot.
+
+After correcting diagnostic comments to identify HUD calls accurately, the
+final supported rebuild passed with executable SHA-256
+`3250f642ca3ee448f8b0f7e67d96436c7c7b2c5372cd63c8727bf4e8219276be`.
+No gameplay logic changed after the second run; that final binary was build-
+and identity-checked, not run through another gameplay pass. Both test
+processes exited; known partition images and temporary compiler-test trees
+were recycled/removed. Redundant rotating BMP captures were removed, preserving
+selected screenshots and validation logs.
+
+## 2026-10-17 — Issue #25 invisible bots and combat follow-up
+
+Local uncommitted work remains on `25-add-bot-support-to-online-matches`, base
+`33fc619`; nothing was committed, pushed or synchronized to another device.
+Windows AMD64, D3D11, Python 3.14.2, CMake 4.4.4, MSVC 19.42 / SDK 10.0.22621.
+The supported US XBE hash was verified before generation and each isolated run.
+Physical free space was 430.98 GiB before building; pins were unchanged.
+
+Reproduced the report with the previous `3250f642...` executable: allocated bot
+models existed on both peers, but entity activation bit 0 was clear, guest
+positions remained zero, and bots had neither human controller state nor generic
+network object IDs. The adapter now activates living host bot bodies after
+spawn, refreshes spatial membership, adds a validated bot-slot actor reference
+for combat events, and sends numeric host state through the compatible transport.
+
+Two intermediate bounded runs identified and corrected routing assumptions:
+the peer record's connection handle is not an IP address, and the host's XNet
+conversion cache need not contain connected guests. The adapter uses the
+original sockaddr/active tables, while snapshot reception still checks the
+current host, session key, match signature, slot bounds and increasing ticks.
+Native UDP coverage now exercises a destination absent from the XNet cache.
+Intermediate logs: `logs/issue25-replicated-pair.log` and
+`logs/issue25-address-fixed-pair.log`. These failed guest synchronization and
+must not be presented as successful gameplay checks.
+
+The supported final routing build and all affected native checks passed:
+`logs/issue25-replication-targets-build.log`. Focused model/guest ABI/native
+fallback plus full patch migration checks passed (17 tests); after the routing
+fix, guest/model/native fallback and identity checks passed again (8 tests).
+The latter includes a regression for host sockaddr lookup. Native checks also
+cover stale, wrong-key, wrong-role and wrong-match snapshot rejection before
+the Xbox receive buffer capacity check. Mac execution remains unverified,
+tracked in [MAC-033](MAC_PORT_BACKLOG.md#mac-033--experimental-network-bot-setup-issue-25).
+
+The combat follow-up also wraps `sub_003593D0`, whose original eligibility
+check discarded bot victims before encoding. The initial interpretation of
+actor `+0xB08`/`+0xB0C` as live health was incorrect; see the correction below. The full supported
+combat rebuild passed, followed by a final incremental build/identity check:
+`logs/issue25-final-combat-build.log`. Final executable SHA-256:
+`13f8220d0e63f968f478bef15454c9fec7f1a47b8346a72a5f690ec34e2da013`.
+Compatibility identity:
+`e0906928fd57228006b0263479589fa099d82a06afa690733feeb07fc0296d9e`.
+Model/guest/native fallback, complete patch migration and identity checks:
+**22 passed in 75.95s**; final health-application assertions and identity checks
+passed again (**8 tests**). All supported native build tests passed.
+
+The routing-only two-peer run (`logs/issue25-targets-fixed-pair.log`) confirmed
+moving guest actors and visible bot models, retained in
+`private/captures/issue25-lobby/client/targets-turn-check.png` (intermediate
+binary, not the final combat build). The final combat binary then ran two
+bounded 240-second Test Lab sessions, matching 2 humans / 6 bots, with isolated
+controls, both display paths, loopback addresses, capped logs and rotating
+captures. Synthetic in-process input exercised movement, firing, reloads and
+grenade buttons; this was not a physical keyboard/controller test.
+
+Final evidence: `logs/issue25-final-combat-pair.log`,
+`logs/issue25-final-combat-health.jsonl` and its compact
+`logs/issue25-final-combat-summary.json`. Bot slot 6's current health fell from
+1.1 to approximately 0.550008 on both peers. The final sampled bot score/death
+fields matched; several sampled fields interpreted as bot deaths increased and active actors continued
+moving afterward. The guest capture
+`private/captures/issue25-lobby/client/final-combat-180.png` shows the red
+directional damage indicator, previously missing in the report. No peer crashed
+during this bounded run. Allocation or identical snapshots alone are not proof
+of complete combat behavior.
+
+**Remaining acceptance:** a deliberately aimed human hit/kill attributed to
+each PC, guest bot muzzle/shot effects, animation fidelity, complete death/
+respawn/scoring behavior, zero-bot/rematch/disconnect cases and actual Online
+bridge gameplay still need confirmation. The observed health reduction is not
+attributed to a particular human attacker. Do not describe issue #25 as fully
+verified online bot support. Both PCs need this same rebuilt runtime.
+
+Both final processes exited, and the runner recycled their known partition
+images. The canonical Test Lab fixture, personal saves/settings and dependency
+pins were preserved. Redundant BMP captures and disposable compiler-test trees
+were removed; selected screenshots, profiles and bounded logs remain local.
+
+## 2026-10-17 ? Issue #25 checkpoint: radar and direct-hit collision
+
+Checkpoint requested on `25-add-bot-support-to-online-matches`, based on
+`33fc619`; source/patches/tests/docs are committed together. No push or main
+merge is part of this checkpoint. Other-device synchronization and Mac execution
+remain unverified; adaptation is queued in MAC-033.
+
+**Correction to the earlier health evidence:** actor `0xB08`/`0xB0C` are health
+configuration values. The prior sampled change from 1.1 to approximately 0.55
+was not evidence of live damage. Original damage routine `sub_000BA310` changes
+entity `0x1CC` (health), `0x1D0` (armor), `0x1D4` (last damage tick) and clamps
+against `0x1D8` (maximum health). Current packets and diagnostics use those
+fields. The earlier claimed health proof is superseded.
+
+Changes in this checkpoint add the radar caller to the allocated-AI activity
+allowlist, restore living bots' `0x61` drawing/collision flags instead of drawing
+alone, replicate actor `0x24` flags and actual vitals, and transfer clip/frame
+channels into guest-local models. A guest whose bot body was deleted can recreate
+it through the original Arcade constructor when a living host snapshot arrives.
+No guest AI decisions or duplicate actor-list entries are introduced. The
+separate combat patch adds bounded, opt-in damage tracing. Synthetic isolated
+input-state files now support sequenced mouse counts for aimed-hit tests.
+
+Validation host: Windows AMD64, D3D11, Python 3.14.2, CMake 4.4.4,
+MSVC 19.42 / Windows SDK 10.0.22621; upstream/dependency pins unchanged.
+The supported US XBE SHA-256 was verified by the supported build. Latest build
+and native checks passed (`logs/issue25-collision-respawn-build.log`). Executable
+SHA-256: `e4884e2c1bccb40f2af61a63d697334c021ebff78a92576ffbc33075afb288fa`.
+The executable predates only the final whitespace/documentation cleanup.
+Compatibility identity tests passed (5 tests).
+Full patch-upgrade/tracking checks passed (28 tests). Three compiler tests first
+failed with an incomplete compiler environment, then all passed with MSVC's x64
+environment (`logs/issue25-compiler-tests.log`). This includes the native fallback,
+radar caller, collision bits, live vitals, and missing-body receive path.
+
+Reviewed intermediate captures `host/pose-radar-check.png` and
+`client/pose-radar-check.png` under `private/captures/issue25-lobby` show bot radar
+markers on both peers. The final 240-second paired LAN run used disposable Test
+Lab copies, isolated controls and both display configurations, loopback addresses,
+capped logs, rotating captures and synthetic input. In
+`private/test-saves/issue25-client/bot-damage.log`, guest human entity `8156F968`
+hits bot 7, reducing actual health from 1.26667 through 1.09567 to zero. The host
+trace independently records that human as `8156FC50`, applying the corresponding
+reductions. Bot-source damage also reduces live health. Later guest samples show
+new bodies for bot slots 5/7, while live health/armor agree across the peers.
+Full evidence: `logs/issue25-collision-live.log` and the two disposable diagnostic
+files. This establishes guest-human damage and body recreation, not every combat
+or lifecycle requirement. Earlier baseline traces are separately retained.
+
+**Still unfinished/unverified:** host-human aimed damage/kill attribution,
+guest gun/muzzle effects, full animation/weapon fidelity, comprehensive
+respawn/scoring and team rules, zero-bot/rematch/disconnect scenarios, and actual
+Online bridge gameplay. Clip/frame replication alone does not prove correct
+rendered animation. Issue #25 remains experimental and incomplete.
+
+Both final test processes exited. The runner recycles only the disposable
+partition images. Personal saves/settings and the canonical Test Lab fixture
+were preserved. Selected captures and bounded diagnostics remain ignored/local.
+
+## 2026-10-17 - Issue #25 guest animation, firing, hits and Scores
+
+Local, uncommitted follow-up to `0c8531c` on the user-requested
+`25-add-bot-support-to-online-matches` branch. No push or main merge. Mac
+adaptation remains queued in [MAC-033](MAC_PORT_BACKLOG.md#mac-033--experimental-network-bot-setup-issue-25);
+no other-device synchronization or Mac execution was verified.
+
+Changes replicate the victim spawn counter, host hit bounds, heading and
+aim/muzzle coordinates. They transfer the second animation track and blend
+channels and invalidate cached poses before evaluating guest-local bones.
+Third-person weapon models use the original local updater. Bounds are restored
+after presentation/spatial refreshes, which otherwise overwrite them. The
+original bounds recalculation is wrapped too: a body/spawn-scoped cache restores
+host bounds between snapshots. The first end-of-snapshot fix alone did not
+survive subsequent local pose/collision work.
+
+The original bot firing function has no working network event sender. A new
+separate patch wraps successful host calls and records numeric shot events.
+Guests resolve local targets and weapons, consume serials once, and discard
+old events and events from another life or weapon. Replayed bot effects cannot
+apply local bot-sourced damage; original incoming host damage remains enabled.
+The existing opt-in diagnostic gains a bounded `.shots` companion file.
+
+Original score calculation, ordering and paused Scores each reject AI through
+separate controller/peer checks. The wrapper now accepts configured AI actor
+records only at those callers, including while a bot's body is missing during
+respawn. Human/controller enumeration and AI ownership remain unchanged.
+
+Validation host: Windows AMD64/D3D11, Python 3.14.2, CMake 4.4.4, MSVC 19.42,
+Windows SDK 10.0.22621. Supported US XBE hash verified before generation;
+upstream/dependency pins unchanged. Free space was checked before rebuilding.
+Final supported build and native checks passed in
+`logs/issue25-bounds-build-retry.log`. The initial full rebuild stopped with
+MSVC D8040 (creating/communicating with a compiler child process); the supported
+incremental retry completed. Executable SHA-256:
+`8dd6654c96ca987c8dce509b7417efb3cb76d69467a16721cdae5c12ff5d5536`.
+Source code matches this build; documentation updates followed it.
+Three focused compiler tests passed (Windows dispatch, native fallback and
+bot model/validation). All 33 patch migration/tracking/identity cases passed
+across the initial run and targeted reruns. Some initial and retry cases had
+temporary-file `PermissionError` failures, including rollback; the last
+isolated CRLF transition rerun passed. See `logs/issue25-shot-patch-tests.log`,
+`issue25-shot-patch-retry.log`, `issue25-shot-crlf-check.log` and
+`issue25-shot-compiler-tests.log` under `logs/`. The final per-frame bounds,
+host/native fallback and stale-source tests passed in
+`logs/issue25-bounds-compiler-tests.log` (3 tests).
+The final complete-stack rerun passed 32 cases initially; its Mac-stack upgrade
+case had the same temporary-file PermissionError and passed alone on retry
+(`logs/issue25-bounds-patch-tests.log` and `issue25-bounds-upgrade-retry.log`).
+
+An earlier bounded pass with both animation tracks recorded changing guest
+bone-buffer checksums and corresponding secondary clips. The subsequent
+240-second LAN pass (`logs/issue25-shot-final-pair.log`, intermediate executable
+`cb3cc1454e2d6742e767967b6d54306c59b43a345d35756d001fa35e6514809b`) loaded two humans and
+six bots on both peers. Host records attribute guest-human hits (`8156FC50`)
+to bot 7 and show actual health reducing from 0.778682 through 0.607683 and
+0.436685 to 0.265686. Guest replay diagnostics recorded successful original
+firing calls for both hands. Samples show host/guest live vitals agreeing
+through bot respawns. Reviewed `host/shot-final-scores.png` and
+`client/shot-final-scores.png` under `private/captures/issue25-lobby` visibly
+show all six bot names and both humans with matching scores. This supersedes
+the intermediate score-order-only check: that earlier UI still hid bot rows.
+
+The next heading/muzzle build was
+`aef5897a7e3f4fdb4d5e406a2124029d4951aea0983acde773c1c2170f6a9ae7`.
+Its eight-sample probe (`logs/issue25-guest-final-bones.log`) records changing
+joint rotations relative to the root on the guest, independently of world
+movement/heading. Its paired pass is `logs/issue25-guest-final-pair.log`; retained
+diagnostics are `logs/issue25-heading-{host,client}-damage.log[.shots]`.
+That pass exposed the between-snapshot bounds reset, leading to the final
+original-function wrapper. The final build's paired pass is recorded separately below.
+Automated runs use disposable Test Lab copies, isolated input/save paths and
+both display configuration paths, synthetic input, rotating captures and
+bounded diagnostics. Personal data and the canonical fixture remain unchanged.
+
+Remaining acceptance: visual animation/weapon fidelity, all weapon/projectile
+types, teams, rematches/disconnects and real Online bridge gameplay. Successful
+pose computation or firing calls alone do not establish visible flash/tracer
+or sound correctness. Issue #25 remains experimental, not fully complete.
+
+Final wrapper verification: `logs/issue25-bounds-final-pair.log` reached one
+two-human/six-bot LAN match on both peers. Read-only probes
+`logs/issue25-bounds-final-inspect-a.txt` / `-b.txt` show guest collision bounds
+retaining recent host geometry between updates, rather than reverting to
+`(1, 1, 1)`. The sampled host/guest animation times differ by a snapshot delay;
+this is not a claim of simultaneous float-for-float equality. The eight-sample
+`logs/issue25-bounds-final-bones.log` records changing guest joint rotations
+relative to the root. Shot replay records successful calls for both hands.
+The host damage trace attributes guest-human hits (`8156FC50`) to bot 6 and
+reduces actual health from 1.18667 through 1.12667 to 1.06667; zero-result hits
+are also retained rather than counted as accepted damage.
+Both final Scores captures (`host/bounds-final-scores.png` and
+`client/bounds-final-scores.png` under `private/captures/issue25-lobby`) visibly
+include six bots and both humans. They are separate capture times, not a
+simultaneous score-agreement measurement. Final diagnostic copies are
+`logs/issue25-bounds-{host,client}-damage.log[.shots]`. Both final test processes
+exited normally through the bounded runner. Disposable partition images were
+recycled and redundant BMPs were removed; selected PNGs and bounded logs remain.
+
+## 2026-10-17 - Issue #25 host-owned bot deaths and guest kill scores
+
+Source: `0c8531cb719f3549675f6a2b6344975e62dc1aed` on
+`25-add-bot-support-to-online-matches`, plus the uncommitted guest follow-up
+and this authority fix. Windows AMD64 / D3D11, Python 3.14.2, CMake 4.4.4,
+MSVC 19.42 / Windows SDK 10.0.22621; upstream remains pinned to
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. The supported US XBE SHA-256
+was verified before generation and again by the isolated gameplay runner.
+Free space before building was 465,248,022,528 bytes. Mac execution and
+other-device synchronization remain unverified; adaptation remains MAC-033.
+
+The previous HP-zero observations did not prove completed kills. Investigation
+found that the host's original NPC death sender could reject a remote human
+shooter, preventing the remainder of death and scoring. The guest meanwhile
+could apply damage/death locally and subsequently have HP restored by a host
+snapshot. The new separate `pc-network-bot-authority` patch permits the host
+to finish configured NPC deaths and prevents a guest from predicting them.
+Guest hits use the existing reliable request/ownership checks; host snapshots
+own NPC health, corpse/respawn visibility and each NPC's victim score column.
+Human-versus-human damage and score handling remain original. Missing-body
+snapshots hide stale replicas and weapons; damage-acceptance bit `0x10` now
+travels with the drawing/collision mask. Guest kill announcements follow
+confirmed score-column increases and do not replay death side effects.
+
+Validation:
+
+- Supported complete build regenerated the wrapper set, compiled and passed
+  the native build checks. The first PowerShell redirection reported exit 1
+  despite reaching successful tests and sealing the executable; the supported
+  incremental confirmation exited 0 (`logs/issue25-authority-build-confirm.log`).
+  Content/executable identity verification passed. Release executable SHA-256:
+  `be174508004497bd71f76e372c96dd13a2881e4b6803f264e8be9e4c8bed9bf4`.
+- Focused MSVC guest adapter/model/native fallback checks: 3 passed, including
+  no speculative/echoed NPC damage, host-only completed death, unchanged human
+  victim handling, victim-column synchronization, duplicate notice suppression,
+  explicit missing-body emission/hiding and draw/damage restoration on respawn.
+  `logs/issue25-authority-unit.log`. An initial default pytest temp directory
+  was inaccessible; the passing run used an isolated project test directory.
+- Patch migration and identity suite: 18 passed plus one temporary-file
+  `PermissionError` in historical Mac-stack migration. That exact test passed
+  on isolated retry (1 passed). Patch tracking: 14 passed. Logs are
+  `issue25-authority-patch-tests.log`, `issue25-authority-upgrade-retry.log` and
+  `issue25-authority-tracking.log` under `logs/`.
+- Bounded LAN pair uses disposable Test Lab copies in
+  `private/test-saves/issue25` and `issue25-client`, separate input files,
+  both display configurations, saves, and loopback bind addresses. Navigation,
+  aiming and firing are synthetic input; score/life inspection only reads
+  these test processes. Canonical fixture and personal data remain unchanged.
+  `logs/issue25-authority-pair.log` records both peers with two humans/six bots.
+  At 149.09 seconds the host credited guest slot 1 with killing bot slot 2;
+  the guest received the same victim-column increment at 149.17 seconds.
+  Both sampled the bot at HP 0 / life counter 1, then HP 1.26667 after respawn.
+  `logs/issue25-authority-inspect-c.log` subsequently records two guest bot
+  kills and a calculated scoreboard value of 2 on both peers, alongside a host
+  score of 4. This checks derived scores as well as the raw kill matrix.
+- Reviewed guest `private/captures/issue25-lobby/client/authority-combat.png`
+  visibly includes a bot model. This single capture does not establish all
+  characters/weapons/render paths. Human visual testing remains needed for
+  intermittent invisibility, full animation/effects fidelity, and lagged play;
+  rematches, disconnects, other game modes and actual Online routing remain
+  outside this LAN acceptance scope.
+
+The completed pair ran to its 355-second driver bound (360-second runner
+ceiling). Final recorded matrices match on both peers: guest slot 1 has nine
+bot kills and no human kills; host slot 0 has eight bot kills, two human kills
+and one suicide. Bot life counters reached 7–12, demonstrating repeated
+deaths/respawns rather than a first-life-only test. The late read-only
+`issue25-authority-inspect-d.log` also records guest derived score 7 on both
+peers before the last two kills. Final summary is
+`logs/issue25-authority-results.log`; preserved damage/shot evidence is
+`issue25-authority-host-damage.log` / `issue25-authority-client-shots.log`.
+Both test PIDs (14216/34508) exited and the runner recycled their known virtual
+disks; 48 redundant BMPs (44,239,392 bytes) were recycled with containment and
+symlink checks. Selected PNGs remain.
+
+Capture limitation: the rotating `frame_s*` images are the software shadow
+renderer, not a desktop/D3D11 backbuffer capture. Final host Scores shows all
+eight rows and both humans at 9; the guest shadow image shows the guest's 9
+but omits several rows, and the preceding shadow image omits the entire list.
+These incomplete shadow captures do not establish actual window visibility.
+Do not describe the UI/invisibility issue as visually accepted from this run;
+retain the captures (`authority-scores.png` and guest
+`authority-scores-earlier.png`) for comparison with a human retest. The numeric
+death/score acceptance above is independent of those capture limitations.
+
+## 2026-10-17 - Issue #25 guest pose and localized kill HUD follow-up
+
+Local, uncommitted work on `25-add-bot-support-to-online-matches`, based on
+`0c8531cb719f3549675f6a2b6344975e62dc1aed` and the earlier uncommitted bot
+follow-ups. Windows AMD64 / D3D11, Python 3.14.2, MSVC 19.42, Windows SDK
+10.0.22621, CMake 4.4.4. Upstream remains pinned at
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. The supported US XBE SHA-256
+was verified before building and again by the isolated gameplay runner.
+Free space before building was 465,070,133,248 bytes. No duplicate game extract
+or build tree was created. Native Mac and other-device synchronization remain
+unverified; adaptation and acceptance are recorded in MAC-033.
+
+The new separate `pc-network-bot-presentation` patch wraps the original pose
+pass. Guest NPCs evaluate received channels without advancing them again and
+position attached weapons after that pass. Received clips omit pending root
+movement already included in the host transform. Spatial refresh preserves
+transform mode, marks cached rotation dirty correctly, and keeps this guest's
+actor visibility bit. The previous network-pump call to `96C20` was lighting
+preparation, not skeleton evaluation; it has been removed. See
+`docs/online-bots-investigation.md` for the original function/field evidence.
+
+Confirmed guest kills now call the original localized `CF440` HUD path using
+the persistent victim actor. Missing corpses cannot drop the notice. An
+unavailable local view leaves the confirmation pending for a later snapshot;
+duplicate snapshots cannot repeat it. This does not predict damage or score.
+
+Validation:
+
+- Native bot model, guest dispatch and native-fallback tests: 3 passed,
+  including missing-body notices, delayed delivery, multiple increments,
+  duplicates, pose argument/return preservation and host/human fallback.
+- Patch migration/tracking: 27 passed initially; one disposable migration
+  fixture hit a Windows `PermissionError` on `kernel_bridge.c`. That exact
+  check passed when retried separately in a fresh fixture (1 passed).
+- Supported `tsfp.ps1 -Action Build` exited 0; all build checks passed and
+  temporary path-test data was recycled. Complete patch stack applied and
+  the new wrapper was regenerated. Log: `logs/issue25-presentation-build.log`.
+  Executable identity verification passed. Release executable SHA-256:
+  `5956a91f7dbbef276751c132d983b55e7a9fe73629c49fee44c47f1ea8da7049`.
+- Bounded two-instance Test Lab LAN run uses separate save, controls, PC
+  display and runtime-display files under the existing `issue25` and
+  `issue25-client` validation directories, with startup videos disabled.
+  Synthetic input navigates the lobby, plays combat and opens Scores. It is
+  not a physical keyboard/controller or Internet transport test.
+- At 251 seconds both peers recorded 9 guest bot kills and 5 host bot kills,
+  with bot life counters 2 through 9. The actual guest HUD queue recorded
+  repeated localized `You Killed` messages. Direct `PrintWindow` captures
+  show a bot model during combat and the full `You Killed The General` text.
+  Logs: `issue25-presentation-pair.log`, `issue25-presentation-watch.log` and
+  `issue25-presentation-hud.log` under `logs/`.
+
+The first desktop capture was occluded by another application and is not
+game evidence; direct game-window captures supersede it. Visible models in
+selected frames do not prove every intermittent disappearance is resolved.
+Human retesting across turns, respawns and maps is still needed. Full animation
+fidelity, cloak/death effects, rematches, disconnects and the Online bridge
+remain outside this run's acceptance.
+
+The run completed normally at its 355-second driver limit (360-second process
+ceiling). Final score snapshots at 352 seconds agree on 10 guest bot kills,
+8 host bot kills, and bot life counters 5 through 13. A separate 65-second
+observer consumed every new HUD queue entry and matched one new confirmed bot
+kill to one `You Killed` notice, with victim slot 4. Its direct window capture
+shows `You Killed The General`. The longer driver's latest-entry-only observer
+can miss intermediate notices when another message arrives in the same poll;
+do not use that observer's message count as an exact kill-notification audit.
+
+Both test processes exited and the runner recycled their known partition
+images. Retained game-only evidence is
+`private/captures/issue25-lobby/client/presentation-combat-0.png`,
+`presentation-combat-1.png`, and `presentation-kill-0.png`. Recycled 13
+disposable BMPs (15,975,102 bytes), including the occluded desktop captures,
+after checking resolved containment, names and absence of reparse points.
+
+User follow-up: "So far, so good," with a request to commit the accumulated
+fixes. This is a positive initial retest report, not full acceptance of every
+remaining scenario. Source, patches, tests and the MAC-033 handoff are included
+in `Fix network bot replication, scoring and guest presentation`; ignored
+builds, captures, logs, saves and personal settings remain local.
+
+## Issue #25: post-match bot records and HUD (2026-10-17)
+
+Build source: then-uncommitted follow-up to `5226c054884f7187a034428d93cdc0e94e2b621d`
+on `25-add-bot-support-to-online-matches`. Windows AMD64/D3D11, Python 3.14.2,
+MSVC 19.42, Windows SDK 10.0.22621.0, CMake 4.4.4, SDL 3.4.16; upstream
+remains pinned at `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`.
+
+The saved-results builder now includes configured AI actors without requiring
+controller/peer records. This supplies bot names, portrait IDs, ranks and
+scores to Results/Scores, retaining the host's reliable final kill/death
+counters on guests. Completed-match menus omit health/shield; the shared
+adapter preserves ordinary pause, gameplay and Story objectives behavior.
+See `docs/online-bots-investigation.md` and MAC-033 for the boundary and Mac
+handoff. Mac execution and other-device synchronization remain unverified.
+
+- Verified the supported US XBE SHA-256 before building/testing; about
+  432.8 GiB free disk space. No duplicate game extract or build tree created.
+- Complete patch stack verified unchanged. `tsfp.ps1 -Action Build` exited 0;
+  all built-in checks passed and path-test disk images were recycled.
+  Log: `logs/issue25-postmatch-build.log`.
+- Native bot model/guest dispatch/fallback: 3 passed. UI/Story objectives:
+  12 passed; after strengthening direct production HUD/stack checks, the
+  affected UI suite passed again (5 tests).
+- Original-US results-builder regression: 2 passed, including a deliberate
+  pre-fix mutation that reproduces missing bot entries. Host/guest names,
+  portrait IDs, ranks, scores and preservation of final received counters
+  are checked with disposable actors.
+- Multiplayer content/executable verification passed. Compatibility:
+  `f366267b47a719c0f86fe1436ae22eeb522386e1f86e2140429aecb36ba6c26f`.
+  Release executable SHA-256:
+  `e2e8ccba5d3b1d406feaa4c09e0237baf9274da67703ba31b99e93d93c37ad63`.
+
+Live validation completed using two bounded, isolated Test Lab instances
+with separate saves, controls and both display configuration paths. Both
+loaded two humans and six bots, played combat, and ended normally at the
+five-minute limit (driver timestamps 415.23s host / 416.21s guest).
+All eight saved result records match exactly between host and guest, across
+Results and Scores: names, portrait IDs, kill matrices, deaths, ranks and
+scores. The humans finished with 10 and 9 points; all six bot rows have names
+and nonzero scores (7, 10, 19, 6, 19, 6 in slot order).
+
+Reviewed direct D3D11 window captures from both peers show all eight portraits
+in Results and complete named score rows, including ties and suicide score
+deductions. Health/shield arcs are absent on Results, Scores and Options.
+Retained six PNGs under `private/captures/issue25-lobby/{host,client}/`, named
+`postmatch-results.png`, `postmatch-scores.png` and `postmatch-options.png`.
+Log: `logs/issue25-postmatch-pair.log`. Recycled the six source BMPs
+(7,373,124 bytes) after explicit path/reparse-point checks. The bounded driver
+exited 0; the Test Lab runner recycled both sessions' partition images.
+
+This uses synthetic input and local LAN peers, not physical input or the
+Internet bridge. Other modes, rematches and Mac runtime behavior remain
+outside this validation. The user accepted this follow-up and requested its
+commit as `Fix bot post-match portraits, scores and HUD`, including regression
+tests and the MAC-033 handoff. Generated builds/evidence remain ignored and
+local. No push or other-device synchronization was performed.
+
+## Issue #25: mode capacity and lobby bot population (2026-10-17)
+
+Source: uncommitted follow-up to `461cb10` on
+`25-add-bot-support-to-online-matches`. Windows AMD64/D3D11, Python 3.14.2,
+MSVC 19.42, Windows SDK 10.0.22621.0, CMake 4.4.4 and SDL 3.4.16; upstream
+remains `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`.
+
+The combined roster uses the game's selected map/network-profile capacity,
+with a separate physical sixteen-slot ceiling. Humans retain their IDs and
+priority; selected bots that cannot fit wait without being deselected.
+Admission is refreshed in reliable lobby settings and checked again at both
+launch boundaries. A zero available-bot count now clears prior admitted bots.
+The current lobby displays players, admitted bots and capacity; the host also
+sees waiting bots or an over-capacity warning. A human roster above the new
+capacity after changing mode cannot launch. See the investigation document
+for exact original boundaries and the distinction between capacity and
+minimum-player queries. MAC-033 records deferred native adaptation.
+
+- Supported US XBE hash verified before generation/game validation:
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+  About 432.8 GiB physical free space; no duplicate game data/build tree.
+- Full patch application and `tsfp.ps1 -Action Build` passed. Generated wrappers
+  were regenerated; built-in tests passed and path-test disk images recycled.
+  Build log: `logs/issue25-cap-build.log`.
+- Targeted model, guest/native fallback, saved results, UI/objectives and
+  patch migration/tracking tests: 45 passed. After adding explicit profile
+  routing and all five native fallback hooks, the affected 3 tests passed
+  again. Logs: `logs/issue25-cap-tests.log`, `logs/issue25-cap-dispatch.log`.
+  Cases include 7 humans + 10 selected bots, an 8-slot capacity, full/empty
+  bot admission, humans leaving, sparse IDs, waiting-roster preservation,
+  invalid map selection and prevention of over-capacity launch.
+- Earlier attempts could not access old temporary directories; validation
+  used a fresh disposable directory under `private/test-saves/issue25-cap-tmp`.
+  No inaccessible directories or personal files were removed or changed.
+- Multiplayer content/executable verification passed. Compatibility:
+  `39327d628767cc28cb8c9a1748ef83f403886219541b7f7033358f0836abd592`.
+  Release executable SHA-256:
+  `2eb14ccad05e924998a8c7748e22c1a7486a249ee973bddfa79c18d54b698baf`.
+
+Two bounded isolated Test Lab instances (180-second limit, driver stopped at
+175 seconds) passed the live lobby/launch check. Separate saves, controls,
+RECOMP_DISPLAY_CONFIG and TSFP_DISPLAY_CONFIG were routed through the test
+runner. The guest joined while the host was editing the recommended bot set;
+both received `[2, 1, 6]` in the reliable frontend/wire config before launch.
+Reviewed direct D3D11 window captures on both peers show the population line
+`2 players + 6 bots / 16`, fitting the original lobby layout. Both loaded two
+humans and six bots at driver time 137 seconds; subsequent memory samples
+show bot movement, combat vitals and guest replication. Gameplay window
+captures were also reviewed. This is synthetic local-LAN input and a bounded
+launch/gameplay check, not Internet, physical-input, full-match or full-lobby
+validation. Lower capacities, waiting counts and join/leave admission changes
+were exercised by the model/guest-adapter tests, not a 16-person live session.
+
+Evidence: `logs/issue25-cap-pair.log` and four PNGs beneath
+`private/captures/issue25-lobby/`: host `capacity-lobby.png`, guest
+`capacity-100.png`, and both peers' `capacity-150.png`. Recycled all five
+new BMPs (6,144,270 bytes) after explicit containment/reparse-point checks;
+the runner recycled both test sessions' partition images. No personal saves
+or settings changed. No Mac execution or other-device synchronization was
+verified. The user requested committing and publishing this branch as a PR.
+The capacity follow-up is included in `Enforce network roster capacity and
+display lobby bots`; no main merge or other-device validation was performed.
+
+Final supported build/verification passed after correcting only the source
+comment describing the lobby formatter's buffer size. Functional code matches
+the live test above. Final log: `logs/issue25-cap-final-build.log`; built-in
+checks passed and path-test images were recycled. Final compatibility:
+`7c14d3fa3a2f7198675e6f767f8dd27697025c3a2cf617d312779d2f527254f4`.
+Final Release executable SHA-256:
+`8bbc87de444db785950449c947473c43365b093a6f1df6fbe3fefc636f6468da`.
+
+## Issue #25: merge current main into bot support (2026-10-17)
+
+Resolved the user's in-progress merge of main `fe8e25341990e304272d2229d6fc27a98012fef6`
+into `25-add-bot-support-to-online-matches` at `68dcf9f`. All five conflicted
+files retain both features: network bot helpers plus menu mouse/quit adapters,
+combined UI test globals and post-match checks, and both input replay formats.
+Four-field replay records set absolute cursor coordinates; five-field records
+apply sequenced raw movement once. The input integration test checks that
+cursor records neither turn the camera nor consume a gameplay motion sequence.
+Preserved existing tracked CRLF input files and main's alpha.6 version.
+
+The automatic documentation merge reused MAC-028 for two unrelated features.
+Bot support is now MAC-033, with its historical references/links updated;
+main's frontend-FOV MAC-028 entry stays intact. Native networking remains
+queued. This merge does not establish Mac runtime support or synchronize
+another device's local files.
+
+Validation host: Windows AMD64/D3D11; Python 3.14.2, MSVC 19.42, Windows SDK
+10.0.22621.0, CMake 4.4.4 and SDL 3.4.16. Upstream stays pinned at
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. Verified supported US XBE SHA-256
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`;
+432.2 GiB physical disk space available before the build.
+
+- The complete combined patch stack applied and regenerated the game wrappers.
+  Windows Release build and all built-in tests passed, including the combined
+  input regression; disposable path-test disks recycled. Log:
+  `logs/issue25-merge-build.log`.
+- Targeted checks initially passed 50/51; the UI hook assertion read the old
+  runtime while patch application was still pending. After patch installation,
+  all 14 runtime-dependent UI/objectives/generation checks passed. The original
+  run also passed bot guest/native-fallback, result-builder, menu mouse, quit,
+  patch migration and tracking checks. Logs: `logs/issue25-merge-tests.log` and
+  `logs/issue25-merge-runtime-tests.log`. No remaining failures.
+- Final executable/content seal verification passed. Compatibility:
+  `c10db24bac529b505d80d5caf2d500042637b6d04590a5ad3ad2023ced9a9281`.
+  Release executable SHA-256:
+  `9336818cacb24e21c884e3b10cf6f2bf94de4650056e6ddb697e271e960b092f`.
+
+No additional gameplay session was run for this merge; earlier two-peer
+results apply to the pre-merge build as recorded above. Personal saves and
+settings were not changed. Merge completion/publication updates PR #108;
+main itself is not merged or modified by this operation.
+
+## Issue #25: Windows CI FOV fixture linkage (2026-10-17)
+
+PR #108 run 39075442502 passed patch transitions but failed its Windows native
+regression step: `tests/test_fov_settings.py` could not link 13 original game
+functions referenced by the newly integrated bot helpers in pc_display_menu.c.
+The production Release build was unaffected; its generated game provides those
+functions. The isolated FOV test needed corresponding fixture dependencies.
+
+Reproduced the linker failure locally, then added fail-fast bot-function stubs
+to `tests/fov_settings.c`, following its existing tutorial/menu-mouse fixtures.
+They satisfy linkage but fail the test if the settings-only scenario enters
+bot code. No production source, patch, game data or settings were changed.
+
+On Windows AMD64, Python 3.14.2/MSVC 19.42, all 81 tests in the same 17 modules
+selected by the Windows CI native step passed (9.30 seconds). Logs:
+`logs/issue25-ci-repro.log`, `logs/issue25-ci-native.log`. Hosted Windows uses
+Python 3.12/MSVC 14.51; its rerun is needed to confirm that environment.
+No game rebuild/play session was required for this test-only fix. Native Mac
+behavior is unchanged; MAC-033's queued network adaptation remains unchanged.
+
+## Issue #118: Online bot session ownership (2026-10-18)
+
+Local, uncommitted on `118-bug-online---guests-unable-to-see-bots`, based on
+`6d351c4`. Reproduced with two Windows instances using the actual Online menu,
+companion processes and authenticated UDP bridges, backed by an isolated
+loopback directory. Two humans and six bots loaded the same match. Host bots
+became active; guest bot bodies retained disabled flags and initial health,
+then disappeared as the original game removed their unsynchronized bodies.
+
+The host generated and registered its local XNKID, but never resolved its own
+XNADDR: Online deliberately does not relay discovery broadcasts to their sender.
+Bot transmission incorrectly required that self-discovery cache entry. Bounded
+diagnostics confirmed `peers=0, targets=1` on the host, so every snapshot returned
+before sending. The guest's host address and match context were correct.
+
+`src/pc_network.c` now retains the local session ID from XNetCreateKey, enables
+it on matching XNetRegisterKey, and uses it directly for bot snapshots. Foreign
+registration/unregistration does not change ownership. Matching unregister,
+new key creation and transport shutdown invalidate the preceding registration.
+The guest still checks the selected host, session ID, match, state validity and
+tick ordering; the Online bridge's authentication and compatibility checks are
+unchanged. No snapshot format, generated game code or patch-stack change.
+
+Validation on Windows AMD64, Python 3.14.2, MSVC 19.42 / toolset 14.42.34433,
+with the D3D11 game renderer:
+
+- Verified the supported US `default.xbe` SHA-256
+  `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+  Physical free space before builds was approximately 458 GB; apparent sparse
+  test-disk capacities were not treated as physical allocation.
+- The native regression reproduced the old host's missing Online snapshot,
+  then passed with the fix. It covers send without a self-XNADDR cache entry,
+  receipt through the bridge into a smaller title buffer, rejection of wrong
+  source/session/match, unrelated registration, unregister/re-register,
+  replacement keys and disconnect/reconnect. Existing LAN transmission passes.
+  Logs: `logs/issue118-regression-before.log` and
+  `logs/issue118-regression-after.log`.
+- `tsfp.ps1 -Action Build` applied/verified the complete pinned patch stack and
+  passed its native checks. Logs: `logs/issue118-build.log` and
+  `logs/issue118-final-build.log` (completed optimized native regressions).
+- All 43 selected Online, identity, bot model/guest/native-fallback,
+  original-US results and patch transition/tracking checks passed across the
+  initial run and focused rerun. One initial patch test encountered WinError 32
+  while cleaning its temporary source fixture; the isolated rerun passed.
+  Logs: `logs/issue118-tests.log`, `logs/issue118-patch-recheck.log`.
+- In the rebuilt Online match, all six guest bot bodies received drawable flags
+  and host vitals. Read-only samples show matching damage/death states and
+  successful guest body recreation after host respawns. Automated movement and
+  firing used disposable Test Lab profiles, with separate controls, both display
+  configurations and save paths. Log: `logs/issue118-fixed-pair.log`.
+- A second bounded Online run used a rotating stationary guest camera. Reviewed
+  D3D11 window capture `private/captures/issue118/visual-client-135.png` clearly
+  shows a bot model with its weapon; the pre-fix capture is retained beside it.
+  Across 115 guest samples, each of the six bots changed position and animation
+  pose (105–115 distinct pose samples per bot), and every bot's spawn counter
+  advanced. Host/guest health and respawn observations are retained in
+  `private/captures/issue118/observations.json`; summary and run logs are
+  `logs/issue118-observations.log` and `logs/issue118-visual-pair.log`.
+  Redundant BMP captures were recycled; retained evidence totals about 1.6 MB.
+
+Build compatibility:
+`30b8e16732c2f23683cebd74242afec2457adf0decef8041beafd3d109dccfb6`.
+Final Release executable SHA-256:
+`bb4b5fd34d8d58e0765eccc5f8eed7f180104a27cea2f6298410ee72f6284c13`.
+Gameplay runs used executable
+`2e81eaee2e691f68e70011ba1d35744fe77ae6432e2360d3cc5024454dfba03d`;
+the final build after completing test-only assertions has the same production
+source/compatibility identity and passed native checks and executable/content
+seal verification. It was not given another gameplay run.
+The local build includes the uncommitted transport fix; both peers need the
+same rebuilt version. No release was packaged or published.
+
+Internet/NAT traversal, long sessions, all game modes and native Mac execution
+were not validated by these loopback Online tests. MAC-033's experimental
+network-bot entry records the session-lifetime requirement for the eventual
+Mac network adapter. Other-device synchronization is unverified. Personal
+saves/settings were preserved; bounded runners recycle their disposable disks.
+
+## Issue #63 - Discord Rich Presence (2026-10-19)
+
+Implemented locally, uncommitted on `feature/63-discord-rich-presence`, based on
+main `c006c24`. The launcher has a Discord preferences tab with an enable switch
+and public Application ID. The default ID is `1561627743353962566`; packaged
+defaults remain off. The ignored source-checkout configuration is enabled with
+the ID supplied by the user. No release was published or installed over a
+running game. The pre-existing untracked `frame000.d3dcap` was left untouched.
+
+`src/pc_discord_model.c` shares configuration validation, game-mode policy and
+bounded JSON serialization. `src/pc_discord.c` is a Windows local named-pipe RPC
+worker with bounded overlapped I/O, READY gating, fragmented-frame assembly,
+64 KiB inbound limits, ping/pong, reconnect and disconnect cleanup. No Discord
+SDK DLL, player login or bot secret is required. The guest camera hook publishes
+plain snapshots once per second; no worker reads guest memory and the guest
+does no pipe I/O. Changed activity is coalesced to one update per 15 seconds;
+the elapsed timestamp is retained across modes and reconnects.
+
+Story gameplay can have runtime flags `0x80008` after its opening cutscene.
+Classifying mode solely by flags initially mislabeled that state Arcade. The
+final model uses the game's mode latched at `0x78AD20` by US `sub_002D38C0`,
+separately from menu selection at `0x78AD2C`. The isolated live test observed
+scene 2 with both mode fields 4. Regression coverage includes Story with zero
+flags and a different menu selection, preserving Story through pause/cutscenes.
+
+Windows validation: Windows 11 Pro x64, build 26300, MSVC 19.44/VS 2022 and the
+pinned runtime `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`; D3D11 backend.
+The supported US XBE SHA-256 was checked before the normal Release build and
+each isolated game run. Final Release executable SHA-256:
+`e411c413c625f617398e059562898066c25ad97dd9f1041fba3da414449bc722`.
+
+- The complete local patch stack validated and the normal Windows build/native
+  checks passed, including the new `tsfp_pc_discord_test` target.
+- Seven Discord pytest checks passed: policy/serialization, disabled/malformed/
+  absent-client behavior, fragmented handshake and ping/pong, reconnect, oversize
+  frame, error reply, no activity before READY and bounded silent-peer shutdown.
+  Automated pipe tests use a private compile-time endpoint and no real account.
+- Patch migration/tracking checks passed after adding the new build patch to
+  the historical fixture's deferred native/display-dependent set.
+- All 32 isolated launcher settings checks passed, including Discord ID
+  validation, persistence/backup, concurrent-edit rejection, save/cancel and
+  child-process configuration routing. Portable startup, FOV and Auto Lookahead
+  checks passed (five pytest checks). The Discord settings render was visually
+  inspected at 1152x772: `logs/discord-settings.png`.
+- Real Discord desktop RPC connected and acknowledged SET_ACTIVITY. The
+  corrected game's bounded isolated Test Lab run verified menu-to-Story,
+  cinematic-to-gameplay and pause activity transitions; selected evidence and
+  bounded logs are in `private/test-saves/discord-presence/verified.*`.
+  Canonical fixture and personal settings/saves were preserved, and test disks
+  recycled. The reproducible opt-in harness is `tests/discord_presence_game.py`.
+- The full launcher updater suite stopped at its existing running-game guard:
+  two pre-existing user game processes were open. They were preserved. The
+  affected launcher settings suite passed separately. No updater behavior changed.
+
+Actual LAN/Online/Arcade/Challenge activity cards, a second user's Discord card
+rendering, and native Mac integration were not manually verified. Their policy
+cases are covered by native tests. Mission/map names, party size and join
+invites are outside this first version. MAC-048 records the queued Mac transport,
+preferences and lifecycle adaptation. Other-device synchronization is unverified.
+
+## Issue #63 - Detailed Discord activity (2026-10-19)
+
+Extended the local, uncommitted `feature/63-discord-rich-presence` implementation
+based on main `c006c24`. Story now publishes its mission title, difficulty,
+single player/co-op and cinematic/gameplay/pause state. Arcade Custom publishes
+its game type, map, humans and bots; League and Challenge include the event
+name. Online/LAN publish map, game type, actual occupied human slots, bots,
+map capacity, host/member lobby state and match/pause state. No player names,
+server addresses or player-created map names are included. The default-off
+setting, worker isolation, 15-second coalescing and elapsed timer are retained.
+
+The shared `src/pc_discord_guest.h` decoder takes bounded read callbacks; only
+the guest thread touches guest RAM. It distinguishes active settings from
+frontend settings, scans the thirteen Story and seventeen Arcade records by
+running scene, reads the rules index separately from the engine category, and
+copies frontend event titles before their level-local strings unload. Title
+text is converted from the game's single-byte Latin-1 to bounded UTF-8; control
+characters and unreadable pointers fall back to the mode. MapMaker uses a
+generic built-in label. Network humans are counted from occupied roster bits,
+including split-screen players and holes left by departures; config slot extent
+and transport peer counts are not population counts.
+
+Live verification corrected two adjacent metadata fields: Story record +0 is
+the year and +2 is the mission title; the Arcade map name precedes its scene
+field by eight bytes, while following fields are thumbnail resources. Story
+cinematics use a separate scene and force their configuration difficulty to
+zero: presence uses the latched mission, selected Story difficulty at 0x78AD54
+and local player count during that transition, then active mission settings in
+play. Tests guard these distinctions and stale-menu cleanup.
+
+Windows 11 Pro x64 build 26300, MSVC 19.44 / VS 2022, D3D11; pinned runtime
+`d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. The supported US XBE hash was verified
+by the normal build and each disposable game run. Current Release executable
+SHA-256: `acc74624fe345d10880ccdb45cf91a97714c572b9f9c15257f966ba08e11e9a6`.
+
+- Full patch validation, normal Windows Release build and native build checks
+  passed. The final decoder/policy also compiled under strict MSVC `/W4 /WX`.
+- Nine pytest checks passed: seven Discord checks plus FOV and Auto Lookahead.
+  Coverage includes bounded guest-memory reads, Story year/title distinction,
+  cinematic selection, co-op/difficulty, map/rules/event lookup and caching,
+  occupied roster bits with empty slots, host/member lobbies, LAN/Online active
+  counts, stale menus, Latin-1/UTF-8, long text, maximum JSON escaping, changed
+  population serialization, reconnect, fragmented frames, READY gating and exit.
+  Protocol tests use an isolated pipe and do not touch a real Discord account.
+- Real Discord accepted Story's `Time to Split` title through cinematic,
+  gameplay and pause. One earlier run was closed through the game window before
+  completing its assertions; subsequent complete bounded runs passed. The final
+  executable also passed with `Normal | Single player` retained through the
+  cinematic, gameplay and pause transitions.
+- Real Discord accepted Arcade Custom `Deathmatch`, map `Vietnam`, one human
+  and six bots through gameplay/pause. The default bot count was checked against
+  a rendered configuration capture. The corrected replay passed.
+- A replay initially intended for Custom selected League instead; its real
+  activity correctly showed `Rockets 101`, `Zeppelin`, `Deathmatch`, one human
+  and seven bots through gameplay/pause. Its Custom-specific assertion failed;
+  the navigation was corrected and the League trace retained as `league.*`.
+- The first LAN run exposed that a host with no remote peers can establish a
+  guest session before transport latency initializes. Such established sessions
+  now default to LAN unless the Online adapter explicitly reports Online;
+  disconnected/offline sessions still require both guest session guards.
+  Regression policy covers the no-peer case. The corrected real-client replay
+  passed from `LAN - Hosting lobby / Deathmatch | Subway | 1 player / 16` to
+  `LAN - Deathmatch / Subway | 1 player / 16 | Hosting | In game`. A rendered
+  Subway gameplay capture was inspected. The old result's misleading sixteen
+  players came from the engine's reserved slot extent; occupied-slot counting
+  now reports the actual one human.
+
+All gameplay validation uses `private/test-saves/discord-presence` and the
+canonical unlocked Test Lab fixture with isolated controls, save and both display
+paths. Logs are bounded to 4 MiB each; runs are limited to 95 seconds and owned
+virtual disks are recycled. Existing user game processes and personal files are
+preserved. MAC-048 records the shared decoder and remaining native adaptation.
+Actual two-peer Online/Internet activity and live Challenge/co-op cards were
+not exercised in this follow-up; their shared decoding/formatting paths have
+regression coverage. No commit, push or release publication was performed;
+other-device execution and another user's Discord card appearance remain
+unverified.
+
+## Issue #63 - Pull request preparation (2026-10-19)
+
+Added the portable Discord policy test and Windows-only private-pipe tests to
+the explicit runtime CI test list. Push routing includes Discord sources,
+configuration and tests; a default Discord settings change selects launcher
+validation. Package fixtures now include the new default/settings guide and
+assert that the archive carries disabled defaults rather than the personal
+source-checkout configuration.
+
+The complete Windows `tools/build-launcher.ps1 -Test` run passed now that no game
+process was open: 100 updater regressions, 27 download/recovery checks, 11 game
+version checks, 10 startup recovery checks, 19 release-news checks, 32 settings
+checks, crash-report checks, 14 unfinished-session checks and 20 maintenance
+checks. The earlier running-game guard in the implementation notes is a
+historical result, no longer an outstanding validation gap. Synthetic launcher
+packaging passed three pytest checks plus two subtests. No real game package or
+release was published; artwork, saves, personal configs and the existing
+`frame000.d3dcap` remain local.
+
+The final PR-preparation pytest run passed 76 checks covering CI suite routing,
+patch transitions/tracking, Discord policy and private IPC, and launcher startup
+configuration routing. `git diff --check` passed. The game runtime sources and
+patch stack are unchanged from the live-tested executable recorded above.
+
+Feature implementation and validation committed as `ff8d6c0240bdeccf85a49034dca121071a0adfec`
+on `feature/63-discord-rich-presence`; MAC-048 links that source revision.
+
+## Issue #63 - Merge conflict resolution (2026-10-19)
+
+Merged main `5e89eaa` (terminal-camera depth clears, PR #168) into the Discord
+feature branch for PR #169. Kept both terminal-depth and Discord tests in the
+runtime CI list, and retained both Mac backlog entries. Main already allocated
+MAC-045 to the terminal-camera fix, so Discord is now MAC-046 and its references
+are updated. Both `tsfp.ps1` test entries and validation records are retained.
+Resolution was performed in a temporary source-only worktree because the shared
+checkout had unrelated uncommitted menu-image work. No personal settings,
+shared build, game data or that in-progress work was changed.
+
+The complete merged patch stack applied successfully to a separate sparse
+checkout of the pinned upstream runtime (51 runtime files updated). All 75
+selected Windows checks passed: CI scope, patch transitions/tracking,
+terminal-depth production-code and missed-clear mutation tests, and Discord
+policy/private IPC. Backlog IDs are unique, both test suites are in CI, and
+`git diff --check` passed. The combined game executable was not rebuilt and
+native Mac execution was not rerun for this conflict-resolution update; prior
+feature builds/live tests and main's terminal-fix evidence remain recorded above.
+
+## Issue #63 - Current main backlog conflict (2026-10-19)
+
+Updated PR #169 from its GitHub merge `577726b` to include main `a8fc545`,
+including the merged launcher v1.2.17 and main-menu image fidelity work.
+The new conflict was another insertion at the top of MAC_PORT_BACKLOG.md.
+Preserved menu fidelity (MAC-047), update rename contention (MAC-046), terminal
+camera clears (MAC-045) and all existing entries. Discord is now MAC-048, placed
+at the end of the backlog to avoid the common top-of-file insertion conflict.
+The earlier MAC-046 allocation is historical; current Discord references use
+MAC-048. Both Discord and menu/terminal CI coverage remain in the merged list.
+
+Validation on Windows 11 x64: the complete patch stack migrated successfully
+(two runtime files updated in the isolated upstream checkout). All 89 selected
+checks passed across CI routing, patch migration/tracking, terminal depth,
+Discord policy/private IPC, menu GPU sampling, UI layout, FOV and launcher
+startup. Full launcher regressions passed with the integrated v1.2.17 code:
+104 updater checks, 28 download/recovery checks, 11 version checks, 10 startup
+checks, 19 news checks, all 32 settings checks, crash report checks, 14 session
+checks and 20 maintenance checks. Packaging passed three checks and two
+subtests. All main backlog entries are preserved and Discord uniquely adds
+MAC-048. No conflict markers remain and `git diff --check` passed.
+The combined game executable and native Mac runtime were not rebuilt/retested
+for this merge; earlier build/live-game evidence remains scoped to its recorded
+revision. Personal files and the primary checkout were preserved.
+
+
+## Launcher compatibility automation (2026-10-19)
+
+Source: `codex/launcher-compatibility-automation`, based on shared launcher UI
+`725b27ca906d8af37d10925e54980e9908e36453` / PR #189, which depends on #187/#186.
+Local host: macOS 27.0.1 ARM64, Python 3.13.16. No game renderer/runtime or personal data changes.
+The workflow uses a pinned Codex Action (`bdf19a4a223ec2549a3e2274a0cf61556bc07675`)
+and CLI/proxy 0.163.0. Linux reviews source; Windows and Mac run actual launcher
+checks through the same reusable workflow as release builds. Proposed repairs are
+separate PRs; automatic merging and release publication are not enabled.
+
+Local validation: 23 offline compatibility tests, 16 publication/recovery tests,
+and 52 CI-scope/backlog checks passed. Actual temporary Git repositories exercise
+patch add/modify/delete, protected paths, symlink rejection and sanitized source
+snapshots. Other cases cover both directions, incomplete file lists, credentials,
+trust, stale revisions, failed host builds, bounded output, idempotent PR creation,
+and explicit bot-PR test dispatch without recursive fix generation. Verified
+`actionlint` 1.7.12 passes all four changed workflow files.
+
+Real OpenAI execution, live automatic repair PR creation and enforcement on main
+remain unrun until the dedicated API key is provisioned, the workflow stack is
+merged, and the activation steps are completed. No API key has been created or
+written by this work. Credential provisioning is pending. Existing MAC-021 delivery,
+notarization and visual acceptance limits remain unchanged.
+
+The first Windows CI run caught OS-default newline expansion in the new disposable
+fixtures. Explicit LF fixture writes fix that test-harness issue; an additional
+Git regression verifies that accepted PowerShell patches retain CRLF working-tree
+files and normalized Git blobs. The actual PR source snapshot passed locally
+(78 source files, 1.6 MB); the existing native launcher's read-only prerequisite
+check also passed. No launcher runtime change was needed.
+
+A stale-run failure handler also rechecks head/base/target before changing the
+commit status, so cancellation cannot overwrite a newer review after retargeting.
+
+Both-host CI at `ef78a7d43f0a1da66d7b592fdd757f1c257ad53b` passed in
+[launcher run 39329419109](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39329419109):
+Windows Server 2025 x64 job 118323542609, macOS 15.7.9 ARM64 job 118324130993,
+and combined package verification job 118324619505. Both real launcher builds,
+seven shared UI groups, host regressions and the Mac packaged repair/restart test
+passed. The automation contracts passed on both hosts (22 at that revision;
+Windows skips its symlink fixture, which Mac exercises). Publication was skipped.
+`b0f3ddb` adds the 23rd contract for stale failure status handling; final-head CI
+results are linked from PR #190. Actions is already allowed to create PRs and
+retains read-only default token permissions; OPENAI_API_KEY is absent. No repository
+permission or required-check setting was changed before service activation.
+
+The complete implementation at `b0f3ddb01bd8b79f282ea66852647e19d0bb6bba`
+also passed both host builds and combined verification in
+[launcher run 39329520086](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39329520086).
+This includes all 23 compatibility contracts (the Windows symlink case remains an
+explicit skip). Later edits only update this validation record and remove a blank
+line at the end of the reusable workflow; the launcher source is unchanged.
+
+## Khallos sky isolation and native frame replay (2026-10-19)
+
+Work is on `codex/khallos-sky`, based on `d30b652` from the published but
+unmerged `codex/shared-renderer-default` stack. It requires that shared-renderer
+work; main was not changed. The implementation is the commit carrying this
+entry. The sky is **not fixed** and MAC-005 remains in progress.
+
+Host: Apple M5 Pro, ARM64, macOS 27.0.1, Apple Clang 21, pinned Vulkan SDK
+1.4.363.0. Runtime pin `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845` and supported
+US XBE SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`
+were retained. No dependency upgrades or personal save/settings changes.
+
+Short Khallos runs used `tools/test-native-mac.py --unlocked-profile` with
+isolated save/input/runtime/display paths, synthetic SDL menu navigation,
+rotating captures and a 120-second limit. There was no full playthrough.
+The final diagnostic run ended normally at 120.14 seconds, recorded at least
+6,300 guest presents, zero interpolated presents, zero counted failed presents,
+zero shader compile failures and zero Vulkan validation errors. These are
+presentation API counts, not GPU completion or a sustained-FPS claim. The sky
+was visibly distorted despite those clean diagnostics. Disposable partition
+images were recycled by the runner; the canonical fixture was not replaced.
+
+Retained local evidence includes `private/captures/native-mac/khallos-sky-probe.d3dcap`
+(SHA-256 `cb17ac5f394db91b72db9c455a73616a822e95fa7fa14d3b6bb6b28331ec7a81`),
+`khallos-scene_05400.d3dcap`, `sky-scotland-control.d3dcap`, selected PNGs and
+`logs/native-boot-summary.json`. Capture/asset data stays ignored. Earlier
+captures that only reached menus/loading were discarded.
+
+The production Windows frame-replay parser/frontend now builds on native Mac
+with `src/native/replay_host_sdl.h` and the `native-frame-replay` patch. SDL only
+supplies window/events/drawable dimensions; the Xbox draws, shaders, textures,
+parser and readback remain shared. `tools/replay-native-mac.py` runs a single
+capture for at most 30 seconds with explicit isolated configuration paths,
+verified SDK loading, rotating output and provenance logs. The retained
+Khallos sky draw prefix (`--draws 3 --skip-draw 0`) reproduced the artifact in
+0.862 seconds with no failed host calls, malformed chunks, unmapped handles or
+unknown chunks. Both KosmicKrisp and MoltenVK reproduced the distorted sky.
+
+Findings so far:
+
+- The artifact survives at 60 guest presents with no interpolation, before
+  later screen effects, and with the first non-sky draw excluded.
+- The two Khallos sky textures contain intact cloud/sun artwork after correct
+  unswizzling. Raw swizzled memory is not an interpretable linear screenshot.
+- Khallos and the working Scotland sky use the same nine-instruction vertex
+  program. It explicitly writes fog; the unwritten-fog fallback is not the
+  explanation for these draws.
+- A sampled triangle's CPU perspective-correct UV calculation agrees with
+  GPU diagnostic output. The first sampled UV triples also occur byte-for-byte
+  in the original game PAK. This does not prove all attributes or state correct.
+- Texture-coordinate seam handling and original Xbox state semantics remain
+  investigation candidates. No coordinate remapping, fog override or
+  title-specific sky workaround has been added without evidence of the cause.
+
+`tools/test-rhi-mac.py` now builds the actual production replay tool without
+requiring game assets and checks a one-frame synthetic red triangle over a
+blue clear. Both pinned Mac drivers passed the existing RHI contracts plus
+this readback test. The Python readback checks reject incorrect pixels,
+truncation and stale images, and support top-down/bottom-up 24/32-bit BMPs.
+The selected local pytest run passed 98 checks with two host-specific skips,
+covering replay readback, CI routing, backlog integrity, patch transitions and
+tracking, and renderer host contracts. `git diff --check` passed.
+The tests and GPU contract are registered in runtime CI; this branch's GitHub
+CI and Windows replay/scene validation have not run yet. Windows keeps its
+existing window adapter.
+
+Temporary guest-address/call-stack probes were removed from the patch stack;
+the supported builder regenerated and rebuilt the game successfully. The
+clean native binary SHA-256 is
+`61777088bf8c16b72fe4a9df74b0bdfb2808c99159e283f1a4cd82d4246955ea`.
+The earlier live captures were made with diagnostic instrumentation and must
+not be described as a live test of this rebuilt binary. The production replay
+contracts were run after probe removal. Personal configuration presence and
+the tracked controls fixture hash were checked unchanged. Free disk space was
+221 GiB at the final build check.
+
+Next: establish the incorrect state/coordinate behavior against a known-good
+reference, add the smallest shared regression and fix, review matched corrected
+sky captures and a short control scene, then proceed to the remaining shared
+renderer reliability work. The goal remains active; no sky-fidelity or
+cross-host visual-parity certification is claimed.
+
+### Khallos sky follow-up: source assets and independent pixel samples
+
+At `244ee77` on the same Mac, both captured sky texture payloads matched their
+full 262,144-byte originals in `pak/storymem/l_11_stm.pak` (archive entries
+`caa402f6` and `68d16bdb`), as well as the two related cutscene-memory archives.
+No texture replacement, truncated upload or stale cache content was found in
+these two resources. The sky mesh duplicates vertices at UV boundaries:
+connected, nondegenerate triangles have maximum UV edge length about 0.171,
+not the large jumps suggested by inspecting consecutive vertex records alone.
+A diagnostic capture with wrapped UVs produced no visible correction and was
+not turned into a runtime workaround.
+
+An independent Python calculation of perspective-correct UVs, Morton texture
+unswizzling, bilinear sampling, vertex-color modulation and the captured blend
+state matched all 65 sampled interior sky pixels within one 8-bit channel
+value on KosmicKrisp. This checks these samples against the captured arguments;
+it does not establish that the guest submitted the same scene/state as an
+original Xbox or a known-good PC build. Local calculation and result:
+`logs/sky-reference-samples.py`, `logs/sky-reference-result.json`; source-byte
+comparison: `logs/sky-asset-check.py`. No game assets were added to Git.
+
+The sky remains visually unverified. A known-good matched scene is still
+needed to distinguish an upstream scene/state error from the original low
+resolution artwork and its intended appearance. A blanket wrapping, fog or
+brightness change is unsupported by the evidence collected so far.
+
+### Shared scene interpolation and Khallos pacing (2026-10-19)
+
+The commit carrying this section on `codex/shared-scene-interpolation` depends
+on `codex/khallos-sky` at `683026d` and the unmerged shared-renderer stack.
+Both title entry points now configure projection c60 and transform c64-c75
+through `src/graphics/tsfp_interpolation.h`. The shared recorder recognizes
+programs reading composed transforms such as c68. The HLE patch deprojects
+these matrices, interpolates their recovered affine motion and reapplies the
+projection; it does not substitute unrelated/stale c64 values. Replay scheduling
+also accounts for preparation time and refreshes the clock before drawing.
+Guest timing and saved interpolation preferences remain unchanged.
+
+Production-code tests cover transform/FOV interpolation, endpoints, HUD,
+unmatched geometry, camera cuts, invalid projection, configured-register draw
+classification and preparation overruns. The selected source suite passed
+125 tests with two host-specific skips. Native build and both pinned drivers'
+asset-free RHI plus production replay contracts passed. Windows runtime and
+GitHub CI for this change remain unrun. `--profile-without-validation` now
+explicitly permits frame profiling without layers; normal tests keep validation.
+
+Host: Apple M5 Pro, ARM64 macOS 27.0.1, Apple Clang 21, pinned SDK 1.4.363.0,
+upstream `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`; supported XBE hash unchanged.
+Build source is `683026d` plus these then-uncommitted changes; executable SHA-256
+`f3396fd435609f9bea91a90d182b093f9aaa794c6e841a650581333f0c1b5696`.
+Short isolated Khallos runs used the disposable unlocked profile and synthetic
+SDL navigation. Reviewed captures retain train, weapon and landscape geometry;
+this is not a full playthrough or physical-input test. A retained interpolated
+frame is not a matched same-frame guest/midpoint comparison.
+
+In separate 120-second runs, the 80-95-second gameplay window at 1920x1080,
+without validation layers or readback in that window, measured:
+
+| Driver | Host presents/s | Guest/s | Interpolated/s | Median interval | p95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| KosmicKrisp | 50.498 | 46.568 | 3.931 | 19.054 ms | 37.607 ms |
+| MoltenVK | 119.802 | 59.934 | 59.868 | 8.738 ms | 9.779 ms |
+
+These count successful presentation API calls, not GPU completion or scanout;
+a single 15-second scene sample does not certify sustained campaign-wide 120 FPS.
+Local comparison: `logs/shared-scene-pacing-comparison.json` and
+`logs/shared-khallos-{scheduled,moltenvk}-120-*`. The default is still KosmicKrisp.
+
+A separate 95-second MoltenVK validation run exited normally with no shader
+compile failures or native fault, but reported ten capped instances of
+`VUID-VkImageViewCreateInfo-imageViewFormatSwizzle-04465`. Thus gameplay was
+NOT validation-clean even though the narrower GPU contracts passed. Fix and
+extend coverage of portability feature negotiation before changing the default.
+Evidence: `logs/shared-khallos-moltenvk-validation-120-*` and
+`private/captures/native-mac/shared-khallos-validation-120.png`.
+
+The static Khallos sky remains unresolved; this interpolation fix does not
+correct it. The common renderer also does not yet implement the documented
+legacy-GL one-shot `--capture-interpolation` request; shared paired-capture
+support remains acceptance work. Personal config presence and controls fixture
+hash were unchanged, disposable test partitions recycled, and retained capture
+allocation stayed below 256 MiB.
+
+### Vulkan portability texture swizzles (2026-10-19)
+
+The commit carrying this section on `codex/vulkan-portability-swizzle` depends
+on `codex/shared-scene-interpolation` at `f1f4236` and its unmerged renderer stack.
+The shared Vulkan device enabled `VK_KHR_portability_subset` but never queried
+or enabled its optional `imageViewFormatSwizzle` feature. Alpha-only and
+opaque-X texture views consequently violated Vulkan's portability requirements.
+The additive `vulkan-portability-swizzle.patch` queries and explicitly enables
+that feature, preserving the custom-border-color feature chain; an unsupported
+portability device now gets a clear prerequisite error instead of invalid views.
+Native Vulkan devices without the extension retain their existing feature path.
+This follows the [Vulkan feature-enabling contract](https://docs.vulkan.org/refpages/latest/refpages/source/VkPhysicalDevicePortabilitySubsetFeaturesKHR.html).
+
+The shared D3D11/Vulkan resource contract now samples A8, BGRX, R8 and RGBA
+textures and verifies all channels. Before the fix, the new MoltenVK test
+reproduced two swizzle validation errors even though its sampled pixels matched.
+After the fix, both pinned Mac drivers passed the expanded resource/pixel tests
+and production frame replay with no validation errors. The historical patch
+upgrade fixture excludes this dependent patch from its pre-Vulkan starting
+state, then checks installation of the complete stack. Relevant source checks:
+75 passed and three host-specific skips across the initial run and focused
+retest. Windows D3D11 execution and GitHub CI have not run for this change.
+
+The native build succeeded on the same M5 Pro/macOS 27.0.1/Clang 21 host with
+pinned SDK 1.4.363.0 and unchanged supported XBE/upstream revisions. Its source
+is `f1f4236` plus this then-uncommitted repair; executable SHA-256
+`bd48e193d9b636596d4d1554748a1d0ada2481c68356ca9ee469dc04df04c8e8`.
+A separate 95.12-second isolated Khallos run on MoltenVK with validation enabled
+reached at least 5,400 guest frames, reported zero Vulkan validation errors,
+zero shader compilation failures and no native fault, and exited normally.
+The reviewed capture retains the train, weapon and landscape; static sky
+fidelity remains unresolved. Logs: `logs/shared-khallos-swizzle-validation-120-*`;
+selected capture: `private/captures/native-mac/shared-khallos-swizzle-fixed.png`.
+Driver warnings about Metal primitive-restart support remain distinct from
+validation errors. The driver default has not changed, and no new performance
+claim is made from validation-enabled runs.
+
+A second isolated 95.15-second run of the opening mission used the same binary
+and MoltenVK with validation enabled. It likewise reported zero validation
+errors, shader failures or native faults and exited normally. The reviewed
+capture shows canyon terrain, NPCs, weapon, HUD/tutorial text and fire/smoke
+with the world present. Synthetic movement, mouse/button and pause/resume events
+were delivered; this single final capture does not independently verify every
+input response or physical mouse operation. No level completion was attempted.
+Evidence: `logs/shared-firstmission-swizzle-control-120-*` and
+`private/captures/native-mac/shared-firstmission-swizzle-control.png`.
+Personal settings/fixture remained unchanged; both runs recycled their six
+known disposable partition images. Captures remain under 100 MiB allocated.
+
+### Manifest-selected MoltenVK and short pacing checks (2026-10-19)
+
+The commit carrying this section on `codex/mac-moltenvk-default` depends on
+`codex/vulkan-portability-swizzle` at `cc364fd` and the unmerged shared renderer
+and scene-interpolation stack. New native Vulkan builds record `vulkan_driver`
+in `BUILD.json`, defaulting to MoltenVK. Python and native-app launchers use the
+same read-only `tools/vulkan_sdk.py` helper. Old manifests lacking the field
+retain KosmicKrisp; invalid values fail rather than silently switching drivers.
+Builder, Python launcher and isolated runner accept explicit driver selection;
+launch overrides leave manifests, preferences and the 60 Hz guest unchanged.
+The bounded summary now records the selected driver separately from renderer.
+The SDK/upstream/Python pins and legacy GL selection remain unchanged.
+
+Validation on Apple M5 Pro/ARM64 macOS 27.0.1, Clang 21, pinned Vulkan SDK
+1.4.363.0 and launcher SDK 8.0.426: 114 Python checks passed; the native builder's
+three CTest checks and renderer/input/settings/debug self-tests passed. The
+native launcher built and passed 18 regression groups, including bounded helper
+output, error and timeout handling. Read-only checks passed for both launchers.
+The final isolated eight-second launcher/game quit test confirmed the actual
+production environment selected MoltenVK before test isolation was applied,
+observed the game window, and verified minimize/restore and clean exit. Its
+reported older crash-record path was pre-existing test evidence, not a new crash.
+
+Repeated native-app prerequisite checks exposed an ARM64 .NET pipe crash:
+13/30 attempts failed with `AccessViolationException` while both pipes were
+redirected, even with synchronous readers. The final helper uses one bounded
+stdout pipe for results and controlled Python errors; 30/30 fresh processes
+passed. This is empirical scope, not proof that every .NET pipe issue is fixed.
+A [related upstream runtime report](https://github.com/dotnet/runtime/issues/88288)
+describes the dual-redirection failure pattern; it does not establish identical
+root cause or justify upgrading the pinned SDK. Logs retain the failures and
+final results in `logs/moltenvk-default-launcher-*-checks.json`.
+
+Both 120-second isolated Khallos runs used the build manifest's default driver
+(no `--vulkan-driver` argument), disposable Test Lab saves and synthetic SDL
+menu input. Same executable SHA-256:
+`bd48e193d9b636596d4d1554748a1d0ada2481c68356ca9ee469dc04df04c8e8`;
+build revision `cc364fd` plus the then-uncommitted driver-selection changes.
+The binary code is unchanged from the validated swizzle fix; BUILD.json records
+the new selection. Supported XBE and upstream hashes remain as above.
+
+| Setting | Host API presents/s | Guest/s | Interpolated/s | Median interval | p95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 60 | 59.995 | 59.995 | 0 | 16.610 ms | 17.654 ms |
+| 120 | 119.995 | 59.998 | 59.998 | 8.563 ms | 9.551 ms |
+
+Samples cover elapsed seconds 80-95 at 1920x1080, after loading/navigation;
+validation was explicitly off for timing and readback occurred afterward.
+Launcher/build activity finished before each measured window (the last check
+ended about 77.96 seconds into the 120-setting run). These are successful host
+presentation API calls, not GPU completion or monitor scanout. No sustained
+whole-campaign 120 FPS claim follows from a single 15-second sample.
+Both reviewed final captures retain train, weapon, landscape and HUD. Sky
+fidelity remains unresolved. The final launcher test and preceding swizzle
+scene tests provide separate validation-on evidence; timing runs are not
+validation passes. Logs: `logs/shared-khallos-default-{60,120}-*`,
+`logs/moltenvk-default-gameplay-pacing.json`,
+`logs/moltenvk-default-launcher-final-e2e.log`.
+
+Personal configuration presence and tracked controls fixture remain unchanged;
+known disposable partitions were recycled, captures remain below 256 MiB, and
+free space before the builds was 221 GiB. Main and concurrent duplicate files
+were untouched. These changes are local until explicitly published; Windows
+runtime execution, another Mac, and this branch's GitHub CI remain unverified.
+Next: shared one-shot guest/midpoint capture, additional representative graphics
+checks, and a known-good matched reference to resolve the Khallos sky.
+
+### Shared guest and intermediate frame evidence (2026-10-19)
+
+The commit carrying this section on `codex/shared-interpolation-capture`
+depends on `codex/mac-moltenvk-default` at `65330e8` and its unmerged renderer
+stack. One-shot capture now belongs to the common HLE interpolation recorder,
+replacing the duplicate GL hook. It captures the completed guest image before
+replay and the intermediate image before host-only overlays, consumes the
+explicit request once, invalidates old pair files and writes a frame/blend/
+presentation receipt. Legacy environment names remain aliases. The isolated
+runner verifies receipt flags, dimensions, complete BMP payloads and hashes;
+missing or failed evidence cannot be reported as a complete pair. An opt-in
+trace prints only the first three draws' transforms for a requested pair.
+
+Portable production-code tests cover ordering, request consumption, stale
+evidence, legacy aliases and failed begin/readback/presentation. Runner tests
+cover symlinks, malformed receipts and truncated BMPs. The final focused run
+passed 47 renderer/runner checks; patch/tracking/CI/backlog checks passed 75
+with two host-specific skips. The initial native build passed three CTest
+checks and the renderer/input/settings/debug self-tests. The final capture
+ordering/trace rebuild and focused tests passed. Windows execution, legacy GL
+live capture and this branch's hosted CI remain unrun.
+
+Host: Apple M5 Pro/ARM64, macOS 27.0.1, Clang 21, pinned Vulkan SDK 1.4.363.0,
+manifest-selected MoltenVK, supported XBE and upstream pins unchanged.
+Final executable SHA-256:
+`3257c89de3dd7b625ed2fdbdd3764bed53e00f20d4e53a496f6b59fb7e1b91de`.
+Source was `65330e8` plus these then-uncommitted changes. Two isolated runs,
+each 95.20 seconds, used disposable Test Lab saves, synthetic SDL menu input
+and validation enabled; both exited normally with zero Vulkan validation
+errors, shader compilation failures or native faults.
+
+| Scene | Guest frame | Intermediate blend | Reviewed evidence |
+| --- | ---: | ---: | --- |
+| Khallos exterior | 4584 | 0.958429266 | Train, weapon, landscape and HUD retained in both images |
+| Opening gameplay | 5184 | 0.527869472 | Canyon, weapon/hand animation, tutorial/HUD, NPC and fire/smoke retained |
+
+Both receipts verified complete 1920x1080 pairs. Logs:
+`logs/shared-{khallos,firstmission}-pair-final-120-*`; retained PNGs:
+`private/captures/native-mac/{khallos,opening}-pair-final-{guest,intermediate}.png`.
+Raw pair BMPs rotate; the final ones belong to the opening mission. Readback
+disturbs timing, so these runs establish no new FPS result. Synthetic menu
+input and reviewed captures do not certify physical controls or a playthrough.
+
+Earlier diagnostic pairs used executable `3bf49b32...` and captured the
+intermediate image after overlays. The earlier opening pair showed the NPC
+briefing, not gameplay. Its Khallos pair at blend 0.722856 showed a sky streak
+that needs a controlled comparison; the final near-current-frame blend above
+does not independently resolve it. The final trace matches both sky draws to
+their corresponding previous draws and shows small transform changes. Static
+Khallos sky fidelity and the cause of the earlier streak remain unresolved;
+no brightness, fog or wrapping workaround was introduced. Main, personal
+settings, the canonical fixture and concurrent duplicate files were preserved.
+Known disposable partitions were recycled; captures remain below 256 MiB.
+
+### Khallos motion-blur reference and overlay isolation (2026-10-19)
+
+`codex/khallos-sky-replay` depends on the unmerged shared paired-capture commit
+`5271401`; main remains unchanged. The user's observation that moving-train
+streaks may be intentional changes the acceptance criterion: preserve the
+effect until a matched reference demonstrates incorrect rendering. The author's
+[Xbox compatibility gameplay screenshots](https://superadventuresingaming.blogspot.com/2026/07/timesplitters-future-perfect-xbox-part-2.html)
+in the Khallos section show a muted grey sky, streaked passing scenery and
+directional streaks in the helicopter scene. These support the motion-blur
+hypothesis qualitatively; they are not matched camera/frame evidence and do
+not establish that our interpolated frame is correct. Brighter pre-release
+promotional screenshots are not an appropriate fidelity target.
+
+A temporary diagnostic patch captured three guest/intermediate pairs plus
+the same intermediate image immediately after host overlays. The isolated
+95.19-second run exited 0 with zero Vulkan validation errors, shader failures
+or native faults. Frames 4537/4780/5023 used blends 0.680246143/0.688135938/
+0.693967514. For each before/after-overlay comparison, all 17,388 changed pixels
+were confined to the top/bottom 45 rows; none changed the sky outside those
+overlay areas. This rules out direct overlay drawing for these captures,
+not every synchronization hazard. Pair 1's intermediate sky streak is stronger
+than its guest image, but that alone does not distinguish intended effects
+from replay differences. Sky draws matched their corresponding previous draws
+with small transform changes. Attempted synthetic mouse motion occurred while
+capture was released and is not a successful camera-look check.
+
+Host/toolchain/pins: Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, Vulkan SDK
+1.4.363.0, manifest-selected MoltenVK, supported XBE/upstream unchanged.
+Diagnostic executable SHA-256:
+`21e66d01bf897615f2781907b7189a50b4fc1c99d9bd5aabe2c90f733ade79ba`;
+source `5271401` plus the temporary overlay-readback patch. Logs/receipts:
+`logs/shared-khallos-overlay-probe-120-*`, `logs/sky-overlay-comparison.json`;
+selected PNGs and pair receipts remain under
+`private/captures/native-mac/sky-overlay-*`. Readback affects timing; these
+counts are not a new FPS benchmark. No full playthrough or physical input test.
+
+The diagnostic patch was removed from the active stack and the supported
+builder successfully restored the production build at `5271401`, SHA-256
+`a38a4dfbf76119aa564084a2e52a1cbc1de94c7623d9b17a88c1215865fcc1ad`.
+Ten redundant diagnostic BMPs were recycled with hashes recorded in
+`logs/sky-overlay-recycled.json`; retained captures allocate 125,656 KiB.
+No sky brightness, fog, wrapping or motion-blur workaround was introduced.
+MAC-005 remains in progress; matched reference and Windows runtime acceptance
+remain pending. This focused investigation and its dependency commits are local,
+not newly pushed or verified on the other computer.
+
+### Shared renderer mansion scene acceptance (2026-10-19)
+
+The documentation commit on `codex/shared-scene-acceptance` depends on
+`codex/khallos-sky-replay` at `0ded9e0` and its unmerged renderer stack. No
+runtime change was needed for these checks. The production binary still comes
+from `5271401`, SHA-256
+`a38a4dfbf76119aa564084a2e52a1cbc1de94c7623d9b17a88c1215865fcc1ad`;
+all source-input hashes in BUILD.json and the binary hash matched before the
+runs. Host: Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, Vulkan SDK 1.4.363.0,
+manifest-selected MoltenVK. Supported XBE/upstream/dependency pins unchanged.
+
+Three bounded runs used `tools/test-native-mac.py --unlocked-profile` with
+`--capture-interpolation --test-keys --fps 120`, isolated saves/controls/both
+display paths, and Vulkan validation enabled. Synthetic menu navigation chose
+Story, Mansion of Madness, then skipped the opening scene. A synthetic click
+recaptured the pointer after Escape before motion input. The exterior route
+turned with `motion 280 0`, moved forward briefly, and sent a fire-button press;
+no hit/combat success is claimed. The separate hall route moved straight to
+the entrance, interacted and entered, stopping in the first room.
+
+| Run | Bound/actual seconds | Captured guest frames | Reviewed result |
+| --- | --- | --- | --- |
+| Exterior, production interpolation | 105 / 105.20 | 4419, 4555, 4817 | Building, foliage, rain, lamps, companion and weapon retained through turn/movement |
+| Exterior, temporary affine-off control | 95 / 95.14 | 4423, 4558, 4820 | Replay preserves rain and scene content without transform blending |
+| Entrance hall, production interpolation | 120 / 120.15 | 4922, 5314, 5931 | Entrance transition, stairs/railings/stained glass, characters, falling chandelier and fire retained |
+
+Each run produced three complete 1920x1080 guest/intermediate pairs and exited
+0 with no Vulkan validation errors, shader failures or native faults. All
+18 selected PNGs were reviewed. The hall's first pair is the entrance cinematic,
+not gameplay; its later pairs show the first room in gameplay. Spirits were
+not observed in these selected frames: MAC-049's appearance, red-eye/trail and
+wall-occlusion acceptance remains open. This is neither level completion nor
+original-Xbox pixel parity, physical input, or all-effects certification.
+
+An initial visual impression of fainter rain in one intermediate image was
+not supported as missing content by the control. Production pairs have mean
+absolute channel differences of 0.106, 0.199 and 0.233 on a 0–255 scale, with
+near-zero signed means; the affine-off pairs differ by one channel unit at
+one pixel, zero pixels and zero pixels respectively. These results isolate
+small transform-related differences; they do not prove every moving particle
+is correct. The override was confined to the control process; normal
+interpolation settings and the 60 Hz guest clock remain unchanged. Readback
+perturbs timing, so no FPS result is inferred from these runs.
+
+Evidence: `logs/shared-mansion-{scene,affine-off,hall}-{out.log,summary.json,err}`,
+`logs/mansion-pair-differences.json`, and `logs/mansion-capture-index.json`.
+The index is reconstructed from per-run console records and retained PNGs
+after a scratch helper reused a receipt filename; it is not presented as an
+original runtime receipt. Final-pair verification remains in each runner
+summary. Images: `private/captures/native-mac/mansion-{scene,affine-off,hall}-*`.
+The affine-off control also retains one 9,758,496-byte, 343-draw capture at
+`private/captures/native-mac/mansion-rain-control.d3dcap` for targeted follow-up.
+
+Shared spirit/cache-restoration, framebuffer-sampling, interpolation/capture
+and backlog tests: **25 passed**. Windows execution and this branch's hosted
+CI were not run. Personal settings/fixture hashes were unchanged; each runner
+recycled six disposable partition images (5,243,406,848 apparent bytes versus
+135,168 allocated bytes per pass). Captures allocate 175,784 KiB, below
+256 MiB; no second game copy or build tree was created. Main and concurrent
+untracked files are preserved. Changes remain local; other-device sync is
+unverified. Remaining goal work includes matched Khallos fidelity, spirit
+scene acceptance and Windows validation of the unmerged shared changes.
+
+## Issue #167 - Experimental smoother presentation (2026-10-19)
+
+Windows implementation is local and uncommitted on `feature/167-144-fps`, based
+on `d63a156`, with the complete patch stack on pinned upstream `d90c929` and
+the supported US XBE hash checked before each build/test. This adds 120/144 FPS
+host targets while retaining the 60 Hz guest clock and normal game speed.
+Input and simulation still update at the game's rate; this does not establish
+native 120/144 Hz input response.
+
+The Windows renderer previously configured only the fixed c60 projection, so
+extra presents could repeat the same pose. It now configures TSFP's c64-c75
+camera/object transforms. A rational clock keeps the fractional 144/60 phase,
+drops expired deadlines, and omits replaced guest endpoints from Shown. Gate
+interpolation alone reached the target in menus but often fell back to 60 during
+gameplay. The final implementation also predicts from the two completed poses
+during guest CPU work, bounded to one guest interval. Three frame histories plus
+a transient state-only snapshot, separate prediction color/depth buffers, and
+held real-frame feedback images preserve the partial guest frame. During CPU
+prediction, clears/draws into shared effect textures or custom depth targets
+are skipped while the main scene continues; failed/unknown targets still
+disable prediction. Cuts, failed
+matches, movies and slow frames retain a guest fallback. Prediction can produce
+corrections; CPU-deformed effects and screen-space UI retain their original rate.
+
+The launcher exposes experimental Smooth motion targets and a separate supported
+fullscreen monitor refresh selector. Existing interpolation and desktop-rate
+preferences remain the defaults. `Play-Smooth.cmd` provides a temporary 144 FPS
+override (`120` selects 120 FPS) without saving settings. Supported monitor modes
+retain desktop dimensions and are restored on focus loss/exit. The existing crash
+helper also provides independent process-death restoration. Mock adapter tests
+cover supported/unsupported modes, focus/normal/abrupt exits, failed recovery and
+preservation of independent user mode changes. The opt-in physical test skipped
+cleanly: this session exposes a virtual 1920x1080@60 display with no supported
+120/144 Hz mode, despite the GPU's physical-monitor WMI report. Its desktop mode
+remained unchanged. Physical high-refresh scanout/restoration and subjective
+smoothness require testing on the user's local display.
+
+Validation host: Windows 11 Pro x64 10.0.26300, MSVC 14.44.35207 / MSBuild
+17.14.40, Windows SDK 10.0.26100.0, SDL 3.4.16, D3D11 on NVIDIA RTX 4070 SUPER,
+driver 32.0.16.1742. The supported Release build and its native GPU/input/settings
+checks passed. Full launcher regressions passed, including all 35 settings checks.
+The initial selected Python/native suite passed all 76 checks, covering patch
+transitions/tracking, CI routing, interpolation/timing/config/refresh behavior,
+framebuffer sampling and terminal depth. These tests are wired into CI and the
+local Test action; physical mode-switch tests remain explicit opt-in checks.
+The actual interpolation fixture exercises c64 midpoint/predicted poses, camera
+cuts, 2D holds, history selection, and CPU prediction during a partial frame with
+state restoration and no replay of guest geometry. Portable clock tests cover ten
+minutes at each rate and stalled-deadline recovery. A deterministic concurrent
+config test also verifies the renderer waits until settings parsing finishes;
+the old lazy-load race could cache fallback pacing/fullscreen values.
+
+Initial isolated 90-second Test Lab Story runs at 120 and 144 targets reached
+Time to Split, replayed camera input, paused and resumed. Stable gameplay report
+windows submitted about 600 and 720 replays per five seconds respectively while
+guest swaps/vblank remained about 60 Hz. Some scene/phase transitions still
+fall below the target. Capturing BMPs itself introduced stalls, so capture-run
+timing is not used as a steady-rate claim. Reviewed same-guest-frame captures
+show distinct poses and intact scene rendering; this is not a physical display
+or every-effect fidelity test. The test runner isolates saves, controls, both
+display configurations and Discord, checks the canonical fixture, bounds logs
+and captures, and recycles only its own virtual disks. Selected PNG evidence and
+CPU submission CSVs remain in ignored `private/test-saves/high-refresh`.
+Across guest frames 3000-4099, the uncaptured runs measured 119.94 and 144.00
+submissions/second. Median intervals were 8.34 and 6.93 ms, with 99th percentiles
+9.00 and 7.69 ms respectively (`timing-summary.json`). Captures `motion144-a.png`
+and `motion144-b.png` came from the immediately preceding rendering build
+`5494bb66f2ea06e2918c8fdabeca5cc6e5fc53a3b204e77f829236945de6f80e`;
+the initial build added initial-state/offscreen guards and was timed without dumps.
+
+Consistency follow-up: those guards disabled all CPU prediction whenever a
+recorded frame contained an offscreen effect. The original 144 run fell to
+481 and then 306 replays per five seconds around 70-80 seconds, despite the
+guest continuing at 60 Hz. The revised recorder holds only the offscreen
+clears/draws and feedback copies during prediction. Main-scene prediction
+continues with isolated color/depth, and normal guest/legacy effect writes
+remain enabled. Lost targets retain the conservative fallback.
+
+Two uncaptured 120-second isolated runs now cover the previously failing region
+and later gameplay. The 120 run also replays repeated turning, WASD and firing
+from 85-115 seconds. Both observed Story gameplay and pause/resume without an
+early exit or crash. Across guest frames 3000-6799 (about 63 seconds, including
+pause/resume), the measured CPU submission results are:
+
+| Target | Submissions/s | Median interval | 95th percentile | 99th percentile | Longest interval |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 120 | 119.64 | 8.33 ms | 8.82 ms | 9.07 ms | 25.41 ms |
+| 144 | 143.21 | 6.94 ms | 7.50 ms | 7.78 ms | 21.97 ms |
+
+The formerly failing region (guest frames 4200-4699) averaged 119.76/143.64
+submissions per second. The 144 five-second reports now contain 717 and 720
+replays around 70-80 seconds, with about 60 guest swaps/vblank per second.
+These numbers describe CPU submissions, not display scanout or measured input
+latency. Occasional missed slots, loading/cutscene slowdowns and prediction
+corrections remain; constant 144 FPS across every scene is not established.
+Evidence: `logs/issue167-consistency120.log`, `issue167-consistency144.log`, and
+ignored `private/test-saves/high-refresh/consistency-timing.json`; the uncaptured
+144 trace is retained as `144-consistency.csv`.
+
+The new production replay-operation regression checks main-scene continuation,
+preserved effect textures/custom depth, both screen-copy paths and normal
+legacy writes. Mutations removing the clear, ordinary draw, indexed draw or
+screen-copy protection each fail the regression as intended. It is wired into
+the Windows CI suite and local Test action.
+
+Follow-up validation passed 81 checks with one native-Mac-only check skipped
+on Windows (`logs/issue167-consistency-tests.log`). The standard Windows Build
+and its bundled tests passed (`logs/issue167-consistency-build.log`). A third
+120-second run used the 144 target with movement/turning/firing input and
+bounded late captures. Reviewed `consistency144-late-a.png` and
+`consistency144-late-b.png` show terrain, the equipped weapon, stable HUD and
+changing firing/impact effects around guest frames 6000-6031. This is a limited
+visual check, not proof of every effect or high-refresh monitor smoothness.
+Capture timing is excluded from the table above. The 24 temporary BMPs were
+recycled after retaining those two PNGs, and all three runners recycled their
+own disposable disks without changing the Test Lab fixture or personal data.
+
+Current game SHA-256:
+`21decd39f02e6d842609df0bad8686ec8af3555eb45c004a5c9067577a9a6045`.
+Monitor recovery helper:
+`b12740b91189f342d2e131dc0ba34404bfbd83a695cb5bcc743ed57f99d23d41`.
+Launcher app:
+`7a95e8f9029db6bd346ad768e8bccbc87857ac06c2887d66edbfadae2d8bf93a`.
+These are local development binaries, not a published release. Native Mac GPU
+validation is unavailable on this host; existing 2x/default and saved 1x paths
+remain unchanged. New native target/monitor adapters are queued in
+[MAC-049](MAC_PORT_BACKLOG.md#mac-049--fractional-presentation-targets-and-windows-transform-setup-issue-167).
+
+### Performance settings audit and user adjustments (2026-10-19)
+
+Still local/uncommitted on `feature/167-144-fps` at base `d63a156`. Runtime
+source and the tested game binary above are unchanged in this follow-up; no
+additional measured engine FPS gain is claimed. The audit found three setup
+gaps: selecting a target could leave VRR disabled, users could subsequently
+select incompatible game pacing, and the scale UI implied supersampling still
+applied with an explicit output resolution. In fact, `pc_display_scene_size`
+overrides the scaled console dimensions with the chosen output size.
+
+The Windows launcher now has draft-only 60/120/144 setup buttons, coordinating
+game pacing, fullscreen/VRR, 1× console scale, FPS overlay and a supported
+matching refresh request. Output resolution/filtering remain selected by the
+user. Choosing a target enables fullscreen/VRR and disables conflicting pacing
+and legacy multiplier controls. Console scale is inactive with explicit output
+resolution; its existing preference is retained. Current primary-monitor Hz
+and live guidance explain the effective settings, unsupported/mismatched refresh,
+fullscreen/VRR changes, quality reductions and Save/restart. No user settings
+are changed simply by opening the page or cancelling a draft. Mode enumeration
+is a snapshot of the primary display; runtime validation remains on the actual
+game monitor. It does not detect or enable the monitor's VRR feature.
+
+The existing runtime disk shader cache is already enabled by default. The
+uncaptured trace from the previous pass reports 21 vertex programs compiled in
+9 ms total, alongside 4 ms of combiner compilation by the gameplay section;
+that trace does not establish shader compilation as the cause of sustained
+late-game FPS drops. GPU execution/presentation-queue and physical scanout
+measurements remain useful follow-up work. CPU submission counters cannot prove
+that a higher target improves input latency or displayed pacing. Changing the
+60 Hz game clock is not used as a performance adjustment.
+
+Validation on the same Windows/MSVC host: `tools/build-launcher.ps1 -Test`
+passed all launcher suites, including 37 isolated settings checks. New cases
+exercise each preset, draft/Cancel behavior, saved graphics preservation,
+restoring 60 FPS, refresh capability filtering, active/inactive console scale,
+and guidance reacting to VRR/fullscreen. A rendered settings-page preview was
+visually checked at 1000×900 (`build/issue167/performance-settings.png`).
+Additional CI-routing and Windows display-model checks passed (see
+`logs/issue167-performance-settings-tests.log`). No automated gameplay run
+or runtime rebuild was required for these launcher-only changes. Mac UI/GPU
+adaptation remains queued in MAC-049.
+
+Updated launcher app SHA-256:
+`c9a6f7bc848a36ac5d620a4bd76695bf4faa2552743f16728effee259269250b`.
+Build evidence: `logs/issue167-performance-settings-build.log`; rendered UI
+check: `logs/issue167-performance-preview.log`. The source usage guide now
+explains the recommended adjustment order and the limits of the FPS counters.
+
+### In-game smoothness controls and GPU investigation (2026-10-19)
+
+Local/uncommitted on `feature/167-144-fps`, base `d63a156`. Windows Display
+settings now includes a Smoothness / refresh page with original 60 FPS and
+experimental 120/144 FPS, plus Desktop/120/144 Hz. Changes are staged, saved
+atomically to the launcher's runtime configuration and applied on next launch.
+Back discards edits. Reopening reads the saved preferences; resolution/FOV,
+comments and unknown runtime settings survive a save. The high-FPS choices
+coordinate fullscreen, VRR and 60 Hz guest pacing. Read/write errors receive
+explicit feedback. Native Mac UI/file/renderer adaptation remains MAC-049.
+
+The next investigation separated CPU redraw, GPU elapsed redraw and Present
+call time. Official Intel PresentMon 2.6.0, filtered to the isolated game PID,
+completed a bounded 120-second capture but returned no events/CSV in this
+session (`logs/issue167-presentmon144.log`). Its downloaded console binary
+has a valid Intel signature and SHA-256
+`b2a706bc6ad475749e3b7e3409263aa1e6906d45bdcf993f6dbc0f660188f1af`.
+This result provides no ETW/display timing evidence.
+
+The additive presentation-timing patch and `src/pc_gpu_timing.inc` therefore
+add an opt-in D3D11 probe (`TSFP_GPU_TRACE`). Sixteen timestamp/disjoint query
+slots are polled without flushing or waiting, with at most 20,000 samples.
+No queries/files are allocated when disabled. Timestamps bracket interpolated
+redraw plus resolve, excluding the guest frame and simulation. These are
+elapsed GPU spans, potentially including idle bubbles, not GPU busy time.
+
+Two isolated 120-second Test Lab first-mission runs used pause/resume and
+movement/turning/firing input, without screenshots or concurrent builds.
+Hardware: Windows 11 x64, MSVC 14.44.35207, D3D11 on RTX 4070 SUPER,
+driver 32.0.16.1742, 1280×720 rendering. The active virtual display still
+offers 1920×1080 at 60 Hz rather than supported 120/144 Hz modes.
+The table covers guest frames 3000–6799, matching submission timestamps
+within 4 ms and rejecting incomplete CSV rows:
+
+| Target | Samples | CPU redraw median / p99 | GPU span median / p99 / max | Present median / p99 |
+| --- | ---: | --- | --- | --- |
+| 120 FPS | 7,575 | 0.402 / 0.679 ms | 1.403 / 2.496 / 4.697 ms | 0.053 / 0.123 ms |
+| 144 FPS | 9,127 | 0.398 / 0.670 ms | 1.406 / 2.503 / 5.020 ms | 0.052 / 0.110 ms |
+
+There were no invalid GPU timestamps, Present errors or skipped probe slots
+in these windows. Redraw cost has headroom relative to the 8.33/6.94 ms target
+intervals in this tested scene, and Present does not show substantial CPU
+blocking. This does not rule out heavier scenes, original guest-frame GPU
+work, queueing or display pacing. DXGI frame statistics contained no useful
+nonzero display counts/QPC, so physical scanout and latency remain unmeasured.
+The next useful hardware check is on a real 120/144 Hz VRR display with
+working presentation/display telemetry, comparing the same scene at both
+targets. No additional FPS gain is claimed from adding this diagnostic.
+
+Evidence: `logs/issue167-gpu120.log`, `issue167-gpu144.log` and ignored
+`private/test-saves/high-refresh/{120,144}-gpu.csv`, corresponding CPU traces
+and `gpu-summary.json`. The runners isolated saves, both display configurations,
+controls and Discord, bounded logs/duration, recycled only their disposable
+disks and preserved the canonical Test Lab fixture.
+
+The standard Windows Build and bundled tests passed
+(`logs/issue167-ingame-build.log`). Patch transitions/tracking, CI routing,
+clock/interpolation/prediction, initialization, refresh and menu regressions
+passed 86 checks (`logs/issue167-ingame-final-tests.log`). The actual menu
+check exposed native restoration of old row IDs overwriting motion choices;
+the adapter now reapplies saved choices after that restoration, and the
+fixture reproduces it. Long feedback is displayed inside the menu because
+the original header region cannot fit it. After these fixes, the affected
+menu/FOV/persistence/layout suite passed 17 checks
+(`logs/issue167-menu-final-tests.log`) and the standard Build passed again.
+
+`tests/motion_settings_game.py` passed a bounded 64-second actual frontend
+check: Display → Smoothness, save 120 FPS/120 Hz, reopen, then change and
+discard. Reviewed `private/test-saves/motion-menu/{display,smoothness,saved,
+reopened}.png` show readable labels, a visible restart message and restored
+120 FPS/120 Hz choices. Both shared frontend/paused entry points use this
+same page; the new live check exercised the frontend entry. The isolated
+configuration retained its comment/unknown key and the PC display file was
+unchanged. Its temporary BMPs and disposable disks were removed/recycled;
+the canonical fixture and personal files were preserved.
+
+GPU runs used game SHA-256
+`40409b503b8ad607afd33c1136e1c6fe13077c69d3ff6174c1720aa8345efc67`.
+The final menu-only fixes were built and live-tested with game SHA-256
+`afffbd870e1c3f8d9991ee2f2df68d22139076d988aacb67b3730e974e6adfba`.
+The timing probe and renderer are unchanged between these binaries. Helper
+and launcher hashes remain as recorded above. No release was published and
+native Mac GPU validation remains unavailable.
+
+### Stability and recovery audit (2026-10-19)
+
+Local/uncommitted on `feature/167-144-fps`, base `d63a156`. The audit found two
+recoverable failures in the current high-refresh work:
+
+- Refresh restoration treated a failed `EnumDisplaySettingsW` query as if the
+  user had independently changed the display. It cleared pending restoration
+  and disarmed the crash watchdog. `src/pc_refresh.c` now retains both until
+  the mode can be inspected, restored, or confirmed to have changed separately.
+  The failure-injection test failed before the fix and passes after it; it also
+  verifies failed restoration, subsequent success and watchdog event state.
+- A single failed extra render-target acquisition permanently disabled
+  interpolation. Its callers then calculated redraw costs from the previous
+  successful present timestamp. The additive `interpolation-recovery.patch`
+  returns an explicit success result, keeps failed draws out of timing/counters,
+  and restores prediction state before returning. Windows 120/144 targets use
+  normal guest frames and retry at most once per second, allowing recovery
+  without restarting. Legacy/native disable-on-failure behavior is preserved.
+  Tests exercise failure and recovery in the real interpolation implementation,
+  all three scheduling paths, cooldown allocation throttling, guest-present
+  fallback, unchanged timing/slot counters and preserved guest recording/state.
+
+The standard Windows Build and bundled tests passed
+(`logs/issue167-recovery-build.log`); the initial five targeted recovery/clock
+checks passed (`logs/issue167-recovery-tests.log`). Monitor failure evidence:
+`logs/issue167-refresh-failure-before.log`. These injected renderer/monitor
+failures are deterministic fixtures, not physical device-loss or cable tests.
+Native GPU validation is unavailable and adaptation is recorded in MAC-049.
+
+Built game SHA-256:
+`3fa073aa5c8bbe6577a0da84ebdd6b6708a8184f86afd0c6db57e1c429ba1e56`.
+Host remains Windows 11 x64, MSVC 14.44.35207, D3D11/RTX 4070 SUPER,
+driver 32.0.16.1742, verified US XBE and pinned runtime `d90c929` plus the
+complete additive patch stack. The active virtual monitor is still 60 Hz.
+
+Full affected patch-transition/tracking, interpolation/prediction, clock and
+monitor recovery checks passed 38 tests
+(`logs/issue167-recovery-final-tests.log`). The new failure cases are part of
+the existing CI/local Test fixtures. `tests/high_refresh_game.py --resources`
+adds bounded five-second samples of the owned child process's private commit,
+working set and handle count; it supports isolated runs up to ten minutes.
+The API/structure follows Microsoft's
+[process memory counters](https://learn.microsoft.com/en-us/windows/win32/api/psapi/ns-psapi-process_memory_counters_ex).
+These process metrics do not measure dedicated GPU memory.
+
+A 300-second isolated 144-target Story run passed with initial movement,
+turning/firing and verified pause/resume, followed by continued gameplay.
+There were no logged crashes, unresolved calls or interpolation-target
+failures. In the 36 resource samples from 120–295 seconds, private commit
+ranged from 346,218,496 to 352,382,976 bytes (330.2–336.1 MiB); handles ranged
+from 730 to 741 and ended at 732. The last sample was the minimum private
+commit, so this window shows no sustained growth trend. The last logged
+five-second interval submitted 719 interpolation redraws while guest swaps
+remained at 60 FPS. This is host submission evidence, not physical scanout.
+The initial part overlapped the regression process, so this run is a
+stability observation rather than a controlled performance benchmark.
+
+Evidence: `logs/issue167-stability144.log`, ignored
+`private/test-saves/high-refresh/144-stability-resources.json`,
+`144-stability-states.json` and bounded stdout/stderr/CPU submission trace.
+No screenshots or GPU trace were requested. Both configurations, saves,
+controls and Discord were isolated; only this child was terminated after
+300 seconds. Its disposable disks were recycled and the canonical Test Lab
+fixture check passed. Existing GPU investigation traces were preserved under
+their original tags.
+
+Remaining coverage: repeated level/menu transitions and save/load loops,
+multiple Arcade/online maps, longer sessions and real-monitor Alt-Tab,
+resolution changes and disconnect/reconnect. This short first-mission run
+does not establish leak-free behavior or physical GPU/device-loss recovery.
+
+### Transition, profile reload and window checks (2026-10-19)
+
+Completed an approximately ten-minute operator-steered session using the same
+Windows build `3fa073aa5c8bbe6577a0da84ebdd6b6708a8184f86afd0c6db57e1c429ba1e56`
+and verified US XBE. Source remains local/uncommitted at base `d63a156` on
+`feature/167-144-fps`; Windows 11 x64, MSVC 14.44.35207, pinned runtime
+`d90c929`, D3D11/RTX 4070 SUPER driver 32.0.16.1742. This follow-up changes
+test tooling and usage documentation, not the game binary.
+
+`tests/stability_transitions_game.py` uses only a disposable Test Lab copy,
+isolated controls/both display configs/Discord, bounded per-process logs and
+renderer captures. Its recorded command sequence and state snapshots are in
+`private/test-saves/stability-transitions`. Reviewed captures and read-only
+scene observations verify:
+
+- Time to Split loaded (scene 2), restarted through the original Restart Level
+  confirmation and returned to level selection. Scotland the Brave then loaded
+  (scene 4) and returned to level selection. These are short scene/transition
+  checks, not mission completion or checkpoint-progress validation.
+- The owned game changed windowed → fullscreen → windowed. Minimize/restore
+  produced actual foreground loss and reacquisition, with rendering continuing.
+  Fullscreen used the game's Alt+Enter message path; this was not physical
+  keyboard Alt-Tab testing. Captures are renderer output, not desktop scanout.
+- Paused Display settings applied and kept 1280×540 from 1280×720. A subsequent
+  1280×720 preview timed out and restored the saved 1280×540. Rendering resumed,
+  and 1280×540 persisted across relaunches.
+- Three process relaunches returned exit code 0. After a committed profile
+  change, Inverse look OFF was visible on two successive relaunches. Both
+  local profile files retain valid runtime HMAC signatures; the canonical
+  fixture remains unchanged. Final child shutdown and disposable-disk/BMP
+  cleanup completed. No logged crashes, unresolved calls, Direct3D errors or
+  unavailable interpolation-target failures occurred in these runs.
+
+The save check found a usage trap: choosing Accept in original Controls applies
+the draft but does not immediately persist it. Closing the game while still
+in Settings lost the change in the first check. Accept followed by Back out of
+Settings to the main menu wrote the profile, and subsequent reloads retained
+it. The Windows usage guide now spells out this sequence. No guest autosave
+behavior was changed. This finding does not apply to F2 Save & Close or the
+explicit PC Display save/confirmation paths.
+
+The disposable seed was also written by the game into a second slot with the
+same Test Lab label. The test explicitly selected the game-written slot for
+reload checks. The original exploration logger tracked only the seed file, so
+its `Profile changed: False` refers to that preserved seed, not the active
+saved profile. The harness now inventories all signed profile files. Separate
+post-run verification confirms active slot `1AD19156651F` hash
+`0beb845a9f298483202468e85c651934c526a06b00d798874d311bf24b6027a3`, while seed
+slot `16D15BD8D404` retains the canonical hash. Neither the canonical fixture
+nor personal saves were edited.
+
+Evidence: `logs/issue167-transitions.log`,
+`logs/issue167-transition-evidence.log`; the owned run's `report.json`,
+`states.json`, `saved-profiles.json`, bounded `run*.err` and selected PNGs
+including `level-reloaded`, `scotland-active`, `resolution-kept`,
+`resolution-timeout`, `saved-off-reloaded` and `saved-off-second-reload`.
+Nine fixture-isolation tests passed (`logs/issue167-transition-fixture-tests.log`)
+and the final harness passes Python syntax checking. This operator-steered
+exploration is not an unattended regression that proves every scenario by itself.
+
+The physical refresh runner attempted 120 Hz, found it unavailable at the
+active virtual monitor's current resolution, and left 1920×1080 at 60 Hz
+unchanged (`logs/issue167-refresh-transition-live.log`). Real 120/144 Hz
+switching/restoration, cable reconnects, physical Alt-Tab, dedicated GPU-memory
+growth, checkpoint saves, longer sessions and broader Arcade/online map coverage
+remain unverified. Native Mac equivalents remain pending in MAC-049.
+
+
+### Controls Accept save follow-up (2026-10-19)
+
+Fixed the frontend Controls persistence caveat found in the transition run.
+US `sub_002CBD20` copies the accepted draft into the selected profile and sets
+`0x78AD24 & 0x10000`, but originally waits until leaving Settings to write it.
+The new additive `controls-accept-save.patch` wraps that commit, and shared
+`src/pc_profile_accept.inc` calls the original `sub_001922D0` save workflow
+immediately afterward, returning to Settings on success. It retains the guest
+signature validation, save-error/retry UI and all-profile save pass. The dirty
+flag is global, so restricting that pass to one profile would incorrectly clear
+other pending commits. Cancel never enters this hook; draft edits remain outside
+the committed profile data. Existing pause-menu Controls behavior is unchanged.
+
+Source remains local/uncommitted on `feature/167-144-fps` at base `d63a156`,
+continuing its stability investigation. The complete additive stack was applied
+and guest sources regenerated by the standard Windows Build action. Final EXE:
+`build/windows/Release/futureperfect_recomp.exe`, SHA256
+`d29331d18cd967e9c9d2142f7350b66bf86ff9b50c93c3ade5f06732d40275d9`.
+Host: Windows 11 x64, MSVC 14.44.35207, pinned runtime `d90c929`, D3D11 on
+RTX 4070 SUPER (driver 32.0.16.1742), supported US XBE SHA256
+`3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+
+Validation:
+
+- Standard Build and bundled controls/display/network/debug tests passed;
+  `logs/controls-accept-build.log`.
+- Fourteen patch-transition tests plus profile routing and Auto Lookahead
+  regressions passed (16 total), `logs/controls-accept-tests.log`. After the
+  final all-profile adjustment, profile routing, Auto Lookahead and full
+  display-settings regressions passed again (3),
+  `logs/controls-accept-final-tests.log`. The routing fixture checks commit-before-
+  save order, the all-profile sentinel, frontend/dirty/reentrancy/profile/menu
+  guards, and leaving save-result handling with the original workflow.
+- `python tests/profile_accept_game.py` passed against the final executable.
+  It drives the bounded isolated `stability_transitions_game.py` runner with
+  `--run-name controls-accept`; saves, controls, both display configs, Discord
+  and input are isolated under `private/test-saves/controls-accept`.
+  Inverse Look ON → OFF → Accept wrote a signed profile before process exit.
+  Only body byte 6 changed (`FF` → `FE`), plus its signature. The game was
+  closed directly from Settings; after relaunch the loaded Controls draft and
+  reviewed renderer capture both showed OFF. Changing it back to ON and choosing
+  Cancel left all saved bytes unchanged; another relaunch again showed OFF.
+- Both relaunch exits and the final close returned zero. No crash, unresolved
+  indirect call or RHI error appeared in bounded logs. Temporary disk images and
+  BMPs were recycled; selected PNGs and `verification.json` remain. Canonical
+  Test Lab fixture and the user's `frame000.d3dcap` hash remain unchanged.
+  No personal save or settings file was used.
+
+Evidence: `logs/controls-accept-evidence.log`, `logs/controls-accept-game.log`,
+the owned run's `report.json`, `verification.json`, `saved-profiles.json`, and
+`accepted-settings.png`, `accepted-reloaded.png`, `cancel-selected.png`,
+`cancel-reloaded.png`. The accepted save SHA256 is
+`95fdcc0f058e2789dadc9f4f5f41bd570a2eb3b94b1d3ff890e5baae8dd985fc`.
+The renamed fixture's game-written slot is explicitly selected on relaunch;
+the repeatable driver recycles only that known disposable slot before a new
+run, because general fixture preparation intentionally retains extra slots.
+
+Usage is updated in `docs/windows-settings.md`: Accept is sufficient before
+quitting from frontend Settings. Native shared code is implemented but Mac
+execution remains unverified (MAC-050). Actual disk-full/save-error/retry UI,
+multiple simultaneously loaded profiles, and checkpoint-progress saves were not
+exercised here; error routing and the global dirty-flag behavior were reviewed
+against the supported executable. This follow-up establishes frontend Controls
+persistence, not broader save-system or gameplay validation.
+
+
+### Issue 167 PR integration validation (2026-10-19)
+
+[PR #188](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/188)
+contains opt-in presentation/settings work in `ae4775c` and the separate
+Controls Accept fix in `903e33a`. Merge `f973ae9` incorporates main `ade3763`;
+the CI conflict retains both frame/profile and vehicle-generation regressions.
+High-refresh choices remain experimental, existing defaults stay intact, and
+issue #167 remains open pending physical high-refresh smoothness evidence.
+
+Windows 11 x64, MSVC 14.44.35207, D3D11 RTX 4070 SUPER driver 32.0.16.1742,
+pinned runtime `d90c929` and the supported US XBE were used again. At source
+`5626c3d`, the standard Build and its bundled tests passed
+(`logs/issue167-pr-build.log`); EXE SHA256:
+`c3c51f361417a650ee5f8bf7de0359815e26f5fc71a6f1efd5bf447b88dd459d`.
+The launcher Build -Test suite passed (`logs/issue167-pr-launcher.log`).
+Forty-eight targeted patch-transition, clock, interpolation/recovery, prediction,
+config, refresh, motion, profile, FOV and vehicle-generation tests passed in
+254.32 seconds (`logs/issue167-pr-tests.log`).
+
+The isolated in-game settings runner passed save/reopen of 120 FPS/Hz,
+Back/discard and preservation of unrelated settings
+(`logs/issue167-pr-motion-menu.log`). The Controls runner passed again on that
+binary: Accept saved a valid signed profile before quitting directly from
+Settings, relaunch loaded the accepted OFF value, and Cancel preserved the
+same bytes and OFF value across another relaunch
+(`logs/issue167-pr-save-game.log`, `private/test-saves/controls-accept/verification.json`).
+Accepted save SHA256 remains
+`95fdcc0f058e2789dadc9f4f5f41bd570a2eb3b94b1d3ff890e5baae8dd985fc`.
+Canonical fixtures and personal settings/saves were preserved. The user's
+untracked graphics capture remains excluded and unchanged.
+
+The final UI review found that the longer experimental label crowded the
+Motion row. Shortening its title from Smooth motion to Motion is a text-only
+follow-up to `5626c3d`; usage documentation now matches. The standard Build
+and bundled tests passed again (`logs/issue167-pr-label-build.log`), producing
+EXE SHA256 `27ed8177063a608824eb6252ad5b4152124b86cf660ca45aee6af695f223544b`.
+The isolated motion-menu regression passed again on that executable
+(`logs/issue167-pr-label-menu.log`); the reviewed reopened-menu capture shows
+the complete experimental label without overlap.
+
+Physical 120/144 Hz switching and scanout, long Arcade/online coverage,
+multiple simultaneously loaded profiles, actual save-error/retry UI and native
+Mac gameplay remain unverified. CI source/compiler checks do not establish
+physical monitor or native game behavior. This is a review candidate, not a
+published release or a change to main.
+
+## API-free launcher integration (2026-10-19)
+
+PR #186 now includes merged PRs #190, #189 and #187 (feature branches only),
+then integrates main `4d5b3f0` into `codex/mac-launcher-visual-polish`.
+The final integration is uncommitted at this record. macOS 27.0.1 ARM64,
+Python 3.13.16, .NET SDK 8.0.426 and Avalonia 11.3.22; no game execution in
+this pass. The primary scene-development checkout and personal data are untouched.
+
+The user rejected API-credit billing. The former Codex/API proposal workflow
+has been replaced with an API-free `pull_request` build/test gate, with only
+read permission, standard hosted runners, and no secrets or AI actions. The
+repository's OPENAI_API_KEY secret and LAUNCHER_COMPATIBILITY_ENABLED variable
+were removed. The ignored local key remains unused. This does not automatically
+write OS adapters; failed builds/tests require a source fix, which can be done in
+Codex using the user's existing chat. The prior HTTP 429 credit-balance failure
+is no longer an activation dependency.
+
+Main's newer Windows 120/144 FPS controls introduced WPF-only tooltips/events and
+Windows display enumeration into the newly shared page. The integration routes
+those operations through host adapters, retains native default interpolation,
+and preserves unsupported saved presentation/refresh values. Shared tests verify
+that editing FOV/interpolation never resets those options. Native fixed targets
+and monitor switching remain MAC-054. Controls Accept persistence is MAC-055;
+these IDs reconcile collisions with older native backlog entries. Both runtime
+CI test selections and all historical validation records are retained.
+
+Local validation: seven API-free scope/completion tests, 16 release/recovery
+contracts, 55 CI-scope/backlog/layout checks, 18 native launcher groups and eight
+shared UI groups pass. All four changed workflows pass actionlint 1.7.12; the
+rebuilt launcher passes its read-only prerequisite check. The native
+launcher was rebuilt from this integration's uncommitted source; its build receipt
+records that state. Fresh Windows/Mac CI and the final main merge are pending. No release was published and these checks
+do not certify native gameplay or complete visual parity.
+
+
+## Launcher main patch integration follow-up (2026-10-19)
+
+At `02acfe0`, GitHub run [39340698617](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39340698617)
+passed the API-free scope gate, Windows launcher build/regressions, native Mac
+build/regressions and packaged repair/restart, and complete dual-platform asset
+verification. Required runtime CI exposed the independently developed main
+presentation patches overlapping shared event pumping, replay depth and present
+outcome code. This follow-up adapts the in-progress presentation rebase from the
+concurrent `codex/renderer-main-integration` checkout to this earlier baseline;
+that checkout and its scene/capture work remain untouched and excluded.
+
+The original three PC presentation payloads remain under `patches/legacy`.
+Their integrated forms apply after the shared renderer stack, retain its replay
+depth cache and successful-present counters, and keep bounded failure retries.
+A small subsequent patch guards the Windows refresh adapter include. Historical
+stack fixtures at `4d5b3f0` and `efbcc4e` exercise upgrade/downgrade/re-upgrade
+while retaining unrelated edits. GPU depth fixtures now cover prediction as well
+as gate replay; the Windows interpolation fixture uses the shared present result.
+
+Host: macOS 27.0.1 ARM64, Python 3.13.16, Apple Clang. Source: uncommitted
+follow-up to `02acfe0`. The patch suite passed 28 tests with two Windows-only
+skips. Another 71 renderer/frame-clock/CI-scope checks passed against a disposable
+source-only archive of pinned upstream `d90c929`; the active runtime checkout was
+not patched. Fresh Windows/macOS CI and the real-GPU contract are pending.
+No game execution, new game build or release publication occurred in this pass.
+
+
+CI follow-up at `ba5aaa7`: both launcher/package jobs passed again in run
+39341464578. Windows runtime migration assertions exposed a test-only mixed
+LF/CRLF append. The fixture now follows the source file's existing line ending
+and compares byte-exact hashes to keep failure logs bounded. Both historical
+migration cases pass locally after this correction; fresh Windows CI is pending.
+
+### Renderer and PC presentation integration (2026-10-19)
+
+Focused branch `codex/renderer-main-integration` depends on the unmerged
+renderer/scene stack at `a0a89f5` and merges main `4d5b3f0` (PR #188) into that
+branch only. Main is not changed by this work. The integration is recorded
+on this focused branch; prior scene results apply to their original builds,
+not this one.
+
+The independent PC timing patches assumed the old replay implementation.
+Their integrated forms now apply after the common renderer stack, preserve
+successful-present return values/counts and use the shared per-subresource
+replay-depth cache for CPU prediction as well as gate replay. They do not
+replace guest depth views with a second platform-specific mechanism. Paired
+capture requests stay pending during CPU prediction, whose guest image is
+incomplete. Both title entry and interpolation setup use the shared register
+layout helper. Windows monitor API includes/enumeration remain host adapters.
+
+The launcher retains Mac's 2x default and saved 1x preferences. Saved PC target
+and monitor-rate fields survive unrelated native settings edits even though
+Mac does not activate those fields. The native capability remains unavailable;
+Mac keeps its existing 60/up-to-120 presentation path and 60 Hz guest clock.
+Backlog IDs MAC-054/055 distinguish PR #188's additions from existing spirit
+and build-restoration records. CI retains both sets of behavioral checks.
+
+Validation so far on Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, pinned Vulkan
+SDK 1.4.363.0/MoltenVK and .NET 8.0.426:
+
+- Clean patch application and repeated application passed. The recorded old
+  PC and native renderer stacks each upgrade, downgrade and re-upgrade while
+  retaining an unrelated source edit (two regression cases).
+- Native launcher builds; 19 regression groups pass, including a new PC-field
+  preservation/default-capability case. No personal settings were used.
+- Shared renderer/frame-clock/profile-save checks: 23 passed. The retry test
+  covers failed begins, cooldown, failed presents and accepted-present counts;
+  the capture test rejects partial-frame prediction evidence.
+- Asset-free MoltenVK resource/shader/presentation/replay checks passed. Their
+  injected device-loss result is expected test coverage, not a gameplay fault.
+  Existing unsupported primitive-restart warnings remain. These tests alone
+  do not establish the actual Xbox device prediction-depth behavior.
+- The first native rebuild exposed a Windows monitor header included through
+  the shared-controls define. The include is now restricted to its Windows
+  adapter. The rebuilt native executable passes all three platform/MMIO/path
+  CTests and renderer/input/settings/debug self-tests. The actual Xbox device
+  contract also passes prediction color/depth/stencil preservation and unsafe
+  custom-target rejection. The final 150-case Python run had 147 passes, two
+  host skips and one historical-fixture dependency failure; after correcting
+  that fixture, the targeted migration/backlog/CI rerun passed all 50 cases.
+  Thus all 148 applicable cases passed across the run and targeted rerun.
+  The read-only launcher prerequisite check passed. Windows compilation/runtime
+  and hosted CI remain pending.
+
+Validation executable SHA-256:
+`f3e85f5cdc4d5b38cc2e3728f349b797c699e2f80a94940b8b4ea0caaa5e86b3`.
+BUILD.json records `a0a89f5` plus the integration working tree; all runtime-input
+hashes and the executable hash match. Native test cleanup recycled twelve known
+partition images (10,486,813,696 apparent bytes, 8,192 allocated bytes), preserving
+profiles and metadata.
+
+Logs use `logs/renderer-integration-*`. A 4.9 MiB source-only patch fixture and
+604 KiB patch inputs were used; no duplicate game extract or build tree.
+Pre-build free space was 220 GiB. Personal saves/settings and the other chat's
+launcher worktree are preserved. Khallos matched-reference fidelity, spirits,
+full scene coverage and other-device synchronization remain unverified.
+
+The integrated build also completed a **95.17-second** isolated Khallos run,
+exit 0, with no Vulkan validation errors, shader failures or native fault.
+Synthetic navigation reached the mission and produced a complete pair before
+guest frame 4556 at blend 0.659900094. Both retained PNGs were reviewed: train
+stairs/railings, weapon, HUD, trees and sky remain visible. Muted sky and moving
+scenery streaks remain; no matched PC/Xbox fidelity claim or sky fix is made.
+The summary's `rendered_game_verified: false` is an automated placeholder;
+this paragraph records the separate human-readable image review.
+
+Images: `private/captures/native-mac/integration-khallos-{guest,midpoint}.png`;
+receipt/logs: `logs/shared-khallos-integration-120-*`. The final counter sample
+records at least 5,481 guest and 4,719 interpolated successful presents, zero
+skips/failures. Loading, validation and diagnostic readback are included, so
+this is not a 120 FPS benchmark. Six disposable partitions were recycled
+(5,243,406,848 apparent bytes; 135,168 allocated bytes). Captures allocate
+179,600 KiB, below 256 MiB. Protected settings and controls-fixture hashes
+match the pre-existing baseline. Windows and hosted CI remain pending.
+
+### Integrated renderer pacing and spirit observation (2026-10-19)
+
+Focused documentation branch `codex/integrated-renderer-acceptance` depends on
+unmerged `codex/renderer-main-integration` at `9940dba19f1d17fc3d0ca7b58740f9b532a4b84e`.
+No runtime change or new build was needed. The existing executable SHA-256 is
+`f3e85f5cdc4d5b38cc2e3728f349b797c699e2f80a94940b8b4ea0caaa5e86b3`;
+all recorded runtime-input hashes still match. Its manifest retains the honest
+pre-commit provenance (`a0a89f5` plus integration changes), rather than being
+relabeled. Host: Apple M5 Pro, macOS 27.0.1 ARM64, Clang 21, pinned Vulkan SDK
+1.4.363.0 with manifest-selected MoltenVK. The supported US XBE hash was checked
+by the isolated runner.
+
+Two 120-second runs used the disposable unlocked profile and synthetic SDL
+navigation to Khallos. Performance runs disabled Vulkan validation explicitly.
+The preselected 80–95-second measurement window excluded loading/navigation and
+capture readback; the one diagnostic capture occurred at guest frame 6000,
+after the window. Both later captures were reviewed and show train stairs,
+railings, weapon, HUD, moving scenery and muted sky. Streaks remain; this is
+neither a sky correction nor a matched original-Xbox/Windows fidelity check.
+
+| Mode | API presents/s | Guest/s | Interpolated/s | Median | p95 | Worst |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 60 | 60.001 | 60.001 | 0 | 16.691 ms | 17.599 ms | 18.737 ms |
+| 120 | 119.998 | 59.999 | 59.999 | 8.521 ms | 9.515 ms | 13.083 ms |
+
+The selected windows contain 900 and 1,800 successful API presents respectively,
+with no interval above 33.33 ms. These are CPU-observed presentation intervals,
+not GPU completion, display scanout or sustained campaign certification. The
+whole runs, including startup/loading and one capture, averaged 59.865 and
+113.278 presents/s with worst intervals 133.162 and 135.402 ms. Both exited 0
+at their limits (120.18 and 120.12 seconds). The 60 Hz guest clock is unchanged.
+
+Evidence: `logs/shared-khallos-integrated-{60,120}-{summary.json,frames.csv,err}`,
+`logs/integrated-khallos-pacing-results.json`, and
+`private/captures/native-mac/integrated-pacing-{60,120}.png`.
+
+A separate **155.19-second** Mansion run kept Vulkan validation enabled and
+completed with exit 0, no reported validation errors/shader failures/native
+fault, and five fresh paired captures. Synthetic navigation reached the hall;
+frames 4978/5369/5986/6723/7339 show the exterior transition, hall characters,
+falling/burning chandelier, then attacking spirits. All ten PNGs were reviewed.
+Pair 3 (frame 6723, blend 0.671622794) visibly contains skull geometry, glowing
+red eyes and dark trailing shapes in both guest and intermediate images. The
+near spirit is partially clipped by the top edge. Pair 4 includes a synthetic
+horizontal turn and a partly off-screen trail; it is not complete multi-angle
+face-culling evidence. Hall geometry, fire and damage indicators remain visible.
+No runtime fix was needed for this observation.
+
+MAC-049 remains Awaiting validation: controlled wall occlusion, full skull
+views from multiple angles, interpreted-vertex execution and the other affected
+ghost encounters were not checked. These frames establish actual spirit
+visibility in this encounter, not every acceptance criterion or original-console
+parity. The runner's automated `rendered_game_verified: false` remains separate
+from this explicit image review.
+
+Evidence: `logs/shared-mansion-spirit-{summary.json,err,captures.json}` and
+`private/captures/native-mac/mansion-spirit-{0,1,2,3,4}-{guest,midpoint}.png`.
+Last sampled counters: 9,108 guest plus 8,292 interpolated successful presents,
+zero skipped/failed; loading, validation and paired readback make these counts
+unsuitable for FPS claims. All three runs recycled their six known disposable
+partition images (5,243,406,848 apparent bytes and 135,168 allocated bytes per
+run). Ten protected personal configuration/fixture paths match their baseline
+hashes. Capture storage allocates 206,792 KiB, below 256 MiB. Windows runtime,
+hosted CI, matched Khallos reference and other-device synchronization remain
+unverified. No full playthrough was performed.
+
+A follow-up **145.15-second** isolated run on the same verified executable
+used a step back, an upward-look request and a short left strafe near the hall
+pillar. It exited 0 with validation enabled, no reported validation/shader
+errors or native fault. Six fresh pairs were produced; pairs 3–5 were reviewed
+and retained (guest frames 6421/6802/7060, blends 0.579280611/0.575864582/
+0.623379742). The first retained pair shows several unclipped distant spirits
+with red eyes, and the next shows a closer side view with skull surface and
+trails. Hall geometry, the nearby pillar and fire remain visible in both guest
+and intermediate images. No new rendering defect was established. The final
+pair does not show the same spirit in the same position, so it cannot establish
+wall occlusion. Controlled occlusion and full-angle face fidelity remain open.
+
+Receipts/logs: `logs/shared-mansion-spirit-angle-{captures.json,summary.json,err}`;
+selected PNGs: `private/captures/native-mac/mansion-spirit-angle-{3,4,5}-{guest,midpoint}.png`.
+Six redundant setup PNGs were recycled; the receipt lists retained indices.
+Capture allocation is 218,992 KiB. Six known disposable partition images were
+recycled (5,243,406,848 apparent / 135,168 allocated bytes), and all ten protected
+configuration/fixture paths still match their baseline hashes. No executable,
+shader, personal setting or fixture was changed. The latest counters record
+8,486 guest and 7,714 interpolated successful presents, zero skips/failures;
+this validation/readback run is not a pacing benchmark.
+
+### Renderer integration hosted CI and line-ending fixture (2026-10-19)
+
+Draft [PR #191](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/191)
+now reviews `codex/renderer-main-integration` against its unmerged
+`codex/shared-scene-acceptance` base. No merge into main was performed.
+At head `9940dba`, [run 39345301346](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39345301346)
+passed its macOS job: 49 scope/backlog tests; 28 patch tests (two host skips);
+228 runtime/render/input tests (18 host skips); real MoltenVK GPU contracts and
+production frame replay; 49 release tests (three host skips); and native launcher
+build/tests. This hosted run uses synthetic GPU data, not game assets.
+
+Windows passed 28 patch tests but failed the two newly added historical-stack
+fixtures before reaching runtime tests. Both appended LF bytes to a CRLF file;
+Git's configured CRLF conversion normalized the artificial mixed-ending edit,
+violating the fixture's byte comparison. The same two failures reproduced on
+Mac with `core.autocrlf=true`. The fixture now appends using the file's existing
+line ending and explicitly tests both conversion settings on both hosts while
+retaining exact source snapshots and unrelated-edit checks. All four local
+history/conversion combinations pass (46.18 seconds). The existing workflow
+already selects this test; no new workflow entry or runtime patch is required.
+Logs: `logs/renderer-integration-crlf-{repro,fixed}.log`. Windows rerun remains
+pending; the native executable and its prior scene evidence are unchanged.
+
+### Khallos PC appearance comparison (2026-10-19)
+
+The user checked the PC build at the mission's starting train stairs and
+reported that its sky also looks muted grey/stretched ("it looks like that").
+This is user-reported observation; the PC revision, driver and a matched frame
+capture were not supplied. Combined with the source-texture/CPU-pixel checks
+and the independent motion-blur reference above, it does not support a new
+Mac-specific static-sky correction. Preserve the train's authored motion effect.
+Exact original-console fidelity is not certified. The shared interpolation and
+Vulkan resource fixes retain their separate measured evidence.
+
+The acceptance branch incorporates the test-only integration follow-up
+`d0edd6d`, preserving the earlier scene/pacing records. PR #191 remains a draft
+against its unmerged renderer base; main and the other chat's worktree are
+unchanged by this work.
+
+The `d0edd6d` follow-up [run 39346834585](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39346834585)
+passed macOS completely, including 30 patch tests (two host skips), 228 runtime
+checks (18 host skips), real GPU contracts and native launcher checks. Windows
+passed the patch transitions, then reported 248 runtime checks passing, 30 skips
+and three interpolation harness link failures: their config stub lacks
+`recomp_config_lookup`, now used by the Windows initializer. A focused test
+harness correction is required; this run does not establish Windows success.
+
+### Interpolation harness Windows linkage (2026-10-19)
+
+At `d0edd6d`, [run 39346834585](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39346834585)
+passed macOS completely (30 patch tests with two skips; 228 runtime/render/input
+checks with 18 skips; real MoltenVK GPU contracts; native launcher checks).
+Windows passed the patch transitions, then 248 runtime checks with 30 skips,
+but three interpolation harnesses failed to link `recomp_config_lookup`.
+The integrated Windows initializer calls that API; the isolated harness supplied
+only the integer-config stub. The shared harness now supplies the missing lookup
+stub, retaining its fail-loud behavior if configuration is unexpectedly reached.
+No runtime behavior changes. All 20 renderer-host tests pass locally on macOS
+ARM64/Clang 21 (3.22 seconds); Windows rerun remains required.
+
+
+### Shared renderer final bounded acceptance (2026-10-19)
+
+At runtime/test head `c6b01d3`, [run 39347966123](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39347966123)
+passes **both** Windows and macOS jobs. Windows: 49 scope checks, 32 patch
+transition checks, 251 runtime/render/input checks (30 host skips), 52 release
+checks, 104 isolated launcher regressions, plus the selected UI/crash suites.
+macOS: 49 scope checks, 30 patch checks (two host skips), 228 runtime/render/input
+checks (18 host skips), real MoltenVK resource/presentation/replay GPU contracts,
+49 release checks (three host skips), and 19 native launcher regression groups.
+The missing lookup-stub correction is verified on Windows. These asset-free
+host checks are not Windows gameplay or matching scene captures.
+
+An additional **115.17-second** isolated opening-mission run on acceptance
+revision `aaf926d` used the same integrated ARM64 executable (`f3e85f5c…` above).
+All BUILD.json runtime-input hashes, binary and supported-XBE hashes matched
+before launch. Host remains Apple M5 Pro/macOS 27.0.1 ARM64/Clang 21, pinned SDK
+1.4.363.0 and MoltenVK. The complete integration runtime is unchanged; BUILD.json
+retains its original `a0a89f5` plus working-tree provenance. Synthetic SDL input
+navigated the menus, skipped the introduction, moved forward, turned both ways
+and strafed. Vulkan validation stayed enabled. It exited 0 without reported
+validation errors, shader failures or native faults.
+
+Three fresh guest/intermediate pairs (frames 4782/5219/5597, blends
+0.655409880/0.567987274/0.569679921) were reviewed, six images total. Canyon walls,
+ground, debris, weapon/hand, HUD, characters and fire/smoke remain visible through
+movement and turns; the last pair shows the new-objective overlay. No disappearing
+world or new rendering defect was observed in this bounded route. The last
+counter sample has 6,774 guest and 6,126 interpolated successful presents, zero
+skips/failures; this readback/validation run is not a pacing benchmark.
+
+Evidence: `logs/shared-integrated-opening-{summary.json,err,captures.json}`,
+`logs/integrated-opening-validation.log`, and
+`private/captures/native-mac/integrated-opening-{0,1,2}-{guest,midpoint}.png`.
+Ten protected configuration/fixture paths still match their baseline. Six known
+disposable partitions were recycled (5,243,406,848 apparent / 135,168 allocated
+bytes). Captures allocate 230,772 KiB; pre-run free space was 220 GiB. No game
+extract, build tree, personal configuration or save was replaced.
+
+Goal audit against the requested bounded renderer work:
+
+| Requirement | Evidence and scope |
+| --- | --- |
+| Diagnose Khallos sky and fix demonstrated rendering defects | Source textures and independent pixel samples agree; both Mac drivers reproduce the static appearance, and the user reports the same on PC. Preserve authored motion instead of adding an unsupported Mac-only sky change. Shared affine interpolation and Vulkan swizzle/resource fixes have production-code and GPU regressions. Exact original-console fidelity is not certified. |
+| Shared implementation and Windows/macOS regressions | Shared patches/interfaces, host adapters and the final two-host CI run above; test-only CI corrections do not alter runtime behavior. |
+| Short representative geometry, lighting, transparency and effects checks | Current integrated Khallos, Mansion hall/spirit and opening-mission captures, with the earlier exterior/rain control separately versioned. No full playthrough or all-scenes claim. |
+| 60 and up-to-120 pacing while retaining the guest clock | Preselected windows measure 60.001 / 119.998 successful API presents/s; 120 mode splits into 59.999 guest + 59.999 interpolated, with no interval over 33.33 ms in those windows. Loading/readback stalls and whole-run means remain reported separately. |
+| Preserve settings, fixtures, pins, lean storage and concurrent work | Verified hashes, isolated runner paths, known partition cleanup and storage totals above; 19 unrelated duplicate files and the other chat's worktree are preserved. |
+| Focused branches, provenance and handoff | Runtime integration PR #191 depends on the unmerged renderer stack; acceptance PR #193 depends on #191. Main was not modified by this work. Other-device checkout synchronization and Windows gameplay remain unverified. |
+
+This completes the requested bounded renderer investigation and acceptance,
+not full-game certification. Broader MAC-005 shader fidelity and MAC-049 spirit
+wall-occlusion/full-angle/other-encounter coverage remain in the backlog. There
+is no demonstrated unresolved Mac-only Khallos defect in the collected evidence.
+
+
+### Renderer promotion onto current main (2026-10-19)
+
+The user authorized merging the completed renderer work into main. Focused
+`codex/renderer-main-promotion` combines main `c238ab3` (including the shared
+launcher UI/release/compatibility work) with renderer acceptance `be37669`.
+Conflict resolution retains main's shared pages and presentation capability
+model, both launcher/runtime test sets and all versioned validation records.
+The superseded launcher-only presentation guard is archived; the shared patch
+supplies that same guard once alongside capture and title-register integration.
+Historical migration now covers PC, native-launcher and native-renderer stacks
+under both Git conversion modes, preserving exact byte hashes and unrelated edits.
+
+Applying the combined stack to the existing tested renderer changed **zero**
+runtime source files (all patched-source hashes compared before/after). The
+existing game executable is not relabeled or rebuilt. On this Mac, the combined
+native launcher builds and passes 21 host regression groups and eight shared UI
+groups. Renderer/tooling/SDK/layout checks: 74 passed, one host skip. Patch/tracking/backlog/scope checks: 85 passed, two host skips (143.59 seconds).
+Hosted Windows/macOS checks are recorded in the promotion PR before merge.
+Prior scene/pacing evidence keeps its original executable/source provenance;
+this source merge does not publish a release or validate Windows gameplay.
+Logs: `logs/renderer-promotion-{patches,contracts,launcher}.log`; source hash
+baseline: `logs/renderer-promotion-runtime-before.json`. No personal data or
+concurrent worktree changes were included.
+
+
+## Texture alpha main integration — 2026-10-19
+
+- Integrated main at `0bf9672` into the issue #74 branch for PR #198, preserving current launcher/crash paths, build targets, themes, historical patch migrations, both STATUS histories and MAC-011 records. The user authorized merging the source alpha while keeping issue #74 open. No closing reference is used.
+- Made texture mode initialization/toggling shared with thin Win32 and POSIX synchronization adapters, and linked it into the native common renderer through a separate reproducible patch. This prevents unresolved mode symbols after current main adopted the common Mac texture loader. The native F10/settings adapter remains pending; existing explicit-pack defaults are preserved. Legacy GL now safely rejects RGBA and alpha-incompatible replacements instead of interpreting accepted RGBA bytes as BC3.
+- Registered DDS/parser/loader mode, compiler, inventory, hybrid-planner and variant checks in Windows/macOS CI, with pinned Pillow installation and texture-tool change routing. Tests compile actual loader/mode code, exercise all four initial modes with synthetic RHI resources, and syntax-check Windows controls/settings. MAC-011 records remaining interactive/native visual validation.
+- Windows validation on the integrated tree: 131 texture/native/storage/CI-selection/backlog checks passed; 34 complete patch-transition/tracking checks passed against the existing pinned upstream (20 transition and 14 tracking tests). PowerShell parsing passed for tsfp.ps1 and both texture/playable launch scripts. Diff whitespace check passed with CRLF treated as line endings. Hosted checks are pending at this local record; local Windows results do not establish Mac execution or GPU/gameplay fidelity.
+- No game launch, artwork generation, private-pack change, game-data copy or distributable build. Private artwork remains local; the pack snapshot stays at 1242 supported keys approved offline, 93 held drafts and 5477 needing art. The full overhaul is incomplete.

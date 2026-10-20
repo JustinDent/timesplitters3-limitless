@@ -31,6 +31,7 @@ int main(void)
     CHECK(!bind_socket(sender,31000)); CHECK(!bind_socket(receiver,31001));
     a[0]=address(100); CHECK(call(0x4317a6)==4); CHECK(memory[100]==127 && memory[103]==2);
     a[0]=address(150); a[1]=address(160); CHECK(!call(0x43170b));
+    CHECK(!call(0x431716));
     a[0]=address(100); a[1]=address(150); a[2]=address(180); CHECK(!call(0x43172c));
     a[0]=*(uint32_t *)(memory+180); a[1]=address(200); a[2]=address(240); CHECK(!call(0x431968));
     CHECK(!memcmp(memory+100,memory+200,36)); CHECK(!memcmp(memory+150,memory+240,8));
@@ -80,6 +81,59 @@ int main(void)
         Sleep(20); CHECK(call(0x43184c)==UINT32_MAX);
         CHECK(pc_network_latency(&ms,&count)==1 && count==1 && ms>=0);
     }
+    /* AI snapshots are private control frames, accepted only from this
+       match's host/key. Their size must not trip the Xbox receive capacity. */
+    {
+        unsigned char packet[40+20+sizeof(PcNetworkBotState)]={0};
+        PcNetworkBotState bot={0},received;
+        const unsigned char version[32]=TSFP_NETWORK_COMPATIBILITY;
+        uint32_t match=0x12345678u,host=htonl(0x7f000003u);
+        memset(memory+800,0,36);memcpy(memory+800,&host,4);
+        a[0]=address(800);a[1]=address(150);a[2]=address(850);CHECK(!call(0x43172c));
+        pc_network_bots_context(2,host,match,2,6);
+        memcpy(packet,"TSFP\1\0\0\0",8);memcpy(packet+8,version,32);
+        memcpy(packet+40,"TSFBAI1",8);memcpy(packet+48,memory+150,8);memcpy(packet+56,&match,4);
+        bot.slot=2;bot.tick=10;bot.health=1.f;bot.position[0]=25.f;
+        memcpy(packet+60,&bot,sizeof bot);
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);a[0]=receiver;a[1]=address(500);a[2]=100;a[3]=0;
+        CHECK(call(0x43184c)==UINT32_MAX);
+        CHECK(pc_network_bots_receive(2,&received) && received.tick==10 && received.position[0]==25.f);
+        CHECK(!pc_network_bots_receive(2,&received));
+        bot.tick=9;memcpy(packet+60,&bot,sizeof bot);
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+        bot.tick=11;memcpy(packet+60,&bot,sizeof bot);packet[48]^=1;
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+        packet[48]^=1;pc_network_bots_context(1,0,match,2,6);
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+        pc_network_bots_context(2,host,match+1,2,6);
+        CHECK(sendto(raw,(char *)packet,sizeof packet,0,(struct sockaddr *)&to,sizeof to)==sizeof packet);
+        Sleep(10);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+        pc_network_bots_context(0,0,0,0,0);
+        /* A connected guest need not be in the host's XNet conversion cache. */
+        {
+            SOCKET target=socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
+            struct sockaddr_in destination={0};DWORD timeout=1000;
+            unsigned char outbound[sizeof packet];uint32_t target_ip=htonl(0x7f000004u);
+            CHECK(target!=INVALID_SOCKET);
+            destination.sin_family=AF_INET;destination.sin_port=htons(31000);
+            destination.sin_addr.s_addr=target_ip;
+            CHECK(!bind(target,(struct sockaddr *)&destination,sizeof destination));
+            setsockopt(target,SOL_SOCKET,SO_RCVTIMEO,(const char *)&timeout,sizeof timeout);
+            pc_network_bots_context(1,0,match,2,6);
+            pc_network_bots_targets(&target_ip,1);bot.tick=12;
+            pc_network_bots_send(&bot);
+            CHECK(recv(target,(char *)outbound,sizeof outbound,0)==sizeof outbound);
+            CHECK(!memcmp(outbound,"TSFP\1\0\0\0",8));
+            CHECK(!memcmp(outbound+40,"TSFBAI1",8));
+            CHECK(!memcmp(outbound+48,memory+150,8));
+            memcpy(&received,outbound+60,sizeof received);CHECK(received.tick==12 && received.slot==2);
+            closesocket(target);pc_network_bots_context(0,0,0,0,0);
+        }
+    }
     closesocket(raw); pc_network_shutdown();
     /* Exercise the exact loopback bridge wire format used by online.py. */
     {
@@ -97,6 +151,11 @@ int main(void)
         receiver=make_socket(); CHECK(receiver!=UINT32_MAX); CHECK(!bind_socket(receiver,1000));
         a[0]=address(100); CHECK(call(0x4317a6)==4);
         CHECK(memory[100]==10 && memory[101]==254 && memory[103]==1);
+        /* Online does not loop discovery broadcasts back to their sender.
+           The host creates/registers its session, but never resolves its own
+           XNADDR through XNetXnAddrToInAddr. */
+        a[0]=address(150);a[1]=address(160);CHECK(!call(0x43170b));
+        CHECK(!call(0x431716));
         size=sizeof native;
         CHECK(recvfrom(raw,packet,sizeof packet,0,(struct sockaddr *)&native,&size)==68);
         CHECK(!memcmp(packet,"TSFB\1\0\0\0",8)); CHECK(*(uint16_t *)(packet+64)==htons(1000));
@@ -113,6 +172,67 @@ int main(void)
         CHECK(call(0x431866)==15); CHECK(!memcmp(memory+500,"bridge payload",15));
         CHECK(((struct sockaddr_in *)(memory+420))->sin_addr.s_addr==htonl(0x0afe0002));
         CHECK(((struct sockaddr_in *)(memory+420))->sin_port==htons(3000));
+        /* Online bot control frames must use the virtual host address, not
+           the loopback address of the bridge, and bypass the title's small
+           receive buffer just like LAN snapshots do. */
+        {
+            unsigned char frame[68+20+sizeof(PcNetworkBotState)];
+            PcNetworkBotState bot={0},received;
+            uint32_t host=htonl(0x0afe0002),match=0x12345678u;
+            memset(memory+800,0,36);memcpy(memory+800,&host,4);
+            a[0]=address(800);a[1]=address(150);a[2]=address(850);CHECK(!call(0x43172c));
+            pc_network_bots_context(2,host,match,2,6);
+            memcpy(frame,packet,68);memcpy(frame+68,"TSFBAI1",8);
+            memcpy(frame+76,memory+150,8);memcpy(frame+84,&match,4);
+            bot.slot=2;bot.tick=10;bot.body_present=1;bot.health=1.f;bot.position[0]=25.f;
+            memcpy(frame+88,&bot,sizeof bot);
+            CHECK(sendto(raw,(char *)frame,sizeof frame,0,(struct sockaddr *)&native,sizeof native)==sizeof frame);
+            Sleep(20);a[0]=receiver;a[1]=address(500);a[2]=100;a[3]=0;
+            CHECK(call(0x43184c)==UINT32_MAX);
+            CHECK(pc_network_bots_receive(2,&received) && received.body_present && received.position[0]==25.f);
+            bot.tick++;memcpy(frame+88,&bot,sizeof bot);frame[76]^=1;
+            CHECK(sendto(raw,(char *)frame,sizeof frame,0,(struct sockaddr *)&native,sizeof native)==sizeof frame);
+            Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+            frame[76]^=1;frame[59]=3; /* A different virtual peer is not the host. */
+            CHECK(sendto(raw,(char *)frame,sizeof frame,0,(struct sockaddr *)&native,sizeof native)==sizeof frame);
+            Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+            frame[59]=2;frame[84]^=1;
+            CHECK(sendto(raw,(char *)frame,sizeof frame,0,(struct sockaddr *)&native,sizeof native)==sizeof frame);
+            Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);CHECK(!pc_network_bots_receive(2,&received));
+            frame[84]^=1;
+            CHECK(sendto(raw,(char *)frame,sizeof frame,0,(struct sockaddr *)&native,sizeof native)==sizeof frame);
+            Sleep(20);CHECK(call(0x43184c)==UINT32_MAX);
+            CHECK(pc_network_bots_receive(2,&received) && received.tick==11);
+            pc_network_bots_context(0,0,0,0,0);
+            /* Host snapshots retain the session key and virtual destination
+               when encapsulated for the Python bridge. */
+            memcpy(memory+900,memory+150,8);memory[900]^=1;
+            a[0]=address(900);a[1]=address(160);CHECK(!call(0x431716));
+            CHECK(!call(0x431721)); /* A foreign session cannot replace/clear ours. */
+            pc_network_bots_context(1,0,match,2,6);pc_network_bots_targets(&host,1);
+            pc_network_bots_send(&bot);
+            CHECK(recv(raw,(char *)frame,sizeof frame,0)==sizeof frame);
+            CHECK(!memcmp(frame,"TSFB\1\0\0\0",8));
+            CHECK(!memcmp(frame+56,memory+100,4) && !memcmp(frame+60,&host,4));
+            CHECK(*(uint16_t *)(frame+64)==htons(1000) && *(uint16_t *)(frame+66)==htons(1000));
+            CHECK(!memcmp(frame+68,"TSFBAI1",8) && !memcmp(frame+76,memory+150,8));
+            memcpy(&received,frame+88,sizeof received);CHECK(received.tick==11 && received.slot==2);
+            /* A stale self-discovery cache must not keep an unregistered
+               session alive. A new key must be registered before use. */
+            timeout=50;setsockopt(raw,SOL_SOCKET,SO_RCVTIMEO,(const char *)&timeout,sizeof timeout);
+            a[0]=address(100);a[1]=address(150);a[2]=address(850);CHECK(!call(0x43172c));
+            a[0]=address(150);CHECK(!call(0x431721));
+            pc_network_bots_send(&bot);CHECK(recv(raw,(char *)frame,sizeof frame,0)==SOCKET_ERROR);
+            a[1]=address(160);CHECK(!call(0x431716));
+            pc_network_bots_send(&bot);CHECK(recv(raw,(char *)frame,sizeof frame,0)==sizeof frame);
+            a[0]=address(920);a[1]=address(940);CHECK(!call(0x43170b));
+            pc_network_bots_send(&bot);CHECK(recv(raw,(char *)frame,sizeof frame,0)==SOCKET_ERROR);
+            CHECK(!call(0x431716));
+            pc_network_bots_send(&bot);CHECK(recv(raw,(char *)frame,sizeof frame,0)==sizeof frame);
+            CHECK(!memcmp(frame+76,memory+920,8));
+            pc_network_bots_context(0,0,0,0,0);
+            a[0]=receiver;a[1]=address(500);a[2]=100;a[3]=0;a[4]=address(420);a[5]=address(400);
+        }
         /* Authenticated telemetry is consumed, never passed to the title. */
         memcpy(packet+56,memory+100,4); memset(packet+64,0,4);
         memcpy(packet+68,"RTT1",4); *(uint32_t *)(packet+72)=htonl(42500); *(uint16_t *)(packet+76)=htons(2);
@@ -124,9 +244,21 @@ int main(void)
         CHECK(sendto(raw,packet,78,0,(struct sockaddr *)&native,sizeof native)==78);
         Sleep(20); CHECK(call(0x431866)==UINT32_MAX);
         { double ms; unsigned count; CHECK(pc_network_latency(&ms,&count)==2 && count==2 && ms==42.5); }
+        /* Reconnecting clears ownership: registering the preceding room's
+           key cannot revive a local session in the new transport lifetime. */
+        CHECK(pc_network_set_online(configuration));
+        receiver=make_socket();CHECK(receiver!=UINT32_MAX);CHECK(!bind_socket(receiver,1000));
+        CHECK(recv(raw,packet,sizeof packet,0)==68);
+        a[0]=address(920);a[1]=address(940);CHECK(!call(0x431716));
+        {
+            PcNetworkBotState bot={0};uint32_t target=htonl(0x0afe0002);
+            bot.slot=2;bot.health=1.f;
+            pc_network_bots_context(1,0,1,2,6);pc_network_bots_targets(&target,1);
+            pc_network_bots_send(&bot);CHECK(recv(raw,packet,sizeof packet,0)==SOCKET_ERROR);
+        }
         closesocket(raw); pc_network_set_online(NULL); WSACleanup();
     }
     VirtualFree(memory,0,MEM_RELEASE);
-    puts("PASS: native UDP, XNADDR/key round trip, source address, incompatible/raw packet rejection, guest bounds, online bridge registration and virtual source routing");
+    puts("PASS: native UDP, XNADDR/key round trip, source address, incompatible/raw packet rejection, guest bounds, online bridge routing, bot snapshots without self-discovery, and local session lifetime");
     return 0;
 }

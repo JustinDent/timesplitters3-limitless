@@ -110,11 +110,26 @@ try {
                         (Join-Path $projectRoot 'tests\test_patch_updates.py'),
                         (Join-Path $projectRoot 'tests\test_patch_tracking.py'),
                         (Join-Path $projectRoot 'tests\test_audio_timing.py'),
+                        (Join-Path $projectRoot 'tests\test_frame_clock.py'),
+                        (Join-Path $projectRoot 'tests\test_frame_interpolation.py'),
+                        (Join-Path $projectRoot 'tests\test_prediction_targets.py'),
+                        (Join-Path $projectRoot 'tests\test_motion_settings.py'),
+                        (Join-Path $projectRoot 'tests\test_config_initialization.py'),
+                        (Join-Path $projectRoot 'tests\test_pc_refresh.py'),
                         (Join-Path $projectRoot 'tests\test_framebuffer_sampling.py'),
+                        (Join-Path $projectRoot 'tests\test_terminal_depth.py'),
+                        (Join-Path $projectRoot 'tests\test_ghost_rendering.py'),
+                        (Join-Path $projectRoot 'tests\test_auto_look.py'),
+                        (Join-Path $projectRoot 'tests\test_discord_presence.py'),
+                        (Join-Path $projectRoot 'tests\test_menu_mouse.py'),
+                        (Join-Path $projectRoot 'tests\test_quit_menu.py'),
+                        (Join-Path $projectRoot 'tests\test_xmv_stop.py'),
                         (Join-Path $projectRoot 'tests\test_cutscene_letterbox.py'),
                         (Join-Path $projectRoot 'tests\test_decal_projection.py'),
+                        (Join-Path $projectRoot 'tests\test_channel_clears.py'),
                         (Join-Path $projectRoot 'tests\test_recomp_generation.py'),
-                        (Join-Path $projectRoot 'tests\test_recomp_float_joins.py'), '-q', '--tb=short')
+                        (Join-Path $projectRoot 'tests\test_recomp_float_joins.py'),
+                        (Join-Path $projectRoot 'tests\test_recomp_vehicle_joins.py'), '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'pytest', 'tools', '-q', '--tb=short')
                     Invoke-Checked $envPython @('-m', 'tools.conformance')
                 }
@@ -145,19 +160,28 @@ try {
                     $generatorChanged = $LASTEXITCODE -ne 0
                     if ($missingWrappers.Count -or $generatorChanged) {
                         Write-Output 'Runtime hooks or generator changed; refreshing generated game code before building.'
+                        # Corrected per-title symbols must replace the cached scan before lifting.
+                        Invoke-Checked $envPython @('-m', 'tools.xdk_symbols', (Join-Path $gameRoot 'default.xbe'))
                         Invoke-Checked $envPython @('scripts/recompile.py', (Join-Path $gameRoot 'default.xbe'),
                             '--work-dir', (Join-Path $privateRoot 'pipeline'), '--project', 'titles/futureperfect',
                             '--game-name', 'TimeSplitters: Future Perfect', '--trace-all-entries', '--only', 'lift')
                         Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\recomp-generation.py'), $toolRoot, '--record')
                     }
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'))
+                    $gameIconResource = & (Join-Path $projectRoot 'tools\build-game-icon.ps1')
                     Invoke-Checked $cmake @('-S', 'titles/futureperfect', '-B', $buildRoot,
                         '-G', 'Visual Studio 17 2022', '-A', 'x64',
                         "-DTSFP_LOCAL_PATH_TEST_SOURCE=$projectRoot/tests/save_paths.c",
-                        "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src")
+                        "-DTSFP_PC_CONTROLS_DIR=$projectRoot/src",
+                        "-DTSFP_GAME_ICON_RESOURCE=$gameIconResource")
                     Invoke-Checked $cmake @('--build', $buildRoot, '--config', $Configuration,
-                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', '--parallel', '4')
+                        '--target', 'futureperfect_recomp', 'tsfp_save_paths_test', 'tsfp_pc_controls_test', 'tsfp_pc_settings_test', 'tsfp_texture_format_test', 'tsfp_texture_toggle_test', 'tsfp_pc_display_test', 'tsfp_pc_debug_test', 'tsfp_pc_prompts_test', 'tsfp_pc_network_test', 'tsfp_pc_discord_test', 'tsfp_hang_policy_test', 'tsfp_pc_clear_test', 'd3d8_replay', '--parallel', '4')
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tests/ghost_targets.py'),
+                        (Join-Path $buildRoot "xboxrecomp/src/replay/$Configuration/d3d8_replay.exe"))
                     Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_network_test.exe") @()
+                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_pc_discord_test.exe") @()
+                    Invoke-Checked (Join-Path $buildRoot "$Configuration\tsfp_hang_policy_test.exe") @()
+                    Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_pc_clear_test.exe") @()
                     Invoke-Checked (Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_format_test.exe") @()
                     $textureTest = Join-Path $buildRoot "xboxrecomp\src\d3d\$Configuration\tsfp_texture_toggle_test.exe"
                     $textureTestRoot = Join-Path $buildRoot 'texture-toggle-tests'
@@ -190,6 +214,7 @@ try {
                         $cleanupPath, 'OnlyErrorDialogs', 'SendToRecycleBin', 'ThrowException')
                     Write-Output 'Build tests passed; temporary build/path-tests data recycled.'
                     Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\network-identity.py'), '--seal-executable', $exe)
+                    Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\crash-symbols.py'), '--build-dir', (Join-Path $buildRoot $Configuration))
                 }
                 { $_ -in 'Run', 'SmokeTest' } {
                     Assert-Game

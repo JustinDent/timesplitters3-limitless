@@ -8,6 +8,7 @@ static int counts[2];
 static struct { void (*fn)(const void *); unsigned char data[512]; } calls[32];
 static int ncalls;
 int hle_d3d8_interp_rec;
+void hle_d3d8_interp_unsafe(void) { }
 void hle_d3d8_interp_op(void (*fn)(const void *),const void *arg,size_t size) {
  assert(ncalls<32 && size<=512);calls[ncalls].fn=fn;memcpy(calls[ncalls++].data,arg,size);
 }

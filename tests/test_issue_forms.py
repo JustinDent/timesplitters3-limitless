@@ -1,5 +1,6 @@
 """Offline checks for release choices and automatic report labels; no live mutations."""
 import importlib.util
+import re
 from pathlib import Path
 import shutil
 import tempfile
@@ -20,7 +21,7 @@ def release(tag, **changes):
 def report(platform='Windows 11', enhancement=False, legacy=False):
     heading = 'What would you like to add or change?' if enhancement else 'What happened?'
     if enhancement and not legacy:
-        return f'### {heading}\n\nAn idea\n\n### Anything else? (optional)\n\n_No response_\n'
+        return f'### {heading}\n\nAn idea\n'
     return (f'### Game version\n\nv0.2.0-alpha.4\n\n'
             f'### Launcher version\n\nv1.2.1\n\n'
             f'### Platform\n\n{platform}\n\n### {heading}\n\nDescription\n'
@@ -29,6 +30,96 @@ def report(platform='Windows 11', enhancement=False, legacy=False):
 
 def http_error(code):
     return urllib.error.HTTPError('https://api.github.com/', code, 'Fixture error', {}, None)
+
+
+class VersionPullRequestTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.file = self.root / forms.FORMS[0]
+        self.file.parent.mkdir(parents=True)
+        self.file.write_text('generated reference data\n')
+        self.base = 'a' * 40
+        self.previous = None
+        self.extra_files = []
+        self.existing = []
+        self.client = forms.GitHub('owner/repo')
+        self.client.request = Mock(side_effect=self.response)
+
+    def response(self, method, path, payload=None):
+        if method == 'GET' and path == 'git/ref/heads/main':
+            return {'object': {'sha': self.base}}
+        if method == 'GET' and path == 'git/ref/heads/automation/issue-form-versions':
+            if self.previous is None:
+                raise http_error(404)
+            return {'object': {'sha': self.previous}}
+        if path.startswith('compare/'):
+            return {'files': self.extra_files}
+        if path.startswith('git/commits/'):
+            return {'tree': {'sha': 'base-tree'}}
+        if method == 'POST' and path == 'git/trees':
+            return {'sha': 'updated-tree'}
+        if method == 'POST' and path == 'git/commits':
+            return {'sha': 'new-commit'}
+        if method == 'GET' and path.startswith('pulls?'):
+            return self.existing
+        if method == 'POST' and path == 'pulls':
+            return {'html_url': 'https://github.com/owner/repo/pull/7'}
+        if method in ('POST', 'PATCH') and path.startswith('git/ref'):
+            return {}
+        self.fail(f'Unexpected request: {method} {path}')
+
+    def publish(self, changed=None):
+        return forms.publish_version_pr(self.client, self.root,
+                                        [self.file] if changed is None else changed,
+                                        'main', 'a' * 40)
+
+    def test_current_references_make_no_requests(self):
+        self.assertIsNone(self.publish([]))
+        self.client.request.assert_not_called()
+
+    def test_new_pr_uses_main_tree_and_only_generated_file(self):
+        self.assertEqual(self.publish(), 'https://github.com/owner/repo/pull/7')
+        calls = self.client.request.call_args_list
+        tree = next(call.args[2] for call in calls if call.args[:2] == ('POST', 'git/trees'))
+        self.assertEqual(tree['base_tree'], 'base-tree')
+        self.assertEqual(tree['tree'], [dict(path=forms.FORMS[0], mode='100644',
+                                           type='blob', content='generated reference data\n')])
+        self.client.request.assert_any_call('POST', 'git/refs',
+            {'ref': 'refs/heads/automation/issue-form-versions', 'sha': 'new-commit'})
+        self.assertFalse(any(call.args[1].startswith('git/refs/heads/main') for call in calls))
+
+    def test_existing_pr_preserves_both_ancestors_without_force_push(self):
+        self.previous = 'b' * 40
+        self.existing = [{'html_url': 'https://github.com/owner/repo/pull/5'}]
+        self.extra_files = [{'filename': forms.FORMS[0]}]
+        self.assertEqual(self.publish(), self.existing[0]['html_url'])
+        self.client.request.assert_any_call('POST', 'git/commits', {
+            'message': 'Refresh issue form release references', 'tree': 'updated-tree',
+            'parents': [self.base, self.previous]})
+        self.client.request.assert_any_call('PATCH', 'git/refs/heads/automation/issue-form-versions',
+                                            {'sha': 'new-commit', 'force': False})
+        self.assertFalse(any(call.args[:2] == ('POST', 'pulls')
+                             for call in self.client.request.call_args_list))
+
+    def test_unrelated_bot_branch_edits_are_preserved(self):
+        self.previous = 'b' * 40
+        self.extra_files = [{'filename': 'README.md'}]
+        with self.assertRaisesRegex(ValueError, 'other edits'):
+            self.publish()
+        self.assertTrue(all(call.args[0] == 'GET' for call in self.client.request.call_args_list))
+
+    def test_stale_checkout_cannot_publish(self):
+        self.base = 'c' * 40
+        with self.assertRaisesRegex(ValueError, 'advanced'):
+            self.publish()
+        self.assertEqual(self.client.request.call_count, 1)
+
+    def test_unlisted_file_cannot_be_uploaded(self):
+        with self.assertRaisesRegex(ValueError, 'Only generated'):
+            self.publish([self.root / 'README.md'])
+        self.client.request.assert_not_called()
 
 
 class VersionTests(unittest.TestCase):
@@ -84,14 +175,20 @@ class VersionTests(unittest.TestCase):
             self.assertEqual(forms.refresh_versions(root, records), [])
             for relative in forms.FORMS:
                 text = (root / relative).read_text()
-                self.assertIn('- "v3.0.0"', text)
-                self.assertIn('- "v4.0.0"', text)
-                self.assertIn('Other / source build', text)
+                self.assertIn('- `v3.0.0`', text)
+                self.assertIn('- `v4.0.0`', text)
                 self.assertIn("I don't know", text)
                 self.assertIn('Anything else? (optional)', text)
-                self.assertNotIn('default:', text)
+                for field in ('game-version', 'launcher-version', 'platform'):
+                    section = text.split('    id: ' + field + '\n', 1)[1].split('\n  - type:', 1)[0]
+                    self.assertIn('  - type: input\n    id: ' + field + '\n', text)
+                    self.assertNotIn('default:', section)
+                    self.assertNotIn('value:', section)
+                    self.assertNotIn('options:', section)
+                    self.assertIn('      required: true', section)
             forms.refresh_versions(root, [])
-            self.assertNotIn('- "v3.0.0"', (root / forms.FORMS[0]).read_text())
+            self.assertNotIn('- `v3.0.0`', (root / forms.FORMS[0]).read_text())
+            self.assertIn('No published releases.', (root / forms.FORMS[0]).read_text())
             self.assertIn('Not installed yet', (root / forms.FORMS[0]).read_text())
 
     def test_bad_launcher_block_does_not_partially_update_game_versions(self):
@@ -118,12 +215,21 @@ class VersionTests(unittest.TestCase):
             before = path.read_bytes()
             forms.refresh_versions(root, [release('v3.0.0'), release('launcher-v4.0.0')])
             self.assertEqual(path.read_bytes(), before)
-            for removed in ('game-version', 'launcher-version', 'id: platform', 'id: reason', 'AUTO GAME', 'AUTO LAUNCHER'):
+            for removed in ('game-version', 'launcher-version', 'id: platform', 'id: reason', 'id: extra', 'id: diagnostics', 'AUTO GAME', 'AUTO LAUNCHER'):
                 self.assertNotIn(removed, path.read_text())
-            self.assertEqual(path.read_text().count('  - type: textarea'), 2)
+            self.assertEqual(path.read_text().count('  - type: textarea'), 1)
 
 
 class LabelTests(unittest.TestCase):
+    def test_typed_platforms_accept_case_and_os_version_details(self):
+        for platform, label in [('windows 11 24H2', 'platform: windows'),
+                                ('WINDOWS 10', 'platform: windows'),
+                                ('win11', 'platform: windows'),
+                                ('macOS 15.5', 'platform: macos'),
+                                ('Mac OS', 'platform: macos')]:
+            with self.subTest(platform=platform):
+                self.assertEqual(forms.report_labels(report(platform)), {'bug', label})
+
     def test_platform_and_type_come_from_form_answers(self):
         for platform, label in [('Windows 10', 'platform: windows'),
                                 ('Windows 11', 'platform: windows'),
@@ -181,6 +287,24 @@ class LabelTests(unittest.TestCase):
             forms.label_report(client, dict(number=7, body=report('macOS'),
                                             labels=[{'name': 'bug'}, {'name': 'platform: windows'}]))
         self.assertEqual(client.request.call_count, 1)
+
+
+class LauncherDiagnosticsForms(unittest.TestCase):
+    def test_launcher_diagnostics_field_is_optional_and_only_in_bug_form(self):
+        source = (ROOT / 'tools/launcher/DiagnosticIssueDraft.cs').read_text(encoding='utf-8')
+        field = re.search(r'const string DiagnosticsField\s*=\s*"([a-z-]+)"', source).group(1)
+        for filename in ['01-bug-report.yml', '02-enhancement.yml']:
+            with self.subTest(filename=filename):
+                text = (ROOT / '.github/ISSUE_TEMPLATE' / filename).read_text(encoding='utf-8')
+                ids = re.findall(r'^    id: (.+)$', text, re.M)
+                if filename == '02-enhancement.yml':
+                    self.assertEqual(ids, ['idea'])
+                    continue
+                self.assertEqual(ids.count(field), 1)
+                section = text.split('    id: ' + field + '\n', 1)[1].split('\n  - type:', 1)[0]
+                self.assertIn('label: Launcher diagnostics (optional)', section)
+                self.assertIn('render: text', section)
+                self.assertNotIn('required: true', section)
 
 
 if __name__ == '__main__':

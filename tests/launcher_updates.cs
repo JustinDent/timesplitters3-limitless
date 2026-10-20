@@ -7,6 +7,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
@@ -17,6 +18,15 @@ static class LauncherTests
 {
     static int passed;
     static string temp;
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    static extern Microsoft.Win32.SafeHandles.SafeFileHandle CreateFile(string path, uint access, uint share,
+        IntPtr security, uint creation, uint flags, IntPtr template);
+    static Microsoft.Win32.SafeHandles.SafeFileHandle LockDirectory(string path)
+    {
+        var handle = CreateFile(path, 0x80000000, 3, IntPtr.Zero, 3, 0x02000000, IntPtr.Zero);
+        if (handle.IsInvalid) { int error = Marshal.GetLastWin32Error(); handle.Dispose(); throw new System.ComponentModel.Win32Exception(error); }
+        return handle;
+    }
     static void Test(string name, Action body) { body(); passed++; Console.WriteLine("PASS " + name); }
     static void Assert(bool value) { if (!value) throw new Exception("Assertion failed."); }
     static void Reject(Action action)
@@ -136,9 +146,28 @@ static class LauncherTests
     { return Json.Encode(new { schema = 1, version = version, size = size, sha256 = hash, asset_name = "TimeSplitters-Launcher-v" + version + "-windows-x64.zip" }); }
     public static int Main(string[] args)
     {
-        if (args.Length == 2 && (args[0] == "--render-preview" || args[0] == "--render-settings-preview" || args[0] == "--render-settings-graphics"))
+        if (args.Length == 2 && (args[0] == "--render-preview" || args[0] == "--render-settings-preview" || args[0] == "--render-settings-graphics" || args[0] == "--render-repair-preview" || args[0] == "--render-diagnostics-preview" || args[0] == "--render-news-preview" || args[0] == "--render-versions-preview"))
         { File.WriteAllText(args[1],args[0]);return 17; } // Synthetic preview child, not a UI/game launch.
+        if (args.Length == 0 && Path.GetFileNameWithoutExtension(typeof(LauncherTests).Assembly.Location)=="futureperfect_recomp")
+            return LauncherSettingsChecks.LaunchProbe();
         if (args.Length == 1 && args[0] == "--settings-child") return LauncherSettingsChecks.Child();
+        if (args.Length == 1 && args[0] == "--maintenance-readonly") return LauncherMaintenanceChecks.Run(true);
+        if (args.Length == 1 && args[0] == "--crashes") return LauncherCrashChecks.Run();
+        if (args.Length == 1 && args[0] == "--sessions") return LauncherSessionChecks.Run();
+        if (args.Length == 2 && args[0] == "--session-owner") return LauncherSessionChecks.Owner(args[1]);
+        if (args.Length == 1 && args[0] == "--session-sleeper") {System.Threading.Thread.Sleep(30000);return 0;}
+        if (args.Length == 2 && args[0] == "--session-exit") return Int32.Parse(args[1]);
+        if (args.Length == 2 && args[0] == "--crash-integration") return LauncherCrashChecks.Integration(args[1]);
+        if (args.Length == 2 && args[0] == "--hang-integration") return LauncherCrashChecks.Integration(args[1],true);
+        if (args.Length == 2 && args[0] == "--exit-integration") return LauncherCrashChecks.Integration(args[1],false,"missing-helper");
+        if (args.Length == 2 && args[0] == "--kill-integration") return LauncherCrashChecks.Integration(args[1],false,"kill");
+        if (args.Length == 1 && args[0] == "--maintenance") return LauncherMaintenanceChecks.Run();
+        if (args.Length == 1 && args[0] == "--downloads-live") return LauncherDownloadChecks.VerifyPublicDownload();
+        if (args.Length == 1 && args[0] == "--downloads") return LauncherDownloadChecks.Run();
+        if (args.Length == 1 && args[0] == "--versions") return LauncherVersionChecks.Run();
+        if (args.Length == 1 && args[0] == "--startup") return LauncherStartupChecks.Run();
+        if (args.Length == 1 && args[0] == "--news") return LauncherNewsChecks.Run();
+        if (args.Length == 1 && args[0] == "--shared-ui") return LauncherSharedUiChecks.Run();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();
         if (args.Length == 2 && args[0] == "--helper")
             return Program.RunHelper("--apply", args[1], Int32.MaxValue, false);
@@ -181,7 +210,7 @@ static class LauncherTests
             Test("bootstrap forwards application previews and preserves spaced output paths and child status", () => {
                 string root=Path.Combine(temp,"preview launcher root");Directory.CreateDirectory(Path.Combine(root,"Bin"));
                 File.Copy(typeof(LauncherTests).Assembly.Location,Path.Combine(root,Core.AppPath));
-                foreach(string flag in new[]{"--render-preview","--render-settings-preview","--render-settings-graphics"}) {
+                foreach(string flag in new[]{"--render-preview","--render-settings-preview","--render-settings-graphics","--render-repair-preview","--render-diagnostics-preview","--render-news-preview","--render-versions-preview"}) {
                     string output=Path.Combine(root,flag.Substring(2)+" image.png");int result;
                     Assert(Bootstrap.TryForwardPreview(root,new[]{flag,output},out result));
                     Assert(result==17 && File.ReadAllText(output)==flag);
@@ -254,6 +283,69 @@ static class LauncherTests
                 Assert(Core.CanRollback(root)); Core.Rollback(root);
                 Assert(Core.InstalledVersion(root) == "v1.0.0"); Assert(File.ReadAllText(Path.Combine(root, Core.LauncherName)) == "old launcher");
                 Assert(!File.Exists(Path.Combine(root, "Launch.ps1"))); Personal(root);
+            });
+            Test("transaction rename survives a temporary Windows directory lock", () => {
+                string root = NewRoot("temporary transaction lock");
+                var changes = Core.Unpack(Path.Combine(temp, "valid.zip"), Path.Combine(temp, "locked-payload"), "v1.1.0");
+                Microsoft.Win32.SafeHandles.SafeFileHandle handle = null;
+                Task release = null;
+                try {
+                    Core.Apply(root, changes, index => {
+                        if (index != 0) return;
+                        string source = Core.PathIn(root, ".launcher/transaction");
+                        handle = LockDirectory(source);
+                        // Prove the old single rename fails with the actual OS lock.
+                        Reject(() => Directory.Move(source, Core.PathIn(root, ".launcher/rollback")));
+                        release = Task.Run(() => { Thread.Sleep(750); handle.Dispose(); });
+                    });
+                    Assert(release != null && release.IsCompleted);
+                    Assert(Core.InstalledVersion(root) == "v1.1.0" && Core.CanRollback(root));
+                    Assert(!Directory.Exists(Core.PathIn(root, ".launcher/transaction"))); Personal(root);
+                    Core.Rollback(root); Assert(Core.InstalledVersion(root) == "v1.0.0"); Personal(root);
+                } finally { if (release != null) release.Wait(); if (handle != null) handle.Dispose(); }
+            });
+            Test("persistent transaction lock stops with actionable error and intact journal", () => {
+                string root = NewRoot("persistent transaction lock");
+                Put(root, ".launcher/transaction/journal.json", "recovery sentinel");
+                using (var handle = LockDirectory(Core.PathIn(root, ".launcher/transaction"))) {
+                    var clock = Stopwatch.StartNew();
+                    try { Core.PromoteTransaction(root, ".launcher/transaction", ".launcher/rollback"); throw new Exception("Expected lock failure."); }
+                    catch (IOException ex) { Assert(ex.Message.Contains("retry the update") && ex.InnerException != null); }
+                    Assert(clock.Elapsed >= TimeSpan.FromSeconds(4) && clock.Elapsed < TimeSpan.FromSeconds(15));
+                    Assert(File.ReadAllText(Core.PathIn(root, ".launcher/transaction/journal.json")) == "recovery sentinel");
+                    Assert(!Directory.Exists(Core.PathIn(root, ".launcher/rollback"))); Personal(root);
+                }
+            });
+            Test("rename does not retry missing sources or replace existing destinations", () => {
+                string root = NewRoot("invalid transaction rename");
+                var clock = Stopwatch.StartNew();
+                Reject(() => Core.PromoteTransaction(root, ".launcher/transaction", ".launcher/rollback"));
+                Put(root, ".launcher/transaction/journal.json", "new journal");
+                Put(root, ".launcher/rollback/keep", "existing rollback");
+                Reject(() => Core.PromoteTransaction(root, ".launcher/transaction", ".launcher/rollback"));
+                Assert(clock.Elapsed < TimeSpan.FromSeconds(4));
+                Assert(File.ReadAllText(Core.PathIn(root, ".launcher/rollback/keep")) == "existing rollback");
+            });
+            Test("failed recovery retains both errors and can recover after unlock", () => {
+                string root = NewRoot("recovery lock");
+                var changes = Core.Unpack(Path.Combine(temp, "valid.zip"), Path.Combine(temp, "recovery-lock-payload"), "v1.1.0");
+                FileStream handle = null;
+                try {
+                    try {
+                        Core.Apply(root, changes, index => {
+                            if (index != 0) return;
+                            handle = new FileStream(Core.PathIn(root, "Bin/futureperfect_recomp.exe"), FileMode.Open, FileAccess.Read, FileShare.None);
+                            throw new IOException("injected update failure");
+                        });
+                        throw new Exception("Expected recovery failure.");
+                    } catch (IOException ex) {
+                        var causes = ex.InnerException as AggregateException;
+                        Assert(ex.Message.Contains("recovery could not finish") && causes != null && causes.InnerExceptions.Count == 2);
+                        Assert(causes.InnerExceptions[0].Message == "injected update failure");
+                        Assert(File.Exists(Core.PathIn(root, ".launcher/transaction/journal.json")));
+                    }
+                } finally { if (handle != null) handle.Dispose(); }
+                Assert(Core.Recover(root)); Assert(Core.InstalledVersion(root) == "v1.0.0"); Personal(root);
             });
             Test("failed install restores previous files", () => {
                 string root = NewRoot("failure");
@@ -585,6 +677,18 @@ static class LauncherTests
     }
     static void SelfUpdateTests()
     {
+        Test("combined release selects only the Windows launcher and manifest", () => {
+            string version = "1.2.19", prefix = "https://github.com/" + ReleaseClient.Repository + "/releases/download/launcher-v" + version + "/";
+            var names = new[] { "TimeSplitters-Launcher-v"+version+"-macos-arm64.zip", "launcher-update-macos-arm64.json",
+                "TimeSplitters-Launcher-v"+version+"-windows-x64.zip", "launcher-update.json",
+                "TimeSplitters-Launcher-windows-x64.zip", "TimeSplitters-Launcher-macos-arm64.zip" };
+            foreach (int count in new[] {4,6}) {
+                var assets = names.Take(count).Select(n => new { name=n, state="uploaded", size=100, digest="", browser_download_url=prefix+n }).ToArray();
+                var candidate = ReleaseClient.SelectLauncher(Json.Encode(new[] { new { tag_name="launcher-v"+version, draft=false, prerelease=false, assets=assets } }), false);
+                Assert(candidate.Package.AssetName == names[2] && candidate.ManifestUrl == prefix+names[3]);
+                Assert(ReleaseClient.VerifyLauncherMetadata(candidate, SelfMetadata(version,100,Hash("zip"))).Tag == version);
+            }
+        });
         Test("launcher version independent of game tag", () => {
             var json = Json.Encode(new[] { SelfRelease("1.1.0", false, false, 100, ""), SelfRelease("1.2.0-beta.1", true, false, 100, ""), SelfRelease("9.0.0", false, true, 100, "") });
             Assert(ReleaseClient.SelectLauncher(json, false).Package.Tag == "1.1.0");
@@ -721,6 +825,44 @@ static class LauncherTests
             Core.InstallPending(root); Assert(Core.InstalledVersion(root) == "v1.1.0"); Assert(SelfUpdate.Complete(root));
             Core.Rollback(root); Assert(Core.InstalledVersion(root) == "v1.0.0");
             Assert(SelfUpdate.InstalledVersion(root) == "9.0.0" && SelfUpdate.Complete(root)); Personal(root);
+        });
+        Test("explicit game version switching downgrades or reinstalls while keeping the launcher and personal files", () => {
+            foreach(string from in new[]{"v2.0.0","v1.1.0"}) {
+                string root=NewRoot("specific-game-"+from);PutSelf(root,"1.2.12");
+                Put(root,"BUILD.json",Json.Encode(new {version=from}));
+                Put(root,"disc.iso","personal ISO");
+                string pending=Core.PathIn(root,".launcher/pending");Directory.CreateDirectory(pending);
+                Core.Unpack(Path.Combine(temp,"valid.zip"),Path.Combine(pending,"payload"),"v1.1.0");
+                string payload=Path.Combine(pending,"payload");PutSelf(payload,"99.0.0");
+                var files=Files().Keys.Concat(new[]{Core.AppPath,Core.SelfManifest}).ToDictionary(n=>n,n=>Core.Hash(Core.PathIn(payload,n)));
+                Put(payload,"BUILD.json",Json.Encode(new {version="v1.1.0",launcher_version="99.0.0",files=files}));
+                Put(pending,"release.json",Json.Encode(new {version="v1.1.0",game_only=true}));
+                Core.InstallPending(root);Assert(Core.InstalledVersion(root)=="v1.1.0" && SelfUpdate.InstalledVersion(root)=="1.2.12" && SelfUpdate.Complete(root));
+                Assert(File.ReadAllText(Core.PathIn(root,"Bin/futureperfect_recomp.exe"))=="new game");Personal(root);Assert(File.ReadAllText(Core.PathIn(root,"disc.iso"))=="personal ISO");
+                Core.Rollback(root);Assert(Core.InstalledVersion(root)==from && SelfUpdate.InstalledVersion(root)=="1.2.12" && SelfUpdate.Complete(root));Personal(root);
+            }
+        });
+        Test("equal-version game launcher preserves artwork and repairs damaged copies", () => {
+            foreach (bool damaged in new[] { false, true }) {
+                string root = NewRoot("game-equal-launcher-" + damaged); PutSelf(root, "1.2.6");
+                string original = File.ReadAllText(Path.Combine(root, Core.SelfManifest));
+                if (damaged) Put(root, Core.AppPath, "damaged app");
+                string pending = Path.Combine(root, ".launcher/pending"); Directory.CreateDirectory(pending);
+                Core.Unpack(Path.Combine(temp, "valid.zip"), Path.Combine(pending, "payload"), "v1.1.0");
+                string payload = Path.Combine(pending, "payload");
+                PutSelf(payload, "1.2.6");
+                Put(payload, Core.AppPath, "same-version fallback app");
+                Put(payload, Core.SelfManifest, SelfManifest("1.2.6", "bootstrap 1.2.6", "same-version fallback app"));
+                var files = Files().Keys.ToDictionary(n=>n,n=>Core.Hash(Core.PathIn(payload,n)));
+                files[Core.AppPath]=Core.Hash(Core.PathIn(payload,Core.AppPath));
+                files[Core.SelfManifest]=Core.Hash(Core.PathIn(payload,Core.SelfManifest));
+                Put(payload,"BUILD.json",Json.Encode(new { version="v1.1.0",launcher_version="1.2.6",files=files }));
+                Put(pending,"release.json","{\"version\":\"v1.1.0\"}");
+                Core.InstallPending(root); Assert(SelfUpdate.Complete(root));
+                Assert(File.ReadAllText(Core.PathIn(root,Core.AppPath)) == (damaged ? "same-version fallback app" : "app 1.2.6"));
+                if(!damaged) Assert(File.ReadAllText(Core.PathIn(root,Core.SelfManifest))==original);
+                Core.Rollback(root); Assert(SelfUpdate.Complete(root)); Personal(root);
+            }
         });
         Test("produced launcher bundle verifies and installs in isolation", () => {
             string output = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);

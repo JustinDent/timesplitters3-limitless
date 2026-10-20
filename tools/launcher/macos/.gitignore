@@ -1,0 +1,6 @@
+# Derived from the shared Windows layout at build time.
+NativeWindow.axaml
+PageTheme.axaml
+TabsTheme.axaml
+bin/
+obj/

@@ -1,0 +1,877 @@
+diff --git a/src/config/recomp_config.c b/src/config/recomp_config.c
+index 1e284e4..2799ff1 100644
+--- a/src/config/recomp_config.c
++++ b/src/config/recomp_config.c
+@@ -15,6 +15,7 @@
+ #include <string.h>
+ 
+ #if defined(_WIN32)
++#include <windows.h>
+ #include <direct.h>
+ #define RECOMP_MKDIR(p) _mkdir(p)
+ #else
+@@ -245,6 +246,10 @@ int recomp_settings_read(const char *path, RecompSettings *s)
+             s->fullscreen = !off_word(v);
+         if ((v = from_table("vrr")) != NULL)
+             s->vrr = !off_word(v);
++        if ((v = from_table("refresh_rate")) != NULL)
++            s->refresh_rate = (atoi(v) == 120 || atoi(v) == 144) ? atoi(v) : 0;
++        if ((v = from_table("frame_target")) != NULL)
++            s->frame_target = (atoi(v) == 120 || atoi(v) == 144) ? atoi(v) : 0;
+         if ((v = from_table("frame_interp")) != NULL)
+             s->frame_interp = clamp_int(atoi(v), 1, 4);
+         if ((v = from_table("game_dir")) != NULL)
+@@ -356,12 +361,23 @@ int recomp_settings_write(const char *path, const RecompSettings *s)
+         "# variable refresh. 1 is off.                   [RECOMP_FRAME_INTERP]\n"
+         "frame_interp = %d\n"
+         "\n"
++        "# Windows presentation target: 0 preserves frame_interp, or 120 / 144.\n"
++        "# Keeps gameplay at 60 Hz. Requires adaptive/60 pacing and GPU headroom.\n"
++        "#                                  [RECOMP_FRAME_TARGET]\n"
++        "frame_target = %d\n"
++        "\n"
++        "# Fullscreen monitor refresh: 0 keeps desktop, 120 or 144 Hz.\n"
++        "# The desktop mode is restored on focus loss/exit; resolution stays.\n"
++        "#                                          [RECOMP_REFRESH_RATE]\n"
++        "refresh_rate = %d\n"
++        "\n"
+         "# Where the game's files are, if they are not beside the executable.\n"
+         "#                                                   [RECOMP_GAME_DIR]\n",
+         s->resolution_scale, s->widescreen, s->hor_plus, s->hor_plus_register,
+         s->widescreen_2d[0] ? s->widescreen_2d : "auto",
+         s->anisotropy, s->frame_cap[0] ? s->frame_cap : "adaptive", s->fps_overlay,
+-        s->fullscreen, s->vrr, s->frame_interp < 1 ? 1 : s->frame_interp);
++        s->fullscreen, s->vrr, s->frame_interp < 1 ? 1 : s->frame_interp,
++        s->frame_target, s->refresh_rate);
+ 
+     if (s->game_dir[0])
+         fprintf(f, "game_dir = %s\n", s->game_dir);
+@@ -456,6 +472,28 @@ static void load_and_report(void)
+                 g_title_id);
+ }
+ 
++/* The vblank timer and renderer can request configuration concurrently.
++ * Publishing g_loaded before parse completed let the renderer cache fallback
++ * fullscreen/pacing values while the timer was still loading the file. */
++#ifdef _WIN32
++static INIT_ONCE config_once = INIT_ONCE_STATIC_INIT;
++static BOOL CALLBACK initialize_config(PINIT_ONCE once, PVOID parameter, PVOID *context)
++{
++    (void)once; (void)parameter; (void)context;
++    load_and_report();
++    return TRUE;
++}
++static void ensure_loaded(void)
++{
++    InitOnceExecuteOnce(&config_once, initialize_config, NULL, NULL);
++}
++#else
++static void ensure_loaded(void)
++{
++    if (!g_loaded) load_and_report();
++}
++#endif
++
+ /* ---------------------------------------------------------------- lookup */
+ 
+ /* The table as it stands, without loading anything. */
+@@ -475,8 +513,7 @@ static const char *from_file(const char *key)
+ {
+     if (!key)
+         return NULL;
+-    if (!g_loaded)
+-        load_and_report();
++    ensure_loaded();
+     return from_table(key);
+ }
+ 
+@@ -491,8 +528,7 @@ const char *recomp_config_lookup(const char *env_name, const char *key)
+ 
+ const char *recomp_config_path(void)
+ {
+-    if (!g_loaded)
+-        load_and_report();
++    ensure_loaded();
+     return g_have_path ? g_path : NULL;
+ }
+ 
+diff --git a/src/config/recomp_config.h b/src/config/recomp_config.h
+index 0e9fc84..f90de84 100644
+--- a/src/config/recomp_config.h
++++ b/src/config/recomp_config.h
+@@ -78,6 +78,8 @@ typedef struct RecompSettings {
+     int  fps_overlay;           /* 0 or 1 */
+     int  fullscreen;            /* 0 or 1: borderless, on the window's monitor */
+     int  vrr;                   /* 0 or 1: present for variable refresh when fullscreen */
++    int  refresh_rate;          /* Windows fullscreen monitor Hz: 0, 120, 144 */
++    int  frame_target;          /* 0: legacy multiplier; 120 or 144: host FPS */
+     int  frame_interp;          /* 1 (off) to 4: frames shown for each the game draws */
+     char game_dir[512];         /* empty means beside the executable */
+ } RecompSettings;
+diff --git a/src/d3d/d3d8_device.c b/src/d3d/d3d8_device.c
+index 6b44e1d..2a7ead9 100644
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -2297,6 +2297,8 @@ static HRESULT __stdcall dev_EndPush(IDirect3DDevice8 *self, DWORD *pPush)
+  * loader on frames presented, so a vsync wait here throttled Burnout 2 from
+  * about 136 frames a second to 27 and cut how far a run got by two thirds. */
+ static UINT g_present_interval = 1;
++static BOOL g_skip_guest_present;
++void xbox_D3D8SkipGuestPresent(void) { g_skip_guest_present = TRUE; }
+ 
+ void xbox_D3D8SetPresentInterval(UINT interval)
+ {
+@@ -2309,6 +2311,12 @@ static HRESULT __stdcall dev_Swap(IDirect3DDevice8 *self, DWORD Flags)
+ 
+     rhi_pump_events();
+ 
++    if (g_skip_guest_present) {
++        g_skip_guest_present = FALSE;
++        two_d_tag_frame();
++        d3d8_display_frame_done();
++        return S_OK;
++    }
+     present_resolve();
+     return (HRESULT)rhi_present_kind(g_present_interval,RHI_PRESENT_GUEST);
+ }
+@@ -2328,6 +2336,7 @@ static HRESULT __stdcall dev_Swap(IDirect3DDevice8 *self, DWORD Flags)
+ static RhiImage *g_interp_image;
+ static RhiView  *g_interp_rtv, *g_interp_srv;
+ static UINT      g_interp_w, g_interp_h;
++static BOOL g_interp_predict;
+ 
+ static void interp_target_destroy(void)
+ {
+@@ -2357,10 +2366,19 @@ static void interp_target_swap(void)
+     rhi_set_render_target(g_cur_rt ? g_cur_rt->rtv : s->rhi_default_rtv, draw_depth_view(g_cur_ds));
+ }
+ 
++BOOL xbox_D3D8InterpCanPredict(void)
++{
++    return !g_interp_on && g_auto_ds && !g_cur_rt && (!g_cur_ds || g_cur_ds == g_auto_ds);
++}
++void xbox_D3D8InterpPredict(BOOL on) { g_interp_predict = on; }
++
+ BOOL xbox_D3D8InterpBegin(void)
+ {
+     D3D8DeviceState *s = &g_device_state;
+ 
++    /* Both gate replay and CPU prediction use the shared per-subresource
++     * depth cache below. Never replace the guest surface's depth view. */
++    if (g_interp_predict && !xbox_D3D8InterpCanPredict()) return FALSE;
+     if (g_interp_on || !rhi_device_ready() || !s->rhi_scene_image)
+         return FALSE;
+     if (g_interp_image && (g_interp_w != s->width || g_interp_h != s->height))
+diff --git a/src/d3d/d3d8_xbox.h b/src/d3d/d3d8_xbox.h
+index 74d7ddf..c962e6c 100644
+--- a/src/d3d/d3d8_xbox.h
++++ b/src/d3d/d3d8_xbox.h
+@@ -1282,6 +1282,9 @@ void          xbox_D3D8ScreenCopyShutdown(void);
+    waits to be shown; Present shows it without counting a frame; End puts
+    the scene target back. FALSE from Begin: no second image, draw nothing. */
+ BOOL xbox_D3D8InterpBegin(void);
++BOOL xbox_D3D8InterpCanPredict(void);
++void xbox_D3D8InterpPredict(BOOL on);
++void xbox_D3D8SkipGuestPresent(void);
+ BOOL xbox_D3D8InterpPresent(void);
+ void xbox_D3D8InterpEnd(void);
+ 
+diff --git a/src/hle/CMakeLists.txt b/src/hle/CMakeLists.txt
+index 75f5a81..2ef867d 100644
+--- a/src/hle/CMakeLists.txt
++++ b/src/hle/CMakeLists.txt
+@@ -47,6 +47,14 @@ if(APPLE AND TSFP_NATIVE_DIR)
+     target_link_libraries(xbox_hle PRIVATE SDL3::SDL3)
+ endif()
+ target_include_directories(xbox_hle PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
++if(TSFP_PC_CONTROLS_DIR)
++    target_include_directories(xbox_hle PRIVATE "${TSFP_PC_CONTROLS_DIR}")
++    if(WIN32)
++        target_sources(xbox_hle PRIVATE "${TSFP_PC_CONTROLS_DIR}/pc_refresh.c")
++    endif()
++elseif(APPLE AND TSFP_NATIVE_DIR)
++    target_include_directories(xbox_hle PRIVATE "${TSFP_NATIVE_DIR}/..")
++endif()
+ target_link_libraries(xbox_hle PUBLIC xbox_config)
+ target_link_libraries(xbox_hle PUBLIC xbox_kernel)
+ # Host device choice and per-control bindings (src/input/input_bindings.c),
+diff --git a/src/hle/hle_d3d8.c b/src/hle/hle_d3d8.c
+index 77c6075..c5b90b4 100644
+--- a/src/hle/hle_d3d8.c
++++ b/src/hle/hle_d3d8.c
+@@ -69,6 +69,7 @@
+ #include "recomp_config.h"
+ #ifdef TSFP_PC_CONTROLS
+ #include "pc_controls.h"
++#include "pc_refresh.h"
+ #endif
+ 
+ static unsigned long g_shadow_swaps; /* Guest frame counter, all hosts. */
+@@ -260,6 +261,7 @@ static LRESULT CALLBACK shadow_wndproc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp
+ {
+ #ifdef TSFP_PC_CONTROLS
+     LRESULT pc_result;
++    pc_refresh_message(hwnd,msg,wp);
+     if (pc_controls_message(hwnd, msg, wp, lp, &pc_result)) return pc_result;
+ #endif
+     switch (msg) {
+@@ -348,6 +350,9 @@ static void shadow_set_fullscreen(HWND hwnd, int on)
+     fflush(stderr);
+     g_shadow_fullscreen = on;
+     xbox_D3D8SetFullscreen(on ? TRUE : FALSE);
++#ifdef TSFP_PC_CONTROLS
++    pc_refresh_fullscreen(hwnd,on,recomp_config_int("RECOMP_REFRESH_RATE","refresh_rate",0));
++#endif
+ }
+ 
+ typedef struct {
+@@ -2088,16 +2093,21 @@ static void overlay_frame(void)
+     if (qpf.QuadPart &&
+         now.QuadPart - window_start.QuadPart >= qpf.QuadPart / 2) {
+         double secs = (double)(now.QuadPart - window_start.QuadPart) / (double)qpf.QuadPart;
++        static unsigned long suppressed_before;
++        unsigned long suppressed = hle_d3d8_interp_suppressed();
+         unsigned long extra = hle_d3d8_interp_presents() - window_extra;
++        double shown = (double)window_frames + extra - (suppressed - suppressed_before);
++        suppressed_before = suppressed;
++        if (shown < 0) shown = 0;
+ 
+ #ifdef TSFP_PC_CONTROLS
+-        pc_debug_sample((double)window_frames / secs, (double)(window_frames + extra) / secs);
++        pc_debug_sample((double)window_frames / secs, shown / secs);
+ #endif
+         /* With frame interpolation, what reaches the screen as well. */
+         if (extra)
+             snprintf(line, line_size, "%.1f fps (%.1f shown)   cap %s",
+                      (double)window_frames / secs,
+-                     (double)(window_frames + extra) / secs, xbox_Nv2aFlipGateModeName());
++                     shown / secs, xbox_Nv2aFlipGateModeName());
+         else
+             snprintf(line, line_size, "%.1f fps   cap %s",
+                      (double)window_frames / secs, xbox_Nv2aFlipGateModeName());
+@@ -2216,6 +2226,9 @@ static void frame_end_shadow(void)
+         {
+             LARGE_INTEGER a, b;
+             QueryPerformanceCounter(&a);
++#ifdef _WIN32
++            if (hle_d3d8_interp_skip_guest()) xbox_D3D8SkipGuestPresent();
++#endif
+             host_Swap(g_shadow, 0);
+             QueryPerformanceCounter(&b);
+             g_swap_present_ticks += b.QuadPart - a.QuadPart;
+@@ -2319,6 +2332,9 @@ HLE_EXPORT(D3DDevice_Swap)
+             g_swap_frame_ticks += t0.QuadPart - g_swap_last.QuadPart;
+         xbox_Nv2aFlipGateArm();
+         QueryPerformanceCounter(&t1);
++#ifdef _WIN32
++        hle_d3d8_interp_finish();
++#endif
+         HLE_CALL_ORIGINAL(D3DDevice_Swap);
+ #if !defined(_WIN32) && !defined(__APPLE__)
+         g_shadow_swaps++;
+@@ -2375,6 +2391,9 @@ HLE_EXPORT(D3DDevice_Present)
+             g_swap_frame_ticks += t0.QuadPart - g_swap_last.QuadPart;
+         xbox_Nv2aFlipGateArm();
+         QueryPerformanceCounter(&t1);
++#ifdef _WIN32
++        hle_d3d8_interp_finish();
++#endif
+         HLE_CALL_ORIGINAL(D3DDevice_Present);
+         QueryPerformanceCounter(&t2);
+         g_swap_gate_ticks += t1.QuadPart - t0.QuadPart;
+diff --git a/src/hle/hle_d3d8_interp.c b/src/hle/hle_d3d8_interp.c
+index 0298429..76eaec7 100644
+--- a/src/hle/hle_d3d8_interp.c
++++ b/src/hle/hle_d3d8_interp.c
+@@ -72,6 +72,7 @@
+ #include "d3d8_vsh.h"
+ #include "hle_d3d8_record.h"
+ #include "recomp_config.h"
++#include "pc_frame_clock.h"
+ #include "../kernel/xbox_memory_layout.h"
+ 
+ #define INTERP_MAX_MULTIPLE  8
+@@ -108,6 +109,7 @@ typedef struct {
+     int        ndraws, cap_draws;
+     uint8_t   *retire;                           /* ops run when the list is done */
+     size_t     rlen, rcap;
++    int        idle_safe;
+     int        whole;                            /* began at a frame start, all kept */
+ } InterpList;
+ 
+@@ -122,14 +124,40 @@ typedef struct {
+ 
+ static int        g_multiple;                    /* frames shown a frame drawn; <2 off */
+ static int        g_on;
++static int g_target, g_replayed;
++static HleFrameClock g_clock;
++static LONGLONG g_release;
++static unsigned long g_suppressed;
++
++unsigned long hle_d3d8_interp_suppressed(void) { return g_suppressed; }
++
+ static int        g_proj = -1, g_aff_first = -1, g_aff_count, g_nregs, g_groups;
+-static InterpList g_list[2];
++static InterpList g_list[4];
++int hle_d3d8_interp_predicting;
++static int previous_list(int i) { return g_target ? (i + 2) % 3 : i ^ 1; }
++static DWORD g_render_thread;
++static int g_idle_checked, g_idle_ok, g_idle_busy;
++static unsigned long g_idle_reasons[10];
+ static int        g_cur;                         /* the list being kept */
+ static Prepared  *g_prep;                        /* g_groups a draw of the current list */
+ static int        g_prep_cap;
+ 
+ /* This frame, in the gate. */
+ static int        g_prepared, g_frame_ok, g_slot;
++void hle_d3d8_interp_unsafe(void) { if (hle_d3d8_interp_rec) g_list[g_cur].idle_safe = 0; }
++
++int hle_d3d8_interp_skip_guest(void)
++{
++    /* All display frames use the host clock. An extra endpoint at every
++     * 60 Hz boundary would undo the even 144 Hz cadence. Unsafe frames
++     * retain the ordinary guest present rather than replaying a bad match. */
++    if (g_target && g_on && g_frame_ok && g_replayed &&
++        !hle_d3d8_capture_active() && !hle_d3d8_movie_layer_shown()) {
++        g_suppressed++;
++        return 1;
++    }
++    return 0;
++}
+ static LONGLONG   g_last_present, g_qpf, g_redraw_est, g_presented_at;
+ 
+ /* RECOMP_INTERP_DUMP=<prefix>: in-between frames from swap
+@@ -664,7 +692,7 @@ static const float *regs_of(const InterpList *l, int i)
+  * matrices ready; decide whether the frame can be interpolated. */
+ static int prepare_frame(void)
+ {
+-    InterpList *cur = &g_list[g_cur], *prev = &g_list[g_cur ^ 1];
++    InterpList *cur = &g_list[g_cur], *prev = &g_list[previous_list(g_cur)];
+     double prims3d = 0.0, matched = 0.0, cut = 0.0;
+     int i, g;
+ 
+@@ -756,7 +784,7 @@ static int prepare_frame(void)
+  * blended ones. */
+ static void set_draw_registers(int i, double a)
+ {
+-    const InterpList *cur = &g_list[g_cur], *prev = &g_list[g_cur ^ 1];
++    const InterpList *cur = &g_list[g_cur], *prev = &g_list[previous_list(g_cur)];
+     const InterpDraw *d = &cur->draws[i];
+     const float *b = regs_of(cur, i);
+     float out[INTERP_MAX_REGS * 4];
+@@ -929,7 +957,25 @@ static int redraw(double a)
+     hle_d3d8_interp_rec = rec;
+     g_pair_trace = 0;
+     capture_finish(&capture, a, presented);
+-    if(presented) {g_presents_total++;g_shown++;}
++    if (presented) {
++    {
++        /* Opt-in bounded timing evidence: CPU submissions, not scanout. */
++        static FILE *trace;
++        static int opened, rows;
++        if (!opened) {
++            const char *path = getenv("RECOMP_INTERP_TRACE");
++            opened = 1;
++            if (path && *path) trace = fopen(path, "w");
++            if (trace) fprintf(trace, "seconds,guest_frame,blend\n");
++        }
++        if (trace && rows < 20000) {
++            fprintf(trace, "%.9f,%lu,%.6f\n", (double)g_presented_at / g_qpf, g_swaps, a);
++            if (++rows % 144 == 0) fflush(trace);
++            if (rows == 20000) { fclose(trace); trace = NULL; }
++        }
++    }
++        g_presents_total++; g_shown++; g_replayed++;
++    }
+     return presented;
+ }
+ 
+@@ -943,6 +989,7 @@ static LONGLONG g_prepare_est;
+ static long long gate_idle(long long now, long long release)
+ {
+     LONGLONG span = release - g_last_present;
++    g_release = release;
+ 
+     if (!g_on || !g_last_present)
+         return 0;
+@@ -971,16 +1018,24 @@ static long long gate_idle(long long now, long long release)
+     }
+     if (!g_frame_ok || span <= g_qpf / 1000 || span > g_qpf / 10)
+         return 0;
+-    while (g_slot < g_multiple) {
+-        LONGLONG due = g_last_present + span * g_slot / g_multiple;
++    if (g_target) {
++        if (!g_clock.rate || now - hle_frame_clock_due(&g_clock) > g_qpf / 10)
++            hle_frame_clock_reset(&g_clock, g_last_present, g_qpf, g_target);
++        hle_frame_clock_catch_up(&g_clock, now + g_redraw_est - g_qpf / 1000);
++    }
++    while (g_target || g_slot < g_multiple) {
++        LONGLONG due = g_target ? hle_frame_clock_due(&g_clock) :
++                                  g_last_present + span * g_slot / g_multiple;
+         LONGLONG start = due - g_redraw_est;
+         LARGE_INTEGER a, b;
+         double alpha, ms;
+ 
++        if (g_target && due >= release)
++            return 0;
+         if (now < start)
+             return start;
+-        if (now + g_redraw_est > release - g_qpf / 2000) {
+-            g_late += g_multiple - g_slot;       /* too late for the rest */
++        if (now + g_redraw_est > release + (g_target ? g_qpf / 2000 : -g_qpf / 2000)) {
++            g_late += g_target ? 1 : g_multiple - g_slot;       /* too late for the rest */
+             g_slot = g_multiple;
+             /* Nothing measured, so the estimate cannot correct itself: let
+              * it fall back, or one slow redraw would hold every frame. */
+@@ -1021,6 +1076,7 @@ static long long gate_idle(long long now, long long release)
+             g_off_ms_max = ms;
+         g_alpha_sum += alpha;
+         g_slot++;
++        if (g_target) g_clock.slot++;
+         if (!g_on)
+             return 0;
+         now = b.QuadPart;
+@@ -1028,6 +1084,136 @@ static long long gate_idle(long long now, long long release)
+     return 0;
+ }
+ 
++/* The next host slot can lie just beyond the guest vblank. Present there
++ * before allowing guest work to start: it then has a whole 6.94 ms host
++ * period to finish before the following 144 Hz slot. Predict transforms
++ * for at most one host period, instead of inserting an off-clock 60 Hz
++ * endpoint or leaving a hole while the guest builds its next frame. Cuts,
++ * failed matches, capture and movies keep the ordinary guest fallback. */
++void hle_d3d8_interp_finish(void)
++{
++#ifdef _WIN32
++    static HANDLE timer;
++    LARGE_INTEGER now, wait;
++    LONGLONG due, span, cost;
++    double alpha;
++    if (!g_target || !g_on || !g_frame_ok || !g_clock.rate ||
++        hle_d3d8_capture_active() || hle_d3d8_movie_layer_shown()) return;
++    span = g_release - g_last_present;
++    if (span <= g_qpf / 1000 || span > g_qpf / 10) return;
++    QueryPerformanceCounter(&now);
++    hle_frame_clock_catch_up(&g_clock, now.QuadPart + g_redraw_est - g_qpf / 1000);
++    due = hle_frame_clock_due(&g_clock);
++    /* Never wait into another guest tick or extrapolate beyond one slot. */
++    if (due > g_release + g_qpf / g_target) return;
++    alpha = (double)(due - g_last_present) / span;
++    if (alpha < 0 || alpha > 1.5) return;
++    if (!timer) timer = CreateWaitableTimerExW(NULL, NULL, 0x00000002, TIMER_ALL_ACCESS);
++    if (!timer) timer = CreateWaitableTimerW(NULL, FALSE, NULL);
++    if (!timer) return;
++    if (due - g_redraw_est > now.QuadPart) {
++        wait.QuadPart = -(LONGLONG)((double)(due - g_redraw_est - now.QuadPart) * 1e7 / g_qpf);
++        if (!SetWaitableTimer(timer, &wait, 0, NULL, NULL, FALSE) ||
++            WaitForSingleObject(timer, 100) != WAIT_OBJECT_0) return;
++    }
++    QueryPerformanceCounter(&now);
++    if (now.QuadPart + g_redraw_est > due + g_qpf / 1000) return;
++    redraw(alpha);
++    cost = g_presented_at - now.QuadPart;
++    if (cost > span / 4) cost = span / 4;
++    g_redraw_est = (g_redraw_est * 7 + cost) / 8;
++    g_clock.slot++;
++    g_slot++;
++#endif
++}
++
++/* Restore a state-only snapshot after drawing a completed pose. This list
++ * contains no guest geometry, clears, or feedback writes. InterpEnd has already
++ * restored the real color/depth targets, including their partial contents. */
++static void restore_prefix(const InterpList *list)
++{
++    size_t off;
++    int rec = hle_d3d8_interp_rec;
++    hle_d3d8_interp_rec = 0;
++    for (off = 0; off < list->len; ) {
++        const op_header *h = (const op_header *)(list->ops + off);
++        h->fn(h->size ? (const void *)(h + 1) : NULL);
++        off += sizeof *h + INTERP_ALIGN(h->size);
++    }
++    hle_d3d8_interp_rec = rec;
++}
++
++/* Between guest functions, including CPU work within a partial frame,
++ * the previous completed scene can be predicted on the same render thread.
++ * This fills host deadlines while the CPU calculates its next guest frame.
++ * Three lists retain both completed poses plus the frame being recorded.
++ * A fourth, transient list saves host state only. Separate color/depth targets
++ * and held feedback copies keep the partially drawn guest scene unchanged. */
++static void guest_idle(void)
++{
++#ifdef _WIN32
++    LARGE_INTEGER now;
++    LONGLONG due, cost, period;
++    double alpha, ms;
++    int recording;
++    if (!g_target || !g_on || g_idle_busy || !g_clock.rate) { g_idle_reasons[0]++; return; }
++    if (GetCurrentThreadId() != g_render_thread) { g_idle_reasons[1]++; return; }
++    if (!hle_d3d8_interp_rec) { g_idle_reasons[2]++; return; }
++
++    if (!g_list[g_cur].whole) { g_idle_reasons[4]++; return; }
++    if (!xbox_D3D8InterpCanPredict()) { g_idle_reasons[5]++; return; }
++    if (hle_d3d8_capture_active() || hle_d3d8_movie_layer_shown()) { g_idle_reasons[6]++; return; }
++    g_idle_reasons[7]++;
++    QueryPerformanceCounter(&now);
++    due = hle_frame_clock_due(&g_clock);
++    if (now.QuadPart + g_redraw_est < due) return;
++    period = g_qpf / 60;
++    hle_frame_clock_catch_up(&g_clock, now.QuadPart + g_redraw_est - g_qpf / 1000);
++    due = hle_frame_clock_due(&g_clock);
++    if (now.QuadPart + g_redraw_est < due) return;
++    alpha = 1.0 + (double)(due - g_last_present) / period;
++    if (alpha < 1.0 || alpha > 2.0) { g_idle_reasons[8]++; return; } /* at most one guest interval */
++    g_idle_reasons[9]++;
++    g_idle_busy = 1;
++    recording = g_cur;
++    g_cur = previous_list(recording);
++    if (!g_list[g_cur].idle_safe) { g_cur=recording;g_idle_busy=0;g_idle_reasons[3]++;return; }
++    if (!g_idle_checked) {
++        g_idle_checked = 1;
++        g_idle_ok = prepare_frame();
++    }
++    if (g_idle_ok) {
++        /* Keep only host state here: no guest draws, clears or feedback writes.
++         * The real scene color/depth remain untouched by prediction. */
++        g_cur = 3;
++        list_retire(&g_list[3]);
++        g_list[3].whole = 1;
++        hle_d3d8_interp_snapshot();
++        g_cur = previous_list(recording);
++        if (!g_list[3].whole) { g_cur=recording;g_idle_busy=0;return; }
++        hle_d3d8_interp_predicting = 1;
++        xbox_D3D8InterpPredict(TRUE);
++        redraw(alpha);
++        xbox_D3D8InterpPredict(FALSE);
++        hle_d3d8_interp_predicting = 0;
++        cost = g_presented_at - now.QuadPart;
++        if (cost > period / 4) cost = period / 4;
++        g_redraw_est = (g_redraw_est * 7 + cost) / 8;
++        ms = (double)(g_presented_at - now.QuadPart) * 1000.0 / g_qpf;
++        g_redraw_ms_sum += ms; g_redraws++;
++        if (ms > g_redraw_ms_max) g_redraw_ms_max = ms;
++        ms = fabs((double)(g_presented_at - due)) * 1000.0 / g_qpf;
++        g_off_ms_sum += ms;
++        if (ms > g_off_ms_max) g_off_ms_max = ms;
++        g_alpha_sum += alpha;
++        g_clock.slot++;g_slot++;
++    }
++    g_cur = recording;
++    if (g_idle_ok) restore_prefix(&g_list[3]);
++    g_idle_busy = 0;
++#endif
++}
++
+ /* ---------------------------------------------------------- frame edges */
+ 
+ /* The registers: what the title or the settings say now. A change drops
+@@ -1048,9 +1234,10 @@ static void follow_registers(void)
+     g_nregs = (proj >= 0 ? 4 : 0) + count;
+     list_retire(&g_list[0]);
+     list_retire(&g_list[1]);
++    list_retire(&g_list[2]);
+     {
+         int i;
+-        for (i = 0; i < 2; i++) {
++        for (i = 0; i < 3; i++) {
+             free(g_list[i].regs);
+             free(g_list[i].draws);
+             g_list[i].regs = NULL;
+@@ -1073,7 +1260,24 @@ void hle_d3d8_interp_init(void)
+     if (done)
+         return;
+     done = 1;
+-    n = recomp_config_int("RECOMP_FRAME_INTERP", "frame_interp", 0);
++#ifdef _WIN32
++    g_target = recomp_config_int("RECOMP_FRAME_TARGET", "frame_target", 0);
++    if (g_target != 120 && g_target != 144) g_target = 0;
++    if (g_target) {
++        const char *cap = recomp_config_lookup("RECOMP_FPS_CAP", "frame_cap");
++        if (cap && strcmp(cap, "adaptive") && strcmp(cap, "60")) {
++            fprintf(stderr, "[INTERP] presentation target requires adaptive or 60 pacing; using legacy multiplier\n");
++            g_target = 0;
++        }
++    }
++#endif
++#ifdef TSFP_PC_CONTROLS
++    /* TSFP puts camera/object transforms in c64-c75. Blending just its
++     * fixed c60 projection repeats poses and only inflates the FPS count.
++     * The native Mac bridge already supplies this title-specific layout. */
++    xbox_D3D8SetInterpRegisters(60, 64, 12);
++#endif
++    n = g_target ? 3 : recomp_config_int("RECOMP_FRAME_INTERP", "frame_interp", 0);
+     if (n < 2)
+         return;
+     if (n > INTERP_MAX_MULTIPLE)
+@@ -1097,7 +1301,12 @@ void hle_d3d8_interp_init(void)
+         g_dump_from = from ? (unsigned long)atol(from) : 0;
+     }
+     xbox_Nv2aFlipGateSetIdle(gate_idle);
+-    fprintf(stderr, "[INTERP] frame interpolation: %d frames shown for each the title "
++#ifdef _WIN32
++    if (g_target) xbox_SetRecompIdle(guest_idle);
++#endif
++    if (g_target)
++        fprintf(stderr, "[INTERP] target %d host FPS; guest clock unchanged at 60 Hz\n", g_target);
++    if (!g_target) fprintf(stderr, "[INTERP] frame interpolation: %d frames shown for each the title "
+             "draws (RECOMP_FRAME_INTERP)\n", n);
+     fflush(stderr);
+ }
+@@ -1109,7 +1318,7 @@ void hle_d3d8_interp_frame_end(void)
+     if (!g_multiple)
+         return;
+     QueryPerformanceCounter(&now);
+-    g_last_present = now.QuadPart;
++    g_last_present = g_target && g_release && g_replayed ? g_release : now.QuadPart;
+     g_frames++;
+     g_swaps++;
+     if (!g_on) {
+@@ -1117,34 +1326,49 @@ void hle_d3d8_interp_frame_end(void)
+             hle_d3d8_interp_rec = 0;
+             list_retire(&g_list[0]);
+             list_retire(&g_list[1]);
++            list_retire(&g_list[2]);
+         }
+         return;
+     }
+     follow_registers();
+     /* The frame just shown becomes the one before; what the one before it
+      * put off can happen now, since neither will be drawn again. */
+-    list_retire(&g_list[g_cur ^ 1]);
+-    g_cur ^= 1;
++    if (!g_target) list_retire(&g_list[g_cur ^ 1]);
++    g_cur = g_target ? (g_cur + 1) % 3 : g_cur ^ 1;
+     list_retire(&g_list[g_cur]);
+     g_list[g_cur].whole = 1;
++    g_list[g_cur].idle_safe = 1;
+     hle_d3d8_interp_rec = 1;
+     hle_d3d8_interp_snapshot();
++#ifdef _WIN32
++    g_render_thread = GetCurrentThreadId();
++#endif
++    g_idle_checked = 0;
+     g_prepared = 0;
+     g_frame_ok = 0;
+     g_slot = 1;
++    if (g_target && !g_replayed) g_clock.rate = 0;
++    g_replayed = 0;
+ }
+ 
+ void hle_d3d8_interp_report(void)
+ {
+     unsigned long held = g_held_2d + g_held_match + g_held_cut + g_held_other;
+ 
++    char label[32];
+     if (!g_multiple)
+         return;
+-    fprintf(stderr, "[INTERP] %dx: %lu frames, %lu in-between accepted, %lu late; held "
++    if (g_target && getenv("RECOMP_INTERP_DEBUG"))
++        fprintf(stderr, "[INTERP-IDLE] off %lu thread %lu rec %lu copy %lu partial %lu drawn %lu movie %lu ready %lu range %lu replay %lu\n",
++                g_idle_reasons[0],g_idle_reasons[1],g_idle_reasons[2],g_idle_reasons[3],g_idle_reasons[4],
++                g_idle_reasons[5],g_idle_reasons[6],g_idle_reasons[7],g_idle_reasons[8],g_idle_reasons[9]);
++    if (g_target) fprintf(stderr, "[INTERP] target %d host FPS; suppressed %lu guest endpoints\n", g_target, g_suppressed);
++    snprintf(label, sizeof label, g_target ? "target %d FPS" : "%dx", g_target ? g_target : g_multiple);
++    fprintf(stderr, "[INTERP] %s: %lu frames, %lu in-between accepted, %lu late; held "
+             "%lu (%lu no 3D, %lu matched too little, %lu cut, %lu other); matched "
+             "%.0f%% of 3D primitives; redraw %.2f ms average, %.2f worst; submission start "
+             "%.2f ms from schedule on average, %.2f worst; blend %.2f average%s\n",
+-            g_multiple, g_frames, g_shown, g_late, held, g_held_2d, g_held_match,
++            label, g_frames, g_shown, g_late, held, g_held_2d, g_held_match,
+             g_held_cut, g_held_other,
+             g_matched_frames ? g_matched_sum * 100.0 / (double)g_matched_frames : 0.0,
+             g_redraws ? g_redraw_ms_sum / (double)g_redraws : 0.0, g_redraw_ms_max,
+diff --git a/src/hle/hle_d3d8_record.c b/src/hle/hle_d3d8_record.c
+index a104895..eb41087 100644
+--- a/src/hle/hle_d3d8_record.c
++++ b/src/hle/hle_d3d8_record.c
+@@ -97,6 +97,19 @@ static UINT               g_target_level, g_target_face;
+ static IDirect3DSurface8 *g_target_depth;
+ static int                g_target_lost;
+ 
++/* CPU prediction may read the last real offscreen result, but must never
++ * change it: the guest may already be using it in its partial frame. */
++static int prediction_holds_target(void)
++{
++#ifdef _WIN32
++    return hle_d3d8_interp_predicting &&
++           (g_target_lost || g_target_texture ||
++            (g_target_depth && g_target_depth != g_device_depth));
++#else
++    return 0;
++#endif
++}
++
+ static unsigned long g_draws, g_texture_writes, g_level_writes, g_unrecorded_binds;
+ static unsigned long g_unrecorded_targets;
+ static uint64_t      g_texture_bytes;
+@@ -948,6 +961,7 @@ typedef struct { DWORD count, flags; D3DCOLOR color; float z; DWORD stencil; } d
+ static void op_clear(const void *arg)
+ {
+     const dq_clear *c = (const dq_clear *)arg;
++    if (prediction_holds_target()) return;
+     host_Clear(hle_d3d8_shadow_device(), c->count,
+                c->count ? (const D3DRECT *)DEFER_PART_A(arg, dq_clear) : NULL,
+                c->flags, c->color, c->z, c->stencil);
+@@ -1291,6 +1305,7 @@ typedef struct { DWORD type; UINT prims, stride; } dq_draw_up;
+ static void op_draw_up(const void *arg)
+ {
+     const dq_draw_up *p = (const dq_draw_up *)arg;
++    if (prediction_holds_target()) return;
+     host_DrawPrimitiveUP(hle_d3d8_shadow_device(), (D3DPRIMITIVETYPE)p->type, p->prims,
+                          DEFER_PART_A(arg, dq_draw_up), p->stride);
+ }
+@@ -1305,6 +1320,7 @@ typedef struct {
+ static void op_draw_indexed_up(const void *arg)
+ {
+     const dq_draw_indexed_up *p = (const dq_draw_indexed_up *)arg;
++    if (prediction_holds_target()) return;
+     host_DrawIndexedPrimitiveUP(hle_d3d8_shadow_device(), (D3DPRIMITIVETYPE)p->type,
+                                 p->min_index, p->num_vertices, p->prims,
+                                 DEFER_PART_A(arg, dq_draw_indexed_up),
+@@ -1646,6 +1662,7 @@ HRESULT host_SetRenderTarget(IDirect3DDevice8 *dev, IDirect3DBaseTexture8 *textu
+     g_target_face    = face;
+     g_target_depth   = depth;
+     g_target_lost    = FAILED(hr);
++    if (g_target_lost) hle_d3d8_interp_unsafe();
+     if (hle_d3d8_interp_rec) {
+         dq_render_target p;
+         p.texture = texture;
+@@ -1907,6 +1924,11 @@ typedef struct { IDirect3DTexture8 *dst; int has_rect; RECT src; POINT at; } dq_
+ static void op_screen_copy(const void *arg)
+ {
+     const dq_screen_copy *p = (const dq_screen_copy *)arg;
++#ifdef _WIN32
++    /* Prediction samples the latest real feedback image. Mutating this shared
++     * texture would corrupt the guest's partial frame when it resumes. */
++    if (hle_d3d8_interp_predicting) return;
++#endif
+ 
+     if (p->has_rect)
+         host_CopyBackBufferRectToTexture(p->dst, &p->src, &p->at);
+@@ -1966,6 +1988,7 @@ void hle_d3d8_interp_snapshot(void)
+ 
+     if (!dev || !hle_d3d8_interp_rec)
+         return;
++    if (g_target_lost) hle_d3d8_interp_unsafe();
+     snapshot_declarations();
+     {
+         dq_constants p;
+diff --git a/src/hle/hle_d3d8_record.h b/src/hle/hle_d3d8_record.h
+index 0aea124..96e136b 100644
+--- a/src/hle/hle_d3d8_record.h
++++ b/src/hle/hle_d3d8_record.h
+@@ -105,6 +105,8 @@ typedef struct {
+     int      uses_proj;   /* drawn through the projection: 3D */
+ } HleInterpDrawKey;
+ 
++void hle_d3d8_interp_unsafe(void);
++extern int hle_d3d8_interp_predicting;
+ void hle_d3d8_interp_op(void (*fn)(const void *arg), const void *arg, size_t size);
+ void hle_d3d8_interp_draw(void (*fn)(const void *arg), const void *arg, size_t size,
+                           const HleInterpDrawKey *key);
+@@ -129,6 +131,9 @@ void hle_d3d8_interp_frame_end(void);
+ /* The five-second report's line, and in-between frames shown so far. */
+ void hle_d3d8_interp_report(void);
+ unsigned long hle_d3d8_interp_presents(void);
++unsigned long hle_d3d8_interp_suppressed(void);
++int hle_d3d8_interp_skip_guest(void);
++void hle_d3d8_interp_finish(void);
+ 
+ /* Screen copies, wrapped so frame interpolation draws them again. */
+ HRESULT host_CopyBackBufferToTexture(IDirect3DTexture8 *dst);
+diff --git a/src/kernel/recomp_trace.c b/src/kernel/recomp_trace.c
+index d7b7378..76ec96e 100644
+--- a/src/kernel/recomp_trace.c
++++ b/src/kernel/recomp_trace.c
+@@ -19,6 +19,11 @@
+ #include <time.h>
+ 
+ #include "xbox_memory_layout.h"
++#ifdef _WIN32
++static void (*s_render_idle)(void);
++static RECOMP_TLS unsigned s_idle_count;
++void xbox_SetRecompIdle(void (*fn)(void)) { s_render_idle = fn; }
++#endif
+ 
+ extern RECOMP_TLS uint32_t g_eax, g_ecx, g_edx, g_esp;
+ extern RECOMP_TLS uint32_t g_ebx, g_esi, g_edi;
+@@ -500,6 +505,11 @@ void recomp_stub_missing(uint32_t va)
+ 
+ void recomp_trace_enter(const char *name, uint32_t va)
+ {
++#ifdef _WIN32
++    /* Bounded checks only when the title explicitly installs a renderer.
++     * The callback verifies thread ownership and untouched frame state. */
++    if (s_render_idle && !(++s_idle_count & 255u)) s_render_idle();
++#endif
+     watch_check(name);
+     dump_va_once();
+     if (trace_only_match(name))
+diff --git a/src/kernel/xbox_memory_layout.c b/src/kernel/xbox_memory_layout.c
+index 4af7f01..3565aab 100644
+--- a/src/kernel/xbox_memory_layout.c
++++ b/src/kernel/xbox_memory_layout.c
+@@ -1086,6 +1086,14 @@ static LONGLONG            g_flip_gate_period, g_flip_gate_qpf;
+ void xbox_Nv2aFlipGateSetIdle(xbox_FlipGateIdleFn fn)
+ {
+     g_flip_gate_idle = fn;
++#ifdef _WIN32
++    /* The timer can query pacing before the title/config is selected.
++     * Re-read it when the renderer installs interpolation, otherwise a
++     * saved strict 60 cap stays adaptive and leaves no replay interval. */
++    g_flip_gate_divisor = -1;
++    g_flip_gate_strict = 0;
++    if (fn && flip_gate_divisor() == 1) g_flip_gate_strict = 1;
++#endif
+ }
+ 
+ /* Lend the wait to the hook until it wants nothing more or the vblank comes.
+@@ -1148,7 +1156,7 @@ void xbox_Nv2aFlipGateArm(void)
+         return;                                         /* no vblank has ever come */
+     if (!g_flip_gate_event)
+         return;
+-#ifdef __APPLE__
++#if defined(__APPLE__) || defined(_WIN32)
+     /* A cinematic may already have waited for this vblank inside the title.
+      * Interpolation must not add another full tick and halve its simulation.
+      * A cheap frame still waits normally, lending time for its midpoint. */
+@@ -1159,6 +1167,11 @@ void xbox_Nv2aFlipGateArm(void)
+         native_now.QuadPart - native_previous_gate >= g_flip_gate_period * 9 / 10 &&
+         WaitForSingleObject(g_flip_gate_event, 0) == WAIT_OBJECT_0) {
+         native_previous_gate = native_now.QuadPart;
++#ifdef _WIN32
++        /* Finish matching this guest frame even when its own wait already
++         * consumed the tick. Its next host slot may follow the boundary. */
++        g_flip_gate_idle(native_now.QuadPart, g_flip_gate_last_vblank);
++#endif
+         return;
+     }
+     native_previous_gate = g_flip_gate_last_vblank + g_flip_gate_period;
+diff --git a/src/kernel/xbox_memory_layout.h b/src/kernel/xbox_memory_layout.h
+index 0ae86d1..4226927 100644
+--- a/src/kernel/xbox_memory_layout.h
++++ b/src/kernel/xbox_memory_layout.h
+@@ -260,6 +260,7 @@ void xbox_Nv2aFlipGateRelease(void);
+  * (adaptive, or a cap of the vblank rate). NULL takes it back. */
+ typedef long long (*xbox_FlipGateIdleFn)(long long now, long long release);
+ void xbox_Nv2aFlipGateSetIdle(xbox_FlipGateIdleFn fn);
++void xbox_SetRecompIdle(void (*fn)(void));
+ 
+ /* The setting by name ("adaptive", "60", "30", "off", or "custom" for one
+  * RECOMP_FPS_CAP asked for that is not a stop on the cycle), and the next
+diff --git a/titles/futureperfect/CMakeLists.txt b/titles/futureperfect/CMakeLists.txt
+index 3c5d828..d3518c0 100644
+--- a/titles/futureperfect/CMakeLists.txt
++++ b/titles/futureperfect/CMakeLists.txt
+@@ -124,7 +124,7 @@ if(WIN32 AND TSFP_PC_CONTROLS_DIR)
+     set_source_files_properties("${TSFP_PC_CONTROLS_DIR}/pc_crash.c" PROPERTIES COMPILE_OPTIONS "/Zi")
+     add_executable(tsfp_crash_helper "${TSFP_PC_CONTROLS_DIR}/../tools/crash_helper.c")
+     target_include_directories(tsfp_crash_helper PRIVATE "${TSFP_PC_CONTROLS_DIR}")
+-    target_link_libraries(tsfp_crash_helper PRIVATE dbghelp bcrypt)
++    target_link_libraries(tsfp_crash_helper PRIVATE dbghelp bcrypt user32)
+     target_compile_options(tsfp_crash_helper PRIVATE /W4 /Zi)
+     target_link_options(tsfp_crash_helper PRIVATE /DEBUG)
+     add_dependencies(${PROJECT_NAME} tsfp_crash_helper)

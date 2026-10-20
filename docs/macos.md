@@ -6,7 +6,7 @@ The Mac build produces an ARM64 Mach-O executable
 from the verified game data and the same pinned runtime and Python dependencies
 used on Windows. It executes the translated Xbox entry point, initializes the
 kernel and graphics device, loads assets, and displays the game's **1–4 player
-selection menu in a native SDL/Cocoa OpenGL window**. This is an experimental
+selection menu in a native SDL/Cocoa window**. This is an experimental
 port: keyboard-driven menus now reach visible first-level gameplay. Basic
 movement, mouse aiming, firing and pause/resume have been checked. Full-level
 completion and rendering fidelity are not yet validated.
@@ -24,6 +24,18 @@ From the project root, use Python 3.12 or newer, Xcode command-line tools, and
 an installed OpenSSL development library. The tested Mac has Apple Clang 21,
 OpenSSL 3.6.3, and pinned SDL 3.4.16 built from its upstream submodule. No system
 SDL installation is used. The script does not upgrade system dependencies.
+Use a focused branch based on current main (or an explicitly documented
+unmerged dependency); the native builder does not require a branch named
+`mac-port`. Host, game hash and upstream revision checks still apply.
+
+Normal builds use the shared PC Xbox frontend through Vulkan on macOS 26+.
+`--renderer auto` selects this route based on the pinned SDK's host requirement;
+older Macs retain legacy OpenGL. `--renderer gl` explicitly selects the fallback.
+`--setup` installs the verified checkout-local SDK when Vulkan is selected.
+Without `--setup`, a missing or modified SDK stops before patching/generation;
+it does not silently change renderer or overwrite an unknown installation.
+Existing binaries keep their renderer until rebuilt. Both launchers use the
+resolved renderer in `BUILD.json` and preserve personal settings.
 
 ```sh
 # First native setup and generation; reuses the existing private/game.
@@ -35,6 +47,9 @@ python3 tools/build-native-mac.py --setup --generate --test
 # Bounded native execution, with isolated saves and configuration.
 .venv/bin/python tools/test-native-mac.py --seconds 120 --capture
 
+# Reusable unlocked Test Lab copy, when its local fixture is available.
+.venv/bin/python tools/test-native-mac.py --unlocked-profile --seconds 120 --capture
+
 # Frame timing without screenshot readback (navigate using isolated test input).
 .venv/bin/python tools/test-native-mac.py --seconds 150 --test-keys --profile-frames
 # Select a known gameplay window, excluding menus/loading and the opening animation.
@@ -43,13 +58,15 @@ python3 tools/build-native-mac.py --setup --generate --test
 
 Output stays in `build/macos`. `BUILD.json` records the source and runtime
 revision, source/patch hashes, executable hash, compiler, Python packages and
-linked libraries. Native changes to the upstream runtime are reproduced by
+linked libraries, plus working-tree changes and the shared source/content
+identity. Native identity files stay in `build/macos/generated`; they do not
+enable native multiplayer. Native changes to the upstream runtime are reproduced by
 `patches/zz-mac-native-boot.patch`, `patches/zzz-mac-renderer.patch`,
 `patches/zzzz-mac-input.patch`, `patches/zzzzz-mac-high-refresh.patch`,
 `patches/zzzzzz-interpolation-layouts.patch` and
 `patches/zzzzzzz-shared-input-model.patch`, applied
-after the shared feature patches. Mac renderer source stays in `src/native`;
-Windows and the inherited Linux graphics backends retain their own sources.
+after the shared feature patches. Thin Mac adapters stay in `src/native`; common Xbox rendering uses the same
+patched runtime source as Windows. Legacy GL remains a compatibility exception.
 Never edit generated game C. Regenerate when wrapper declarations change.
 
 The native probe requires an ARM64 binary and the supported XBE hash. It strips
@@ -59,6 +76,9 @@ upstream and PC settings, bounds duration/log size, and records
 until its time limit. The default is 15 seconds; an explicit `--seconds` accepts
 up to 1800 seconds for sustained testing, with the same 8 MiB log limit.
 An intentional early stop is recorded as `process_exit`, not a passed timed probe.
+`--unlocked-profile` uses the shared [Test Lab fixture](testing-profile.md) in
+a disposable nested save directory and skips startup movies. The default probe
+retains its existing profile. Neither mode uses personal saves or configurations.
 It separately reports sampled host presents/GL errors;
 menu recognition still requires reviewing the captures. `--capture` retains two
 rotating BMPs under `private/captures/native-mac`; it does not capture the desktop.
@@ -68,8 +88,11 @@ partition images are sparse, then recycled with validated paths; profiles,
 configuration and logs remain. Native CTest uses `build/macos/path-tests` and
 recycles its partition images after the pass as well.
 
-`--profile-frames` records CPU wall-clock intervals between completed host
-presents and time spent in swap, capped at 20,000 rows (under 2 MiB). It adds
+`--profile-frames` uses the same recorder in GL and the common Vulkan
+renderer. It records CPU wall-clock intervals between successful presentation
+API returns and time spent in the call, capped at 20,000 rows (under 2 MiB).
+Guest, interpolated and other presents are separate; failed/skipped calls do not
+add samples, and their gap remains in the next successful interval. It adds
 no GPU readback. The CSV and whole-run statistics are diagnostic data; loading
 screens and menus must be excluded before describing gameplay FPS. These are
 host-present timings, not measurements of monitor scanout. Compare the same
@@ -92,10 +115,16 @@ use `frame_cap = 60` with interpolation, or the `--fps 120` override. Do not rai
 
 The isolated test runner also accepts `--fps 60` / `--fps 120`. Profile rows label
 each present as `guest` or `interpolated`, and the statistics report both rates.
+For a separate performance measurement, `--profile-frames --profile-without-validation`
+disables Vulkan validation layers for that isolated run only. The default
+keeps validation enabled. Report which mode was used, exclude loading/readback
+from steady-scene timings, and do not treat a profiling-only run as a clean
+Vulkan validation pass.
 For motion evidence, `--capture-interpolation` enables a request file at
 `private/test-saves/native-mac/capture-interpolation.txt`; write `1` while moving
 to replace exactly two BMPs (`interpolation-guest.bmp` and
-`interpolation-midpoint.bmp`) in the normal native capture directory. This GPU
+`interpolation-midpoint.bmp`) plus an `interpolation-pair.json` receipt in the
+normal native capture directory. This GPU
 readback is for visual validation; keep it outside measured performance windows.
 
 The native implementation includes a reserved 4 GiB **virtual address range**
@@ -119,18 +148,26 @@ gameplay and save/load still need validation.
 Native controls use the same JSON bindings as Windows. Focus the game window:
 
 - Arrow keys navigate; **Enter**, **Space** or **E** selects; **Backspace** goes back.
-- **Click inside the game** to capture the pointer, then move the mouse to look
+- In menus, move the pointer to highlight a row, left-click to select, right-click
+  to go back, or scroll to change rows. Keyboard/controller navigation remains
+  available. Held menu clicks are suppressed when gameplay resumes.
+- **Click inside gameplay** to capture the pointer, then move the mouse to look
   around. This first click is consumed; subsequent left clicks fire. Relative
   mouse counts now update camera angles directly using the shared PC model,
   including zoom sensitivity and pitch limits; they no longer emulate a stick.
-- **Escape** pauses and releases the mouse. After resuming, click to capture
-  again. **F1** also toggles relative mouse capture
+- **Escape** pauses and releases the mouse. Resuming a menu automatically restores
+  mouse look while the game stays focused. Focus loss releases controls; click
+  inside gameplay to capture again. **F1** also toggles relative mouse capture
   (use Fn+F1 if macOS reserves the function key for brightness).
 - **WASD** moves; left mouse fires; right mouse activates the right-stick action;
   **R** reloads, **G** uses the left trigger, **Tab** maps to Xbox Back.
 - The first unassigned SDL controller also shares player 1. Explicit controllers
   assigned to other players are reserved. Physical controller play is unverified;
   SDL virtual-controller mapping/hotplug has regression coverage.
+
+**Quit to Desktop** is available from the main and Pause menus. Its confirmation
+starts on Cancel; Back returns to the current menu. The original Quit still
+returns to the frontend.
 
 Formatted menu/HUD hints use the current keyboard/mouse bindings and switch to
 controller icons on deliberate controller activity. Text baked into artwork or
@@ -147,10 +184,17 @@ Unsupported saved keys are preserved and labeled unavailable on Mac.
 
 **Save this tab** applies the edits and backs up the controls file; Cancel discards
 unsaved edits. Capture and conflict changes remain drafts until Save.
-The Graphics tab selects the render resolution and fullscreen. **F11** toggles
-fullscreen directly. Resolutions persist in `config/pc-display.ini`; fullscreen
+The Graphics tab filters resolutions by aspect ratio and sets vertical field of
+view (40–100°, default 55°), render resolution and fullscreen. Defaults and
+changes remain drafts until Save; Cancel leaves settings unchanged. A failed
+display save restores both resolution and FOV. **F11** toggles fullscreen
+directly. Resolution and FOV persist in `config/pc-display.ini`; fullscreen
 is a session setting. The original in-game Settings/Options menu also includes
 **Display settings**, with a 15-second resolution preview and automatic rollback.
+
+The lower-right host overlay shows the shared game version and generated build
+identity independently of the performance display. It stays out of guest
+screen-copy textures and capture files.
 
 **Mac debug tools:** **F9** toggles the FPS overlay for the current session.
 **F12** or **Game Settings → Debug & Performance…** opens options for FPS,
@@ -218,3 +262,84 @@ Portable patch, launcher and test-isolation checks:
 ```sh
 .venv/bin/python -m pytest tests/test_patch_updates.py tests/test_patch_tracking.py tests/test_native_mac_tools.py tests/test_native_mac_launcher.py -q
 ```
+
+## Common renderer development probe
+
+The common PC/Mac renderer uses the existing Vulkan backend and PC HLSL through
+DXC. This is the normal build route on macOS 26+; the launcher follows the build
+manifest and also supports explicit legacy GL builds. No game data or save fixture is needed
+for this probe. Use the checkout's pinned Python/CMake/Ninja environment:
+
+```sh
+.venv/bin/python tools/test-rhi-mac.py --setup-sdk
+.venv/bin/python tools/test-rhi-mac.py --driver moltenvk
+.venv/bin/python tools/test-rhi-mac.py --driver kosmickrisp
+```
+
+The current SDK requires Apple Silicon macOS 26+ for this validation route.
+`config/vulkan-sdk.json` pins SDK 1.4.363.0, its URL, byte size and publisher
+SHA-256. The setup needs 5 GiB free for download/extraction, installs inside
+ignored `external/vulkan-sdk`, uses `copy_only=1` and makes no system-wide SDK
+installation. It preserves licenses/version manifests and records hashes of the
+installed libraries and compiler headers. Unknown or changed installations fail
+verification instead of being overwritten. The installed core takes about
+2.5 GiB on the tested device; the verified installer/archive are disposable.
+See the [SDK installation documentation](https://vulkan.lunarg.com/doc/view/latest/mac/getting_started.html).
+
+The runner validates the runtime pin, applies the complete patch stack, initializes
+only pinned SDL/Vulkan header/loader/allocator submodules, and builds a small test
+under `build/macos/rhi-tests`. It bounds the executable to 60 seconds, isolates
+cache/config paths and writes `logs/rhi-<driver>.log` and `.json`. A missing
+validation layer or reported validation error fails the check. The shared shader
+pixel checks also run through Windows D3D11 WARP in CI; Mac additionally checks
+swapchain channel order and presentation. These checks are not gameplay or full
+rendering certification. See [measured scope](../STATUS.md#common-vulkan-backend-on-mac-2026-10-19).
+
+
+### Common game renderer
+
+<a id="opt-in-common-game-renderer"></a>
+
+With verified local game data/generated sources and the pinned SDK installed:
+
+```sh
+.venv/bin/python tools/build-native-mac.py --renderer vulkan --test
+.venv/bin/python tools/test-native-mac.py --unlocked-profile --seconds 120 --capture --test-keys --fps 60
+```
+
+The builder reuses `build/macos` and records the renderer in `BUILD.json`; there
+is no second game build tree. New Vulkan builds record the pinned MoltenVK
+driver in `BUILD.json`; build with `--vulkan-driver kosmickrisp` to select the
+alternative. Both launchers and the isolated runner honor that recorded choice.
+Older manifests without a driver field retain KosmicKrisp. The Python launcher
+and runner accept `--vulkan-driver moltenvk|kosmickrisp` as a temporary override
+without changing the manifest or saved settings. The runner enables validation.
+This path compiles the PC Xbox frontend directly. The Mac adapters supply the
+window, SDL events and CoreText overlay bitmap. It has bounded first-mission
+coverage, not full rendering, physical-input or 120-present certification.
+`--profile-frames` uses the common presentation recorder on both renderers and
+separates accepted guest/interpolated API presents. These timings do not measure
+GPU completion or display scanout. GL-specific `--trace-render` remains
+unavailable on the common renderer. `--capture-interpolation` enables a shared
+one-shot request: write `1` to the isolated `capture-interpolation.txt` after
+entering gameplay. The next eligible replay consumes it and writes
+`interpolation-guest.bmp`, `interpolation-midpoint.bmp` and
+`interpolation-pair.json` under `private/captures/native-mac`. The runner clears
+old pair evidence at startup and verifies both BMPs before reporting a complete
+pair. The receipt records the guest frame, actual blend and presentation result;
+"midpoint" names the intermediate image even when its blend differs from 0.5.
+Both images are taken before host-only FPS/watermark overlays. For a bounded
+transform trace, `RECOMP_INTERP_DEBUG=1` also prints the first three draws'
+previous, current and blended registers when a pair is requested.
+At 60 FPS or while interpolation is held, there may be no eligible replay.
+Readback disturbs timing: paired captures are diagnostic, not FPS benchmarks.
+Use the isolated runner for automated checks. For interactive use, both the
+native app and `Play-Native-Mac.command` read the renderer from `BUILD.json`,
+verify the pinned SDK receipt, and configure the manifest-selected loader without
+changing saved graphics preferences. `--check` remains read-only and now catches
+missing or modified Vulkan dependencies before launch. Rebuild with
+`--renderer gl --test` to select the fallback explicitly. Khallos sky distortion,
+movie playback, full campaign fidelity and sustained 120-present performance
+remain separate acceptance gaps; selecting a shared implementation does not
+certify them.
+See [results and remaining work](../STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).

@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Bounded native boot probe, always using isolated saves and configuration."""
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
 from pathlib import Path
 import platform
 import re
+import math
+import struct
 from native_mac_common import recycle_test_disks
 import shutil
 import signal
@@ -22,9 +25,70 @@ def isolated_environment(root, test):
     env.update(RECOMP_GAME_DIR=str(root / 'private/game'), RECOMP_SAVE_DIR=str(test),
                RECOMP_INPUT_CONFIG=str(test / 'pc-controls.json'), RECOMP_DISPLAY_CONFIG=str(test / 'runtime.conf'),
                XDG_CONFIG_HOME=str(test / 'xdg-config'), XDG_DATA_HOME=str(test / 'xdg-data'),
+               XDG_CACHE_HOME=str(test / 'xdg-cache'),
                TSFP_DISPLAY_CONFIG=str(test / 'pc-display.ini'),
                RECOMP_TRACE_BUDGET='500', RECOMP_LOG_FILE=str(root / 'logs/native-boot.err'))
     return env
+
+
+def prepare_environment(root, test, unlocked=False):
+    """Use the shared immutable fixture inside the existing native test root."""
+    from testing_profile import contained, prepare_run
+    test = contained(root, test, 'private/test-saves')
+    if unlocked:
+        run = test / 'unlocked'
+        env = isolated_environment(root, run)
+        prepared = prepare_run(root, run)
+        env.update({k:v for k,v in prepared.items() if k.startswith(('RECOMP_', 'TSFP_'))})
+        for key in ('RECOMP_SAVE_DIR', 'RECOMP_INPUT_CONFIG', 'RECOMP_DISPLAY_CONFIG',
+                    'TSFP_DISPLAY_CONFIG', 'XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
+            contained(root, Path(env[key]), 'private/test-saves')
+        return env
+    test.mkdir(parents=True, exist_ok=True)
+    config = contained(root, test / 'pc-controls.json', 'private/test-saves')
+    if not config.exists():
+        shutil.copyfile(root / 'tests/fixtures/pc-controls.json', config)
+    runtime = contained(root, test / 'runtime.conf', 'private/test-saves')
+    if not runtime.exists():
+        runtime.write_text('# Isolated native boot defaults\n')
+    contained(root, test / 'pc-display.ini', 'private/test-saves')
+    env = isolated_environment(root, test)
+    for key in ('XDG_CONFIG_HOME', 'XDG_DATA_HOME', 'XDG_CACHE_HOME'):
+        contained(root, Path(env[key]), 'private/test-saves')
+    return env
+
+
+@contextmanager
+def test_session(root, test, unlocked=False):
+    """Hold native/profile ownership until the child and disk cleanup finish."""
+    from testing_profile import contained
+    test = contained(root, test, 'private/test-saves')
+    if test != root.resolve() / 'private/test-saves/native-mac':
+        raise ValueError('Unexpected native test root')
+    test.mkdir(parents=True, exist_ok=True)
+    locks = []
+    prepared = False
+    try:
+        lock = test / 'run.lock'
+        with lock.open('x') as stream:
+            stream.write(str(os.getpid()))
+        locks.append(lock)
+        env = prepare_environment(root, test, unlocked)
+        if unlocked:
+            lock = test / 'unlocked/run.lock'
+            with lock.open('x') as stream:
+                stream.write(str(os.getpid()))
+            locks.append(lock)
+        prepared = True
+        yield env
+    finally:
+        try:
+            if prepared:
+                recycle_test_disks(root, test)
+        finally:
+            for lock in reversed(locks):
+                lock.unlink()
+
 
 def capture_environment(root):
     captures = root / 'private/captures/native-mac'
@@ -38,22 +102,97 @@ def capture_environment(root):
                 RECOMP_HLE_D3D8_DUMP_EVERY='60', RECOMP_HLE_D3D8_DUMP_KEEP_LAST='2')
 
 
+def prepare_interpolation_capture(root, test):
+    capture_environment(root)
+    captures = root / 'private/captures/native-mac'
+    request = test / 'capture-interpolation.txt'
+    outputs = [captures / ('interpolation-' + name)
+               for name in ('guest.bmp', 'midpoint.bmp', 'pair.json')]
+    for path in (request, *outputs):
+        if path.is_symlink():
+            raise RuntimeError('Unexpected interpolation capture path')
+    # Invalidate only this runner's known files, before starting any process.
+    for path in outputs:
+        path.unlink(missing_ok=True)
+    request.write_text('')
+    return dict(RECOMP_INTERP_CAPTURE_REQUEST=str(request),
+                RECOMP_INTERP_CAPTURE_PREFIX=str(captures / 'interpolation'))
+
+
+def interpolation_capture_result(root):
+    captures = root / 'private/captures/native-mac'
+    result = dict(complete=False, diagnostic_readback=True, images=[])
+    metadata = captures / 'interpolation-pair.json'
+    if not metadata.exists():
+        return dict(result, reason='No eligible interpolation capture completed')
+    try:
+        if metadata.is_symlink() or metadata.stat().st_size > 4096:
+            raise ValueError('Invalid interpolation metadata file')
+        receipt = json.loads(metadata.read_text())
+        if not isinstance(receipt, dict):raise ValueError('Invalid interpolation metadata object')
+        result['receipt'] = receipt
+        if not (receipt.get('complete') is True and receipt.get('presented') is True
+                and receipt.get('guest_written') is True and receipt.get('midpoint_written') is True
+                and isinstance(receipt.get('guest_frame'), int) and receipt['guest_frame'] > 0
+                and isinstance(receipt.get('blend'), (int, float)) and math.isfinite(receipt['blend'])
+                and 0 <= receipt['blend'] <= 1):
+            raise ValueError('Capture/readback/presentation did not complete')
+        dimensions = []
+        for name in ('guest', 'midpoint'):
+            path = captures / ('interpolation-' + name + '.bmp')
+            if path.is_symlink():raise ValueError('Unexpected interpolation image link')
+            with path.open('rb') as stream:header = stream.read(54)
+            if len(header) != 54 or header[:2] != b'BM':raise ValueError('Invalid interpolation BMP')
+            offset = struct.unpack_from('<I', header, 10)[0]
+            width, height, planes, bits, compression = struct.unpack_from('<iiHHI', header, 18)
+            if not (0 < width <= 16384 and 0 < abs(height) <= 16384 and planes == 1
+                    and bits in (24, 32) and compression == 0 and offset >= 54):
+                raise ValueError('Invalid interpolation BMP format')
+            size = path.stat().st_size
+            if size != offset + ((width * bits + 31) // 32) * 4 * abs(height):
+                raise ValueError('Truncated or oversized interpolation BMP')
+            dimensions.append((width, abs(height)))
+            result['images'].append(dict(path=str(path.relative_to(root)), bytes=size,
+                width=width, height=abs(height), sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
+        if dimensions[0] != dimensions[1]:raise ValueError('Interpolation pair sizes differ')
+        result['complete'] = True
+    except (OSError, ValueError, TypeError, KeyError) as error:
+        result['reason'] = str(error)
+    return result
+
+
+def present_counts(errors):
+    """Last cumulative API-acceptance snapshot, never inferred from guest ticks."""
+    samples=re.findall(r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) '
+                       r'interpolated=(\d+) other=(\d+) skipped=(\d+) failed=(\d+)',errors)
+    if not samples:return None
+    return dict(zip(('total','guest','interpolated','other','skipped','failed'),map(int,samples[-1])))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--seconds', type=int, default=15,
                         help='Bounded run duration, 1–1800 seconds (default: 15)')
+    parser.add_argument('--unlocked-profile', action='store_true',
+                        help='Reset a disposable copy of the local Test Lab fixture and skip startup movies')
     parser.add_argument('--capture', action='store_true', help='Retain two rotating native frame captures')
     parser.add_argument('--test-keys', action='store_true', help='Read synthetic SDL key/mouse events from isolated test-keys.txt')
     parser.add_argument('--trace-render', action='store_true', help='Enable bounded frame tracing on request')
     parser.add_argument('--profile-frames', action='store_true',
                         help='Record up to 20,000 host present intervals, without GPU readback')
+    parser.add_argument('--profile-without-validation', action='store_true',
+                        help='With --profile-frames, measure Vulkan without validation-layer overhead; not a validation pass')
     parser.add_argument('--fps', type=int, choices=(60,120), help='Override the native display target for this test only')
     parser.add_argument('--capture-interpolation', action='store_true', help='Capture one guest/midpoint pair when capture-interpolation.txt requests it')
+    parser.add_argument('--vulkan-driver',choices=('moltenvk','kosmickrisp'),
+                        help='Temporary Vulkan driver override; default comes from BUILD.json')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('This probe requires an Apple Silicon Mac.')
     if not 1 <= args.seconds <= 1800:
         parser.error('--seconds must be between 1 and 1800')
+    if args.profile_without_validation and not args.profile_frames:
+        parser.error('--profile-without-validation requires --profile-frames')
     xbe = ROOT / 'private/game/default.xbe'
     if hashlib.sha256(xbe.read_bytes()).hexdigest() != EXPECTED_XBE:
         raise SystemExit('Unsupported game executable')
@@ -64,26 +203,23 @@ def main():
     test = ROOT / 'private/test-saves/native-mac'
     if test.is_symlink() or not test.resolve().is_relative_to((ROOT / 'private/test-saves').resolve()):
         raise SystemExit('Unexpected isolated test path')
-    test.mkdir(parents=True, exist_ok=True)
-    config = test / 'pc-controls.json'
-    if not config.exists():
-        shutil.copyfile(ROOT / 'tests/fixtures/pc-controls.json', config)
-    runtime_config = test / 'runtime.conf'
-    if not runtime_config.exists():
-        runtime_config.write_text('# Isolated native boot defaults\n')
-    env = isolated_environment(ROOT, test)
+    with test_session(ROOT, test, args.unlocked_profile) as env:
+        return run_probe(args, test, env, exe, kind)
+
+
+def run_probe(args, test, env, exe, kind):
+    manifest_path=ROOT/'build/macos/BUILD.json'
+    manifest=json.loads(manifest_path.read_text()) if manifest_path.is_file() else {}
+    if manifest.get('renderer')=='vulkan':
+        import vulkan_sdk
+        env=vulkan_sdk.with_probe_gpu_environment(env,vulkan_sdk.verify_install(),
+            vulkan_sdk.select_driver(manifest,getattr(args,'vulkan_driver',None)))
+        env['RECOMP_VK_VALIDATION']='0' if getattr(args,'profile_without_validation',False) else '1'
     if args.fps:
         env.update(RECOMP_FRAME_INTERP='2' if args.fps==120 else '1',
                    RECOMP_FPS_CAP='60' if args.fps==120 else 'adaptive')
     if args.capture_interpolation:
-        capture_environment(ROOT) # Same path and symlink checks as normal captures.
-        captures=ROOT / 'private/captures/native-mac'
-        request=test / 'capture-interpolation.txt'
-        for path in (request,captures/'interpolation-guest.bmp',captures/'interpolation-midpoint.bmp'):
-            if path.is_symlink():raise SystemExit('Unexpected interpolation capture path')
-        request.write_text('')
-        env.update(TSFP_NATIVE_INTERP_CAPTURE_REQUEST=str(request),
-                   TSFP_NATIVE_INTERP_CAPTURE_PREFIX=str(captures/'interpolation'))
+        env.update(prepare_interpolation_capture(ROOT, test))
     if args.test_keys:
         keys = test / 'test-keys.txt'
         if keys.is_symlink():raise SystemExit('Unexpected test key file')
@@ -104,7 +240,7 @@ def main():
         profile.write_text('')
         env['TSFP_NATIVE_FRAME_PROFILE'] = str(profile)
     out_path, err_path = logs / 'native-boot.out', logs / 'native-boot.err'
-    print(f'Native probe: {exe}\nIsolated saves: {test}\nLimit: {args.seconds}s, 8 MiB logs', flush=True)
+    print(f'Native probe: {exe}\nIsolated saves: {env["RECOMP_SAVE_DIR"]}\nLimit: {args.seconds}s, 8 MiB logs', flush=True)
     started = time.monotonic()
     reason = 'process_exit'
     with out_path.open('wb') as out, err_path.open('wb') as err:
@@ -127,6 +263,7 @@ def main():
     errors = err_path.read_text(errors='replace')
     frames = [int(n) for n in re.findall(r'\[NATIVE-GUEST\] completed frame (\d+)', errors)]
     presented = re.findall(r'\[native-gl\] presented frame (\d+), GL error=0x([0-9a-fA-F]+)', errors)
+    counts = present_counts(errors)
     captures = []
     if args.capture:
         for name in ('frame000.bmp', 'frame001.bmp'):
@@ -137,10 +274,16 @@ def main():
     boot = dict(guest_entry_reached='Entering translated Xbox entry' in output,
                 graphics_initialized='graphics initialization returned 0x00000000' in errors,
                 completed_guest_frames_at_least=max(frames, default=0),
-                presented_frames_at_least=max((int(n) for n, _ in presented), default=0),
+                presented_frames_at_least=counts['total'] if counts else max((int(n) for n, _ in presented), default=0),
+                host_present_counts_at_least=counts,
                 sampled_gl_errors=[int(code, 16) for _, code in presented if int(code, 16)],
                 native_fault='[NATIVE-FAULT]' in errors,
-                rendering_connected='[d3d8_gl] GL ' in errors and 'host rendering connected' in errors)
+                rendering_connected=('host rendering connected' in errors and
+                    ('[d3d8_gl] GL ' in errors or '[native-rhi] common Xbox renderer' in errors)),
+                renderer=manifest.get('renderer','gl'),
+                host_present_counter_available=counts is not None or bool(presented),
+                shader_compile_failures=errors.count('compile failed'),
+                vulkan_validation_errors=len(re.findall(r'\[VKVAL\]',errors)))
     cleanup = recycle_test_disks(ROOT, test)
     result = dict(boot=boot, disposable_test_disks=cleanup, branch=subprocess.check_output(['git', 'branch', '--show-current'], cwd=ROOT, text=True).strip(),
                   source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
@@ -149,9 +292,13 @@ def main():
                   executable_sha256=hashlib.sha256(exe.read_bytes()).hexdigest(),
                   seconds=round(time.monotonic()-started, 2), reason=reason, exit_code=proc.returncode,
                   test_directory=str(test.relative_to(ROOT)),
+                  unlocked_profile=bool(args.unlocked_profile),
                   overrides={k:v for k,v in env.items() if k.startswith(('RECOMP_', 'TSFP_'))},
+                  vulkan_driver=(vulkan_sdk.select_driver(manifest,getattr(args,'vulkan_driver',None)) if manifest.get('renderer')=='vulkan' else None),
                   frame_captures=captures,
                   rendered_game_verified=False) # Visual recognition is a separate reviewed result.
+    if args.capture_interpolation:
+        result['interpolation_capture'] = interpolation_capture_result(ROOT)
     if args.profile_frames:
         from native_frame_stats import summarize
         try:
@@ -167,7 +314,8 @@ def main():
     print(json.dumps({k:result[k] for k in ('seconds', 'reason', 'exit_code')}, indent=2))
     # A process exit of zero can be the guest rebooting after a startup error.
     # Count this milestone only when real frame calls survive to our time limit.
-    return 0 if reason == 'time_limit' and frames and not boot['native_fault'] else 1
+    return 0 if (reason == 'time_limit' and frames and not boot['native_fault']
+                 and not boot['shader_compile_failures'] and not boot['vulkan_validation_errors']) else 1
 
 
 if __name__ == '__main__':

@@ -2,9 +2,65 @@
 
 [Back to the README](../README.md)
 
+## Launcher settings
+
+The launcher, its startup window and the windowed game title bar follow
+Windows' **app mode** (Light or Dark), including changes made while they are
+open. This changes the title bar only; the launcher's interior keeps its own
+theme. High-contrast mode uses the standard light title-bar setting. Windows
+versions without the optional DWM theme attribute retain their normal title
+bars. There is no separate game preference to save.
+
+The game's **PC Settings** menu bar and dropdown, **Keyboard & Mouse** and
+**Debug** windows (including the binding-capture dialog) also follow app mode.
+Their backgrounds, text, lists and controls use a dark palette in Dark mode
+and return to system colors in Light/high-contrast mode. The separate **Online**
+window and its invitation dialog follow the same preference, checking for
+changes about once a second. The game graphics and launcher interior retain
+their existing appearance; Mica/Acrylic is not used.
+Dark controls retain Windows-style typography and layout, with rounded surfaces,
+blue checkbox accents and focus/hover feedback. Online uses Vista control
+layouts with custom dark drawing rather than switching to the classic Clam
+appearance. Light mode restores the original native styling.
+
+The current source launcher groups **Game settings** into two tabs with a fixed
+Save/Cancel footer. **Keyboard & mouse** contains Input & mouse and the key-binding
+table, with four labeled slots per action. **Graphics & resolution** groups Display,
+Camera & window, Quality & performance, and Startup into separate cards. Expand
+**Custom resolution** to edit width and height; the preset picker and aspect filter
+remain above it. Save applies the draft on the next launch; Home retains it and
+Cancel discards unsaved edits. The sidebar stays visible while editing.
+
 ## In-game display settings
 
 These instructions describe the current Windows source build. Downloaded releases may predate individual features.
+
+For FPS and monitor refresh, open **Settings → Display settings → Smoothness /
+refresh** from the main menu, or the same Display settings page under paused
+**Options**. Use left/right on each row:
+
+- **Motion:** 60 FPS (original), 120 FPS (experimental), or 144 FPS (experimental).
+  **Keep current** preserves a custom/legacy pacing setup. Selecting 120/144
+  also enables fullscreen and VRR and keeps the game simulation at 60 Hz.
+- **Monitor refresh:** Desktop rate, 120 Hz if supported, or 144 Hz if supported.
+  This is separate from the FPS target. The game checks the actual monitor at
+  launch and leaves unsupported modes unchanged.
+- **Save for next launch:** saves these preferences, then shows a restart
+  reminder. Restart normally to apply them. **Back (discard changes)** leaves
+  the saved preferences alone. Resolution, FOV and other graphics preferences
+  are preserved by this save.
+
+Start with 120 FPS and a supported matching refresh rate; compare the same
+scene while turning the camera before trying 144. Use **60 FPS (original)** to
+turn interpolation off. These are presentation targets, not guaranteed frame
+rates. The [launcher guide](windows-launcher.md) explains resolution/quality
+adjustments and the FPS counters. `Play-Smooth.cmd` and environment overrides
+take priority over saved preferences; use normal `Play.cmd` or the launcher's
+Play button when checking the saved selection.
+
+Smoothness/refresh uses the runtime display configuration shared with the
+launcher (`RECOMP_DISPLAY_CONFIG` in isolated tests). It applies after restart;
+resolution and FOV below retain their existing live confirmation behavior.
 
 Open **Settings → Display settings** from the main menu, or **Options → Display
 settings** while paused. Choose an **Aspect ratio** group (All, 4:3, 5:4,
@@ -41,19 +97,33 @@ custom dimensions, and a live current-ratio label. Selecting a group only change
 the draft; the existing Save/Cancel and in-game confirmation rules still apply.
 These settings change the native
 3D rendering resolution; the window still follows its existing size. Use
-**Alt+Enter** for fullscreen. Desktop resolution and refresh rate are unchanged.
+**Alt+Enter** for fullscreen. Render resolution does not change desktop
+resolution or refresh; the separate Smoothness / refresh option can request
+a supported monitor rate while the game is foreground and fullscreen.
 Menu backgrounds fill the selected canvas, while text, buttons and panels fit
 proportionally. Narrower layouts fit widgets vertically instead of cropping them.
+Windows frontend menus reconstruct magnified background, logo and icon textures
+with a bounded cubic filter. Main-menu row lettering also reconstructs glyph
+coverage for crisper edges. These use the original artwork; they do not add
+new high-resolution assets. Native-size/minified textures and gameplay keep
+their existing sampling. For comparison or troubleshooting, launch with
+`TSFP_MENU_FILTER=linear` to restore the previous menu filtering for that run.
+
 In single-player widescreen, ammo counters, corner radar, status indicators and
 scope zoom controls move toward their screen edges with consistent proportions.
 World target markers and the central aiming graphics retain their own placement.
 Split-screen retains its existing layout. Gameplay uses the selected aspect ratio
-and an adjusted horizontal camera view. Cutscene bars adapt to
-the selected aspect ratio while preserving the original cinematic framing:
-wide screens use thinner bars, and screens wider than the cinematic picture
-use side bars to fit its full height. The cutscene camera and scripted bar
-animations adapt together, preserving the original composition. This affects
-in-engine cutscenes; startup video framing is unchanged.
+and an adjusted horizontal camera view. Cutscene bars adapt to the selected
+aspect ratio: wide screens use thinner horizontal bars. Screens wider than
+the cinematic picture fill the width by cropping vertically, preserving
+proportions instead of adding side bars. The camera stays within the authored
+horizontal aperture so cutscene backdrops still cover the view. The camera
+and scripted bar animations adapt together. The recorded attract reel follows
+the same proportional width-fill rule, excluding its encoded side padding
+on wide screens. Startup logos also fill the width proportionally. Wider
+displays crop the top and bottom of the original movie or logo picture.
+Presentation changes do not alter animation speed, audio timing, or the
+recorded videos' original frame rate.
 
 Settings live in `config/pc-display.ini` beside the keyboard/mouse configuration
 (`Settings/pc-display.ini` in packaged builds). `TSFP_DISPLAY_CONFIG` can override
@@ -126,6 +196,14 @@ The shared float-comparison fix in `837692d` restores intermediate values;
 rebuild with `tsfp.ps1 -Action Build` to refresh older generated code and the
 executable. This setting is separate from raw mouse sensitivity in F2.
 
+For the original game's **Settings → Controls** page (for example, Inverse
+look), **Accept** now writes the selected profile before returning to Settings.
+You can then quit directly from Settings; returning to the main menu is no
+longer required. **Cancel** discards the draft. If saving fails, follow the
+game's save-error screen before quitting. This is
+separate from the PC keyboard/mouse window's **Save & Close** and Display
+settings' explicit save/confirmation controls.
+
 In-game button prompts automatically show the **first assigned keyboard or mouse
 binding** for each control, for example **[E] Select** and **[F] Back**. Saving
 bindings in F2 updates the prompts immediately. Unassigned controls show
@@ -161,6 +239,9 @@ pause the simulation. The Debug window offers:
 
 - **Show FPS:** game frame rate; when interpolation adds presentations, the
   overlay shows game/shown FPS. F9 toggles the FPS display for the current session.
+  With the experimental 120/144 FPS target, Shown excludes guest endpoints
+  replaced by interpolated presentations, avoiding double-counting. These are
+  host submissions, not a measurement of the monitor's scanout rate.
 - **Show average frame time:** the average interval between game frames in
   milliseconds, measured over roughly half a second; this is not GPU execution time.
 - **Show error / warning counters:** on-screen E/W counts of matching runtime log

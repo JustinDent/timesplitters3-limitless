@@ -1,4 +1,5 @@
 #include "vertex_selftest.inc"
+#include "renderer_host_selftest.inc"
 /* Real GPU regressions: topology, A8 swizzle/sampling, compositing, readback,
  * and moving the GL context to a guest-style worker and back. */
 static int native_test_pixel(IDirect3DDevice8 *dev, UINT x, UINT y,
@@ -19,7 +20,10 @@ static int native_test_pixel(IDirect3DDevice8 *dev, UINT x, UINT y,
 #include "debug_overlay_selftest.inc"
 #include "feature_selftest.inc"
 #include "screen_copy_selftest.inc"
+#include "channel_clear_selftest.inc"
 #include "multitexture_selftest.inc"
+#include "fog_selftest.inc"
+#include "menu_sampling_selftest.inc"
 static void *native_test_worker(void *arg) {
     IDirect3DDevice8 *dev=arg;
     dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF00FF00,1,0);
@@ -41,11 +45,15 @@ int tsfp_native_renderer_test(void) {
         {56,56,0,1,0xFFFF0000,1,1}, {8,56,0,1,0xFFFF0000,0,1}
     };
     dev->lpVtbl->SetVertexShader(dev,D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_TEX1);
-    int ok=native_test_debug_overlay(dev);
+    int ok=native_test_renderer_host(g.window,native_debug_release);
+    ok &= native_test_debug_overlay(dev);
     ok &= native_test_screen_copy(dev);
+    ok &= native_test_channel_clears(dev);
     ok &= native_test_vertex_programs();
     ok &= native_test_pack(dev);
     ok &= native_test_multitexture(dev);
+    ok &= native_test_fog(dev);
+    ok &= native_test_menu_sampling(dev);
     /* High-resolution rendering must retain guest readback coordinates and
        later offscreen/interpolation tests must operate on the new target. */
     ok &= pc_display_apply((PcDisplayMode){1280,720});
@@ -57,9 +65,16 @@ int tsfp_native_renderer_test(void) {
     ok &= native_test_pixel(dev,16,16,255,0,0);
     ok &= native_test_pixel(dev,48,48,255,0,0);
     ok &= native_test_pixel(dev,4,4,0,0,255);
+    /* The shared menu policy now squeezes AUTO widgets even without a camera
+     * frame. The 8..56 quad occupies 14..50 at 16:9 after guest readback. */
+    ok &= native_test_pixel(dev,10,32,0,0,255);
+    ok &= native_test_pixel(dev,52,32,0,0,255);
     /* Queue many different uploads before any readback synchronizes the GPU.
      * Earlier draws must retain their geometry/color as the stream is reused,
      * including changing sizes and both 16/32-bit index uploads. */
+    uint32_t upload_tag;int upload_placement=xbox_D3D8GetTwoDPlacement(&upload_tag);
+    /* These are adjacent upload tiles, not separate proportional HUD widgets. */
+    xbox_D3D8SetTwoDPlacement(XBOX_D3D8_2D_STRETCH,0);
     dev->lpVtbl->Clear(dev,0,NULL,D3DCLEAR_TARGET,0xFF000000,1,0);
     for(int pass=0;pass<16;pass++)for(int tile=0;tile<8;tile++) {
         DWORD color=tile&1?0xFF00FF00:0xFFFF0000;
@@ -79,6 +94,7 @@ int tsfp_native_renderer_test(void) {
         }
     }
     for(int tile=0;tile<8;tile++)ok &= native_test_pixel(dev,tile*8+4,32,tile&1?0:255,tile&1?255:0,0);
+    xbox_D3D8SetTwoDPlacement(upload_placement,upload_tag);
     IDirect3DTexture8 *texture=NULL;
     ok &= SUCCEEDED(dev->lpVtbl->CreateTexture(dev,8,8,1,0,D3DFMT_A8,D3DPOOL_MANAGED,&texture));
     if(texture) {
@@ -172,7 +188,8 @@ int tsfp_native_renderer_test(void) {
     for(int i=0;i<4;i++)vertices[i].color=0xFFFF0000;
     dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]);
     ok &= native_test_pixel(dev,32,32,255,0,0);
-    xbox_D3D8InterpPresent();xbox_D3D8InterpEnd();
+    ok &= xbox_D3D8InterpPresent();xbox_D3D8InterpEnd();
+    ok &= !xbox_D3D8InterpPresent();
     ok &= native_test_pixel(dev,32,32,0,0,255);
     for(int i=0;i<4;i++){vertices[i].z=.6f;vertices[i].color=0xFF00FF00;}
     dev->lpVtbl->DrawPrimitiveUP(dev,D3DPT_QUADLIST,1,vertices,sizeof vertices[0]);
@@ -202,6 +219,8 @@ int tsfp_native_renderer_test(void) {
     }
     ok &= pc_display_apply((PcDisplayMode){0,0});
     ok &= native_scene_w==64 && native_scene_h==64;
+    ok &= tsfp_native_graphics_settings_test(g.window);
+    ok &= native_test_renderer_window_modes(g.window,dev);
     fprintf(stderr,"[native-feature-test] resolution apply/reject/restore and high-resolution offscreen/interpolation: %s\n",ok?"PASS":"FAIL");
     SDL_GL_DestroyContext(g.glctx);g.glctx=NULL;
     SDL_DestroyWindow(g.window);g.window=NULL;

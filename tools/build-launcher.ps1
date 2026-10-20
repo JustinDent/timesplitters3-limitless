@@ -8,7 +8,7 @@ included in supported Windows 10/11 installations. -Test runs isolated updater
 regressions, without downloading a game or accessing personal saves/settings.
 #>
 [CmdletBinding()]
-param([string]$Output, [switch]$Test, [string]$BannerPath, [string]$LogoPath)
+param([string]$Output, [switch]$Test, [string]$BannerPath, [string]$LogoPath, [switch]$RequireArtwork, [string]$BackdropPath)
 $ErrorActionPreference = 'Stop'
 $project = Split-Path -Parent $PSScriptRoot
 if (!$Output) { $Output = Join-Path $project 'build\launcher' }
@@ -26,6 +26,7 @@ if (Test-Path -LiteralPath $BannerPath -PathType Leaf) {
     if ((Get-Item -LiteralPath $BannerPath).Length -gt 8MB) { throw 'Launcher banner must be no larger than 8 MiB.' }
     $bannerArguments = @(('/resource:' + $BannerPath + ',launcher-banner.png'))
 } else {
+    if ($RequireArtwork) { throw 'Release launcher artwork is required: banner missing. Supply -BannerPath or restore private/launcher-art.' }
     Write-Host 'Private launcher banner not present; using the built-in vector theme.'
 }
 
@@ -42,16 +43,27 @@ if (Test-Path -LiteralPath $LogoPath -PathType Leaf) {
         $logoArguments = @(('/resource:' + $LogoPath + ',launcher-logo.png'))
     } finally { $logo.Dispose() }
 } else {
+    if ($RequireArtwork) { throw 'Release launcher artwork is required: logo missing. Supply -LogoPath or restore private/launcher-art.' }
     Write-Host 'Private title logo not present; using the sidebar text fallback.'
 }
+# The generated environment is separate from the untouched original key art.
+if (!$BackdropPath) { $BackdropPath = Join-Path $project 'private\launcher-art\future-perfect-backdrop-v1.png' }
+if (Test-Path -LiteralPath $BackdropPath -PathType Leaf) {
+    $BackdropPath = (Resolve-Path -LiteralPath $BackdropPath).ProviderPath
+    if ((Get-Item -LiteralPath $BackdropPath).Length -gt 8MB) { throw 'Launcher backdrop must be no larger than 8 MiB.' }
+    $bannerArguments += '/resource:' + $BackdropPath + ',launcher-backdrop.png'
+} else {
+    if ($RequireArtwork) { throw 'Release launcher artwork is required: backdrop missing. Supply -BackdropPath or restore private/launcher-art.' }
+    Write-Host 'Private launcher backdrop not present; using the built-in gradient behind the original artwork.'
+}
 if (!('LauncherIconBuilder' -as [type])) {
-    Add-Type -TypeDefinition ([IO.File]::ReadAllText((Join-Path $source 'IconBuilder.cs'))) -ReferencedAssemblies System.Drawing
+    Add-Type -Path @((Join-Path $source 'IconBuilder.cs'), (Join-Path $source 'GameMonogram.cs')) -ReferencedAssemblies System.Drawing
 }
 [LauncherIconBuilder]::Write((Join-Path $Output 'launcher.ico'))
 [LauncherIconBuilder]::Preview((Join-Path $Output 'icon-preview.png'))
 $references = @('System.dll','System.Core.dll','System.Web.Extensions.dll','System.Net.Http.dll',
     'System.IO.Compression.dll','System.IO.Compression.FileSystem.dll','System.Xaml.dll',
-    'System.Windows.Forms.dll')
+    'System.Windows.Forms.dll','System.Management.dll')
 $commonArguments = @('/nologo','/target:winexe','/platform:x64','/optimize+','/utf8output',
     ('/win32manifest:' + (Join-Path $source 'launcher.manifest')),
     ('/win32icon:' + (Join-Path $Output 'launcher.ico')),
@@ -61,8 +73,8 @@ foreach ($reference in $references) { $commonArguments += '/reference:' + (Join-
 foreach ($reference in @('PresentationCore.dll','PresentationFramework.dll','WindowsBase.dll')) {
     $commonArguments += '/reference:' + (Join-Path $framework "WPF\$reference")
 }
-$commonSources = @((Join-Path $source 'Core.cs'), (Join-Path $source 'ReleaseClient.cs'),
-    (Join-Path $source 'SelfUpdate.cs'), (Join-Path $source 'LauncherVersion.cs'))
+$commonSources = @((Join-Path $source 'Core.cs'), (Join-Path $source 'LauncherPlatform.cs'), (Join-Path $source 'DownloadTransfer.cs'), (Join-Path $source 'ReleaseNews.cs'), (Join-Path $source 'ReleaseClient.cs'),
+    (Join-Path $source 'SelfUpdate.cs'), (Join-Path $source 'LauncherVersion.cs'), (Join-Path $source 'WindowTheme.cs'))
 $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Bootstrap',
     ('/out:' + (Join-Path $Output 'TimeSplitters Launcher.exe'))) + $commonSources + @((Join-Path $source 'Bootstrap.cs'))
 & $compiler @arguments
@@ -72,8 +84,11 @@ $arguments = $commonArguments + @('/main:TimeSplitters.Launcher.Program',
     ('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml')) + $commonSources + @(
     (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'))
 $arguments += $bannerArguments
-$settingsSources = @((Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'SettingsPage.cs'))
-$defaultControls = @(('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'),
+$settingsSources = @((Join-Path $source 'Ui.cs'), (Join-Path $source 'GameSessions.cs'), (Join-Path $source 'CrashReports.cs'), (Join-Path $source 'PageTheme.cs'), (Join-Path $source 'ReleaseNotesMarkdown.cs'), (Join-Path $source 'ReleaseNotesDocument.cs'), (Join-Path $source 'GameSettings.cs'), (Join-Path $source 'DisplayModes.cs'), (Join-Path $source 'InstallationMaintenance.cs'), (Join-Path $source 'DiagnosticIssueDraft.cs'))
+# Every shared page is compiled for both hosts; add new pages beside these sources.
+$settingsSources += @(Get-ChildItem -LiteralPath $source -Filter '*Page.cs' | ForEach-Object { $_.FullName })
+$defaultControls = @(('/resource:' + (Join-Path $source 'PageTheme.xaml') + ',PageTheme.xaml'),
+    ('/resource:' + (Join-Path $source 'TabsTheme.xaml') + ',TabsTheme.xaml'), ('/resource:' + (Join-Path $project 'config\pc-controls.default.json') + ',launcher-controls-default.json'),
     ('/resource:' + (Join-Path $project 'src\pc_display_modes.inc') + ',display-modes.inc'))
 $arguments += $settingsSources + @($defaultControls)
 & $compiler @arguments
@@ -103,8 +118,6 @@ $hash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerI
 [IO.File]::WriteAllText(($archivePath + '.sha256'), "$hash  $assetName`n", $encoding)
 $metadata = [ordered]@{ schema = 1; version = $version; asset_name = $assetName; size = (Get-Item -LiteralPath $archivePath).Length; sha256 = $hash }
 [IO.File]::WriteAllText((Join-Path $Output 'launcher-update.json'), (($metadata | ConvertTo-Json) + "`n"), $encoding)
-Copy-Item -LiteralPath $archivePath -Destination (Join-Path $Output 'TimeSplitters-Launcher-windows-x64.zip') -Force
-[IO.File]::WriteAllText((Join-Path $Output 'TimeSplitters-Launcher-windows-x64.zip.sha256'), ($hash + '  TimeSplitters-Launcher-windows-x64.zip' + "`n"), $encoding)
 if ($Test) {
     $testArgs = @('/nologo','/target:exe','/platform:x64','/optimize+','/utf8output','/main:LauncherTests',
         ('/out:' + (Join-Path $Output 'launcher-tests.exe')))
@@ -115,14 +128,31 @@ if ($Test) {
     $testArgs += $commonSources + @((Join-Path $source 'Bootstrap.cs'),
         (Join-Path $source 'Launcher.cs'), (Join-Path $PSScriptRoot 'release\ImportGame.cs'),
         (Join-Path $project 'tests\launcher_updates.cs'))
-    $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher_settings.cs'))
+    $testArgs += $settingsSources + @($defaultControls, (Join-Path $project 'tests\launcher_crashes.cs'), (Join-Path $project 'tests\launcher_settings.cs'), (Join-Path $project 'tests\launcher_maintenance.cs'), (Join-Path $project 'tests\launcher_downloads.cs'), (Join-Path $project 'tests\launcher_news.cs'), (Join-Path $project 'tests\launcher_versions.cs'), (Join-Path $project 'tests\launcher_startup.cs'))
+    $testArgs += @((Join-Path $project 'tests\launcher_sessions.cs'), (Join-Path $project 'tests\launcher_shared_ui.cs'))
     $testArgs += @(('/resource:' + (Join-Path $source 'Launcher.xaml') + ',Launcher.xaml'),
         ('/resource:' + (Join-Path $Output 'launcher.ico') + ',launcher.ico')) + $bannerArguments + $logoArguments
     & $compiler @testArgs
     if ($LASTEXITCODE -ne 0) { throw 'Launcher test compilation failed.' }
     & (Join-Path $Output 'launcher-tests.exe')
     if ($LASTEXITCODE -ne 0) { throw 'Launcher regression tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --shared-ui
+    if ($LASTEXITCODE -ne 0) { throw 'Shared launcher UI tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --downloads
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher download tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --versions
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher game version tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --startup
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher startup recovery tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --news
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher release news tests failed.' }
     & (Join-Path $Output 'launcher-tests.exe') --settings
     if ($LASTEXITCODE -ne 0) { throw 'Launcher settings tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --crashes
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher crash report tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --sessions
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher unfinished-session tests failed.' }
+    & (Join-Path $Output 'launcher-tests.exe') --maintenance
+    if ($LASTEXITCODE -ne 0) { throw 'Launcher maintenance tests failed.' }
 }
 Get-Item -LiteralPath (Join-Path $Output 'TimeSplitters Launcher.exe') | Select-Object FullName,Length

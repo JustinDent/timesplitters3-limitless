@@ -1,34 +1,61 @@
 /* Host-only overlay: drawn after scene presentation so guest captures, copied
  * textures, and interpolation history cannot contain the debug text. */
-static GLuint native_debug_texture,native_debug_fbo;
-static char native_debug_text[384];
+typedef struct NativeDebugLine {
+    GLuint texture,fbo;
+    char text[384];
+    int width;
+} NativeDebugLine;
+static NativeDebugLine native_debug_lines[2];
+static void native_debug_release(void) {
+    for(int i=0;i<2;i++) {
+        if(native_debug_lines[i].texture)glDeleteTextures(1,&native_debug_lines[i].texture);
+        if(native_debug_lines[i].fbo)glDeleteFramebuffers(1,&native_debug_lines[i].fbo);
+    }
+    memset(native_debug_lines,0,sizeof native_debug_lines);
+}
+static void native_debug_line(NativeDebugLine *cache,const char *text,GLuint destination,
+                              int width,int height,int bottom) {
+    if(!cache->texture){glGenTextures(1,&cache->texture);glGenFramebuffers(1,&cache->fbo);}
+    if(strcmp(text,cache->text) || !cache->width) {
+        static unsigned char pixels[1024*48*4];
+        if(!tsfp_native_debug_bitmap(text,pixels,1024,48,&cache->width))return;
+        glBindTexture(GL_TEXTURE_2D,cache->texture);
+        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,1024,48,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
+        snprintf(cache->text,sizeof cache->text,"%s",text);
+    }
+    glBindFramebuffer(GL_READ_FRAMEBUFFER,cache->fbo);
+    glFramebufferTexture2D(GL_READ_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,cache->texture,0);
+    if(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE) {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER,destination);
+        int shown=width-20<cache->width?width-20:cache->width;
+        int x=bottom?width-10-shown:10,y=bottom?10:height-58;
+        /* Fit the complete line when the drawable is narrow. CoreText truncates
+         * only text exceeding the cache itself, with an explicit ellipsis. */
+        glBlitFramebuffer(0,48,cache->width,0,x,y,x+shown,y+48,GL_COLOR_BUFFER_BIT,GL_LINEAR);
+    }
+}
 static void native_debug_draw(GLuint destination,int width,int height) {
+    if(width<=20 || height<=60)return;
     char text[320],line[384];
-    if(width<=20 || height<=60 || !pc_debug_overlay(text,sizeof text,NULL))return;
+    int show=pc_debug_overlay(text,sizeof text,NULL);
     PcDebugOptions options;pc_debug_get(&options);
-    snprintf(line,sizeof line,"%s%s",options.show_fps?"Game/Shown: ":"",text);
-    GLint read,draw,binding,unpack;GLboolean scissor=glIsEnabled(GL_SCISSOR_TEST);
+    snprintf(line,sizeof line,"%s%s",options.show_fps?"Game/Shown: ":"",show?text:"");
+    GLint read,draw,binding,unpack,row,skip_rows,skip_pixels,pbo;
+    GLboolean scissor=glIsEnabled(GL_SCISSOR_TEST);
     glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING,&read);glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING,&draw);
     glGetIntegerv(GL_TEXTURE_BINDING_2D,&binding);glGetIntegerv(GL_UNPACK_ALIGNMENT,&unpack);
-    if(!native_debug_texture){glGenTextures(1,&native_debug_texture);glGenFramebuffers(1,&native_debug_fbo);}
-    if(strcmp(line,native_debug_text)) {
-        static unsigned char pixels[1024*48*4];
-        if(!tsfp_native_debug_bitmap(line,pixels,1024,48))return;
-        glBindTexture(GL_TEXTURE_2D,native_debug_texture);glPixelStorei(GL_UNPACK_ALIGNMENT,1);
-        glTexImage2D(GL_TEXTURE_2D,0,GL_RGBA8,1024,48,0,GL_RGBA,GL_UNSIGNED_BYTE,pixels);
-        snprintf(native_debug_text,sizeof native_debug_text,"%s",line);
-    }
-    glBindFramebuffer(GL_READ_FRAMEBUFFER,native_debug_fbo);
-    glFramebufferTexture2D(GL_READ_FRAMEBUFFER,GL_COLOR_ATTACHMENT0,GL_TEXTURE_2D,native_debug_texture,0);
-    if(glCheckFramebufferStatus(GL_READ_FRAMEBUFFER)==GL_FRAMEBUFFER_COMPLETE) {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER,destination);glDisable(GL_SCISSOR_TEST);
-        int shown=width-20<1024?width-20:1024;
-        /* CoreGraphics bitmap rows begin at the top; OpenGL textures at the bottom. */
-        glBlitFramebuffer(0,48,shown,0,10,height-58,10+shown,height-10,GL_COLOR_BUFFER_BIT,GL_NEAREST);
-    }
+    glGetIntegerv(GL_UNPACK_ROW_LENGTH,&row);glGetIntegerv(GL_UNPACK_SKIP_ROWS,&skip_rows);
+    glGetIntegerv(GL_UNPACK_SKIP_PIXELS,&skip_pixels);glGetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING,&pbo);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER,0);glPixelStorei(GL_UNPACK_ALIGNMENT,1);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH,0);glPixelStorei(GL_UNPACK_SKIP_ROWS,0);glPixelStorei(GL_UNPACK_SKIP_PIXELS,0);
+    glDisable(GL_SCISSOR_TEST);
+    if(show)native_debug_line(&native_debug_lines[0],line,destination,width,height,0);
+    native_debug_line(&native_debug_lines[1],pc_debug_watermark(),destination,width,height,1);
     if(scissor)glEnable(GL_SCISSOR_TEST);
     glBindFramebuffer(GL_READ_FRAMEBUFFER,read);glBindFramebuffer(GL_DRAW_FRAMEBUFFER,draw);
     glBindTexture(GL_TEXTURE_2D,binding);glPixelStorei(GL_UNPACK_ALIGNMENT,unpack);
+    glPixelStorei(GL_UNPACK_ROW_LENGTH,row);glPixelStorei(GL_UNPACK_SKIP_ROWS,skip_rows);glPixelStorei(GL_UNPACK_SKIP_PIXELS,skip_pixels);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER,pbo);
 }
 static void native_debug_present(Uint64 now,int guest) {
     static Uint64 start;static unsigned games,shown;

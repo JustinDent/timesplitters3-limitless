@@ -1,9 +1,14 @@
 """Exercise real runtime patches on small source-only checkout fixtures."""
 from pathlib import Path
 import importlib.util
+import hashlib
+import io
+import json
+import os
 import shutil
 import subprocess
 import sys
+import tarfile
 
 import pytest
 
@@ -15,17 +20,27 @@ installer = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(installer)
 
 
-@pytest.fixture
-def checkout(tmp_path):
-    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+@pytest.fixture(scope='session')
+def upstream_files():
+    # Read pristine bytes once, rather than starting git show for each file in
+    # every test. Never reuse a mutable checkout between transition scenarios.
     names = {line[6:] for patch in PATCHES.rglob('*.patch')
              for line in patch.read_text(encoding='utf-8').splitlines()
              if line.startswith('+++ b/')}
-    for name in names:
+    archive = subprocess.check_output(['git', '-C', str(RUNTIME), 'archive', 'HEAD', '--', *sorted(names)])
+    with tarfile.open(fileobj=io.BytesIO(archive)) as contents:
+        files = {item.name: contents.extractfile(item).read() for item in contents if item.isfile()}
+    assert files.keys() == names, 'Upstream archive must include every patched source file'
+    return files
+
+
+@pytest.fixture
+def checkout(tmp_path, upstream_files):
+    subprocess.run(['git', 'init', '-q', str(tmp_path)], check=True)
+    for name, content in upstream_files.items():
         destination = tmp_path / name
         destination.parent.mkdir(parents=True, exist_ok=True)
-        destination.write_bytes(subprocess.check_output(
-            ['git', '-C', str(RUNTIME), 'show', 'HEAD:' + name]))
+        destination.write_bytes(content)
     return tmp_path
 
 
@@ -41,23 +56,100 @@ def snapshot(tree):
 
 def test_fresh_checkout_and_repeated_build(checkout):
     assert installer.apply_patches(checkout, PATCHES)
+    assert '"${TSFP_NATIVE_DIR}/../texture_mode.c"' in (
+        checkout / 'src/d3d/CMakeLists.txt').read_text()
     complete = snapshot(checkout)
     assert installer.apply_patches(checkout, PATCHES) == []
     assert snapshot(checkout) == complete
+
+
+@pytest.mark.parametrize('history', ['pc-presentation', 'native-renderer', 'native-launcher'])
+@pytest.mark.parametrize('autocrlf', ['false', 'true'])
+def test_integrate_independent_presentation_stacks(checkout, tmp_path, history,
+                                                  autocrlf, monkeypatch):
+    """Recorded PC, native-renderer and native-launcher stacks migrate safely."""
+    # Exercise both hosts' Git conversion modes, including disposable staging
+    # repositories created by the installer. Preserve any other test config.
+    count = int(os.environ.get('GIT_CONFIG_COUNT', '0'))
+    monkeypatch.setenv(f'GIT_CONFIG_KEY_{count}', 'core.autocrlf')
+    monkeypatch.setenv(f'GIT_CONFIG_VALUE_{count}', autocrlf)
+    monkeypatch.setenv('GIT_CONFIG_COUNT', str(count + 1))
+    histories = json.loads((ROOT / 'tests/fixtures/renderer-patch-stacks.json').read_text())
+    launcher_history = json.loads((ROOT / 'tests/fixtures/launcher-patch-stacks.json').read_text())
+    histories['native-launcher'] = launcher_history['native-launcher']
+    prior = tmp_path / 'prior-patches'
+    prior.mkdir()
+    for name in histories[history]['patches']:
+        source = PATCHES / name
+        if name.endswith(('-144-fps.patch', '-presentation-timing.patch',
+                          '-interpolation-recovery.patch')):
+            source = PATCHES / 'legacy' / name
+        shutil.copyfile(source, prior / name)
+    installer.apply_patches(checkout, prior)
+    installer.apply_patches(checkout, PATCHES)
+    integrated = snapshot(checkout)
+    manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
+    newline = b'\r\n' if manual.read_bytes().endswith(b'\r\n') else b'\n'
+    local_edit = newline + b'/* integration-local edit */' + newline
+    manual.write_bytes(manual.read_bytes() + local_edit)
+    installer.apply_patches(checkout, prior)
+    installer.apply_patches(checkout, PATCHES)
+    key = Path('titles/futureperfect/src/recomp_manual.c')
+    integrated[key] += local_edit
+    # Hash comparison is byte-exact without dumping megabytes of source into
+    # CI logs if a transition changes one file unexpectedly.
+    digest = lambda files: {name: hashlib.sha256(data).hexdigest()
+                            for name, data in files.items()}
+    assert digest(snapshot(checkout)) == digest(integrated)
+    assert installer.apply_patches(checkout, PATCHES) == []
 
 
 def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
-        if patch.name in ('zzzzzzzzzz-decal-projection.patch',
+        if patch.name.endswith('-texture-mode-shared.patch'):
+            continue  # Depends on the common native renderer added by migration.
+        if patch.name.endswith(('-discord-presence.patch', '-shared-renderer-host.patch', '-shared-vulkan-mac.patch', '-shared-native-renderer.patch', '-shared-interpolation-depth.patch', '-shared-present-metrics.patch', '-native-launcher-services.patch', '-shared-screen-copy-clipping.patch', '-vulkan-portability-swizzle.patch', '-shared-interpolation-capture.patch')):
+            continue  # These changes depend on later native/display or feedback blocks.
+        if patch.name in ('zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-white-flash-overlay.patch',
+                         'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-title-screen-matte.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-character-mouse.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-team-mouse.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-custom-choice-arrows.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-choice-arrows.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-setting-sliders.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-audio-menu-mouse.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-build-identity.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-menu-mode.patch',
+                          'zzzzzzzzzz-decal-projection.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzz-arcade-rank-anchor.patch',
+                          'zzzzzzzzzzz-model-projection.patch',
+                          'zzzzzzzzzzzzzzzzz-channel-clears.patch',
                           'zzzzzzzzzzzzzzzzzz-ui-layout.patch',
                           'zzzzzzzzzzzzzzzzzz-ui-narrow.patch',
                           'zzzzzzzzzzzzzzzzzzz-tutorial-layout.patch',
                           'zzzzzzzzzzzzzzzzzzzz-fullscreen-effects.patch',
                           'zzzzzzzzzzzzzzzzzzzzz-story-caption.patch',
-                          'zzzzzzzzzzzzzzzzzzzzzz-objectives-ui-integration.patch'):
+                          'zzzzzzzzzzzzzzzzzzzzzz-objectives-ui-integration.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-spirit-rendering.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-ghost-target-feedback.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-source.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-footer.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-mouse-themed-footer.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-quit-desktop.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-footer-background.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-menu-backdrop.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-main-menu-font.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-objectives-scope-coverage.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-sniper-scope-coverage.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-weapon-aim-overlays.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-special-weapon-overlays.patch',
+                          'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-transition-overlay.patch'):
             continue  # Requires the display wrapper, absent in this historical state.
+        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch')):
+            continue  # Depends on native/shared renderer context added by the full migration below.
         if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'texture-toggle.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
             apply(checkout, patch.name)
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
@@ -83,7 +175,15 @@ def test_upgrade_existing_mac_stack_with_networking(checkout, tmp_path):
     for patch in PATCHES.glob('*.patch'):
         if patch.name not in ('zz-pc-network.patch', 'zzz-pc-online.patch',
                               'zzzzzzzzzzzzzzz-pc-network-movement.patch',
-                              'zzzzzzzzzzzzzzzz-pc-network-state-refresh.patch'):
+                                  'zzzzzzzzzzzzzzzz-pc-network-state-refresh.patch',
+                                  'zzzzzzzzzzzzzzzzzzzzzz-pc-network-bots-test.patch',
+                                  'zzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-combat.patch',
+                                  'zzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-scoreboard.patch',
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-shots.patch',
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-bounds.patch',
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-authority.patch',
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-presentation.patch',
+                                  'zzzzzzzzzzzzzzzzzzzzzzzzzzzzz-pc-network-bot-capacity.patch'):
             shutil.copyfile(patch, old_patches / patch.name)
     assert installer.apply_patches(checkout, old_patches)
     assert installer.apply_patches(checkout, PATCHES)

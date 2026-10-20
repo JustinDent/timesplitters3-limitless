@@ -7,6 +7,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import subprocess
 import tempfile
 import unittest
 from unittest import mock
@@ -20,6 +21,24 @@ spec.loader.exec_module(package)
 
 
 class LauncherPackaging(unittest.TestCase):
+    @unittest.skipUnless(os.name == 'nt', 'Windows launcher build prerequisite')
+    def test_release_build_refuses_missing_artwork(self):
+        powershell = Path(os.environ['SystemRoot']) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
+        with tempfile.TemporaryDirectory(prefix='launcher-artwork-') as directory:
+            root = Path(directory)
+            banner = root / 'banner.png'
+            banner.write_bytes(b'synthetic banner; compilation must not start')
+            for missing, banner_path in [('banner', root / 'absent.png'), ('logo', banner)]:
+                with self.subTest(missing=missing):
+                    output = root / missing
+                    result = subprocess.run([str(powershell), '-NoProfile', '-ExecutionPolicy', 'Bypass',
+                        '-File', str(ROOT / 'tools/build-launcher.ps1'), '-Output', str(output),
+                        '-RequireArtwork', '-BannerPath', str(banner_path), '-LogoPath', str(root / 'absent-logo.png')],
+                        capture_output=True, text=True, timeout=30)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn('Release launcher artwork is required: ' + missing + ' missing', result.stderr)
+                    self.assertFalse((output / 'TimeSplitters Launcher.exe').exists())
+
     def test_manifest_and_user_data_exclusion(self):
         with tempfile.TemporaryDirectory(prefix='launcher-package-') as directory:
             root = Path(directory)
@@ -31,14 +50,21 @@ class LauncherPackaging(unittest.TestCase):
                 path.write_bytes(b'synthetic test fixture')
 
             for path in [root / 'build/windows/Release/futureperfect_recomp.exe',
+                         root / 'build/windows/Release/futureperfect_recomp.pdb',
+                         root / 'build/windows/Release/tsfp_crash_helper.exe',
                          root / 'build/launcher/TimeSplitters Launcher.exe',
                          root / 'build/launcher/Bin/TimeSplitters.App.exe',
                          root / 'config/pc-controls.default.json', root / 'tools/playable-launch.ps1',
+                         root / 'config/pc-discord.default.ini', root / 'docs/discord-presence.md',
                          root / 'tools/start-game.ps1', root / 'tools/release/ImportGame.cs',
+                         root / 'tools/launcher/GameMonogram.NOTICE.txt',
                          root / 'tools/release/Import-game.ps1', root / 'tools/release/Play.cmd',
                          root / 'Data/default.xbe', root / 'Saves/profile',
                          root / 'Settings/pc-controls.json']:
                 put(path)
+            discord_default = (ROOT / 'config/pc-discord.default.ini').read_bytes()
+            (root / 'config/pc-discord.default.ini').write_bytes(discord_default)
+            (root / 'config/pc-discord.ini').write_text('TSFP_DISCORD_V1 1 999999999999999999\n')
             manifest_path = root / 'build/launcher/Support/Launcher/manifest.json'
             manifest_path.parent.mkdir(parents=True, exist_ok=True)
             manifest_path.write_text(json.dumps({'schema': 1, 'version': '1.1.0', 'files': {}}))
@@ -58,12 +84,20 @@ class LauncherPackaging(unittest.TestCase):
                 package.main()
                 self.assertEqual(build.call_count, 2)
                 self.assertIn(str(root / 'tools/build-launcher.ps1'), build.call_args.args[0])
-            archive_path = next((root / 'build/releases').glob('*.zip'))
+                self.assertIn('-RequireArtwork', build.call_args.args[0])
+            archive_path = root / 'build/releases/TimeSplitters-Future-Perfect-PC-v1.2.3-windows-x64.zip'
             prefix = archive_path.stem + '/'
             with zipfile.ZipFile(archive_path) as archive:
                 self.assertIn(prefix + 'TimeSplitters Launcher.exe', archive.namelist())
                 self.assertIn(prefix + 'Bin/TimeSplitters.App.exe', archive.namelist())
+                self.assertIn(prefix + 'Bin/tsfp_crash_helper.exe', archive.namelist())
+                self.assertIn(prefix + 'Discord-setup.txt', archive.namelist())
+                self.assertEqual(archive.read(prefix + 'Settings/pc-discord.ini'), discord_default)
+                self.assertTrue(discord_default.startswith(b'TSFP_DISCORD_V1 0 '))
+                self.assertFalse(any('/config/pc-discord.ini' in name for name in archive.namelist()))
+                self.assertFalse(any(name.endswith('.pdb') for name in archive.namelist()))
                 self.assertIn(prefix + 'Support/Launcher/manifest.json', archive.namelist())
+                self.assertIn(prefix + 'Licenses/Game-icon-lettering.txt', archive.namelist())
                 self.assertFalse(any('/Data/' in name or '/Saves/' in name for name in archive.namelist()))
                 manifest = json.loads(archive.read(prefix + 'BUILD.json'))
                 self.assertEqual(manifest['version'], 'v1.2.3')
@@ -73,6 +107,10 @@ class LauncherPackaging(unittest.TestCase):
                     self.assertEqual(hashlib.sha256(archive.read(prefix + name)).hexdigest(), digest)
             digest = archive_path.with_suffix('.zip.sha256').read_text().split()[0]
             self.assertEqual(hashlib.sha256(archive_path.read_bytes()).hexdigest(), digest)
+            with zipfile.ZipFile(root/'build/releases/TimeSplitters-Future-Perfect-PC-v1.2.3-windows-x64-symbols.zip') as symbols:
+                self.assertIn('futureperfect_recomp.pdb', symbols.namelist())
+                info = json.loads(symbols.read('BUILD.json'))
+                self.assertEqual(info['files']['futureperfect_recomp.exe'], hashlib.sha256(symbols.read('futureperfect_recomp.exe')).hexdigest())
 
     def test_invalid_release_versions_are_rejected(self):
         for tag in ['main', '../escape', 'v01.2.3', 'v1.2.3-alpha.01']:

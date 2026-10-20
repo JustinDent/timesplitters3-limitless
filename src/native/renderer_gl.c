@@ -19,8 +19,12 @@
 
 #include <SDL3/SDL.h>
 #include "input_sdl.h"
+#include "renderer_host_sdl.h"
+#include "rhi.h"
+#include "graphics/present_metrics.h"
 #include "settings_macos.h"
 #include "pc_display.h"
+#include "pc_menu_sampling.h"
 #include "pc_debug.h"
 #ifdef __APPLE__
 #define GL_SILENCE_DEPRECATION
@@ -128,7 +132,7 @@ static unsigned trace_draw;
 static void native_trace(const char *kind,const float *vertices,UINT count) {
     if(!trace_draw || trace_draw>2000)return;
     BYTE pixel[4]={0};glReadPixels(native_target_width/2,native_target_height/2,1,1,GL_RGBA,GL_UNSIGNED_BYTE,pixel);
-    fprintf(stderr,"[native-draw] %u %s pixel=%u,%u,%u,%u vsh=%x ps=%x depth=%u/%u/%u blend=%u/%u/%u cull=%u vp=%u,%u,%u,%u tex=%p,%p,%p,%p\n",trace_draw++,kind,pixel[0],pixel[1],pixel[2],pixel[3],g.current_vsh,g.current_psh,g.rs[7],g.rs[14],g.rs[23],g.rs[27],g.rs[19],g.rs[20],g.rs[22],g.viewport.X,g.viewport.Y,g.viewport.Width,g.viewport.Height,g.textures[0],g.textures[1],g.textures[2],g.textures[3]);
+    fprintf(stderr,"[native-draw] %u %s pixel=%u,%u,%u,%u vsh=%x ps=%x depth=%u/%u/%u blend=%u/%u/%u cull=%u vp=%u,%u,%u,%u tex=%p,%p,%p,%p texmodes=%x dotmap=%x inputs=%x\n",trace_draw++,kind,pixel[0],pixel[1],pixel[2],pixel[3],g.current_vsh,g.current_psh,g.rs[7],g.rs[14],g.rs[23],g.rs[27],g.rs[19],g.rs[20],g.rs[22],g.viewport.X,g.viewport.Y,g.viewport.Width,g.viewport.Height,g.textures[0],g.textures[1],g.textures[2],g.textures[3],g.rs[D3DRS_PSTEXTUREMODES],g.rs[D3DRS_PSDOTMAPPING],g.rs[D3DRS_PSINPUTTEXTURE]);
     if(vertices && count) {
         const float *v=vertices;
         fprintf(stderr,"[native-draw] vertex=%g,%g,%g,%g color=%g,%g,%g,%g uv=%g,%g comb=%x final=%x,%x\n",v[0],v[1],v[2],v[3],v[4],v[5],v[6],v[7],v[8],v[9],g.rs[234],g.rs[208],g.rs[209]);
@@ -214,10 +218,11 @@ static const char *VS_SRC =
     "layout(location=3) in vec4 a_uv1;\n"
     "layout(location=4) in vec4 a_uv2;\n"
     "layout(location=5) in vec4 a_uv3;\n"
+    "layout(location=6) in float a_fog;\n"
     "uniform mat4 u_mvp;\n"
     "uniform int  u_use_xform;\n"
     "uniform vec2 u_size;\n"
-    "out vec4 v_color;\n"
+    "out vec4 v_color;out float v_fog;\n"
     "out vec4 v_uv[4];\n"
     "void main() {\n"
     "  if (u_use_xform == 1) {\n"
@@ -228,7 +233,7 @@ static const char *VS_SRC =
     "    gl_Position = a_pos;\n"
     "    if (u_use_xform == 0) { float w = a_pos.w != 0.0 ? 1.0/a_pos.w : 1.0; gl_Position = vec4((a_pos.x+0.5)*2.0/u_size.x-1.0, 1.0-(a_pos.y+0.5)*2.0/u_size.y, a_pos.z*2.0-1.0, 1.0)*w; }\n"
     "  }\n"
-    "  v_color = a_color;\n"
+    "  v_color = a_color;v_fog=a_fog;\n"
     "  v_uv[0]=a_uv0;v_uv[1]=a_uv1;v_uv[2]=a_uv2;v_uv[3]=a_uv3;\n"
     "}\n";
 
@@ -660,33 +665,17 @@ static HRESULT __stdcall dev_GetCreationParameters(IDirect3DDevice8 *s, void *pP
 static HRESULT __stdcall dev_Reset(IDirect3DDevice8 *s, D3DPRESENT_PARAMETERS *pPP)
 { NATIVE_GL_SCOPE; (void)s;(void)pPP; return D3D_OK; }
 
-/* Opt-in CPU wall-clock intervals between completed host presents. This does
- * not wait for the GPU or claim display scanout timing. At most 20,000 rows
- * (under 2 MiB), with no per-frame flush or readback. */
+/* Same successful-API timing recorder as the common RHI renderer. */
+static TsfpPresentMetrics native_metrics;
 static void native_frame_timing(Uint64 swap_start,Uint64 now) {
     native_debug_present(now,!native_interp_on);
-    static int checked;
-    static FILE *output;
-    static Uint64 first,last;
-    static unsigned rows;
-    if(!checked) {
-        checked=1;const char *path=getenv("TSFP_NATIVE_FRAME_PROFILE");
-        if(path && *path) {
-            output=fopen(path,"w");
-            if(output)fputs("frame,elapsed_ms,frame_ms,swap_ms,kind,guest_frame\n",output);
-        }
-    }
-    if(!output)return;
-    if(!first)first=now;
-    if(last) {
-        fprintf(output,"%u,%.3f,%.3f,%.3f,%s,%u\n",native_present_count,
-                (now-first)/1e6,(now-last)/1e6,(now-swap_start)/1e6,
-                native_interp_on?"interpolated":"guest",native_guest_present_count);
-        if(++rows%60==0)fflush(output);
-        if(rows==20000){fclose(output);output=NULL;}
-    }
-    last=now;
+    tsfp_present_record(&native_metrics,"gl",native_interp_on?RHI_PRESENT_INTERPOLATED:RHI_PRESENT_GUEST,
+                        0,swap_start,now);
 }
+
+/* Pointer hit testing must invert the same full-canvas shape as presentation. */
+void d3d8_display_output_shape(unsigned w,unsigned h,unsigned *out_w,unsigned *out_h)
+{ (void)w;(void)h;pc_display_shape(out_w,out_h); }
 
 static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const RECT *dst,
                                      HWND hwnd, void *dirty)
@@ -695,6 +684,7 @@ static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const
     native_scene_present();
     Uint64 swap_start=SDL_GetTicksNS();
     if(!native_swap_window()) {
+        tsfp_present_record(&native_metrics,"gl",RHI_PRESENT_GUEST,-1,swap_start,SDL_GetTicksNS());
         fprintf(stderr,"[native-gl] present failed: %s\n",SDL_GetError());return E_FAIL;
     }
     native_present_count++;native_guest_present_count++;
@@ -709,17 +699,7 @@ static HRESULT __stdcall dev_Present(IDirect3DDevice8 *s, const RECT *src, const
         if(f){fscanf(f,"%d",&requested);fclose(f);}
         if(requested){f=fopen(trace_path,"w");if(f)fclose(f);trace_draw=1;fprintf(stderr,"[native-draw] begin frame %u\n",native_present_count);}
     }
-    /* Cocoa event pumping stays on the main thread. The guest has no host
-     * close-window loop, so quit ends the native process directly. */
-    if(SDL_IsMainThread())tsfp_native_input_frame(g.window);
-    SDL_Event ev;
-    while (SDL_IsMainThread() && SDL_PollEvent(&ev)) {
-        tsfp_native_input_event(&ev,g.window);
-        if (ev.type == SDL_EVENT_QUIT || ev.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED) {
-            fprintf(stderr, "[native-input] window close requested\n");
-            exit(0);
-        }
-    }
+    rhi_pump_events();
     return D3D_OK;
 }
 
@@ -739,7 +719,8 @@ static HRESULT __stdcall dev_Clear(IDirect3DDevice8 *s, DWORD count, const D3DRE
 { NATIVE_GL_SCOPE;
     (void)s;if(count && !rects)return D3DERR_INVALIDCALL;
     GLbitfield m = 0;
-    if (flags & D3DCLEAR_TARGET) {
+    unsigned channels=(flags & D3DCLEAR_TARGET) ? 15u : (flags & D3DCLEAR_CHANNEL_MASK)>>4;
+    if (channels) {
         float a = ((color >> 24) & 0xFF) / 255.0f;
         float r = ((color >> 16) & 0xFF) / 255.0f;
         float gr= ((color >>  8) & 0xFF) / 255.0f;
@@ -752,7 +733,8 @@ static HRESULT __stdcall dev_Clear(IDirect3DDevice8 *s, DWORD count, const D3DRE
     if(m) {
         GLint old_box[4],old_stencil;GLboolean scissor=glIsEnabled(GL_SCISSOR_TEST);
         glGetIntegerv(GL_SCISSOR_BOX,old_box);glGetIntegerv(GL_STENCIL_WRITEMASK,&old_stencil);
-        glDepthMask(GL_TRUE);glColorMask(1,1,1,1);glStencilMask(~0u);glEnable(GL_SCISSOR_TEST);
+        glDepthMask(GL_TRUE);glColorMask(channels&1,!!(channels&2),!!(channels&4),!!(channels&8));
+        glStencilMask(~0u);glEnable(GL_SCISSOR_TEST);
         /* D3D clears are clipped to the viewport, even without explicit rects. */
         for(DWORD i=0;i<(count?count:1);i++) {
             int x=g.viewport.X,y=g.viewport.Y,right=x+g.viewport.Width,bottom=y+g.viewport.Height;
@@ -867,6 +849,9 @@ static void setup_fvf_attribs(DWORD fvf, UINT stride)
         glDisableVertexAttribArray(1);
         glVertexAttrib4f(1, 1.f, 1.f, 1.f, 1.f);
     }
+    /* Fixed-function vertices default to the PC shader's no-fog factor.
+     * Programmable fog travels through this attribute only in CPU fallback. */
+    glDisableVertexAttribArray(6);glVertexAttrib1f(6,1.0f);
     /* Specular */
     if (fvf & D3DFVF_SPECULAR) off += 4;
     unsigned count=(fvf&D3DFVF_TEXCOUNT_MASK)>>D3DFVF_TEXCOUNT_SHIFT;
@@ -889,7 +874,7 @@ static GLuint native_samplers[4];
 static void bind_texture0(void)
 {
     if(!native_samplers[0])glGenSamplers(4,native_samplers);
-    GLint used[4],flipped[4],modes[4];GLfloat scale[8];
+    GLint used[4],flipped[4],modes[4];GLfloat scale[8],menu_filter[4];
     DWORD token=d3d8_combiners_get_pixel_shader(),tm=g.rs[D3DRS_PSTEXTUREMODES];
     static unsigned warned;
     for(int stage=0;stage<4;stage++) {
@@ -901,6 +886,10 @@ static void bind_texture0(void)
         glSamplerParameteri(native_samplers[stage],GL_TEXTURE_WRAP_S,native_wrap(g.tss[stage][D3DTSS_ADDRESSU]));
         glSamplerParameteri(native_samplers[stage],GL_TEXTURE_WRAP_T,native_wrap(g.tss[stage][D3DTSS_ADDRESSV]));
         flipped[stage]=t && t->flipped;
+        menu_filter[stage]=pc_menu_sampling_mode(pc_display_menu_filter(),
+            g.tss[stage][D3DTSS_MAGFILTER]==D3DTEXF_LINEAR,t!=NULL,
+            t?t->usage:0,t?t->screen_copy:0,
+            t && (t->format==D3DFMT_A8 || t->format==D3DFMT_LIN_A8));
         scale[stage*2]=scale[stage*2+1]=1;
         if(token && t && d3d8_format_is_linear(t->format)) {
             scale[stage*2]=1.0f/t->width;scale[stage*2+1]=1.0f/t->height;
@@ -913,7 +902,10 @@ static void bind_texture0(void)
         } else if(tm&D3D8_PSTEXTUREMODES_XBOX)modes[stage]=(tm>>(5*stage))&31;
         else {unsigned m=(tm>>(4*stage))&15;modes[stage]=m==0?32:m==3?0:31;}
         unsigned mode=modes[stage];
-        if(mode!=0 && mode!=1 && mode!=4 && mode!=32 && !(warned&(1u<<mode))) {
+        /* Dependent reads retain their original sampling, as in the shared
+         * Windows combiner. Only ordinary/projected 2D uses menu filtering. */
+        if(mode!=1 && mode!=32)menu_filter[stage]=0;
+        if(mode!=0 && mode!=1 && mode!=4 && mode!=9 && mode!=15 && mode!=16 && mode!=17 && mode!=32 && !(warned&(1u<<mode))) {
             warned|=1u<<mode;fprintf(stderr,"[native-gl] texture shader mode %u remains unsupported\n",mode);
         }
         char name[24];snprintf(name,sizeof name,"u_tex%d",stage);
@@ -924,6 +916,7 @@ static void bind_texture0(void)
     glUniform1iv(glGetUniformLocation(g.prog,"u_flip"),4,flipped);
     glUniform1iv(glGetUniformLocation(g.prog,"u_mode"),4,modes);
     glUniform2fv(glGetUniformLocation(g.prog,"u_scale"),4,scale);
+    glUniform1fv(glGetUniformLocation(g.prog,"u_menu_filter"),4,menu_filter);
     glUniform1i(glGetUniformLocation(g.prog,"u_combiner"),token!=0);
     glUniform1uiv(glGetUniformLocation(g.prog,"u_rs"),256,g.rs);
 }
@@ -951,7 +944,7 @@ static HRESULT __stdcall dev_DrawPrimitiveUP(IDirect3DDevice8 *s, D3DPRIMITIVETY
     GLuint gpu=native_gpu_prepare(stride);
     if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
         converted=native_shader_vertices(verts,vcount,stride);if(!converted)return E_FAIL;
-        verts=converted;stride=96;
+        verts=converted;stride=100;
     }
     GLsizeiptr size = (GLsizeiptr)vcount * stride;
     native_select_program(gpu?gpu:native_fixed_program);
@@ -994,7 +987,7 @@ static HRESULT __stdcall dev_DrawIndexedPrimitiveUP(IDirect3DDevice8 *s, D3DPRIM
     GLuint gpu=native_gpu_prepare(stride);
     if(!gpu && d3d8_vsh_is_programmable(g.current_vsh)) {
         converted=native_shader_vertices(verts,nv,stride);if(!converted)return E_FAIL;
-        verts=converted;stride=96;
+        verts=converted;stride=100;
     }
     GLsizeiptr vbytes = (GLsizeiptr)nv * stride;
     native_select_program(gpu?gpu:native_fixed_program);
@@ -1312,6 +1305,7 @@ static HRESULT __stdcall d3d_CreateDevice(IDirect3D8 *s, UINT adapter, DWORD dev
         g.window = NULL;
         return D3DERR_INVALIDCALL;
     }
+    tsfp_renderer_host_bind(g.window, native_debug_release);
     SDL_GL_MakeCurrent(g.window, g.glctx);
     SDL_GL_SetSwapInterval(g_present_interval);
 

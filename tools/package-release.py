@@ -32,7 +32,7 @@ def main():
 
     powershell = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
     subprocess.run([str(powershell), '-NoProfile', '-ExecutionPolicy', 'Bypass',
-                    '-File', str(ROOT/'tools/build-launcher.ps1')], check=True)
+                    '-File', str(ROOT/'tools/build-launcher.ps1'), '-RequireArtwork'], check=True)
 
     def copy(source, dest):
         target = stage / dest
@@ -40,6 +40,7 @@ def main():
         shutil.copy2(source, target)
 
     copy(ROOT / 'build/windows/Release/futureperfect_recomp.exe', 'Bin/futureperfect_recomp.exe')
+    copy(ROOT / 'build/windows/Release/tsfp_crash_helper.exe', 'Bin/tsfp_crash_helper.exe')
     copy(ROOT/'build/launcher/TimeSplitters Launcher.exe', 'TimeSplitters Launcher.exe')
     copy(ROOT/'build/launcher/Bin/TimeSplitters.App.exe', 'Bin/TimeSplitters.App.exe')
     copy(ROOT/'build/launcher/Support/Launcher/manifest.json', 'Support/Launcher/manifest.json')
@@ -55,6 +56,8 @@ def main():
     for path in candidates[-1].parent.glob('*.dll'):
         copy(path, 'Bin/'+path.name)
     copy(ROOT / 'config/pc-controls.default.json', 'Settings/pc-controls.json')
+    copy(ROOT / 'config/pc-discord.default.ini', 'Settings/pc-discord.ini')
+    copy(ROOT / 'docs/discord-presence.md', 'Discord-setup.txt')
     copy(ROOT / 'tools/playable-launch.ps1', 'Launch.ps1')
     copy(ROOT / 'tools/start-game.ps1', 'Start-game.ps1')
     for file in ['ImportGame.cs', 'Import-game.ps1', 'Play.cmd']:
@@ -65,6 +68,7 @@ def main():
         ('third_party/SDL/LICENSE.txt', 'SDL.txt'), ('third_party/ffmpeg/LICENSE.txt', 'FFmpeg-LGPL-3.0.txt'),
     ]:
         copy(upstream / source, 'Licenses/' + dest)
+    copy(ROOT / 'tools/launcher/GameMonogram.NOTICE.txt', 'Licenses/Game-icon-lettering.txt')
     online = bundle(ROOT, stage, copy)
     # Include the exact local source edits used for this test package, since
     # those may not yet exist at the source_commit recorded below.
@@ -110,6 +114,8 @@ The first controller not assigned to another player also controls player 1.
 Pause before opening F2: the editor blocks input but does not pause the game.
 Settings and paused Options include Display settings for render resolution.
 Confirmed display choices are saved in Settings/pc-display.ini.
+Optional Discord Rich Presence: enable Game settings > Discord with the Discord
+desktop app running. See Discord-setup.txt. Fresh installs leave this disabled.
 
 Online multiplayer: choose Online / System Link > Online in the game.
 Host: Start New Match detects your public IPv4 and starts the HTTPS directory.
@@ -165,6 +171,11 @@ Third-party notices are in Licenses. Microsoft Visual C++ runtime is bundled.
         assert not any('/Data/' in n or '/Saves/' in n or n.lower().endswith(('.iso', '.xbe', '.pak', '.img', '.pdb')) for n in archive.namelist())
     digest = hashlib.sha256(archive_path.read_bytes()).hexdigest()
     archive_path.with_suffix('.zip.sha256').write_text(f'{digest}  {archive_path.name}\n', encoding='ascii')
+    # Keep exact executable/PDB outside the player package for later analysis.
+    from importlib.util import spec_from_file_location, module_from_spec
+    spec = spec_from_file_location('crash_symbols', Path(__file__).with_name('crash-symbols.py'))
+    symbols = module_from_spec(spec); spec.loader.exec_module(symbols)
+    symbols.archive(args.output.resolve() / (name + '-symbols.zip'), root=ROOT)
     print(json.dumps({'archive': str(archive_path), 'bytes': archive_path.stat().st_size, 'sha256': digest, 'stage': str(stage)}, indent=2))
 
 

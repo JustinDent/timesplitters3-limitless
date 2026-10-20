@@ -75,6 +75,23 @@ static int virtual_pad_test(void)
         CHECK(tsfp_texture_is_4k()==before);
     }
     ShowWindow(window,SW_SHOW); SetForegroundWindow(window);
+    {
+        ULONGLONG deadline=GetTickCount64()+1000;
+        while(GetForegroundWindow()!=window && GetTickCount64()<deadline) {
+            MSG message;
+            while(PeekMessage(&message,NULL,0,0,PM_REMOVE)) {
+                TranslateMessage(&message);DispatchMessage(&message);
+            }
+            SetForegroundWindow(window);Sleep(10);
+        }
+        if(GetForegroundWindow()!=window) {
+            SDL_CloseJoystick(joystick);
+            CHECK(SDL_DetachVirtualJoystick(id));
+            DestroyWindow(window);
+            puts("SKIP: virtual-pad routing requires Windows foreground focus; foreground activation was refused");
+            return 0;
+        }
+    }
     CHECK(pc_controls_accept_pad());
     Sleep(260);
     CHECK(recomp_bindings_sample(0,&output));

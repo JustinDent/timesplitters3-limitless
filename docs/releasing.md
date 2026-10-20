@@ -54,13 +54,18 @@ versions, use `--latest=false` during draft creation and final publication.
 
 ### Keep the launcher download current
 
+Use short release titles with the product and version first: **TSFP v0.2.0-alpha.5**
+and **Launcher v1.2.7**. The game publisher sets this title automatically. For a
+launcher release, the [Windows and Mac workflow](launcher-releases.md) sets
+`Launcher vX.Y.Z` automatically. Keep the existing
+`vX.Y.Z` and `launcher-vX.Y.Z` tag formats; titles do not change download URLs.
+
 The README download button uses GitHub's permanent `/releases/latest` URL.
-Reserve the repository's **Latest** designation for the newest stable Windows
-launcher. When publishing a new stable `launcher-vX.Y.Z` release, attach the
-complete launcher ZIP and its verification assets, then select **Set as the
-latest release** (or use `gh release create/edit --latest`). Do not mark test
-launcher prereleases Latest. This moves the README destination automatically;
-no README version edit is needed.
+Reserve the repository's **Latest** designation for the newest stable launcher
+release containing both Windows and native Mac packages. The shared workflow
+uploads and verifies both before publishing, then assigns Latest for stable
+versions only. This moves the README destination automatically; no README
+version edit is needed.
 
 Game releases published through this script retain the launcher destination.
 If publishing a game release manually, also leave **Set as the latest release**
@@ -70,25 +75,33 @@ list, so game releases do not need the Latest badge. See GitHub's
 
 ### Issue-form versions and labels
 
-The **Issue forms** workflow refreshes the bug report's version choices from published GitHub
+The **Issue form versions** workflow refreshes the bug report's reference lists from published GitHub
 releases after publication, editing, deletion or unpublishing. Game tags use
 `v...`; launcher tags use `launcher-v...`. Draft releases and unreleased source
 version bumps are not offered as installed versions. Both stable and preview
 releases are included, newest version first, with up to 30 versions of each
-and fallbacks for older/custom, unknown and uninstalled builds. No version is
-preselected. The improvement form has no version or platform questions and is
+in a collapsed Markdown reference. Game version, Launcher version and Platform
+are required text inputs without prefilled values. GitHub counts an empty
+dropdown option as a selection, so blank dropdown entries do not enforce an
+answer. Users can type older/custom, unknown or uninstalled values explicitly.
+Release refreshes must update only the reference lists and never prefill inputs.
+The improvement form
+asks only for the idea, has no version, platform or diagnostic questions, and is
 excluded from version refreshes.
 
 The workflow also refreshes on relevant pushes to `main` and can be run manually
-from Actions. It commits only the bug form's version choices to the default
-branch with `contents: write`; it never force-pushes. If branch protection is
-added later, allow these updates or adapt this job to the required review flow.
-The current publisher uses the maintainer's GitHub CLI authentication. A future
-publisher using `GITHUB_TOKEN` must explicitly dispatch **Issue forms** because
-token-created release events do not start another workflow.
+from Actions. It proposes only the bug form's reference lists through a PR on
+`automation/issue-form-versions`, with `contents: write` and `pull-requests: write`;
+it never pushes directly to the protected default branch or force-pushes.
+Approve workflows to run if GitHub requests it on the bot-created PR, then let
+the required checks pass before merging. Auto-merge can be enabled for that PR.
+See [CI and branch protection](ci.md) for repository settings and check names.
+The game publisher uses the maintainer's GitHub CLI authentication. The launcher
+workflow uses `GITHUB_TOKEN` and explicitly dispatches **Issue form versions**
+because token-created release events do not start another workflow.
 
 Form submissions receive `bug` or `enhancement` immediately. On issue creation,
-editing or reopening, the workflow synchronizes that type plus
+editing or reopening, the separate **Automatic issue labels** workflow synchronizes that type plus
 `platform: windows` or `platform: macos` when a platform answer is present. New
 improvement suggestions receive only `enhancement`. It creates
 missing platform labels, removes outdated managed labels after edits, and keeps
@@ -103,12 +116,25 @@ Manual refresh: `python tools/issue-forms.py versions --repository owner/name`
 
 ### Release notes and preparation
 
-The description includes GitHub-generated release notes, source commit descriptions
-since the most recently **published** release (including prereleases), installation
-instructions, validation performed and experimental limitations. It does not use
+The description includes merged game-related PRs since the most
+recently **published game** release (including prereleases) and installation
+instructions, with numbered launcher steps followed by a portable ZIP alternative.
+The generated "What's Changed" heading is removed beneath
+"Changes since"; source commit lists and build/validation sections are omitted.
+Build provenance remains in the verification assets. The comparison does not use
 the last Git tag or skip prereleases by asking for GitHub's latest stable release.
+Launcher releases, drafts and unrelated tags are excluded from the comparison.
 GitHub's [release notes API](https://docs.github.com/en/rest/releases/releases#generate-release-notes-content-for-a-release)
-provides the PR/contributor notes.
+provides candidate PRs. The publisher verifies each PR is merged and its merge
+commit is within the exact game-release commit range, then reads all changed
+files (including renamed paths). Game source, shared patches/configuration,
+game build inputs and runtime/import tools qualify; launcher-only,
+documentation-only, version-only and CI/release-note housekeeping PRs do not.
+Mixed game/launcher PRs remain because they change the game. Classification uses
+files rather than title keywords or labels. Incomplete file metadata stops note
+generation instead of guessing. PRs are deduplicated; an empty range gets an
+explicit message. The full changelog link still opens GitHub's repository-wide
+comparison, which can contain launcher commits.
 
 To prepare and inspect the ZIP/notes locally without creating a tag or release:
 

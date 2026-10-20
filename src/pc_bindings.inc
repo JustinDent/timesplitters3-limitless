@@ -221,11 +221,8 @@ void pc_debug_config_read(PcDebugOptions *s)
     recomp_bindings_init();
     text=g_have_path?read_file(g_path):NULL;
     if (text && (debug=pc_member(text,"debug",NULL)) && *debug=='{') {
-        s->show_fps=pc_debug_bool(debug,"show_fps");
-        s->show_frame_time=pc_debug_bool(debug,"show_frame_time");
-        s->show_issues=pc_debug_bool(debug,"show_issues");
-        s->log_performance=pc_debug_bool(debug,"log_performance");
-        s->show_latency=pc_debug_bool(debug,"show_latency");
+        for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++)
+            pc_debug_option_set(s,i,pc_debug_bool(debug,pc_debug_option(i)->key));
     }
     free(text);
     env=getenv("RECOMP_FPS_OVERLAY");
@@ -245,12 +242,10 @@ int pc_debug_config_save(const PcDebugOptions *s, char *error, size_t bytes)
     if (!debug || *debug!='{') {
         if (!pc_replace_member(&text,ws(text),"debug","{}")) goto failure;
     }
-    if (!pc_replace_member(&text,pc_member(text,"debug",NULL),"show_fps",s->show_fps?"true":"false") ||
-        !pc_replace_member(&text,pc_member(text,"debug",NULL),"show_frame_time",s->show_frame_time?"true":"false") ||
-        !pc_replace_member(&text,pc_member(text,"debug",NULL),"show_issues",s->show_issues?"true":"false") ||
-        !pc_replace_member(&text,pc_member(text,"debug",NULL),"log_performance",s->log_performance?"true":"false") ||
-        !pc_replace_member(&text,pc_member(text,"debug",NULL),"show_latency",s->show_latency?"true":"false") ||
-        !pc_write_config(text)) goto failure;
+    for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++)
+        if(!pc_replace_member(&text,pc_member(text,"debug",NULL),pc_debug_option(i)->key,
+            pc_debug_option_value(s,i)?"true":"false")) goto failure;
+    if(!pc_write_config(text)) goto failure;
     pc_debug_set(s);
     ok=1;
 failure:

@@ -26,8 +26,9 @@ For a native Mac launch:
 ./Play-Native-Mac.command --texture-pack private/texture-remaster/pack
 ```
 
-The current shared loader accepts full-mip DXT1/DXT3/DXT5 and RGBA DDS
-replacements with compatible alpha.
+The common renderer's loader accepts full-mip DXT1/DXT3/DXT5 and RGBA DDS
+replacements with compatible alpha. The legacy Mac GL adapter accepts compressed
+replacements; RGBA replacements fall back to originals there.
 Missing, invalid or over-budget replacements fall back to original textures.
 The active pack has a **6 GiB disk budget**, including metadata, and the loader
 limits resident replacement textures to **512 MiB**. Source artwork and temporary

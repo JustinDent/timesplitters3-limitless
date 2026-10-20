@@ -2,12 +2,16 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include "pc_controls.h"
+#include "pc_crash.h"
+#include "pc_discord.h"
 #include "pc_input.h"
 #include "pc_camera.h"
 #include "pc_terminal.h"
 #include "pc_settings.h"
 #include "pc_prompts.h"
 #include "texture_mode.h"
+#include "pc_window_theme.h"
+#include "pc_menu_theme.h"
 #include <math.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -23,6 +27,12 @@ static int invert_y;
 static int wheel_remainder;
 static unsigned long applied;
 static volatile LONG editing;
+static int menu_mode, menu_button_block;
+static int menu_wheel;
+static ULONGLONG menu_wheel_at;
+static int test_cursor_x=-1,test_cursor_y=-1;
+#define PC_MENU_MOUSE_MESSAGE (WM_APP+0x186)
+
 
 /* Deterministic integration tests use the same key/motion model as the
    window messages. No desktop keyboard or mouse events are synthesized. */
@@ -35,29 +45,62 @@ static ULONGLONG replay_started;
 static const char *test_state_path;
 static ULONGLONG test_state_checked;
 static unsigned test_state_key;
+static unsigned test_state_motion;
+
+/* Caller holds lock. Raw input is the only wheel event source, avoiding a
+ * duplicate step from Windows' corresponding WM_MOUSEWHEEL message. */
+static void wheel_input(int steps)
+{
+    if(menu_mode) {
+        if(!input.focused || InterlockedCompareExchange(&editing,0,0) ||
+           (!replaying && GetForegroundWindow()!=window_handle)) return;
+        menu_wheel+=steps>8?8:steps<-8?-8:steps;
+        if(menu_wheel>8) menu_wheel=8;
+        if(menu_wheel<-8) menu_wheel=-8;
+        menu_wheel_at=GetTickCount64();
+    } else pc_input_wheel(&input,steps);
+}
 
 static void replay_tick(void)
 {
     ULONGLONG now = GetTickCount64();
     if (!replaying) return;
     if(test_state_path && now-test_state_checked>=16) {
-        FILE *state; unsigned key=0; int down=0;
+        FILE *state; unsigned key=0,motion=0; int down=0,dx=0,dy=0,fields=0;
         test_state_checked=now;
         state=fopen(test_state_path,"r");
         if(state) {
-            if(fscanf(state,"%u %d",&key,&down)!=2 || key>=256) key=0;
+            char line[128];
+            if(fgets(line,sizeof line,state)) {
+                fields=sscanf(line,"%u %d %u %d %d",&key,&down,&motion,&dx,&dy);
+                /* Four fields describe an absolute menu cursor; five describe
+                   a sequenced gameplay motion. Do not interpret one as both. */
+                if(fields==4) {
+                    int x=-1,y=-1;
+                    if(sscanf(line,"%u %d %d %d",&key,&down,&x,&y)==4) {
+                        test_cursor_x=x;test_cursor_y=y;
+                    }
+                }
+            }
+            if(fields<2 || key>=256) {key=0;down=0;}
             fclose(state);
         }
         if(test_state_key!=key || !down) pc_input_key(&input,test_state_key,0);
         test_state_key=key;
         pc_input_key(&input,key,down!=0);
+        /* Optional sequence + raw counts allow a bounded test to aim after
+           loading. Apply a motion update once, regardless of polling rate. */
+        if(fields==5 && motion!=test_state_motion) {
+            test_state_motion=motion;pc_input_motion(&input,dx,dy,now);
+        }
     }
     if (!replay_started) replay_started = now;
     while (replay_next < replay_count && now - replay_started >= replay[replay_next].at) {
         struct Replay *r = &replay[replay_next++];
         if (!strcmp(r->type, "key")) pc_input_key(&input, (unsigned)r->a, r->b);
+        else if (!strcmp(r->type, "cursor")) { test_cursor_x=r->a; test_cursor_y=r->b; }
         else if (!strcmp(r->type, "mouse")) pc_input_motion(&input, r->a, r->b, now);
-        else if (!strcmp(r->type, "wheel")) pc_input_wheel(&input, r->a);
+        else if (!strcmp(r->type, "wheel")) wheel_input(r->a);
         fprintf(stderr, "[PC-INPUT-TEST] %lu %s %d %d\n", r->at, r->type, r->a, r->b);
     }
 }
@@ -76,8 +119,9 @@ static void clip_to_window(HWND window)
 static void capture(HWND window, int on)
 {
     AcquireSRWLockExclusive(&lock);
-    pc_input_capture(&input, enabled && on && !replaying);
+    pc_input_capture(&input, enabled && on && !replaying && !menu_mode);
     wheel_remainder = 0;
+    menu_wheel = 0;
     on = input.captured;
     ReleaseSRWLockExclusive(&lock);
     if (on) { clip_to_window(window); SetCursor(NULL); }
@@ -90,6 +134,7 @@ void pc_controls_attach(HWND window)
     FILE *f;
     RAWINPUTDEVICE mouse = { 0x01, 0x02, 0, NULL };
     window_handle = window;
+    pc_window_theme_apply(window);
     v = getenv("RECOMP_PC_MOUSE");
     enabled = !v || strcmp(v, "0");
     v = getenv("RECOMP_MOUSE_SENSITIVITY");
@@ -125,6 +170,8 @@ void pc_controls_attach(HWND window)
             sensitivity, invert_y ? "on" : "off");
     if (window) pc_settings_attach(window);
     pc_debug_init(window);
+    pc_crash_window(window);
+    pc_discord_start();
 }
 
 void pc_controls_get_mouse(double *value, int *on, int *inverted)
@@ -147,7 +194,9 @@ static void show_settings(HWND window, int debug)
 {
     if (InterlockedCompareExchange(&editing, 1, 0)) return;
     capture(window, 0);
+    pc_crash_inhibit(1);
     if (debug) pc_debug_show(window); else pc_settings_show(window);
+    pc_crash_inhibit(0);
     AcquireSRWLockExclusive(&lock);
     pc_input_focus(&input, replaying || GetForegroundWindow() == window);
     if(replaying) pc_input_capture(&input,1);
@@ -173,11 +222,22 @@ static void update_fullscreen_menu(HWND window)
 
 int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT *result)
 {
-    int captured;
+    int captured, frontend;
     *result = 0;
     if (window != window_handle) return 0;
+    if (pc_menu_theme_message(window,message,wp,lp,result)) return 1;
+    if (message == WM_SETTINGCHANGE || message == WM_THEMECHANGED) pc_window_theme_apply(window);
     if (message == WM_TIMER && wp == PC_DEBUG_TIMER) { pc_debug_poll(); return 1; }
-    if (message == WM_DESTROY) { pc_settings_detach(window); pc_debug_shutdown(); }
+    if (message == WM_DESTROY) { pc_discord_stop(); pc_crash_window(NULL); pc_settings_detach(window); pc_debug_shutdown(); }
+    if(message==PC_MENU_MOUSE_MESSAGE) {
+        /* Escape temporarily releases capture to open Pause. Returning to
+         * gameplay restores the capture preference without another click.
+         * Focus loss still prevents capture and does not steal focus. */
+        AcquireSRWLockShared(&lock); frontend=menu_mode; ReleaseSRWLockShared(&lock);
+        if(wp && !frontend) want_capture=1;
+        if(!replaying && !InterlockedCompareExchange(&editing,0,0)) capture(window,want_capture);
+        return 1;
+    }
     if(replaying) return 0;
     switch (message) {
     case WM_COMMAND:
@@ -199,14 +259,16 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         if ((int)wp == GWL_STYLE) update_fullscreen_menu(window);
         break;
     case WM_ENTERMENULOOP:
+        pc_crash_inhibit(1);
         capture(window, 0);
         break;
     case WM_EXITMENULOOP:
+        pc_crash_inhibit(0);
         capture(window, want_capture);
         break;
     case WM_MOUSEACTIVATE:
-        AcquireSRWLockShared(&lock); captured = input.captured; ReleaseSRWLockShared(&lock);
-        if (!captured && enabled) {
+        AcquireSRWLockShared(&lock); captured = input.captured; frontend=menu_mode; ReleaseSRWLockShared(&lock);
+        if (!captured && enabled && !frontend) {
             want_capture = 1;
             *result = MA_ACTIVATEANDEAT; /* focus the game without an accidental shot */
             return 1;
@@ -275,14 +337,14 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
                        message == WM_RBUTTONDOWN || message == WM_RBUTTONUP ? VK_RBUTTON : VK_MBUTTON;
         int down = message == WM_LBUTTONDOWN || message == WM_RBUTTONDOWN || message == WM_MBUTTONDOWN;
         if (down) pc_prompts_keyboard();
-        AcquireSRWLockShared(&lock); captured = input.captured; ReleaseSRWLockShared(&lock);
-        if (!captured && message == WM_LBUTTONDOWN && enabled) {
+        AcquireSRWLockShared(&lock); captured = input.captured; frontend=menu_mode; ReleaseSRWLockShared(&lock);
+        if (!captured && message == WM_LBUTTONDOWN && enabled && !frontend) {
             want_capture = 1;
             capture(window, 1); /* recapture click must not fire a weapon */
             return 1;
         }
         AcquireSRWLockExclusive(&lock);
-        pc_input_key(&input, key, down && captured);
+        pc_input_key(&input, key, down && (captured || menu_mode));
         ReleaseSRWLockExclusive(&lock);
         break;
     }
@@ -309,7 +371,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
                 pc_input_motion(&input, raw.data.mouse.lLastX, raw.data.mouse.lLastY, GetTickCount64());
             if (raw.data.mouse.usButtonFlags & RI_MOUSE_WHEEL) {
                 int delta = (short)raw.data.mouse.usButtonData + wheel_remainder;
-                pc_input_wheel(&input, delta / WHEEL_DELTA);
+                wheel_input(delta / WHEEL_DELTA);
                 wheel_remainder = delta % WHEEL_DELTA;
             }
             ReleaseSRWLockExclusive(&lock);
@@ -317,8 +379,11 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         break; /* DefWindowProc must perform WM_INPUT cleanup */
     }
     case WM_SETCURSOR:
-        AcquireSRWLockShared(&lock); captured = input.captured; ReleaseSRWLockShared(&lock);
+        AcquireSRWLockShared(&lock); captured = input.captured; frontend=menu_mode; ReleaseSRWLockShared(&lock);
         if (captured && LOWORD(lp) == HTCLIENT) { SetCursor(NULL); *result = TRUE; return 1; }
+        if (frontend && LOWORD(lp) == HTCLIENT) {
+            SetCursor(LoadCursor(NULL, IDC_ARROW)); *result = TRUE; return 1;
+        }
         break;
     }
     return 0;
@@ -336,12 +401,63 @@ int pc_controls_key_down(int key)
     if (InterlockedCompareExchange(&editing, 0, 0)) return 0;
     AcquireSRWLockExclusive(&lock);
     replay_tick();
-    down = (replaying || GetForegroundWindow() == window_handle) &&
-           pc_input_down(&input, (unsigned)key, GetTickCount64());
+    down = pc_input_down(&input, (unsigned)key, GetTickCount64());
+    /* Custom menus may read D-pad edges instead of the WASD analogue stick. */
+    if(menu_mode) {
+        unsigned alias=key==VK_LEFT?'A':key==VK_RIGHT?'D':
+                       key==VK_UP?'W':key==VK_DOWN?'S':0;
+        if(alias) down|=pc_input_down(&input,alias,GetTickCount64());
+    }
+    down=down && (replaying || GetForegroundWindow()==window_handle);
+    if(!input.keys[VK_LBUTTON]) menu_button_block &= ~1;
+    if(!input.keys[VK_RBUTTON]) menu_button_block &= ~2;
+    if((key==VK_LBUTTON && (menu_mode || (menu_button_block&1))) ||
+       (key==VK_RBUTTON && (menu_mode || (menu_button_block&2)))) down=0;
     if (key == VK_LBUTTON && pc_input_terminal_suppresses_left(&input, input.keys[VK_LBUTTON])) down = 0;
     ReleaseSRWLockExclusive(&lock);
     return down;
 }
+
+void pc_controls_menu_mode(int active)
+{
+    int changed;
+    AcquireSRWLockExclusive(&lock);
+    changed=menu_mode!=!!active;
+    if(changed) {
+        menu_button_block=(input.keys[VK_LBUTTON]?1:0)|(input.keys[VK_RBUTTON]?2:0);
+        menu_mode=!!active;
+        menu_wheel=0; wheel_remainder=0;
+        input.dx=input.dy=0;
+    }
+    ReleaseSRWLockExclusive(&lock);
+    if(changed && window_handle) PostMessage(window_handle,PC_MENU_MOUSE_MESSAGE,!active,0);
+}
+
+static PcMenuPointer menu_pointer(int consume)
+{
+    PcMenuPointer p={0};
+    POINT point={0}; RECT client;
+    AcquireSRWLockExclusive(&lock);
+    if(consume) replay_tick();
+    if(menu_mode && !InterlockedCompareExchange(&editing,0,0) &&
+       (replaying || GetForegroundWindow()==window_handle) &&
+       GetClientRect(window_handle,&client)) {
+        p.width=(float)client.right; p.height=(float)client.bottom;
+        if(replaying) { point.x=test_cursor_x; point.y=test_cursor_y; p.valid=point.x>=0 && point.y>=0; }
+        else p.valid=GetCursorPos(&point) && ScreenToClient(window_handle,&point);
+        p.x=(float)point.x; p.y=(float)point.y;
+        p.valid=p.valid && p.x>=0 && p.y>=0 && p.x<p.width && p.y<p.height;
+        p.left=input.keys[VK_LBUTTON]; p.right=input.keys[VK_RBUTTON];
+        if(consume && p.valid && GetTickCount64()-menu_wheel_at<250) p.wheel=menu_wheel;
+    }
+    if(consume) menu_wheel=0;
+    ReleaseSRWLockExclusive(&lock);
+    return p;
+}
+
+PcMenuPointer pc_controls_menu_pointer(void) { return menu_pointer(1); }
+/* Drawing must not consume wheel packets or advance the input replay. */
+PcMenuPointer pc_controls_menu_hover_pointer(void) { return menu_pointer(0); }
 
 int pc_controls_terminal_click(void)
 {

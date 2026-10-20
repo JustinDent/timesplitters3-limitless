@@ -2,10 +2,24 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+
+#if MACOS
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Automation;
+using UIElement = Avalonia.Controls.Control;
+using Brush = Avalonia.Media.IBrush;
+using FontWeights = Avalonia.Media.FontWeight;
+#else
+using System.Windows.Automation;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+#endif
 
 namespace TimeSplitters.Launcher
 {
@@ -19,180 +33,137 @@ namespace TimeSplitters.Launcher
         readonly GameSettings model;
         readonly TextBlock status;
         readonly Slider fov;
-        readonly TextBox sensitivity, width, height;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes;
-        readonly ComboBox device, resolution, aspect, scale, filtering, pacing, interpolation;
+        readonly TextBox sensitivity, width, height, discordId;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled;
+        readonly ComboBox device, resolution, aspect, scale, filtering, pacing, interpolation, presentation, refresh;
+        readonly TextBlock performanceAdvice;
+        readonly System.Collections.Generic.List<int> supportedRefreshRates;
+        readonly int desktopRefreshRate;
         readonly Button[,] bindingButtons = new Button[24,4];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
-        static Brush ColorBrush(byte r,byte g,byte b) { var brush=new SolidColorBrush(Color.FromRgb(r,g,b));brush.Freeze();return brush; }
+        static Brush ColorBrush(byte r,byte g,byte b) { var brush=new SolidColorBrush(Color.FromRgb(r,g,b));Ui.Freeze(brush);return brush; }
         static readonly Brush Ink = ColorBrush(228,237,245);
-        static readonly Brush Muted = ColorBrush(158,175,191);
+        static readonly Brush Muted = ColorBrush(180,199,216);
         static readonly Brush Accent = ColorBrush(134,205,255);
         static readonly Brush Panel = ColorBrush(21,36,53);
-        static TextBlock Text(string text, int size) { return new TextBlock { Text=text, FontSize=size, Foreground=Ink, TextWrapping=TextWrapping.Wrap, Margin=new Thickness(0,4,0,8) }; }
-        static Button Button(string text) { return new Button { Content=text, Margin=new Thickness(4), MinHeight=32, Padding=new Thickness(12,6,12,6) }; }
-        static CheckBox Check(string text, bool value) { return new CheckBox { Content=text, IsChecked=value, Foreground=Ink, Margin=new Thickness(0,9,20,9) }; }
-        static TextBox Entry(string text) { return new TextBox { Text=text, Background=new SolidColorBrush(Color.FromRgb(11,20,32)), Foreground=Ink, BorderBrush=Muted, Padding=new Thickness(8), Margin=new Thickness(0,2,12,8), MinWidth=100 }; }
+        static TextBlock Text(string text, int size) { var block=PageTheme.Text(text,size);block.Margin=new Thickness(0,0,0,6);return block; }
+        static Button Button(string text) { return new Button { Content=text, Margin=new Thickness(0,0,8,0) }; }
+        static CheckBox Check(string text, bool value) { return new CheckBox { Content=text, IsChecked=value, Foreground=Ink, FontSize=13, Margin=new Thickness(0,6,20,6) }; }
+        static TextBox Entry(string text) { return new TextBox { Text=text, MinWidth=90 }; }
         static ComboBox Choices(string[] choices, string selected)
         {
-            var combo = new ComboBox { Margin=new Thickness(0,2,12,12), Padding=new Thickness(8), MinWidth=180, Foreground=Brushes.Black };
+            var combo = new ComboBox();
             foreach (string choice in choices) combo.Items.Add(choice);
             if (!combo.Items.Contains(selected)) combo.Items.Add(selected);
             combo.SelectedItem=selected; return combo;
         }
         static void Field(Panel parent, string label, UIElement input)
-        { var stack=new StackPanel { Margin=new Thickness(0,0,18,8) }; stack.Children.Add(Text(label,12)); stack.Children.Add(input); parent.Children.Add(stack); }
-        static ScrollViewer Scroll(UIElement content) { return new ScrollViewer { VerticalScrollBarVisibility=ScrollBarVisibility.Auto, Content=content, Margin=new Thickness(18) }; }
-        static ResourceDictionary TabsTheme()
         {
-            // Keep native TabControl navigation/accessibility with launcher-styled headers.
-            return (ResourceDictionary)System.Windows.Markup.XamlReader.Parse(@"
-<ResourceDictionary xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-                    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'>
-  <Style TargetType='TabItem'>
-    <Setter Property='Foreground' Value='#B4C7D8'/>
-    <Setter Property='Background' Value='#152A3E'/>
-    <Setter Property='BorderBrush' Value='#36536F'/>
-    <Setter Property='BorderThickness' Value='1'/>
-    <Setter Property='Padding' Value='22,12'/>
-    <Setter Property='Margin' Value='0'/>
-    <Setter Property='MinWidth' Value='196'/>
-    <Setter Property='MinHeight' Value='48'/>
-    <Setter Property='Cursor' Value='Hand'/>
-    <Setter Property='Template'>
-      <Setter.Value>
-        <ControlTemplate TargetType='TabItem'>
-          <Border x:Name='Face' Background='{TemplateBinding Background}'
-                  BorderBrush='{TemplateBinding BorderBrush}' BorderThickness='{TemplateBinding BorderThickness}' CornerRadius='4' Margin='0,0,10,0'>
-            <Grid>
-              <ContentPresenter ContentSource='Header' RecognizesAccessKey='True'
-                                TextElement.FontSize='13' TextElement.FontWeight='SemiBold'
-                                HorizontalAlignment='Center' VerticalAlignment='Center' Margin='{TemplateBinding Padding}'/>
-              <Border x:Name='SelectionLine' Height='2' Margin='18,0,18,4'
-                      VerticalAlignment='Bottom' Background='#86CDFF' Visibility='Collapsed'/>
-            </Grid>
-          </Border>
-          <ControlTemplate.Triggers>
-            <Trigger Property='IsMouseOver' Value='True'>
-              <Setter TargetName='Face' Property='Background' Value='#21415D'/>
-              <Setter TargetName='Face' Property='BorderBrush' Value='#729CBE'/>
-              <Setter Property='Foreground' Value='#F0F7FF'/>
-            </Trigger>
-            <Trigger Property='IsSelected' Value='True'>
-              <Setter TargetName='Face' Property='Background'>
-                <Setter.Value><LinearGradientBrush StartPoint='0,0' EndPoint='0,1'>
-                  <GradientStop Color='#2B5679'/><GradientStop Color='#193C59' Offset='1'/>
-                </LinearGradientBrush></Setter.Value>
-              </Setter>
-              <Setter TargetName='Face' Property='BorderBrush' Value='#86CDFF'/>
-              <Setter Property='Foreground' Value='#DDEFFF'/>
-              <Setter TargetName='SelectionLine' Property='Visibility' Value='Visible'/>
-            </Trigger>
-            <Trigger Property='IsKeyboardFocusWithin' Value='True'>
-              <Setter TargetName='Face' Property='BorderBrush' Value='#F0F8FF'/>
-              <Setter TargetName='Face' Property='BorderThickness' Value='2'/>
-            </Trigger>
-            <Trigger Property='IsEnabled' Value='False'>
-              <Setter TargetName='Face' Property='Opacity' Value='0.4'/>
-            </Trigger>
-          </ControlTemplate.Triggers>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
-  </Style>
-  <Style TargetType='TabControl'>
-    <Setter Property='Template'>
-      <Setter.Value>
-        <ControlTemplate TargetType='TabControl'>
-          <Grid KeyboardNavigation.TabNavigation='Local'>
-            <Grid.RowDefinitions><RowDefinition Height='Auto'/><RowDefinition Height='*'/></Grid.RowDefinitions>
-            <TabPanel IsItemsHost='True' KeyboardNavigation.TabIndex='1' Panel.ZIndex='1' Margin='0,0,0,12'/>
-            <Border Grid.Row='1' Background='{TemplateBinding Background}' BorderBrush='{TemplateBinding BorderBrush}'
-                    BorderThickness='1' CornerRadius='4' KeyboardNavigation.TabNavigation='Local'>
-              <ContentPresenter x:Name='PART_SelectedContentHost' ContentSource='SelectedContent'/>
-            </Border>
-          </Grid>
-        </ControlTemplate>
-      </Setter.Value>
-    </Setter>
-  </Style>
-</ResourceDictionary>");
+            var stack=new StackPanel { Margin=new Thickness(0,0,0,10) };var caption=Text(label,13);caption.Foreground=Muted;
+            stack.Children.Add(caption);stack.Children.Add(input);parent.Children.Add(stack);
+            AutomationProperties.SetLabeledBy(input,caption);
         }
+        static Grid Columns(Panel parent)
+        {
+            var grid=new Grid();grid.ColumnDefinitions.Add(new ColumnDefinition());grid.ColumnDefinitions.Add(new ColumnDefinition());parent.Children.Add(grid);return grid;
+        }
+        static StackPanel Column(Grid grid,int index)
+        { var panel=new StackPanel { Margin=index==0?new Thickness(0,0,10,0):new Thickness(10,0,0,0) };Grid.SetColumn(panel,index);grid.Children.Add(panel);return panel; }
+        static ScrollViewer Scroll(UIElement content) { return new ScrollViewer { VerticalScrollBarVisibility=ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled, Content=content, Padding=new Thickness(0,0,12,0) }; }
         public SettingsPage(ResourceDictionary resources, string root, bool preview)
         {
-            string inherited = preview ? null : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "xboxrecomp", "titles", "45410066.conf");
+            string inherited = Ui.InheritedSettings(preview);
             model=GameSettings.Load(root, inherited);
-            View=new Grid { Background=new SolidColorBrush(Color.FromRgb(11,20,32)), Margin=new Thickness(30,24,30,18) };
-            View.Resources.MergedDictionaries.Add(resources);
-            View.Resources.MergedDictionaries.Add(TabsTheme());
+            View=new Grid { Background=PageTheme.Brush("#0B1420"), Margin=new Thickness(30,24,30,18) };
+            Ui.Resources(View,resources);
+            Ui.Theme(View);
+            Ui.Tabs(View);
             layout=new DockPanel(); View.Children.Add(layout);
-            overlay=new Border { Visibility=Visibility.Collapsed, Background=new SolidColorBrush(Color.FromArgb(245,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(4), Padding=new Thickness(24) };
-            View.Children.Add(overlay);
+            overlay=new Border { Background=new SolidColorBrush(Color.FromArgb(248,11,20,32)), BorderBrush=Accent, BorderThickness=new Thickness(1), CornerRadius=new CornerRadius(7), Padding=new Thickness(28) };
+            Ui.Show(overlay,false);View.Children.Add(overlay);
             var heading=new StackPanel(); DockPanel.SetDock(heading,Dock.Top); layout.Children.Add(heading);
-            heading.Children.Add(Text("Game settings",25));
-            var subtitle=Text("Set controls and graphics before starting the game. Changes apply on your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
-            var footer=new StackPanel(); DockPanel.SetDock(footer,Dock.Bottom); layout.Children.Add(footer);
-            status=Text("Save to apply on your next launch. Home keeps your draft; Cancel discards unsaved edits.",12); status.Foreground=Muted; footer.Children.Add(status);
-            var actions=new StackPanel { Orientation=Orientation.Horizontal, HorizontalAlignment=HorizontalAlignment.Right };
+            var eyebrow=PageTheme.Text("GAME PREFERENCES",11,"#86CDFF");eyebrow.FontWeight=FontWeights.SemiBold;heading.Children.Add(eyebrow);
+            var title=Text("Game settings",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
+            var subtitle=Text("Adjust controls, display and performance before your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
+            var footer=new DockPanel { LastChildFill=true };
+            var footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,16,0,0),Child=footer };
+            DockPanel.SetDock(footerBorder,Dock.Bottom);layout.Children.Add(footerBorder);
+            var actions=new StackPanel { Orientation=Orientation.Horizontal, VerticalAlignment=VerticalAlignment.Center };
+            DockPanel.SetDock(actions,Dock.Right);footer.Children.Add(actions);
             var cancel=Button("Cancel"); cancel.Name="SettingsCancelButton"; cancel.Click+=(s,e)=> { if(Cancelled!=null)Cancelled(); }; actions.Children.Add(cancel);
-            var save=Button("Save settings"); save.Name="SettingsSaveButton"; save.Background=Accent; save.Foreground=new SolidColorBrush(Color.FromRgb(9,28,44)); save.Click+=(s,e)=>Save(); actions.Children.Add(save); footer.Children.Add(actions);
-            tabs=new TabControl { Background=Panel, BorderBrush=new SolidColorBrush(Color.FromRgb(48,72,95)), Margin=new Thickness(0,14,0,14) }; layout.Children.Add(tabs);
+            var save=Button("Save settings"); save.Name="SettingsSaveButton";save.Margin=new Thickness(0);PageTheme.Primary(save);save.Click+=(s,e)=>Save();actions.Children.Add(save);
+            status=Text("Home keeps your draft. Save when you’re ready.",12);status.Foreground=Muted;status.Margin=new Thickness(0,0,16,0);status.VerticalAlignment=VerticalAlignment.Center;footer.Children.Add(status);
+            tabs=new TabControl { Background=Brushes.Transparent,BorderThickness=new Thickness(0), Margin=new Thickness(0,8,0,12) };layout.Children.Add(tabs);
             var controls=new StackPanel();
-            var mouse=new WrapPanel(); controls.Children.Add(mouse);
-            sensitivity=Entry(model.Sensitivity.ToString("G",CultureInfo.InvariantCulture)); sensitivity.Name="MouseSensitivity"; Field(mouse,"Mouse sensitivity (0.001–10)",sensitivity);
-            enabled=Check("Mouse look",model.MouseEnabled); invert=Check("Invert vertical look",model.InvertY); mouse.Children.Add(enabled); mouse.Children.Add(invert);
+            var input=PageTheme.Section(controls,"Input & mouse","Choose your input device and adjust how the camera responds.");
+            var inputColumns=Columns(input);var inputLeft=Column(inputColumns,0);var inputRight=Column(inputColumns,1);
             var deviceLabels=new[]{"Keyboard & mouse","Controller 1","Controller 2","Controller 3","Controller 4","Disabled"};
-            device=Choices(deviceLabels,deviceLabels[Array.IndexOf(Devices,model.Device.Replace("xinput:","gamepad:"))]); Field(controls,"Player 1 input device",device);
-            var hint=Text("Select a binding to capture a key or mouse button. Four slots per action. Mouse wheel is supported; game-reserved keys are unavailable.",12); hint.Foreground=Muted; controls.Children.Add(hint);
+            device=Choices(deviceLabels,deviceLabels[Array.IndexOf(Devices,model.Device.Replace("xinput:","gamepad:"))]);Field(inputLeft,"Player 1 input device",device);
+            sensitivity=Entry(model.Sensitivity.ToString("G",CultureInfo.InvariantCulture));sensitivity.Name="MouseSensitivity";Field(inputRight,"Mouse sensitivity · 0.001–10",sensitivity);
+            var mouse=new WrapPanel();enabled=Check("Mouse look",model.MouseEnabled);invert=Check("Invert vertical look",model.InvertY);mouse.Children.Add(enabled);mouse.Children.Add(invert);input.Children.Add(mouse);
+            var bindings=PageTheme.Section(controls,"Key bindings","Select a slot, then press a key or mouse button. Mouse wheel is supported.");
+            var bindingHead=new Grid { Margin=new Thickness(0,0,0,6) };bindingHead.ColumnDefinitions.Add(new ColumnDefinition {Width=new GridLength(200)});
+            var actionHeading=PageTheme.Text("ACTION",11,"#B4C7D8");actionHeading.Margin=new Thickness(4,6,0,6);bindingHead.Children.Add(actionHeading);
+            for(int slot=0;slot<4;slot++){bindingHead.ColumnDefinitions.Add(new ColumnDefinition());var label=PageTheme.Text("SLOT "+(slot+1),11,"#B4C7D8");label.HorizontalAlignment=HorizontalAlignment.Center;Grid.SetColumn(label,slot+1);bindingHead.Children.Add(label);}bindings.Children.Add(bindingHead);
             for (int i=0;i<24;i++)
             {
-                var row=new Grid { Margin=new Thickness(0,2,8,2), Background=i%2==0?Panel:Brushes.Transparent };
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width=new GridLength(235) });
-                var label=Text(GameSettings.Labels[i],12); label.VerticalAlignment=VerticalAlignment.Center; label.Margin=new Thickness(8,4,8,4); row.Children.Add(label);
+                var row=new Grid { Margin=new Thickness(0,0,0,3), Background=i%2==0?PageTheme.Brush("#172B3F"):Brushes.Transparent };
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width=new GridLength(200) });
+                var label=Text(GameSettings.Labels[i],12);label.VerticalAlignment=VerticalAlignment.Center;label.Margin=new Thickness(8,7,8,7);row.Children.Add(label);
                 for (int j=0;j<4;j++)
                 {
                     row.ColumnDefinitions.Add(new ColumnDefinition());
-                    int action=i,slot=j; var button=Button(""); button.FontSize=11; button.ToolTip=GameSettings.Labels[i]+", binding "+(j+1);
-                    button.Click+=(s,e)=>Capture(action,slot); Grid.SetColumn(button,j+1); row.Children.Add(button); bindingButtons[i,j]=button;
+                    int action=i,slot=j;var button=Button("");button.FontSize=11;button.MinHeight=32;button.Padding=new Thickness(5,7,5,7);button.Margin=new Thickness(3);button.Background=PageTheme.Brush("#122233");button.BorderBrush=PageTheme.Brush("#365069");Ui.Tip(button,GameSettings.Labels[i]+", binding "+(j+1));
+                    button.Click+=(s,e)=>Capture(action,slot);Grid.SetColumn(button,j+1);row.Children.Add(button);bindingButtons[i,j]=button;
                 }
-                controls.Children.Add(row);
+                bindings.Children.Add(row);
             }
-            var reset=Button("Restore default keyboard & mouse controls"); reset.HorizontalAlignment=HorizontalAlignment.Left;
+            var reset=Button("Restore default controls");reset.Margin=new Thickness(0,16,0,0);reset.HorizontalAlignment=HorizontalAlignment.Left;
             reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
-            controls.Children.Add(reset); tabs.Items.Add(new TabItem { Header="Keyboard & mouse", Content=Scroll(controls) });
+            bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Keyboard & mouse",Content=Scroll(controls) });
             var graphics=new StackPanel();
-            graphics.Children.Add(Text("Startup",20));
-            skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);
-            graphics.Children.Add(skipSplashes);
-            var startupHint=Text("Skip the opening logo videos on your next launch. Also disables the idle attract video. Story cutscenes still play.",12);
-            startupHint.Foreground=Muted; graphics.Children.Add(startupHint);
-            graphics.Children.Add(Text("Display & graphics",20));
-            graphics.Children.Add(Text("Higher render scale and resolution increase GPU load. These options use the game runtime’s supported settings.",12));
+            var quick=PageTheme.Section(graphics,"Smoothness setup","Choose a starting point, then Save settings and restart the game.");
+            var presets=new WrapPanel();quick.Children.Add(presets);
+            foreach(int rate in new[]{60,120,144}) {
+                int target=rate;
+                var preset=Button(rate==60?"60 FPS · original":""+rate+" FPS · smooth");
+                preset.Name="PerformancePreset"+rate;
+                preset.Margin=new Thickness(0,0,8,8);
+                preset.IsEnabled=rate==60 || model.SupportsPresentationTarget;
+                Ui.Tip(preset,"Sets 60 Hz game pacing, fullscreen, VRR, 1× console render scale and FPS overlay. Uses a matching supported monitor rate for 120/144. Keeps output resolution and filtering. Applies after Save and restart.");
+                preset.Click+=(s,e)=>ApplyPerformancePreset(target);presets.Children.Add(preset);
+            }
+            performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
+            performanceAdvice.Foreground=Muted;quick.Children.Add(performanceAdvice);
+            var display=PageTheme.Section(graphics,"Display","Choose the game’s output size. Your desktop resolution stays unchanged.");
+            var displayColumns=Columns(display);var displayLeft=Column(displayColumns,0);var displayRight=Column(displayColumns,1);
             var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height)).ToList();
-            aspect=new ComboBox { Name="AspectRatio", Margin=new Thickness(4,2,4,12), Padding=new Thickness(8), MinWidth=180, Foreground=Brushes.Black };
+            aspect=new ComboBox { Name="AspectRatio" };
             foreach(var ratio in DisplayModes.Aspects)aspect.Items.Add(ratio);
-            aspect.SelectedIndex=0;Field(graphics,"Aspect ratio",aspect);
-            resolution=new ComboBox { Margin=new Thickness(4,2,4,12), Padding=new Thickness(8), MinWidth=240, Foreground=Brushes.Black };
+            aspect.SelectedIndex=0;Field(displayLeft,"Aspect ratio",aspect);
+            resolution=new ComboBox { Name="OutputResolution" };
             foreach(var mode in sizes) resolution.Items.Add(mode);
             resolution.SelectedItem=sizes.FirstOrDefault(m=>m.Width==model.Width && m.Height==model.Height);
-            var selector=new DockPanel { HorizontalAlignment=HorizontalAlignment.Left };
-            var previous=Button("◀"); previous.ToolTip="Previous resolution";
-            System.Windows.Automation.AutomationProperties.SetName(previous,"Previous resolution");
-            var next=Button("▶"); next.ToolTip="Next resolution";
-            System.Windows.Automation.AutomationProperties.SetName(next,"Next resolution");
+            var selector=new DockPanel();
+            var previous=Button("‹");previous.Width=32;previous.Padding=new Thickness(0);previous.Margin=new Thickness(0,0,6,0);Ui.Tip(previous,"Previous resolution");
+            AutomationProperties.SetName(previous,"Previous resolution");
+            var next=Button("›");next.Width=32;next.Padding=new Thickness(0);next.Margin=new Thickness(6,0,0,0);Ui.Tip(next,"Next resolution");
+            AutomationProperties.SetName(next,"Next resolution");
             previous.Click+=(s,e)=>resolution.SelectedIndex=(resolution.SelectedIndex+resolution.Items.Count-1)%resolution.Items.Count;
             next.Click+=(s,e)=>resolution.SelectedIndex=(resolution.SelectedIndex+1)%resolution.Items.Count;
             DockPanel.SetDock(previous,Dock.Left); selector.Children.Add(previous);
             DockPanel.SetDock(next,Dock.Right); selector.Children.Add(next); selector.Children.Add(resolution);
-            Field(graphics,"Output resolution",selector);
-            graphics.Children.Add(Text("Common render resolutions plus modes reported by your display. Aspect ratio narrows the list; custom sizes are preserved. Desktop resolution is unchanged.",12));
-            var dimensions=new WrapPanel(); width=Entry(model.Width.ToString()); height=Entry(model.Height.ToString()); Field(dimensions,"Width",width); Field(dimensions,"Height",height); graphics.Children.Add(dimensions);
+            Field(displayRight,"Output resolution",selector);
+            var custom=new StackPanel { Margin=new Thickness(0,12,0,0) };var dimensions=Columns(custom);
+            width=Entry(model.Width.ToString());height=Entry(model.Height.ToString());Field(Column(dimensions,0),"Width",width);Field(Column(dimensions,1),"Height",height);
+            var customHint=Text("Use a supported custom size, or 0 × 0 for the original console resolution.",12);customHint.Foreground=Muted;custom.Children.Add(customHint);
+            var customSize=new Expander { Header="Custom resolution",Foreground=Ink,FontSize=12,Content=custom,Margin=new Thickness(0,2,0,12) };display.Children.Add(customSize);
             resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); } };
-            var ratioValue=Text("Current ratio: "+DisplayModes.RatioLabel(model.Width,model.Height),12);ratioValue.Name="CurrentAspectRatio";graphics.Children.Add(ratioValue);
-            TextChangedEventHandler updateRatio=(s,e)=> {
+            var ratioValue=Text("Current ratio: "+DisplayModes.RatioLabel(model.Width,model.Height),12);ratioValue.Name="CurrentAspectRatio";ratioValue.Foreground=Accent;display.Children.Add(ratioValue);
+            Action updateRatio=()=> {
                 int w,h;ratioValue.Text=Int32.TryParse(width.Text,out w)&&Int32.TryParse(height.Text,out h)?"Current ratio: "+DisplayModes.RatioLabel(w,h):"Enter a valid size";
             };
-            width.TextChanged+=updateRatio;height.TextChanged+=updateRatio;
+            Ui.TextChanged(width,updateRatio);Ui.TextChanged(height,updateRatio);
             aspect.SelectionChanged+=(s,e)=> {
                 if(aspect.SelectedIndex<0)return;
                 int w,h;if(!Int32.TryParse(width.Text,out w)||!Int32.TryParse(height.Text,out h)){w=model.Width;h=model.Height;}
@@ -201,52 +172,91 @@ namespace TimeSplitters.Launcher
                 var nearest=available.OrderBy(m=>Math.Abs((long)(m.Height==0?480:m.Height)-(h==0?480:h))*10000+Math.Abs((long)(m.Width==0?640:m.Width)-(w==0?640:w))).First();
                 resolution.Items.Clear();foreach(var mode in available)resolution.Items.Add(mode);resolution.SelectedItem=nearest;
             };
-            var fieldOfView=new DockPanel { MaxWidth=460, HorizontalAlignment=HorizontalAlignment.Left };
+            var fieldOfView=new DockPanel { HorizontalAlignment=HorizontalAlignment.Stretch };
             var fovValue=Text(model.VerticalFov.ToString(CultureInfo.InvariantCulture)+"°",14); fovValue.Name="VerticalFovValue";
             fovValue.MinWidth=48; fovValue.TextAlignment=TextAlignment.Right;
             DockPanel.SetDock(fovValue,Dock.Right); fieldOfView.Children.Add(fovValue);
             fov=new Slider { Name="VerticalFovSlider", Minimum=GameSettings.FovMin, Maximum=GameSettings.FovMax,
                 Value=model.VerticalFov, TickFrequency=1, IsSnapToTickEnabled=true, SmallChange=1, LargeChange=5,
-                Width=290, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
-            System.Windows.Automation.AutomationProperties.SetName(fov,"Vertical field of view in degrees");
-            fov.ValueChanged+=(s,e)=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°";
+                MinWidth=140, MaxWidth=360, Margin=new Thickness(0,6,12,6), VerticalAlignment=VerticalAlignment.Center };
+            AutomationProperties.SetName(fov,"Vertical field of view in degrees");
+            Ui.ValueChanged(fov,()=>fovValue.Text=((int)Math.Round(fov.Value)).ToString(CultureInfo.InvariantCulture)+"°");
             fov.IsEnabled=model.CanAdjustFov;
-            fieldOfView.Children.Add(fov); Field(graphics,"Vertical FOV (40–100°)",fieldOfView);
+            fieldOfView.Children.Add(fov);
+            var camera=PageTheme.Section(graphics,"Camera & window","Adjust your view and choose how the game fills your display.");
+            var cameraColumns=Columns(camera);var cameraLeft=Column(cameraColumns,0);var cameraRight=Column(cameraColumns,1);
+            Field(cameraLeft,"Vertical FOV · 40–100°",fieldOfView);
+            fullscreen=Check("Borderless fullscreen",model.Fullscreen);fullscreen.Name="BorderlessFullscreen";Field(cameraRight,"Window mode",fullscreen);
+            refresh=new ComboBox{Name="MonitorRefreshRate",IsEnabled=model.SupportsPresentationTarget};
+            supportedRefreshRates=DisplayModes.PrimaryRefreshRates();
+            desktopRefreshRate=DisplayModes.PrimaryRefreshRate();
+            var refreshRates=supportedRefreshRates.ToList();
+            if(!refreshRates.Contains(model.RefreshRate))refreshRates.Add(model.RefreshRate);
+            foreach(int hz in refreshRates) refresh.Items.Add(hz==0?"Current desktop rate":hz+" Hz");
+            refresh.SelectedIndex=refreshRates.IndexOf(model.RefreshRate);
+            Ui.Tip(refresh,"Applies on the game's monitor in fullscreen. Restores your previous rate on focus loss and exit. Unsupported rates leave the monitor unchanged.");
+            Field(cameraRight,"Monitor refresh · fullscreen",refresh);
+            cameraRight.Children.Add(Text("Primary display now: "+(desktopRefreshRate>0?desktopRefreshRate+" Hz":"rate unavailable")+". Check the game's display in "+LauncherPlatform.DisplaySettingsLocation+".",12));
             var resetFov=Button("Reset FOV to 55°"); resetFov.Name="ResetFovButton";
             resetFov.IsEnabled=model.CanAdjustFov;
             resetFov.HorizontalAlignment=HorizontalAlignment.Left; resetFov.Click+=(s,e)=>fov.Value=GameSettings.FovDefault;
-            graphics.Children.Add(resetFov);
-            if(!model.CanAdjustFov) graphics.Children.Add(Text("Custom FOV requires a game release newer than v0.2.0-alpha.4. Resolution settings remain available.",12));
-            graphics.Children.Add(Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative. Cinematic and terminal framing is unchanged.",12));
-            fullscreen=Check("Borderless fullscreen",model.Fullscreen); graphics.Children.Add(fullscreen);
-            var quality=new WrapPanel(); graphics.Children.Add(quality);
-            scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString()); Field(quality,"Render scale / supersampling",scale);
-            filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString()); Field(quality,"Anisotropic filtering",filtering);
-            pacing=Choices(new[]{"adaptive","60","30","0"},model.FrameCap); Field(quality,"Frame pacing (0 = uncapped)",pacing);
-            interpolation=Choices(new[]{"1","2","3","4"},model.Interpolation.ToString()); Field(quality,"Frame interpolation (1 = off)",interpolation);
-            vrr=Check("Variable refresh rate (requires display/driver support)",model.Vrr); fps=Check("Show FPS overlay",model.FpsOverlay); graphics.Children.Add(vrr); graphics.Children.Add(fps);
-            graphics.Children.Add(Text("Interpolation adds displayed frames while the game keeps its normal clock. It can produce visual artifacts. Your desktop refresh rate is unchanged.",12));
+            cameraLeft.Children.Add(resetFov);
+            if(!model.CanAdjustFov) camera.Children.Add(Text("Custom FOV requires a game release newer than v0.2.0-alpha.4. Resolution settings remain available.",12));
+            var fovHint=Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative.",12);fovHint.Foreground=Muted;fovHint.Margin=new Thickness(0,10,0,4);camera.Children.Add(fovHint);
+            var quality=PageTheme.Section(graphics,"Quality & performance","Lower output resolution reduces GPU work. Console render scale applies only at Original console resolution.");
+            var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
+            scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";Field(qualityLeft,"Console render scale / supersampling",scale);
+            filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());Field(qualityRight,"Anisotropic filtering",filtering);
+            pacing=Choices(new[]{"adaptive","60","30","0"},model.FrameCap);pacing.Name="GameFramePacing";Field(qualityLeft,"Game pacing · 0 = uncapped",pacing);
+            interpolation=Choices(new[]{"1","2","3","4"},model.Interpolation.ToString());interpolation.Name="LegacyInterpolation";Field(qualityRight,"Frame interpolation · 1 = off",interpolation);
+            presentation=Choices(new[]{"Use interpolation setting","120 FPS","144 FPS"},model.PresentationFps==0?"Use interpolation setting":model.PresentationFps+" FPS");
+            presentation.Name="PresentationTarget";
+            presentation.IsEnabled=model.SupportsPresentationTarget;
+            Field(qualityRight,"Smooth motion · FPS (experimental)",presentation);
+            presentation.SelectionChanged+=(s,e)=> {
+                bool legacy=presentation.SelectedIndex==0;interpolation.IsEnabled=legacy;pacing.IsEnabled=legacy;
+                if(!legacy && Convert.ToString(pacing.SelectedItem)!="adaptive" && Convert.ToString(pacing.SelectedItem)!="60") pacing.SelectedItem="60";
+                if(!legacy) { fullscreen.IsChecked=true;vrr.IsChecked=true; }
+                UpdatePerformanceAdvice();
+            };
+            interpolation.IsEnabled=!model.SupportsPresentationTarget || model.PresentationFps==0;
+            pacing.IsEnabled=!model.SupportsPresentationTarget || model.PresentationFps==0;
+            vrr=Check("Variable refresh rate",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("Show FPS overlay",model.FpsOverlay);
+            var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
+            var interpolationHint=Text("120/144 FPS blends camera and object motion while gameplay stays at 60 Hz. Use a matching high refresh display with VRR and GPU headroom. Menus, cuts and slow frames can fall back to 60 FPS; interpolation can produce artifacts.",12);interpolationHint.Foreground=Muted;interpolationHint.Margin=new Thickness(0,8,0,0);quality.Children.Add(interpolationHint);
+            if(!model.SupportsPresentationTarget) quality.Children.Add(Text(LauncherPlatform.CanSelectPresentationTarget ? "120/144 FPS targets require a game release newer than v0.3.0-alpha.2." : "Fixed 120/144 FPS targets and automatic monitor switching await native support. Frame interpolation remains available.",12));
+            foreach(var choice in new[]{scale,refresh,pacing,interpolation}) choice.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
+            foreach(var toggle in new[]{fullscreen,vrr}) Ui.CheckedChanged(toggle,UpdatePerformanceAdvice);
+            width.TextChanged+=(s,e)=>UpdatePerformanceAdvice();height.TextChanged+=(s,e)=>UpdatePerformanceAdvice();
+            UpdatePerformanceAdvice();
+            var startup=PageTheme.Section(graphics,"Startup","Choose how the game opens.");
+            skipSplashes=Check("Skip startup splash screens",model.SkipStartupSplashes);startup.Children.Add(skipSplashes);
+            var startupHint=Text("Skips opening logo videos and the idle attract video. Story cutscenes still play.",12);startupHint.Foreground=Muted;startupHint.Margin=new Thickness(0,8,0,0);startup.Children.Add(startupHint);
             tabs.Items.Add(new TabItem { Header="Graphics & resolution", Content=Scroll(graphics) }); RefreshBindings();
+            var discord=new StackPanel();
+            var presence=PageTheme.Section(discord,"Discord Rich Presence","Share your current game mode and elapsed session time on your Discord profile.");
+            discordEnabled=Check("Enable Discord Rich Presence",model.DiscordEnabled);discordEnabled.Name="DiscordPresenceEnabled";presence.Children.Add(discordEnabled);
+            discordId=Entry(model.DiscordApplicationId);discordId.Name="DiscordApplicationId";discordId.MaxLength=20;
+            Field(presence,"Application ID",discordId);
+            presence.Children.Add(Text("Create an application in the Discord Developer Portal, then copy General Information → Application ID here. This ID is public; no bot token or client secret is needed.",12));
+            var portal=Button("Open Discord Developer Portal");portal.HorizontalAlignment=HorizontalAlignment.Left;
+            portal.Click+=(s,e)=> { try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("https://discord.com/developers/applications") { UseShellExecute=true }); } catch(Exception ex) { status.Text=ex.Message; } };
+            presence.Children.Add(portal);
+            presence.Children.Add(Text("Keep the Discord desktop app open and allow activity sharing in Discord. Changes apply on your next game launch. Requires a game build with Rich Presence support.",12));
+            tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
         }
-        static string KeyName(string token)
-        {
-            if (token=="none" || token=="") return "Unbound";
-            int key=GameSettings.KeyCode(token);
-            if(key>=48 && key<=57)return ((char)key).ToString();
-            switch(key) { case 1:return "Mouse 1";case 2:return "Mouse 2";case 4:return "Mouse 3";case 5:return "Mouse 4";case 6:return "Mouse 5";case 8:return "Backspace";case 13:return "Enter";case 16:return "Shift";case 17:return "Ctrl";case 18:return "Alt";case 134:return "Wheel up";case 135:return "Wheel down"; }
-            return key==0?token:((System.Windows.Forms.Keys)key).ToString();
-        }
-        void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) bindingButtons[i,j].Content=KeyName(keys[j]); } }
+        static string KeyName(string token) { return GameSettings.BindingLabel(token); }
+        void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
         public void DismissPrompt()
         {
-            overlay.Visibility=Visibility.Collapsed; overlay.Child=null; layout.IsEnabled=true;
+            Ui.Show(overlay,false); overlay.Child=null; layout.IsEnabled=true;
         }
         StackPanel Prompt(string title, string description)
         {
             var content=new StackPanel { VerticalAlignment=VerticalAlignment.Center, MaxWidth=560 };
             content.Children.Add(Text(title,22)); content.Children.Add(Text(description,14));
-            layout.IsEnabled=false; overlay.Child=content; overlay.Visibility=Visibility.Visible;
+            layout.IsEnabled=false; overlay.Child=content; Ui.Show(overlay,true);
             return content;
         }
         void Confirm(string title,string description,string label,Action accepted)
@@ -270,14 +280,47 @@ namespace TimeSplitters.Launcher
                 if(conflict>=0) Confirm("Move binding?","This key is assigned to "+GameSettings.Labels[conflict]+". Move it to "+GameSettings.Labels[action]+"?","Move binding",assign);
                 else assign();
             };
-            area.PreviewKeyDown+=(s,e)=> { if(e.Key==Key.Escape) { DismissPrompt(); bindingButtons[action,slot].Focus(); e.Handled=true; return; } Key key=e.Key==Key.System?e.SystemKey:e.Key; int vk=KeyInterop.VirtualKeyFromKey(key); if(vk==160||vk==161)vk=16; if(vk==162||vk==163)vk=17; if(vk==164||vk==165)vk=18; if(vk>0){e.Handled=true;accept(vk);} };
-            area.PreviewMouseDown+=(s,e)=> { e.Handled=true; accept(e.ChangedButton==MouseButton.Left?1:e.ChangedButton==MouseButton.Right?2:e.ChangedButton==MouseButton.Middle?4:e.ChangedButton==MouseButton.XButton1?5:6); };
-            area.PreviewMouseWheel+=(s,e)=> {e.Handled=true;accept(e.Delta>0?134:135);};
+            Ui.Capture(area,accept,()=> { DismissPrompt(); bindingButtons[action,slot].Focus(); });
             var buttons=new WrapPanel { Margin=new Thickness(0,12,0,0) }; content.Children.Add(buttons);
             var escape=Button("Bind Escape"); escape.Click+=(s,e)=>accept(27); buttons.Children.Add(escape);
             var clear=Button("Clear binding"); clear.Click+=(s,e)=>accept(0); buttons.Children.Add(clear);
             var cancel=Button("Cancel"); cancel.Click+=(s,e)=> { DismissPrompt(); bindingButtons[action,slot].Focus(); }; buttons.Children.Add(cancel);
-            area.Loaded+=(s,e)=>area.Focus(); area.Focus();
+            Ui.FocusWhenReady(area);
+        }
+        void ApplyPerformancePreset(int target)
+        {
+            if(model.SupportsPresentationTarget) presentation.SelectedIndex=target==144?2:target==120?1:0;
+            if(target==60) interpolation.SelectedItem="1";
+            pacing.SelectedItem="60";scale.SelectedItem="1";
+            fullscreen.IsChecked=true;vrr.IsChecked=true;fps.IsChecked=true;
+            refresh.SelectedItem=target>60 && supportedRefreshRates.Contains(target)?target+" Hz":"Current desktop rate";
+            UpdatePerformanceAdvice();
+            status.Text=target+" FPS setup selected. Save settings and restart the game to apply.";
+        }
+        void UpdatePerformanceAdvice()
+        {
+            if(vrr==null || scale==null) return;
+            int w,h,n;
+            bool original=Int32.TryParse(width.Text,out w) && Int32.TryParse(height.Text,out h) && w==0 && h==0;
+            scale.IsEnabled=original;
+            Int32.TryParse(Convert.ToString(scale.SelectedItem),out n);
+            int target=presentation.SelectedIndex==1?120:presentation.SelectedIndex==2?144:0;
+            int requested=refresh.SelectedIndex<=0?0:Int32.Parse(Convert.ToString(refresh.SelectedItem).Split(' ')[0]);
+            var notes=new System.Collections.Generic.List<string>();
+            notes.Add(!LauncherPlatform.CanSelectPresentationTarget ? "This native game uses the frame interpolation multiplier. Configure display refresh in System Settings → Displays; saved Windows presentation and refresh options are preserved." : "For steadier motion, start at 120 FPS. If it stays stable, try 144; use 60 to turn interpolation off. Game speed stays at 60 Hz.");
+            if(target>0 && model.SupportsPresentationTarget) {
+                if(!fullscreen.IsChecked.GetValueOrDefault()) notes.Add("Enable borderless fullscreen for the high-refresh presentation path.");
+                if(!vrr.IsChecked.GetValueOrDefault()) notes.Add("VRR is off: display synchronization can limit the extra frames. Enable it here and on a compatible monitor/driver.");
+                if(requested>0 && !supportedRefreshRates.Contains(requested)) notes.Add("The selected monitor rate is not reported by the primary display; the runtime only applies it if the game's display supports it.");
+                int effective=requested>0 && supportedRefreshRates.Contains(requested)?requested:desktopRefreshRate;
+                if(effective>0 && effective<target) notes.Add("The primary display is set for "+effective+" Hz with these settings, below the "+target+" FPS target. Select a supported higher rate or check "+LauncherPlatform.DisplaySettingsLocation+".");
+                if(Convert.ToString(pacing.SelectedItem)!="60" && Convert.ToString(pacing.SelectedItem)!="adaptive") notes.Add("Select a smoothness setup above to restore the required 60 Hz game pacing.");
+            }
+            if(original && n>1) notes.Add(n+"× console scale draws "+(n*n)+"× the scene pixels. Reduce it to 1 first if FPS drops.");
+            else if(!original) notes.Add("Your output resolution sets the scene size; console scale is inactive. Lower output resolution first if GPU load causes drops.");
+            else notes.Add("Console scale is already 1×. Try 120 instead of 144 if frame delivery remains uneven.");
+            notes.Add("Save and restart after changes. The FPS overlay separates game updates from shown frames; a high shown count alone does not prove smooth display timing.");
+            performanceAdvice.Text=String.Join("\n\n",notes);
         }
         void Save()
         {
@@ -291,7 +334,12 @@ namespace TimeSplitters.Launcher
                 model.VerticalFov=(int)Math.Round(fov.Value);
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
+                model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem); model.FrameCap=(string)pacing.SelectedItem; model.Interpolation=Int32.Parse((string)interpolation.SelectedItem);
+                if(model.SupportsPresentationTarget) {
+                    model.PresentationFps=presentation.SelectedIndex==1?120:presentation.SelectedIndex==2?144:0;
+                    model.RefreshRate=Convert.ToString(refresh.SelectedItem)=="Current desktop rate"?0:Int32.Parse(Convert.ToString(refresh.SelectedItem).Split(' ')[0]);
+                }
                 model.Save(); status.Foreground=Accent; status.Text="Settings saved. Changes apply on your next launch.";
                 if(Saved!=null)Saved();
             }

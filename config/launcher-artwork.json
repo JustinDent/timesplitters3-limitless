@@ -1,0 +1,9 @@
+{
+  "url": "https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/download/launcher-v1.2.18/TimeSplitters-Launcher-v1.2.18-windows-x64.zip",
+  "sha256": "44a814ad2fb8e81f618abc71e7430425b254677400758bc070b102e774c9117f",
+  "resources": {
+    "launcher-banner.png": "f318dac55d35da823386570c11f5cff9654e8b42963766eee54bc8a8dcd6e764",
+    "launcher-backdrop.png": "9b2d098a393ecb29ab8994524cd747ae2dcc7f028b4fa679a8af60094ae5328d",
+    "launcher-logo.png": "6f50234a380cd794fc9e82b2f1a204663c0bb741ea38fe57c2cc8f0a12aefed0"
+  }
+}

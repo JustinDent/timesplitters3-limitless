@@ -60,8 +60,10 @@ effects and UI; scene UV alignment, transparency, 1080p/4K/ultrawide modes,
 memory, fallback and stability. A full campaign playthrough is a separate check.
 
 Windows live-switch and loader checks do not prove Mac parity. The native Mac
-loader has existing synthetic GPU coverage, but the live-toggle adapter and
-real-art scene validation remain pending under
+common renderer links the shared mode policy and retains explicit-pack loading.
+The native input/settings toggle and real-art scene validation remain pending.
+Legacy GL accepts compressed replacements and falls back to originals for RGBA
+replacements. Platform validation is tracked under
 [MAC-011](../MAC_PORT_BACKLOG.md#mac-011--real-texture-pack-gameplay-coverage).
 
 See [the batch 188 audit](../STATUS.md#texture-overhaul-issue-74-correction-batch-188)

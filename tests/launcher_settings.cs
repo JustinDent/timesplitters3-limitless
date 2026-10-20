@@ -8,6 +8,29 @@ using TimeSplitters.Launcher;
 public static class LauncherSettingsChecks
 {
     static int count;
+    [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+    static extern int DwmGetWindowAttribute(IntPtr window,int attribute,out int value,int size);
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    static extern IntPtr SendMessage(IntPtr window,int message,IntPtr wp,IntPtr lp);
+    static void CheckTitleTheme()
+    {
+        bool dark=false;
+        var window=new System.Windows.Window { Width=320,Height=160,Title="Title bar theme regression",ShowInTaskbar=false };
+        WindowTheme.Attach(window,()=>dark);
+        try
+        {
+            var hwnd=new System.Windows.Interop.WindowInteropHelper(window).EnsureHandle();
+            int actual;
+            if(DwmGetWindowAttribute(hwnd,20,out actual,sizeof(int))<0)
+            { Console.WriteLine("SKIP: optional DWM theme attribute unavailable");return; }
+            Require(actual==0,"Initial title bar must use light mode");
+            dark=true;SendMessage(hwnd,0x001A,IntPtr.Zero,IntPtr.Zero);
+            Require(DwmGetWindowAttribute(hwnd,20,out actual,sizeof(int))>=0 && actual==1,"Settings change must select dark mode");
+            dark=false;SendMessage(hwnd,0x031A,IntPtr.Zero,IntPtr.Zero);
+            Require(DwmGetWindowAttribute(hwnd,20,out actual,sizeof(int))>=0 && actual==0,"Theme change must restore light mode");
+        }
+        finally { window.Close(); }
+    }
     static string temp;
     static void Require(bool condition, string message = "Settings assertion failed.") { if (!condition) throw new Exception(message); }
     static void Reject(Action action) { bool rejected=false; try { action(); } catch { rejected=true; } Require(rejected); }
@@ -53,12 +76,80 @@ public static class LauncherSettingsChecks
         Console.WriteLine("XMV_PLAY="+Environment.GetEnvironmentVariable("RECOMP_XMV_PLAY"));
         return 0;
     }
+    // Invoked only by the synthetic copy of this test binary in a disposable Bin.
+    public static int LaunchProbe()
+    {
+        Console.WriteLine("DIRECT_GAME_STARTED");
+        Console.WriteLine("CWD=" + Environment.CurrentDirectory);
+        foreach (string key in new[] { "RECOMP_GAME_DIR", "RECOMP_SAVE_DIR", "RECOMP_INPUT_CONFIG",
+            "RECOMP_FFMPEG_DIR", "RECOMP_DISPLAY_CONFIG", "TSFP_DISPLAY_CONFIG", "TSFP_ONLINE_SETTINGS",
+            "RECOMP_LOG_FILE", "RECOMP_MOUSE_SENSITIVITY", "RECOMP_MOUSE_INVERT_Y", "RECOMP_PC_MOUSE",
+            "RECOMP_XMV_PLAY", "RECOMP_UNWANTED", "TSFP_UNWANTED" })
+            Console.WriteLine(key + "=" + Environment.GetEnvironmentVariable(key));
+        Console.Error.WriteLine("synthetic game diagnostic");
+        return Int32.Parse(File.ReadAllText(Path.Combine(Environment.CurrentDirectory, "probe-exit.txt")));
+    }
+    static void PlayProbe(string root, int exitCode)
+    {
+        Directory.CreateDirectory(Path.Combine(root,"Bin"));
+        File.Copy(typeof(LauncherSettingsChecks).Assembly.Location,Path.Combine(root,"Bin/futureperfect_recomp.exe"));
+        Put(root,"Bin/probe-exit.txt",exitCode.ToString());
+        // Reproduce the reported restricted script operation if Play regresses
+        // to using PowerShell. No machine policy or personal settings are changed.
+        Put(root,"Launch.ps1","$ErrorActionPreference = 'Stop'\n" +
+            "$ExecutionContext.SessionState.LanguageMode = 'ConstrainedLanguage'\n" +
+            "$info = New-Object System.Diagnostics.ProcessStartInfo\nexit 23\n");
+        var settings = Directory.GetFiles(Path.Combine(root,"Settings"))
+            .ToDictionary(p=>p,p=>Convert.ToBase64String(File.ReadAllBytes(p)));
+        string oldRecomp=Environment.GetEnvironmentVariable("RECOMP_UNWANTED"),oldTsfp=Environment.GetEnvironmentVariable("TSFP_UNWANTED");
+        Environment.SetEnvironmentVariable("RECOMP_UNWANTED","must not inherit");
+        Environment.SetEnvironmentVariable("TSFP_UNWANTED","must not inherit");
+        try {
+            STA(()=>{
+                var ui=new LauncherWindow(root,true);
+                var dispatcher=System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                var previous=System.Threading.SynchronizationContext.Current;
+                var timer=new System.Windows.Threading.DispatcherTimer { Interval=TimeSpan.FromSeconds(15) };
+                var frame=new System.Windows.Threading.DispatcherFrame();bool timedOut=false;
+                try {
+                    System.Threading.SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(dispatcher));
+                    var task=ui.LaunchGame();
+                    timer.Tick+=(sender,args)=>{timedOut=true;frame.Continue=false;};timer.Start();
+                    task.ContinueWith(done=>dispatcher.BeginInvoke(new Action(()=>frame.Continue=false)));
+                    System.Windows.Threading.Dispatcher.PushFrame(frame);
+                    Require(!timedOut,"Play did not finish within 15 seconds.");task.GetAwaiter().GetResult();
+                    string expected=exitCode==0?"Game closed.":"The game closed unexpectedly. No crash dump was captured; session report saved - see Diagnostics.";
+                    string actual=((System.Windows.Controls.TextBlock)ui.Window.FindName("StatusText")).Text;
+                    Require(actual==expected,"Unexpected game exit status: "+actual+"\n"+(File.Exists(Path.Combine(root,".launcher/launcher.log"))?File.ReadAllText(Path.Combine(root,".launcher/launcher.log")):"No launcher log."));
+                } finally {timer.Stop();System.Threading.SynchronizationContext.SetSynchronizationContext(previous);ui.Window.Close();}
+            });
+        } finally {
+            Environment.SetEnvironmentVariable("RECOMP_UNWANTED",oldRecomp);
+            Environment.SetEnvironmentVariable("TSFP_UNWANTED",oldTsfp);
+        }
+        string output=File.ReadAllText(Directory.GetFiles(Path.Combine(root,"Logs"),"*.out").Single());
+        string errors=Directory.GetFiles(Path.Combine(root,"Logs"),"*.err").Single();
+        Require(output.Contains("DIRECT_GAME_STARTED") && output.Contains("CWD="+Path.Combine(root,"Bin")));
+        foreach(var pair in new[]{new[]{"RECOMP_GAME_DIR","Data"},new[]{"RECOMP_SAVE_DIR","Saves"},
+            new[]{"RECOMP_INPUT_CONFIG","Settings/pc-controls.json"},new[]{"RECOMP_FFMPEG_DIR","Bin"},
+            new[]{"RECOMP_DISPLAY_CONFIG","Settings/runtime.conf"},new[]{"TSFP_DISPLAY_CONFIG","Settings/pc-display.ini"},
+            new[]{"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"}})
+            Require(output.Contains(pair[0]+"="+Core.PathIn(root,pair[1])));
+        Require(output.Contains("RECOMP_LOG_FILE="+errors) && File.ReadAllText(errors).Contains("synthetic game diagnostic"));
+        if(exitCode!=0)Require(File.ReadAllText(Path.Combine(CrashReports.Folder(root,CrashReports.Latest(root)),"game-log-tail.txt")).Contains("synthetic game diagnostic"),"Unexpected-exit report must include a short buffered stderr diagnostic.");
+        Require(output.Contains("RECOMP_MOUSE_SENSITIVITY=0.37") && output.Contains("RECOMP_MOUSE_INVERT_Y=1") &&
+            output.Contains("RECOMP_PC_MOUSE=0") && output.Contains("RECOMP_XMV_PLAY=0"));
+        Require(output.Contains("RECOMP_UNWANTED=\r\n") && output.Contains("TSFP_UNWANTED=\r\n"));
+        Require(settings.Count==Directory.GetFiles(Path.Combine(root,"Settings")).Length);
+        foreach(var pair in settings)Require(Convert.ToBase64String(File.ReadAllBytes(pair.Key))==pair.Value);
+    }
     public static int Run()
     {
         temp=Path.Combine(Path.GetDirectoryName(typeof(LauncherSettingsChecks).Assembly.Location),"settings-tests-"+Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(temp);
         try
         {
+            Test("title bar follows initial theme and live setting changes",()=>STA(CheckTitleTheme));
             Test("published alpha.4 retains V1 resolution settings and rejects custom FOV atomically",()=>{
                 string root=Root("legacy-fov");Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.4\"}");
                 var model=GameSettings.Load(root,null);Require(!model.CanAdjustFov);
@@ -249,6 +340,42 @@ public static class LauncherSettingsChecks
                 Require(model.Sensitivity==.10 && model.Binding(14)[0]=="key:W" && !model.SkipStartupSplashes);
                 Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
             });
+            Test("Discord defaults, validation, persistence, launch routing and concurrent edits",()=>{
+                string root=Root("discord");var model=GameSettings.Load(root,null);
+                Require(!model.DiscordEnabled && model.DiscordApplicationId=="1561627743353962566");
+                model.DiscordEnabled=true;
+                foreach(string invalid in new[]{"", "bot-token", "+1561627743353962566", "01561627743353962566", "18446744073709551616", "1561627743353962566\n"}) {
+                    model.DiscordApplicationId=invalid;Reject(()=>model.Save());
+                    Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+                }
+                model.DiscordApplicationId="1561627743353962566";model.Save();
+                Require(Read(root,"Settings/pc-discord.ini")=="TSFP_DISCORD_V1 1 1561627743353962566\n");
+                Require(GameSettings.Load(root,null).DiscordEnabled);
+                Require(GameSettings.StartInfo(root).EnvironmentVariables["TSFP_DISCORD_CONFIG"]==Path.Combine(root,"Settings","pc-discord.ini"));
+                model=GameSettings.Load(root,null);model.DiscordEnabled=false;model.Save();
+                Require(!GameSettings.Load(root,null).DiscordEnabled && Read(root,"Settings/pc-discord.ini.bak").Contains("V1 1"));
+                model=GameSettings.Load(root,null);string before=Read(root,"Settings/pc-controls.json");
+                Put(root,"Settings/pc-discord.ini","TSFP_DISCORD_V1 1 1561627743353962566\n");
+                model.Sensitivity=.9;Reject(()=>model.Save());Require(Read(root,"Settings/pc-controls.json")==before);
+                Put(root,"Settings/pc-discord.ini","TSFP_DISCORD_V1 1 0\n");Reject(()=>GameSettings.Load(root,null));
+            });
+            Test("Discord settings UI saves and cancels without altering unrelated preferences",()=>STA(()=>{
+                string root=Root("discord-ui");var owner=new System.Windows.Window();
+                var editor=new SettingsPage(owner.Resources,root,true);editor.SelectTab(2);owner.Content=editor.View;
+                var nodes=Descendants(editor.View).ToList();
+                var enabled=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="DiscordPresenceEnabled");
+                var id=nodes.OfType<System.Windows.Controls.TextBox>().Single(c=>c.Name=="DiscordApplicationId");
+                Require(enabled.IsChecked==false && id.Text=="1561627743353962566");
+                enabled.IsChecked=true;id.Text="wrong";
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
+                Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+                id.Text="1561627743353962566";
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsCancelButton"));
+                Require(Directory.GetFiles(root,"*",SearchOption.AllDirectories).Length==0);
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
+                var saved=GameSettings.Load(root,null);Require(saved.DiscordEnabled && saved.Sensitivity==.10 && !saved.SkipStartupSplashes);
+                owner.Close();
+            }));
             Test("startup preference round-trips, preserves other launcher keys and can be disabled",()=>{
                 string root=Root("startup");var model=GameSettings.Load(root,null);model.Save();
                 var json=Json.Object(Read(root,"Settings/pc-controls.json"));
@@ -288,6 +415,96 @@ public static class LauncherSettingsChecks
                 Require(Read(root,"Settings/runtime.conf").Contains("# Keep this comment") && Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
                 Require(File.Exists(Path.Combine(root,"Settings/pc-controls.json.bak")));
             });
+            Test("120 and 144 FPS preserve guest pacing and legacy interpolation preferences",()=>{
+                string root=Root("presentation-fps");
+                Put(root,"Settings/runtime.conf","frame_interp = 2\nfuture_graphics = keep\n");
+                var model=GameSettings.Load(root,null);Require(model.PresentationFps==0);
+                foreach(int target in new[]{120,144,0}) {
+                    model.PresentationFps=target;model.Save();model=GameSettings.Load(root,null);
+                    Require(model.PresentationFps==target && model.Interpolation==2);
+                    Require(Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
+                }
+                model.PresentationFps=144;model.FrameCap="0";Reject(()=>model.Save());
+                model.FrameCap="30";Reject(()=>model.Save());
+                model.FrameCap="60";model.Save();Require(GameSettings.Load(root,null).FrameCap=="60");
+                model.PresentationFps=145;Reject(()=>model.Save());
+                model.PresentationFps=144;model.RefreshRate=120;model.Save();Require(GameSettings.Load(root,null).RefreshRate==120);
+                model.RefreshRate=144;model.Save();Require(GameSettings.Load(root,null).RefreshRate==144);
+                model.RefreshRate=60;Reject(()=>model.Save());
+            });
+            Test("presentation UI selects 144 FPS and restores legacy multiplier",()=>STA(()=>{
+                string root=Root("presentation-ui");var model=GameSettings.Load(root,null);
+                model.FrameCap="30";model.Interpolation=2;model.Save();
+                var owner=new System.Windows.Window();var page=new SettingsPage(owner.Resources,root,true);page.SelectTab(1);
+                var target=Descendants(page.View).OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PresentationTarget");
+                target.SelectedIndex=2;
+                var save=Descendants(page.View).OfType<System.Windows.Controls.Button>().Single(b=>Convert.ToString(b.Content)=="Save settings");
+                Click(save);model=GameSettings.Load(root,null);
+                Require(model.PresentationFps==144 && model.FrameCap=="60" && model.Interpolation==2);
+                target.SelectedIndex=0;Click(save);
+                Require(GameSettings.Load(root,null).PresentationFps==0);
+            }));
+            Test("older games keep legacy interpolation and cannot select unsupported targets",()=>STA(()=>{
+                string root=Root("old-presentation");Put(root,"BUILD.json","{\"version\":\"v0.3.0-alpha.2\"}");
+                var model=GameSettings.Load(root,null);Require(!model.SupportsPresentationTarget);
+                model.PresentationFps=144;Reject(()=>model.Save());model.PresentationFps=0;model.Interpolation=2;model.Save();
+                var owner=new System.Windows.Window();var page=new SettingsPage(owner.Resources,root,true);page.SelectTab(1);
+                Require(!Descendants(page.View).OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PresentationTarget").IsEnabled);
+                Put(root,"BUILD.json","{\"version\":\"v0.3.0-alpha.3\"}");Require(model.SupportsPresentationTarget);
+            }));
+            Test("smoothness setups coordinate pacing, refresh and quality only on Save",()=>STA(()=>{
+                string root=Root("performance-setups");var model=GameSettings.Load(root,null);
+                model.Vrr=false;model.Fullscreen=false;model.Scale=4;model.Interpolation=3;
+                model.FrameCap="30";model.Width=1920;model.Height=1080;model.Anisotropy=8;model.Save();
+                string before=Read(root,"Settings/runtime.conf");
+                var owner=new System.Windows.Window();var page=new SettingsPage(owner.Resources,root,true);page.SelectTab(1);
+                var nodes=Descendants(page.View).ToList();
+                var save=nodes.OfType<System.Windows.Controls.Button>().Single(b=>b.Name=="SettingsSaveButton");
+                var pacing=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="GameFramePacing");
+                var target=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PresentationTarget");
+                foreach(int rate in new[]{120,144,60}) {
+                    Click(nodes.OfType<System.Windows.Controls.Button>().Single(b=>b.Name=="PerformancePreset"+rate));
+                    Require(Read(root,"Settings/runtime.conf")==before);
+                    Require(pacing.IsEnabled==(rate==60));
+                    Click(save);model=GameSettings.Load(root,null);before=Read(root,"Settings/runtime.conf");
+                    Require(model.PresentationFps==(rate==60?0:rate) && model.FrameCap=="60");
+                    Require(model.Interpolation==(rate==60?1:3) && model.Vrr && model.Fullscreen && model.FpsOverlay && model.Scale==1);
+                    Require(model.Width==1920 && model.Height==1080 && model.Anisotropy==8);
+                    Require(model.RefreshRate==(rate>60 && DisplayModes.PrimaryRefreshRates().Contains(rate)?rate:0));
+                }
+                target.SelectedIndex=2;
+                Require(!pacing.IsEnabled);
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(b=>b.Name=="SettingsCancelButton"));
+                Require(Read(root,"Settings/runtime.conf")==before);
+            }));
+            Test("performance guidance tracks actual resolution, VRR and fullscreen choices",()=>STA(()=>{
+                string root=Root("performance-guidance");var model=GameSettings.Load(root,null);model.Scale=4;model.Save();
+                var owner=new System.Windows.Window();var page=new SettingsPage(owner.Resources,root,true);page.SelectTab(1);
+                var nodes=Descendants(page.View).ToList();
+                var advice=nodes.OfType<System.Windows.Controls.TextBlock>().Single(t=>t.Name=="PerformanceAdvice");
+                var scale=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="ConsoleRenderScale");
+                var resolution=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="OutputResolution");
+                Require(scale.IsEnabled && advice.Text.Contains("16× the scene pixels"));
+                resolution.SelectedItem=resolution.Items.OfType<DisplayMode>().First(m=>m.Width==1920 && m.Height==1080);
+                Require(!scale.IsEnabled && advice.Text.Contains("console scale is inactive"));
+                Require(Convert.ToString(scale.SelectedItem)=="4");
+                var target=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PresentationTarget");target.SelectedIndex=2;
+                var vrr=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="VariableRefreshRate");
+                var fullscreen=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="BorderlessFullscreen");
+                Require(vrr.IsChecked==true && fullscreen.IsChecked==true);
+                vrr.IsChecked=false;fullscreen.IsChecked=false;
+                Require(advice.Text.Contains("VRR is off") && advice.Text.Contains("Enable borderless fullscreen"));
+                vrr.IsChecked=true;fullscreen.IsChecked=true;
+                Require(!advice.Text.Contains("VRR is off") && !advice.Text.Contains("Enable borderless fullscreen"));
+                string preview=Environment.GetEnvironmentVariable("TSFP_PERFORMANCE_PREVIEW");
+                if(!String.IsNullOrEmpty(preview)) {
+                    page.View.Measure(new System.Windows.Size(1000,900));
+                    page.View.Arrange(new System.Windows.Rect(0,0,1000,900));page.View.UpdateLayout();
+                    var bitmap=new System.Windows.Media.Imaging.RenderTargetBitmap(1000,900,96,96,System.Windows.Media.PixelFormats.Pbgra32);bitmap.Render(page.View);
+                    var encoder=new System.Windows.Media.Imaging.PngBitmapEncoder();encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+                    using(var stream=File.Create(preview))encoder.Save(stream);
+                }
+            }));
             Test("conflicting key requires move and removes only that key",()=>{
                 var model=GameSettings.Load(Root("conflict"),null);Reject(()=>model.Assign(14,1,69,false));
                 model.Assign(14,1,69,true);Require(GameSettings.KeyCode(model.Binding(14)[1])==69);
@@ -321,6 +538,16 @@ public static class LauncherSettingsChecks
                 string root=Root("inherit");Put(root,"old.conf","frame_interp = 2\nfuture = untouched\n");
                 var model=GameSettings.Load(root,Path.Combine(root,"old.conf"));Require(model.Interpolation==2);model.Save();Require(Read(root,"old.conf")=="frame_interp = 2\nfuture = untouched\n");Require(Read(root,"Settings/runtime.conf").Contains("future = untouched"));
             });
+            foreach(bool configured in new[]{false,true}) foreach(int exitCode in new[]{0,7})
+            {
+                bool saved=configured;int expectedExit=exitCode;
+                Test("Play directly launches " + (saved?"configured":"fresh") + " installation, exit " + expectedExit,()=>{
+                    string root=Root("Play in folder with spaces "+saved+expectedExit);
+                    var model=GameSettings.Load(root,null);model.Sensitivity=.37;model.InvertY=true;model.MouseEnabled=false;model.SkipStartupSplashes=true;model.Save();
+                    if(!saved) {File.Delete(Path.Combine(root,"Settings/runtime.conf"));File.Delete(Path.Combine(root,"Settings/pc-display.ini"));}
+                    PlayProbe(root,expectedExit);
+                });
+            }
             Test("configured launch passes portable settings directly to runtime",()=>{
                 string root=Root("launch");var model=GameSettings.Load(root,null);model.Sensitivity=.25;model.Save();
                 string old=Environment.GetEnvironmentVariable("RECOMP_SETTINGS_TEST");Environment.SetEnvironmentVariable("RECOMP_SETTINGS_TEST","bad");

@@ -10,6 +10,7 @@ public static class FakeGame
     {
         Thread.Sleep(600);
         if (args.Length > 0 && args[0] == "fail") return 7;
+        if (args.Length > 0 && args[0] == "no-window") return 0;
         var app = new Application();
         var window = new Window { Title = "Synthetic launch lifecycle fixture", Width = 80,
             Height = 80, Left = -10000, Top = 0, ShowActivated = false };

@@ -2,6 +2,13 @@
    Settings sub_002CBFC0, and paused Options sub_002F5520. Original controls,
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
+#ifdef TSFP_PC_DISCORD
+#include "pc_discord_guest.h"
+#include "pc_guest_memory.h"
+#ifdef _WIN32
+#include "pc_network.h"
+#endif
+#endif
 #include "pc_display.h"
 #include "pc_cutscene.h"
 #ifndef _WIN32
@@ -100,7 +107,10 @@ static float gameplay_fov_scale(uint32_t caller)
     /* Only the two player-camera projections in sub_000CCAB0. Story camera
        sub_000C95E0, terminal views and scripted letterbox transitions retain
        their authored lens. Do not rewrite gameplay/weapon zoom state. */
-    if((caller!=0x000CCBEDu && caller!=0x000CDD35u) ||
+    /* Frontend scenes reuse a player camera and state 2. Match the signed
+       scene > 100 test in US sub_001CE9A0 to retain their authored lens. */
+    if((int32_t)WORD_AT(0x0079094Cu)>100 ||
+       (caller!=0x000CCBEDu && caller!=0x000CDD35u) ||
        (WORD_AT(0x007DE458u)&0x20000000u) ||
        (!WORD_AT(0x007490E8u) && phase>0.f) ||
        !guest_writable(actor,0x118) ||
@@ -111,8 +121,34 @@ static float gameplay_fov_scale(uint32_t caller)
     return pc_display_fov_scale();
 }
 
+#ifdef TSFP_PC_DISCORD
+static int discord_guest_read(void *context,uint32_t address,void *out,size_t bytes)
+{
+    uintptr_t host=(uintptr_t)address+g_xbox_mem_offset;
+    (void)context;
+    if(!address || bytes>UINT32_MAX-address || !pc_guest_memory(host,bytes,0)) return 0;
+    memcpy(out,(const void *)host,bytes);return 1;
+}
+#endif
+
 void pc_display_camera(void (*original)(void))
 {
+#ifdef TSFP_PC_DISCORD
+    /* Sample guest RAM on its own thread; publish only plain values to IPC. */
+    static ULONGLONG discord_sampled;
+    static PcDiscordGuestCache discord_cache;
+    ULONGLONG now=GetTickCount64();
+    if(now-discord_sampled>=1000) {
+        PcDiscordSnapshot sample;
+        int network=0;
+#ifdef _WIN32
+        double latency;unsigned peers;
+        network=pc_network_latency(&latency,&peers);
+#endif
+        pc_discord_sample(&sample,discord_guest_read,NULL,&discord_cache,network);
+        pc_discord_submit(&sample);discord_sampled=now;
+    }
+#endif
     static float last_factor;
     uint32_t player, matrix;
     float factor, zoom, fov_scale=gameplay_fov_scale(WORD_AT(g_esp));
@@ -136,8 +172,8 @@ void pc_display_camera(void (*original)(void))
         float *projection=(float *)((uintptr_t)matrix+g_xbox_mem_offset);
         float *horizontal=(float *)((uintptr_t)(player+0x380u)+g_xbox_mem_offset);
         float *vertical=(float *)((uintptr_t)(player+0x37cu)+g_xbox_mem_offset);
-        /* Fit the original cinematic aperture with the adaptive matte. Only
-         * widening the camera reveals beyond authored cutscene backdrops.
+        /* Fit the cinematic aperture; ultrawide crops vertically to fill.
+         * Widening past that aperture exposes authored backdrop edges.
          * Keep GPU projection and CPU culling in agreement on both axes. */
         projection[0]*=zoom/(factor*fov_scale);
         projection[5]*=zoom/fov_scale;
@@ -146,11 +182,23 @@ void pc_display_camera(void (*original)(void))
     }
 }
 
-void pc_display_decal_projection(void (*original)(void))
+void pc_display_perspective_projection(void (*original)(void))
 {
     const uint32_t caller=WORD_AT(g_esp), destination=WORD_AT(g_esp+4);
     uint32_t camera, matrix;
     original();
+    /* US sub_001B73F0 builds the first-person weapon lens; sub_002C44D0
+       rebuilds the character picker lens, including when models change.
+       Neither goes through pc_display_camera. Correct each freshly built
+       matrix, rather than copying the world camera's different FOV/zoom or
+       adjusting a retained matrix repeatedly while a new character loads. */
+    if(caller==0x001B7482u || caller==0x002C46EFu) {
+        if(guest_writable(destination,64)) {
+            float *projection=(float *)((uintptr_t)destination+g_xbox_mem_offset);
+            projection[0]/=pc_display_camera_factor();
+        }
+        return;
+    }
     /* These two US decal passes rebuild a perspective matrix with biased
        near/far planes instead of using the camera projection. Match the
        active camera's aperture, including widescreen and cinematic zoom,
@@ -237,6 +285,13 @@ static int mode_count, selected_mode, page, staged_fov, previous_fov;
 static uint32_t resolution_row, aspect_row;
 static ULONGLONG deadline;
 static char status[192];
+#ifdef _WIN32
+#include "pc_motion_settings.inc"
+static PcMotionSettings staged_motion;
+static uint32_t motion_fps_row,motion_refresh_row;
+static const int motion_fps_values[]={0,60,120,144};
+static const int motion_refresh_values[]={0,120,144};
+#endif
 /* Fixed backing storage survives transitions and renderer references. */
 #define TEXT_BYTES 192
 #define TEXT_ADDRESS(i) (storage+64u+(uint32_t)(i)*TEXT_BYTES)
@@ -251,7 +306,7 @@ static uint32_t text_at(int i,const char *format,...)
 static uint32_t guest_call(void (*fn)(void),unsigned count,...)
 {
     GuestRegisters r;
-    uint32_t args[9],result; unsigned i;
+    uint32_t args[12],result; unsigned i;
     va_list ap;
     save_registers(&r);
     va_start(ap,count); for(i=0;i<count;i++) args[i]=va_arg(ap,uint32_t); va_end(ap);
@@ -260,6 +315,203 @@ static uint32_t guest_call(void (*fn)(void),unsigned count,...)
     restore_registers(&r);
     return result;
 }
+#include "pc_profile_accept.inc"
+
+/* Recreate only a missing guest body using the same constructor as the
+ * original Arcade initializer. Keep the existing actor-list entry and scores;
+ * never run guest AI decisions or add a duplicate entry to 0x7A3580. */
+uint32_t pc_network_bots_revive(unsigned slot)
+{
+#ifdef _WIN32
+    extern void sub_000DAC30(void),sub_000D7570(void);
+    const uint32_t pool=WORD_AT(0x007356d8u);
+    const unsigned humans=*(uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
+    const unsigned bots=*(uint8_t *)((uintptr_t)0x007de402u+g_xbox_mem_offset);
+    uint32_t actor,entity,character,variant;
+    if(!humans || !bots || bots>10u || humans+bots>16u || slot<humans || slot>=humans+bots ||
+       !pool || WORD_AT(0x0076b140u)!=2u || WORD_AT(0x0076b1a4u)!=15u) return 0;
+    actor=pool+slot*0xea0u;
+    if(!guest_writable(actor,0xea0u) || WORD_AT(actor)) return 0;
+    character=*(uint8_t *)((uintptr_t)(0x007de414u+slot)+g_xbox_mem_offset);
+    variant=(uint32_t)(int32_t)*(int8_t *)((uintptr_t)(0x007de444u+slot)+g_xbox_mem_offset);
+    entity=guest_call(sub_000DAC30,10,character,character,(uint32_t)slot,
+        0u,0u,0u,0u,UINT32_MAX,1u,variant);
+    if(!entity || !guest_writable(entity,0x25cu) || WORD_AT(actor)!=entity) return 0;
+    WORD_AT(0x007a2d00u+(slot-humans)*4u)=entity;
+    guest_call(sub_000D7570,1,actor);
+    return entity;
+#else
+    (void)slot;return 0;
+#endif
+}
+void pc_network_bots_entity_refresh(uint32_t entity)
+{
+#ifdef _WIN32
+    extern void sub_0009FBE0(void);
+    if(guest_writable(entity,0x2e8u)) {
+        /* +32 is the transform MODE, not a dirty flag. +28 bit 0x1000
+           invalidates the cached rotation consumed by sub_000A14B0. */
+        WORD_AT(entity+0x28u)|=0x1000u;
+        guest_call(sub_0009FBE0,1,entity);
+    }
+#else
+    (void)entity;
+#endif
+}
+void pc_network_bots_present(uint32_t entity,const PcNetworkBotState *state)
+{
+#ifdef _WIN32
+    extern void sub_000966E0(void);
+    uint32_t model,speed,actor;unsigned hand;
+    const int32_t clip=state->clip;
+    int16_t next_index;
+    if(!guest_writable(entity,0x238u) || clip<0 || clip>4095 || state->next_clip<0 || state->next_clip>4095) return;
+    actor=WORD_AT(entity+0x7cu);
+    if(guest_writable(actor,0xea0u)) for(hand=0;hand<2u;hand++) {
+        uint32_t weapon=WORD_AT(actor+0x18cu+hand*0x130u);
+        if(guest_writable(weapon,0x2cu)) {
+            if(state->body_present && state->health>0.f && (state->entity_flags&1u)) WORD_AT(weapon+0x28u)|=1u;
+            else WORD_AT(weapon+0x28u)&=~1u;
+        }
+    }
+    if(!state->body_present) return;
+    model=WORD_AT(entity+4u);
+    if(!guest_writable(model,0x200u)) return;
+    if((int32_t)WORD_AT(model+0xd4u)!=clip) {
+        memcpy(&speed,state->clip_channels+11,4);
+        guest_call(sub_000966E0,3,model,(uint32_t)clip,speed);
+    }
+    memcpy((void *)((uintptr_t)(model+0xdcu)+g_xbox_mem_offset),state->clip_channels,72);
+    WORD_AT(model+0x124u)=state->clip_cycle;WORD_AT(model+0x128u)=state->clip_flags&~0xc00u;
+    /* The original character animator crossfades a second numeric clip block
+       into the first. Resolve its asset index locally; never copy host handles. */
+    next_index=*(int16_t *)((uintptr_t)(0x007e03c0u+(uint32_t)state->next_clip*2u)+g_xbox_mem_offset);
+    WORD_AT(model+0x12cu)=(uint32_t)state->next_clip;WORD_AT(model+0x130u)=(uint32_t)(int32_t)next_index;
+    memcpy((void *)((uintptr_t)(model+0x134u)+g_xbox_mem_offset),state->next_channels,72);
+    WORD_AT(model+0x17cu)=state->next_cycle;WORD_AT(model+0x180u)=state->next_flags&~0xc00u;
+    WORD_AT(model+0xa8u)=state->overlay_phase;
+    memcpy((void *)((uintptr_t)(model+0xacu)+g_xbox_mem_offset),state->overlay_channels,32);
+    memcpy((void *)((uintptr_t)(model+0x198u)+g_xbox_mem_offset),state->blend_channels,12);
+    /* 0xc00 carries pending root translation/rotation, already included in
+       the host's body transform. Do not apply it twice. Bone buffers belong
+       to the frame arena: evaluate in the normal animation pass, not here.
+       sub_00096C20 is lighting preparation, not skeleton evaluation. */
+#else
+    (void)entity;(void)state;
+#endif
+}
+void pc_network_bots_pose_weapons(uint32_t entity)
+{
+#ifdef _WIN32
+    extern void sub_001BE870(void);
+    float health;
+    if(!guest_writable(entity,0x2e8u)) return;
+    memcpy(&health,(void *)((uintptr_t)(entity+0x1ccu)+g_xbox_mem_offset),4);
+    if(health>0.f && (WORD_AT(entity+0x28u)&1u)) {
+        /* Only after the engine has allocated/evaluated this frame's bones. */
+        guest_call(sub_001BE870,2,entity,0u);
+        guest_call(sub_001BE870,2,entity,1u);
+    }
+#else
+    (void)entity;
+#endif
+}
+/* Send the original reliable hit request without predicting NPC health/death.
+   The normal serializer still checks local ownership of the damage source. */
+void pc_network_bots_request_hit(uint32_t context)
+{
+#ifdef _WIN32
+    extern void sub_0035C870(void);
+    if(guest_writable(context,0x58u)) guest_call(sub_0035C870,1,context);
+#else
+    (void)context;
+#endif
+}
+/* Announce only a confirmed increase in the host's victim score column.
+   Do not replay the damage/death routine: it mutates health, scores and models. */
+int pc_network_bots_kill_notice(unsigned victim,unsigned killer)
+{
+#ifdef _WIN32
+    extern void sub_000CF440(void);
+    uint32_t pool=WORD_AT(0x007356d8u),players=WORD_AT(0x007b0c48u),player,source;
+    unsigned humans=*(uint8_t *)((uintptr_t)0x007de400u+g_xbox_mem_offset);
+    if(killer>=humans || victim>=16u || killer==victim) return 1;
+    if(!guest_writable(pool,16u*0xea0u) || !guest_writable(players,humans*0x1584u)) return 0;
+    player=players+killer*0x1584u;
+    if((int32_t)WORD_AT(player+4u)<0) return 1; /* remote player's kill */
+    source=WORD_AT(player+0x14u);
+    if(!WORD_AT(player+8u) || !guest_writable(source,0x25cu) ||
+       WORD_AT(source+0x7cu)!=pool+killer*0xea0u) return 0;
+    /* The normal localized "You killed" HUD path uses the victim actor;
+       unlike the announcer it needs neither a corpse nor a damage context. */
+    guest_call(sub_000CF440,2,player,pool+victim*0xea0u);
+    return 1;
+#else
+    (void)victim;(void)killer;
+    return 1;
+#endif
+}
+void pc_network_bots_present_shot(uint32_t entity,const PcNetworkBotShot *shot)
+{
+#ifdef _WIN32
+    extern void sub_001BB5C0(void);
+    uint32_t actor,target,pool,previous_target,weapon,result;
+    if(!guest_writable(entity,0x25cu) || shot->hand>1u || shot->mode>1u || shot->flags>1u ||
+       shot->weapon<0 || shot->weapon>=66 || shot->target_slot>=16u ||
+       WORD_AT(0x0076b140u)!=2u || WORD_AT(0x0076b1a4u)!=15u) return;
+    actor=WORD_AT(entity+0x7cu);pool=WORD_AT(0x007356d8u);
+    if(!guest_writable(actor,0xea0u) || !guest_writable(pool,16u*0xea0u)) return;
+    target=WORD_AT(pool+shot->target_slot*0xea0u);
+    if(!guest_writable(target,0x25cu)) return;
+    weapon=actor+0xa4u+shot->hand*0x130u;
+    /* A late shot from the previous weapon must not use the new model. */
+    if(WORD_AT(weapon+0x30u)!=(uint32_t)shot->weapon ||
+       !guest_writable(WORD_AT(weapon+0xe8u),0x24u)) return;
+    previous_target=WORD_AT(actor+4u);WORD_AT(actor+4u)=target;
+    /* Preserve local model/owner handles at weapon + E8/EC. */
+    memcpy((void *)((uintptr_t)weapon+g_xbox_mem_offset),shot->transform,48);
+    memcpy((void *)((uintptr_t)(actor+0xb88u)+g_xbox_mem_offset),shot->aim,12);
+    memcpy((void *)((uintptr_t)(actor+0xbb4u)+g_xbox_mem_offset),shot->muzzle,12);
+    result=guest_call(sub_001BB5C0,4,entity,shot->hand,shot->mode,shot->flags);
+    WORD_AT(actor+4u)=previous_target;
+    {
+        static unsigned traces;
+        const char *path=getenv("TSFP_BOT_TRACE");
+        if(path && *path && traces<128u) {
+            char name[1024];FILE *log;
+            if(snprintf(name,sizeof name,"%s.shots",path)<(int)sizeof name) {
+                log=fopen(name,traces++?"a":"w");
+                if(log) {fprintf(log,"slot=%u serial=%u weapon=%d hand=%u mode=%u result=%u\n",
+                    WORD_AT(actor+8u),shot->serial,shot->weapon,shot->hand,shot->mode,result);fclose(log);}
+            }
+        }
+    }
+#else
+    (void)entity;(void)shot;
+#endif
+}
+void pc_network_bots_menu(void (*original)(void))
+{
+#ifdef _WIN32
+    const uint32_t mode=WORD_AT(0x0078AD2Cu);
+    const int host=WORD_AT(0x0076B108u) && WORD_AT(0x0076B140u)==1u &&
+        mode>=11u && mode<=13u;
+    /* Only the synchronous menu construction sees Arcade's setup mode. This
+       runs the title's own Bot Set row, dropdown, edit callback, positioning
+       and footer layout; the transport and installed callbacks stay original.
+       Restore the real mode before returning to the lobby or processing input. */
+    if(host) {
+        WORD_AT(0x0078AD2Cu)=9u;
+        _putenv_s("TSFP_NETWORK_BOTS","1");
+    }
+    original();
+    if(host) WORD_AT(0x0078AD2Cu)=mode;
+#else
+    original();
+#endif
+}
+#include "pc_quit_menu.inc"
+#include "pc_menu_mouse_guest.inc"
 #include "pc_display_ui.inc"
 #include "pc_tutorial_ui.inc"
 
@@ -269,6 +521,16 @@ static void row(int id,const char *label)
     guest_call(sub_00079D60_gen,6,text_at(id+1,"%s",label),(uint32_t)id,0u,0u,SELECT_CB,0u);
 }
 static void fov_label(void) { text_at(8,"Vertical FOV: %d",staged_fov); }
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
+static void menu_slider_fov_pointer(float x,float left,float width)
+{
+    unsigned value=pc_menu_slider_value(x,left,width,PC_FOV_MAX-PC_FOV_MIN);
+    if(page==0) {
+        staged_fov=PC_FOV_MIN+(int)value;
+        fov_label();
+    }
+}
+#endif
 static void fov_draw(void)
 {
     GuestRegisters r;
@@ -279,6 +541,11 @@ static void fov_draw(void)
         memcpy(bounds,(void *)((uintptr_t)rect+g_xbox_mem_offset),sizeof bounds);
         dark=guest_call(sub_00154FE0,2,0x11193c7fu,WORD_AT(menu+0xf4));
         light=guest_call(sub_00154FE0,2,0x69737f7fu,WORD_AT(menu+0xf4));
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
+        if(page==0)
+            menu_slider_capture(MENU_FOV,menu,WORD_AT(g_esp+8),
+                (float)(int)(bounds[2]-102.f),(float)(int)((bounds[1]+bounds[3]-8.f)*.5f),100.f,8.f);
+#endif
         /* Original sensitivity-slider painter, in the menu's logical units. */
         guest_call(sub_000814B0,9,bits((float)(staged_fov-PC_FOV_MIN)/(PC_FOV_MAX-PC_FOV_MIN)),
             (uint32_t)(int)(bounds[2]-102.f),(uint32_t)(int)((bounds[1]+bounds[3]-8.f)*.5f),
@@ -289,18 +556,8 @@ static void fov_draw(void)
 static void refresh(int next,int selected);
 static void filter_modes(void)
 {
-    unsigned long long best=~0ull;
-    mode_count=0;selected_mode=0;
-    for(int i=0;i<all_mode_count;i++) {
-        PcDisplayMode m=all_modes[i];
-        if(selected_aspect && pc_display_aspect(m)!=selected_aspect)continue;
-        unsigned mw=m.width?m.width:640,mh=m.height?m.height:480;
-        unsigned sw=staged.width?staged.width:640,sh=staged.height?staged.height:480;
-        unsigned long long score=(unsigned long long)abs((int)mh-(int)sh)*10000+abs((int)mw-(int)sw);
-        if(m.width==staged.width && m.height==staged.height)score=0;
-        if(score<best){best=score;selected_mode=mode_count;}
-        modes[mode_count++]=m;
-    }
+    mode_count=pc_display_filter_modes(all_modes,all_mode_count,selected_aspect,
+        staged,modes,PC_DISPLAY_MODE_CAPACITY,&selected_mode);
     if(mode_count)staged=modes[selected_mode];
 }
 static void labels(void)
@@ -329,9 +586,34 @@ static void labels(void)
         fov_label();
         guest_call(sub_00079D60_gen,6,TEXT_ADDRESS(8),2u,0x400u,0u,0u,FOV_DRAW_CB);
         guest_call(sub_00079710,1,1u);
-        row(3,"Apply settings"); row(4,"Reset FOV to 55"); row(5,"Back");
+        row(3,"Apply settings"); row(4,"Reset FOV to 55");
+#ifdef _WIN32
+        guest_call(sub_00079D60_gen,6,text_at(9,"Smoothness / refresh"),6u,0u,0u,SELECT_CB,0u);
+#endif
+        row(5,"Back");
     } else if(page==1) { row(0,"Keep resolution"); row(1,"Revert"); }
-    else row(0,"Back");
+#ifdef _WIN32
+    else if(page==3) {
+        const char *fps_labels[]={"Keep current", "60 FPS (original)","120 FPS (experimental)","144 FPS (experimental)"};
+        const char *hz_labels[]={"Desktop rate","120 Hz if supported","144 Hz if supported"};
+        motion_fps_row=guest_call(sub_00079D60_gen,6,text_at(7,"Motion"),0u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        for(int i=0;i<4;i++)guest_call(sub_000717D0,1,text_at(12+i,"%s",fps_labels[i]));
+        for(int i=0;i<4;i++)if(motion_fps_values[i]==staged_motion.fps)guest_call(sub_00075430,2,motion_fps_row,(uint32_t)i);
+        motion_refresh_row=guest_call(sub_00079D60_gen,6,text_at(8,"Monitor refresh"),1u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0x8400u,0u);
+        for(int i=0;i<3;i++)guest_call(sub_000717D0,1,text_at(16+i,"%s",hz_labels[i]));
+        for(int i=0;i<3;i++)if(motion_refresh_values[i]==staged_motion.refresh)guest_call(sub_00075430,2,motion_refresh_row,(uint32_t)i);
+        row(2,"Save for next launch");row(3,"Back (discard changes)");
+    }
+#endif
+    else {
+#ifdef _WIN32
+        /* Long feedback does not fit the original narrow page-header region. */
+        guest_call(sub_00079D60_gen,6,text_at(10,"%s",status),1u,0u,0u,SELECT_CB,0u);
+#endif
+        row(0,"Back");
+    }
 }
 static void read_resolution(void)
 {
@@ -344,7 +626,17 @@ static void build_menu(void)
 {
     GuestRegisters r; uint32_t menu=WORD_AT(g_esp+4);
     save_registers(&r); current_menu=menu;
-    guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",page?status:"Display settings"),bits(55.f),0u,BACK_CB);
+    /* The builder uses a 0..100 percentage canvas (sub_000771D0 centres
+       at (100-width)/2), not the painter's 640-unit coordinates. Reserve
+       75% for label + longest resolution + arrows without clipping rows.
+       Resolution confirmation keeps its original 55% width. */
+    const char *title=page?status:"Display settings";
+    float width=page==0 || page==3?75.f:55.f;
+#ifdef _WIN32
+    if(page==3)title="Smoothness";
+    if(page==2){title="Display settings";width=75.f;}
+#endif
+    guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",title),bits(width),0u,BACK_CB);
     guest_call(sub_00071B10,4,1u,bits(2.f),1u,1u);
     guest_call(sub_00071C50,1,0x26200u);
     labels(); guest_call(sub_000771D0,1,menu);
@@ -362,6 +654,16 @@ static void refresh(int next,int selected)
         guest_call(sub_00075430,2,aspect_row,(uint32_t)selected_aspect);
         guest_call(sub_00075430,2,resolution_row,(uint32_t)selected_mode);
     }
+#ifdef _WIN32
+    if(page==3 && motion_fps_row && motion_refresh_row) {
+        /* These IDs also belonged to aspect/resolution on the previous page.
+           Restore the saved motion choices after the guest restores old IDs. */
+        for(int i=0;i<4;i++)if(motion_fps_values[i]==staged_motion.fps)
+            guest_call(sub_00075430,2,motion_fps_row,(uint32_t)i);
+        for(int i=0;i<3;i++)if(motion_refresh_values[i]==staged_motion.refresh)
+            guest_call(sub_00075430,2,motion_refresh_row,(uint32_t)i);
+    }
+#endif
     guest_call(sub_000770E0,2,current_menu,(uint32_t)selected);
 }
 static void leave(void)
@@ -413,13 +715,36 @@ static void select_callback(void)
                 snprintf(status,sizeof status,"Cannot apply"); refresh(2,0);
             }
         } else if(selected==4) { staged_fov=PC_FOV_DEFAULT; fov_label(); }
+#ifdef _WIN32
+        else if(selected==6) {
+            if(pc_motion_load(&staged_motion)) { snprintf(status,sizeof status,"Smoothness - restart required");refresh(3,0); }
+            else { snprintf(status,sizeof status,"Cannot read performance settings");refresh(2,0); }
+        }
+#endif
         else if(selected==5) leave();
     } else if(page==1) {
         if(selected==0) {
             if(pc_display_save()) { deadline=0; refresh(0,0); }
             else { revert(); if(!deadline) { snprintf(status,sizeof status,"Save failed"); refresh(2,0); } }
         } else revert();
-    } else refresh(0,0);
+    }
+#ifdef _WIN32
+    else if(page==3) {
+        if(selected==2) {
+            unsigned f=WORD_AT(motion_fps_row+0xc8),h=WORD_AT(motion_refresh_row+0xc8);
+            if(f<4 && h<3) {
+                staged_motion.fps=motion_fps_values[f];staged_motion.refresh=motion_refresh_values[h];
+                int saved=pc_motion_save(staged_motion);
+                const char *override=getenv("RECOMP_FRAME_TARGET");
+                snprintf(status,sizeof status,saved?
+                    (override && *override?"Saved - restart without FPS override":"Saved - restart game to apply"):
+                    "Save failed - settings unchanged");
+                refresh(2,0);
+            }
+        } else if(selected==3)refresh(0,0);
+    }
+#endif
+    else refresh(0,0);
     restore_registers(&r); g_esp+=4;
 }
 static void tick_menu(void)
@@ -470,6 +795,16 @@ static void activate(void)
 }
 #ifdef _WIN32
 extern void sub_001A0A60(void);
+/* Indirect editor callbacks run after the constructor has returned. Give
+   those callbacks the same Arcade Custom rules (including custom bot sets),
+   with the network mode restored at every callback boundary. */
+extern void sub_002C2C20(void),sub_002C0490(void),sub_002C19F0(void);
+extern void sub_002C1570(void),sub_002C1490(void);
+static void network_bots_build(void) { pc_network_bots_menu(sub_002C2C20); }
+static void network_bots_tick(void) { pc_network_bots_menu(sub_002C0490); }
+static void network_bots_list(void) { pc_network_bots_menu(sub_002C19F0); }
+static void network_bots_list_tick(void) { pc_network_bots_menu(sub_002C1570); }
+static void network_bots_item_draw(void) { pc_network_bots_menu(sub_002C1490); }
 static void system_link_activate(void)
 {
     GuestRegisters r; save_registers(&r);
@@ -494,8 +829,19 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
     case SELECT_CB: return select_callback;
     case BACK_CB: return back_callback;
     case FOV_DRAW_CB: return fov_draw;
+#if defined(_WIN32) || defined(TSFP_NATIVE_DISPLAY)
+    case QUIT_OPEN_CB: return quit_open;
+    case QUIT_BUILD_CB: return quit_build;
+    case QUIT_SELECT_CB: return quit_select;
+    case QUIT_BACK_CB: return quit_back;
+#endif
 #ifdef _WIN32
     case 0x1200du: return online_activate;
+    case 0x002C2C20u: return network_bots_build;
+    case 0x002C0490u: return network_bots_tick;
+    case 0x002C19F0u: return network_bots_list;
+    case 0x002C1570u: return network_bots_list_tick;
+    case 0x002C1490u: return network_bots_item_draw;
     /* Any remaining indirect reference to the retired Live entry uses Online. */
     case 0x001CC050u: return online_activate;
     /* System Link is reached through the title's indirect menu table. Online

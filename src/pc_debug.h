@@ -9,9 +9,54 @@ typedef void *HWND;
 
 #define PC_DEBUG_COMMAND 0x7e21
 #define PC_DEBUG_TIMER 0x7e30
+enum { PC_DEBUG_CAP_NETWORK=1u };
+typedef enum PcDebugOptionId {
+#define PC_DEBUG_OPTION(id,field,label,caps) PC_DEBUG_OPTION_##id,
+#include "pc_debug_options.def"
+#undef PC_DEBUG_OPTION
+    PC_DEBUG_OPTION_COUNT
+} PcDebugOptionId;
 typedef struct PcDebugOptions {
-    int show_fps, show_frame_time, show_issues, log_performance, show_latency;
+#define PC_DEBUG_OPTION(id,field,label,caps) int field;
+#include "pc_debug_options.def"
+#undef PC_DEBUG_OPTION
 } PcDebugOptions;
+typedef struct PcDebugOption {
+    const char *key,*label;
+    unsigned capabilities;
+    size_t offset;
+} PcDebugOption;
+static inline const PcDebugOption *pc_debug_option(unsigned index)
+{
+    static const PcDebugOption definitions[]={
+#define PC_DEBUG_OPTION(id,field,label,caps) {#field,label,caps,offsetof(PcDebugOptions,field)},
+#include "pc_debug_options.def"
+#undef PC_DEBUG_OPTION
+    };
+    return index<PC_DEBUG_OPTION_COUNT?&definitions[index]:NULL;
+}
+static inline int pc_debug_option_available(unsigned index,unsigned capabilities)
+{
+    const PcDebugOption *option=pc_debug_option(index);
+    return option && (option->capabilities & capabilities)==option->capabilities;
+}
+static inline unsigned pc_debug_option_count(unsigned capabilities)
+{
+    unsigned count=0;
+    for(unsigned i=0;i<PC_DEBUG_OPTION_COUNT;i++)
+        count+=pc_debug_option_available(i,capabilities)!=0;
+    return count;
+}
+static inline int pc_debug_option_value(const PcDebugOptions *values,unsigned index)
+{
+    const PcDebugOption *option=pc_debug_option(index);
+    return option?!!*(const int *)((const char *)values+option->offset):0;
+}
+static inline void pc_debug_option_set(PcDebugOptions *values,unsigned index,int value)
+{
+    const PcDebugOption *option=pc_debug_option(index);
+    if(option)*(int *)((char *)values+option->offset)=!!value;
+}
 typedef struct PcDebugSnapshot {
     double fps, shown_fps, frame_ms;
     unsigned long errors, warnings, slow_frames;

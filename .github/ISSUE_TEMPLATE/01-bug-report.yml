@@ -7,56 +7,77 @@ body:
     attributes:
       value: |
         Tell us what went wrong. Check [existing reports](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues) first.
-        Not sure about a version? Choose **I don't know**. If you choose **Other**, add your version in the description below.
-  - type: dropdown
+        Enter the versions you have installed. If you cannot find one, type **I don't know** rather than guessing.
+  - type: markdown
+    attributes:
+      value: |
+        <details>
+        <summary>Published versions (reference only)</summary>
+
+        **Game releases**
+
+        <!-- BEGIN AUTO GAME VERSIONS -->
+        - `v0.3.0-alpha.2`
+        - `v0.3.0-alpha.1`
+        - `v0.2.0-alpha.6`
+        - `v0.2.0-alpha.5`
+        - `v0.2.0-alpha.4`
+        - `v0.2.0-alpha.3`
+        - `v0.2.0-alpha.2`
+        - `v0.1.0-alpha.1`
+        <!-- END AUTO GAME VERSIONS -->
+
+        **Launcher releases**
+
+        <!-- BEGIN AUTO LAUNCHER VERSIONS -->
+        - `v1.2.19`
+        - `v1.2.18`
+        - `v1.2.17`
+        - `v1.2.16`
+        - `v1.2.15`
+        - `v1.2.14`
+        - `v1.2.13`
+        - `v1.2.12`
+        - `v1.2.11`
+        - `v1.2.10`
+        - `v1.2.9`
+        - `v1.2.8`
+        - `v1.2.7`
+        - `v1.2.6`
+        - `v1.2.5`
+        - `v1.2.4`
+        - `v1.2.3`
+        - `v1.2.2`
+        - `v1.2.1`
+        - `v1.2.0`
+        - `v1.1.2`
+        - `v1.1.1`
+        - `v1.1.0`
+        <!-- END AUTO LAUNCHER VERSIONS -->
+
+        </details>
+  - type: input
     id: game-version
     attributes:
       label: Game version
-      description: Shown as the installed game version in the launcher. Pick the one you have, not an available update.
-      options:
-        # BEGIN AUTO GAME VERSIONS
-        - "v0.2.0-alpha.4"
-        - "v0.2.0-alpha.3"
-        - "v0.2.0-alpha.2"
-        - "v0.1.0-alpha.1"
-        # END AUTO GAME VERSIONS
-        - "Other / source build"
-        - "I don't know"
-        - "Not installed yet"
+      description: Copy the installed game version from the launcher. If none is installed, enter Not installed yet.
+      placeholder: Enter your installed game version, or I don't know
     validations:
       required: true
-  - type: dropdown
+  - type: input
     id: launcher-version
     attributes:
       label: Launcher version
-      description: Look for LAUNCHER v... at the top of the launcher window.
-      options:
-        # BEGIN AUTO LAUNCHER VERSIONS
-        - "v1.2.6"
-        - "v1.2.5"
-        - "v1.2.4"
-        - "v1.2.3"
-        - "v1.2.2"
-        - "v1.2.1"
-        - "v1.2.0"
-        - "v1.1.2"
-        - "v1.1.1"
-        - "v1.1.0"
-        # END AUTO LAUNCHER VERSIONS
-        - "Other / custom build"
-        - "I don't know"
-        - "Not using the launcher"
+      description: Copy LAUNCHER v... from the top of the launcher window. If you do not use it, enter Not using the launcher.
+      placeholder: Enter your launcher version, or I don't know
     validations:
       required: true
-  - type: dropdown
+  - type: input
     id: platform
     attributes:
       label: Platform
-      options:
-        - Windows 11
-        - Windows 10
-        - macOS
-        - Other / not sure
+      description: Enter your operating system, such as Windows 11, Windows 10, or macOS.
+      placeholder: Enter your operating system
     validations:
       required: true
   - type: textarea
@@ -83,3 +104,10 @@ body:
     attributes:
       label: Anything else? (optional)
       description: Attach a screenshot, video, or log if you have one. View logs in the launcher opens its log folder. You can also mention your graphics card, settings, or how often it happens. Remove personal information and do not upload game files or saves.
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Launcher diagnostics (optional)
+      description: Open Diagnostics in the launcher and choose Report a bug or Request enhancement. If the launcher copied a longer report, paste the complete report here. Review before submitting; do not include private paths, raw logs, game files or saves.
+      placeholder: Paste the filtered diagnostic report from the launcher here.
+      render: text

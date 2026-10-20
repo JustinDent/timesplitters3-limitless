@@ -1,0 +1,28 @@
+name: Issue resolution tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/issue-resolution.yml
+      - .github/workflows/issue-resolution-comments.yml
+      - tools/issue-resolution.py
+      - tests/test_issue_resolution.py
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Issue resolution tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests -p test_issue_resolution.py -v

@@ -27,3 +27,11 @@ def test_runtime_declarations_invalidate_generated_wrappers(tmp_path):
     assert generation.current(tmp_path)
     source.unlink()
     assert not generation.current(tmp_path)
+    generation.record(tmp_path)
+    symbols = tmp_path / 'config/extra_symbols/45410066.json'
+    symbols.parent.mkdir(parents=True)
+    symbols.write_text('{"symbols": []}')
+    assert not generation.current(tmp_path)
+    generation.record(tmp_path)
+    symbols.write_text('{"symbols": [{"name": "XMVPlaybackStop"}]}')
+    assert not generation.current(tmp_path)

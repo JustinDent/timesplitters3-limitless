@@ -19,6 +19,8 @@ xbox_kernel.log
 /config/pc-controls.json
 /config/pc-display.ini
 /config/pc-online.json
+/config/pc-discord.ini
+/config/pc-discord.ini.bak
 
 # Packaged builds and local credentials are never source uploads.
 *.zip
@@ -30,3 +32,6 @@ xbox_kernel.log
 *.obj
 .env
 .env.*
+
+# Native launcher state in a development checkout.
+/.launcher/
