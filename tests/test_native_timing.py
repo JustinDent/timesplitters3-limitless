@@ -61,7 +61,7 @@ def test_native_update_statistics():
 
 
 def test_gameplay_checks_reject_frozen_opening():
-    from high_refresh_game import gameplay_checks
+    from native_refresh_game import gameplay_checks
     frozen=[dict(seconds=t,position=[1,2,3],
                  hand=dict(clip=836,time=[1.14885,1.14885])) for t in (86,90,100,110)]
     assert not any(gameplay_checks(frozen).values())
@@ -85,7 +85,7 @@ def test_gameplay_checks_reject_frozen_opening():
 
 
 def test_opening_handoff_rejects_unarmed_natural_intro():
-    from high_refresh_game import opening_firearm_check
+    from native_refresh_game import opening_firearm_check
     assert opening_firearm_check([])=={}
     samples=[dict(seconds=157.6,equipped=[0xffffffff,0xffffffff]),
              dict(seconds=180.6,equipped=[0xffffffff,37])]
@@ -94,7 +94,7 @@ def test_opening_handoff_rejects_unarmed_natural_intro():
     assert opening_firearm_check(samples)==dict(opening_firearm_equipped_at_end=False)
     samples[-1]['equipped'][1]=14
     assert opening_firearm_check(samples)==dict(opening_firearm_equipped_at_end=True)
-    from high_refresh_game import gameplay_checks
+    from native_refresh_game import gameplay_checks
     late=[dict(seconds=t,position=[t,0,0],equipped=[0xffffffff,weapon],
                hand=dict(clip=t,time=[.2,.1]))
           for t,weapon in [(50,37),(86,37),(95,14),(115,14)]]
@@ -104,6 +104,16 @@ def test_opening_handoff_rejects_unarmed_natural_intro():
     assert not checks['opening_firearm_equipped']
     assert not all(checks.values())
 
+
+def test_native_presents_require_real_guest_frames():
+    from native_refresh_game import native_present_checks
+    assert not any(native_present_checks('').values())
+    valid='[PRESENT] backend=d3d11 total=3000 guest=3000 interpolated=0 other=0 skipped=0 failed=0'
+    assert all(native_present_checks(valid).values())
+    mixed=valid.replace('guest=3000','guest=2999').replace('interpolated=0','interpolated=1')
+    assert not native_present_checks(valid+'\n'+mixed)['interpolation_disabled']
+    assert not native_present_checks(valid.replace('failed=0','failed=1'))['present_failures_absent']
+    assert not native_present_checks(valid.replace('3000','0'))['guest_presents_observed']
 
 @pytest.mark.parametrize('harness_name,ranges', [
     ('native_script_events.c', [(0x228870,0x228b35),(0x218910,0x218aa6),

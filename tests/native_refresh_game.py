@@ -1,12 +1,13 @@
-"""Bounded opt-in Windows interpolation test; uses only disposable Test Lab data.
+"""Bounded Windows native-update test; uses only disposable Test Lab data.
 
 CPU submission times do not prove monitor scanout or perceptual smoothness.
---capture retains at most 24 interpolation BMPs for motion/fidelity review.
+--capture retains bounded guest-frame BMPs for motion/fidelity review.
 """
 import argparse
 import ctypes
 import hashlib
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -16,6 +17,16 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 from testing_profile import XBE_SHA256, prepare_run, recycle_disks, check_fixture
+
+
+def native_present_checks(text):
+    reports=[tuple(map(int,m)) for m in re.findall(
+        r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) interpolated=(\d+) '
+        r'other=(\d+) skipped=(\d+) failed=(\d+)',text)]
+    return dict(guest_presents_observed=any(r[1]>0 for r in reports),
+                interpolation_disabled=bool(reports) and
+                    all(r[0]==r[1] and r[2]==r[3]==0 for r in reports),
+                present_failures_absent=bool(reports) and all(r[5]==0 for r in reports))
 
 
 def gameplay_checks(samples):
@@ -67,13 +78,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--fps', type=int, choices=(60, 120, 144), required=True)
     parser.add_argument('--native', action='store_true',
-                        help='test fresh game updates instead of interpolated presentation')
+                        help='test native updates; omit for the original 60 FPS reference')
+    parser.add_argument('--label', default='', help='optional evidence label (letters, digits and hyphens)')
     parser.add_argument('--capture', action='store_true')
-    parser.add_argument('--capture-from', type=int, default=4500,
-                        help='first guest frame to capture (late gameplay by default)')
     parser.add_argument('--stress', action='store_true',
                         help='replay walking, firing and camera turns after the intro')
-    parser.add_argument('--legacy-projection-only', action='store_true')
     parser.add_argument('--pause-check', action='store_true')
     parser.add_argument('--no-intro-skip', action='store_true',
                         help='let the opening cinematic finish naturally for timing diagnosis')
@@ -89,17 +98,22 @@ def main():
     parser.add_argument('--seconds', type=int, choices=range(60,601), default=90)
     parser.add_argument('--windowed', action='store_true')
     args = parser.parse_args()
+    if not args.native and args.fps!=60:
+        parser.error('The original timing reference is fixed at 60 FPS; use --native for 120/144.')
+    if args.label and not re.fullmatch(r'[a-zA-Z0-9-]{1,32}',args.label):
+        parser.error('--label must contain 1-32 letters, digits or hyphens')
     runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     if os.name != 'nt': parser.error('Windows only')
     assert hashlib.sha256((ROOT / 'private/game/default.xbe').read_bytes()).hexdigest() == XBE_SHA256
     run = ROOT / 'private/test-saves/high-refresh'
     env = prepare_run(ROOT, run)
-    tag = ('native-' if args.native else '') + str(args.fps) + ('-projection-only' if args.legacy_projection_only else '')
+    tag = ('native-' if args.native else '') + str(args.fps)
     if args.no_intro_skip: tag += '-natural-intro'
     if args.trace_handoff: tag += '-handoff'
     if args.trace_handoff and args.handoff_watch!='equipped': tag += '-'+args.handoff_watch
     if args.resources: tag += '-stability'
-    (run / 'runtime.ini').write_text(f'frame_target = {args.fps if args.fps > 60 else 0}\nframe_interp = 1\nframe_cap = 60\nfps_overlay = 1\nfullscreen = {int(not args.windowed)}\nvrr = 1\n')
+    if args.label: tag += '-'+args.label
+    (run / 'runtime.ini').write_text(f'frame_target = 0\nframe_interp = 1\nframe_cap = 60\nfps_overlay = 1\nfullscreen = {int(not args.windowed)}\nvrr = 1\n')
     (run / 'display.ini').write_text('TSFP_DISPLAY_V1 1280 720\n')
     sequence = [(5000, 69), (10000, 69), (14000, 40), (18000, 69),
                 (22000, 69), (26000, 69), (30000, 69), (34000, 69)]
@@ -119,8 +133,7 @@ def main():
     assert len(events)<=256, 'PC replay hook accepts at most 256 events'
     (run / 'input.txt').write_text('\n'.join(f'{at} {event}' for at,event in sorted(events))+'\n')
     env.update(TSFP_PC_INPUT_REPLAY=str(run / 'input.txt'), RECOMP_WINDOW_BACKGROUND='1' if args.windowed else '0',
-               RECOMP_PC_MOUSE='1', RECOMP_INTERP_TRACE=str(run / (tag+'.csv')),
-               RECOMP_INTERP_DEBUG='1', RECOMP_FPS='5', TSFP_PC_INPUT_STATE=str(run / 'state.txt'))
+               RECOMP_PC_MOUSE='1', RECOMP_FPS='5', TSFP_PC_INPUT_STATE=str(run / 'state.txt'))
     if args.native:
         env.update(TSFP_NATIVE_FPS=str(args.fps), RECOMP_FRAME_TARGET='0', RECOMP_FRAME_INTERP='1',
                    TSFP_NATIVE_TRACE=str(run / (tag+'-frames.csv')))
@@ -139,18 +152,16 @@ def main():
     if args.profile: env.update(RECOMP_WAIT_LOG='1',RECOMP_WAIT_PROFILE='1',
         RECOMP_SAMPLE='200',RECOMP_SAMPLE_REPORT='10',RECOMP_SAMPLE_DEPTH='8',
         RECOMP_SAMPLE_DUMP=str(run/(tag+'-sample.txt')))
-    if args.legacy_projection_only: env['RECOMP_INTERP_AFFINE'] = 'none'
-    if args.capture and (args.native or args.fps==60):
+    if args.capture:
         env.update(RECOMP_HLE_D3D8_DUMP=str(run / (tag+'-frame')),
                    RECOMP_HLE_D3D8_DUMP_EVERY=str(args.fps*5), RECOMP_HLE_D3D8_DUMP_KEEP_LAST='3')
-    elif args.capture:
-        env.update(RECOMP_INTERP_DUMP=str(run / tag), RECOMP_INTERP_DUMP_FROM=str(args.capture_from))
     lock = run / 'run.lock'
     with lock.open('x') as marker: marker.write(str(os.getpid()))
     process = None
     profiler = None
     threads = []
     states=[];resources=[];native_samples=[];game_samples=[];completed=False
+    terminated_by_runner=False
     def drain(pipe, path):
         with path.open('wb') as output:
             remaining = 4 * 1024 * 1024
@@ -300,6 +311,7 @@ def main():
         if args.resources:(run/(tag+'-resources.json')).write_text(json.dumps(resources,indent=2))
     finally:
         if process is not None and process.poll() is None:
+            terminated_by_runner=True
             process.terminate(); process.wait(timeout=10)
         if profiler is not None and profiler.poll() is None:
             try: profiler.wait(timeout=10)
@@ -312,8 +324,7 @@ def main():
         checks=dict(no_crash='[CRASH]' not in text,
                     story=any(scene==2 and not flags&0x20000000 for _,scene,flags,_ in states))
         if args.native:
-            checks.update(native_hook='[NATIVE-TIMING]' in text,
-                          interpolation_disabled='[INTERP] disabled for native game updates' in text)
+            checks.update(native_hook='[NATIVE-TIMING]' in text,**native_present_checks(text))
             (run/(tag+'-timing.json')).write_text(json.dumps(native_samples,indent=2))
         if args.pause_check:
             checks.update(paused=any(80.5<t<82.5 and pause for t,_,_,pause in states),
@@ -323,6 +334,7 @@ def main():
         checks.update(opening_firearm_check(game_samples))
         (run/(tag+'-validation.json')).write_text(json.dumps(dict(
             completed=completed,exit_code=process.returncode if process else None,
+            terminated_by_runner=terminated_by_runner,
             passed=completed and all(checks.values()),checks=checks,
             executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
             runner_sha256=runner_sha256,native_fps=args.fps if args.native else 0,
@@ -349,7 +361,7 @@ def main():
     assert '[CRASH]' not in log
     if args.native:
         assert '[NATIVE-TIMING]' in log, 'Native timing hook was not executed'
-        assert '[INTERP] disabled for native game updates' in log
+        assert all(native_present_checks(log).values()), 'Native run did not present only fresh guest frames'
         print('Native engine timing:', run / (tag+'-timing.json'),flush=True)
     if args.stress and args.seconds >= 116:
         observed=gameplay_checks(game_samples)
@@ -361,7 +373,7 @@ def main():
         assert any(80.5<t<82.5 and pause for t,_,_,pause in states), 'Pause not observed'
         assert any(t>84 and not pause for t,_,_,pause in states), 'Resume not observed'
     print('\n'.join(line for line in log.splitlines() if '[INTERP]' in line or '[FPS]' in line or '[PC-DISPLAY] Camera' in line))
-    print('Evidence:', run / (tag+'.csv'))
+    print('Evidence:', run / (tag+'-validation.json'))
 
 
 if __name__ == '__main__': main()

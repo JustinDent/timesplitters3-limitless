@@ -80,6 +80,33 @@ class LauncherReleaseTests(unittest.TestCase):
         self.version = patch.object(release, 'source_version', return_value=self.plan['version']).start()
         self.addCleanup(patch.stopall)
 
+    def test_plan_reads_unicode_github_event_under_windows_legacy_encoding(self):
+        event_path = self.directory/'event.json'
+        plan_path = self.directory/'plan.json'
+        body = 'Fix \u201clinked paths\u201d for \u65e5\u672c\u8a9e users'
+        event = {'pull_request': {'body': body}, 'repository': {'default_branch': 'main'}}
+        event_path.write_bytes(json.dumps(event, ensure_ascii=False).encode('utf-8'))
+        read_text = Path.read_text
+
+        def legacy_read(path, *args, **kwargs):
+            if path == event_path and not args and not kwargs.get('encoding'):
+                kwargs['encoding'] = 'cp1252'
+            return read_text(path, *args, **kwargs)
+
+        env = dict(GITHUB_EVENT_PATH=str(event_path), GITHUB_EVENT_NAME='pull_request',
+                   GITHUB_REF='refs/pull/214/merge', GITHUB_SHA=SHA,
+                   GITHUB_REPOSITORY=release.REPOSITORY, LAUNCHER_VALIDATION_SHA=SHA)
+        with patch.object(Path, 'read_text', legacy_read), \
+                patch.dict(release.os.environ, env, clear=True), \
+                patch('sys.argv', ['launcher-release.py', 'plan', '--plan', str(plan_path)]), \
+                patch.object(release, 'plan_release', wraps=release.plan_release) as planner, \
+                patch('builtins.print'):
+            release.main()
+        self.assertEqual(planner.call_args.args[0]['pull_request']['body'], body)
+        plan = json.loads(plan_path.read_text(encoding='utf-8'))
+        self.assertFalse(plan['publish'])
+        self.assertEqual(plan['source_revision'], SHA)
+
     def package(self, platform, *, extra=None, executable=True, sealed=True):
         files = ({'TimeSplitters Launcher.exe': b'bootstrap', 'Bin/TimeSplitters.App.exe': b'launcher'}
                  if platform == 'windows-x64' else {
@@ -217,10 +244,11 @@ class LauncherReleaseTests(unittest.TestCase):
         with patch.object(builder.subprocess, 'run') as run:
             builder.sign_bundle(app)
         calls = [c.args[0] for c in run.call_args_list]
-        self.assertEqual(calls[0][-1], str(libs/'native.dylib'))
-        self.assertEqual(calls[1][-1], str(app))
-        self.assertIn('--sign', calls[1])
-        self.assertEqual(calls[2], ['/usr/bin/codesign', '--verify', '--deep', '--strict', '--verbose=2', str(app)])
+        self.assertEqual(calls[0], ['/usr/bin/xattr', '-cr', str(app)])
+        self.assertEqual(calls[1][-1], str(libs/'native.dylib'))
+        self.assertEqual(calls[2][-1], str(app))
+        self.assertIn('--sign', calls[2])
+        self.assertEqual(calls[3], ['/usr/bin/codesign', '--verify', '--deep', '--strict', '--verbose=2', str(app)])
         self.assertTrue(all(c.kwargs['check'] for c in run.call_args_list))
 
     def test_mac_executable_mode_is_required(self):
@@ -327,6 +355,30 @@ class LauncherReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'validation-only'):
             release.publish(self.directory, self.plan, self.api)
         self.assertEqual(self.api.calls, [])
+
+    def test_plan_reads_utf8_github_event_with_windows_default_encoding(self):
+        event = self.directory/'event.json'
+        plan_path = self.directory/'plan.json'
+        event.write_text(json.dumps({
+            'repository': {'default_branch': 'r\u00e9vision'},
+            'pull_request': {'body': 'Fix the \u201cUPDATE CHANNEL\u201d overlap.'},
+        }, ensure_ascii=False), encoding='utf-8')
+        read_text = Path.read_text
+
+        def windows_read_text(path, encoding=None, **kwargs):
+            return read_text(path, encoding=encoding or 'cp1252', **kwargs)
+
+        environment = dict(GITHUB_EVENT_PATH=str(event), GITHUB_EVENT_NAME='pull_request',
+                           GITHUB_REF='refs/pull/215/merge', GITHUB_SHA=SHA,
+                           GITHUB_REPOSITORY=release.REPOSITORY, LAUNCHER_VALIDATION_SHA=SHA)
+        with patch.dict(release.os.environ, environment, clear=True), \
+                patch('sys.argv', ['launcher-release.py', 'plan', '--plan', str(plan_path)]), \
+                patch.object(Path, 'read_text', windows_read_text), patch('builtins.print'):
+            release.main()
+        plan = json.loads(plan_path.read_text(encoding='utf-8'))
+        self.assertEqual(plan['default_branch'], 'r\u00e9vision')
+        self.assertEqual(plan['source_revision'], SHA)
+        self.assertFalse(plan['publish'])
 
     @patch.object(release.subprocess, 'run')
     def test_publish_event_policy_checks_main_ancestry_and_matching_tag(self, run):

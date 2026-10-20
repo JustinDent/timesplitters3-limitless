@@ -148,7 +148,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-009 | Intro and in-game movie playback | Queued |
 | MAC-010 | In-game resolution preview and rollback | Awaiting validation |
 | MAC-011 | Real texture-pack gameplay coverage | Awaiting validation |
-| MAC-012 | Standalone Mac runtime distribution | Queued |
+| MAC-012 | Standalone Mac runtime distribution | Verified |
 | MAC-013 | System Link and Online multiplayer | Queued |
 | MAC-014 | Patch upgrades across Windows watermark and native overlay guards | Verified |
 | MAC-015 | Release test privileges and disposable cleanup | Awaiting validation |
@@ -188,10 +188,11 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-051 | Version and build-identity watermark | Awaiting validation |
 | MAC-052 | Experimental network bot setup (issue #25) | Queued |
 | MAC-053 | Discord Rich Presence (issue #63) | Awaiting validation |
-| MAC-054 | Fractional presentation targets and Windows transform setup (issue #167) | Queued |
+| MAC-054 | Fractional presentation targets and Windows transform setup (issue #167) | Awaiting validation |
 | MAC-055 | Persist accepted frontend Controls before quitting Settings | Awaiting validation |
 | MAC-056 | Texture-camera composition alignment (issue #49) | Awaiting validation |
-| MAC-057 | Native fractional updates at 60/120/144 FPS | Awaiting validation |
+| MAC-057 | Optional texture pack delivery through the launcher | Awaiting validation |
+| MAC-058 | Native fractional updates at 60/120/144 FPS | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -1265,14 +1266,28 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   affected native regressions on Mac. See
   [compiler validation](STATUS.md#release-regression-compiler-discovery--2026-10-16).
 
-- **Status:** Queued
+- **Status:** Verified
 - **PC behavior:** Windows has a public runtime package with launcher, dependencies, licenses, checksums/build manifest and game-import workflow.
 - **PC source:** Audited revision above; `tools/package-release.py`, `tools/release/Import-game.ps1`, `tools/release/ImportGame.cs`, `tests/release_import.py`; `tools/play-native-mac.py`.
 - **PC validation:** Windows packaging/import tooling exists; this audit did not assemble or validate a new release.
-- **Existing Mac support:** Mac has a checkout-based interactive launcher and `BUILD.json`, but the release packager targets Windows executables/DLLs.
-- **Mac adaptation needed:** Add a relocatable native runtime package and supported local-data import/check path, with host dependencies, licenses and accurate provenance. Plan signing/distribution requirements when this work is requested.
+- **Existing Mac support:** Checkout and standalone Apple Silicon builds share
+  the native runtime; `tools/package-native-mac.py` now supplies the portable
+  game ZIP, bundled dependencies, licenses and build provenance.
+- **Mac adaptation needed:** Implemented for Apple Silicon with production
+  launcher data import/checks and preservation. Developer ID/notarization and
+  validation of older deployment targets remain separate follow-up work.
 - **Mac acceptance checks:** Launch from a clean path without compiler/build tree, verify architecture/dependencies and hashes, reject unsupported XBE, preserve existing saves/settings, and exclude game data/personal files from public artifacts.
-- **Mac implementation and evidence:** Remaining work pending. Existing coverage:
+- **Mac implementation and evidence:** `release/macos-alpha1` adds native
+  dependency bundling/relocation, signed binaries, pinned notices, source and
+  provenance, and fresh/existing real-ZIP installation gates. Launcher 1.2.21
+  loads hashed portable Vulkan dependencies without a checkout or Python.
+  Native alpha.1 source rebuild and platform/GPU/input/settings/debug tests
+  pass on the Apple M4 Mac mini. Real-ZIP fresh/existing installations verify
+  all 61 files and signatures; a 95-second relocated runtime probe loads only
+  bundled libraries, preserves personal settings and exits normally. Public
+  macos-arm64 ZIP/checksum/build provenance are added to alpha.1. This build
+  requires macOS 27.0+, with ad-hoc signatures; notarization remains future work.
+  [Validation](STATUS.md#native-mac-alpha1-distribution--2026-10-20). Existing coverage:
   [native adapter validation](STATUS.md#native-mac-settings-and-graphics-adapters-2026-10-15).
 
 ### MAC-013 — System Link and Online multiplayer
@@ -1558,6 +1573,46 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Native confirmation dialog layout (2026-10-20, commit carrying this entry
+  on `codex/launcher-dialog-layout`):** Windows uses native message boxes with a
+  horizontal action row. Mac's separate windows did not inherit the launcher
+  theme and stacked generic gray buttons vertically. `NativeWindow.MessageDialog`
+  now loads the shared `Ui.Theme`/`PageTheme` button templates and colors, with
+  equal minimum button widths, a right-aligned Cancel/Continue row, and bounded
+  scrolling for long text. Confirmations and error alerts reuse this native
+  window adapter; no Windows message-box or update behavior changes. Native
+  regressions, prerequisite checks and inspected short/long/error renders pass.
+  Windows/macOS CI results will be recorded in the PR; wider delivery status
+  remains Awaiting validation.
+  [Evidence](STATUS.md#native-launcher-confirmation-dialog-layout-2026-10-20).
+- **Automatic restart after game updates (2026-10-20, commit carrying this
+  entry on `codex/launcher-update-restart`):** Windows already used a copied
+  updater to close/apply/reopen; Mac applied game packages inside the old UI
+  process, leaving replaced launcher code active. Both helpers now use shared
+  `tools/launcher/UpdateRestart.cs`; installation locks and relaunch commands
+  remain in `LauncherPlatform.cs`. Native install, repair and restore route
+  through `NativeStartup.HandoffGame`. Mac self-update and game-update restarts
+  retain the selected installation root, including translocated app launches.
+  Native regressions, shared success/failure/restore tests and an actual packaged
+  helper replacement/restart/render pass locally. Windows CI is pending at
+  implementation, with shared and separate-process regressions in its existing
+  launcher workflow. No gameplay or browser-download delivery claim; status
+  remains Awaiting validation for wider delivery work.
+  [Evidence](STATUS.md#automatic-launcher-restart-after-updates-2026-10-20).
+- **Download status spacing (2026-10-20, commit carrying this entry on
+  `codex/launcher-download-spacing`):** The Windows source layout placed channel
+  controls, transfer text and the progress bar in one grid row; the generated
+  native Mac UI inherited the overlap. `tools/launcher/Launcher.xaml` now stacks
+  these controls vertically so wrapping text expands the row. No OS adapter
+  is needed. `NativeWindow.cs` adds offline download previews for normal and
+  minimum sizes, including scrolled controls. Native build/regressions and
+  inspected previews pass. Initial Windows CI exposed locale-dependent event
+  decoding in `tools/launcher-release.py`; explicit UTF-8 and a CP1252 regression
+  fix that shared build prerequisite. Windows/native Mac CI remains pending at
+  implementation. The local game prerequisite check is blocked by the existing
+  checkout's missing Python environment. Live transfer and Windows visual
+  acceptance remain unverified; status remains Awaiting validation.
+  [Evidence](STATUS.md#launcher-download-status-spacing-2026-10-20).
 - **Game package compatibility correction (2026-10-20,
   `fix/launcher-compatible-discord-package`):** Windows runtime packages now
   place Discord documentation and the disabled template under `Support/Discord`.
@@ -2690,7 +2745,29 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-054 — Fractional presentation targets and Windows transform setup (issue #167)
 
-- **Status:** Queued
+- **Fixture repair (2026-10-20, PR #219, commit `0f01b2ce`):**
+  `tests/fov_settings.c` retained deleted motion APIs and the old timing label.
+  Its replacement checks assert the fixed-60 menu's row set and preservation of
+  unrelated runtime settings, keeping the existing FOV/texture/rollback coverage.
+  No Mac adapter is needed: shared production menu policy is unchanged. The
+  portable pointer fixture and its broken-setting-drag detection pass on Mac;
+  subsequent Windows/macOS native CI passed in run 39381646838. The integrated
+  Windows fixture also passes locally with MSVC, preserving main's stricter
+  seven-row and Back-navigation checks. Full Mac gameplay validation remains
+  pending. [Evidence and limits](STATUS.md#fixed-60-settings-fixture-repair-2026-10-20).
+
+- **Current disposition (2026-10-20, commit carrying this entry):** Withdrawn at the user's
+  request. Both hosts now use fixed 60 FPS; the interpolation/prediction engine
+  is replaced with inert recorder ABI compatibility functions. Shared launcher
+  UI removes timing controls and migrates old values without changing unrelated
+  preferences. Native scripts reject higher targets and no longer default to 2x.
+  Historical implementation notes below are superseded. PR #216 hosted run
+  39380510747 passed Mac native regressions, patch upgrades and asset-free GPU
+  checks. Full Mac game/visual validation remains pending; these CI checks do
+  not establish gameplay fidelity. See [fixed-60 validation](STATUS.md#fixed-60-fps-restoration-2026-10-20).
+
+
+- **Status:** Awaiting validation
 - **Shared stack integration (2026-10-19, PR #186 follow-up, uncommitted):**
   Current main's presentation series overlapped the earlier shared renderer
   patches. The three presentation patches now apply after the shared host,
@@ -2842,7 +2919,27 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   clipped picture or shifted mask, then check normal HUD and terminal cameras.
 - **PC evidence:** See the issue #49 section in STATUS.md.
 
-### MAC-057 — Native fractional updates at 60/120/144 FPS
+### MAC-057 — Optional texture pack delivery through the launcher
+
+- **Status:** Awaiting validation
+- **Behavior:** Players explicitly download the optional GitHub texture pack or
+  select a local ZIP/folder in launcher Graphics & resolution settings. The
+  shared installer chooses the runtime's texture path, validates DDS/metadata,
+  enforces 6 GiB, preserves unrelated files and recovers interrupted replacements.
+- **Source:** `feat/launcher-texture-install` (uncommitted at entry creation);
+  `tools/launcher/TexturePack.cs`, `TextureDownload.cs`, `SettingsPage.cs`,
+  host window adapters and `tools/texture-release.py`.
+- **PC evidence:** Windows compilation, shared UI and installer tests cover
+  placement, ZIP validation, checksums, cancellation and recovery. Final results
+  are recorded in `STATUS.md`.
+- **Existing Mac support:** Uses the same service and UI; the adapter uses native
+  file/folder pickers and the existing checkout/portable texture-path policy.
+  Both host builds execute `tests/launcher_textures.cs` and shared UI contracts.
+- **Remaining validation:** Native CI build/contracts and packaged interaction;
+  verify opt-in confirmation, cancellation, installation under a portable root
+  and a source checkout, then reuse existing loader evidence. Actual Mac texture
+  scene fidelity remains under MAC-011 and the near-completion playtest policy.
+### MAC-058 — Native fractional updates at 60/120/144 FPS
 
 - **Status:** Awaiting validation
 - **Behavior:** Opt-in `TSFP_NATIVE_FPS` / `native_fps` runs fresh title updates
@@ -2850,19 +2947,19 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   60 Hz console interrupt clock. Fractional motion deltas, integer-timer
   remainders, pause/resume and bounded catch-up share one implementation.
 - **Source:** local development checkpoint on `feature/native-144-fps`: `pc_native_timing*.h`,
-  `pc_native_timing_guest.inc`, `pc_native_rate.h`, `pc_native_numeric.h`,
+  `pc_native_timing_guest.inc`, `pc_native_clock.h`, `pc_native_rate.h`, `pc_native_numeric.h`,
   additive native timing/numeric/animation-scope/input/script-event/decay patches and
   `tests/test_native_timing.py`, including execution of the original US script
   and NPC/player dispatchers and animation-event readers. Usage is in
   `docs/native-high-refresh.md`.
-- **Existing Mac support:** The guest hooks and numeric conversion policy are
-  compiled by the shared title build, and the Mac entry point suppresses its
-  default interpolation multiplier when native mode is requested. No second
+- **Existing Mac support:** The guest hooks, update clock and numeric conversion
+  policy are compiled by the shared title build. The Mac entry point reports
+  the opt-in native rate; normal play retains main's fixed-60 default. No second
   timing model or higher-frequency console clock was introduced.
 - **Remaining adaptation:** Validate compilation, waitable-timer behavior,
   common Vulkan and legacy GL rendering on actual Apple Silicon. Integrate a
-  native launcher selector after game-speed and pacing acceptance; its current
-  `--fps` option still selects the established interpolated path.
+  native launcher selector after game-speed and pacing acceptance; the normal
+  launcher currently offers the fixed-60 path.
 - **Acceptance:** Run portable timing/numeric/ABI tests, then isolated Story,
   Arcade, Challenge, split-screen, vehicle, cutscene/movie, recorded-demo and
   network sessions at 60/120/144. Compare actual movement, animation, weapon

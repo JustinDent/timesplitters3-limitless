@@ -28,17 +28,21 @@ namespace TimeSplitters.Launcher
         public readonly Grid View;
         readonly DockPanel layout;
         readonly Border overlay;
+        readonly Border footerBorder;
         readonly TabControl tabs;
         public event Action Saved, Cancelled;
+        public event Action<int> InstallTextures;
+        public event Action CancelTextureInstall;
+        readonly TextBlock textureStatus;
+        readonly Button textureDownload, textureZip, textureFolder, textureCancel;
+        readonly string root;
         readonly GameSettings model;
         readonly TextBlock status;
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
         readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled;
-        readonly ComboBox device, resolution, aspect, scale, filtering, pacing, interpolation, presentation, refresh;
+        readonly ComboBox device, resolution, aspect, scale, filtering;
         readonly TextBlock performanceAdvice;
-        readonly System.Collections.Generic.List<int> supportedRefreshRates;
-        readonly int desktopRefreshRate;
         readonly Button[,] bindingButtons = new Button[24,4];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
         static Brush ColorBrush(byte r,byte g,byte b) { var brush=new SolidColorBrush(Color.FromRgb(r,g,b));Ui.Freeze(brush);return brush; }
@@ -72,6 +76,7 @@ namespace TimeSplitters.Launcher
         static ScrollViewer Scroll(UIElement content) { return new ScrollViewer { VerticalScrollBarVisibility=ScrollBarVisibility.Auto, HorizontalScrollBarVisibility=ScrollBarVisibility.Disabled, Content=content, Padding=new Thickness(0,0,12,0) }; }
         public SettingsPage(ResourceDictionary resources, string root, bool preview)
         {
+            this.root=root;
             string inherited = Ui.InheritedSettings(preview);
             model=GameSettings.Load(root, inherited);
             View=new Grid { Background=PageTheme.Brush("#0B1420"), Margin=new Thickness(30,24,30,18) };
@@ -86,7 +91,7 @@ namespace TimeSplitters.Launcher
             var title=Text("Game settings",28);title.Margin=new Thickness(0,5,0,7);heading.Children.Add(title);
             var subtitle=Text("Adjust controls, display and performance before your next launch.",12); subtitle.Foreground=Muted; heading.Children.Add(subtitle);
             var footer=new DockPanel { LastChildFill=true };
-            var footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,16,0,0),Child=footer };
+            footerBorder=new Border { BorderBrush=PageTheme.Brush("#2D455C"),BorderThickness=new Thickness(0,1,0,0),Padding=new Thickness(0,16,0,0),Child=footer };
             DockPanel.SetDock(footerBorder,Dock.Bottom);layout.Children.Add(footerBorder);
             var actions=new StackPanel { Orientation=Orientation.Horizontal, VerticalAlignment=VerticalAlignment.Center };
             DockPanel.SetDock(actions,Dock.Right);footer.Children.Add(actions);
@@ -122,19 +127,19 @@ namespace TimeSplitters.Launcher
             reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
             bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Keyboard & mouse",Content=Scroll(controls) });
             var graphics=new StackPanel();
-            var quick=PageTheme.Section(graphics,"Smoothness setup","Choose a starting point, then Save settings and restart the game.");
-            var presets=new WrapPanel();quick.Children.Add(presets);
-            foreach(int rate in new[]{60,120,144}) {
-                int target=rate;
-                var preset=Button(rate==60?"60 FPS · original":""+rate+" FPS · smooth");
-                preset.Name="PerformancePreset"+rate;
-                preset.Margin=new Thickness(0,0,8,8);
-                preset.IsEnabled=rate==60 || model.SupportsPresentationTarget;
-                Ui.Tip(preset,"Sets 60 Hz game pacing, fullscreen, VRR, 1× console render scale and FPS overlay. Uses a matching supported monitor rate for 120/144. Keeps output resolution and filtering. Applies after Save and restart.");
-                preset.Click+=(s,e)=>ApplyPerformancePreset(target);presets.Children.Add(preset);
-            }
-            performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
-            performanceAdvice.Foreground=Muted;quick.Children.Add(performanceAdvice);
+            var textures=PageTheme.Section(graphics,"4K texture pack · optional","Download enhanced textures from GitHub, or install a pack you already have. Original textures remain available. Uses up to 6 GiB.");
+            textureStatus=Text(TexturePack.Summary(root),12);textureStatus.Name="TexturePackStatus";textures.Children.Add(textureStatus);
+            var textureActions=new WrapPanel();textures.Children.Add(textureActions);
+            textureDownload=Button("Download 4K texture pack");textureDownload.Name="DownloadTexturePack";PageTheme.Primary(textureDownload);
+            textureZip=Button("Install pack ZIP");textureZip.Name="InstallTextureZip";
+            textureFolder=Button("Install pack folder");textureFolder.Name="InstallTextureFolder";
+            textureCancel=Button("Cancel installation");textureCancel.Name="CancelTextureInstall";Ui.Show(textureCancel,false);
+            textureDownload.Click+=(s,e)=> { if(InstallTextures!=null)InstallTextures(0); };
+            textureZip.Click+=(s,e)=> { if(InstallTextures!=null)InstallTextures(1); };
+            textureFolder.Click+=(s,e)=> { if(InstallTextures!=null)InstallTextures(2); };
+            textureCancel.Click+=(s,e)=> { if(CancelTextureInstall!=null)CancelTextureInstall(); };
+            foreach(var button in new[]{textureDownload,textureZip,textureFolder,textureCancel}){button.Margin=new Thickness(0,8,8,0);textureActions.Children.Add(button);}
+            textures.Children.Add(Text("The launcher installs to the correct game folder. After installation, choose Enhanced in the game's Display settings. The pack is an incomplete alpha; untouched textures keep their original appearance.",12));
             var display=PageTheme.Section(graphics,"Display","Choose the game’s output size. Your desktop resolution stays unchanged.");
             var displayColumns=Columns(display);var displayLeft=Column(displayColumns,0);var displayRight=Column(displayColumns,1);
             var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height)).ToList();
@@ -187,16 +192,6 @@ namespace TimeSplitters.Launcher
             var cameraColumns=Columns(camera);var cameraLeft=Column(cameraColumns,0);var cameraRight=Column(cameraColumns,1);
             Field(cameraLeft,"Vertical FOV · 40–100°",fieldOfView);
             fullscreen=Check("Borderless fullscreen",model.Fullscreen);fullscreen.Name="BorderlessFullscreen";Field(cameraRight,"Window mode",fullscreen);
-            refresh=new ComboBox{Name="MonitorRefreshRate",IsEnabled=model.SupportsPresentationTarget};
-            supportedRefreshRates=DisplayModes.PrimaryRefreshRates();
-            desktopRefreshRate=DisplayModes.PrimaryRefreshRate();
-            var refreshRates=supportedRefreshRates.ToList();
-            if(!refreshRates.Contains(model.RefreshRate))refreshRates.Add(model.RefreshRate);
-            foreach(int hz in refreshRates) refresh.Items.Add(hz==0?"Current desktop rate":hz+" Hz");
-            refresh.SelectedIndex=refreshRates.IndexOf(model.RefreshRate);
-            Ui.Tip(refresh,"Applies on the game's monitor in fullscreen. Restores your previous rate on focus loss and exit. Unsupported rates leave the monitor unchanged.");
-            Field(cameraRight,"Monitor refresh · fullscreen",refresh);
-            cameraRight.Children.Add(Text("Primary display now: "+(desktopRefreshRate>0?desktopRefreshRate+" Hz":"rate unavailable")+". Check the game's display in "+LauncherPlatform.DisplaySettingsLocation+".",12));
             var resetFov=Button("Reset FOV to 55°"); resetFov.Name="ResetFovButton";
             resetFov.IsEnabled=model.CanAdjustFov;
             resetFov.HorizontalAlignment=HorizontalAlignment.Left; resetFov.Click+=(s,e)=>fov.Value=GameSettings.FovDefault;
@@ -207,26 +202,11 @@ namespace TimeSplitters.Launcher
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";Field(qualityLeft,"Console render scale / supersampling",scale);
             filtering=Choices(new[]{"1","2","4","8","16"},model.Anisotropy.ToString());Field(qualityRight,"Anisotropic filtering",filtering);
-            pacing=Choices(new[]{"adaptive","60","30","0"},model.FrameCap);pacing.Name="GameFramePacing";Field(qualityLeft,"Game pacing · 0 = uncapped",pacing);
-            interpolation=Choices(new[]{"1","2","3","4"},model.Interpolation.ToString());interpolation.Name="LegacyInterpolation";Field(qualityRight,"Frame interpolation · 1 = off",interpolation);
-            presentation=Choices(new[]{"Use interpolation setting","120 FPS","144 FPS"},model.PresentationFps==0?"Use interpolation setting":model.PresentationFps+" FPS");
-            presentation.Name="PresentationTarget";
-            presentation.IsEnabled=model.SupportsPresentationTarget;
-            Field(qualityRight,"Smooth motion · FPS (experimental)",presentation);
-            presentation.SelectionChanged+=(s,e)=> {
-                bool legacy=presentation.SelectedIndex==0;interpolation.IsEnabled=legacy;pacing.IsEnabled=legacy;
-                if(!legacy && Convert.ToString(pacing.SelectedItem)!="adaptive" && Convert.ToString(pacing.SelectedItem)!="60") pacing.SelectedItem="60";
-                if(!legacy) { fullscreen.IsChecked=true;vrr.IsChecked=true; }
-                UpdatePerformanceAdvice();
-            };
-            interpolation.IsEnabled=!model.SupportsPresentationTarget || model.PresentationFps==0;
-            pacing.IsEnabled=!model.SupportsPresentationTarget || model.PresentationFps==0;
             vrr=Check("Variable refresh rate",model.Vrr);vrr.Name="VariableRefreshRate";Ui.Tip(vrr,"Allows unsynchronized presentation in fullscreen. Enable VRR in your monitor and driver too; a fixed-refresh display may tear.");fps=Check("Show FPS overlay",model.FpsOverlay);
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
-            var interpolationHint=Text("120/144 FPS blends camera and object motion while gameplay stays at 60 Hz. Use a matching high refresh display with VRR and GPU headroom. Menus, cuts and slow frames can fall back to 60 FPS; interpolation can produce artifacts.",12);interpolationHint.Foreground=Muted;interpolationHint.Margin=new Thickness(0,8,0,0);quality.Children.Add(interpolationHint);
-            if(!model.SupportsPresentationTarget) quality.Children.Add(Text(LauncherPlatform.CanSelectPresentationTarget ? "120/144 FPS targets require a game release newer than v0.3.0-alpha.2." : "Fixed 120/144 FPS targets and automatic monitor switching await native support. Frame interpolation remains available.",12));
-            foreach(var choice in new[]{scale,refresh,pacing,interpolation}) choice.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
-            foreach(var toggle in new[]{fullscreen,vrr}) Ui.CheckedChanged(toggle,UpdatePerformanceAdvice);
+            performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
+            performanceAdvice.Foreground=Muted;quality.Children.Add(performanceAdvice);
+            scale.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             width.TextChanged+=(s,e)=>UpdatePerformanceAdvice();height.TextChanged+=(s,e)=>UpdatePerformanceAdvice();
             UpdatePerformanceAdvice();
             var startup=PageTheme.Section(graphics,"Startup","Choose how the game opens.");
@@ -245,6 +225,14 @@ namespace TimeSplitters.Launcher
             presence.Children.Add(Text("Keep the Discord desktop app open and allow activity sharing in Discord. Changes apply on your next game launch. Requires a game build with Rich Presence support.",12));
             tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
         }
+        public void TextureProgress(string message) { textureStatus.Text=message; }
+        public void TextureBusy(bool busy)
+        {
+            footerBorder.IsEnabled=!busy;
+            textureDownload.IsEnabled=textureZip.IsEnabled=textureFolder.IsEnabled=!busy;
+            Ui.Show(textureCancel,busy);
+        }
+        public void RefreshTextures() { textureStatus.Text=TexturePack.Summary(root); }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
         void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
@@ -287,16 +275,6 @@ namespace TimeSplitters.Launcher
             var cancel=Button("Cancel"); cancel.Click+=(s,e)=> { DismissPrompt(); bindingButtons[action,slot].Focus(); }; buttons.Children.Add(cancel);
             Ui.FocusWhenReady(area);
         }
-        void ApplyPerformancePreset(int target)
-        {
-            if(model.SupportsPresentationTarget) presentation.SelectedIndex=target==144?2:target==120?1:0;
-            if(target==60) interpolation.SelectedItem="1";
-            pacing.SelectedItem="60";scale.SelectedItem="1";
-            fullscreen.IsChecked=true;vrr.IsChecked=true;fps.IsChecked=true;
-            refresh.SelectedItem=target>60 && supportedRefreshRates.Contains(target)?target+" Hz":"Current desktop rate";
-            UpdatePerformanceAdvice();
-            status.Text=target+" FPS setup selected. Save settings and restart the game to apply.";
-        }
         void UpdatePerformanceAdvice()
         {
             if(vrr==null || scale==null) return;
@@ -304,22 +282,12 @@ namespace TimeSplitters.Launcher
             bool original=Int32.TryParse(width.Text,out w) && Int32.TryParse(height.Text,out h) && w==0 && h==0;
             scale.IsEnabled=original;
             Int32.TryParse(Convert.ToString(scale.SelectedItem),out n);
-            int target=presentation.SelectedIndex==1?120:presentation.SelectedIndex==2?144:0;
-            int requested=refresh.SelectedIndex<=0?0:Int32.Parse(Convert.ToString(refresh.SelectedItem).Split(' ')[0]);
             var notes=new System.Collections.Generic.List<string>();
-            notes.Add(!LauncherPlatform.CanSelectPresentationTarget ? "This native game uses the frame interpolation multiplier. Configure display refresh in System Settings → Displays; saved Windows presentation and refresh options are preserved." : "For steadier motion, start at 120 FPS. If it stays stable, try 144; use 60 to turn interpolation off. Game speed stays at 60 Hz.");
-            if(target>0 && model.SupportsPresentationTarget) {
-                if(!fullscreen.IsChecked.GetValueOrDefault()) notes.Add("Enable borderless fullscreen for the high-refresh presentation path.");
-                if(!vrr.IsChecked.GetValueOrDefault()) notes.Add("VRR is off: display synchronization can limit the extra frames. Enable it here and on a compatible monitor/driver.");
-                if(requested>0 && !supportedRefreshRates.Contains(requested)) notes.Add("The selected monitor rate is not reported by the primary display; the runtime only applies it if the game's display supports it.");
-                int effective=requested>0 && supportedRefreshRates.Contains(requested)?requested:desktopRefreshRate;
-                if(effective>0 && effective<target) notes.Add("The primary display is set for "+effective+" Hz with these settings, below the "+target+" FPS target. Select a supported higher rate or check "+LauncherPlatform.DisplaySettingsLocation+".");
-                if(Convert.ToString(pacing.SelectedItem)!="60" && Convert.ToString(pacing.SelectedItem)!="adaptive") notes.Add("Select a smoothness setup above to restore the required 60 Hz game pacing.");
-            }
+            notes.Add("Game rendering and simulation run at 60 FPS. Your desktop refresh rate stays unchanged.");
             if(original && n>1) notes.Add(n+"× console scale draws "+(n*n)+"× the scene pixels. Reduce it to 1 first if FPS drops.");
             else if(!original) notes.Add("Your output resolution sets the scene size; console scale is inactive. Lower output resolution first if GPU load causes drops.");
-            else notes.Add("Console scale is already 1×. Try 120 instead of 144 if frame delivery remains uneven.");
-            notes.Add("Save and restart after changes. The FPS overlay separates game updates from shown frames; a high shown count alone does not prove smooth display timing.");
+            else notes.Add("Console scale is already 1×.");
+            notes.Add("Save and restart after changes.");
             performanceAdvice.Text=String.Join("\n\n",notes);
         }
         void Save()
@@ -335,11 +303,7 @@ namespace TimeSplitters.Launcher
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
-                model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem); model.FrameCap=(string)pacing.SelectedItem; model.Interpolation=Int32.Parse((string)interpolation.SelectedItem);
-                if(model.SupportsPresentationTarget) {
-                    model.PresentationFps=presentation.SelectedIndex==1?120:presentation.SelectedIndex==2?144:0;
-                    model.RefreshRate=Convert.ToString(refresh.SelectedItem)=="Current desktop rate"?0:Int32.Parse(Convert.ToString(refresh.SelectedItem).Split(' ')[0]);
-                }
+                model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);
                 model.Save(); status.Foreground=Accent; status.Text="Settings saved. Changes apply on your next launch.";
                 if(Saved!=null)Saved();
             }

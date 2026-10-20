@@ -1,4 +1,4 @@
-"""Compile actual shared interpolation math with dead-code removal on Windows."""
+"""Verify the retired engine ABI cannot replay or suppress guest frames."""
 import os
 from pathlib import Path
 import subprocess
@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.mark.skipif(os.name != 'nt', reason='MSVC dead-code/linker fixture; Mac retains its GPU regressions')
-def test_camera_interpolation(tmp_path):
+def test_interpolation_removed(tmp_path):
     compiler, environment = native_compiler(tmp_path)
     source=ROOT / 'external/ts3FPrecomp/src'
     output=tmp_path / 'frame-interpolation.exe'

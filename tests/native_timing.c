@@ -3,6 +3,24 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "../src/pc_native_timing.h"
+#include "../src/pc_native_clock.h"
+
+static void pacing(int rate, int64_t frequency)
+{
+    PcNativeClock clock;
+    pc_native_clock_reset(&clock,12345,frequency,rate);
+    int64_t previous=12345;
+    for(int i=1;i<=rate*10;i++) {
+        int64_t due=pc_native_clock_due(&clock);
+        assert(due>previous && due==12345+(int64_t)i*frequency/rate);
+        previous=due; clock.slot++;
+    }
+    assert(previous==12345+10*frequency);
+    int64_t late=pc_native_clock_due(&clock)+frequency/10;
+    pc_native_clock_catch_up(&clock,late);
+    assert(pc_native_clock_due(&clock)>=late);
+    assert(pc_native_clock_due(&clock)-late<=frequency/rate+1);
+}
 
 static void compare_rates(int rate, int64_t frequency)
 {
@@ -30,6 +48,8 @@ int main(void)
     for (int rate = 60; rate <= 144; rate += rate == 60 ? 60 : 24) {
         compare_rates(rate, 10000000);
         compare_rates(rate, 1000000003);
+        pacing(rate,10000000);
+        pacing(rate,1000000003);
     }
     PcNativeTiming clock = {0};
     pc_native_timing_step(&clock, 0, 144000, 144, 0);

@@ -66,6 +66,7 @@ namespace TimeSplitters.Launcher
         }
         static Dictionary<string,object> GpuEnvironment(string root,Dictionary<string,object> manifest)
         {
+            if(!LauncherPlatform.Checkout(root))return PortableGpuEnvironment(root,manifest);
             string python=Path.Combine(root,".venv/bin/python");
             Core.Require(LauncherPlatform.Checkout(root) && File.Exists(python) && File.Exists(Core.PathIn(root,"tools/vulkan_sdk.py")),"This Vulkan build needs its pinned checkout SDK and verification helper.");
             var info=new ProcessStartInfo(python){UseShellExecute=false,RedirectStandardOutput=true,WorkingDirectory=root};
@@ -74,6 +75,20 @@ namespace TimeSplitters.Launcher
             if(manifest.TryGetValue("vulkan_driver",out var driver))selection["vulkan_driver"]=driver;
             info.ArgumentList.Add("-c");info.ArgumentList.Add("import pathlib,sys,json; sys.dont_write_bytecode=True; sys.path.insert(0,str(pathlib.Path(sys.argv[1])/'tools'))\ntry:\n import vulkan_sdk; print(json.dumps(vulkan_sdk.launch_environment(pathlib.Path(sys.argv[1]),json.loads(sys.argv[2]))))\nexcept Exception as error:\n print(str(error)); sys.exit(1)");info.ArgumentList.Add(root);info.ArgumentList.Add(Json.Encode(selection));
             return Json.Object(ReadGpuHelper(info));
+        }
+        internal static Dictionary<string,object> PortableGpuEnvironment(string root,Dictionary<string,object> manifest)
+        {
+            Core.Require(Json.String(manifest,"vulkan_driver")=="moltenvk","Unsupported packaged Vulkan driver.");
+            Core.Require(manifest.TryGetValue("files",out var files)&&files is Dictionary<string,object>,"Packaged runtime hashes are missing.");
+            var hashes=(Dictionary<string,object>)files;
+            var required=new[]{"Bin/libvulkan.1.dylib","Bin/libMoltenVK.dylib","Bin/libdxcompiler.dylib","Support/Vulkan/MoltenVK_icd.json"};
+            foreach(var name in required.Concat(hashes.Keys.Where(n=>n.StartsWith("Bin/",StringComparison.Ordinal)&&n.EndsWith(".dylib",StringComparison.Ordinal))).Distinct()){
+                string path=Core.PathIn(root,name),expected=Json.String(hashes,name);
+                Core.Require(expected.Length==64&&File.Exists(path)&&Core.Hash(path)==expected,"Packaged Vulkan runtime is missing or changed: "+name);
+            }
+            var icd=Json.Object(File.ReadAllText(Core.PathIn(root,required[3])));
+            Core.Require(icd.TryGetValue("ICD",out var entry)&&entry is Dictionary<string,object> && Json.String((Dictionary<string,object>)entry,"library_path")=="../../Bin/libMoltenVK.dylib","Packaged Vulkan driver path is invalid.");
+            return new Dictionary<string,object>{{"DYLD_LIBRARY_PATH",Core.PathIn(root,"Bin")},{"SDL_VULKAN_LIBRARY",Core.PathIn(root,required[0])},{"VK_DRIVER_FILES",Core.PathIn(root,required[3])},{"RECOMP_SHADER_CACHE","0"}};
         }
         internal static string ReadGpuHelper(ProcessStartInfo info,int timeout=30000)
         {
@@ -121,7 +136,7 @@ namespace TimeSplitters.Launcher
             foreach(var path in new[]{LauncherPlatform.Saves(root),Path.GetDirectoryName(files[2]),"logs"})Directory.CreateDirectory(Core.PathIn(root,path));
             string controls=Core.PathIn(root,files[0]);Directory.CreateDirectory(Path.GetDirectoryName(controls));
             if(!File.Exists(controls))using(var src=typeof(NativeHost).Assembly.GetManifestResourceStream("launcher-controls-default.json"))using(var dst=new FileStream(controls,FileMode.CreateNew))src.CopyTo(dst);
-            string runtime=Core.PathIn(root,files[2]);if(!File.Exists(runtime))using(var writer=new StreamWriter(new FileStream(runtime,FileMode.CreateNew)))writer.WriteLine("# Native runtime settings\nframe_interp = 2");
+            string runtime=Core.PathIn(root,files[2]);if(!File.Exists(runtime))using(var writer=new StreamWriter(new FileStream(runtime,FileMode.CreateNew)))writer.WriteLine("# Native runtime settings\nframe_interp = 1\nframe_target = 0\nframe_cap = 60\nrefresh_rate = 0");
         }
         public static async Task Drain(Stream input,string path)
         {

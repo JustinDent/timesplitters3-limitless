@@ -5,10 +5,45 @@
 The texture overhaul is in development: a modern reinterpretation of materials
 and surfaces, using up to 4096×4096 for major surfaces and smaller sizes where
 appropriate. It is not a completed full-game remaster, and the public download
-does not include the private development artwork or original game assets.
+does not include original game assets or private source artwork. Compiled
+replacement textures are a separate, optional GitHub release download.
 
 See the [texture alpha overview](texture-alpha.md) for the current source scope,
 local pack snapshot and remaining validation gates.
+
+## Install through the launcher
+
+Open **Game settings → Graphics & resolution → Download 4K texture pack**.
+The launcher shows the pack version, download size and installed size before
+asking you to continue. It downloads verified parts from this repository and
+installs them in the folder used by the active game installation. A Git clone
+or ordinary game/launcher update does not download the optional artwork.
+
+The first public alpha contains **1,242 replacements**, about **990 MiB installed**.
+It covers approximately 18% of supported keys, not the entire game. Selected
+surfaces use up to 4K; smaller assets use appropriate sizes, and generated
+source images are resampled where recorded in their metadata.
+
+Once installed, start the game and select **Display settings → Textures →
+Enhanced**. Classic remains available. Close the game before installing or
+updating packs. The installer preserves saves, settings and unrelated texture
+keys, enforces the **6 GiB** pack limit, validates DDS dimensions/mips and
+metadata checksums, and rejects redirected paths and unsafe archives.
+
+You can also choose **Install pack ZIP** or **Install pack folder** for a pack
+already downloaded. Choose a flat folder of keyed DDS files and optional matching
+JSON metadata, or a ZIP containing those files at its root or in one wrapper
+folder. No manual move into the installation is needed.
+
+Downloads use parts smaller than 64 MiB. Each completed part is installed and its
+download cache removed. Cancelling rolls back the current part; earlier completed
+parts remain usable and missing keys use Classic. Retry to complete the pack.
+Interrupted file replacements are recovered at the next launcher start. The
+installer retains old versions only while a part is being installed; it does not
+keep a second complete texture pack or a permanent whole-pack ZIP.
+
+The source adds this feature to both Windows and Mac launchers. It becomes
+available to installed users when a launcher release containing it is published.
 
 ## Preview an installed local pack
 
@@ -22,6 +57,18 @@ resolution/FOV. The texture choice lasts for this game session and remains in sy
 with Windows **F10** and **PC Settings > 4K Textures**.
 This is separate from render resolution. Restart after changing pack files. Ordinary **Play.cmd** starts
 in Classic mode with the local pack available for switching.
+
+For an installed Windows launcher, the pack belongs in a normal **Textures**
+folder beside **TimeSplitters Launcher.exe**, with the keyed `.dds` files directly
+inside it. The install action creates this folder automatically. A missing
+folder or missing replacement falls back to Classic even when Enhanced is selected.
+Directory junctions and symbolic links are rejected by installation validation.
+Windows Cloud Files folders such as OneDrive are supported by the launcher's
+cloud-tag-aware path validation; this does not permit redirected installation paths.
+On one NTFS volume, developers can install file hard links inside the normal folder
+to share the existing pack's disk space. This is a snapshot of installed keys:
+new or replaced source files require an explicit refresh, followed by a game restart.
+The game log records successful replacements as `[TEXTURE-PACK] loaded ...`.
 
 For a native Mac launch:
 
@@ -156,3 +203,25 @@ DXT5 alpha is lossy. Compare decoded alpha with the resampled original; use
 RGBA8 at a suitable size when compression damages an important mask. Preserving
 original alpha does not prove new color details align with it or establish how
 the channel is used in a scene. Runtime validation remains part of the final gate.
+
+## Publish pack updates
+
+Keep the authoritative authored pack under ignored `private/texture-remaster/pack`.
+Before merging a texture delivery update, publish a new immutable pack version:
+
+```sh
+python tools/texture-release.py publish --version 0.1.0-alpha.1
+```
+
+Use a new version for changed content. The tool audits all DDS/metadata, strips
+private source paths, uploads one small ZIP at a time to a draft, verifies GitHub's
+asset hashes, and publishes only after every part is present. It writes the small
+`config/texture-pack.json` download manifest; commit that manifest with the source
+change. Pack releases never take the launcher's **Latest** designation.
+
+The **Optional texture pack** workflow tests publication and verifies the referenced
+assets on manifest PRs, every main push, and release publication. GitHub cannot
+read a developer's ignored local artwork: newly authored textures must go through
+the publication command before their manifest is merged. Ordinary source pushes
+reuse the already published pack. CI does not regenerate or silently upload art.
+Source artwork, original game files, prompts, personal paths and saves stay local.

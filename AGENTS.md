@@ -154,16 +154,14 @@ reproducibility, and validation requirements.
   captures. Native `--test` also runs bounded real-GPU and SDL input regression
   checks. `--test-keys` is explicitly synthetic SDL event input, not a physical
   device test; distinguish it from macOS event delivery and human playtesting.
-- Native Mac defaults to up to 120 host presents per second through 2x render
-  interpolation while retaining the 60 Hz guest clock. Preserve saved
-  `frame_interp = 1` preferences; use `--fps 60` / `--fps 120` on the launcher
-  or isolated runner for a temporary override. Report guest and interpolated
-  presents separately. Never raise the console clock as an FPS shortcut.
-  Interpolated replay must preserve guest depth/stencil and target bindings;
-  use the common replay-depth helper and GPU contract for RHI changes rather
-  than adding separate Windows/Mac depth behavior.
-  The shared patch stack enables optimized scalar native game code with debug
-  symbols; GPU vertex programs retain the CPU interpreter as fallback/reference.
+- Both Windows and native Mac use fixed 60 FPS rendering and the original
+  60 Hz guest clock. Above-60 presentation, interpolation, prediction and
+  automatic monitor-rate switching were removed at the user's request.
+  Legacy timing settings migrate to frame_interp=1, frame_target=0,
+  frame_cap=60 and refresh_rate=0. Preserve unrelated personal settings.
+  Do not reintroduce higher-FPS features or raise the console clock without
+  an explicit new request. Keep shared renderer correctness fixes and GPU
+  contracts independently of the retired presentation engine.
 - `Play-Native-Mac.command` is the interactive ARM64 launcher. It preserves
   personal controls/display settings and uses `private/saves`; native runtime settings stay in ignored
   `private/native-settings`. Its `--check` is read-only. Automated tests must
@@ -232,6 +230,16 @@ reproducibility, and validation requirements.
   Do not describe this experimental port as fully playable without evidence.
 
 ## Project storage and texture work
+
+- The user explicitly authorized optional public delivery of the compiled
+  replacement DDS pack through the launcher (2026-10-20). This is an exception
+  to the local-only rule for those compiled replacements and sanitized metadata,
+  not for source artwork, original game assets or personal files. Use
+  `tools/texture-release.py publish` before merging a new pack manifest; commit
+  only `config/texture-pack.json`, never large texture files into Git. Keep pack
+  downloads opt-in, release versions immutable, and the launcher as GitHub Latest.
+  Source pushes cannot upload ignored local art from a hosted runner. Confirm the
+  Optional texture pack check passes before merging delivery updates.
 
 The user explicitly requires a lean project folder on every device. Preserve
 this preference on all further work, including texture remastering and testing.

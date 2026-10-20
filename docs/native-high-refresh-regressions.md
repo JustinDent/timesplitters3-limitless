@@ -245,8 +245,43 @@ animation/event timing, animated texture behavior, visual fidelity and
 gameplay progression separate in the evidence. Completion requires the full
 [goal and acceptance criteria](native-high-refresh.md#goal-and-acceptance-criteria).
 
-At the 2026-10-20 NPC audit, the local `origin/main` snapshot was 41 commits
-ahead of this branch's base. Those later changes have not been integrated or
-validated here. Reconcile them without losing their fixes before claiming
-preservation of all currently resolved bugs; the passing suites above cover
-the source actually on this branch.
+### Main integration validation
+
+Checkpoint `5830f12` has been integrated with fetched main `7b0838a`. Both sets
+of validation notes and Mac backlog entries are retained; the native entry
+is now **MAC-058**, since main already assigned MAC-057 to optional texture
+delivery. Main's fixed-60 default, retired interpolation engine, launcher
+repairs and packaging changes remain in place.
+
+The native schedule now uses `pc_native_clock.h`, independent of the retired
+presentation helper. An additive patch removes the old native interpolation
+guard before main's retirement patch runs; the final renderer has inert
+interpolation entry points. The native guest timing and flip-gate bypass
+remain opt-in. Legacy timing settings still migrate to main's fixed values.
+An upgrade test covers the pre-merge native checkpoint and idempotent reapply.
+
+The bounded runner is now `tests/native_refresh_game.py`, with only original
+60 or native 60/120/144 modes. Native acceptance requires recorded guest
+presents and zero interpolated/other presents, rather than an initialization
+message. `--label` keeps integration evidence separate from earlier captures.
+
+Windows Release and its built-in checks pass. **14 timing/default/retired-engine
+checks**, **119 patch/launcher/Mac-tool tests with 13 subtests** (two host-dependent
+skips), and the backlog integrity test pass. Current integration build SHA-256:
+`95660e9e93227cbb05e2f1b0a66bd97caa609c9c8cbef4ad2e68fc79f4bd23e2`.
+
+The original-60 and native-144 120-second opening-level replays both pass
+movement, hand animation, firearm handoff, ammunition use and pause/resume.
+Native presentation records contain guest frames only, with no failed presents.
+Matching one-second walking spans measure 6.256 and 6.262 world units/s
+(0.10% difference). First firearm observations are 73.062 and 72.063 seconds;
+both runs end with 16 loaded rounds and 80 in reserve. These observations
+do not establish identical event cadence, collision behavior or full-level
+correctness. The native run overlapped source tests, so it is not a controlled
+performance benchmark.
+
+Logs use `logs/native-main-*`; isolated evidence uses `main-integration`
+labels, with source hashes in `native-main-comparison.json`. Real Mac execution,
+broader levels and texture/camera animation acceptance remain pending. The
+runtime overlay's cap label still reflects the fixed console flip-gate setting
+even when native pacing bypasses that gate; its label needs a separate repair.

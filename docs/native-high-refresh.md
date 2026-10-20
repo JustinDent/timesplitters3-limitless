@@ -1,9 +1,9 @@
 # Native high refresh development
 
 The `feature/native-144-fps` branch adds an opt-in path that runs the title's
-own update and rendering loop at a 60, 120 or 144 FPS target. It disables render
-interpolation. The existing Smooth motion setting continues to select the
-older interpolated presentation path.
+own update and rendering loop at a 60, 120 or 144 FPS target. Normal play keeps
+main's fixed-60 default. The old interpolated presentation engine and Smooth
+motion setting remain retired.
 
 Build this branch with the normal `tsfp.ps1 -Action Build` workflow. On Windows,
 open `Play-Native.cmd` for the 144 FPS target. `Play-Native.cmd 120` selects 120;
@@ -15,8 +15,8 @@ point, not a launcher update for an installed release.
 For a direct game launch on either host, set `TSFP_NATIVE_FPS=144` or put
 `native_fps = 144` in its isolated runtime display configuration. Supported
 values are 60, 120 and 144; absent, zero and invalid values retain original
-timing. The native mode takes precedence over interpolation and presentation
-targets. Leave the console interrupt clock at 60 Hz. Do not use
+timing. Legacy presentation settings retain main's fixed migration values.
+Leave the console interrupt clock at 60 Hz. Do not use
 `RECOMP_VBLANK_HZ=144` to enable this feature.
 
 ## Timing and motion
@@ -114,7 +114,7 @@ the original fallback, and fractional animation-time restoration.
 The bounded Windows integration runner accepts:
 
 ```powershell
-.venv\Scripts\python.exe tests/high_refresh_game.py --native --fps 144 --seconds 120 --stress --pause-check --windowed
+.venv\Scripts\python.exe tests/native_refresh_game.py --native --fps 144 --seconds 120 --stress --pause-check --windowed
 ```
 
 It uses only disposable Test Lab data, caps its logs and recycles its virtual

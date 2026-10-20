@@ -4,8 +4,10 @@ This is an early source alpha for [issue #74](https://github.com/TheDoffman/time
 It adds the live Classic/replacement switch and the tools used to build,
 review and audit the texture overhaul. The complete remaster is still in progress.
 
-**The PR contains source, tests and documentation.** The local artwork and compiled
-pack remain private; checking out this branch does not download those textures.
+**Git contains source, tests, documentation and a small download manifest.**
+Compiled replacements are an optional GitHub release pack offered through the
+launcher's **Game settings → Graphics & resolution → Download 4K texture pack**.
+Private source artwork stays local; checking out this branch does not download textures.
 Original game files, saves and personal settings are not included.
 
 ## What is available
@@ -30,7 +32,8 @@ required. Restart after changing pack files.
 ## Local development snapshot
 
 Recorded on October 19, 2026, after correction batch 188 at `514ea67`.
-These figures describe the private development pack, not a public download.
+These figures describe the development snapshot. The first optional public alpha
+uses these 1,242 DDS files with sanitized metadata (about 990 MiB installed).
 
 | Measure | Audited state |
 | --- | --- |

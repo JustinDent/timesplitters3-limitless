@@ -119,25 +119,21 @@ reserves them. See the [full Mac controls](docs/macos.md) and
 **Current Mac status:** native menus, movement, mouse aiming, firing and
 pause/resume have been checked, with additional bounded first-mission, Khallos
 and Mansion scene checks recorded in [measured progress](STATUS.md).
-Experimental interpolation targets up to **120 presentations per second** while
-the game simulation stays at **60 Hz**; saved 60 FPS preferences are retained.
+Rendering and simulation use the original **60 FPS / 60 Hz** path on both hosts.
 Full campaign completion, save/load and complete rendering/audio fidelity remain
 unverified. Movie playback, native multiplayer and standalone game delivery
-remain unfinished. Windows 144 FPS and monitor-refresh controls are not active
-on Mac. [Track remaining Mac work →](MAC_PORT_BACKLOG.md)
+remain unfinished. [Track remaining Mac work →](MAC_PORT_BACKLOG.md)
 
 ## PC features
 
 Feature availability depends on the platform and installed game build. The
 Windows details below do not establish Mac parity; see [current Mac status](#mac-apple-silicon).
 
-Current Windows source adds experimental [120/144 FPS smooth motion and
-fullscreen monitor refresh controls](docs/windows-launcher.md#pre-game-settings).
-The development launcher provides 60/120/144 FPS setups, current monitor-rate
-information and guidance for conflicting settings under **Game settings →
-Graphics & resolution → Smoothness setup**. Save and restart to apply.
-For a local development build, `Play-Smooth.cmd` temporarily selects 144 FPS;
-`Play-Smooth.cmd 120` selects 120 FPS. Published builds require a runtime update
+Current source uses fixed 60 FPS on Windows and Mac. Experimental interpolation,
+prediction, uncapped pacing and automatic monitor refresh controls have been
+removed. Older timing preferences are ignored by the runtime and normalized
+when launcher settings are saved; unrelated preferences remain intact.
+Your desktop refresh rate stays unchanged. Published builds require an update
 containing these changes.
 
 The `feature/native-144-fps` development branch also provides
@@ -298,9 +294,12 @@ the saved bot set. The host sees how many are waiting.
 
 **Texture overhaul:** modern materials and surfaces, with **up to 4K** on major
 surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit
-keep storage and memory bounded. This is a **partial local preview**: much of the
-game still uses original art. Development artwork is not bundled with the public
-release; 4K output does not imply native 4K source detail.
+keep storage and memory bounded. The **optional alpha pack** contains 1,242
+replacements (about 990 MiB installed); much of the game still uses original art.
+In launchers containing the texture installer, choose **Game settings → Graphics
+& resolution → Download 4K texture pack**, then enable **Enhanced** in the game's
+Display settings. The pack is hosted separately on GitHub and is never downloaded
+by cloning the repository. 4K output does not imply native 4K source detail.
 [Texture guide →](docs/textures.md)
 
 > [!NOTE]

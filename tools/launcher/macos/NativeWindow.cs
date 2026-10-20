@@ -41,7 +41,9 @@ namespace TimeSplitters.Launcher
                 if(args.Contains("--test-session")){await TestSession();return;}
                 if(render){Refresh();await Render();return;}
                 Directory.CreateDirectory(Core.PathIn(root,".launcher"));installationLock=new FileStream(Core.PathIn(root,".launcher/mac.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
-                Core.RecoverLauncher(root);Core.Recover(root);Core.CleanupGameAfterStartup(root);string recovered=null;try{recovered=GameSessions.Recover(root);}catch(Exception ex){LauncherLog.Write(root,"Session recovery deferred: "+ex.GetType().Name);}Refresh();if(recovered!=null)Maintenance(true);SelfUpdate.CleanupAfterStartup(root);try{File.Delete(Core.PathIn(root,".launcher/mac-self-helper"));}catch(IOException){}await Check();
+                Core.RecoverLauncher(root);Core.Recover(root);TexturePack.Recover(root);Core.CleanupGameAfterStartup(root);string recovered=null;try{recovered=GameSessions.Recover(root);}catch(Exception ex){LauncherLog.Write(root,"Session recovery deferred: "+ex.GetType().Name);}Refresh();if(recovered!=null)Maintenance(true);SelfUpdate.CleanupAfterStartup(root);
+                foreach(var name in new[]{".launcher/mac-self-helper",".launcher/mac-update-helper"})try{File.Delete(Core.PathIn(root,name));}catch(IOException){}
+                await Check();string result=Core.PathIn(root,".launcher/last-result.txt");if(File.Exists(result)){Status(File.ReadAllText(result));File.Delete(result);}
                 issuesTimer=new DispatcherTimer{Interval=TimeSpan.FromMinutes(5)};issuesTimer.Tick+=(a,b)=>{if(Find<ContentControl>("NewsHost").IsVisible && WindowState!=WindowState.Minimized && !busy)Run(()=>newsPage.RefreshIssues());};issuesTimer.Start();
             }catch(Exception ex){Status(ex.Message);if(installationLock==null)IsEnabled=false;}};
             Activated+=(s,e)=>{if(newsPage!=null&&Find<Control>("NewsHost").IsVisible&&!busy)Run(newsPage.RefreshIssuesIfDue);};
@@ -83,7 +85,7 @@ namespace TimeSplitters.Launcher
             Label("ChannelBadge",Preview?"●  PREVIEW CHANNEL":"●  STABLE CHANNEL");
             if(render){Label("ReleaseTitle","Native Mac launcher");Label("ReleaseDescription","Preview layout · native Mac releases appear here when published.");Label("UpdateStateLabel","MAC PREVIEW");Status("Preview only · no game launched, network requests or personal files changed.");}
         }
-        async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);if(!Find<Control>("CommandCenter").IsVisible){var alert=new Window{Title="TimeSplitters",Width=480,SizeToContent=SizeToContent.Height,WindowStartupLocation=WindowStartupLocation.CenterOwner};var panel=new StackPanel{Margin=new Thickness(24)};panel.Children.Add(Text(e.Message));panel.Children.Add(Button("Close",()=>alert.Close()));alert.Content=panel;await alert.ShowDialog(this);}}}
+        async void Run(Func<Task> action){try{await action();}catch(OperationCanceledException){Status("Download paused. Choose Install release to resume.");}catch(Exception e){Status(e.Message);if(!Find<Control>("CommandCenter").IsVisible)await MessageDialog("TimeSplitters",e.Message,false).ShowDialog(this);}}
         async Task Check()
         {
             if(busy)return;int revision=++checkRevision;bool channel=Preview;Label("ReleaseTitle","Checking for updates…");
@@ -135,16 +137,41 @@ namespace TimeSplitters.Launcher
         async Task Install(Release release)
         {
             if(release==null||busy)return;Core.Require(!LauncherPlatform.Checkout(root),"Release updates cannot overwrite a developer checkout.");Core.Require(!gameRunning&&!Core.GameRunning(),"Close the game before updating.");
-            if(!await Confirm("Install "+release.Tag+"?","This replaces the game runtime. Saves, game data and settings are preserved."))return;
+            if(!await Confirm("Install "+release.Tag+"?","This replaces the game runtime and restarts the launcher. Saves, game data and settings are preserved."))return;
             if(busy||gameRunning)return;busy=true;operation=new CancellationTokenSource();Refresh();Find<Control>("PauseDownloadButton").IsVisible=true;Find<Control>("UpdateProgress").IsVisible=true;
             try{string pending=Core.PathIn(root,".launcher/pending");Core.Require(!Directory.Exists(pending),"An unfinished update is staged. Restart for recovery before continuing.");Directory.CreateDirectory(pending);
                 try{string zip=Path.Combine(pending,"release.zip");await client.Download(release,zip,new TransferProgress(snapshot=>{Label("TransferDetails",snapshot.Summary);Find<Control>("TransferDetails").IsVisible=true;Find<ProgressBar>("UpdateProgress").Value=snapshot.Percent;}),operation.Token,Core.PathIn(root,".launcher/downloads/game"));
-                    await Task.Run(()=>Core.Unpack(zip,Path.Combine(pending,"payload"),release.Tag,operation.Token));Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new{version=release.Tag}));File.Delete(zip);await Task.Run(()=>Core.InstallPending(root));Status("Installed "+release.Tag+".");}
-                catch{Core.DiscardGameStaging(root);throw;}
-            }finally{busy=false;operation.Dispose();operation=null;Find<Control>("PauseDownloadButton").IsVisible=false;Find<Control>("TransferDetails").IsVisible=false;Find<Control>("UpdateProgress").IsVisible=false;Refresh();}
+                    await Task.Run(()=>Core.Unpack(zip,Path.Combine(pending,"payload"),release.Tag,operation.Token));operation.Token.ThrowIfCancellationRequested();
+                    Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new{version=release.Tag}));File.Delete(zip);Status("Restarting the launcher to install "+release.Tag+"…");NativeStartup.HandoffGame(root);}
+                catch{if(!NativeStartup.HandingOff)Core.DiscardGameStaging(root);throw;}
+            }finally{operation.Dispose();operation=null;if(!NativeStartup.HandingOff){busy=false;Find<Control>("PauseDownloadButton").IsVisible=false;Find<Control>("TransferDetails").IsVisible=false;Find<Control>("UpdateProgress").IsVisible=false;Refresh();}}
         }
-        async Task Rollback(){if(busy||gameRunning)return;if(await Confirm("Restore previous game?","Your saves and settings stay unchanged.")){if(busy||gameRunning)return;busy=true;Refresh();try{await Task.Run(()=>Core.Rollback(root));Status("Previous game restored.");}finally{busy=false;Refresh();}}}
-        void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");}
+        async Task Rollback(){if(busy||gameRunning)return;if(await Confirm("Restore previous game?","The launcher restarts after restoring the previous game. Your saves and settings stay unchanged.")){if(busy||gameRunning)return;busy=true;Refresh();try{NativeStartup.HandoffGame(root,true);}finally{if(!NativeStartup.HandingOff){busy=false;Refresh();}}}}
+        void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.InstallTextures+=mode=>Run(()=>InstallTextures(mode));settings.CancelTextureInstall+=()=>operation?.Cancel();settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");}
+        async Task InstallTextures(int mode)
+        {
+            if(render||busy||gameRunning||Core.GameRunning())return;
+            var page=settings;string source=null;
+            if(mode==1){var picked=await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions{Title="Choose a texture pack ZIP",AllowMultiple=false,FileTypeFilter=new[]{new FilePickerFileType("Texture pack ZIP"){Patterns=new[]{"*.zip"}}}});source=picked.FirstOrDefault()?.TryGetLocalPath();if(source==null)return;}
+            else if(mode==2){var picked=await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions{Title="Choose the folder containing the keyed texture DDS files",AllowMultiple=false});source=picked.FirstOrDefault()?.TryGetLocalPath();if(source==null)return;}
+            if(busy||gameRunning||Core.GameRunning())return;
+            busy=true;operation=new CancellationTokenSource();page.TextureBusy(true);Refresh();
+            try{
+                var token=operation.Token;var progress=new Progress<string>(message=>page.TextureProgress(message));
+                if(mode==0){
+                    page.TextureProgress("Checking the optional texture pack download…");
+                    var pack=await TextureDownload.Check(client,token);
+                    if(!await Confirm("Optional 4K texture pack",TextureDownload.Description(pack))){page.RefreshTextures();return;}
+                    await TextureDownload.Install(root,client,pack,progress,token);
+                }else{
+                    if(!await Confirm("Install texture pack?","Matching texture keys will be updated. Other textures, saves and settings are kept.")){page.RefreshTextures();return;}
+                    await Task.Run(()=>TexturePack.Install(root,source,progress,token),token);
+                }
+                page.RefreshTextures();Status("Texture pack installed. Select Enhanced in the game's Display settings.");
+            }catch(OperationCanceledException){page.TextureProgress("Installation cancelled. Completed download parts remain installed; retry to finish the pack.");}
+            catch(Exception e){page.TextureProgress("Texture installation stopped: "+e.Message);LauncherLog.Write(root,e.ToString());}
+            finally{operation.Dispose();operation=null;busy=false;page.TextureBusy(false);Refresh();}
+        }
         async Task News()
         {
             if(newsPage==null){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;}
@@ -165,7 +192,7 @@ namespace TimeSplitters.Launcher
         internal async Task Maintain(Func<CancellationToken,Task> action)
         {
             Core.Require(!busy,"Finish the current operation first.");busy=true;operation=new CancellationTokenSource();Refresh();
-            try{await action(operation.Token);}finally{operation.Dispose();operation=null;busy=false;Refresh();}
+            try{await action(operation.Token);}finally{operation.Dispose();operation=null;if(!NativeStartup.HandingOff){busy=false;Refresh();}}
         }
         internal void CancelMaintenance(){operation?.Cancel();}
         internal async Task Repair(bool launcher,CancellationToken token)
@@ -173,22 +200,62 @@ namespace TimeSplitters.Launcher
             Core.Require(!gameRunning&&!Core.GameRunning(),"Close the game before repairing files.");
             Core.Require(!LauncherPlatform.Checkout(root),"Rebuild development files from source. Release repair is available in portable installations.");
             if(launcher){var release=await client.FindLauncher(LauncherVersion.Value,token);Core.Require(await SelfUpdate.Prepare(root,release,client,null,token,true),"Launcher repair could not be staged.");NativeStartup.Handoff(root);}
-            else {await InstallationMaintenance.PrepareGameRepair(root,Core.InstalledVersion(root),client,null,token);token.ThrowIfCancellationRequested();await Task.Run(()=>Core.InstallPending(root));}
+            else {await InstallationMaintenance.PrepareGameRepair(root,Core.InstalledVersion(root),client,null,token);token.ThrowIfCancellationRequested();NativeStartup.HandoffGame(root);}
         }
         public static TextBlock Text(string text,int size=13)=>new TextBlock{Text=text,FontSize=size,Foreground=Brush.Parse("#E4EDF5"),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,0,0,10)};
         public static Button Button(string label,Action action){var b=new Button{Content=label,Margin=new Thickness(0,4,0,8),Padding=new Thickness(16,10),HorizontalAlignment=HorizontalAlignment.Left};b.Click+=(s,e)=>action();return b;}
         public static StackPanel Heading(string eyebrow,string title,string description){var p=new StackPanel{Margin=new Thickness(30,24,30,18),Spacing=8};p.Children.Add(Text(eyebrow,11));p.Children.Add(Text(title,28));p.Children.Add(Text(description,13));return p;}
         public static ScrollViewer Scroll(Control content)=>new ScrollViewer{Content=content,HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled};
-        public async Task<bool> Confirm(string title,string text){var dialog=new Window{Title=title,Width=480,SizeToContent=SizeToContent.Height,CanResize=false,WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=Brush.Parse("#102031")};var p=new StackPanel{Margin=new Thickness(24),Spacing=12};p.Children.Add(Text(text));p.Children.Add(Button("Continue",()=>dialog.Close(true)));p.Children.Add(Button("Cancel",()=>dialog.Close(false)));dialog.Content=p;return await dialog.ShowDialog<bool>(this);}
+        static Window MessageDialog(string title,string text,bool confirmation)
+        {
+            var dialog=new Window{Title=title,Width=480,SizeToContent=SizeToContent.Height,CanResize=false,
+                WindowStartupLocation=WindowStartupLocation.CenterOwner,Background=PageTheme.Brush("#102031"),FontFamily=new FontFamily("Arial")};
+            // Owned windows have a separate style scope. Load the same translated
+            // button templates used by the shared pages instead of Fluent defaults.
+            Ui.Theme(dialog);
+            var panel=new StackPanel{Margin=new Thickness(24),Spacing=24};
+            panel.Children.Add(new ScrollViewer{Content=PageTheme.Text(text,14),MaxHeight=360,
+                HorizontalScrollBarVisibility=Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled});
+            var actions=new StackPanel{Orientation=Orientation.Horizontal,HorizontalAlignment=HorizontalAlignment.Right,Spacing=12};
+            if(confirmation){
+                var cancel=new Button{Content="Cancel",MinWidth=100,IsCancel=true};
+                cancel.Click+=(s,e)=>dialog.Close(false);PageTheme.Secondary(cancel);actions.Children.Add(cancel);
+            }
+            var accept=new Button{Content=confirmation?"Continue":"Close",MinWidth=100};
+            accept.Click+=(s,e)=>dialog.Close(true);PageTheme.Primary(accept);actions.Children.Add(accept);
+            panel.Children.Add(actions);dialog.Content=new Border{Background=dialog.Background,Child=panel};
+            return dialog;
+        }
+        public Task<bool> Confirm(string title,string text)=>MessageDialog(title,text,true).ShowDialog<bool>(this);
         async Task Render()
         {
             string mode=args.First(a=>a.StartsWith("--render-"));int at=Array.IndexOf(args,mode);string output=args[at+1];
+            if(mode.Contains("confirm")||mode.Contains("alert")){
+                string message="This replaces the game runtime and restarts the launcher. Saves, game data and settings are preserved.";
+                if(mode.Contains("long"))message+="\n\n"+string.Join("\n\n",Enumerable.Repeat("Matching files will be updated. Other files are kept. You can cancel before installation begins.",8));
+                var dialog=MessageDialog(mode.Contains("alert")?"TimeSplitters":"Install v0.3.1-alpha.1?",message,!mode.Contains("alert"));
+                var shown=dialog.ShowDialog<bool>(this);await Task.Delay(350);
+                var body=(Control)dialog.Content;
+                using(var bitmap=new RenderTargetBitmap(PixelSize.FromSize(body.Bounds.Size,1),new Vector(96,96))){bitmap.Render(body);bitmap.Save(output);}
+                dialog.Close(false);await shown;Close();return;
+            }
             if(mode.Contains("settings")){ShowSettings();if(mode.Contains("graphics"))settings.SelectTab(1);if(mode.Contains("discord"))settings.SelectTab(2);}
             if(mode.Contains("repair")||mode.Contains("diagnostics"))Maintenance(mode.Contains("diagnostics"));
             if(mode.Contains("versions")){versionsPage=new NativeVersions(root,client,()=>false,Install);Find<ContentControl>("VersionsHost").Content=versionsPage.View;Page("VersionsHost");}
             if(mode.Contains("news")){newsPage=new NativeNews(root,client,()=>Preview);Find<ContentControl>("NewsHost").Content=newsPage.View;Page("NewsHost");}
             if(mode.Contains("game-data"))Find<Expander>("GameDataExpander").IsExpanded=true;
-            await Task.Delay(350);var visual=(Control)Content;visual.Measure(new Size(1152,772));visual.Arrange(new Rect(0,0,1152,772));using(var bitmap=new RenderTargetBitmap(new PixelSize(1152,772),new Vector(96,96))){bitmap.Render(visual);bitmap.Save(output);}Close();
+            if(mode.Contains("download")){
+                var snapshot=new TransferSnapshot{Phase="Downloading",Bytes=(long)(22.2*1048576),Total=(long)(84.5*1048576),BytesPerSecond=1.7*1048576};
+                Label("ReleaseTitle","Available: v0.3.1-alpha.1");Label("ReleaseDescription","Available to install. Open Home to install the game runtime.");Label("UpdateStateLabel","CHECKED");
+                Label("TransferDetails",snapshot.Summary);Find<Control>("TransferDetails").IsVisible=true;
+                Find<ProgressBar>("UpdateProgress").Value=snapshot.Percent;Find<Control>("UpdateProgress").IsVisible=true;
+                Find<Control>("PauseDownloadButton").IsVisible=true;Find<Control>("UpdateButton").IsVisible=false;Find<Control>("CheckButton").IsVisible=false;
+            }
+            int width=mode.Contains("compact")?1000:1152,height=mode.Contains("compact")?720:772;
+            Width=width;Height=height;
+            await Task.Delay(350);var visual=(Control)Content;visual.Measure(new Size(width,height));visual.Arrange(new Rect(0,0,width,height));
+            if(mode.Contains("scrolled")){var scroll=Find<ScrollViewer>("HomeCardsScroll");scroll.Offset=new Vector(0,scroll.Extent.Height);await Task.Delay(100);}
+            using(var bitmap=new RenderTargetBitmap(new PixelSize(width,height),new Vector(96,96))){bitmap.Render(visual);bitmap.Save(output);}Close();
         }
     }
 }

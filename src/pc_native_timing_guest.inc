@@ -5,7 +5,7 @@
 #include "platform/xbox_winnt.h"
 #include "pc_native_rate.h"
 #include "pc_native_timing.h"
-#include "pc_frame_clock.h"
+#include "pc_native_clock.h"
 extern uint64_t xbox_ReadTimeStampCounter(void);
 extern void sub_000455B0(void), sub_000455C0(void), sub_00150190(void);
 int g_tsfp_native_timing_active;
@@ -74,7 +74,7 @@ static void pc_native_call(void (*function)(void))
 static void pc_native_timing_guest(void (*original)(void))
 {
     static PcNativeTiming clock;
-    static HleFrameClock pacing;
+    static PcNativeClock pacing;
     static HANDLE timer;
     static int announced;
     LARGE_INTEGER now, frequency;
@@ -84,9 +84,9 @@ static void pc_native_timing_guest(void (*original)(void))
     QueryPerformanceFrequency(&frequency);
     QueryPerformanceCounter(&now);
     if (!pacing.rate) {
-        hle_frame_clock_reset(&pacing, now.QuadPart, frequency.QuadPart, rate);
+        pc_native_clock_reset(&pacing, now.QuadPart, frequency.QuadPart, rate);
     } else {
-        int64_t due = hle_frame_clock_due(&pacing);
+        int64_t due = pc_native_clock_due(&pacing);
         if (!timer) timer = CreateWaitableTimerExW(NULL, NULL, 2, TIMER_ALL_ACCESS);
         if (!timer) timer = CreateWaitableTimerW(NULL, FALSE, NULL);
         while (now.QuadPart < due) {
@@ -99,7 +99,7 @@ static void pc_native_timing_guest(void (*original)(void))
             QueryPerformanceCounter(&now);
         }
         pacing.slot++;
-        hle_frame_clock_catch_up(&pacing, now.QuadPart);
+        pc_native_clock_catch_up(&pacing, now.QuadPart);
     }
     int32_t pause = (int32_t)NT_WORD(0x7497B4u);
     PcNativeStep step = pc_native_timing_step(&clock, now.QuadPart,

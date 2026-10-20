@@ -6,6 +6,20 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Integration of main `7b0838a` preserves its fixed-60 default, retired
+  interpolation engine, launcher/packaging repairs and both sets of validation
+  notes. The opt-in native update path uses its own shared pacing helper.
+  Native Mac handoff is **MAC-058**; main's texture-delivery MAC-057 is retained.
+  Windows Release and its built-in checks pass. **14 timing/default/inert-engine
+  checks**, **119 patch/launcher/Mac-tool tests with 13 subtests** (two skips),
+  and the backlog integrity test pass. A 120-second native 144 replay passes
+  all gameplay checks and records guest-only presents without failed presents.
+  The original-60 replay also passes. Comparable one-second walking spans
+  measure 6.256 versus 6.262 world units/s (0.10% difference); both runs end
+  with 16 loaded rounds and 80 in reserve. This is bounded opening-level
+  evidence, not full-game acceptance. Integration executable SHA-256:
+  `95660e9e93227cbb05e2f1b0a66bd97caa609c9c8cbef4ad2e68fc79f4bd23e2`.
+  Logs use `logs/native-main-*`; live evidence has `main-integration` labels.
 - Active goal now includes texture fluidity, smooth animations, and regression
   verification for previously addressed bugs. The acceptance criteria are in
   [the native high-refresh goal](docs/native-high-refresh.md#goal-and-acceptance-criteria).
@@ -128,7 +142,7 @@ published release or a full-game 144 FPS certification.
   passed, including native timing/edges and fresh/historical/idempotent patch
   transitions. The final timing/statistics unit run passed all six cases.
   Native Mac compilation, GPU/runtime checks and remote CI were not run here;
-  shared implementation is recorded as MAC-057 awaiting validation.
+  shared implementation is recorded as MAC-058 awaiting validation.
 - The final 120-second isolated 144-target run passed its startup, Story-state,
   pause/resume, native-hook/no-interpolation and no-crash assertions. It replayed
   camera turns, movement keys and firing. The final presentation report showed
@@ -157,6 +171,180 @@ published release or a full-game 144 FPS certification.
   multiplayer synchronization and a full campaign. Source timing checks and
   scene flags alone do not establish complete gameplay or perceptual smoothness.
   See [usage and limits](docs/native-high-refresh.md).
+## Fixed-60 settings fixture repair (2026-10-20)
+
+Committed repair in PR #219 (`0f01b2ce`), for PR #216 source head
+`b555ac8aa6597207e73c782eacbb2300dc62b3b6`. The Windows FOV fixture still
+referenced deleted motion types, rows and persistence functions after the timing
+submenu was withdrawn. It now checks the remaining guest row IDs (including
+absence of timing row 6) and preservation of the isolated runtime file instead.
+Existing FOV, texture, cancellation, atomic-failure and preview checks remain.
+Production behavior, adapters, settings and dependency pins are unchanged.
+
+Validation on macOS 27.0.1 (26A434), ARM64, Apple clang 21.0.0 and Python 3.9.6:
+the asset-free `tests/menu_mouse.c` builds with warnings as errors and passes.
+The existing missing-setting-drag mutation fails at its expected FOV assertion,
+confirming that the portable drag regression still detects a broken setter.
+Compilation was bounded to 60 seconds and execution to 10 seconds, with outputs
+under `build/compatibility-repair`; no game or personal settings were used.
+Pytest is unavailable. Direct native menu syntax compilation stops at missing
+`platform/win32_compat.h`: this snapshot has no `external/ts3FPrecomp` tree.
+These were limits of the original repair environment. PR #219 subsequently passed
+Windows and macOS native/runtime CI (run 39381646838), launcher compatibility,
+and issue-form/resolution checks. Integration with main preserves PR #216's
+seven-row count, row reset and Back-navigation assertions. The integrated Windows
+FOV fixture also passes locally with MSVC and the existing pinned runtime.
+Fresh PR CI validates the final merge before it is accepted; no gameplay was run.
+No local GPU, visual or gameplay validation is claimed. See MAC-054.
+
+## Native launcher confirmation dialog layout (2026-10-20)
+
+Prepared on `codex/launcher-dialog-layout` from main `164c492`, in the commit
+carrying this entry. The standalone confirmation window used Fluent default
+buttons rather than the shared launcher theme and added both actions to its
+vertical message stack. It now explicitly loads the existing shared page theme
+and places Cancel/Continue together on the right, with 100-pixel minimum widths,
+12-pixel spacing, consistent 24-pixel padding and a blue primary action.
+Error alerts use the same native window adapter. Long messages scroll above
+the action row; native title bars remain system-managed.
+
+Local validation: macOS 27.0.1 (26A434), ARM64, pinned .NET SDK 8.0.426,
+Avalonia 11.3.22, Python 3.13.16. Signed native build, 24 launcher regression
+groups, 13 texture installer checks, one startup UI check and nine shared UI
+groups pass. Inspected actual modal renders at 480 pixels wide: the reported
+install confirmation, a long scrolling confirmation and a one-button alert.
+All retain visible, aligned controls with no overlap. The new build's read-only
+prerequisite check passes against the current portable installation folder.
+
+Windows still uses its existing OS message boxes; no Windows visual change is
+claimed. Both host CI checks run for this change, with results recorded in the
+PR. No game was started, personal installation or settings changed, or release
+published by this task.
+
+## Fixed 60 FPS restoration (2026-10-20)
+
+Prepared on `remove-high-fps-enhancements`, based on main `5db4efc`, in the
+commit carrying this entry.
+At the user's request, removed the interpolation/prediction engine, fractional
+presentation clock, in-game and launcher timing selectors, high-refresh presets,
+Play-Smooth helper and obsolete interpolation tests. The upstream recorder
+retains inert ABI compatibility functions only. Historical patches remain for
+safe checkout transitions; unrelated renderer and gameplay fixes are preserved.
+
+Both hosts use frame_interp=1, frame_target=0, frame_cap=60 and refresh_rate=0.
+The runtime ignores old timing files/overrides, and both launchers normalize the
+legacy keys on Save while preserving unrelated preferences. Launch also enforces
+safe values for older packages. Native scripts reject higher FPS targets.
+Desktop refresh is unchanged; guest simulation remains 60 Hz.
+
+Windows x64 / MSVC 17.14 build and build tests passed. The standalone launcher
+passed its regression groups, including 35 settings checks and eight shared UI
+groups. Configuration migration, removed-engine and native-script checks passed.
+Historical patch transitions passed after updating the pre-presentation fixture
+to exclude the later removal patch. The final targeted recheck passed 20 tests
+with one platform skip; obsolete tests of deleted interpolation internals were
+replaced by checks that no replay or guest-frame suppression occurs.
+Patch-transition and renderer results are in ignored
+`build/fixed60-regressions.log` and `build/fixed60-recheck.log`.
+
+A 45-second isolated startup/menu test on D3D11 / RTX 4070 SUPER at 3440×1440
+supplied 144 FPS, interpolation 4 and uncapped values through both a test file
+and environment. The runtime reported strict 60 FPS pacing. Its last cumulative
+sample recorded 2,400 guest presentations, zero interpolated/other presentations,
+and zero skipped/failed presentations. This checks policy and startup/menu
+execution, not complete weapon/level visual coverage or monitor scanout.
+Test preferences were restored to 60 afterward; personal saves were not used.
+
+PR #216 CI exposed a stale Windows FOV fixture that still compiled removed
+Smoothness-menu controls. The fixture now verifies the remaining seven rows
+and Back navigation while retaining FOV/resolution/texture coverage. Its local
+recheck passed eight tests with one Mac-only skip. Hosted run 39380510747
+passed patch upgrades on both hosts and the Mac native regression, asset-free
+GPU and release checks; the Windows compiler failure caused both aggregate
+gates to fail. Full Mac game/visual validation remains pending (MAC-054).
+Main through `7ec77a7` is integrated. The launcher conflict retained the new
+optional texture installer while keeping high-FPS presets removed. Launcher
+compilation, shared UI, texture-install and 35 settings checks passed; 72 Python
+checks passed with one platform skip and three subtests. The full launcher
+repeat stopped at the version installer test because another game was running;
+that process was left untouched. Hosted CI will exercise the isolated suite.
+This is a source change; no release has been published.
+
+## Automatic launcher restart after updates (2026-10-20)
+
+Prepared on `codex/launcher-update-restart` from main `68d141e`, in the commit
+carrying this entry. The Desktop game update replaced launcher 1.2.20 with 1.2.21
+while the old Mac process stayed open. Play therefore ran the old checkout-only
+Vulkan validation despite the new portable-capable app already being on disk.
+The old binary reproduces the SDK error; restarting the installed 1.2.21 passes
+the read-only game-data/build checks.
+
+Native game install, repair and restore now copy a helper outside the app and
+exit before any installed files are replaced. Both Windows and Mac helpers use
+the shared `UpdateRestart.ApplyGame` ordering: wait for the parent, lock the
+installation, verify/apply or restore, record the outcome, release the lock,
+then reopen the installed launcher. Windows retains its existing updater UI
+handoff. The Mac adapter retains the explicit installation root across restart,
+including the existing self-update path. Restarts skip one network update check;
+cancelled preparation does not restart, and failed game installation reopens the
+retained installation with a failure result instead of retrying automatically.
+
+Local validation: macOS 27.0.1 (26A434), ARM64, .NET SDK 8.0.426,
+Avalonia 11.3.22, Python 3.13.16. The signed packaged build passes 24 native
+regression groups, one startup UI check and eight shared UI groups. The shared
+restart group checks completed replacement, restore, rejected payload, lock
+release, spaced paths and preservation of personal data/settings. Python shared
+UI/compatibility tests pass 3/9. The package test runs the copied Mac helper,
+asserts no installation while its parent is alive, replaces a damaged bundled
+launcher, opens the installed app in a new process and renders successfully;
+strict installed/repaired signatures pass. The existing launcher self-repair/
+restart test also passes. The new build's read-only `--check` against the Desktop
+portable installation passes without starting the game or modifying personal
+files.
+
+Windows integration now exercises a real helper process and the installed
+launcher restart entry point, including parent waiting and personal-file
+preservation. It and the shared regression group run through the existing
+Windows/macOS launcher workflow; hosted results are pending at implementation
+and will be recorded in the PR. Synthetic package/render tests do not prove
+gameplay or Gatekeeper browser-download behavior. No installed user app,
+game files, saves or settings were replaced by this task. No release published.
+
+## Launcher download status spacing (2026-10-20)
+
+Prepared on `codex/launcher-download-spacing` from main `9324a7d`, in the commit
+carrying this entry. The download summary, channel selector and progress bar
+were siblings assigned to the same grid row in `tools/launcher/Launcher.xaml`.
+Long transfer text therefore covered the channel label and dropdown. A shared
+vertical stack now places the channel section, wrapping summary and progress
+bar in order, with the action row below. Windows WPF and generated native Mac
+layout consume this same change; no download or installation policy changes.
+
+Local validation: macOS 27.0.1 (26A434), ARM64, pinned .NET SDK 8.0.426,
+Avalonia 11.3.22, Python 3.13.16. The signed native build passes 22 launcher
+regression groups, the translocation startup UI check and eight shared UI groups.
+All three shared layout/theme tests and nine compatibility-policy tests pass.
+New offline download previews were visually inspected at 1152 x 772 and
+1000 x 720, including the compact view scrolled to the bottom: channel controls,
+two-line transfer text, progress bar and pause button no longer overlap.
+The minimum-size window uses the existing card scrollbar to reach the pause
+button. Preview commands are documented in `docs/mac-launcher.md`.
+
+The first Windows CI attempt (run 39378565086) stopped before compilation:
+`launcher-release.py` decoded the UTF-8 GitHub event using Windows CP1252, which
+rejects a byte in the PR body's curly quotes. Event parsing now specifies UTF-8.
+A regression invokes the real plan command with an unescaped Unicode event and
+simulated CP1252 default; it reproduces the failure before the fix and passes
+afterward. All 24 release-policy tests pass locally; the existing workflow runs
+this suite on both hosts.
+
+The read-only launcher `--check` against the existing development checkout was
+attempted but cannot start its missing `.venv/bin/python`; this task does not
+recreate or change that separate environment. Windows/native Mac CI and package
+checks are pending at implementation; exact-revision results will be recorded
+in the PR. Windows visual inspection, a live download and the installed release
+are not validated by these synthetic previews. No game session, personal-file
+changes, merge or release publication. MAC-021 retains wider delivery gaps.
 
 ## Mac launcher translocation recovery (2026-10-19)
 
@@ -12802,3 +12990,111 @@ it remains intact. No personal settings, saves or private texture pack were
 changed. This corrects Windows package layout, not runtime gameplay or native
 Mac distribution. MAC-021 records the host boundary and MAC-053 retains the
 separate Discord acceptance work.
+
+## Native Mac alpha.1 distribution — 2026-10-20
+
+Branch `release/macos-alpha1` packages the native game from the existing
+`v0.3.1-alpha.1` game source (`5db4efc`); packaging and bundled launcher changes
+are recorded separately and do not retag or replace the Windows release.
+
+- Mac mini: macOS 27.0.1 arm64, Apple Clang 21, Python 3.12.12; verified US XBE,
+  pinned runtime/SDL/SDK and MoltenVK. Recreated the copied, broken virtual
+  environment with pinned requirements; preserved the old environment and cache.
+- Native rebuild/regeneration passed three CTests and renderer/input/settings/
+  debug checks. Vulkan reported its known primitive-restart capability warning;
+  no validation errors were reported. Personal saves/settings were isolated.
+- The real ZIP installs and verifies all 61 files on fresh and personal-file
+  fixtures; both installed app signatures and portable dependency hashes pass.
+  Launcher 1.2.21 supplies portable Vulkan loading. All 23 native launcher
+  groups and eight shared UI groups pass. Windows launcher regression suites
+  pass; 102 Python checks and ten subtests pass on Windows (the preceding
+  101-check revision also passed on Mac).
+- A 95.22-second relocated probe on Apple M4 passes: at least 5,100 completed
+  guest frames and sampled 8,700 successful host presents (5,260 guest and 3,440
+  interpolated); normal exit 0, no native fault or shader compilation failure.
+  These counters do not measure display scanout or whole-game performance.
+  Dyld traces show bundled crypto, Vulkan loader, MoltenVK and DXC; none loads
+  from Homebrew or the development SDK. Personal settings remain unchanged.
+  The final capture shows the rendered pause/options menu; complete gameplay
+  and full visual fidelity remain unverified.
+- Alpha.1 native ZIP: 88,570,219 bytes, SHA-256
+  `e462fbabc6ebda3fc411b533da9a98a904d2913796855f828e6f7cb4ca352483`.
+  Game source is `5db4efc`; packaging source is `339fe94`, with the actual
+  launcher source recorded separately in its receipt. Its actual deployment
+  target requires macOS 27.0+; it is ad-hoc signed, without notarization.
+  Mac ZIP/checksum/build provenance are added to the existing alpha.1 release.
+  The Windows assets and release tag are unchanged.
+- Cloud-provider Finder metadata prevented signing under the Mac Desktop.
+  The generated bundle and release staging use a local cache instead; generated
+  bundle metadata is normalized before signing, with source artwork preserved.
+  Source changes remain on this focused branch for review; main is not merged.
+
+
+## 2026-10-20: launcher texture installation and OneDrive path repair
+
+Branch fix/launcher-onedrive-paths, based on main 5db4efc. The local portable
+installation had no Textures folder and logged zero replacements. An attempted
+directory junction was rejected by the launcher. After the user removed that
+junction, a normal directory with 2,484 NTFS file hard links (1,242 DDS plus
+metadata) was installed. Same-file identity was verified for every pair: no
+second texture payload copy. The subsequent user-run session logged 45 loaded
+replacement entries and Enhanced mode. This establishes loading, not visual
+approval or complete remaster coverage. Future new/replaced keys need an explicit
+installation refresh; hard links are not a directory mirror.
+
+A separate path-validation defect also rejects ordinary OneDrive ancestors:
+Core.PathIn rejects every reparse marker, including a measured Cloud Files tag
+0x9000601a. The Windows adapter now reads metadata without following the final
+reparse point and admits only the documented CLOUD / CLOUD_1 through CLOUD_F tag
+family. Unknown tags, junctions and symbolic links remain rejected. Installation,
+download and cleanup guards share this decision; missing-file checks retain
+dangling-link inspection. Reference: Microsoft Reparse Point Tags documentation,
+https://learn.microsoft.com/en-us/windows/win32/fileio/reparse-point-tags.
+
+Validation on Windows x64: build-launcher.ps1 -Test passed all groups, including
+109 updater regressions, existing real junction-cleanup guards, cloud/unknown-tag
+cases, download/recovery, settings, sessions and maintenance. The built launcher's
+PathIn accepts the actual desktop installation's Bin, Textures, settings and
+pending-download paths; it positively identifies the desktop's Cloud Files tag.
+13 Python launcher/handoff tests plus 26 subtests passed. No game build or new
+automated playtest was needed. The original installed launcher rejected
+these paths in a read-only probe. After the user closed the game and launcher,
+the corrected binaries and self manifest were installed locally on October 20.
+Installed SelfUpdate.Complete and GameSettings.StartInfo passed in the Windows
+.NET Framework runtime, resolving all 1,242 DDS files. Nine personal settings
+files and the game build manifest retained their hashes. A small launcher-only
+recovery copy and installation receipt remain under .launcher/local-fixes.
+This local fix has not been published as a launcher release. Personal settings and saves remain
+untouched. Local build output is build/launcher-onedrive-fix in the working root.
+
+Mac: no adapter is required for Windows Cloud Files. The existing Mac rejection
+of filesystem links remains unchanged behind its platform adapter; native Mac
+build/interaction validation was not performed in this Windows-only repair.
+
+
+## Optional launcher texture installation (2026-10-20)
+
+Focused branch: feat/launcher-texture-install, based on main 0e1e868.
+Adds shared opt-in GitHub pack download, local ZIP/folder import, automatic runtime
+path selection, 6 GiB enforcement, DDS/mip and checksum validation, per-part rollback
+and startup recovery. Download parts are below 64 MiB and completed caches are
+removed. No game or personal settings changes are required.
+
+Windows x64/.NET Framework build compiles. Existing 109 updater tests and 9 shared
+UI groups passed; 10 initial texture installation/recovery cases passed before a
+manifest array-shape difference was found and corrected. Full final host checks
+are pending. Concurrent game sessions sometimes block the global updater guard;
+those sessions were not stopped. 43 Python tests and 39 subtests passed.
+
+Read-only pack audit: 1,242 valid DDS/metadata pairs, 989.90 MiB with sanitized
+public metadata, split into 22 bounded release assets. Source paths are stripped;
+private originals, source artwork, prompts, saves and settings are excluded.
+A Windows settings preview shows the optional download/import controls at the
+top of Graphics & resolution. No game playtest or personal installation update
+was performed. Native interaction/scene verification remains MAC-057/MAC-011.
+
+The optional compiled pack is now published as textures-v0.1.0-alpha.1: all
+22 ZIP assets and the sanitized manifest verified against GitHub SHA-256.
+config/texture-pack.json records the exact published files. Publication used one
+bounded part at a time and left no ZIP files in build/texture-publication.
+The launcher installer remains source-only until its PR and a launcher release.

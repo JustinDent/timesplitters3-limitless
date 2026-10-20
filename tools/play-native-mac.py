@@ -46,10 +46,9 @@ def game_environment(base, root, fps=None):
                XDG_CONFIG_HOME=str(settings / 'xdg-config'),
                XDG_DATA_HOME=str(settings / 'xdg-data'), RECOMP_TRACE_BUDGET='0',
                RECOMP_LOG_FILE=str(root / 'logs/native-play.err'))
-    if fps is not None:
-        if fps not in (60,120):raise ValueError('Native FPS must be 60 or 120')
-        env.update(RECOMP_FRAME_INTERP='2' if fps==120 else '1',
-                   RECOMP_FPS_CAP='60' if fps==120 else 'adaptive')
+    if fps not in (None,60):raise ValueError('Only 60 FPS is supported')
+    env.update(RECOMP_FRAME_INTERP='1', RECOMP_FRAME_TARGET='0',
+               RECOMP_FPS_CAP='60', RECOMP_REFRESH_RATE='0')
     return env
 
 
@@ -101,7 +100,7 @@ def drain_log(stream, path, budget=4*1024*1024):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true', help='Read-only prerequisite check')
-    parser.add_argument('--fps', type=int, choices=(60,120), help='Display target for this launch (default: saved preference or 120)')
+    parser.add_argument('--fps', type=int, choices=(60,), help='Display target (60 FPS)')
     parser.add_argument('--vulkan-driver', choices=('moltenvk','kosmickrisp'), help='Temporary driver override; default comes from BUILD.json')
     parser.add_argument('--texture-pack', type=Path, help='Use an existing compiled DDS texture pack for this launch')
     args = parser.parse_args()

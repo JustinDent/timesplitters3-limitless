@@ -160,33 +160,80 @@ namespace TimeSplitters.Launcher
                 Need(SelfUpdate.Complete(install),"Self repair did not restore the modified bundle");Need(File.Exists(Core.PathIn(install,"self-update-preview.png")),"Updated app did not open and render");Need(!Directory.Exists(pending),"Completed staging retained");
                 Need(BundleSignatureValid(install),"Self repair did not restore the app bundle signature");
                 Need(File.ReadAllText(Path.Combine(install,"Saves/keep"))=="preserved save"&&File.ReadAllText(Path.Combine(install,"BUILD.json"))=="preserved game metadata","Package touched personal/game files");
-                Console.WriteLine("Packaged Mac app installed, repaired through a copied helper, restarted and rendered; game metadata and saves preserved.");return 0;
+                Console.WriteLine("Packaged Mac app installed, repaired through a copied helper, restarted and rendered; game metadata and saves preserved.");
+
+                Core.Apply(install,Core.Unpack(Archive(test,"v1.0.0"),Path.Combine(test,"initial-game"),"v1.0.0"),null);
+                Write(install,"Settings/pc-controls.json","personal bindings");Write(install,"Data/keep","personal data");
+                var bundled=changes.ToDictionary(change=>change.Name,change=>File.ReadAllBytes(change.Source));
+                LauncherRestartChecks.Stage(install,"v1.1.0",bundled);
+                // An incomplete equal-version launcher must be replaced by the
+                // bundled app, reproducing the game-update replacement boundary.
+                File.AppendAllText(Core.PathIn(install,Core.AppPath),"old installed fixture");
+                string gameHelper=Core.PathIn(install,".launcher/mac-update-helper");
+                LauncherPlatform.CopyFile(Core.PathIn(install,Core.LauncherName),gameHelper);
+                File.SetUnixFileMode(gameHelper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
+                using(var parent=Process.Start(new ProcessStartInfo("/bin/sleep","2"){UseShellExecute=false})){
+                    var start=new ProcessStartInfo(gameHelper){UseShellExecute=false};
+                    foreach(var arg in new[]{"--test-game-helper",install,parent.Id.ToString()})start.ArgumentList.Add(arg);
+                    using(var child=Process.Start(start)){
+                        Thread.Sleep(250);
+                        Need(!parent.HasExited&&Core.InstalledVersion(install)=="v1.0.0","Game update did not wait for the old process");
+                        if(!child.WaitForExit(40000)){child.Kill(true);child.WaitForExit(3000);throw new Exception("Game-update helper timed out");}
+                        Need(child.ExitCode==0,"Game-update helper failed");
+                    }
+                }
+                Need(Core.InstalledVersion(install)=="v1.1.0"&&SelfUpdate.Complete(install)&&BundleSignatureValid(install),"Game update did not replace the bundled launcher");
+                Need(File.Exists(Core.PathIn(install,"game-update-preview.png")),"Game update did not reopen the installed app");
+                Need(!Directory.Exists(Core.PathIn(install,".launcher/pending")),"Game update retained completed staging");
+                Need(File.ReadAllText(Core.PathIn(install,"Settings/pc-controls.json"))=="personal bindings"&&File.ReadAllText(Core.PathIn(install,"Data/keep"))=="personal data"&&File.ReadAllText(Core.PathIn(install,"Saves/keep"))=="preserved save","Game update changed personal files");
+                Console.WriteLine("Packaged Mac game update waited for the parent, replaced the bundled launcher, restarted and rendered with personal files preserved.");return 0;
             }
             catch(Exception e){Console.Error.WriteLine(e);return 1;}
+            finally{Directory.Delete(test,true);}
+        }
+        public static int VerifyGamePackage(string archive,string version)
+        {
+            string test=Path.Combine(Path.GetDirectoryName(Path.GetFullPath(archive)),"game-package-check-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(test);
+            try {
+                foreach(bool preserve in new[]{false,true}){
+                    string root=Path.Combine(test,preserve?"existing":"fresh"),pending=Path.Combine(root,".launcher/pending");Directory.CreateDirectory(pending);
+                    if(preserve){Write(root,"Data/keep","game data");Write(root,"Saves/keep","save");Write(root,"Settings/pc-controls.json","personal controls");Write(root,"Settings/pc-display.ini","personal display");}
+                    Core.Unpack(archive,Path.Combine(pending,"payload"),version);Write(pending,"release.json",Json.Encode(new{version=version}));
+                    Core.InstallPending(root);
+                    var manifest=NativeHost.CheckBuild(root);var files=(Dictionary<string,object>)manifest["files"];
+                    foreach(var pair in files){if(preserve&&pair.Key=="Settings/pc-controls.json")continue;Need(Core.Hash(Core.PathIn(root,pair.Key))==(string)pair.Value,"Installed package file changed: "+pair.Key);}
+                    Need(SelfUpdate.Complete(root)&&BundleSignatureValid(root),"Bundled launcher failed installation/signature checks");
+                    if(preserve)Need(File.ReadAllText(Core.PathIn(root,"Data/keep"))=="game data"&&File.ReadAllText(Core.PathIn(root,"Saves/keep"))=="save"&&File.ReadAllText(Core.PathIn(root,"Settings/pc-controls.json"))=="personal controls"&&File.ReadAllText(Core.PathIn(root,"Settings/pc-display.ini"))=="personal display","Personal files changed");
+                    Console.WriteLine("Mac game package installed and verified "+files.Count+" files (preserve personal files: "+preserve+").");
+                }
+                return 0;
+            }catch(Exception e){Console.Error.WriteLine(e);return 1;}
             finally{Directory.Delete(test,true);}
         }
         public static int Run()
         {
             sandbox=Path.Combine(AppContext.BaseDirectory,"tsfp-mac-launcher-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(sandbox);
             try{
+                Test("shared update restart and failure recovery", LauncherRestartChecks.Run);
+                LauncherTextureChecks.Run();
                 Test("translocation recovery validates the real writable installation and preserves personal files", LocationTests);
                 Test("game cleanup preserves launcher files and legacy casing while retired game files roll back", GamePruningTest);
                 Test("Mac release selection rejects Windows packages",()=>{Need(ReleaseClient.Select(Metadata("windows-x64"),true)==null,"Windows package selected");Need(ReleaseClient.Select(Metadata("macos-arm64"),false)!=null,"Native release missing");Need(ReleaseClient.Select(Metadata("macos-arm64","v1.1.0-alpha.1",true),false)==null,"Preview selected on stable");});
                 Test("JSON adapter round-trips nested fields and journal records",()=>{var map=Json.Object("{\"nested\":{\"flag\":true},\"list\":[1,2],\"n\":9223372036854775807}");Need(map["nested"] is Dictionary<string,object> && map["list"] is object[] && (long)map["n"]==long.MaxValue,"JSON types lost");var journal=Json.Serializer().Deserialize<List<Original>>(Json.Encode(new[]{new Original{Name="Bin/test",Existed=true}}));Need(journal[0].Name=="Bin/test"&&journal[0].Existed,"Journal fields lost");});
                 Test("settings drafts, backups, unknown fields and external edit protection",()=>{var r=NewRoot("settings");var model=GameSettings.Load(r,null);Need(!Directory.Exists(Path.Combine(r,"Settings")),"Load wrote settings");model.Width=1280;model.Height=720;model.Save();var file=Core.PathIn(r,"Settings/pc-controls.json");var map=Json.Object(File.ReadAllText(file));map["future_option"]="preserve";File.WriteAllText(file,Json.Encode(map));var before=File.ReadAllBytes(file);model=GameSettings.Load(r,null);model.Sensitivity=.2;model.Save();Need(File.ReadAllBytes(file+".bak").SequenceEqual(before),"Backup differs");Need(Json.String(Json.Object(File.ReadAllText(file)),"future_option")=="preserve","Unknown setting lost");var a=GameSettings.Load(r,null);File.AppendAllText(file,"\n");Reject(()=>a.Save());});
                 Test("multi-file settings failure rolls back committed files",()=>{var r=NewRoot("settings-failure");var m=GameSettings.Load(r,null);m.Save();var files=LauncherPlatform.Settings(r).Select(p=>Core.PathIn(r,p)).ToArray();var old=files.Select(File.ReadAllBytes).ToArray();Directory.CreateDirectory(files[2]+".bak");m.Sensitivity=.3;Reject(()=>m.Save());for(int i=0;i<files.Length;i++)Need(File.ReadAllBytes(files[i]).SequenceEqual(old[i]),"Partial settings commit");});
-                Test("PC presentation preferences survive unrelated native settings edits",()=>{
+                Test("retired presentation preferences migrate during native settings edits",()=>{
                     var r=NewRoot("pc-presentation");
                     Write(r,"tools/play-native-mac.py","fixture");
                     Write(r,"private/native-settings/runtime.conf","frame_interp = 1\nframe_target = 144\nrefresh_rate = 144\nframe_cap = 30\nfuture_setting = retained\n");
                     var m=GameSettings.Load(r,null);
-                    Need(!m.SupportsPresentationTarget,"Unsupported native presentation target advertised");
                     m.Sensitivity=.2;m.Save();
                     var saved=GameSettings.Load(r,null);
-                    Need(saved.PresentationFps==144 && saved.RefreshRate==144 && saved.Interpolation==1 && saved.FrameCap=="30","PC timing preference lost or activated");
+                    Need(saved.PresentationFps==0 && saved.RefreshRate==0 && saved.Interpolation==1 && saved.FrameCap=="60","Retired timing preference not migrated");
                     Need(saved.Sensitivity==.2,"Native edit not saved");
+                    Need(File.ReadAllText(Path.Combine(r,"private/native-settings/runtime.conf")).Contains("future_setting = retained"),"Unrelated setting lost during migration");
                     var fresh=GameSettings.Load(NewRoot("native-defaults"),null);
-                    Need(fresh.Interpolation==2 && fresh.PresentationFps==0,"Native 120 default changed");
+                    Need(fresh.Interpolation==1 && fresh.PresentationFps==0,"Native 60 FPS default incorrect");
                 });
                 Test("checkout settings and launch routing preserve user defaults",()=>{var r=NewRoot("checkout");Write(r,"tools/play-native-mac.py","fixture");Write(r,"private/native-settings/runtime.conf","frame_interp = 1\nfuture_setting = retained\n");var m=GameSettings.Load(r,null);Need(m.Interpolation==1,"60 FPS preference lost");m.Save();Need(!Directory.Exists(Path.Combine(r,"Settings")),"Created package settings in checkout");Environment.SetEnvironmentVariable("RECOMP_TEST_STALE","bad");var info=GameSettings.StartInfo(r);Need(info.FileName==Path.Combine(r,"build/macos/futureperfect_recomp"),"Wrong native executable");Need(info.EnvironmentVariables["RECOMP_SAVE_DIR"]==Path.Combine(r,"private/saves"),"Wrong save route");Need(info.EnvironmentVariables["RECOMP_DISPLAY_CONFIG"]==Path.Combine(r,"private/native-settings/runtime.conf")&&info.EnvironmentVariables["TSFP_DISPLAY_CONFIG"]==Path.Combine(r,"config/pc-display.ini"),"Display routes wrong");Need(!info.EnvironmentVariables.ContainsKey("RECOMP_TEST_STALE"),"Inherited override leaked");Need(File.ReadAllText(Path.Combine(r,"private/native-settings/runtime.conf")).Contains("future_setting = retained"),"Unsupported setting lost");Environment.SetEnvironmentVariable("RECOMP_TEST_STALE",null);});
                 Test("binding conflicts, reserved keys and clear are shared",()=>{Need(GameSettings.WheelUpKey==134 && GameSettings.WheelDownKey==135 && GameSettings.BindingLabel("key:F24")=="Wheel down" && GameSettings.CaptureKey(162)==17,"Native capture differs from shared bindings");var m=GameSettings.Load(NewRoot("bindings"),null);m.Assign(0,0,65,true);Need(m.Conflict(1,65)==0,"Conflict missing");Reject(()=>m.Assign(1,0,65,false));m.Assign(1,0,65,true);Need(m.Binding(0)[0]=="none","Move left old key");Reject(()=>m.Assign(1,0,113,true));m.Assign(1,0,0,true);Need(m.Binding(1)[0]=="none","Clear failed");});
@@ -220,6 +267,20 @@ namespace TimeSplitters.Launcher
                     Need(NativeHost.ReadGpuHelper(Helper("head -c 100000 /dev/zero")).Length==16384,"Unbounded or blocked output");
                     Reject(()=>NativeHost.ReadGpuHelper(Helper("printf rejected; exit 7")));
                     Reject(()=>NativeHost.ReadGpuHelper(Helper("sleep 5"),50));
+                });
+                Test("portable Vulkan uses only hashed bundled libraries without a checkout",()=>{
+                    var r=NewRoot("portable-vulkan");var hashes=new Dictionary<string,object>();
+                    foreach(var name in new[]{"Bin/libvulkan.1.dylib","Bin/libMoltenVK.dylib","Bin/libdxcompiler.dylib","Bin/libcrypto.3.dylib","Support/Vulkan/MoltenVK_icd.json"}){
+                        Write(r,name,name.EndsWith(".json")?"{\"ICD\":{\"library_path\":\"../../Bin/libMoltenVK.dylib\"}}":"library");hashes[name]=Core.Hash(Core.PathIn(r,name));
+                    }
+                    var manifest=new Dictionary<string,object>{{"vulkan_driver","moltenvk"},{"files",hashes}};
+                    var env=NativeHost.PortableGpuEnvironment(r,manifest);
+                    Need((string)env["SDL_VULKAN_LIBRARY"]==Core.PathIn(r,"Bin/libvulkan.1.dylib")&&(string)env["VK_DRIVER_FILES"]==Core.PathIn(r,"Support/Vulkan/MoltenVK_icd.json"),"Wrong packaged GPU paths");
+                    Need(!Directory.Exists(Path.Combine(r,"Settings")),"Read-only GPU check wrote settings");
+                    Write(r,"Bin/libcrypto.3.dylib","altered");Reject(()=>NativeHost.PortableGpuEnvironment(r,manifest));
+                    hashes["Bin/libcrypto.3.dylib"]=Core.Hash(Core.PathIn(r,"Bin/libcrypto.3.dylib"));
+                    Write(r,"Support/Vulkan/MoltenVK_icd.json","{\"ICD\":{\"library_path\":\"/tmp/untrusted.dylib\"}}");hashes["Support/Vulkan/MoltenVK_icd.json"]=Core.Hash(Core.PathIn(r,"Support/Vulkan/MoltenVK_icd.json"));Reject(()=>NativeHost.PortableGpuEnvironment(r,manifest));
+                    manifest["vulkan_driver"]="unknown";Reject(()=>NativeHost.PortableGpuEnvironment(r,manifest));
                 });
                 Test("wrong XBE and altered native executable fail read-only checks",()=>{var r=NewRoot("checks");Write(r,"Data/default.xbe","invalid");Reject(()=>NativeHost.CheckData(r));Write(r,LauncherPlatform.GameBinary,"invalid");Write(r,"BUILD.json",Json.Encode(new{version="v1.0.0",executable_sha256=new string('a',64)}));Reject(()=>NativeHost.CheckBuild(r));Need(!Directory.Exists(Path.Combine(r,"Saves")),"Check created saves");});
                 Test("verified download and cached replay use shared integrity policy",()=>{var r=NewRoot("download");byte[] bytes=Encoding.UTF8.GetBytes("verified archive");var release=new Release{AssetUrl="https://github.com/"+ReleaseClient.Repository+"/releases/download/v1.0.0/a.zip",Digest="sha256:"+Hash(bytes),Size=bytes.Length};int calls=0;using(var c=new ReleaseClient(new Handler{Reply=q=>{calls++;return new HttpResponseMessage(HttpStatusCode.OK){Content=new ByteArrayContent(bytes)};}})){c.Download(release,Path.Combine(r,"one.zip"),null,CancellationToken.None,Path.Combine(r,"cache")).GetAwaiter().GetResult();c.Download(release,Path.Combine(r,"two.zip"),null,CancellationToken.None,Path.Combine(r,"cache")).GetAwaiter().GetResult();}Need(calls==1&&File.ReadAllBytes(Path.Combine(r,"two.zip")).SequenceEqual(bytes),"Cache replay failed");});

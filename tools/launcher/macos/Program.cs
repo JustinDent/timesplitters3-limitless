@@ -21,9 +21,12 @@ namespace TimeSplitters.Launcher
             Arguments=args;
             if(args.Length==3 && args[0]=="--test-self-helper")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]),true);
             if(args.Length==3 && args[0]=="--apply-self")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]));
+            if(args.Length==3 && (args[0]=="--apply-game" || args[0]=="--rollback-game" || args[0]=="--test-game-helper"))
+                return NativeStartup.ApplyGame(Path.GetFullPath(args[1]),Int32.Parse(args[2]),args[0]=="--rollback-game",args[0]=="--test-game-helper");
             if(args.Length==3 && args[0]=="--extract-art") { ExtractArt(args[1],args[2]);return 0; }
             if(args.Length==1 && args[0]=="--test")return NativeTests.Run();
             if(args.Length==3 && args[0]=="--verify-package")return NativeTests.VerifyPackage(args[1],args[2]);
+            if(args.Length==3 && args[0]=="--verify-game-package")return NativeTests.VerifyGamePackage(args[1],args[2]);
             if(args.Length==1 && args[0]=="--test-ui"){AppBuilder.Configure<NativeApplication>().UsePlatformDetect().SetupWithoutStarting();try{NativeTests.LocationUi();return LauncherSharedUiChecks.Run();}catch(Exception e){Console.Error.WriteLine(e);return 1;}}
             Root=FindRoot(args);
             if(args.Contains("--check")){try{Core.Require(!NativeInstallation.Translocated(Root),NativeInstallation.Guidance);NativeHost.CheckData(Root);NativeHost.CheckBuild(Root);GameSettings.Load(Root,null);Console.WriteLine("Native Mac launcher prerequisites passed.");return 0;}catch(Exception e){Console.Error.WriteLine(e.Message);return 1;}}
