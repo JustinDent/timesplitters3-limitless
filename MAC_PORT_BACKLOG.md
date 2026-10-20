@@ -1115,6 +1115,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 texture batch 249: four material/equipment replacements installed,
+  four drafts held for markings, brightness or band geometry. Total 1,469 installed.
+  Fresh whole-pack Python audit and four new Windows parser checks pass; prior
+  1,465 hashes/checker identity unchanged. Six RAM comparisons replay exactly.
+  Pack 1,151,369,672 bytes; temporary snapshot 268,172,153 bytes, below caps.
+  Actual Windows allocation queried without errors; provenance retains source
+  sizes and resampling. No platform adapter/runtime change or gameplay.
+  **Awaiting validation** remains for Mac GPU, mapped seams/markings, material
+  lighting, render modes and residency. See STATUS.md artwork batch 249.
+
 - 2026-10-20 hybrid queue reconciliation: shared Python planner accepts the
   environment_material alias and routes mixed sensitive categories to specialist
   review. 145 keys join bounded material batches; 1,191 move to specialist review.

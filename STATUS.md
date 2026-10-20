@@ -1,5 +1,47 @@
 # Measured progress
 
+## Texture artwork batch 249: four replacements installed (2026-10-20)
+
+Returned to artwork production after the completed known-key appearance pass and
+queue reconciliation. Eight cached original PNGs matched archive RGBA, dimensions
+and opaque alpha exactly; supported XBE hash verified. Built-in image generation
+produced eight sources: two 1254x1254, five 1774x887 and one 887x1774, totaling
+23,246,081 bytes. No original exports or raster review files were created.
+
+Accepted dark industrial panel 65eeec8b528160e3, red/brass component 76767c3526d0cb07,
+hammered brass dish 79391994e8392e9e and carved trim 865403494ba0c46a. Their output
+sizes are 1024x1024 for the panel and 1024x512 for the other three, LANCZOS
+resampled from generated sources, DXT1 with mip chains; these are not native 4K.
+Held hatch 79b5443d96164ab9 for altered red markings, brown trim 839469ebbe1e4fb1
+for +26.60% brightness, oval fitting 3b193ff21e5daba1 for -24.13% brightness and
+changed rim lighting, and blue strip 5b0b7691d2f2edf0 for a widened/upward-shifted
+gold band and weakened joints. Held drafts do not count as complete.
+
+Six RAM comparisons (full, repeated, original-grid and marking focus) inspected
+and replayed exactly; 1,626,027 raster bytes were not written. Four new Windows
+native DDS parser checks pass. All prior 1,465 hashes and checker identity are
+unchanged against batch 242 evidence; fresh Python whole-pack audit passes all
+1,469 installed DDS. Counts: 5,186 needing art, 1,469 installed, 157 held. All
+6,812 known keys remain classified; category/use and embedded/procedural coverage
+remain unfinished. No runtime/build changes or gameplay; mapped scenes, material
+lighting, edge sampling, Mac GPU, render modes and residency remain unverified.
+
+Pack is 1,151,369,672 bytes, an increase of 1,749,930 bytes, below 6144 MiB.
+Temporary snapshot: 268,172,153 bytes, below 256 MiB with 263,303 bytes headroom.
+Windows GetCompressedFileSizeW independently queried all 10,310 texture-workspace
+files after installation with no errors: logical and allocated snapshots both
+7,342,343,772 bytes, including source art; free disk 84,669,186,048 bytes. This
+excludes Codex default generation outputs outside the project. Metadata writes
+follow the snapshot. No cleanup, staging, duplicate extracts or publication.
+One active pack, 512 MiB residency limit, saves and personal settings preserved.
+
+Private evidence: review/hybrid-249-selection.json, prompts.json, per-key generation
+receipts, memory-review.json, decisions.json, native-audit.json, acceptance.json
+and physical-storage-final.json (all filenames use the hybrid-249 prefix).
+Previous response was a status explanation, not production progress; state was
+revalidated before this batch. MAC-011 remains Awaiting validation. Changes local
+on issue #74 branch; installed-and-audited playtest gate remains unmet.
+
 ## Texture hybrid queue: reconcile completed inventory labels (2026-10-20)
 
 The planner recognized only environment for material batches, leaving the newer
