@@ -1,5 +1,46 @@
 # Measured progress
 
+## Texture batch 238: three individually reviewed machinery atlases (2026-10-20)
+
+Eight machinery/prop references were individually inspected and edited through
+built-in image generation. Existing cached originals matched archive RGBA exactly;
+all are opaque. No new original exports or disk contact sheets were written.
+Three accepted offline and installed: 6fcd5b731325bc4c (paired yellow-lamp panel),
+787969fba3da53ee (riveted plate with paired hinge assemblies), and
+a43827c3360eee7b (socket/latch atlas). Atlas divisions, lamp centers, hinge
+boundaries, seven gold sockets, two lower latches and principal fastener layouts
+remain aligned. Mean luminance changes: +3.02%, -2.89% and -2.90% respectively.
+Full, 2x2-repeat and original-grid checks pass. An initial thumbnail concern
+about the hinge panel's bottom rivet row was disproved by the full comparison:
+that row is present in the original. Scene mapping and lamp behavior remain pending.
+
+Five held: 6c3507f5d4b07ee6 has overly bright frame/wires (+24.87%) and changed
+lattice rhythm; 700da32297609824 loses broad green glow/center fill (-12.21%);
+7ba9da7d189172e6 brightens bronze patina and reflected bands (+53.94%);
+7c1cfb73a5b2def5 brightens its frame/fittings (+22.24%); ab5d953d8c7a1c3e
+darkens subtle atlas panels and changes the lower-left highlight (-14.85%).
+None installed. These need focused lighting/layout corrections, not auto-approval.
+
+Actual sources: eight 1254x1254 files totaling 23,496,557 bytes. Three installed
+outputs are 1024x1024, LANCZOS downsampled without crop/color/alpha edits;
+not native 4K. Five RAM comparisons avoid 2,149,450 raster bytes and replay
+exactly. Three new Windows DDS parser checks pass; prior 1,441 DDS hashes and
+checker identity match existing evidence. All 1,444 installed files pass a fresh
+Python format/metadata/dimensions/aspect/mip/hash audit. Queue/progress refreshed:
+1,444 installed, 5,225 needing art, 143 held; 6,121 classified, 691 unclassified.
+Private evidence: review/hybrid-238-acceptance.json, decisions, memory-review,
+selection, prompts, generation receipts and native-audit. Originals/art stay private.
+
+Pack including metadata: 1,140,170,496 bytes (1087.35 MiB), up 2,098,872 bytes,
+below 6144 MiB. Temporary snapshot: 268,300,554 bytes, below 256 MiB with
+134,902 bytes headroom. Texture workspace including source art: 7,213,043,522
+bytes; free disk snapshot: 85,809,721,344 bytes. Allocation helper equals logical
+size; it is not independent physical-allocation proof. No cleanup attempted;
+no denied path retried. One active pack, unchanged 512 MiB residency limit.
+No gameplay, runtime changes, duplicate game/build/staging, publication or personal
+save/settings edits. MAC-011 stays Awaiting validation. Inventory/category coverage
+and consolidated scene checks remain unfinished; the playtesting gate is not met.
+
 ## Texture batch 237: six masonry, timber and striated materials (2026-10-20)
 
 Eight original references were inspected and edited with built-in image generation.
