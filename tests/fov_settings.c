@@ -16,6 +16,7 @@ RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 RECOMP_TLS uint16_t g_fp_cc,g_fp_control_word;
 static int available=1,returned;
+static unsigned built_rows, built_row_count;
 static char runtime_path[MAX_PATH];
 uint32_t recomp_config_title_id(void) { return 0x45410066; }
 int recomp_settings_path(uint32_t title,char *out,size_t size)
@@ -65,6 +66,7 @@ BOT_STUB(sub_002C1570) BOT_STUB(sub_002C1490)
 /* Native builder/centring contract: width is a percentage, not pixels.
  * An out-of-range width renders a panel with its rows outside the canvas. */
 void sub_00075B70(void) {
+    built_rows=built_row_count=0;
     uint32_t word=WORD_AT(g_esp+12);float width;memcpy(&width,&word,4);
     float left=(100.f-width)*.5f;
     CHECK(isfinite(width) && width>0 && left>=0 && left+width<=100.f);
@@ -89,9 +91,9 @@ static float drawn;
 void sub_000814B0(void) { uint32_t b=WORD_AT(g_esp+4);memcpy(&drawn,&b,4);g_esp+=4; }
 void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }
 void sub_00079B70(void) { returned++;g_esp+=4; }
-static unsigned built_rows;
 void sub_00079D60_gen(void) {
-    unsigned id=WORD_AT(g_esp+8);CHECK(id<8);built_rows|=1u<<id;
+    unsigned id=WORD_AT(g_esp+8);CHECK(id<32);
+    built_rows|=1u<<id;++built_row_count;
     g_eax=0x200000+id*0x200;g_esp+=4;
 }
 static void call(uint32_t address,int selected,unsigned buttons)
@@ -138,8 +140,9 @@ int main(int argc,char **argv)
     call(PC_DISPLAY_MENU_CALLBACK,0,0);CHECK(staged_fov==55);
     call(BUILD_CB,0,0);
     CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(7)),"Aspect ratio"));
-    /* The retired timing submenu used row 6; remaining controls keep IDs. */
-    CHECK(built_rows==0xbfu);
+    /* Aspect, resolution, FOV, textures, Apply, Reset and Back only.
+     * The retired Smoothness row (6) must not be offered. */
+    CHECK(built_row_count==7 && built_rows==0xbf);
     CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(2)),"Textures"));
     CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(3)),"Classic"));
     CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(10)),"Enhanced"));
@@ -217,8 +220,12 @@ int main(int argc,char **argv)
     call(SELECT_CB,3,0);CHECK(pc_display_fov()==90 && page==2);
     CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));content("TSFP_DISPLAY_V2 1920 1080 90\n");
     CHECK(pc_display_set_fov(55) && pc_display_save());content("TSFP_DISPLAY_V1 1920 1080\n");
-    /* Display edits preserve runtime preferences. Fixed-60 normalization is
-     * owned by the runtime/launcher, not the resolution/FOV menu. */
+    /* Returning from feedback rebuilds the same seven-row menu. Back still
+     * exits normally after removal of the Smoothness submenu. */
+    call(BACK_CB,0,0);CHECK(page==0 && built_row_count==7 && built_rows==0xbf);
+    {int before=returned;call(SELECT_CB,5,0);CHECK(returned==before+1);}
+    content("TSFP_DISPLAY_V1 1920 1080\n");
+    /* Display/FOV edits must leave unrelated runtime preferences untouched. */
     {
         char text[256]={0};FILE *f=fopen(runtime_path,"rb");CHECK(f);
         fread(text,1,sizeof text-1,f);CHECK(!ferror(f) && feof(f));CHECK(!fclose(f));

@@ -191,6 +191,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-054 | Fractional presentation targets and Windows transform setup (issue #167) | Awaiting validation |
 | MAC-055 | Persist accepted frontend Controls before quitting Settings | Awaiting validation |
 | MAC-056 | Texture-camera composition alignment (issue #49) | Awaiting validation |
+| MAC-057 | Optional texture pack delivery through the launcher | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -1571,6 +1572,20 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Automatic restart after game updates (2026-10-20, commit carrying this
+  entry on `codex/launcher-update-restart`):** Windows already used a copied
+  updater to close/apply/reopen; Mac applied game packages inside the old UI
+  process, leaving replaced launcher code active. Both helpers now use shared
+  `tools/launcher/UpdateRestart.cs`; installation locks and relaunch commands
+  remain in `LauncherPlatform.cs`. Native install, repair and restore route
+  through `NativeStartup.HandoffGame`. Mac self-update and game-update restarts
+  retain the selected installation root, including translocated app launches.
+  Native regressions, shared success/failure/restore tests and an actual packaged
+  helper replacement/restart/render pass locally. Windows CI is pending at
+  implementation, with shared and separate-process regressions in its existing
+  launcher workflow. No gameplay or browser-download delivery claim; status
+  remains Awaiting validation for wider delivery work.
+  [Evidence](STATUS.md#automatic-launcher-restart-after-updates-2026-10-20).
 - **Download status spacing (2026-10-20, commit carrying this entry on
   `codex/launcher-download-spacing`):** The Windows source layout placed channel
   controls, transfer text and the progress bar in one grid row; the generated
@@ -2717,7 +2732,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-054 — Fractional presentation targets and Windows transform setup (issue #167)
 
-- **Fixture repair (2026-10-20, PR #216, uncommitted):**
+- **Fixture repair (2026-10-20, PR #219, commit `0f01b2ce`):**
   `tests/fov_settings.c` retained deleted motion APIs and the old timing label.
   Its replacement checks assert the fixed-60 menu's row set and preservation of
   unrelated runtime settings, keeping the existing FOV/texture/rollback coverage.
@@ -2732,9 +2747,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   is replaced with inert recorder ABI compatibility functions. Shared launcher
   UI removes timing controls and migrates old values without changing unrelated
   preferences. Native scripts reject higher targets and no longer default to 2x.
-  Historical implementation notes below are superseded. Native build, GPU and
-  launcher execution still need Mac validation; no Mac result is claimed from
-  Windows checks. See [fixed-60 validation](STATUS.md#fixed-60-fps-restoration-2026-10-20).
+  Historical implementation notes below are superseded. PR #216 hosted run
+  39380510747 passed Mac native regressions, patch upgrades and asset-free GPU
+  checks. Full Mac game/visual validation remains pending; these CI checks do
+  not establish gameplay fidelity. See [fixed-60 validation](STATUS.md#fixed-60-fps-restoration-2026-10-20).
 
 
 - **Status:** Awaiting validation
@@ -2888,6 +2904,27 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   following U logo at 4:3 and widescreen ratios. Confirm no left black strip,
   clipped picture or shifted mask, then check normal HUD and terminal cameras.
 - **PC evidence:** See the issue #49 section in STATUS.md.
+
+### MAC-057 — Optional texture pack delivery through the launcher
+
+- **Status:** Awaiting validation
+- **Behavior:** Players explicitly download the optional GitHub texture pack or
+  select a local ZIP/folder in launcher Graphics & resolution settings. The
+  shared installer chooses the runtime's texture path, validates DDS/metadata,
+  enforces 6 GiB, preserves unrelated files and recovers interrupted replacements.
+- **Source:** `feat/launcher-texture-install` (uncommitted at entry creation);
+  `tools/launcher/TexturePack.cs`, `TextureDownload.cs`, `SettingsPage.cs`,
+  host window adapters and `tools/texture-release.py`.
+- **PC evidence:** Windows compilation, shared UI and installer tests cover
+  placement, ZIP validation, checksums, cancellation and recovery. Final results
+  are recorded in `STATUS.md`.
+- **Existing Mac support:** Uses the same service and UI; the adapter uses native
+  file/folder pickers and the existing checkout/portable texture-path policy.
+  Both host builds execute `tests/launcher_textures.cs` and shared UI contracts.
+- **Remaining validation:** Native CI build/contracts and packaged interaction;
+  verify opt-in confirmation, cancellation, installation under a portable root
+  and a source checkout, then reuse existing loader evidence. Actual Mac texture
+  scene fidelity remains under MAC-011 and the near-completion playtest policy.
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 
