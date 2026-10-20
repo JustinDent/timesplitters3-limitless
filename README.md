@@ -180,7 +180,7 @@ OS integrations use host adapters. See [launcher development](docs/shared-platfo
 
 | Controls | Display | Launcher |
 | --- | --- | --- |
-| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) selects aspect-ratio groups, resolution and vertical FOV (40–100°, default 55°). Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Repair / Verify → Open game folder** opens the installation folder. Its **Diagnostics** tab provides system reports and GitHub reporting in launcher v1.2.12. **Saves**, **View logs** and **Support** open the save folder, logs and issue tracker. |
+| **F2** opens keyboard/mouse settings. Save bindings, sensitivity and inversion. Pause before editing. | **Settings → Display settings** (or paused **Options**) groups **Screen**, **Camera**, **Textures** and **Frame rate**. Screen selects aspect ratio and resolution; Camera sets vertical FOV (40–100°, default 55°). Frame rate offers **60 FPS (Original)** and beta **120/144 FPS**, applied after saving and restarting. Confirm resolution changes within **15 seconds** or it reverts. | **Check updates → Update release** installs game updates. **Repair / Verify → Open game folder** opens the installation folder. Its **Diagnostics** tab provides system reports and GitHub reporting in launcher v1.2.12. **Saves**, **View logs** and **Support** open the save folder, logs and issue tracker. |
 
 In the main, pause and Tab/Objectives menus, hover to highlight, **left-click** to select and
 **right-click** to go back. Use the **mouse wheel** to move up/down through
@@ -201,7 +201,7 @@ The team chooser supports its left/right arrows and **Select/Back** footer;
 The **Controls** sensitivity bar and **Display settings** FOV bar also support
 clicking and dragging. Sensitivity changes the selected player's controller
 setting; mouse sensitivity remains in PC Settings. FOV changes stay pending
-until **Apply settings**; **Back** discards them.
+until **Apply field of view**; **Back** discards them.
 Visible, enabled prompts along the bottom (Select, Back, Player Progress and
 other shortcuts) turn light blue on hover and accept left-click. This also applies
 to the profile picker's Select, Back and Delete Profile prompts. Disabled prompts
@@ -298,7 +298,7 @@ keep storage and memory bounded. The **optional alpha pack** contains 1,242
 replacements (about 990 MiB installed); much of the game still uses original art.
 In launchers containing the texture installer, choose **Game settings → Graphics
 & resolution → Download 4K texture pack**, then enable **Enhanced** in the game's
-Display settings. The pack is hosted separately on GitHub and is never downloaded
+**Display settings → Textures**. The pack is hosted separately on GitHub and is never downloaded
 by cloning the repository. 4K output does not imply native 4K source detail.
 [Texture guide →](docs/textures.md)
 

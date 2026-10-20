@@ -1,16 +1,33 @@
 # Native high refresh development
 
 The `feature/native-144-fps` branch adds an opt-in path that runs the title's
-own update and rendering loop at a 60, 120 or 144 FPS target. Normal play keeps
-main's fixed-60 default. The old interpolated presentation engine and Smooth
+own update and rendering loop at a 60, 120 or 144 FPS target. Without a saved
+FPS preference, normal play keeps main's fixed-60 default. The old interpolated presentation engine and Smooth
 motion setting remain retired.
 
 Build this branch with the normal `tsfp.ps1 -Action Build` workflow. On Windows,
 open `Play-Native.cmd` for the 144 FPS target. `Play-Native.cmd 120` selects 120;
 `Play-Native.cmd 60` provides a native timing comparison at the original rate.
-These launch overrides do not rewrite saved graphics preferences. Normal
-`Play.cmd` retains the existing behavior. This is a development checkout entry
-point, not a launcher update for an installed release.
+These launch defaults do not rewrite saved graphics preferences.
+
+In **Settings → Display settings → Frame rate** (also in paused Options),
+choose **60 FPS (Original)**, **120 FPS (Beta)** or **144 FPS (Beta)**, select
+**Save frame rate**, then restart the game. The page warns that high refresh
+is beta and can cause gameplay issues. Original 60 FPS is the compatibility
+fallback. Saving does not switch the clock during the current session.
+The selection lives in `pc-frame-rate.ini` beside `pc-display.ini` (or beside
+input settings when no display path is specified), independently of resolution,
+FOV, texture choices and saves. A valid saved choice takes precedence over
+launcher/environment defaults on the next startup, including `Play-Native.cmd`.
+Invalid/missing preferences retain the existing launch behavior. Automated
+rate comparisons must use isolated settings directories without a saved FPS
+choice unless they are explicitly testing preference precedence.
+
+**Display settings** now has separate **Screen**, **Camera**, **Textures** and
+**Frame rate** pages. Resolution keeps its 15-second confirmation; FOV is
+staged until Apply; texture arrows still apply immediately. The same guest
+menu and preference policy serve Windows and Mac. This is a development
+checkout entry point, not a launcher update for an installed release.
 
 The FPS overlay shows `target 144` (or the selected native rate) alongside
 measured FPS. Original timing still shows `cap 60`. Network RTT appears only

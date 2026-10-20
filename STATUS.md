@@ -6,6 +6,23 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Display settings reorganization (this revision):** Screen, Camera, Textures
+  and Frame rate are separate guest pages. Saved 60 FPS Original or beta
+  120/144 FPS applies on restart; the page explains beta gameplay issues and
+  the original-60 fallback. Windows x64/D3D11 Release build and built-in checks
+  pass (binary SHA-256 `6934be7528dfe9635b34c0ca9579f3a93e5183e2373291dec2ad9ff7a88770f2`).
+  Nine focused settings/input tests and 156 timing/input/runtime regressions
+  pass; one Mac compile check is skipped. All 21 patch-upgrade cases pass
+  across the full run and a targeted historical-checkpoint rerun. Final menu
+  corrections pass three settings/config checks. Live keyboard navigation and
+  captures verify the grouped pages, selected FPS row, unclipped beta/restart
+  notes and save feedback. The isolated `display-menu-restart` session saves
+  120 from 144, restarts at native 120, saves Original 60 and restarts with the
+  fixed-60 clock despite the launcher's native-144 default. Test profiles and
+  personal controls/display files remain unchanged. Earlier test windows were
+  closed normally before completion; their exit traces are not crashes.
+  Controller/physical mouse checks and Mac execution remain unverified.
+  The open Arcade regression below remains unresolved.
 - **Open Arcade regression:** A live Vietnam Deathmatch on Windows build
   `c4171db` renders at the native-144 target and accepts pause/resume, but the
   player's position and ammunition do not respond to movement/fire commands.

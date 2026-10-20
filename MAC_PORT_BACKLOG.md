@@ -2960,6 +2960,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Display menu / FPS preference (this revision):** Shared `pc_display_menu.c`
+  groups Screen, Camera, Textures and Frame rate. `pc_frame_rate_settings.h`
+  and the additive `native-frame-rate-settings` patch save original 60 or beta
+  native 120/144 for the next startup. Resolution preview, FOV cancellation
+  and live texture controls stay independent. The shared config library takes
+  one startup snapshot so saving cannot change the live clock. No separate
+  Mac menu implementation is required; Mac compilation, controller/mouse
+  navigation, atomic POSIX save and restart acceptance remain unverified.
+  Windows model/navigation/persistence, live menu layout and actual 144-to-120
+  and 120-to-original-60 save/restart checks pass; see STATUS.md. These do not
+  establish Mac runtime support.
 - **Status:** Awaiting validation
 - **Behavior:** Opt-in `TSFP_NATIVE_FPS` / `native_fps` runs fresh title updates
   and rendering at a 60/120/144 target, disables interpolation, and retains the

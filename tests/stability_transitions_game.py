@@ -26,12 +26,16 @@ def main():
     parser.add_argument('--run-name',default='stability-transitions')
     parser.add_argument('--native-fps',type=int,choices=(60,120,144))
     parser.add_argument('--manual-start',action='store_true')
+    parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
     args=parser.parse_args()
     assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
     assert os.name=='nt'
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest()==XBE_SHA256
     run=ROOT/'private/test-saves'/args.run_name;env=prepare_run(ROOT,run)
+    # This owned, unlocked test directory starts from the requested CLI rate.
+    # In-session restarts retain any preference saved by the menu under test.
+    (run/'pc-frame-rate.ini').unlink(missing_ok=True)
     (run/'runtime.ini').write_text('frame_target = 144\nframe_cap = 60\nframe_interp = 1\nfullscreen = 0\nvrr = 1\n')
     (run/'display.ini').write_text('TSFP_DISPLAY_V1 1280 720\n')
     (run/'discord.ini').write_text('TSFP_DISCORD_V1 0 0\n')
@@ -41,7 +45,7 @@ def main():
     replay=run/'input.txt';replay.write_text('\n'.join(f'{at+d} key {k} {v}' for at,k in initial for d,v in [(0,1),(180,0)])+'\n')
     env.update(TSFP_PC_INPUT_REPLAY=str(replay),TSFP_PC_INPUT_STATE=str(state),
         RECOMP_WINDOW_BACKGROUND='1',RECOMP_PC_MOUSE='1',TSFP_DISCORD_CONFIG=str(run/'discord.ini'),
-        RECOMP_HLE_D3D8_DUMP=str(run/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='120',
+        RECOMP_HLE_D3D8_DUMP=str(run/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='30',
         RECOMP_HLE_D3D8_DUMP_KEEP_LAST='3',RECOMP_FPS='5',RECOMP_INTERP_DEBUG='1')
     if args.native_fps:
         env.update(TSFP_NATIVE_FPS=str(args.native_fps),RECOMP_FRAME_TARGET='0',RECOMP_FRAME_INTERP='1',
@@ -111,6 +115,9 @@ def main():
         for pipe,ext in [(process.stdout,'out'),(process.stderr,'err')]:
             t=threading.Thread(target=drain,args=(pipe,run/f'run{index}.{ext}'),daemon=True);t.start();threads.append(t)
         window=ui.wait_window(process.pid,'TimeSplitters FP')
+        if args.minimized:
+            user.ShowWindow.argtypes=[c.c_void_p,c.c_int]
+            user.ShowWindow(window,6)
         print('Child',index,process.pid,flush=True)
     def close():
         nonlocal handle

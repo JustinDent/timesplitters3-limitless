@@ -16,8 +16,10 @@ RECOMP_TLS double g_fp_stack[8];
 RECOMP_TLS int g_fp_top,g_fp_cmp,g_df;
 RECOMP_TLS uint16_t g_fp_cc,g_fp_control_word;
 static int available=1,returned;
-static unsigned built_rows, built_row_count;
+static unsigned built_rows, built_row_count, built_ids[32];
 static char runtime_path[MAX_PATH];
+const char *recomp_config_lookup(const char *env,const char *key)
+{ (void)env;(void)key;return "144"; }
 uint32_t recomp_config_title_id(void) { return 0x45410066; }
 int recomp_settings_path(uint32_t title,char *out,size_t size)
 { (void)title;return snprintf(out,size,"%s",runtime_path)>0; }
@@ -73,7 +75,11 @@ void sub_00075B70(void) {
     g_esp+=4;
 }
 STUB(sub_00071B10) STUB(sub_00071C50)
-STUB(sub_000771D0) STUB(sub_000770E0)
+STUB(sub_000771D0)
+void sub_000770E0(void) {
+    unsigned index=WORD_AT(g_esp+8);CHECK(index<built_row_count);
+    WORD_AT(WORD_AT(g_esp+4)+0x18c)=built_ids[index];g_esp+=4;
+}
 void sub_00078980(void) {
     unsigned first=WORD_AT(0x200000+0xc8),second=WORD_AT(0x200200+0xc8),
         textures=WORD_AT(0x200e00+0xc8);build_menu();
@@ -93,7 +99,7 @@ void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }
 void sub_00079B70(void) { returned++;g_esp+=4; }
 void sub_00079D60_gen(void) {
     unsigned id=WORD_AT(g_esp+8);CHECK(id<32);
-    built_rows|=1u<<id;++built_row_count;
+    built_rows|=1u<<id;built_ids[built_row_count++]=id;
     g_eax=0x200000+id*0x200;g_esp+=4;
 }
 static void call(uint32_t address,int selected,unsigned buttons)
@@ -137,33 +143,16 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V2 1280 720\n");CHECK(pc_display_fov()==55 && !current.width);
     reload("TSFP_DISPLAY_V1 1280 720 75\n");CHECK(pc_display_fov()==55 && !current.width);
     reload("TSFP_DISPLAY_V1 1280 720\n");
-    call(PC_DISPLAY_MENU_CALLBACK,0,0);CHECK(staged_fov==55);
-    call(BUILD_CB,0,0);
-    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(7)),"Aspect ratio"));
-    /* Aspect, resolution, FOV, textures, Apply, Reset and Back only.
-     * The retired Smoothness row (6) must not be offered. */
-    CHECK(built_row_count==7 && built_rows==0xbf);
-    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(2)),"Textures"));
-    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(3)),"Classic"));
-    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(10)),"Enhanced"));
-    CHECK(texture_row==0x200e00);
-    /* Actual native choice arrows change the live mode, independently of
-       resolution Apply. Host toggles cannot be undone by an unchanged row. */
+    call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    CHECK(page==DISPLAY_HOME && built_row_count==5 && built_rows==0x2f);
+    call(SELECT_CB,2,0);CHECK(page==DISPLAY_TEXTURES && texture_row==0x200e00);
     tsfp_texture_set_4k(0);call(TICK_CB,7,0);CHECK(WORD_AT(texture_row+0xc8)==0);
-    WORD_AT(texture_row+0xc8)=1;call(TICK_CB,7,0);
-    CHECK(tsfp_texture_is_4k() && texture_choice==1);
+    WORD_AT(texture_row+0xc8)=1;call(TICK_CB,7,0);CHECK(tsfp_texture_is_4k());
+    tsfp_texture_toggle();call(TICK_CB,7,0);CHECK(!tsfp_texture_is_4k() && WORD_AT(texture_row+0xc8)==0);
+    WORD_AT(texture_row+0xc8)=99;call(TICK_CB,7,0);CHECK(WORD_AT(texture_row+0xc8)==0);
     content("TSFP_DISPLAY_V1 1280 720\n");
-    tsfp_texture_toggle();call(TICK_CB,7,0);
-    CHECK(!tsfp_texture_is_4k() && WORD_AT(texture_row+0xc8)==0);
-    tsfp_texture_toggle();call(TICK_CB,0,0);
-    CHECK(tsfp_texture_is_4k() && WORD_AT(texture_row+0xc8)==1);
-    WORD_AT(texture_row+0xc8)=99;call(TICK_CB,7,0);
-    CHECK(tsfp_texture_is_4k() && WORD_AT(texture_row+0xc8)==1);
-    WORD_AT(texture_row+0xc8)=0;tsfp_texture_set_4k(1);refresh(0,0);
-    CHECK(WORD_AT(texture_row+0xc8)==1); /* refresh's stale row restore */
-    call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(tsfp_texture_is_4k() && WORD_AT(texture_row+0xc8)==1);
-    WORD_AT(texture_row+0xc8)=0;call(TICK_CB,7,0);CHECK(!tsfp_texture_is_4k());
+    call(BACK_CB,0,0);CHECK(page==DISPLAY_HOME);
+    call(SELECT_CB,0,0);CHECK(page==DISPLAY_SCREEN && built_row_count==4);
     for(unsigned a=1;a<PC_DISPLAY_ASPECT_COUNT;a++) {
         WORD_AT(aspect_row+0xc8)=a;call(TICK_CB,0,0);
         CHECK(selected_aspect==(int)a && mode_count>0);
@@ -171,60 +160,61 @@ int main(int argc,char **argv)
         CHECK(pc_display_aspect(staged)==(int)a);
         for(int i=0;i<mode_count;i++)CHECK(pc_display_aspect(modes[i])==(int)a);
     }
-    /* Group selection is a draft, never a desktop mode change or implicit save. */
-    CHECK(current.width==1280 && current.height==720);
-    content("TSFP_DISPLAY_V1 1280 720\n");
-    call(BACK_CB,0,0);call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
+    CHECK(current.width==1280 && current.height==720);content("TSFP_DISPLAY_V1 1280 720\n");
+    call(BACK_CB,0,0);call(SELECT_CB,1,0);CHECK(page==DISPLAY_CAMERA && WORD_AT(0x30018c)==2);
     for(int i=0;i<100;i++)call(TICK_CB,2,0x80000);CHECK(staged_fov==100 && pc_display_fov()==55);
     for(int i=0;i<100;i++)call(TICK_CB,2,0x40000);CHECK(staged_fov==40);
     WORD_AT(0x70000c)=0x400000;
-    { float rectangle[4]={0,0,400,20};memcpy((void *)(g_xbox_mem_offset+0x400000),rectangle,sizeof rectangle); }
+    {float rectangle[4]={0,0,400,20};memcpy((void *)(g_xbox_mem_offset+0x400000),rectangle,sizeof rectangle);}
     call(FOV_DRAW_CB,1,0);CHECK(drawn==0.f);
     staged_fov=100;call(FOV_DRAW_CB,1,0);CHECK(drawn==1.f);
-    /* The production FOV painter registers its final bar; dragging changes
-     * only the draft and label. Back discards it; Apply below saves it. */
     slider_capture_enabled=1;
     WORD_AT(0x700008)=0x200400;WORD_AT(0x200414)=2;WORD_AT(0x200488)=0x300000;
     WORD_AT(0x300198)=0x200400;
-    FLOAT_AT(0x3000e4)=0;FLOAT_AT(0x3000e8)=0;
-    FLOAT_AT(0x3000ec)=640;FLOAT_AT(0x3000f0)=480;
+    FLOAT_AT(0x3000e4)=0;FLOAT_AT(0x3000e8)=0;FLOAT_AT(0x3000ec)=640;FLOAT_AT(0x3000f0)=480;
     call(FOV_DRAW_CB,2,0);CHECK(drawn==1.f);
-    MenuSliderTrack *fov_track=&menu_slider_tracks[MENU_FOV];
-    CHECK(fov_track->x==298 && fov_track->y==6 && fov_track->w==100 && fov_track->h==8);
-    PcMenuPointer p={0,0,1920,1080,1,1,0,0};
-    memset(&menu_mouse,0,sizeof menu_mouse);
-    CHECK(menu_slider_pointer(0x300000,p,2,348,8,1920,1080));
+    MenuSliderTrack *track=&menu_slider_tracks[MENU_FOV];
+    CHECK(track->x==298 && track->y==6 && track->w==100 && track->h==8);
+    PcMenuPointer pointer={0,0,1920,1080,1,1,0,0};memset(&menu_mouse,0,sizeof menu_mouse);
+    CHECK(menu_slider_pointer(0x300000,pointer,2,348,8,1920,1080));
     CHECK(staged_fov==70 && pc_display_fov()==55);
-    CHECK(!strcmp((char *)(g_xbox_mem_offset+TEXT_ADDRESS(8)),"Vertical FOV: 70"));
-    content("TSFP_DISPLAY_V1 1280 720\n");
-    p.left=0;CHECK(!menu_slider_pointer(0x300000,p,0,348,8,1920,1080));
-    slider_capture_enabled=0;
-    /* Leaving discards the draft. No write on slider movement. */
-    call(BACK_CB,1,0);content("TSFP_DISPLAY_V1 1280 720\n");
-    call(PC_DISPLAY_MENU_CALLBACK,0,0);CHECK(staged_fov==55);
+    pointer.left=0;CHECK(!menu_slider_pointer(0x300000,pointer,0,348,8,1920,1080));slider_capture_enabled=0;
+    call(BACK_CB,0,0);call(SELECT_CB,1,0);CHECK(staged_fov==55);
     for(int i=0;i<20;i++)call(TICK_CB,2,0x80000);
-    call(SELECT_CB,3,0);CHECK(pc_display_fov()==75);content("TSFP_DISPLAY_V2 1280 720 75\n");
+    call(SELECT_CB,3,0);CHECK(page==DISPLAY_STATUS && pc_display_fov()==75);
+    content("TSFP_DISPLAY_V2 1280 720 75\n");call(BACK_CB,0,0);CHECK(page==DISPLAY_CAMERA && WORD_AT(0x30018c)==2);
     call(SELECT_CB,4,0);CHECK(staged_fov==55 && pc_display_fov()==75);
-    /* Combined resolution/FOV preview rolls both back, including global exit. */
-    resolution_row=0;staged=(PcDisplayMode){1920,1080};
-    call(SELECT_CB,3,0);CHECK(page==1 && pc_display_fov()==55);
-    call(BACK_CB,0,0);CHECK(page==0 && current.width==1280 && pc_display_fov()==75);
-    resolution_row=0;staged=(PcDisplayMode){1920,1080};staged_fov=80;
-    call(SELECT_CB,3,0);clock_ms=16000;pc_display_frame_done();
-    CHECK(current.width==1280 && pc_display_fov()==75);content("TSFP_DISPLAY_V2 1280 720 75\n");
-    call(TICK_CB,0,0);CHECK(page==0 && staged_fov==75);
-    resolution_row=0;staged=(PcDisplayMode){1920,1080};staged_fov=90;
-    call(SELECT_CB,3,0);call(SELECT_CB,0,0);
-    CHECK(page==0 && current.width==1920 && pc_display_fov()==90);content("TSFP_DISPLAY_V2 1920 1080 90\n");
-    resolution_row=0;staged=current;staged_fov=80;CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));
-    call(SELECT_CB,3,0);CHECK(pc_display_fov()==90 && page==2);
-    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));content("TSFP_DISPLAY_V2 1920 1080 90\n");
-    CHECK(pc_display_set_fov(55) && pc_display_save());content("TSFP_DISPLAY_V1 1920 1080\n");
-    /* Returning from feedback rebuilds the same seven-row menu. Back still
-     * exits normally after removal of the Smoothness submenu. */
-    call(BACK_CB,0,0);CHECK(page==0 && built_row_count==7 && built_rows==0xbf);
+    CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_READONLY));call(SELECT_CB,3,0);
+    CHECK(pc_display_fov()==75 && page==DISPLAY_STATUS);CHECK(SetFileAttributesA(path,FILE_ATTRIBUTE_NORMAL));
+    call(BACK_CB,0,0);call(BACK_CB,0,0);call(SELECT_CB,0,0);
+    /* Screen changes preserve the separately saved FOV; timeout, cancel and keep. */
+    resolution_row=0;staged=(PcDisplayMode){1920,1080};call(SELECT_CB,3,0);
+    CHECK(page==DISPLAY_CONFIRM && pc_display_fov()==75);call(BACK_CB,0,0);
+    CHECK(page==DISPLAY_SCREEN && current.width==1280 && pc_display_fov()==75);
+    resolution_row=0;staged=(PcDisplayMode){1920,1080};call(SELECT_CB,3,0);
+    clock_ms=16000;pc_display_frame_done();call(TICK_CB,0,0);
+    CHECK(page==DISPLAY_SCREEN && current.width==1280 && pc_display_fov()==75);
+    resolution_row=0;staged=(PcDisplayMode){1920,1080};call(SELECT_CB,3,0);call(SELECT_CB,0,0);
+    CHECK(page==DISPLAY_SCREEN && current.width==1920 && pc_display_fov()==75);
+    content("TSFP_DISPLAY_V2 1920 1080 75\n");
+    call(BACK_CB,0,0);call(SELECT_CB,3,0);CHECK(page==DISPLAY_RATE && staged_rate==2 && WORD_AT(0x30018c)==8);
+    CHECK(strstr((char *)(g_xbox_mem_offset+TEXT_ADDRESS(20)),"beta"));
+    CHECK(strstr((char *)(g_xbox_mem_offset+TEXT_ADDRESS(22)),"Restart"));
+    WORD_AT(rate_row+0xc8)=1;call(TICK_CB,8,0);call(BACK_CB,0,0);
+    CHECK(pc_frame_rate_read()==-1); /* Back discards unsaved rate. */
+    call(SELECT_CB,3,0);CHECK(staged_rate==2);
+    WORD_AT(rate_row+0xc8)=1;call(SELECT_CB,3,0);
+    CHECK(page==DISPLAY_STATUS && pc_frame_rate_read()==120 && pc_native_rate()==144);
+    call(BACK_CB,0,0);CHECK(page==DISPLAY_RATE && WORD_AT(rate_row+0xc8)==1);
+    char rate_path[32768];CHECK(pc_frame_rate_path(rate_path,sizeof rate_path));
+    CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_READONLY));WORD_AT(rate_row+0xc8)=0;
+    call(SELECT_CB,3,0);CHECK(strstr(status,"Could not") && pc_frame_rate_read()==120);
+    CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_NORMAL));call(BACK_CB,0,0);
+    WORD_AT(rate_row+0xc8)=0;call(SELECT_CB,3,0);CHECK(pc_frame_rate_read()==0);
+    content("TSFP_DISPLAY_V2 1920 1080 75\n");
+    call(BACK_CB,0,0);call(BACK_CB,0,0);
+    CHECK(page==DISPLAY_HOME && built_row_count==5);
     {int before=returned;call(SELECT_CB,5,0);CHECK(returned==before+1);}
-    content("TSFP_DISPLAY_V1 1920 1080\n");
     /* Display/FOV edits must leave unrelated runtime preferences untouched. */
     {
         char text[256]={0};FILE *f=fopen(runtime_path,"rb");CHECK(f);
