@@ -3075,6 +3075,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Windows runner exposes it through `--trace-effects`. No game or OS adapter
   changed. Actual Mac execution, upstream scene visibility inputs and GPU
   submission remain unverified. [Dispatch evidence](docs/native-high-refresh-regressions.md#effect-visibility-and-reproduction-tracing).
+- **Second projectile updater audit:** The shared original-code fixture
+  `tests/native_projectile_coupled.c` reproduces lost fractional travel in
+  0xF08D0 for kind 35 and demonstrates the steering/trail cadence changes from
+  opening its gate alone. It executes the original initializer, target sampler,
+  steering and updater with controlled geometry/effect services. This is a
+  strict expected failure while the runtime correction remains outstanding;
+  no OS adapter or production code changed. Actual Mac execution and live
+  projectile identification remain unverified.
+  [Coupled evidence](docs/native-high-refresh-regressions.md#second-projectile-updater-coupled-timing).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.

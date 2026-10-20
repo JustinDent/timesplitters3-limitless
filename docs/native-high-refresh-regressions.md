@@ -1778,3 +1778,76 @@ snapshots / 69,818 bytes with no traversal faults. All were outside Story
 not reproduce the reported shot/trail. Evidence is retained in
 `private/pipeline/effects-dispatch-observation.jsonl` and its `.json` summary.
 The interactive process and its executable were left untouched.
+
+### Second projectile updater coupled timing
+
+Source baseline `38c3f4c`, Windows x64, supported checksum-verified US XBE.
+`tests/native_projectile_coupled.c` translates the complete original
+0xF08D0..0xF1A4B updater, kind-35 initializer 0xE78F0..0xE799A,
+target sampler 0xE1FA0..0xE2370 and steering 0xE2370..0xE2514.
+The original switch table and scalar constants come from the XBE. Collision
+queries return no impact; line-of-sight queries accept a controlled target.
+Effect allocation/position updates and deterministic RNG are captured
+services. This executes their original call sites and arithmetic, but does
+not render effects or apply damage.
+
+The initializer allocates four effects through 0x101660 with configuration
+IDs 83, 83, 84 and 85, assigns sizes 45/40/37/35, and clears the
+target sampling counter. The updater's gate at 0xF08D0 rejects zero-whole
+ticks although displacement uses live float delta at 0xF0D45. The
+non-homing path also applies the original 1.02 speed multiplier in the
+whole-tick loop at 0xF1513/0xF1544. This is acceleration, not damping.
+For kind 35, the effect positioning code at 0xF1735..0xF1952 makes nine RNG
+draws and updates four effect positions per accepted callback. With homing
+flag 0x2000, the target helper decrements integer +0x1AC once per callback,
+refreshes line of sight when negative and resets it to 10; steering adds a
+fixed per-callback contribution before normalizing the direction.
+
+`logs/native-projectile-coupled-audit.log` executes 16 one-game-second
+schedules: original 60, native 60/120/144 at normal/quarter speed, and a
+native-144 counterfactual that opens only the gate, for both homing modes.
+Original/native 60 shot bytes are identical. Zero-time callbacks between all
+live updates preserve projectile/effect bytes and all callback/RNG counts.
+Guest registers, stack/x87 balance and timing globals are checked.
+
+| Normal-speed case | X position after one game second | Fresh movement frames | Target checks | RNG draws | Effect position updates |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Original 60, unsteered | 456.205841 | 60/60 | 0 | 540 | 240 |
+| Current native 144, unsteered | 190.085800 | 60/144 | 0 | 540 | 240 |
+| Gate-only native 144, unsteered | 454.700317 | 144/144 | 0 | 1296 | 576 |
+| Original 60, homing | 215.687500 | 60/60 | 6 | 540 | 240 |
+| Current native 144, homing | 89.950760 | 60/144 | 6 | 540 | 240 |
+| Gate-only native 144, homing | 215.079788 | 144/144 | 14 | 1296 | 576 |
+
+The homing Y positions are 104.512825, 43.384315 and 106.175316 respectively.
+Unsteered terminal speed remains 787.446533 in these schedules; homing speed
+remains 240. Quarter-speed native 144 loses still more motion: X is
+47.521450 unsteered and 22.498043 homing over the same game-time duration,
+with only 60 fresh movement frames out of 576.
+
+The new strict `ProjectileCoupledTiming` expected failure applies only after
+the complete fixture runs successfully. Compilation, missing-service,
+constant-table, ABI or fixture failures remain ordinary failures. Acceptance
+requires fresh movement and effect positioning each advancing frame,
+original RNG and target-check counts, matching terminal speed, and a final
+position within one original frame's travel of the original 60 reference.
+This is recorded missing behavior, not a passing native-timing claim.
+
+Opening this gate alone is not a valid fix. The correction needs to separate
+continuous travel/steering/effect anchoring from target-sampling and random
+decisions, preserving initialization and recycled projectile identity.
+The nine random trail values must not consume the shared RNG 2.4 times as
+often, and the target counter must retain its game-time cadence. Other kinds
+sharing the updater, collision/retirement branches, multi-tick catch-up and
+distance-based damage falloff also need coverage before broader changes.
+No production code changed, no game rebuild/restart was performed, and the
+user's screenshot has not been identified as this projectile/effect type.
+Actual Mac execution remains unverified.
+
+The timing, CI-scope and backlog suite completes with 96 passes and two
+strict expected failures: this newly measured coupling defect and the
+existing object-rocking quantization (`logs/native-projectile-coupled-shared.log`,
+40.17 seconds). A final focused run also verifies all four original effect
+configuration IDs, owner slots and sizes before reproducing the timing
+failure; the backlog format check passes. The test is in the existing shared
+timing CI suite. These results do not mark the runtime defect resolved.

@@ -9,6 +9,10 @@ from native_compiler import native_compiler
 
 ROOT = Path(__file__).resolve().parents[1]
 
+class ProjectileCoupledTiming(AssertionError):
+    """Travel/steering/effect cadence differs after complete routine execution."""
+
+
 class ObjectRockingQuantization(AssertionError):
     """Measured repeated live transforms; fixture/build errors remain failures."""
 
@@ -195,6 +199,10 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                               (0xb9790,0xb991d),(0xb9720,0xb9789),
                               (0xbb6c0,0xbb842),(0xbb490,0xbb6bf),(0xba310,0xba6f7)]),
     ('native_projectile_motion.c', [(0xf4a50,0xf51af)]),
+    pytest.param('native_projectile_coupled.c', [(0xf08d0,0xf1a4b),
+                 (0xe78f0,0xe799a),(0xe1fa0,0xe2370),(0xe2370,0xe2514)],
+                 marks=pytest.mark.xfail(strict=True, raises=ProjectileCoupledTiming,
+                     reason='Second projectile updater loses fractional motion; gate-only changes steering/effect cadence')),
     ('native_npc_aim.c', [(0x2b93d5,0x2b9793),(0x2b9381,0x2b938a),
                                      (0x2b9389,0x2b938a),(0x2b938d,0x2b938e),
                                      (0x123d0,0x123f3),(0x124f0,0x12533),
@@ -224,7 +232,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
+        if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
@@ -232,6 +240,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             addresses=set(range(0x218630,0x218648,4) if harness_name=='native_mothership.c'
                           else range(0x507d88,0x507db8,4) if harness_name=='native_ship_debris.c'
                           else range(0xf51b0,0xf51e8,4) if harness_name=='native_projectile_motion.c'
+                          else range(0xf1a4c,0xf1a90,4) if harness_name=='native_projectile_coupled.c'
                           else [0x478674]+list(range(0x10ad74,0x10ade8,4))+list(range(0x4e11bc,0x4e143c,4))
                           if harness_name in ('native_beam_lifetime.c','native_beam_geometry.c')
                           else [] if harness_name=='native_npc_aim.c'
@@ -359,8 +368,25 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
-    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
+    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c'):
         print(output)
+    if harness_name=='native_projectile_coupled.c':
+        import math
+        rows=[dict(field.split('=',1) for field in line.split()[1:])
+              for line in output.splitlines() if line.startswith('coupled_projectile ')]
+        assert len(rows)==16,output
+        for homing in ('0','1'):
+            reference=next(r for r in rows if r['native']=='0' and r['homing']==homing)
+            for r in rows:
+                if r['homing']==homing and r['native']=='1' and r['opened']=='0':
+                    distance=math.hypot(float(r['x'])-float(reference['x']),
+                                        float(r['y'])-float(reference['y']))
+                    if (int(r['fresh'])!=int(r['frames']) or
+                        distance>float(reference['speed'])/60+.00001 or
+                        abs(float(r['speed'])-float(reference['speed']))>.001 or
+                        r['rng']!=reference['rng'] or r['scans']!=reference['scans'] or
+                        int(r['fx'])!=4*int(r['frames'])):
+                        raise ProjectileCoupledTiming(output)
     if harness_name=='native_npc_aim.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('npc_aim ')]
