@@ -1460,13 +1460,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
-- **Bundle signing correction (2026-10-19, uncommitted):** The published v1.2.19
+- **Bundle signing correction (2026-10-19, `72a4bb3`, PR #201):** The published v1.2.19
   executable signature is intact, but the completed app is unsealed. The Mac
   builder now signs nested code and then the app, with strict validation before
   manifest generation. Shared publication/updater policy carries the canonical
   CodeResources seal; Windows behavior is unchanged. Package regression tests
   check missing/tampered seals and installed/repaired signature validity. Local
-  21 policy tests pass; Mac host CI is pending. Developer ID/notarization and
+  21 policy tests pass; Mac host CI was pending at implementation; results are recorded in
+[PR #201](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/201). Developer ID/notarization and
   browser-download Gatekeeper acceptance remain unverified; no credentials are
   available. v1.2.19 requires one manual Mac replacement because its updater
   rejects the new seal path. No security bypass is implemented. See

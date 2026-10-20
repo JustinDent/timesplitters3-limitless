@@ -2,7 +2,7 @@
 
 ## Mac launcher bundle-signing correction (2026-10-19)
 
-Prepared on `fix/mac-launcher-bundle-signing` from main `0bf9672` (uncommitted).
+Prepared on `fix/mac-launcher-bundle-signing` from main `0bf9672` (implementation `72a4bb3`, PR #201).
 The reported Safari download shows macOS's damaged-app rejection. The published
 v1.2.19 ARM64 ZIP has SHA-256
 `d270928c0d63a7f85d9ee972574efadea9f1de62e891f6219a94aa9436025122`;
@@ -17,7 +17,8 @@ bundle, then creates manifests. The Mac payload allowlist accepts only the exact
 CodeResources path. Shared publication requires the seal; packaged Mac regression
 checks reject missing seals and modified plists, then verify installed/repaired
 signatures. Existing game cleanup protects the seal. Windows payload rules remain
-unchanged. Local Windows policy tests: 21 passed; Mac host CI is pending.
+unchanged. Local Windows policy tests: 21 passed; Mac host CI was pending at implementation; results are recorded in
+[PR #201](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/201).
 
 The user has no Apple Developer membership. This remains ad-hoc signing, without
 Developer ID/notarization or a guarantee that Gatekeeper permits browser downloads.
