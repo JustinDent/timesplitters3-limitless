@@ -1,5 +1,47 @@
 # Measured progress
 
+## Texture batch 196: alpha-bearing materials and mask fidelity (2026-10-20)
+
+Issue #74: reviewed eight independently generated cutout/foliage materials.
+One hedge strip accepted offline; seven drafts held for correction. Failures
+include shifted grille bars, missing RGB coverage, changed damage/mesh geometry,
+new rectangular halos inside translucent faces, matte-edge color contamination
+and altered material palettes. Restoring original alpha alone is not acceptance:
+RGB, checkerboard, neutral-gray composites and diagnostic repeats were inspected.
+
+The accepted hedge preserves its ragged silhouette, thin upper branches and
+dense lower body with finer leaf detail. Original alpha was restored before
+DXT5 encoding; decoded base alpha mean error is 1.521/255, maximum 32, and
+threshold-mask disagreement 0.474%. This is lossy alpha, not byte-exact retention.
+Alpha-weighted luminance rises 17.28%; actual scene brightness and edge blending
+remain explicit validation tasks. No scene adjacency or gameplay claim.
+
+Actual generated sources: five 1254x1254 squares and three 1774x887 landscapes.
+The accepted source is Lanczos-resampled to 1024x512 DXT5 with 11 mip levels.
+No native 4K claim. Its native DDS-reader check passed; 1,279 prior installed
+DDS hashes and checker hash are unchanged. Full Python metadata/hash/dimension/
+aspect/mip-byte validation covers all 1,280 installed replacements.
+
+Reviewed 64 additional original RGB/alpha pairs, reaching 3,689 classified keys.
+Foliage, logos/text, alpha-only masks, baked captures and character/weapon atlases
+retain specialist review. Classification is not completed artwork. Installed
+coverage is 18.79% of 6,812 cataloged keys; 5,413 still need art and 119
+held drafts remain incomplete. Uncataloged/other-encoded/procedural discovery
+gaps remain open; catalog support does not establish full embedded coverage.
+
+Pack including metadata: 1,058,451,865 bytes (1009.42 MiB),
+up 700,101 bytes. Temporary outputs measured
+182.60 MiB. Texture workspace including necessary source art:
+5978.56 MiB logical and allocated by the existing
+measurement helper; disk free 85.48 GiB. The 6144 MiB pack and
+256 MiB temporary caps hold. The 512 MiB residency policy is unchanged and
+not runtime-measured this batch.
+
+Private evidence: `review/hybrid-196-acceptance.json` and linked source, alpha,
+comparison, triage and audit records. No game launch or Mac scene/GPU validation.
+MAC-011 remains Awaiting validation. Local issue #74 checkpoint; private artwork
+and game files remain local.
+
 ## Texture batch 195: sixteen-asset production and repeated-feature checks (2026-10-20)
 
 Issue #74: expanded bounded production to 16 independent built-in edits;
