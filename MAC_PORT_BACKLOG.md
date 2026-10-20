@@ -1115,6 +1115,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 texture batch 239: seven prop/folded-metal atlases installed;
+  one curved atlas held for tonal correction. Total 1,451 installed. Fresh full
+  Python audit and seven new Windows parser checks pass; prior 1,444 DDS hashes
+  and checker identity unchanged. Five RAM comparisons replay exactly. Sixteen
+  archive-reproducible original exports retired, reclaiming 712,272 bytes;
+  no denied paths retried. Pack 1,143,495,008 bytes; temporary 267,651,438 bytes,
+  both below caps. **Awaiting validation** remains for Mac GPU, mapped scenes,
+  reflections, display modes, alpha and 512 MiB residency. No gameplay/runtime
+  changes. See STATUS.md batch 239 and private acceptance.
+
 - 2026-10-20 texture batch 238: three machinery atlases installed (yellow lamps,
   paired hinges and socket/latch panel); five lighting/layout failures held.
   Total 1,444 installed. Fresh full Python audit and three new Windows parser

@@ -1,5 +1,50 @@
 # Measured progress
 
+## Texture batch 239: seven prop and folded-metal replacements (2026-10-20)
+
+Eight cached references matched archive RGBA and were individually edited using
+built-in image generation. Seven accepted offline and installed: 65ba7f86b3509361
+(tall pale inset), 8a7b680d08a46bca (ribbed reflective panel), 8df5e6566030589e
+(curved metallic prop/strap atlas), 90ca534540913f83 (olive trim and blank quadrant),
+a680eb7db7fadac2 (folded pale sheet), af48975ecc1d0513 (corroded riveted braces),
+and 0fdb02ab5b9cbad7 (reinforcement plates and channel). Their mean luminance
+changes are -2.24%, -2.29%, +1.38%, -4.76%, -1.22%, +5.72% and -2.77%.
+Full, 2x2-repeat and original-grid review retains principal atlas divisions,
+folds, brace outlines, circular recesses and blank regions. Exact object use
+remains unresolved for some atlases; visual approval does not close category
+coverage or mapped-scene validation.
+
+The ribbed panel's seven main rows retain original-grid rows 14, 30, 46, 62, 78, 94 and 110;
+additional profile peaks are new fine detail, not extra primary rows. The trim's
+unused interior was RGB 255/251/255; decoded DDS is 255/251..252/255. These scoped
+checks support offline layout review, not scene sampling or reflections.
+One draft held: 1ee8ec8180a0fe09 is too dark (-12.32%) with exaggerated arch/frame
+highlights and reduced broad fill. It was not installed and needs tonal correction.
+
+Actual sources: four 1254x1254, two 1774x887 and two 887x1774, totaling
+25,310,900 bytes. Installed: three 1024-square, two 512x1024, one 1024x512 and
+one 512-square; all LANCZOS downsampled without crop/color/alpha edits, not native 4K.
+Five RAM sheets avoid 1,902,783 raster bytes and replay exactly. Seven new Windows
+DDS parser checks pass; prior 1,444 DDS hashes and checker identity unchanged.
+All 1,451 installed files pass a fresh Python format/metadata/dimensions/aspect/mip/
+hash audit. Queue/progress refreshed: 1,451 installed, 5,217 needing art, 144 held;
+6,121 classified, 691 unclassified. Private evidence: review/hybrid-239-acceptance.json,
+decisions, memory-review, selection, prompts, generation receipts, native-audit and cache
+cleanup preflight/result. Source artwork, game data and provenance remain private.
+
+Sixteen disposable original PNG exports from batches 235/237 were regenerated
+byte-for-byte in memory from game archives, then removed using guarded exact paths
+and matching hashes. Reclaimed 712,272 bytes. Current batch reused eight originals;
+no new exports or previously denied cleanup paths. Game archives/artwork retained.
+Pack including metadata: 1,143,495,008 bytes (1090.52 MiB), up 3,324,512 bytes,
+below 6144 MiB. After cleanup, temporary snapshot 267,651,438 bytes, below 256 MiB
+with 784,018 bytes headroom. Texture workspace including source art: 7,241,058,306
+bytes; free disk snapshot 85,624,037,376 bytes. Allocation helper equals logical
+size, not independent physical-allocation proof. One pack, unchanged 512 MiB
+residency limit. No gameplay/runtime changes, duplicate game/build/staging,
+publication or personal save/settings edits. MAC-011 stays Awaiting validation;
+inventory/category coverage and consolidated scenes remain unfinished.
+
 ## Texture batch 238: three individually reviewed machinery atlases (2026-10-20)
 
 Eight machinery/prop references were individually inspected and edited through
