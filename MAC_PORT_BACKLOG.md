@@ -1115,6 +1115,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Texture batch 231: all six interrupted requests now have generated sources
+  and review decisions; four stone/molding materials installed, two held for
+  palette/brightness corrections. Sources three 1774x887 and three 1254x1254;
+  accepted outputs downsampled to one 1024x512 and three 1024x1024. Four new
+  Windows parser passes plus 1,409 unchanged hash/checker evidence; all 1,413
+  pass fresh Python audit. Shared runtime/512 MiB residency unchanged.
+  MAC-011 remains Awaiting validation for Mac GPU, scenes and transparency.
+  See STATUS.md batch 231 and private review/hybrid-231-acceptance.json.
+
 - Texture batch 230: two new opaque rock materials accepted offline and installed;
   six unreturned generation requests remain unfinished after orchestration was
   stopped. Sources 1774x887 and 1254x1254 downsampled to 1024x512/1024x1024.

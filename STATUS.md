@@ -1,5 +1,50 @@
 # Measured progress
 
+## Texture batch 231: four stone and molding replacements (2026-10-20)
+
+The six unreturned requests from batch 230 were regenerated after confirming
+its orchestration handle was terminated and no additional outputs existed.
+All six new built-in image-generation outputs and per-key receipts are saved
+privately. Four accepted offline and installed: bde46e7953c4a5d0 (horizontal
+stone molding), bec3bb33b2c9600f (layered pale gray/pink stone), c5e0dcbde662e68f
+(diagonal fractured bedrock), c873e4f6fdf1157e (pale fractured bedrock).
+Full, 2x2-repeat and original-grid comparisons retain major profile heights,
+rock faces and fracture maps with finer mineral detail. Luminance changes in
+that order: -1.32%, -0.84%, -2.16%, +2.86%. Existing edge transitions and
+neighboring scene/lighting behavior still require runtime validation.
+
+Two remain held: bb326199fe68eb09 loses the cool violet-gray upper tone and
+adds coarse pale aggregate; ced0d2d9eeae7406 is visibly too dark (-14.93%)
+with overly shadowed pits. Neither was installed. All six interrupted requests
+now have artwork and decisions; this does not make the two failed drafts complete.
+
+Actual sources: three 1774x887 and three 1254x1254; installed one 1024x512
+and three 1024x1024, all LANCZOS downsampled. No crop, color edits, aspect
+change or alpha override. Not native 4K artwork. All six sources retained
+(24,573,946 bytes). Five comparison sheets remained in memory, avoiding
+1,979,086 raster bytes. Metrics and raster hashes replay exactly after retiring
+six newly recreated original PNG caches (478,278 bytes), verified against
+catalog hashes and decoded archive pixels. Previously denied paths untouched.
+
+Four new Windows native parser executions pass. Prior 1,409 DDS hashes and
+checker identity match existing evidence; all 1,413 installed files pass fresh
+Python format, metadata, dimensions, aspect, mip and hash audit. Worklist,
+hybrid queue and progress refreshed: 1,413 installed, 5,273 needing artwork,
+126 held drafts; 6,121 classified and 691 unclassified. Classification remains
+routing, not completion. Private review/hybrid-231-acceptance.json links evidence.
+
+Pack including metadata: 1,131,895,176 bytes (1079.46 MiB),
+below 6144 MiB; increase 2,448,974 bytes. Temporary output:
+267,658,844 bytes (255.26 MiB), below
+256 MiB. Texture workspace including source art: 7,013,592,431
+bytes; measured disk free 87,260,270,592 bytes. Existing allocation helper
+reports logical/allocated equally, not independent physical-allocation proof.
+One active pack remains; no duplicate game/build/staging, gameplay, publication,
+personal save/settings or runtime changes. The 512 MiB residency limit stays.
+MAC-011 remains Awaiting validation: Mac GPU, mapped scenes, display modes,
+transparency and runtime residency unverified. Discovery/category coverage and
+consolidated scene validation remain incomplete.
+
 ## Texture batch 230: two new rock materials (2026-10-20)
 
 Eight classified opaque rock/architectural materials were selected and their
