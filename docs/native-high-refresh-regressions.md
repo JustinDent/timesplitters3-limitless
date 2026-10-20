@@ -733,3 +733,66 @@ The cooldown addition changes tests only, so the already-built executable
 and its runtime/build validation remain applicable.
 Source and smoke-evidence hashes are retained in
 `private/test-saves/high-refresh/native-weapon-sound-evidence.json`.
+
+## Generic firing mixed-clock regression
+
+Audit checkpoint: d6e8fe4 plus the new test; Windows x64/MSVC 14.44.35207.
+No production code changes or game rebuild are part of this audit. The
+existing user session was left running.
+
+`tests/native_weapon_fire.c` translates the complete original routines
+0x244F30–0x24598E (generic firing), 0x1BC890–0x1BC988 (integer weapon-counter
+update) and 0x1B5660–0x1B567B (mode lookup) from the hash-verified US XBE.
+It invokes counter update then firing on every synthetic update, with the
+native policy enabled at 120/144 and the original policy at 60. The fixture
+uses the actor-flag 0x40 socket path, a single projectile per event and
+controlled weapon definitions. Actor lookup/socket/direction, eligibility,
+RNG, projectile construction, effects and sound dispatch are mocked. Unused
+services and indirect callbacks assert. It verifies return-stack/register
+preservation, paused updates and expected request counts. It does not run
+whole actor/player callers or real collisions, damage, ammunition and audio.
+
+Over one second, with the original gate intact:
+
+| Configured interval | FPS | Projectile requests | Weapon+0x104 |
+| --- | ---: | ---: | ---: |
+| 0 s | 60 original | 60 | 0.999999702 |
+| 0 s | 120 native | 60 | 0.499999851 |
+| 0 s | 144 native | 60 | 0.416666836 |
+| 0.1 s | 60 original | 10 | 0.166666672 |
+| 0.1 s | 120 native | 10 | 0.083333336 |
+| 0.1 s | 144 native | 10 | 0.069444448 |
+
+The gate at 0x244FCD only accepts whole-tick frames. The accepted path adds
+`game_float / 60` to weapon+0x104 at 0x245094; fractional time from skipped
+frames never reaches that addition. The field also has consumers/reset/decay
+paths in other weapon routines, so this fixture does not assign it a single
+user-visible meaning such as firing cooldown or damage.
+
+A test-only override that opens the gate on every live fractional update
+raises zero-interval projectile requests to 120/144 and RNG requests to
+360/432, versus 60 and 180 originally. With a 0.1-second interval, integer
+cooldown thresholds still limit shots to 10, and the timer discrepancy
+remains. The experiment is isolated inside the test numeric hook; **the
+runtime gate is unchanged**. This demonstrates why merely replacing this
+integer gate with a live-time boolean is insufficient.
+
+The test is marked strict expected failure for `WeaponTimingMismatch` only.
+That exception is raised after successful compilation/execution when the
+unmodified native path differs from the original reference's timer or shot
+count. Build failures, ABI assertions and other errors remain real failures;
+an unexpected parity pass requires removing the marker. This known failure
+is not included in passing timing counts. Measurements are retained in
+`logs/native-weapon-fire-measurements.log`, with the focused pytest result in
+`logs/native-weapon-fire-audit.log`. The combined timing/camera/auto-look/
+float/vehicle/CI-scope/backlog run reports **124 passed, 1 expected failure**
+in 46.54 seconds (`logs/native-weapon-fire-regressions.log`). No new runtime
+build or game smoke was needed for this test/documentation-only checkpoint.
+
+The next fix must separate discrete firing cadence from fractional timer
+consumption, characterize the field's other writers/decay and preserve
+nested sound/event timing. Acceptance must include zero and positive fire
+intervals, variable/catch-up steps, slow motion, pause, the alternate mode,
+multiple projectiles, actual caller states and representative weapons.
+A complete damage/ammo comparison remains necessary before claiming weapon
+mechanics parity. Actual Mac execution remains unverified under MAC-058.

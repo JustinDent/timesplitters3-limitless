@@ -2970,6 +2970,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   The original deferred weapon cooldown branch also has shared 60/120/144,
   quarter-speed, pause and catch-up coverage in `native_weapon_cooldown.c`;
   its whole-tick subtraction already behaves correctly and is unchanged.
+- **Open firing-timer audit:** `native_weapon_fire.c` executes original generic
+  firing and counter-update code and reproduces timer loss at 120/144 while
+  projectile counts remain at the reference cadence. A test-only gate-opening
+  experiment instead overproduces zero-interval projectiles. The parity test
+  is a strict expected failure, not a fix or Mac verification; no runtime
+  adapter change was made. Windows measurements and acceptance work are in
+  [the regression record](docs/native-high-refresh-regressions.md#generic-firing-mixed-clock-regression).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
   Mapping checks remain fresh for each call and at protection boundaries.

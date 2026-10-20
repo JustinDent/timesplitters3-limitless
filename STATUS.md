@@ -6,6 +6,18 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Open firing-timer regression:** an original-code fixture for generic firing
+  (`sub_00244F30`) and its integer-counter update reproduces a mixed-clock
+  error. Over one simulated second, a zero-interval configuration makes 60
+  projectile requests at all tested rates, but weapon+0x104 advances by
+  1.000 / 0.500 / 0.4167 at 60 / 120 / 144 FPS. A test-only gate-opening
+  experiment raises projectile requests to 60 / 120 / 144, so it is not a
+  valid fix. A 0.1-second interval retains 10 requests but also loses timer
+  advancement. The new parity test is an explicit strict expected failure;
+  it does not count as a passing native-144 check. No runtime change was made
+  for this finding. Projectile creation, audio and actor services are mocked;
+  damage, ammunition and complete caller states remain outside this fixture.
+  [Evidence and next fix requirements](docs/native-high-refresh-regressions.md#generic-firing-mixed-clock-regression).
 - Weapon sound helper 0x1B6FF0 now accepts events on live fractional intervals.
   Its original-code test reproduces dropped one-shot requests before the fix
   and verifies sound parameters, repeat duration, pause and unchanged one-tick
