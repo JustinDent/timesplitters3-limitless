@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <math.h>
+#include <string.h>
 extern ptrdiff_t g_xbox_mem_offset;
 extern int g_tsfp_native_timing_active;
 /* These original integer-to-float reads are continuous motion consumers of
@@ -65,6 +66,9 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
  * immediately, so rejecting them loses damage permanently. EAX is replaced
  * at 0xBB6D2 before use. Keep the hit amount and the separate continuous-
  * damage scaling unchanged; zero live time still rejects application.
+ * NPC aim at 0x2B93DA gates both linear recovery and fixed-factor tracking.
+ * Advance both on live intervals; the tracking coefficient and RNG decision
+ * cadence are handled separately below. ECX is replaced before arithmetic.
  * All other loads, including other reads of this same address, stay exact. */
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
@@ -77,7 +81,8 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
          site == 0xC73C0u || site == 0xC7610u || site == 0xCEA8Du ||
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
          site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u ||
-         site == 0x216958u || site == 0xF4A66u || site == 0xBB6C0u) &&
+         site == 0x216958u || site == 0xF4A66u || site == 0xBB6C0u ||
+         site == 0x2B93DAu) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
@@ -132,4 +137,33 @@ static inline float pc_native_divide(uint32_t site, float left, float right)
 }
 #define RECOMP_F32_DIV_AT(site, left, right) \
     pc_native_divide((uint32_t)(site), (float)(left), (float)(right))
+/* The original NPC aim tracker closes 5% of its gap per whole update.
+ * Normalize only this argument, leaving the shared interpolation helper and
+ * every other immediate unchanged. Its chance decision still runs only on
+ * carried whole ticks; skipped decisions do not advance the shared RNG. */
+static inline uint32_t pc_native_push_imm(uint32_t site,uint32_t value)
+{
+    if (site==0x2B963Fu && g_tsfp_native_timing_active) {
+        float delta=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if (delta!=1.0f) {
+            float factor;memcpy(&factor,&value,sizeof factor);
+            factor=delta>0 ? -expm1f(delta*log1pf(-factor)) : 0;
+            memcpy(&value,&factor,sizeof value);
+        }
+    }
+    return value;
+}
+extern void pc_native_rng_interval_skip(void);
+static inline int pc_native_skip_aim_random(void)
+{
+    return g_tsfp_native_timing_active &&
+        *(const uint32_t *)((uintptr_t)0x4E7944u+g_xbox_mem_offset)==0 &&
+        *(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset)>0;
+}
+/* Test the constant site outside the helper so other calls remain direct,
+ * including on compilers that decline to inline function-pointer helpers. */
+#define RECOMP_PUSH_IMM_U32_AT(site,value) \
+    ((site)==0x2B963Fu ? pc_native_push_imm((site),(uint32_t)(value)) : (uint32_t)(value))
+#define RECOMP_DIRECT_CALLEE_AT(site,function) \
+    (((site)==0x2B9478u && pc_native_skip_aim_random()) ? pc_native_rng_interval_skip : (function))
 #endif

@@ -41,6 +41,18 @@ published release or a full-game 144 FPS certification.
   FPS is not established. Personal controls/display hashes are unchanged.
   Interactive native-144 PID 25304 was reopened and is responding.
   [Build evidence](docs/native-high-refresh-regressions.md#npc-and-sniper-build-validation).
+- NPC aim recovery/tracking now has a separate source correction. Original
+  code lost fractional decay intervals, while its actor-target blend and
+  random decisions used fixed per-update behavior. The fix advances recovery
+  each live frame, normalizes the 5% blend to elapsed ticks, and preserves
+  random decisions on carried whole ticks. Original-branch tests match the
+  60-FPS stable-input result at 120/144 and quarter speed, with fresh aim
+  changes each frame. Rare decisions retain their counts and game ticks;
+  their subframe blend phase is bounded, not bit-identical. Wider checks pass
+  484 tests, 87 subtests, with 41 skips and the existing rocking xfail;
+  17 patch-transition checks pass. This is source-only while the user plays;
+  Windows rebuild, targeted live AI and actual Mac execution remain pending.
+  [Aim evidence](docs/native-high-refresh-regressions.md#npc-aim-recovery-and-tracking).
 - Beam-manager lifetime audit passes without a runtime change: the original
   type-32 manager starts an undelayed beam on its first update and expires it
   near 1.2 game seconds at 60/120/144, including quarter-speed and paused

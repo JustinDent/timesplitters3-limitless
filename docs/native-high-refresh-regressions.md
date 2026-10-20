@@ -1578,3 +1578,91 @@ closed, and a child-process-only Windows module path allowed the normal
 The delayed trails, specific pre-bridge enemy behavior, remaining physics/
 weapon/campaign audits, full-game performance and actual Mac validation remain
 open. The goal is active.
+
+
+### NPC aim recovery and tracking
+
+Baseline `87ed587`, pinned US XBE, Windows x64. The aim portion of 0x2B8F90
+loads integer delta at 0x2B93DA and skips both recovery and tracking on a
+zero-whole interval. For non-actor targets, 0x2B9720 consumes fractional time
+when reducing actor-state +0x9FC toward zero; lost intervals slow recovery.
+For actor targets, the original interpolation helper 0x126C0 instead consumes
+a fixed 5% argument pushed at 0x2B963F. A target-state flag also enables a
+random decision at 0x2B9478, with possible additional random draws. Opening
+the gate alone would accelerate blending and random decisions.
+
+`tests/native_npc_aim.c` executes original 0x2B93D5..0x2B9792, the zero-result
+store at 0x2B9381, and the original clamp/sign/interpolation helpers at
+0x124F0/0x123D0/0x126C0. Outgoing joins end with a fixture RET before subsequent
+eligibility/firing work. Actor geometry and random outputs are controlled;
+the CRT float-to-integer boundary is modeled, and two actor-state services
+return false. This tests the original aim branch, not pathfinding, target
+selection, firing eligibility, rendered appearance or a live mission.
+
+Before correction (`logs/native-npc-aim-audit.log`), a recovery value of 0.75
+ends at 0.0833327 after one game second at original 60, versus 0.4722231 at
+native 144, and 0.6805558 at native 144 quarter speed. The actor-target path
+reaches the same final value as original 60 but changes only 60 of 144
+advancing frames. An isolated gate-only counterfactual changes every frame
+but shifts tracking from 0.0250130 to -0.0095290 and increases RNG calls from
+60 to 144. That counterfactual remains in the fixture to demonstrate the
+coupled behavior; it is not a production mode.
+
+The shared correction has three parts:
+
+- The pause-only load policy at 0x2B93DA accepts every positive live interval.
+  Its ECX is only compared before replacement on either path.
+- The immediate 5% argument is replaced by `1 - (1 - 0.05)^delta_ticks` at
+  0x2B963F only. One-tick values retain their original bits. Other callers of
+  the shared interpolation helper and other immediate arguments stay exact.
+- On zero-whole live frames, only the chance call at 0x2B9478 selects a helper
+  returning a guaranteed nonzero chance outcome without consuming RNG. The
+  target's velocity adjustment still executes. Whole-tick chance calls and
+  their rare additional draws execute the original RNG. Guest return-stack
+  handling remains inside the existing ABI-call boundary.
+
+The additive `native-npc-aim-timing` patch adds generic immediate-argument and
+direct-callee policy hooks with identity defaults, plus the small shared
+manual RNG-skip helper. Title addresses stay in `pc_native_numeric.h`, not the
+lifter. Constant site tests occur outside the function-pointer helper so other
+calls retain their original callees and do not acquire an RNG-helper linkage
+dependency. The initial generic helper form exposed such a linkage dependency
+in an unrelated fixture; the constant-site macro form resolved it. No generated
+C was edited by hand. Historical patch fixtures exclude the new patch with its
+native timing prerequisites.
+
+`logs/native-npc-aim-fixed.log` and final expanded
+`logs/native-npc-aim-final.log` verify normal/quarter-speed stable-input results
+within 1e-5 of original 60, including fresh changes on all native 120/144
+frames. Rare-event schedules preserve 60 chance decisions, 66 actual RNG draws
+and events at game ticks 20/40/60. Their post-event blend phase is allowed to
+differ by at most one original blend step (5% of the full [-1,1] range, 0.1);
+observed final differences are at most about 0.034. This is not bit-identical
+trajectory parity across an instantaneous random change. Zero-time callbacks,
+including stale nonzero integer ticks, preserve state. Uneven intervals and
+2-/6-tick catch-up match the elapsed-time recovery/blend result while retaining
+the original per-callback chance cadence. Positive/negative recovery clamps
+exactly at zero, and a missing target changes neither aim nor RNG.
+
+The wider suite passes 484 checks and 87 subtests, with 41 skips and one existing
+object-rocking expected failure in 57.36 seconds
+(`logs/native-npc-aim-shared.log`). It includes native timing, scalar/vehicle
+joins, CI scope, Mac backlog and the upstream recompiler tests. The later rare/
+boundary additions pass separately. Fresh/repeated application, historical Mac
+and controls upgrades, and patch tracking pass 17 checks in 48.38 seconds
+(`logs/native-npc-aim-patch-transitions.log`). Full stack application updates
+three runtime source/template files (`logs/native-npc-aim-patches.log`).
+
+The interactive executable remains `fc3a7ce` / PID 25304 and was left running.
+A bounded read-only observation produced no Story snapshots during its window
+(`private/pipeline/npc-current-build-observation.jsonl`); it did not reproduce
+the reported pre-bridge enemy behavior. This source correction has not yet
+been rebuilt or verified in that scene. Delayed trails, live enemy movement,
+remaining campaign/physics audits and actual Mac execution remain open.
+
+Full generation completes in 73.6 seconds (`logs/native-npc-aim-generate.log`),
+and the generation-current check passes. The production translation contains
+the intended gate at 0x2B93DA, RNG-callee policy at 0x2B9478 and coefficient
+argument policy at 0x2B963F. The shared manual file contains the matching
+RNG-skip helper. This verifies integration into generated source, not a linked
+or running executable; the interactive process remains unchanged.

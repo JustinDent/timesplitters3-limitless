@@ -3045,6 +3045,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Windows Release and a 120-second native-144 smoke check pass on `fc3a7ce`;
   targeted live AI confirmation and actual Mac execution remain pending.
   See [event evidence](docs/native-high-refresh-regressions.md#npc-animation-marker-shots).
+- **NPC aim recovery/tracking:** Shared numeric policy advances the 0x2B93DA
+  gate, normalizes only the 5% argument at 0x2B963F, and preserves whole-tick
+  RNG decisions at 0x2B9478. New generic identity-default immediate/callee
+  hooks are supplied through the shared patch stack. Original branch and
+  helper fixtures pass across 60/120/144, quarter speed, rare decisions,
+  pause and uneven/catch-up intervals. Source-only; Windows rebuild,
+  targeted live AI and actual Mac execution remain pending. No OS adapter
+  change is needed. [Aim evidence](docs/native-high-refresh-regressions.md#npc-aim-recovery-and-tracking).
 - **Beam lifetime audit:** `tests/native_beam_lifetime.c` executes the original
   shared effect manager with original switch/type tables. First-update,
   lifetime, explicit delay and paused-age checks pass on Windows at

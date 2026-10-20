@@ -195,6 +195,10 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                               (0xb9790,0xb991d),(0xb9720,0xb9789),
                               (0xbb6c0,0xbb842),(0xbb490,0xbb6bf),(0xba310,0xba6f7)]),
     ('native_projectile_motion.c', [(0xf4a50,0xf51af)]),
+    ('native_npc_aim.c', [(0x2b93d5,0x2b9793),(0x2b9381,0x2b938a),
+                                     (0x2b9389,0x2b938a),(0x2b938d,0x2b938e),
+                                     (0x123d0,0x123f3),(0x124f0,0x12533),
+                                     (0x126c0,0x12717)]),
     ('native_beam_lifetime.c', [(0x10a760,0x10ad71)]),
     ('native_ship_debris.c', [(0x2168c0,0x216ca5)]),
     pytest.param('native_object_rocking.c', [(0xa84f0,0xa8a97),
@@ -217,7 +221,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
-        if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c','native_beam_lifetime.c'):
+        if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c','native_beam_lifetime.c','native_npc_aim.c'):
             import re, struct
             # Original scalar constants referenced by the complete routines.
             # Include switch-table data; production generation reads this XBE too.
@@ -227,6 +231,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                           else range(0xf51b0,0xf51e8,4) if harness_name=='native_projectile_motion.c'
                           else [0x478674]+list(range(0x10ad74,0x10ade8,4))+list(range(0x4e11bc,0x4e143c,4))
                           if harness_name=='native_beam_lifetime.c'
+                          else [] if harness_name=='native_npc_aim.c'
                           else range(0x4dad48,0x4dafb8,4))
             decoder=Cs(CS_ARCH_X86,CS_MODE_32)
             for start,end in ranges:
@@ -238,6 +243,14 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
             constants='\n'.join(
                 f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
                 for address in sorted(addresses))
+        if harness_name=='native_npc_aim.c':
+            # Keep the original aim branch and its zero-result store. End
+            # before unrelated eligibility/firing work at each outgoing join.
+            for site,expected in [(0x2b9389,'8b7c2460'),(0x2b938d,'396c241c'),
+                                  (0x2b9792,'8b4e2c')]:
+                end=config.va_to_file_offset(site)
+                assert image[end:end+len(bytes.fromhex(expected))].hex()==expected
+                image=image[:end]+b'\xc3'+image[end+1:]
         if harness_name=='native_object_bounce.c':
             # The CRT register-argument adapter enters the asin kernel:
             # x / sqrt((1+x)*(1-x)), evaluated with FPATAN. Only this
@@ -324,10 +337,9 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                        for start,info in functions.items())
         if harness_name=='native_npc_weapon_fire.c':
             # Match production's manual NPC entry wrapper at both caller sites.
-            assert code.count('0x001BB5C0u, sub_001BB5C0_gen,')==2
+            assert code.count('sub_001BB5C0_gen)')==2
             code='void sub_001BB5C0(void);\n'+code.replace(
-                '0x001BB5C0u, sub_001BB5C0_gen,',
-                '0x001BB5C0u, sub_001BB5C0,')
+                'sub_001BB5C0_gen)', 'sub_001BB5C0)')
 
     finally:
         vars(config).update(previous)
@@ -338,8 +350,30 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_weapon_guest.h").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
-    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c','native_beam_lifetime.c'):
+    if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_sniper_damage.c','native_beam_lifetime.c','native_npc_aim.c'):
         print(output)
+    if harness_name=='native_npc_aim.c':
+        rows=[dict(field.split('=',1) for field in line.split()[1:])
+              for line in output.splitlines() if line.startswith('npc_aim ')]
+        assert len(rows)==33,output
+        for mode in range(3):
+            for slow in (1,4):
+                base=next(r for r in rows if int(r['mode'])==mode and int(r['slow'])==slow and r['fps']=='60' and r['opened']=='0' and r['rare']=='0')
+                for r in rows:
+                    if int(r['mode'])==mode and int(r['slow'])==slow and r['opened']=='0' and r['fps']!='60' and r['rare']=='0':
+                        if abs(float(r['offset'])-float(base['offset']))>.00001 or int(r['changed'])!=int(r['frames']):
+                            raise AssertionError(output)
+                        assert r['rng']==base['rng'],output
+        for slow in (1,4):
+            base=next(r for r in rows if r['rare']=='1' and r['fps']=='60' and int(r['slow'])==slow)
+            for r in rows:
+                if r['rare']=='1' and int(r['slow'])==slow:
+                    assert r['rng']==base['rng'],output
+                    # Instant random changes can land at a different subframe.
+                    # Bound that phase difference by one original 5% blend of
+                    # the full [-1,1] range; random draws/ticks stay exact.
+                    assert abs(float(r['offset'])-float(base['offset']))<=.10001,output
+
     if harness_name=='native_object_rocking.c':
         rows=[dict(field.split('=',1) for field in line.split()[1:])
               for line in output.splitlines() if line.startswith('rocking_audit ')]
