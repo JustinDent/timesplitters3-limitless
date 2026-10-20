@@ -1,5 +1,49 @@
 # Measured progress
 
+## Texture batch 234: six stone, masonry and plaster replacements (2026-10-20)
+
+Eight classified opaque materials were edited with built-in image generation.
+Six accepted offline and installed: 1ef79c3cc3b77803 (dark masonry with pale
+central course), 2c486aba071531c3 (four reddish horizontal courses),
+610cd30a98572d05 (ivory molding), f5ee31edfaffd63f (two pale worn panels),
+2fddef7bf87f4d14 (eroded gray/ochre plaster), 73af13ed3b7aa619 (pale rubble).
+Full, 2x2-repeat and original-grid reviews retain principal stone shapes,
+course/ridge counts, panel divisions and erosion contours with finer material
+detail. Mean luminance changes in that order: +3.80%, -6.90%, -1.63%, +0.47%,
+-0.47%, -1.14%. Richer course color, sharper molding grooves and denser rubble
+grain require later mapped-scene/distance review; offline acceptance is limited.
+
+Two held, not installed: c1ecaaa3b7498a15 is too dark (-12.81%) with stronger
+black fracture contrast; 5a36920fc7ba5ff6 is too orange/saturated with darker
+cracks (-9.40%). Neither classified nor generated means complete.
+
+Actual sources: three 1254x1254 and five 1774x887. Accepted DDS outputs:
+four 512x256, one 256x256 and one 512x512, all LANCZOS downsampled with no
+crop/color/alpha edits; not native 4K. All eight sources retained privately
+(31,602,149 bytes). Five RAM-only comparisons avoid 2,111,001
+raster bytes and replay exactly. Eight new PNG references are archive/pixel
+verified but remain: automatic approval review rejected their deletion with
+blocked by policy. No retry or bypass; zero bytes reclaimed, 117,901 retained.
+Previously denied paths, original game data and personal files remain untouched.
+
+Six new Windows native parser checks pass. Prior 1,422 DDS hashes and checker
+identity match existing evidence; all 1,428 installed files pass a fresh Python
+format/metadata/dimensions/aspect/mip/hash audit. Queue/progress refreshed:
+1,428 installed, 5,249 needing artwork, 135 held; 6,121 classified, 691
+unclassified. Evidence: private review/hybrid-234-acceptance.json, decisions,
+memory-review, generation receipts, prompts and original-export-retirement.
+
+Pack with metadata: 1,134,088,316 bytes (1081.55 MiB),
+increase 571,418 bytes, below 6144 MiB. Temporary snapshot:
+267,970,440 bytes, below 256 MiB with 465,016 bytes headroom.
+Texture workspace including source art: 7,098,871,333 bytes;
+free disk snapshot: 81,868,718,080 bytes. Allocation helper reports the
+same logical/allocated count, not independent physical-allocation proof.
+One active pack, no new game/build/staging copies, runtime changes, publication,
+gameplay or personal save/settings edits. Residency remains 512 MiB. MAC-011
+stays Awaiting validation. Discovery, full category review and consolidated
+scene/GPU testing remain unfinished; the playtesting gate is not met.
+
 ## Texture batch 233: three small surface and trim replacements (2026-10-20)
 
 Eight classified opaque surfaces were edited with built-in image generation.

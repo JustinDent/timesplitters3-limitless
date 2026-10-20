@@ -1115,6 +1115,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 texture batch 234: six stone/masonry/plaster replacements installed;
+  two color/contrast failures held. Total 1,428 installed; fresh full Python
+  audit and six new Windows parser checks pass, with prior 1,422 DDS hashes and
+  checker identity unchanged. Five RAM comparisons replay exactly; eight new
+  reference exports retained after policy denial. Pack 1,134,088,316 bytes;
+  temporary 267,970,440 bytes. No gameplay or runtime changes. **Awaiting
+  validation** remains for Mac GPU, mapped scenes, alpha, display modes and
+  512 MiB residency. See STATUS.md batch 234 and private acceptance evidence.
+
 - 2026-10-20 texture batch 233: three small surfaces/trim accepted and installed;
   five drafts held for ridge, atlas, border or brightness errors. Total 1,422
   installed; fresh full Python audit and three new Windows parser checks pass,
