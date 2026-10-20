@@ -284,17 +284,15 @@ jobs:
       - name: Apply shared runtime patches
         if: steps.scope.outputs.native == 'true'
         run: python tools/apply-patches.py external/ts3FPrecomp patches
-      - name: Install pinned recompiler test dependency
+      - name: Install pinned runtime and texture test dependencies
         if: steps.scope.outputs.native == 'true'
         run: |
           python - <<'PY'
           from pathlib import Path
           import subprocess, sys
-          dependency = next(line for line in Path('requirements.txt').read_text().splitlines()
-                            if line.startswith('capstone=='))
-          pillow = next(line for line in Path('requirements.txt').read_text().splitlines()
-                        if line.startswith('Pillow=='))
-          subprocess.run([sys.executable, '-m', 'pip', 'install', dependency, pillow], check=True)
+          pins = [line for line in Path('requirements.txt').read_text().splitlines()
+                  if line.startswith(('capstone==', 'Pillow==', 'numpy=='))]
+          subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
       - name: Test native runtime, rendering and input regressions
         if: steps.scope.outputs.native == 'true'
