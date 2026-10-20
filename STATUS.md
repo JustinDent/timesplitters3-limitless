@@ -1,5 +1,43 @@
 # Measured progress
 
+## Texture batch 217: original inventory and specialist routing (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals in paired RGB and
+alpha contact sheets: 85 opaque and 43 with non-opaque alpha. Recorded a
+per-key provisional category, visible structure, evidence and preservation
+constraints. Coverage includes architectural panels and trims, mechanical
+atlases, character portraits/skin islands, multilingual error screens, rotated
+or mirrored labels, tiny functional icons and alpha-carried effects/masks.
+Plain white/black RGB was not treated as evidence of a blank texture.
+
+All sixteen diagnostic sheets reviewed. Originals decoded directly in memory;
+no individual PNG exports, generated artwork or installed pack changes.
+Contact-sheet display uses aspect-preserving nearest-neighbor scaling only.
+Classification now covers 5,097 of 6,812 supported keys; 1,715 remain
+unclassified. Categories are appearance-based and scene usage remains
+unverified. Specialist text, UI, character and channel-sensitive assets need
+enlarged semantic/mapping review before production. Routing is not completion.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passes for all 1,381 installed DDS files. Their hashes and the native checker
+identity match batch 216 evidence; Windows parser results carried forward,
+with no new native parser execution. Worklist and hybrid plan refreshed.
+5,309 keys still need art and 122 drafts remain held. Shared formats,
+runtime adapters and the 512 MiB residency policy are unchanged.
+
+Single active pack remains 1,110,424,692 bytes (1058.98 MiB), including metadata,
+under the 6144 MiB cap. Temporary output about 247.8 MiB, with about 8.2 MiB
+headroom below 256 MiB. Texture workspace including source art about 6502.6 MiB
+logical/allocated by the existing helper; disk free about 83.08 GiB. No cleanup
+attempt or denied-deletion retry, duplicate extracts/builds/staging/ZIPs,
+personal-data changes or publication.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior, alpha and residency. Inventory, other-encoding/procedural
+coverage and final scene tests remain unfinished. Private
+review/hybrid-217-acceptance.json links original payload/RGBA hashes, all
+RGB/alpha evidence, per-key decisions, storage and carried-forward parser audit.
+
 ## Texture batch 216: held material corrections (2026-10-20)
 
 Generated eight individual corrections from catalog/game hash-verified opaque
