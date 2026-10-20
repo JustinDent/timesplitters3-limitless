@@ -1,5 +1,62 @@
 # Measured progress
 
+## Texture batch 206: correct carrier-edge contamination and finish narrow trims (2026-10-20)
+
+A stronger edge-color inspection invalidated batch 205's zero-magenta claim:
+its high-saturation threshold missed blended pink pixels on the first and
+last extracted rows. The affected DDS and metadata were withdrawn to private
+review evidence. Seven new magenta-carrier attempts showed the same problem
+and were rejected. No color filtering, arbitrary inset cropping or relaxed
+compiler aspect rule was used to hide it. Earlier batch 205 evidence is
+annotated as superseded by review/hybrid-206-magenta-edge-audit.json.
+
+The corrected references repeat the original 4:1 texture four times vertically
+inside a square, with no artificial padding color. Fifteen sources generated
+with built-in image generation this batch: seven rejected colored carriers,
+then eight accepted original-only repeated carriers. Each actual generated
+canvas is 1254x1254. The prescribed second tile, normalized [0,0.25,1,0.5],
+is a 1254x313.5 region, technically resampled with LANCZOS to 1024x256 and
+encoded DXT1 with 11 mip levels. Metadata records the precompiler resampling;
+these are not native 4K sources. Neighboring samples contain actual material.
+
+All eight selected corrections have zero detected blended-magenta chroma
+pixels in compiled output and pass original/compiled and repeated-edge review.
+Fine vertical seams, curved highlight bands, a stepped notch, bracket fittings,
+stacked panels, riveted rails and mechanical recesses retain their layouts.
+The brown trim's rail peaks remain at original rows 6 and 57. Average luminance
+changes range from -2.67% to +10.60%; actual mapped brightness and surface
+adjacency remain scene-validation work. This method still requires per-asset
+UV and repetition checks; a square canvas alone does not prove correctness.
+
+The batch replaces the withdrawn trim and adds seven more keys: 1,327 installed,
+124 held drafts, 5,361 needing art. All eight native Windows DDS checks pass.
+The other 1,319 DDS hashes and checker match prior audited evidence. Full
+current Python format, dimensions, aspect, hashes, metadata and mip-chain audit
+passes. Worklist, hybrid production queue and inventory refreshed.
+
+Also decoded and reviewed 64 additional original RGB/alpha pairs, with original
+catalog payload and decoded hashes verified. Classification now covers 4,361
+of 6,812 supported keys; 2,451 remain unclassified. Alpha-only weapon icons,
+an embossed medallion, intricate ironwork, partial-opacity glows, inverse
+reflection masks, text labels and functional constants remain specialist or
+semantic work. Classification is routing, not replacement approval.
+
+Pack 1,082,519,048 bytes (1032.37 MiB), including metadata,
+below 6144 MiB. Temporary output 216.06 MiB, below 256 MiB.
+Texture workspace including retained art 6214.00 MiB
+logical/allocated by existing helper; disk free 84.28 GiB at audit.
+Retired 14 superseded rejected local source copies (35,291,665 bytes)
+after verifying exact default-tool recovery hashes, selected replacements and
+absence of active pack references. Prompts, selected art/carriers, comparisons,
+withdrawn-DDS diagnosis and recovery manifests remain. No duplicate extracts,
+builds, staging or ZIPs. Game assets, saves and settings were not modified.
+
+No gameplay or Mac execution; the 512 MiB residency policy is unchanged and
+has no new GPU measurement. MAC-011 remains Awaiting validation. Full category
+review, other-encoding/procedural discovery and final scenes remain incomplete.
+Private review/hybrid-206-acceptance.json links decisions, both generation
+methods, UV extraction, edge-color audit, triage, native checks and retirement.
+
 ## Texture batch 205: fixed-region carrier resolves one narrow trim (2026-10-20)
 
 One focused built-in image-generation correction resolves the brown metal
