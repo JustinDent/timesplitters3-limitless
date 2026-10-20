@@ -7,13 +7,15 @@ required. The prior paid review/proposal workflow has been replaced.
 
 ## What happens on a PR
 
-1. Every PR runs a small scope check so the final `Launcher compatibility` status
+1. Every PR and push to `main` runs a small scope check so the final `Launcher compatibility` status
    is always reported. Launcher source, adapters, tests, shared configuration and
    build/workflow changes select both hosts. Removed or renamed launcher files
    remain in scope. Unrelated game/documentation changes skip launcher builds.
 2. The shared read-only `launcher-build.yml` workflow builds/tests both launchers,
    runs their common UI tests, verifies all release assets and exercises the Mac
-   packaged install/corruption/repair/restart path. Releases reuse this workflow.
+   packaged install/corruption/repair/restart path. It also owns the Windows
+   startup-preference, packaging and game-icon checks. Runtime CI no longer
+   repeats launcher builds or these tests. Releases reuse this workflow.
 3. `Launcher compatibility` passes only after the scope check and all selected
    builds/tests/package checks pass. Failure, cancellation, missing output or an
    unexpectedly skipped build cannot pass. Fork PRs use read-only permissions and
@@ -181,3 +183,37 @@ The worker's asset-free checks are
 Both host jobs also run shared UI tests and the host launcher regression suite.
 Scope tests exercise real Git rename/deletion diffs and completion tests cover
 failure, cancellation, skipped builds and missing scope results.
+
+## Runtime CI selection and parallel checks
+
+`Runtime patch transitions` selects work once, then runs patch-upgrade and native
+runtime jobs independently on both Windows and macOS. Both jobs check out the
+pinned upstream revision; native tests apply the full patch stack themselves.
+Parallel execution reduces the serial wait, but adds runner setup overhead and
+does not promise fewer total runner minutes for a full runtime change.
+
+| Changed inputs | Selected work |
+| --- | --- |
+| Runtime patches | Patch upgrades, native tests and Mac GPU contracts |
+| Runtime source or unknown runtime inputs | Native tests and Mac GPU contracts |
+| Known offline texture/Python tools | Native tests, without GPU setup |
+| Launcher source, builds or packaging/icon tests | Dedicated Windows/Mac launcher workflow |
+| Release validation tools | Release contracts on Windows and Mac |
+| Runtime CI policy, dependency pins or patch application machinery | All runtime suites |
+| Documentation | Lightweight scope, handoff and worker checks |
+
+Selections combine for mixed changes. Shared inputs can deliberately select both
+runtime and launcher workflows. Unknown runtime inputs retain GPU coverage;
+only explicitly recognized offline tools omit it. Issue automation keeps its
+existing separate checks.
+
+The required names `Patch transitions (windows-latest)` and
+`Patch transitions (macos-latest)` stay unchanged. These final jobs retain worker
+regressions on their real hosts and require every selected runtime matrix to
+succeed. An intentional scope skip is allowed; missing output, failure,
+cancellation or an unexpected skip fails both gates. They do not need changes to
+branch protection. `Launcher compatibility` separately gates both launcher builds.
+
+Manual dispatch selects all suites owned by that workflow: dispatch runtime CI
+for full runtime validation and launcher compatibility for both launcher builds.
+These asset-free checks do not launch the game or verify visual/gameplay parity.

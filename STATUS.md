@@ -1,5 +1,40 @@
 # Measured progress
 
+## Mac launcher translocation recovery (2026-10-19)
+
+Prepared on `codex/mac-launcher-translocation` from main `b7a0630`, in the commit
+carrying this entry. The user's release screenshot identifies a failed `.launcher`
+write beneath `/private/var/folders/.../AppTranslocation/<UUID>/d`; moving the
+outer extraction folder did not stop the reported translocation. Startup had
+treated the running app's parent as the writable portable installation.
+
+The Mac startup adapter now detects that location before creating the normal
+startup/main window. A recovery window lets the user select the actual
+installation. It reuses shared manifest, path and checksum validation, requires
+the same running launcher binary, rejects linked/incomplete/modified folders,
+and probes write access with an exclusive temporary file removed on close.
+It then opens normal startup with that root. Cancellation and invalid selections
+leave the recovery window usable. Selection lasts for this launch; it does not
+copy/migrate data or change quarantine attributes. Explicit `--root` and checkout
+discovery remain supported. Windows code and shared installation policy are
+unchanged. Existing v1.2.20 downloads do not yet contain this fix.
+
+Local validation: macOS 27.0.1 (26A434), Apple Silicon, pinned .NET SDK 8.0.426,
+Avalonia 11.3.22. The native build passes 22 regression groups, the new recovery
+UI route test and eight shared UI groups. Python compatibility/shared-layout/
+release-policy checks pass 7/3/21 tests; native launcher/backlog checks pass 18.
+The launcher's real-checkout `--check` passes without starting the game.
+The initial Desktop build hit existing File Provider metadata that prevents
+bundle signing; the clean build uses a cache directory outside Desktop/iCloud.
+No security attributes were removed. The final packaged app passes installation,
+recovery-folder validation, negative signature tests, copied-helper repair,
+restart/render and strict restored-signature verification with game metadata and
+saves preserved. The recovery-screen PNG was visually inspected for readable
+instructions and buttons. Exact-revision Windows/macOS CI remains pending.
+Real Gatekeeper-translocated browser launch and the user's
+installed release remain unverified; synthetic routing/read-only tests do not
+certify those paths. No game rebuild, personal data changes or release publication.
+
 ## Launcher v1.2.20 replacement release (2026-10-19)
 
 Prepared on `release/launcher-v1.2.20` from merged main `ec1d067`. This release
@@ -12499,6 +12534,16 @@ All 34 patch-transition/tracking checks passed in 314.60 seconds, including fres
 art generation, pack copy, save/config modification or additional game build tree.
 The existing Windows executable has not been replaced; these changes require a
 new runtime build. Visual layout and real-art scene behavior remain unverified.
+
+
+
+## 2026-10-20: focused PR validation optimization
+
+Based on main 140f53cc4c52b8aaa57b255025b64af83c72da60; branch ci/reduce-pr-validation-cost. Launcher builds and startup/package/icon tests now have one workflow owner. Known offline Python/texture inputs omit Mac GPU setup; unknown runtime inputs retain GPU coverage. Patch upgrades and native tests run in parallel on Windows and macOS, with the existing required check names retained as strict completion gates. Worker regressions remain on both hosts.
+
+Local Windows validation: focused policy/handoff tests (113 passed, 2 Windows-inapplicable skips, 43 subtests); actionlint 1.7.12 passed for all three changed workflows (shellcheck/pyflakes unavailable). Hosted Windows/Mac runtime, patch upgrades, launchers, package verification and Mac GPU contracts passed at ae373aa on PR #209. Runtime run 39369178991 completed in 7m27s including queue time; Windows native work (3m44s) overlapped patch upgrades (6m04s). This is one observed run, not a controlled speedup benchmark. The subsequent main sync retains PR #208 replay-link coverage and its pinned CMake/Ninja dependencies; see PR #209 for current-head hosted results.
+
+CI orchestration only: no gameplay, launcher UI, OS adapter, runtime pin or dependency version changes; no Mac backlog entry is needed. No game was launched, built, copied or packaged locally; saves, settings and the texture pack are unchanged. See docs/launcher-compatibility.md for selection and manual-run scope.
 
 ## Windows release replay link fix — 2026-10-20
 
