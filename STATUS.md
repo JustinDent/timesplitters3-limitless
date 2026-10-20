@@ -1,5 +1,60 @@
 # Measured progress
 
+## Texture batch 222: six environment materials installed (2026-10-20)
+
+Generated eight individual opaque material edits with built-in image generation
+from catalog/game hash-verified originals. Six passed original-versus-compiled
+DDS, repeated-edge and selected original-grid review: warm orange-pink plaster,
+gray-beige granular surface, chipped pink-gray plaster, dark bronze bands,
+rough pale swirled plaster and reddish rock. Refined material detail preserves
+the reviewed broad features, palette and opaque coverage. Mean luminance changes
+for accepted results range from -8.32% to +4.48%. Metrics support visual review;
+they do not prove mapped-scene fidelity or seamless adjacency.
+
+Two drafts remain held and uninstalled. Masonry changes mortar course/joint
+positions; wood changes board divisions and is 14.96% brighter. Keep original
+structure and tone in their correction work. A separate initial candidate,
+5f08f18ab6339528, was excluded before generation: full-size inspection reveals
+a dense outlined UV atlas, rather than the simple panel suggested by its
+thumbnail. Classification was refined with the prior record retained.
+Masonry target was corrected to match its square source before generation.
+
+Actual generated sizes: four 1774x887 landscapes and four 1254x1254 squares.
+Six installed outputs: four 1024x512 and two 512x512, all LANCZOS downsampled
+without cropping, color edits or aspect changes. The held wood's proposed
+2048-square DDS was reviewed in memory only; it is not installed. These are
+appropriately scaled material replacements, not native 4K generated sources.
+
+Five full/repeated/original-grid comparison sheets were displayed entirely in
+memory. Exact replay after installation matches every metric and JPEG byte hash.
+Retained compact evidence and the technical reproduction script, avoiding
+1,466,867 bytes of saved diagnostic JPEGs. Nine original PNGs totaling 630,875
+bytes were retained for image-edit references and specialist atlas review;
+no other raster diagnostics, duplicate pack or staging tree were written.
+
+All 1,398 installed DDS files pass fresh Python format, metadata, dimensions,
+aspect, hash and mip checks. Six new files passed actual Windows parser execution;
+1,392 prior hashes and checker identity are unchanged, carrying their previous
+parser evidence forward. 5,289 keys need art and 125 drafts remain held.
+Classification remains 5,481 of 6,812 supported keys, with 1,331 unclassified.
+Worklist/hybrid queue and current progress storage refreshed.
+
+One pack: 1,118,255,076 bytes including metadata (1066.45 MiB), up 1,751,076 bytes
+and below 6144 MiB. Temporary output about 254.93 MiB, leaving about 1.07 MiB
+below 256 MiB. Workspace including authored sources about 6588.93 MiB
+logical/allocated by the existing helper; disk free about 82.70 GiB. Allocation
+is the helper's measurement, not an independent physical-filesystem audit.
+No cleanup attempts or changes to previously denied paths. Source art/prompts
+remain private and local; no saves/settings changes or publication.
+
+Supported XBE hash verified before generation. No gameplay, Mac execution,
+runtime or adapter change. Shared formats and 512 MiB residency policy unchanged.
+MAC-011 remains Awaiting validation for mapped scenes, GPU appearance, alpha
+and residency. Asset/category coverage, other-encoding/procedural discovery and
+consolidated scene/display-mode validation remain unfinished. Private
+review/hybrid-222-acceptance.json links prompts, generation, decisions, memory
+evidence, original verification, native parser results and storage.
+
 ## Texture batch 221: continued material and channel inventory (2026-10-20)
 
 Reviewed 128 further catalog/game hash-verified originals: 74 opaque and 54
