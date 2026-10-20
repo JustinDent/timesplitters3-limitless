@@ -121,6 +121,42 @@ static Result run(unsigned fps,unsigned slow,int native)
                fps,slow,native,result.seconds,wreck[0],wreck[1],wreck[2],wreck[3],wreck[4],wreck[5]);
         return result;
 }
+static void variable_intervals(const Result *reference,unsigned slow)
+{
+    /* Alternate short/long frames using exact integer clock quanta. This
+     * exercises carried whole ticks without assuming perfectly paced FPS.
+     * Pausing each crash phase must neither advance it nor spawn a wreck. */
+    const unsigned intervals[]={5,4,7,3,9,6,2,8,10,6};
+    unsigned elapsed=0,frames=0,paused_states=0;
+    const unsigned quanta_per_tick=12*slow;
+    g_tsfp_native_timing_active=1;prepare(3);
+    while(!retired && frames<20000) {
+        unsigned state=MEM32(ENTITY+0x1a0);
+        assert(state>=3 && state<=5);
+        if(!(paused_states&(1u<<state))) {
+            unsigned char before[0x2e8];
+            memcpy(before,(void *)((uintptr_t)ENTITY+g_xbox_mem_offset),sizeof(before));
+            unsigned before_spawns=spawns,before_retired=retired;
+            step(0,0);step(0,0);
+            assert(!memcmp(before,(void *)((uintptr_t)ENTITY+g_xbox_mem_offset),sizeof(before)));
+            assert(spawns==before_spawns && retired==before_retired);
+            paused_states|=1u<<state;
+        }
+        unsigned duration=intervals[frames%10];
+        unsigned whole=(elapsed+duration)/quanta_per_tick-elapsed/quanta_per_tick;
+        step(whole,(float)duration/quanta_per_tick);
+        elapsed+=duration;frames++;
+    }
+    float seconds=(float)elapsed/(60*quanta_per_tick);
+    assert(spawns==1 && retired==1 && paused_states==((1u<<3)|(1u<<4)|(1u<<5)));
+    assert(fabsf(seconds-reference->seconds)<.05f);
+    for(unsigned i=0;i<3;i++) {
+        assert(fabsf(wreck[i]-reference->wreck[i])<.75f);
+        assert(fabsf(wreck[i+3]-reference->wreck[i+3])<.05f);
+    }
+    printf("mothership_variable slow=%u frames=%u game_seconds=%.6f x=%.9f y=%.9f z=%.9f paused_states=%u\n",
+           slow,frames,seconds,wreck[0],wreck[1],wreck[2],paused_states);
+}
 int main(void)
 {
     unsigned char *memory=calloc(1,0x800000);
@@ -145,6 +181,8 @@ int main(void)
         }
         if(fps==60 && slow==1)assert(!memcmp(&actual,&reference,sizeof(actual)));
     }
+    variable_intervals(&reference,1);
+    variable_intervals(&reference,4);
     /* Existing multi-tick damping and catch-up retain their exact behavior. */
     unsigned char original[0x2e8];
     for(unsigned whole=1;whole<=6;whole++) {

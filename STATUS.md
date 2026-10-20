@@ -15,8 +15,14 @@ published release or a full-game 144 FPS certification.
   9.67 seconds at 60 FPS; the correction restores 9.65 seconds and lands
   within 0.24 units per axis in the normal 144 FPS case. Six native-rate /
   slow-motion combinations, pause, ABI and exact original catch-up pass.
-  This is an offline source fix, not yet a rebuilt/scene-verified fix in
-  the user's running executable, which remains open for gameplay.
+  Uneven frame intervals and pauses in all three crash phases also pass.
+  The supported Windows Release build and its built-in tests now pass;
+  the user session had closed before rebuilding. A 120-second isolated
+  native-144 gameplay check passes movement, hand/weapon animation,
+  ammunition and pause/resume checks. Its active gameplay window averages
+  137.949 CPU updates/s with 1× game speed. The rebuilt executable
+  still requires a bridge-scene comparison before this obstruction can
+  be marked resolved. Actual Mac execution remains pending.
   [Bridge investigation](docs/native-high-refresh-regressions.md#bridge-crash-placement-investigation).
 - Object rocking/bounce motion has a reproduced smoothness gap: the original
   updater produces only 60 changed transforms across 144 live updates, while

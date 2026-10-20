@@ -1196,7 +1196,42 @@ The broader native timing, entity-trace, float/vehicle translation, audio,
 CI-scope and Mac-backlog checks pass: 146 passed and one expected failure
 in 49.07 seconds (`logs/native-mothership-shared-regressions.log`).
 The expected failure remains the separate object-rocking cadence gap.
-The user's interactive game remains the previous `cfaef73` executable.
-A rebuilt Windows game and isolated bridge-scene comparison are still
-required before calling the reported obstruction resolved; actual Mac
-execution and full mission/random-effect coverage remain pending.
+An additional schedule alternates intervals from 2/12 to 10/12 of a
+game tick and repeats at quarter speed, carrying whole ticks independently.
+It pauses twice in each of crash states 3, 4 and 5, including immediately
+before wreck creation; entity state, spawn count and retirement count stay
+unchanged during every pause. Both schedules create exactly one wreck and
+retire the ship once. Crash duration is 9.6333/9.6347 game seconds, with
+landing coordinates within 0.39 units per axis of the original 60 FPS
+reference. The focused original-code test passes in 42.25 seconds while
+the Windows build runs (`logs/native-mothership-variable-regression.log`).
+These checks retain centered random wobble and bounded effect stubs;
+they do not replace a bridge-scene playthrough.
+After the user's interactive process had closed (both process-name and
+Win32 process queries found no game process), the supported
+`tsfp.ps1 -Action Build` completed successfully, including its built-in
+Windows tests. The runtime source is `d4c5ee8`; the subsequent changes
+only extend this fixture and documentation. The new Release executable
+SHA-256 is `08ba9a6be1d6f078123e53e69a00254e05b6fc7f131f4e896ec4f3124c250c61`.
+Build output is `logs/native-mothership-windows-build.log`.
+The rebuilt executable subsequently passed a 120-second isolated Test Lab
+run at native 144 with movement/firing and pause/resume replay, using
+`tests/native_refresh_game.py --fps 144 --native --label ship-fix-build
+--stress --pause-check --seconds 120 --windowed`. All recorded checks pass,
+including opening firearm handoff, advancing/changing hand animation,
+ammunition consumption, fresh guest presents and no interpolation.
+The runner terminated its child at the duration limit; recorded exit code 1
+is that intentional termination, not a normal game exit.
+Evidence is `private/test-saves/high-refresh/native-144-ship-fix-build-validation.json`
+and `logs/native-mothership-built-smoke.log`.
+
+The unpaused CPU-update sample starting at 85 seconds contains 4,743
+intervals across 34.3823 seconds: 137.949 updates/second, p50 7.0546 ms,
+p95 9.0974 ms and p99 10.1704 ms, with game/raw time both 1.0 seconds per
+wall second. This windowed 1280×720 opening-area test does not establish
+144 FPS throughout the game or monitor scanout. It does not reach the bridge.
+Audio initialized through XAudio2 at master gain 1 and submitted nonzero
+samples; this does not establish audible output at the user's device.
+An isolated bridge-scene comparison is still required before calling the
+reported obstruction resolved; actual Mac execution and full mission/
+random-effect coverage remain pending.

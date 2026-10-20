@@ -3009,8 +3009,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   the separate damping loops unchanged. A complete original-code fixture
   reproduces the altered crash timing/landing and checks the correction at
   60/120/144 Hz, normal/quarter-speed, pause and catch-up. No OS adapter is
-  needed; Windows rebuild/scene replay and actual Mac execution remain
-  pending. The user's current game is deliberately left running. See
+  needed. Uneven frame intervals and pauses in all crash phases also pass.
+  The supported Windows Release build and built-in tests pass; bridge-scene
+  replay and actual Mac execution remain pending. See
   [the investigation](docs/native-high-refresh-regressions.md#bridge-crash-placement-investigation).
 - **Shared performance work:** `pc_prompt_guest.inc` reuses a call's validated
   stack span for stack-local text fragments, avoiding duplicate VM queries.
