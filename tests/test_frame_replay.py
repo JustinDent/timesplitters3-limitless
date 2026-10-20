@@ -1,6 +1,7 @@
 """Readback must distinguish rendered output from stale/empty/flipped images."""
 from pathlib import Path
 import os
+import shutil
 import struct
 import subprocess
 import sys
@@ -64,6 +65,10 @@ def test_windows_replay_links_without_input_library(tmp_path):
     root = Path(__file__).resolve().parents[1]
     runtime = root / 'external/ts3FPrecomp'
     _, environment = native_compiler(tmp_path)
+    # The publisher invokes .venv Python directly, without activating its PATH.
+    environment['PATH'] = str(Path(sys.executable).parent) + os.pathsep + environment['PATH']
+    cmake = shutil.which('cmake', path=environment['PATH'])
+    assert cmake, 'Install the pinned CMake dependency from requirements.txt'
     # No generated game code, SDL, original assets or input library is needed.
     (tmp_path / 'CMakeLists.txt').write_text('''
 cmake_minimum_required(VERSION 3.20)
@@ -78,10 +83,10 @@ add_subdirectory("${TSFP_RUNTIME_DIR}/src/replay" replay)
 ''', encoding='utf-8')
     build = tmp_path / 'build'
     commands = [
-        ['cmake', '-S', str(tmp_path), '-B', str(build), '-G', 'Ninja',
+        [cmake, '-S', str(tmp_path), '-B', str(build), '-G', 'Ninja',
          '-DCMAKE_BUILD_TYPE=Release', '-DTSFP_RUNTIME_DIR=' + runtime.as_posix(),
          '-DTSFP_PC_CONTROLS_DIR=' + (root / 'src').as_posix()],
-        ['cmake', '--build', str(build), '--target', 'd3d8_replay', '--parallel', '4'],
+        [cmake, '--build', str(build), '--target', 'd3d8_replay', '--parallel', '4'],
     ]
     for command in commands:
         result = subprocess.run(command, cwd=tmp_path, env=environment,
