@@ -1,5 +1,47 @@
 # Measured progress
 
+## Texture batch 213: worn environment materials (2026-10-20)
+
+Generated twelve individual material edits using built-in image generation and
+hash-verified originals. Nine passed original/compiled-DDS and 2x2 repetition
+review: rust, painted wood, granular olive-brown surface, warm metal, rounded
+stained surface with white band, damaged plaster, chipped green wall, pale
+speckled panel and recessed-seam stone. Main partitions, wear footprints,
+structural boundaries and coarse lighting were reviewed with finer detail.
+Mapped appearance and actual neighboring surfaces still need scene validation.
+
+Three drafts remain held. The pale plaster with wooden post loses its thin
+bottom strip and becomes 14.37% brighter. Marble trim loses the right-edge
+vertical join despite preserving the horizontal seam. Charcoal material becomes
+15.52% darker with stronger mottling. A focused original-grid comparison records
+these defects. None is installed; retain source art, original references and
+correction notes. No programmatic color or artistic repair was applied.
+
+Actual generated sources: nine 1254x1254 squares and three 1774x887 landscapes.
+Accepted outputs are four 1024x1024, three 512x512 and two 1024x512 DXT1 files
+with complete mip chains. LANCZOS downsampling only, no crop or aspect change;
+not native 4K generated artwork. All installed hashes match reviewed DDS bytes.
+No new triage: 4,841 of 6,812 keys classified and 1,971 unclassified.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passed for 1,366 installed files. Nine new files passed the existing Windows
+DDS parser; all 1,357 earlier hashes and checker identity match prior evidence.
+5,321 keys need art and 125 drafts are held. Worklist and hybrid routing updated.
+Shared formats and 512 MiB residency policy unchanged; no runtime/adapter edits.
+
+Single active pack 1,101,940,090 bytes (1050.89 MiB), including metadata;
+batch growth 3.84 MiB, below 6144 MiB. Temporary output 238.48 MiB, leaving
+17.52 MiB below the 256 MiB limit. Texture workspace including source art
+6419.21 MiB logical/allocated by the existing helper; disk free 83.42 GiB.
+No duplicate game/build/staging/ZIPs or cleanup retry. Game assets, personal
+saves and settings remain untouched; artwork remains local and private.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation for GPU,
+mapped scenes, transparency and residency. Discovery, full category review and
+final validation remain incomplete; this is not a full remaster. Private
+review/hybrid-213-acceptance.json links prompts, source sizes, original hashes,
+appearance decisions, metrics and parser results.
+
 ## Texture batch 212: original-channel inventory review (2026-10-20)
 
 Inspected 128 additional catalog-hash-verified originals through eight RGB and
