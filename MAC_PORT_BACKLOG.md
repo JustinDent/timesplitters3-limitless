@@ -1460,6 +1460,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Single-ZIP publication (2026-10-19, `430cdfd`, PR #199):** The shared publisher and
+  exact host artifact selections produce one versioned ZIP per platform, retaining
+  existing client discovery names and manifests. No Mac OS adapter is required.
+  Both host regression fixtures cover releases with and without old aliases.
+  Local Windows packaging, 19 policy tests and published v1.2.18 discovery passed;
+  Windows/Mac host builds, regressions and complete release verification passed
+  in CI run 39360311404. Existing release assets remain intact; versionless
+  Latest asset links must migrate to the release page for future releases.
+  See [STATUS](STATUS.md#launcher-single-zip-publication-2026-10-19).
+
 - **v1.2.19 release preparation (2026-10-19):** Shared version bump packages
   the already merged Windows and native Mac implementation through the common
   release workflow. Local Windows upgrade/rollback and full-suite evidence is

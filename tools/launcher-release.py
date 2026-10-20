@@ -6,7 +6,6 @@ import json
 import os
 from pathlib import Path, PurePosixPath
 import re
-import shutil
 import stat
 import subprocess
 import urllib.error
@@ -83,8 +82,7 @@ def manifest_name(platform):
 
 def package_names(version, platform):
     archive = f'TimeSplitters-Launcher-v{version}-{platform}.zip'
-    alias = f'TimeSplitters-Launcher-{platform}.zip'
-    return [archive, archive + '.sha256', alias, alias + '.sha256', manifest_name(platform),
+    return [archive, archive + '.sha256', manifest_name(platform),
             'launcher-build-' + platform + '.json']
 
 
@@ -144,10 +142,7 @@ def stamp(directory, plan, platform):
     directory = Path(directory)
     archive = verify_package(directory, plan, platform)
     names = package_names(plan['version'], platform)
-    alias = directory/names[2]
-    shutil.copyfile(archive, alias)
-    (directory/names[3]).write_text(digest(alias) + '  ' + alias.name + '\n')
-    write_json(directory/names[5], {'schema': 1, 'platform': platform, 'version': plan['version'],
+    write_json(directory/names[3], {'schema': 1, 'platform': platform, 'version': plan['version'],
         'source_revision': plan['source_revision'], 'archive_sha256': digest(archive)})
 
 
@@ -157,13 +152,10 @@ def release_assets(directory, plan):
     for platform in PLATFORMS:
         archive = verify_package(directory, plan, platform)
         names = package_names(plan['version'], platform)
-        receipt = json.loads((directory/names[5]).read_text())
+        receipt = json.loads((directory/names[3]).read_text())
         require(receipt == {'schema': 1, 'platform': platform, 'version': plan['version'],
                            'source_revision': plan['source_revision'], 'archive_sha256': digest(archive)},
                 'Platform packages must come from the same tested source revision.')
-        alias = directory/names[2]
-        require(digest(alias) == digest(archive) and (directory/names[3]).read_text().split() ==
-                [digest(alias), alias.name], 'Permanent download alias differs from its package.')
         assets.extend(directory/name for name in names)
     return assets
 
@@ -237,8 +229,13 @@ def publish(directory, plan, api):
         api.call('POST', base+'/git/refs', {'ref': 'refs/tags/'+tag, 'sha': sha})
     if release is None:
         notes = api.call('POST', base+'/releases/generate-notes', {'tag_name': tag, 'target_commitish': sha})
+        download = 'https://github.com/'+REPOSITORY+'/releases/download/'+tag+'/'
+        links = ' · '.join('['+label+']('+download+package_names(version, platform)[0]+')'
+                           for label, platform in [('Download Windows x64', 'windows-x64'),
+                                                   ('Download Mac (Apple Silicon)', 'macos-arm64')])
         body = ('One launcher release for Windows x64 and native Apple Silicon Mac. Download the ZIP for your platform; '
                 'existing launchers select their matching update automatically. Saves and settings are preserved.\n\n'
+                + links + '\n\n' +
                 'The Mac app is ad-hoc signed; Developer ID signing/notarization and clean-machine installation '
                 'remain pending. No game runtime or original game data is included.\n\n' + notes.get('body', '') + '\n\n' + marker)
         release = api.call('POST', base+'/releases', {'tag_name': tag, 'target_commitish': sha,

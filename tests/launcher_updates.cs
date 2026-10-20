@@ -682,10 +682,12 @@ static class LauncherTests
             var names = new[] { "TimeSplitters-Launcher-v"+version+"-macos-arm64.zip", "launcher-update-macos-arm64.json",
                 "TimeSplitters-Launcher-v"+version+"-windows-x64.zip", "launcher-update.json",
                 "TimeSplitters-Launcher-windows-x64.zip", "TimeSplitters-Launcher-macos-arm64.zip" };
-            var assets = names.Select(n => new { name=n, state="uploaded", size=100, digest="", browser_download_url=prefix+n }).ToArray();
-            var candidate = ReleaseClient.SelectLauncher(Json.Encode(new[] { new { tag_name="launcher-v"+version, draft=false, prerelease=false, assets=assets } }), false);
-            Assert(candidate.Package.AssetName == names[2] && candidate.ManifestUrl == prefix+names[3]);
-            Assert(ReleaseClient.VerifyLauncherMetadata(candidate, SelfMetadata(version,100,Hash("zip"))).Tag == version);
+            foreach (int count in new[] {4,6}) {
+                var assets = names.Take(count).Select(n => new { name=n, state="uploaded", size=100, digest="", browser_download_url=prefix+n }).ToArray();
+                var candidate = ReleaseClient.SelectLauncher(Json.Encode(new[] { new { tag_name="launcher-v"+version, draft=false, prerelease=false, assets=assets } }), false);
+                Assert(candidate.Package.AssetName == names[2] && candidate.ManifestUrl == prefix+names[3]);
+                Assert(ReleaseClient.VerifyLauncherMetadata(candidate, SelfMetadata(version,100,Hash("zip"))).Tag == version);
+            }
         });
         Test("launcher version independent of game tag", () => {
             var json = Json.Encode(new[] { SelfRelease("1.1.0", false, false, 100, ""), SelfRelease("1.2.0-beta.1", true, false, 100, ""), SelfRelease("9.0.0", false, true, 100, "") });

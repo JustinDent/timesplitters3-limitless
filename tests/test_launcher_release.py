@@ -59,7 +59,7 @@ class FakeGitHub:
             self.assets = [a for a in self.assets if a['id'] != int(path.rsplit('/', 1)[-1])]
             return None
         if method == 'PATCH':
-            assert len(self.assets) == 12, 'Never publish a partial release.'
+            assert len(self.assets) == 8, 'Never publish a partial release.'
             self.release.update(data)
             return self.release
         if path.endswith('/dispatches'):
@@ -109,7 +109,7 @@ class LauncherReleaseTests(unittest.TestCase):
             self.package(platform)
             release.stamp(self.directory, self.plan, platform)
 
-    def test_complete_release_publishes_only_after_all_twelve_uploads(self):
+    def test_complete_release_publishes_only_after_all_eight_uploads(self):
         self.both()
         url = release.publish(self.directory, self.plan, self.api)
         self.assertTrue(url.endswith('/launcher-v1.2.19'))
@@ -117,6 +117,12 @@ class LauncherReleaseTests(unittest.TestCase):
         self.assertEqual(self.api.release['make_latest'], 'true')
         self.assertEqual(self.api.calls[-1][1].split('/')[-2:], ['issue-form-versions.yml', 'dispatches'])
         self.assertEqual(self.api.tag, SHA)
+        for platform in release.PLATFORMS:
+            self.assertIn('/releases/download/launcher-v1.2.19/TimeSplitters-Launcher-v1.2.19-'+platform+'.zip)',
+                          self.api.release['body'])
+        self.assertEqual(sorted(a['name'] for a in self.api.assets if a['name'].endswith('.zip')),
+                         ['TimeSplitters-Launcher-v1.2.19-macos-arm64.zip',
+                          'TimeSplitters-Launcher-v1.2.19-windows-x64.zip'])
 
     def test_missing_platform_does_not_even_contact_github(self):
         self.package('windows-x64')
@@ -125,7 +131,21 @@ class LauncherReleaseTests(unittest.TestCase):
             release.publish(self.directory, self.plan, self.api)
         self.assertEqual(self.api.calls, [])
 
-    def test_mixed_revision_or_corrupt_alias_prevents_remote_mutation(self):
+    def test_stale_aliases_and_older_packages_are_never_uploaded(self):
+        self.both()
+        for platform in release.PLATFORMS:
+            alias = self.directory/f'TimeSplitters-Launcher-{platform}.zip'
+            self.assertFalse(alias.exists(), 'Stamp must not create a second ZIP.')
+            alias.write_bytes(b'stale alias from an earlier build')
+            alias.with_suffix('.zip.sha256').write_text('old checksum')
+            (self.directory/f'TimeSplitters-Launcher-v1.2.18-{platform}.zip').write_bytes(b'old package')
+        release.publish(self.directory, self.plan, self.api)
+        self.assertEqual(len(self.api.assets), 8)
+        self.assertFalse(any(a['name'].startswith('TimeSplitters-Launcher-') and
+                             not a['name'].startswith('TimeSplitters-Launcher-v1.2.19-')
+                             for a in self.api.assets))
+
+    def test_mixed_revision_or_corrupt_checksum_prevents_remote_mutation(self):
         self.both()
         receipt = self.directory/'launcher-build-macos-arm64.json'
         value = json.loads(receipt.read_text())
@@ -135,8 +155,8 @@ class LauncherReleaseTests(unittest.TestCase):
             release.publish(self.directory, self.plan, self.api)
         self.assertEqual(self.api.calls, [])
         release.stamp(self.directory, self.plan, 'macos-arm64')
-        (self.directory/'TimeSplitters-Launcher-windows-x64.zip').write_bytes(b'bad')
-        with self.assertRaisesRegex(ValueError, 'alias'):
+        (self.directory/'TimeSplitters-Launcher-v1.2.19-windows-x64.zip.sha256').write_text('bad')
+        with self.assertRaisesRegex(ValueError, 'checksum'):
             release.publish(self.directory, self.plan, self.api)
         self.assertEqual(self.api.calls, [])
 
@@ -173,7 +193,7 @@ class LauncherReleaseTests(unittest.TestCase):
         self.api.fail_upload = None
         release.publish(self.directory, self.plan, self.api)
         self.assertFalse(self.api.release['draft'])
-        self.assertEqual(len(self.api.assets), 12)
+        self.assertEqual(len(self.api.assets), 8)
         self.assertEqual(sum(c[0] == 'POST' and c[1].endswith('/releases') for c in self.api.calls), 1)
 
     def test_digest_mismatch_keeps_draft_then_retry_repairs_owned_assets(self):
@@ -197,6 +217,16 @@ class LauncherReleaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'immutable'):
             release.publish(self.directory, self.plan, self.api)
         self.assertTrue(all(c[0] == 'GET' for c in self.api.calls))
+
+    def test_retry_preserves_existing_published_alias_assets(self):
+        self.both()
+        release.publish(self.directory, self.plan, self.api)
+        self.api.assets.append({'name': 'TimeSplitters-Launcher-macos-arm64.zip'})
+        self.api.calls.clear()
+        with self.assertRaisesRegex(ValueError, 'unrelated assets'):
+            release.publish(self.directory, self.plan, self.api)
+        self.assertTrue(all(c[0] == 'GET' for c in self.api.calls))
+        self.assertEqual(len(self.api.assets), 9)
 
     def test_existing_unowned_release_or_wrong_tag_is_not_modified(self):
         self.both()
@@ -264,6 +294,14 @@ class LauncherReleaseTests(unittest.TestCase):
         self.assertIn('--install-sdk --test --require-artwork', shared)
         self.assertIn("tags: ['launcher-v*']", workflow)
         self.assertIn('default: false', workflow)
+        self.assertNotIn('TimeSplitters-Launcher-*.zip*', shared)
+        self.assertIn('TimeSplitters-Launcher-v${{ steps.plan.outputs.version }}-windows-x64.zip', shared)
+        self.assertIn('TimeSplitters-Launcher-v${{ needs.windows.outputs.version }}-macos-arm64.zip', shared)
+
+    def test_readme_download_button_uses_release_page_not_removed_alias(self):
+        readme = (ROOT/'README.md').read_text(encoding='utf-8')
+        self.assertIn('href="https://github.com/'+release.REPOSITORY+'/releases/latest"', readme)
+        self.assertNotIn('/releases/latest/download/TimeSplitters-Launcher-', readme)
 
 
 if __name__ == '__main__':

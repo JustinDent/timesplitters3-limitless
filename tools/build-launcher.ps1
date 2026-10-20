@@ -118,8 +118,6 @@ $hash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerI
 [IO.File]::WriteAllText(($archivePath + '.sha256'), "$hash  $assetName`n", $encoding)
 $metadata = [ordered]@{ schema = 1; version = $version; asset_name = $assetName; size = (Get-Item -LiteralPath $archivePath).Length; sha256 = $hash }
 [IO.File]::WriteAllText((Join-Path $Output 'launcher-update.json'), (($metadata | ConvertTo-Json) + "`n"), $encoding)
-Copy-Item -LiteralPath $archivePath -Destination (Join-Path $Output 'TimeSplitters-Launcher-windows-x64.zip') -Force
-[IO.File]::WriteAllText((Join-Path $Output 'TimeSplitters-Launcher-windows-x64.zip.sha256'), ($hash + '  TimeSplitters-Launcher-windows-x64.zip' + "`n"), $encoding)
 if ($Test) {
     $testArgs = @('/nologo','/target:exe','/platform:x64','/optimize+','/utf8output','/main:LauncherTests',
         ('/out:' + (Join-Path $Output 'launcher-tests.exe')))
