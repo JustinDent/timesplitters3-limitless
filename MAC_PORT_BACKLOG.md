@@ -2738,9 +2738,10 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   unrelated runtime settings, keeping the existing FOV/texture/rollback coverage.
   No Mac adapter is needed: shared production menu policy is unchanged. The
   portable pointer fixture and its broken-setting-drag detection pass on Mac;
-  actual native menu compilation is blocked by the absent pinned runtime tree,
-  and repaired Windows fixture execution remains pending MSVC. Status remains
-  Awaiting validation. [Evidence and limits](STATUS.md#fixed-60-settings-fixture-repair-2026-10-20).
+  subsequent Windows/macOS native CI passed in run 39381646838. The integrated
+  Windows fixture also passes locally with MSVC, preserving main's stricter
+  seven-row and Back-navigation checks. Full Mac gameplay validation remains
+  pending. [Evidence and limits](STATUS.md#fixed-60-settings-fixture-repair-2026-10-20).
 
 - **Current disposition (2026-10-20, commit carrying this entry):** Withdrawn at the user's
   request. Both hosts now use fixed 60 FPS; the interpolation/prediction engine

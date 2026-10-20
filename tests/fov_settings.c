@@ -231,7 +231,6 @@ int main(int argc,char **argv)
         fread(text,1,sizeof text-1,f);CHECK(!ferror(f) && feof(f));CHECK(!fclose(f));
         CHECK(!strcmp(text,"# preserve\nframe_interp = 3\nframe_cap = 30\nfuture_key = keep\n"));
     }
-    content("TSFP_DISPLAY_V1 1920 1080\n");
     VirtualFree(mem,0,MEM_RELEASE);
     puts("PASS: FOV config, bounds, staging, reset, cancellation, atomic failure, preview rollback, keep, live texture choice/synchronization and guest ABI");
     return 0;

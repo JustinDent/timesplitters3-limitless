@@ -18,8 +18,12 @@ Compilation was bounded to 60 seconds and execution to 10 seconds, with outputs
 under `build/compatibility-repair`; no game or personal settings were used.
 Pytest is unavailable. Direct native menu syntax compilation stops at missing
 `platform/win32_compat.h`: this snapshot has no `external/ts3FPrecomp` tree.
-The repaired Windows fixture therefore still requires MSVC execution, and native
-menu compilation requires the pinned dependency in the controller's host checks.
+These were limits of the original repair environment. PR #219 subsequently passed
+Windows and macOS native/runtime CI (run 39381646838), launcher compatibility,
+and issue-form/resolution checks. Integration with main preserves PR #216's
+seven-row count, row reset and Back-navigation assertions. The integrated Windows
+FOV fixture also passes locally with MSVC and the existing pinned runtime.
+Fresh PR CI validates the final merge before it is accepted; no gameplay was run.
 No Windows, GPU, visual or gameplay validation is claimed. See MAC-054.
 
 ## Fixed 60 FPS restoration (2026-10-20)
