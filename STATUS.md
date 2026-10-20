@@ -12,7 +12,10 @@ published release or a full-game 144 FPS certification.
   seconds; the correction produces zero in this controlled full-screen case.
   Whole-tick draw arguments remain exact. Pause, rebases, four views, clipped
   ranges and disabled-native checks pass. Graphics calls are spies; this does
-  not yet establish live visual acceptance. Build validation is pending.
+  not yet establish live visual acceptance. All 148 shared checks and the
+  supported Windows build/built-in checks pass for `a08f41a`. The existing
+  interactive `b3c30cf` session was preserved; the new build awaits its next
+  launch. Controls/display hashes are unchanged.
   [Strip distortion](docs/native-high-refresh-regressions.md#fractional-strip-distortion).
 - Shared source corrects a reproduced procedural-texture cache collision.
   A zero-whole native frame could cache a no-op against the display vblank;

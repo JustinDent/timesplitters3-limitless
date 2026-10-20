@@ -1732,10 +1732,32 @@ Guest clocks and every other read remain unchanged; no new patch is needed.
 
 Evidence: `logs/native-strip-before.log` records the original production-policy
 failure at 120; `logs/native-strip-fixed.log` records all six corrected cases.
-The focused fixture passes. Full Windows build, live strip-effect triggering,
-actual GPU visuals, complete original-60 gameplay comparison and Mac execution
-remain pending at this source checkpoint. This does not establish full-game
-native 144 FPS coverage.
+All 148 shared timing/float/vehicle/CI-scope/backlog checks pass in 70.07 seconds
+(`logs/native-strip-shared.log`). The unchanged complete patch stack verifies
+with zero updates (`logs/native-strip-patches.log`), and the generated caller
+contains the site-aware conversion at `0xF9B4B` with a current generation
+fingerprint. The full Windows MSVC x64 Release build of `a08f41a` and its
+built-in checks pass (`logs/native-strip-build.log` / `.err`). Executable SHA-256:
+`e4082f51b9d4fb9ee595f7eb06db8982973bb6bcfab4df8f60bb3dababc4e163`.
+
+The user's existing PID 22536 remains on `b3c30cf`, retained as
+`futureperfect_recomp.running-b3c30cf.exe` while the normal executable was
+rebuilt. It was not terminated or restarted. Personal controls/display hashes
+remain unchanged. Live strip-effect triggering, actual GPU visuals, complete
+original-60 gameplay comparison and Mac execution remain pending. This does
+not establish full-game native 144 FPS coverage.
+
+A separate read-only observation of that older interactive session found
+`attract.xmv` playback in the log while the guest update counter stayed at
+18,092, console vblank at 38,742 and level clock at 7,550 for six seconds in
+scene 101. RHI present counts continued growing. Those counters represent
+accepted API submissions, including repeated movie pictures, not fresh game
+updates or decoded movie frames. The shared recorder already excludes positive
+skip statuses and negative failures. Movie-loop pacing and fresh-picture
+accounting require a separate audit; this observation was made during a build
+and is not a performance benchmark. Evidence is
+`private/pipeline/strip-interactive-counter-audit.json` and the corresponding
+`logs/play-20261020-180012.err` movie/presentation records.
 
 ## Bridge-crash placement investigation
 
