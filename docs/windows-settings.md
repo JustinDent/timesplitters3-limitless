@@ -35,32 +35,8 @@ Cancel discards unsaved edits. The sidebar stays visible while editing.
 
 These instructions describe the current Windows source build. Downloaded releases may predate individual features.
 
-For FPS and monitor refresh, open **Settings → Display settings → Smoothness /
-refresh** from the main menu, or the same Display settings page under paused
-**Options**. Use left/right on each row:
-
-- **Motion:** 60 FPS (original), 120 FPS (experimental), or 144 FPS (experimental).
-  **Keep current** preserves a custom/legacy pacing setup. Selecting 120/144
-  also enables fullscreen and VRR and keeps the game simulation at 60 Hz.
-- **Monitor refresh:** Desktop rate, 120 Hz if supported, or 144 Hz if supported.
-  This is separate from the FPS target. The game checks the actual monitor at
-  launch and leaves unsupported modes unchanged.
-- **Save for next launch:** saves these preferences, then shows a restart
-  reminder. Restart normally to apply them. **Back (discard changes)** leaves
-  the saved preferences alone. Resolution, FOV and other graphics preferences
-  are preserved by this save.
-
-Start with 120 FPS and a supported matching refresh rate; compare the same
-scene while turning the camera before trying 144. Use **60 FPS (original)** to
-turn interpolation off. These are presentation targets, not guaranteed frame
-rates. The [launcher guide](windows-launcher.md) explains resolution/quality
-adjustments and the FPS counters. `Play-Smooth.cmd` and environment overrides
-take priority over saved preferences; use normal `Play.cmd` or the launcher's
-Play button when checking the saved selection.
-
-Smoothness/refresh uses the runtime display configuration shared with the
-launcher (`RECOMP_DISPLAY_CONFIG` in isolated tests). It applies after restart;
-resolution and FOV below retain their existing live confirmation behavior.
+Rendering uses fixed 60 FPS. High-FPS motion, interpolation and monitor-refresh
+selectors have been removed. The desktop refresh rate stays unchanged.
 
 Open **Settings → Display settings** from the main menu, or **Options → Display
 settings** while paused. Choose an **Aspect ratio** group (All, 4:3, 5:4,
@@ -98,8 +74,7 @@ the draft; the existing Save/Cancel and in-game confirmation rules still apply.
 These settings change the native
 3D rendering resolution; the window still follows its existing size. Use
 **Alt+Enter** for fullscreen. Render resolution does not change desktop
-resolution or refresh; the separate Smoothness / refresh option can request
-a supported monitor rate while the game is foreground and fullscreen.
+resolution or refresh.
 Menu backgrounds fill the selected canvas, while text, buttons and panels fit
 proportionally. Narrower layouts fit widgets vertically instead of cropping them.
 Windows frontend menus reconstruct magnified background, logo and icon textures
@@ -237,11 +212,8 @@ Press **F12** or choose **PC Settings > Debug**.
 The shortcuts also work in fullscreen. Pause a mission first: settings block gameplay input but do not
 pause the simulation. The Debug window offers:
 
-- **Show FPS:** game frame rate; when interpolation adds presentations, the
-  overlay shows game/shown FPS. F9 toggles the FPS display for the current session.
-  With the experimental 120/144 FPS target, Shown excludes guest endpoints
-  replaced by interpolated presentations, avoiding double-counting. These are
-  host submissions, not a measurement of the monitor's scanout rate.
+- **Show FPS:** game frame rate, capped at 60. F9 toggles the FPS display for
+  the current session. These are host submissions, not monitor scanout readings.
 - **Show average frame time:** the average interval between game frames in
   milliseconds, measured over roughly half a second; this is not GPU execution time.
 - **Show error / warning counters:** on-screen E/W counts of matching runtime log

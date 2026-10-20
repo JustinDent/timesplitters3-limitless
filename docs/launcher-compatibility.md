@@ -26,9 +26,8 @@ required. The prior paid review/proposal workflow has been replaced.
 
 Common UI/model changes compile into both launchers. OS-specific calls still need
 an implementation for the other host or an explicit capability/backlog entry.
-For example, the Windows experimental fixed 120/144 FPS targets and monitor
-switching remain unavailable on native Mac (MAC-054); its saved values are
-preserved and the existing Mac interpolation setting remains usable.
+Both hosts remove retired high-FPS preferences and migrate old timing values to
+the fixed 60 FPS policy (MAC-054), while retaining unrelated settings.
 
 Passing checks establish tested behavior, not complete visual or system-integration
 parity. Discord sessions, native dialogs, physical displays, signing/notarization

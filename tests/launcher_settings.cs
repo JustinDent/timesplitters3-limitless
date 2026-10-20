@@ -410,72 +410,30 @@ public static class LauncherSettingsChecks
                 var model=GameSettings.Load(root,null);model.Width=3440;model.Height=1440;model.Sensitivity=.35;model.Anisotropy=16;model.Fullscreen=true;
                 model.Assign(14,1,90,false);model.Save();var saved=GameSettings.Load(root,null);
                 Require(saved.Binding(14)[0]=="key:W" && GameSettings.KeyCode(saved.Binding(14)[1])==90);
-                Require(saved.Width==3440 && saved.Height==1440 && saved.Fullscreen && saved.Interpolation==2 && saved.Anisotropy==16 && saved.Sensitivity==.35);
+                Require(saved.Width==3440 && saved.Height==1440 && saved.Fullscreen && saved.Interpolation==1 && saved.Anisotropy==16 && saved.Sensitivity==.35);
                 Require(Read(root,"Settings/pc-controls.json").Contains("keep pad") && Read(root,"Settings/pc-controls.json").Contains("future_setting"));
                 Require(Read(root,"Settings/runtime.conf").Contains("# Keep this comment") && Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
                 Require(File.Exists(Path.Combine(root,"Settings/pc-controls.json.bak")));
             });
-            Test("120 and 144 FPS preserve guest pacing and legacy interpolation preferences",()=>{
-                string root=Root("presentation-fps");
-                Put(root,"Settings/runtime.conf","frame_interp = 2\nfuture_graphics = keep\n");
-                var model=GameSettings.Load(root,null);Require(model.PresentationFps==0);
-                foreach(int target in new[]{120,144,0}) {
-                    model.PresentationFps=target;model.Save();model=GameSettings.Load(root,null);
-                    Require(model.PresentationFps==target && model.Interpolation==2);
-                    Require(Read(root,"Settings/runtime.conf").Contains("future_graphics = keep"));
+            Test("legacy timing settings migrate to 60 FPS without losing unrelated preferences",()=>{
+                foreach(int target in new[]{0,120,144}) {
+                    string root=Root("retired-fps-"+target);
+                    Put(root,"Settings/runtime.conf","frame_interp = 4\nframe_target = "+target+"\nrefresh_rate = 144\nframe_cap = 0\nfuture_graphics = keep\nfullscreen = 1\n");
+                    var model=GameSettings.Load(root,null);
+                    Require(model.PresentationFps==0 && model.Interpolation==1 && model.FrameCap=="60" && model.RefreshRate==0);
+                    var info=GameSettings.StartInfo(root);
+                    Require(info.EnvironmentVariables["RECOMP_FRAME_INTERP"]=="1" && info.EnvironmentVariables["RECOMP_FRAME_TARGET"]=="0" && info.EnvironmentVariables["RECOMP_FPS_CAP"]=="60");
+                    model.Save();
+                    var values=GameSettings.ParseRuntime(Read(root,"Settings/runtime.conf"));
+                    Require(values["frame_interp"]=="1" && values["frame_target"]=="0" && values["frame_cap"]=="60" && values["refresh_rate"]=="0");
+                    Require(values["future_graphics"]=="keep" && model.Fullscreen);
                 }
-                model.PresentationFps=144;model.FrameCap="0";Reject(()=>model.Save());
-                model.FrameCap="30";Reject(()=>model.Save());
-                model.FrameCap="60";model.Save();Require(GameSettings.Load(root,null).FrameCap=="60");
-                model.PresentationFps=145;Reject(()=>model.Save());
-                model.PresentationFps=144;model.RefreshRate=120;model.Save();Require(GameSettings.Load(root,null).RefreshRate==120);
-                model.RefreshRate=144;model.Save();Require(GameSettings.Load(root,null).RefreshRate==144);
-                model.RefreshRate=60;Reject(()=>model.Save());
             });
-            Test("presentation UI selects 144 FPS and restores legacy multiplier",()=>STA(()=>{
-                string root=Root("presentation-ui");var model=GameSettings.Load(root,null);
-                model.FrameCap="30";model.Interpolation=2;model.Save();
-                var owner=new System.Windows.Window();var page=new SettingsPage(owner.Resources,root,true);page.SelectTab(1);
-                var target=Descendants(page.View).OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PresentationTarget");
-                target.SelectedIndex=2;
-                var save=Descendants(page.View).OfType<System.Windows.Controls.Button>().Single(b=>Convert.ToString(b.Content)=="Save settings");
-                Click(save);model=GameSettings.Load(root,null);
-                Require(model.PresentationFps==144 && model.FrameCap=="60" && model.Interpolation==2);
-                target.SelectedIndex=0;Click(save);
-                Require(GameSettings.Load(root,null).PresentationFps==0);
-            }));
-            Test("older games keep legacy interpolation and cannot select unsupported targets",()=>STA(()=>{
-                string root=Root("old-presentation");Put(root,"BUILD.json","{\"version\":\"v0.3.0-alpha.2\"}");
-                var model=GameSettings.Load(root,null);Require(!model.SupportsPresentationTarget);
-                model.PresentationFps=144;Reject(()=>model.Save());model.PresentationFps=0;model.Interpolation=2;model.Save();
-                var owner=new System.Windows.Window();var page=new SettingsPage(owner.Resources,root,true);page.SelectTab(1);
-                Require(!Descendants(page.View).OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PresentationTarget").IsEnabled);
-                Put(root,"BUILD.json","{\"version\":\"v0.3.0-alpha.3\"}");Require(model.SupportsPresentationTarget);
-            }));
-            Test("smoothness setups coordinate pacing, refresh and quality only on Save",()=>STA(()=>{
-                string root=Root("performance-setups");var model=GameSettings.Load(root,null);
-                model.Vrr=false;model.Fullscreen=false;model.Scale=4;model.Interpolation=3;
-                model.FrameCap="30";model.Width=1920;model.Height=1080;model.Anisotropy=8;model.Save();
-                string before=Read(root,"Settings/runtime.conf");
-                var owner=new System.Windows.Window();var page=new SettingsPage(owner.Resources,root,true);page.SelectTab(1);
-                var nodes=Descendants(page.View).ToList();
-                var save=nodes.OfType<System.Windows.Controls.Button>().Single(b=>b.Name=="SettingsSaveButton");
-                var pacing=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="GameFramePacing");
-                var target=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PresentationTarget");
-                foreach(int rate in new[]{120,144,60}) {
-                    Click(nodes.OfType<System.Windows.Controls.Button>().Single(b=>b.Name=="PerformancePreset"+rate));
-                    Require(Read(root,"Settings/runtime.conf")==before);
-                    Require(pacing.IsEnabled==(rate==60));
-                    Click(save);model=GameSettings.Load(root,null);before=Read(root,"Settings/runtime.conf");
-                    Require(model.PresentationFps==(rate==60?0:rate) && model.FrameCap=="60");
-                    Require(model.Interpolation==(rate==60?1:3) && model.Vrr && model.Fullscreen && model.FpsOverlay && model.Scale==1);
-                    Require(model.Width==1920 && model.Height==1080 && model.Anisotropy==8);
-                    Require(model.RefreshRate==(rate>60 && DisplayModes.PrimaryRefreshRates().Contains(rate)?rate:0));
-                }
-                target.SelectedIndex=2;
-                Require(!pacing.IsEnabled);
-                Click(nodes.OfType<System.Windows.Controls.Button>().Single(b=>b.Name=="SettingsCancelButton"));
-                Require(Read(root,"Settings/runtime.conf")==before);
+            Test("graphics page removes interpolation and high FPS controls",()=>STA(()=>{
+                var page=new SettingsPage(new System.Windows.Window().Resources,Root("fixed-fps-ui"),true);page.SelectTab(1);
+                var names=Descendants(page.View).OfType<System.Windows.FrameworkElement>().Select(n=>n.Name).ToList();
+                foreach(string name in new[]{"PresentationTarget","LegacyInterpolation","GameFramePacing","MonitorRefreshRate","PerformancePreset120","PerformancePreset144"})
+                    Require(!names.Contains(name),"Retired control remains: "+name);
             }));
             Test("performance guidance tracks actual resolution, VRR and fullscreen choices",()=>STA(()=>{
                 string root=Root("performance-guidance");var model=GameSettings.Load(root,null);model.Scale=4;model.Save();
@@ -488,14 +446,7 @@ public static class LauncherSettingsChecks
                 resolution.SelectedItem=resolution.Items.OfType<DisplayMode>().First(m=>m.Width==1920 && m.Height==1080);
                 Require(!scale.IsEnabled && advice.Text.Contains("console scale is inactive"));
                 Require(Convert.ToString(scale.SelectedItem)=="4");
-                var target=nodes.OfType<System.Windows.Controls.ComboBox>().Single(c=>c.Name=="PresentationTarget");target.SelectedIndex=2;
-                var vrr=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="VariableRefreshRate");
-                var fullscreen=nodes.OfType<System.Windows.Controls.CheckBox>().Single(c=>c.Name=="BorderlessFullscreen");
-                Require(vrr.IsChecked==true && fullscreen.IsChecked==true);
-                vrr.IsChecked=false;fullscreen.IsChecked=false;
-                Require(advice.Text.Contains("VRR is off") && advice.Text.Contains("Enable borderless fullscreen"));
-                vrr.IsChecked=true;fullscreen.IsChecked=true;
-                Require(!advice.Text.Contains("VRR is off") && !advice.Text.Contains("Enable borderless fullscreen"));
+                Require(advice.Text.Contains("60 FPS"));
                 string preview=Environment.GetEnvironmentVariable("TSFP_PERFORMANCE_PREVIEW");
                 if(!String.IsNullOrEmpty(preview)) {
                     page.View.Measure(new System.Windows.Size(1000,900));
@@ -536,7 +487,7 @@ public static class LauncherSettingsChecks
             });
             Test("inherited runtime settings are copied without modifying their source",()=>{
                 string root=Root("inherit");Put(root,"old.conf","frame_interp = 2\nfuture = untouched\n");
-                var model=GameSettings.Load(root,Path.Combine(root,"old.conf"));Require(model.Interpolation==2);model.Save();Require(Read(root,"old.conf")=="frame_interp = 2\nfuture = untouched\n");Require(Read(root,"Settings/runtime.conf").Contains("future = untouched"));
+                var model=GameSettings.Load(root,Path.Combine(root,"old.conf"));Require(model.Interpolation==1);model.Save();Require(Read(root,"old.conf")=="frame_interp = 2\nfuture = untouched\n");Require(Read(root,"Settings/runtime.conf").Contains("future = untouched"));
             });
             foreach(bool configured in new[]{false,true}) foreach(int exitCode in new[]{0,7})
             {

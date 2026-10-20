@@ -102,21 +102,13 @@ public static class LauncherSharedUiChecks
                 Click(Find<Button>(page.View,"SettingsSaveButton"));var saved=GameSettings.Load(root,null);
                 Need(saved.DiscordEnabled&&saved.DiscordApplicationId=="123456789012345678"&&saved.VerticalFov==75,"Discord save changed other settings");
             });
-            Test("host capabilities preserve saved presentation and refresh preferences",()=>{
+            Test("both launchers migrate retired timing preferences",()=>{
                 string shared=Path.Combine(root,"high-refresh");Directory.CreateDirectory(Path.Combine(shared,"Settings"));
-                File.WriteAllText(Path.Combine(shared,"Settings/runtime.conf"),"frame_interp = 2\nframe_target = 144\nrefresh_rate = 120\nframe_cap = 60\n");
+                File.WriteAllText(Path.Combine(shared,"Settings/runtime.conf"),"frame_interp = 2\nframe_target = 144\nrefresh_rate = 120\nframe_cap = 0\n");
                 var page=new SettingsPage(new ResourceDictionary(),shared,true);page.SelectTab(1);
-                Need(Find<ComboBox>(page.View,"PresentationTarget").IsEnabled==LauncherPlatform.CanSelectPresentationTarget,"Presentation capability differs from host");
-                Need(Find<Button>(page.View,"PerformancePreset144").IsEnabled==LauncherPlatform.CanSelectPresentationTarget,"Unsupported preset enabled");
                 Find<Slider>(page.View,"VerticalFovSlider").Value=70;
                 Click(Find<Button>(page.View,"SettingsSaveButton"));var saved=GameSettings.Load(shared,null);
-                Need(saved.VerticalFov==70 && saved.PresentationFps==144 && saved.RefreshRate==120 && saved.Interpolation==2,"Editing FOV reset saved presentation preferences");
-                if(!LauncherPlatform.CanSelectPresentationTarget) {
-                    Need(Find<ComboBox>(page.View,"LegacyInterpolation").IsEnabled,"Native interpolation became unavailable");
-                    Find<ComboBox>(page.View,"LegacyInterpolation").SelectedItem="1";
-                    Click(Find<Button>(page.View,"SettingsSaveButton"));saved=GameSettings.Load(shared,null);
-                    Need(saved.Interpolation==1 && saved.PresentationFps==144 && saved.RefreshRate==120,"Native interpolation edit changed unsupported saved options");
-                }
+                Need(saved.VerticalFov==70 && saved.PresentationFps==0 && saved.RefreshRate==0 && saved.Interpolation==1 && saved.FrameCap=="60","Retired timing settings survived migration");
             });
             Test("news selection, stale notes and toolbar spacing",()=>{
                 var page=new WhatsNewPage();page.SetVersions("v1.0.0","1.0.0",false);

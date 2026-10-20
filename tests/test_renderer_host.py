@@ -97,7 +97,7 @@ def test_present_metrics(tmp_path):
     assert rows[1]['kind']=='other'
 
 
-@pytest.mark.parametrize('name', ['interpolation_present', 'interpolation_scene', 'interpolation_draw_key', 'interpolation_capture'])
+@pytest.mark.parametrize('name', ['interpolation_draw_key'])
 def test_interpolation_present_outcomes(tmp_path,name):
     compiler, env=native_compiler(tmp_path)
     exe=tmp_path/('interp-present.exe' if os.name=='nt' else 'interp-present')

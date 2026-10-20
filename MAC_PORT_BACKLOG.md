@@ -188,7 +188,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-051 | Version and build-identity watermark | Awaiting validation |
 | MAC-052 | Experimental network bot setup (issue #25) | Queued |
 | MAC-053 | Discord Rich Presence (issue #63) | Awaiting validation |
-| MAC-054 | Fractional presentation targets and Windows transform setup (issue #167) | Queued |
+| MAC-054 | Fractional presentation targets and Windows transform setup (issue #167) | Awaiting validation |
 | MAC-055 | Persist accepted frontend Controls before quitting Settings | Awaiting validation |
 | MAC-056 | Texture-camera composition alignment (issue #49) | Awaiting validation |
 | MAC-057 | Optional texture pack delivery through the launcher | Awaiting validation |
@@ -2732,7 +2732,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-054 — Fractional presentation targets and Windows transform setup (issue #167)
 
-- **Status:** Queued
+- **Current disposition (2026-10-20, commit carrying this entry):** Withdrawn at the user's
+  request. Both hosts now use fixed 60 FPS; the interpolation/prediction engine
+  is replaced with inert recorder ABI compatibility functions. Shared launcher
+  UI removes timing controls and migrates old values without changing unrelated
+  preferences. Native scripts reject higher targets and no longer default to 2x.
+  Historical implementation notes below are superseded. PR #216 hosted run
+  39380510747 passed Mac native regressions, patch upgrades and asset-free GPU
+  checks. Full Mac game/visual validation remains pending; these CI checks do
+  not establish gameplay fidelity. See [fixed-60 validation](STATUS.md#fixed-60-fps-restoration-2026-10-20).
+
+
+- **Status:** Awaiting validation
 - **Shared stack integration (2026-10-19, PR #186 follow-up, uncommitted):**
   Current main's presentation series overlapped the earlier shared renderer
   patches. The three presentation patches now apply after the shared host,
