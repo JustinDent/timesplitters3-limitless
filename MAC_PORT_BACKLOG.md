@@ -1115,6 +1115,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- Batch 207 (issue #74): 128 additional original RGB/alpha classifications; no art, pack, format, runtime or adapter changes. Existing 1,327 DDS files pass current Python audit and unchanged-hash native evidence carry-forward. Shared DXT1/DXT5/RGBA8 support remains; **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency. No Mac execution. See STATUS.md batch 207 and private review/hybrid-207-acceptance.json.
+
 - Batch 206 (issue #74): found and withdrew the batch 205 trim's blended-magenta border, then replaced it and installed seven further narrow trims using original-only repeated references. Eight new Windows DDS parser passes; 1,319 unchanged hashes carried forward and full current Python audit passed (1,327 total). Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. STATUS.md batch 206 and private review/hybrid-206-acceptance.json supersede the earlier edge-color claim.
 
 - Batch 205 (issue #74): one narrow metal trim installed after fixed-region carrier extraction and offline UV/edge review; 1,320 total. New Windows native DDS parser pass, remaining 1,319 unchanged-hash evidence carried forward. Shared DXT1, no format/runtime/adapter change. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 205 and private review/hybrid-205-acceptance.json.

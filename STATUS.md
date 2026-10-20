@@ -1,5 +1,46 @@
 # Measured progress
 
+## Texture batch 207: inventory of masks, labels and material channels (2026-10-20)
+
+Inspected 128 previously unclassified supported keys, each with two catalog
+occurrences, directly from hash-verified payload spans. Eight RGB and eight
+separate alpha contact sheets preserve aspect ratios. Recorded per-key
+provisional categories and preservation constraints; classification now covers
+4,489 of 6,812 keys (65.90%), with 2,323 still unclassified. This is routing,
+not replacement approval or full category/scene validation. No art generated,
+resampled or installed.
+
+Notable specialist work includes alpha-only decorative script and glyphs,
+skull/zoom symbols, character portraits and face/equipment atlases, ammunition
+stencils, X-ray labels, book spines and inverted magazine imagery. Preserve
+supplied text/atlas orientation rather than inventing unreadable lettering.
+Several apparently solid rock/wall materials contain inverse or partial alpha.
+Low-opacity glows/noise, constant-alpha153 and184 surfaces, and functional
+lookup-like textures retain their channel ranges and unresolved semantics.
+Chain links, window/grate holes, foliage and ornate ironwork require exact
+silhouettes and connectivity. Unknown usage remains open and in scope.
+
+Full current Python pack audit passed at batch start: format, metadata,
+dimensions, aspect, hashes and mip chains. All 1,327 installed DDS hashes
+still match audited progress assets, and the native checker is unchanged.
+Batch 206 Windows parser evidence is carried forward with no redundant native
+execution. Counts remain 5,361 needing art, 124 held drafts and 1,327 installed.
+Worklist and hybrid production queue refreshed; no pack or runtime changes.
+
+Pack unchanged at 1,082,519,048 bytes (1032.37 MiB).
+Temporary output 219.05 MiB at audit, below 256 MiB;
+consolidated scratch notes removed after verifying the canonical decisions.
+Texture workspace including retained source art 6217.10 MiB
+logical/allocated by existing helper; disk free 84.28 GiB.
+The 6144 MiB pack cap and 512 MiB residency policy are unchanged. No new GPU
+measurement, duplicate extracts/builds/staging/ZIPs, or game/save/settings edits.
+
+No gameplay or Mac execution; MAC-011 remains Awaiting validation. Inventory,
+other-encoding/procedural discovery, full category review and final scenes are
+unfinished. Private evidence: review/hybrid-207-acceptance.json, original
+verification, triage decisions, RGB/alpha sheets and carried-forward native
+audit. Current partial coverage is not a completed remaster.
+
 ## Texture batch 206: correct carrier-edge contamination and finish narrow trims (2026-10-20)
 
 A stronger edge-color inspection invalidated batch 205's zero-magenta claim:
