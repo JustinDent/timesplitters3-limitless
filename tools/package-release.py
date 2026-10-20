@@ -32,7 +32,7 @@ def main():
 
     powershell = Path(os.environ.get('SystemRoot', r'C:\Windows')) / 'System32/WindowsPowerShell/v1.0/powershell.exe'
     subprocess.run([str(powershell), '-NoProfile', '-ExecutionPolicy', 'Bypass',
-                    '-File', str(ROOT/'tools/build-launcher.ps1'), '-RequireArtwork'], check=True)
+                    '-File', str(ROOT/'tools/build-launcher.ps1'), '-RequireArtwork', '-Test'], check=True)
 
     def copy(source, dest):
         target = stage / dest
@@ -56,8 +56,10 @@ def main():
     for path in candidates[-1].parent.glob('*.dll'):
         copy(path, 'Bin/'+path.name)
     copy(ROOT / 'config/pc-controls.default.json', 'Settings/pc-controls.json')
-    copy(ROOT / 'config/pc-discord.default.ini', 'Settings/pc-discord.ini')
-    copy(ROOT / 'docs/discord-presence.md', 'Discord-setup.txt')
+    # Keep optional defaults out of personal Settings and use paths understood
+    # by existing launchers. An absent Discord preference already means off.
+    copy(ROOT / 'config/pc-discord.default.ini', 'Support/Discord/pc-discord.default.ini')
+    copy(ROOT / 'docs/discord-presence.md', 'Support/Discord/README.txt')
     copy(ROOT / 'tools/playable-launch.ps1', 'Launch.ps1')
     copy(ROOT / 'tools/start-game.ps1', 'Start-game.ps1')
     for file in ['ImportGame.cs', 'Import-game.ps1', 'Play.cmd']:
@@ -115,7 +117,7 @@ Pause before opening F2: the editor blocks input but does not pause the game.
 Settings and paused Options include Display settings for render resolution.
 Confirmed display choices are saved in Settings/pc-display.ini.
 Optional Discord Rich Presence: enable Game settings > Discord with the Discord
-desktop app running. See Discord-setup.txt. Fresh installs leave this disabled.
+desktop app running. See Support/Discord/README.txt. Fresh installs leave this disabled.
 
 Online multiplayer: choose Online / System Link > Online in the game.
 Host: Start New Match detects your public IPv4 and starts the HTTPS directory.

@@ -26,6 +26,10 @@ removes that isolated directory after the pass.
 installing anything. `launcher-tests.exe --verify-release` downloads, verifies,
 and installs the published Preview ZIP into a disposable test folder, then
 removes it; it never executes downloaded code or copies game data.
+Before publication, `launcher-tests.exe --verify-package <zip> <version>` runs
+the same production unpack/install code on the exact local ZIP. It checks a
+fresh install and preservation of synthetic personal files in a disposable
+folder; packaged executables are copied but never run.
 `launcher-tests.exe --live-launcher` reads launcher-only metadata without
 installing anything. `"build/launcher/Bin/TimeSplitters.App.exe" --render-preview
 preview.png` renders a sample installed-state UI without showing a window or

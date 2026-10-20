@@ -185,6 +185,8 @@ static class LauncherTests
         }
         if (args.Length == 1 && args[0] == "--verify-release")
             return VerifyPublishedRelease();
+        if (args.Length == 3 && args[0] == "--verify-package")
+            return VerifyLocalPackage(args[1], args[2]);
         if (args.Length == 1 && args[0] == "--live")
         {
             using (var client = new ReleaseClient())
@@ -268,6 +270,18 @@ static class LauncherTests
                 var changes = Core.Unpack(Zip("valid", null, null, false), Path.Combine(temp, "valid-payload"), "v1.1.0");
                 Assert(changes.Count == 6);
             });
+            Test("Discord support files install and preserve personal settings", () => {
+                VerifyLocalPackage(Zip("discord support", f => {
+                    f.Add("Support/Discord/README.txt", "setup instructions");
+                    f.Add("Support/Discord/pc-discord.default.ini", "TSFP_DISCORD_V1 0 1561627743353962566\n");
+                }, null, false), "v1.1.0");
+            });
+            Test("unsupported root Discord documentation stays rejected", () => Reject(() =>
+                Core.Unpack(Zip("discord root", f => f.Add("Discord-setup.txt", "setup"), null, false),
+                    Path.Combine(temp, "discord-root-rejected"), "v1.1.0")));
+            Test("personal Discord settings stay protected from packages", () => Reject(() =>
+                Core.Unpack(Zip("discord settings", f => f.Add("Settings/pc-discord.ini", "defaults"), null, false),
+                    Path.Combine(temp, "discord-settings-rejected"), "v1.1.0")));
             Test("wrong archive version rejected", () => Reject(() => Core.Unpack(Path.Combine(temp, "valid.zip"), Path.Combine(temp, "wrong-version"), "v2.0.0")));
             Test("wrong file checksum rejected", () => Reject(() => Core.Unpack(Zip("bad-hash", null, null, true), Path.Combine(temp, "bad-hash-payload"), "v1.1.0")));
             Test("zip traversal rejected", () => Reject(() => Core.Unpack(Zip("traversal", null, "package/../outside.exe", false), Path.Combine(temp, "traversal-payload"), "v1.1.0")));
@@ -879,6 +893,51 @@ static class LauncherTests
             Assert(SelfUpdate.Complete(root) && SelfUpdate.InstalledVersion(root) == LauncherVersion.Value);
             Assert(Core.InstalledVersion(root) == "v1.0.0"); Personal(root);
         });
+    }
+    static int VerifyLocalPackage(string archive, string version)
+    {
+        archive = Path.GetFullPath(archive);
+        string root = Path.Combine(Path.GetDirectoryName(typeof(LauncherTests).Assembly.Location), "local-package-check");
+        Core.Require(!Directory.Exists(root), "A local-package-check folder already exists; inspect it first.");
+        Directory.CreateDirectory(root);
+        try
+        {
+            foreach (bool upgrade in new[] { false, true })
+            {
+                string install = Path.Combine(root, upgrade ? "upgrade" : "fresh");
+                Directory.CreateDirectory(install);
+                if (upgrade)
+                {
+                    Put(install, "Settings/pc-controls.json", "personal bindings");
+                    Put(install, "Settings/pc-display.ini", "personal display");
+                    Put(install, "Settings/runtime.conf", "personal runtime");
+                    Put(install, "Settings/pc-discord.ini", "TSFP_DISCORD_V1 1 999999999999999999\n");
+                    Put(install, "Data/default.xbe", "personal data");
+                    Put(install, "Saves/profile", "personal save");
+                    Put(install, "Textures/pack.dds", "personal textures");
+                }
+                string pending = Core.PathIn(install, ".launcher/pending");
+                var changes = Core.Unpack(archive, Path.Combine(pending, "payload"), version);
+                Core.Write(Path.Combine(pending, "release.json"), Json.Encode(new { version = version }));
+                Core.InstallPending(install);
+                Assert(Core.InstalledVersion(install) == version);
+                if (upgrade)
+                {
+                    Personal(install);
+                    Assert(File.ReadAllText(Path.Combine(install, "Settings/pc-discord.ini")) == "TSFP_DISCORD_V1 1 999999999999999999\n");
+                }
+                else
+                {
+                    Assert(!Directory.Exists(Path.Combine(install, "Data")) && !Directory.Exists(Path.Combine(install, "Saves")));
+                    Assert(!File.Exists(Path.Combine(install, "Settings/pc-discord.ini")));
+                }
+                Console.WriteLine("PASS: local package " + (upgrade ? "upgrade/personal-file preservation" : "fresh install") +
+                    ": " + version + " (" + changes.Count + " files; no downloaded code executed)");
+                Directory.Delete(install, true);
+            }
+            return 0;
+        }
+        finally { Directory.Delete(root, true); }
     }
     static int VerifyPublishedRelease()
     {

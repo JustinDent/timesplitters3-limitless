@@ -340,6 +340,25 @@ def test_failed_build_prevents_packaging_and_publication(publisher, monkeypatch)
     assert len(commands) == 3 and not publication_calls(publisher)
 
 
+def test_launcher_install_rejection_stops_before_portable_checks_or_publication(publisher, monkeypatch):
+    publisher.preflight()
+    publisher.output.mkdir(parents=True)
+    commands = []
+    def run(arguments, **kwargs):
+        commands.append(arguments)
+        if publisher.root/'tools/package-release.py' in arguments:
+            FakePublisher.build_package(publisher)
+        if '--verify-package' in arguments:
+            assert arguments[2:] == [publisher.archive, publisher.tag]
+            raise RuntimeError('launcher rejected package')
+        return ''
+    monkeypatch.setattr(publisher, 'run', run)
+    with pytest.raises(RuntimeError, match='launcher rejected package'):
+        module.Publisher.build_package(publisher)
+    assert not any(publisher.root/'tests/portable_online.py' in command for command in commands)
+    assert not publisher.plan.exists() and not publication_calls(publisher)
+
+
 def test_dependency_install_failure_stops_before_build_or_tests(publisher, monkeypatch):
     publisher.preflight()
     commands = []
