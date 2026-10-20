@@ -29,11 +29,15 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
  * motion and slows its elapsed-time counters by 60 / native FPS.
  * Player dispatcher sub_000D5EB0 also overwrites its pause-gate register
  * immediately after the test; its movement consumers use fractional time.
+ * Camera translation sub_000C73C0 discards its gate register before use;
+ * direction easing sub_000C7610 only tests it, then overwrites it on the
+ * direct-copy path. Their motion and easing must consume each live interval.
  * All other loads, including other reads of this same address, stay exact. */
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
 {
-    if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu) &&
+    if ((site == 0x228880u || site == 0x15EB0Cu || site == 0xD5EBFu ||
+         site == 0xC73C0u || site == 0xC7610u) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;
@@ -54,4 +58,25 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
 }
 #define RECOMP_F32_MUL_AT(site, left, right) \
     pc_native_multiply((uint32_t)(site), (float)(left), (float)(right))
+/* Scripted camera direction closes 1 / remaining_ticks of the angular gap
+ * per original update. Normalize that decay to the live game interval,
+ * preserving the original coefficient for one tick. Scaling the pause gate
+ * alone would make this easing run native_fps / 60 times too quickly.
+ * The original caller supplies a positive integer divisor here; its zero
+ * and negative cases copy the target directly without reaching this divide. */
+static inline float pc_native_divide(uint32_t site, float left, float right)
+{
+    float value=left/right;
+    if (site == 0xC7651u && g_tsfp_native_timing_active) {
+        float delta=*(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset);
+        if (delta == 1.0f) return value;
+        if (delta <= 0.0f) return 0.0f;
+        if (value >= 1.0f) return 1.0f;
+        if (value > 0.0f)
+            return -expm1f(delta*log1pf(-value));
+    }
+    return value;
+}
+#define RECOMP_F32_DIV_AT(site, left, right) \
+    pc_native_divide((uint32_t)(site), (float)(left), (float)(right))
 #endif

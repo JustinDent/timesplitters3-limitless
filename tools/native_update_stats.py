@@ -25,7 +25,7 @@ def summarize(rows, start=60.0):
     if any(value is None for row in rows for value in row.values()):
         raise ValueError('Incomplete record inside the native trace')
     intervals = []
-    ticks = 0.0
+    raw_ticks = game_ticks = 0.0
     for before, after in zip(rows, rows[1:]):
         if float(before['seconds']) < start:
             continue
@@ -36,7 +36,8 @@ def summarize(rows, start=60.0):
         if not math.isfinite(duration) or duration <= 0:
             raise ValueError('Native trace timestamps must advance monotonically')
         intervals.append(duration * 1000)
-        ticks += float(after['raw_delta'])
+        raw_ticks += float(after['raw_delta'])
+        game_ticks += float(after['game_delta'])
     if not intervals:
         raise ValueError('No unpaused Story gameplay intervals in the requested range')
     wall = sum(intervals)/1000
@@ -46,7 +47,8 @@ def summarize(rows, start=60.0):
                 frame_ms={name:round(percentile(intervals,q),4)
                           for name,q in [('p50',.5),('p95',.95),('p99',.99)]},
                 worst_frame_ms=round(max(intervals),4),
-                game_seconds_per_wall_second=round(ticks/60/wall,6))
+                game_seconds_per_wall_second=round(game_ticks/60/wall,6),
+                raw_seconds_per_wall_second=round(raw_ticks/60/wall,6))
 
 
 def main():

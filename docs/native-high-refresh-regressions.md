@@ -285,3 +285,73 @@ labels, with source hashes in `native-main-comparison.json`. Real Mac execution,
 broader levels and texture/camera animation acceptance remain pending. The
 runtime overlay's cap label still reflects the fixed console flip-gate setting
 even when native pacing bypasses that gate; its label needs a separate repair.
+
+### Scripted camera fractional motion
+
+The original US `sub_000C73C0` translates a camera using the fractional delta
+but skips the entire operation when the whole-tick field is zero. It also
+returns zero in that case; its caller at `0xCE076` can interpret this as
+completion and clear a transition flag. The direction routine `sub_000C7610`
+has a similar gate, followed by per-call angular easing.
+
+The native load policy lets these two routines consume live fractional time.
+The division at `0xC7651` converts the original easing coefficient `a` to
+`1 - (1 - a)^delta`, using stable logarithm/exponential arithmetic and keeping
+the original one-tick value. Other divisions and the disabled native path
+retain their original arithmetic. The additive camera patch adds a
+site-aware scalar-division hook; no generated game C is edited.
+
+`tests/native_camera_motion.c` executes both original routines with mocked
+collision/sector lookup. It reproduces translation loss under the old gate,
+checks that a distant target does not report completion on a fractional step,
+and compares camera translation and angular decay at 60/120/144. It also
+covers pause, quarter-speed time, catch-up, angular wrap, direct target snaps,
+stack/register preservation and unchanged integer deltas. A gate-only repair
+failed the angular comparison before the easing hook was applied.
+
+The native timing, bounded capture cleanup and existing auto-look tests pass
+**15 cases**. Recompiler checks pass **352 tests and 87 subtests**, with 41
+skips; **37 original floating-point/vehicle regression checks** and **22
+patch-migration/backlog checks** also pass. Windows Release and its built-in
+checks pass. Build SHA-256:
+`6609f626278bc4ce6d77c9bd1597c74c7e4a748973a36ebcecc1ef6d3ad5acb1`.
+
+Both 240-second natural-intro runs pass scene/handoff/no-crash checks, with
+guest-only presents and no presentation failures in native mode. First
+player/firearm observations are 158.531/183.625 s for original 60 and
+157.625/182.141 s for native 144. Subtracting embedded animation time from
+the first observed NPC idle and handoff clips estimates the intervening
+span at 20.678 and 20.599 s (0.079 s difference). These estimates help
+separate initial loading delay from clip progression, but do not prove exact
+event timing or a complete animation-rate match.
+
+The native trace retained 7.309 s of unpaused Story intervals after 160 s:
+141.748 mean CPU updates/s, p50/p95/p99 intervals 7.002/7.781/8.428 ms, and
+34.706 ms worst interval. Both game and raw deltas sum to 1.0 second per
+wall second. The timing summary now reports those two clocks separately,
+including quarter-speed test coverage. This is a bounded captured diagnostic
+run, with source tests overlapping part of the intro; it is not sustained
+144 FPS or monitor-scanout acceptance. The 20,000-row trace cap limits the
+recorded gameplay interval after the long intro.
+
+Local evidence is `native-camera-natural-comparison.json`, its source files
+and their hashes under `private/test-saves/high-refresh`, plus
+`logs/native-camera-*`. Reviewed end-of-run captures show the firearm/HUD and
+rendered opening environment on both paths; they are different moments, not
+matched visual-fidelity comparisons. The runner now explicitly recycles
+early and rolling captures to retain only three images per run, rather than
+relying on the runtime's KEEP_LAST option, which also retains early frames.
+Camera samples from `--trace-camera` are asynchronous half-second reads and
+can observe temporary rendering cameras. The comparison identifies the
+dominant Story camera pointer; it cannot establish per-frame visual smoothness
+or prove that every camera path exercised the repaired routines.
+
+The broader camera audit remains open, including camera collision/blending
+in `sub_000C79C0`, the caller gate at `0xCEA8D`, and the mode-specific branch
+at `0xCD70F`. Do not broaden the load policy without following register uses,
+per-call constants and the affected original behavior. Moving targets,
+vehicle cameras, multiplayer cameras and full cinematics need scene checks.
+In particular, `0xC7D73` and `0xC7E0C` bound a whole-tick decay loop for
+camera fields `+0x3A4` and `+0x3AC`, using factors at `+0x3A8` and `+0x3B0`.
+These reads are not interchangeable with standalone pause gates. A follow-up
+must test the loop and its decay rate together with the outer caller gate.

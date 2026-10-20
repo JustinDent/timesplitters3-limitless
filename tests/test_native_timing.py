@@ -53,7 +53,11 @@ def test_native_update_statistics():
     result=summarize(rows,0)
     assert result['mean_update_fps']==144
     assert result['game_seconds_per_wall_second']==1
+    assert result['raw_seconds_per_wall_second']==1
     assert result['frame_ms']['p99']==6.9444
+    slow=[dict(row,game_delta=row['game_delta']/4) for row in rows]
+    assert summarize(slow,0)['game_seconds_per_wall_second']==.25
+    assert summarize(slow,0)['raw_seconds_per_wall_second']==1
     rows[72]['game_delta']=0
     assert summarize(rows,0)['intervals']==142
     rows.append(dict(seconds='1.1',scene=None,flags=None,game_delta=None,raw_delta=None))
@@ -115,11 +119,42 @@ def test_native_presents_require_real_guest_frames():
     assert not native_present_checks(valid.replace('failed=0','failed=1'))['present_failures_absent']
     assert not native_present_checks(valid.replace('3000','0'))['guest_presents_observed']
 
+
+def test_capture_cleanup_preserves_other_evidence(tmp_path):
+    from native_refresh_game import recycle_captures
+    for i in range(24):
+        (tmp_path/f'native-144-frame{i:03}.bmp').write_bytes(b'frame')
+    other=tmp_path/'reference-60-frame000.bmp'
+    other.write_bytes(b'reference')
+    recycle_captures(tmp_path,'native-144')
+    assert [p.name for p in sorted(tmp_path.glob('native-144-*'))]==[
+        f'native-144-frame{i:03}.bmp' for i in (21,22,23)]
+    assert other.read_bytes()==b'reference'
+    for i in (720,1440,2160):
+        (tmp_path/f'native-144-frame_s{i:08}.bmp').write_bytes(b'rolling')
+    recycle_captures(tmp_path,'native-144')
+    assert [p.name for p in sorted(tmp_path.glob('native-144-*'))]==[
+        f'native-144-frame_s{i:08}.bmp' for i in (720,1440,2160)]
+    with pytest.raises(ValueError):
+        recycle_captures(tmp_path,'../reference-60')
+    target=tmp_path/'outside.bmp'
+    target.write_bytes(b'keep')
+    link=tmp_path/'native-144-frame000.bmp'
+    try:
+        link.symlink_to(target)
+    except OSError:
+        return  # Link creation may require developer mode on Windows.
+    with pytest.raises(ValueError):
+        recycle_captures(tmp_path,'native-144')
+    assert target.read_bytes()==b'keep'
+
+
 @pytest.mark.parametrize('harness_name,ranges', [
     ('native_script_events.c', [(0x228870,0x228b35),(0x218910,0x218aa6),
                                (0x61570,0x6160f),(0x585e0,0x5861b),(0x59cf0,0x59d14)]),
     ('native_npc_dispatch.c', [(0x15eae0,0x15f0ca)]),
     ('native_player_dispatch.c', [(0xd5eb0,0xd683d)]),
+    ('native_camera_motion.c', [(0xc73c0,0xc760e),(0xc7610,0xc77bc)]),
 ])
 def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     import hashlib

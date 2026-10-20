@@ -6,6 +6,28 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- Scripted camera translation/direction now consume fractional intervals.
+  Their two original whole-tick gates lost movement or reported premature
+  transition completion; direction easing also needed its per-call decay
+  scaled by elapsed game time. Tests execute the original US routines, with
+  collision/sector services mocked. **15 native timing/capture/auto-look checks**
+  and **22 patch-migration/backlog checks** pass, plus **37 original
+  floating-point/vehicle regression checks**, **352 recompiler tests
+  and 87 subtests** (41 skips). Windows Release and built-in checks pass.
+  Build SHA-256: `6609f626278bc4ce6d77c9bd1597c74c7e4a748973a36ebcecc1ef6d3ad5acb1`.
+  A 240-second native 144 run without skipping the intro passes the handoff
+  and guest-only presentation checks; first player at 157.625 s, first firearm
+  at 182.141 s. The matching original-60 reference also passes, with first
+  player at 158.531 s and firearm at 183.625 s. Embedded NPC clip-time
+  estimates put the idle-to-handoff-clip span at 20.599 versus 20.678 s;
+  loading time and half-second sampling prevent exact event-parity claims.
+  The short
+  recorded Story interval after 160 s averages 141.748 CPU updates/s over
+  7.309 s, with p95/p99 intervals of 7.781/8.428 ms and a 34.706 ms worst
+  interval. Game and raw clock deltas both sum to 1.0 second per wall second.
+  This captured diagnostic run does not establish sustained 144 FPS or
+  per-frame visual smoothness; camera modes/decay loops remain under audit.
+  Evidence: `logs/native-camera-*` and isolated `camera-timing` records.
 - Integration of main `7b0838a` preserves its fixed-60 default, retired
   interpolation engine, launcher/packaging repairs and both sets of validation
   notes. The opt-in native update path uses its own shared pacing helper.

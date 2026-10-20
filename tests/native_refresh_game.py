@@ -19,6 +19,25 @@ sys.path.insert(0, str(ROOT / 'tools'))
 from testing_profile import XBE_SHA256, prepare_run, recycle_disks, check_fixture
 
 
+def recycle_captures(run, tag):
+    """Keep three frames from this run, never adjacent evidence or linked files.
+
+    The runtime KEEP_LAST option rotates only its final slots; it also retains
+    its early frames. Enforce this runner's smaller budget during capture.
+    """
+    if not re.fullmatch(r'[a-zA-Z0-9-]+',tag):
+        raise ValueError('Invalid capture tag')
+    root=run.resolve(strict=True)
+    pattern=re.compile(re.escape(tag)+r'-frame(?:[0-9]{3}|_s[0-9]{8,})\.bmp')
+    files=[path for path in run.glob(tag+'-frame*.bmp') if pattern.fullmatch(path.name)]
+    for path in files:
+        if path.is_symlink() or path.resolve().parent!=root:
+            raise ValueError('Capture path escaped test root or is a link')
+    files.sort(key=lambda path:(path.stat().st_mtime_ns,path.name))
+    for path in files[:-3]:
+        path.unlink()
+
+
 def native_present_checks(text):
     reports=[tuple(map(int,m)) for m in re.findall(
         r'\[PRESENT\] backend=\S+ total=(\d+) guest=(\d+) interpolated=(\d+) '
@@ -88,6 +107,8 @@ def main():
                         help='let the opening cinematic finish naturally for timing diagnosis')
     parser.add_argument('--trace-handoff', action='store_true',
                         help='bounded function and equipped-weapon tracing for the opening regression')
+    parser.add_argument('--trace-camera', action='store_true',
+                        help='sample live camera position/direction every half second, including the intro')
     parser.add_argument('--handoff-watch', choices=('none', 'equipped', 'loadout', 'npc-position'), default='equipped',
                         help='fixed diagnostic address to watch; none samples actors by live lookup only')
     parser.add_argument('--profile', action='store_true')
@@ -160,7 +181,7 @@ def main():
     process = None
     profiler = None
     threads = []
-    states=[];resources=[];native_samples=[];game_samples=[];completed=False
+    states=[];resources=[];native_samples=[];game_samples=[];camera_samples=[];completed=False
     terminated_by_runner=False
     def drain(pipe, path):
         with path.open('wb') as output:
@@ -258,6 +279,16 @@ def main():
                 trace=run/(tag+'-presentmon.csv')
                 assert not args.presentmon or not trace.exists() or trace.stat().st_size<16*1024*1024, 'PresentMon CSV exceeded 16 MiB'
                 elapsed=time.monotonic()-started
+                if args.capture:
+                    recycle_captures(run,tag)
+                if args.trace_camera and elapsed > 30:
+                    camera=word(0x7b0cc0)
+                    if 0x80000000 <= camera < 0x84000000:
+                        camera_samples.append(dict(seconds=round(elapsed,4),camera=camera,
+                            mode=word(camera+0x218),camera_flags=word(camera+0x21c),
+                            scene=word(0x79094c),flags=word(0x7de458),
+                            position=floats(camera+0x27c,3),
+                            direction=floats(camera+0x334,3)))
                 if elapsed > 50 and word(0x79094C)==2:
                     player=word(0x7b0c7c)
                     if 0x80000000 <= player < 0x84000000:
@@ -340,11 +371,16 @@ def main():
             runner_sha256=runner_sha256,native_fps=args.fps if args.native else 0,
             presentation_fps=args.fps,seconds=args.seconds,
             intro_skip_requested=not args.no_intro_skip,
+            camera_trace=args.trace_camera,camera_samples=len(camera_samples),
             handoff_trace=args.trace_handoff,
             handoff_watch=args.handoff_watch if args.trace_handoff else None,
             samples=len(native_samples),gameplay_samples=len(game_samples)),indent=2))
         (run/(tag+'-states.json')).write_text(json.dumps(states))
         (run/(tag+'-gameplay.json')).write_text(json.dumps(game_samples,indent=2))
+        if args.trace_camera:
+            (run/(tag+'-camera.json')).write_text(json.dumps(camera_samples,indent=2))
+        if args.capture:
+            recycle_captures(run,tag)
         lock.unlink(); recycle_disks(ROOT, run)
     check_fixture(ROOT)
     if args.gpu_timing:

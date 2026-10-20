@@ -48,11 +48,19 @@ animation had advanced; the next animation update could overwrite an event
 crossing before the script saw it. NPC and player dispatchers' similar gates
 discarded fractional movement and elapsed time. A site-specific global-load
 policy changes those gates at `0x228880`, `0x15EB0C` and `0xD5EBF`. The integer
-delta in guest memory and all other loads retain their original value. The
+delta in guest memory retains its original value. The
 player's per-update damping also uses fractional elapsed time to retain its
 original half-life. The original dispatchers and event readers are exercised
 by `tests/native_script_events.c`, `tests/native_npc_dispatch.c` and
 `tests/native_player_dispatch.c`.
+
+Scripted camera translation and direction use the same live-time gate at
+`0xC73C0` and `0xC7610`. Direction easing at `0xC7651` scales its original
+per-update decay by elapsed game time, retaining its one-tick coefficient.
+`tests/native_camera_motion.c` executes both original routines at 60/120/144,
+including slow motion, pause, angular wrap and direct target snaps. Collision
+services are mocked; complete camera modes and moving targets require scene
+acceptance.
 
 These changes target responsive input, consistent frame pacing and continuous
 motion. They do not guarantee a performance increase: running more genuine

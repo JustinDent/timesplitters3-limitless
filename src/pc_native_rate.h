@@ -2,8 +2,8 @@
 #define TSFP_PC_NATIVE_RATE_H
 #include "recomp_config.h"
 #include <stdlib.h>
-/* Explicit title-specific opt-in. This is independent of frame_target, which
- * continues to mean interpolated presentation. Never change the console ISR. */
+/* Explicit title-specific opt-in, independent of retired presentation options.
+ * Legacy frame_target remains fixed at zero. Never change the console ISR. */
 static inline int pc_native_rate(void)
 {
     const char *value = recomp_config_lookup("TSFP_NATIVE_FPS", "native_fps");
