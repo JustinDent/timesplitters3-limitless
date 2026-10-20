@@ -91,6 +91,16 @@ The previous launcher remains until a successful verified startup; helpers apply
 updates after the old process exits. Original game data, saves and config are
 never launcher-update targets. Building does not publish a release.
 
+Game installation, repair and restoring a previous game also close and reopen
+the launcher automatically. The copied `.launcher/mac-update-helper` waits for
+the old process to exit, takes the installation lock, verifies/applies the staged
+files, and starts the installed app with the same installation folder. This also
+loads a newer launcher bundled with a game update instead of keeping old code in
+memory. The shared `UpdateRestart` policy is used by Windows and Mac. A failed
+game update reopens the retained installation and shows its failure result;
+cancelling before installation leaves the current launcher open. Relaunch skips
+one startup update check to avoid retry loops.
+
 When macOS opens a downloaded app under `AppTranslocation`, its apparent parent
 folder is temporary and read-only. Startup now offers **Choose installation
 folder** before checking updates or writing launcher state. Select the real

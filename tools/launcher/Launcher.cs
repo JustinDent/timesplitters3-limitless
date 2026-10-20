@@ -90,36 +90,10 @@ namespace TimeSplitters.Launcher
         internal static int RunHelper(string action, string root, int parent, bool relaunch)
         {
             // This executable lives outside the replaceable payload. Parent exits first.
-            try
-            {
-                using (var p = Process.GetProcessById(parent))
-                    if (!p.WaitForExit(30000)) throw new IOException("The launcher did not close. No files were changed.");
-            }
-            catch (ArgumentException) { }
-            bool success = false;
-            using (var mutex = new Mutex(false, Core.MutexName(root)))
-            {
-                bool locked;
-                try { locked = mutex.WaitOne(30000); } catch (AbandonedMutexException) { locked = true; }
-                Core.Require(locked, "Another launcher is using this installation. No update was applied.");
-                try
-                {
-                    Core.Recover(root);
-                    if (action == "--rollback") Core.Rollback(root); else Core.InstallPending(root);
-                    Core.Write(Core.PathIn(root, ".launcher/last-result.txt"), action == "--rollback" ? "Previous release restored." : "Release files installed and verified successfully.");
-                    success = true;
-                }
-                catch (Exception ex)
-                {
-                    Log(root, ex.ToString());
-                    Core.Write(Core.PathIn(root, ".launcher/last-result.txt"), "Update failed: " + ex.Message + " Check launcher.log before retrying.");
-                    if (relaunch) MessageBox.Show(ex.Message + "\n\nKeep the .launcher folder for recovery. Details: .launcher\\launcher.log", "TimeSplitters — Update failed", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                finally { mutex.ReleaseMutex(); }
-            }
-            string launcher = Core.PathIn(root, Core.LauncherName);
-            if (relaunch && File.Exists(launcher)) Process.Start(new ProcessStartInfo(launcher) { WorkingDirectory = root, UseShellExecute = true });
-            return success ? 0 : 1;
+            return UpdateRestart.ApplyGame(root, parent, action == "--rollback",
+                () => { if (relaunch) Process.Start(LauncherPlatform.RestartInfo(root)); },
+                ex => { if (relaunch) MessageBox.Show(ex.Message + "\n\nKeep the .launcher folder for recovery. Details: .launcher\\launcher.log",
+                    "TimeSplitters — Update failed", MessageBoxButton.OK, MessageBoxImage.Error); });
         }
     }
 
