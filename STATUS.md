@@ -1,5 +1,32 @@
 # Measured progress
 
+## Texture batch 191: correction acceptance and original triage (2026-10-20)
+
+Issue #74: eight built-in image corrections, four accepted after original and
+compiled-DDS comparison plus repeated-grid review. Plaster, rock, limestone and
+two-panel timber are installed; four drafts remain held for extra cracks or
+brightness mismatch. Accepted 1254x1254 generated sources are Lanczos-resampled
+to 1024x1024 DXT1 with complete mip chains; no native 4K source claim.
+
+Inspected 32 more SHA256-verified original RGB/alpha pairs, reaching 3,401 visually
+classified keys. Glass, foliage, portraits, weapon icons, soft masks and decal
+atlases require their recorded alpha/identity handling. Classification is not
+completion, and uncataloged/embedded discovery remains incomplete.
+
+Windows offline structural coverage is 1,253 installed files: four new native
+DDS-reader passes plus 1,249 unchanged files matching prior audited hashes and
+unchanged checker binary. Full Python worklist hashing/dimension/aspect/mip checks
+pass. Coverage is 18.39% of 6,812 keys, with 5,461 needing art and 98 held.
+Pack plus metadata: 1,044,890,912 bytes (996.49 MiB); temporary files:
+162.67 MiB. Retired eight superseded rejected PNGs (29,587,595 bytes)
+after exact path/hash and active-reference checks, retaining selected source,
+prior prompts/hashes and comparisons. No original game data or settings changed.
+
+Private evidence: `review/hybrid-191-acceptance.json` and its linked records in
+the single texture workspace. No game launch or residency measurement; the
+512 MiB policy is unchanged. MAC-011 remains Awaiting validation. This local
+issue #74 checkpoint does not publish artwork or claim scene validation.
+
 ## Texture batch 190: metal, timber and visual triage (2026-10-20)
 
 Issue #74 local artwork: eight built-in image edits, three accepted replacements
