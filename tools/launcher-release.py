@@ -208,9 +208,24 @@ def asset_matches(record, path):
             record.get('digest') == 'sha256:' + digest(path))
 
 
+def publication_assets(directory, plan):
+    # Verify both platforms before preparing aliases or contacting GitHub.
+    assets = {path.name: path for path in release_assets(directory, plan)}
+    for platform in PLATFORMS:
+        archive = assets[package_names(plan['version'], platform)[0]]
+        alias = f'TimeSplitters-Launcher-{platform}.zip'
+        # Upload the verified archive again under the stable name. Never trust
+        # a stale alias on disk, or make another local copy of the large ZIP.
+        assets[alias] = archive
+        checksum = Path(directory)/(alias + '.sha256')
+        checksum.write_text(digest(archive) + '  ' + alias + '\n', encoding='utf-8')
+        assets[checksum.name] = checksum
+    return assets
+
+
 def publish(directory, plan, api):
     require(plan['publish'] and plan['repository'] == REPOSITORY, 'This run is validation-only.')
-    assets = release_assets(directory, plan)  # Both hosts must be complete before any remote mutation.
+    expected = publication_assets(directory, plan)
     base = '/repos/' + REPOSITORY
     version, sha, tag = plan['version'], plan['source_revision'], plan['tag']
     require(tag == 'launcher-v'+version, 'Release tag/version mismatch.')
@@ -247,17 +262,16 @@ def publish(directory, plan, api):
             'prerelease': plan['prerelease'], 'make_latest': 'false'})
     endpoint = base+'/releases/'+str(release['id'])
     remote = api.call('GET', endpoint+'/assets?per_page=100')
-    expected = {p.name: p for p in assets}
     require(all(a['name'] in expected for a in remote), 'Release has unrelated assets; inspect it before retrying.')
-    for path in assets:
-        matches = [a for a in remote if a['name'] == path.name]
+    for name, path in expected.items():
+        matches = [a for a in remote if a['name'] == name]
         require(len(matches) <= 1, 'Duplicate remote release asset.')
         if matches and asset_matches(matches[0], path):
             continue
         require(release['draft'], 'Published release assets are immutable; use a new launcher version.')
         if matches:
             api.call('DELETE', base+'/releases/assets/'+str(matches[0]['id']))
-        api.call('POST', endpoint+'/assets?name='+urllib.parse.quote(path.name, safe=''), upload=path)
+        api.call('POST', endpoint+'/assets?name='+urllib.parse.quote(name, safe=''), upload=path)
     remote = api.call('GET', endpoint+'/assets?per_page=100')
     require(len(remote) == len(expected) and {a['name'] for a in remote} == set(expected) and
             all(asset_matches(a, expected[a['name']]) for a in remote),
