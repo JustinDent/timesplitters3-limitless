@@ -241,6 +241,10 @@ class LabelTests(unittest.TestCase):
         self.assertEqual(forms.report_labels(report().replace('\n', '\r\n')),
                          {'bug', 'platform: windows'})
 
+    def test_bom_prefixed_report_is_recognized(self):
+        for body in ('\ufeff' + report(), '\ufeff' + report().replace('\n', '\r\n')):
+            self.assertEqual(forms.report_labels(body), {'bug', 'platform: windows'})
+
     def test_short_enhancement_gets_type_label_without_versions_or_platform(self):
         self.assertEqual(forms.report_labels(report(enhancement=True)), {'enhancement'})
 
