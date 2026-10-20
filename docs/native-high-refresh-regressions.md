@@ -1457,6 +1457,67 @@ fractional-phase support that respects those clock resets and overrides;
 globally replacing integer absolute-time reads is not justified by this
 evidence and is not part of this correction.
 
+## Screen-distortion absolute-time audit
+
+The full original US `sub_000F9700` (`0xF9700..0xF9B0B`) calculates a
+screen-distortion grid from the whole absolute clock at `0x7DE318`. Its direct
+caller is the per-player effects renderer `sub_000FED20` at `0xFEDA3`, after
+processing five effect slots. This is a framebuffer distortion effect; it
+does not establish the behavior of world texture scrolling or all animations.
+
+`tests/native_screen_distortion.c`, registered in the existing shared native
+timing suite, executes that entire routine, the original grid-size selector
+`sub_000F8AA0`, and original sine-table initializer `sub_00153C20` plus its
+FSIN helper `sub_00012010`. All code and constants are read from the pinned,
+SHA-256-verified US executable. The fixture supplies a controlled 640x448
+grid with amplitude 0.75, fixed edges, a viewport and active-player records.
+Graphics services are spies: every update checks all 99 vertex positions,
+all 80 draw packets of 21 words, the framebuffer-copy bounds, call counts,
+stack/callee-saved registers, FPU depth and unchanged guest timing fields.
+This tests guest geometry and dispatch, not GPU output or scene activation.
+
+For eight game seconds, the current production numeric policy repeats the
+whole original-60 mesh and draw packets on each intermediate native frame.
+A **test-only** clock-read probe supplies the exact fractional absolute time
+to the original calculation. It is not linked into the game and does not
+implement clock accumulation, reset detection or network/replay integration.
+
+| Target FPS | Speed | Updates | Current repeated outputs | Fractional probe repeated outputs |
+|---|---|---:|---:|---:|
+| 60 | Normal | 480 | 0 | 0 |
+| 120 | Normal | 960 | 480 | 23 |
+| 144 | Normal | 1,152 | 672 | 44 |
+| 60 | Quarter | 1,920 | 1,440 | 279 |
+| 120 | Quarter | 3,840 | 3,360 | 1,452 |
+| 144 | Quarter | 4,608 | 4,128 | 2,059 |
+
+Every probe sample at a whole-tick boundary matches the original mesh and
+draw packets exactly. The remaining repeated outputs reflect the original
+integer pixel conversion; fractional time alone cannot remove that geometry
+quantization. The fixture also samples repeated paused times, forward/backward
+rebases, zero-time resets and two player-view selections at the same time.
+These verify consumer determinism, **not** execution of the actual pause,
+reset, replay or network writer paths. Quarter speed is a controlled clock
+input, not proof of the complete live slow-motion path.
+
+The next production correction needs a fractional absolute clock tied to the
+original clock writes. It must distinguish an advancing zero-whole-tick
+interval from a branch that never updates the level clock, explicitly rebase
+on initialization/demo/network writes (including same-value writes), and
+allow several player views to sample one clock value without advancing it.
+The six ordinary direct increment stores are `0x688BB`, `0x68F8E`,
+`0x691F3`, `0x69239`, `0x69265` and `0x69325`; direct reset/override stores
+are `0x670E8`, `0x43595` and `0x357939`. This inventory does not rule out
+indirect writes. In particular, the `0x6924D` path can skip the increment
+after calling `sub_00153AF0`, so elapsed host time alone is insufficient.
+
+Evidence: `logs/native-screen-distortion-audit.log` and
+`logs/native-screen-distortion-shared.log`. On Windows x64/MSVC, all 139 shared
+timing, float/vehicle-join, CI-scope and backlog checks pass in 71.25 seconds.
+Runtime build `8893ba8` is unchanged;
+no rebuild or gameplay interruption is needed for this test-only audit.
+Actual Mac execution and live distortion visuals remain unverified.
+
 ## Bridge-crash placement investigation
 
 The user reports a later ship crash intruding into the playable canyon,

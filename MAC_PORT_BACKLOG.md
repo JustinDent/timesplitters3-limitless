@@ -3131,6 +3131,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   No platform adapter or host cache is added. The full Windows build, 138
   shared checks, 21 patch-upgrade checks and two-minute native-144 Story smoke
   pass. Actual Mac compilation and live MapMaker visual acceptance remain pending.
+- **Screen-distortion absolute-time audit (local, test only):**
+  `tests/native_screen_distortion.c` executes the complete original mesh/draw
+  routine, original grid-size selector and sine-table initialization/helper.
+  Graphics services are spies; controlled grid/viewport inputs are explicit.
+  The shared native timing test measures whole-clock repetition at 60/120/144
+  and quarter speed, compares a test-only fractional clock probe, checks exact
+  original tick-boundary outputs and samples resets, pause and two player views.
+  No production clock policy or platform adapter changes here. Actual Mac
+  execution, clock lifecycle integration and live GPU visuals remain pending.
 - **Offline network-hook overhead:** `pc_network_bots_guest.inc` and
   `pc_network_bots_lobby.inc` reject ineligible guest modes/actors before reading
   host network settings. Eligible calls still read live settings; no transport

@@ -6,6 +6,17 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- An offline original-code screen-distortion audit reproduces a remaining
+  visual timing limit: 672 of 1,152 native-144 mesh updates repeat over eight
+  game seconds. A test-only fractional absolute-time probe reduces repeats
+  to 44 and preserves original meshes/draw arguments at tick boundaries.
+  Integer pixel coordinates account for the residual quantization. Reset/
+  rebase sampling, paused sampling and two player-view selections are covered
+  as consumer checks; actual clock lifecycle integration is still required.
+  All 139 shared checks pass on Windows. This is evidence for the next
+  correction, not a shipped fix or GPU test.
+  The interactive `8893ba8` build is unchanged.
+  [Distortion audit](docs/native-high-refresh-regressions.md#screen-distortion-absolute-time-audit).
 - Current build `8893ba8` corrects a reproduced MapMaker light-preview regression:
   the original mode-3 zero-whole-tick branch replaces a white preview with
   black even while its decision timer is unchanged. Shared source now retains
