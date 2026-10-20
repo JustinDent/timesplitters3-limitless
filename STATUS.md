@@ -2,7 +2,8 @@
 
 ## Launcher single-ZIP publication (2026-10-19)
 
-Prepared on `fix/launcher-single-platform-zips` from main `bbe1709` (uncommitted).
+Implemented in `430cdfd` on `fix/launcher-single-platform-zips` from main
+`bbe1709`, [PR #199](https://github.com/TheDoffman/timesplitters-future-perfect-pc/pull/199).
 The shared publisher now selects one versioned ZIP per platform, its checksum,
 update manifest and source receipt: eight assets total. Windows packaging no
 longer duplicates the ZIP; both host artifact uploads use exact versioned names
@@ -20,8 +21,10 @@ its package manifest/checksum passed verification. All 19 Python publication
 policy tests passed, including stale-output exclusion. The actual published
 v1.2.18 client discovered and validated a read-only v1.2.19 release fixture with
 the aliases removed. Windows and native Mac regression fixtures now cover
-combined releases both with and without aliases. Both host CI checks are
-pending. No live installation, personal files or published release was modified;
+combined releases both with and without aliases. Windows and native Mac builds,
+regressions, package validation and the complete eight-asset release check passed
+in [CI run 39360311404](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39360311404)
+at `430cdfd`. No live installation, personal files or published release was modified;
 no new launcher version is published by this change. See MAC-021 for existing
 native signing and clean-machine delivery gaps.
 
