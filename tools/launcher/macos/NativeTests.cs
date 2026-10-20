@@ -160,7 +160,33 @@ namespace TimeSplitters.Launcher
                 Need(SelfUpdate.Complete(install),"Self repair did not restore the modified bundle");Need(File.Exists(Core.PathIn(install,"self-update-preview.png")),"Updated app did not open and render");Need(!Directory.Exists(pending),"Completed staging retained");
                 Need(BundleSignatureValid(install),"Self repair did not restore the app bundle signature");
                 Need(File.ReadAllText(Path.Combine(install,"Saves/keep"))=="preserved save"&&File.ReadAllText(Path.Combine(install,"BUILD.json"))=="preserved game metadata","Package touched personal/game files");
-                Console.WriteLine("Packaged Mac app installed, repaired through a copied helper, restarted and rendered; game metadata and saves preserved.");return 0;
+                Console.WriteLine("Packaged Mac app installed, repaired through a copied helper, restarted and rendered; game metadata and saves preserved.");
+
+                Core.Apply(install,Core.Unpack(Archive(test,"v1.0.0"),Path.Combine(test,"initial-game"),"v1.0.0"),null);
+                Write(install,"Settings/pc-controls.json","personal bindings");Write(install,"Data/keep","personal data");
+                var bundled=changes.ToDictionary(change=>change.Name,change=>File.ReadAllBytes(change.Source));
+                LauncherRestartChecks.Stage(install,"v1.1.0",bundled);
+                // An incomplete equal-version launcher must be replaced by the
+                // bundled app, reproducing the game-update replacement boundary.
+                File.AppendAllText(Core.PathIn(install,Core.AppPath),"old installed fixture");
+                string gameHelper=Core.PathIn(install,".launcher/mac-update-helper");
+                LauncherPlatform.CopyFile(Core.PathIn(install,Core.LauncherName),gameHelper);
+                File.SetUnixFileMode(gameHelper,UnixFileMode.UserRead|UnixFileMode.UserWrite|UnixFileMode.UserExecute);
+                using(var parent=Process.Start(new ProcessStartInfo("/bin/sleep","2"){UseShellExecute=false})){
+                    var start=new ProcessStartInfo(gameHelper){UseShellExecute=false};
+                    foreach(var arg in new[]{"--test-game-helper",install,parent.Id.ToString()})start.ArgumentList.Add(arg);
+                    using(var child=Process.Start(start)){
+                        Thread.Sleep(250);
+                        Need(!parent.HasExited&&Core.InstalledVersion(install)=="v1.0.0","Game update did not wait for the old process");
+                        if(!child.WaitForExit(40000)){child.Kill(true);child.WaitForExit(3000);throw new Exception("Game-update helper timed out");}
+                        Need(child.ExitCode==0,"Game-update helper failed");
+                    }
+                }
+                Need(Core.InstalledVersion(install)=="v1.1.0"&&SelfUpdate.Complete(install)&&BundleSignatureValid(install),"Game update did not replace the bundled launcher");
+                Need(File.Exists(Core.PathIn(install,"game-update-preview.png")),"Game update did not reopen the installed app");
+                Need(!Directory.Exists(Core.PathIn(install,".launcher/pending")),"Game update retained completed staging");
+                Need(File.ReadAllText(Core.PathIn(install,"Settings/pc-controls.json"))=="personal bindings"&&File.ReadAllText(Core.PathIn(install,"Data/keep"))=="personal data"&&File.ReadAllText(Core.PathIn(install,"Saves/keep"))=="preserved save","Game update changed personal files");
+                Console.WriteLine("Packaged Mac game update waited for the parent, replaced the bundled launcher, restarted and rendered with personal files preserved.");return 0;
             }
             catch(Exception e){Console.Error.WriteLine(e);return 1;}
             finally{Directory.Delete(test,true);}
@@ -188,6 +214,7 @@ namespace TimeSplitters.Launcher
         {
             sandbox=Path.Combine(AppContext.BaseDirectory,"tsfp-mac-launcher-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(sandbox);
             try{
+                Test("shared update restart and failure recovery", LauncherRestartChecks.Run);
                 Test("translocation recovery validates the real writable installation and preserves personal files", LocationTests);
                 Test("game cleanup preserves launcher files and legacy casing while retired game files roll back", GamePruningTest);
                 Test("Mac release selection rejects Windows packages",()=>{Need(ReleaseClient.Select(Metadata("windows-x64"),true)==null,"Windows package selected");Need(ReleaseClient.Select(Metadata("macos-arm64"),false)!=null,"Native release missing");Need(ReleaseClient.Select(Metadata("macos-arm64","v1.1.0-alpha.1",true),false)==null,"Preview selected on stable");});

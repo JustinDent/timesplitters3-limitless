@@ -1,5 +1,45 @@
 # Measured progress
 
+## Automatic launcher restart after updates (2026-10-20)
+
+Prepared on `codex/launcher-update-restart` from main `68d141e`, in the commit
+carrying this entry. The Desktop game update replaced launcher 1.2.20 with 1.2.21
+while the old Mac process stayed open. Play therefore ran the old checkout-only
+Vulkan validation despite the new portable-capable app already being on disk.
+The old binary reproduces the SDK error; restarting the installed 1.2.21 passes
+the read-only game-data/build checks.
+
+Native game install, repair and restore now copy a helper outside the app and
+exit before any installed files are replaced. Both Windows and Mac helpers use
+the shared `UpdateRestart.ApplyGame` ordering: wait for the parent, lock the
+installation, verify/apply or restore, record the outcome, release the lock,
+then reopen the installed launcher. Windows retains its existing updater UI
+handoff. The Mac adapter retains the explicit installation root across restart,
+including the existing self-update path. Restarts skip one network update check;
+cancelled preparation does not restart, and failed game installation reopens the
+retained installation with a failure result instead of retrying automatically.
+
+Local validation: macOS 27.0.1 (26A434), ARM64, .NET SDK 8.0.426,
+Avalonia 11.3.22, Python 3.13.16. The signed packaged build passes 24 native
+regression groups, one startup UI check and eight shared UI groups. The shared
+restart group checks completed replacement, restore, rejected payload, lock
+release, spaced paths and preservation of personal data/settings. Python shared
+UI/compatibility tests pass 3/9. The package test runs the copied Mac helper,
+asserts no installation while its parent is alive, replaces a damaged bundled
+launcher, opens the installed app in a new process and renders successfully;
+strict installed/repaired signatures pass. The existing launcher self-repair/
+restart test also passes. The new build's read-only `--check` against the Desktop
+portable installation passes without starting the game or modifying personal
+files.
+
+Windows integration now exercises a real helper process and the installed
+launcher restart entry point, including parent waiting and personal-file
+preservation. It and the shared regression group run through the existing
+Windows/macOS launcher workflow; hosted results are pending at implementation
+and will be recorded in the PR. Synthetic package/render tests do not prove
+gameplay or Gatekeeper browser-download behavior. No installed user app,
+game files, saves or settings were replaced by this task. No release published.
+
 ## Launcher download status spacing (2026-10-20)
 
 Prepared on `codex/launcher-download-spacing` from main `9324a7d`, in the commit

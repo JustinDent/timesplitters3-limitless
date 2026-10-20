@@ -41,7 +41,9 @@ namespace TimeSplitters.Launcher
                 if(args.Contains("--test-session")){await TestSession();return;}
                 if(render){Refresh();await Render();return;}
                 Directory.CreateDirectory(Core.PathIn(root,".launcher"));installationLock=new FileStream(Core.PathIn(root,".launcher/mac.lock"),FileMode.OpenOrCreate,FileAccess.ReadWrite,FileShare.None);
-                Core.RecoverLauncher(root);Core.Recover(root);Core.CleanupGameAfterStartup(root);string recovered=null;try{recovered=GameSessions.Recover(root);}catch(Exception ex){LauncherLog.Write(root,"Session recovery deferred: "+ex.GetType().Name);}Refresh();if(recovered!=null)Maintenance(true);SelfUpdate.CleanupAfterStartup(root);try{File.Delete(Core.PathIn(root,".launcher/mac-self-helper"));}catch(IOException){}await Check();
+                Core.RecoverLauncher(root);Core.Recover(root);Core.CleanupGameAfterStartup(root);string recovered=null;try{recovered=GameSessions.Recover(root);}catch(Exception ex){LauncherLog.Write(root,"Session recovery deferred: "+ex.GetType().Name);}Refresh();if(recovered!=null)Maintenance(true);SelfUpdate.CleanupAfterStartup(root);
+                foreach(var name in new[]{".launcher/mac-self-helper",".launcher/mac-update-helper"})try{File.Delete(Core.PathIn(root,name));}catch(IOException){}
+                await Check();string result=Core.PathIn(root,".launcher/last-result.txt");if(File.Exists(result)){Status(File.ReadAllText(result));File.Delete(result);}
                 issuesTimer=new DispatcherTimer{Interval=TimeSpan.FromMinutes(5)};issuesTimer.Tick+=(a,b)=>{if(Find<ContentControl>("NewsHost").IsVisible && WindowState!=WindowState.Minimized && !busy)Run(()=>newsPage.RefreshIssues());};issuesTimer.Start();
             }catch(Exception ex){Status(ex.Message);if(installationLock==null)IsEnabled=false;}};
             Activated+=(s,e)=>{if(newsPage!=null&&Find<Control>("NewsHost").IsVisible&&!busy)Run(newsPage.RefreshIssuesIfDue);};
@@ -135,15 +137,16 @@ namespace TimeSplitters.Launcher
         async Task Install(Release release)
         {
             if(release==null||busy)return;Core.Require(!LauncherPlatform.Checkout(root),"Release updates cannot overwrite a developer checkout.");Core.Require(!gameRunning&&!Core.GameRunning(),"Close the game before updating.");
-            if(!await Confirm("Install "+release.Tag+"?","This replaces the game runtime. Saves, game data and settings are preserved."))return;
+            if(!await Confirm("Install "+release.Tag+"?","This replaces the game runtime and restarts the launcher. Saves, game data and settings are preserved."))return;
             if(busy||gameRunning)return;busy=true;operation=new CancellationTokenSource();Refresh();Find<Control>("PauseDownloadButton").IsVisible=true;Find<Control>("UpdateProgress").IsVisible=true;
             try{string pending=Core.PathIn(root,".launcher/pending");Core.Require(!Directory.Exists(pending),"An unfinished update is staged. Restart for recovery before continuing.");Directory.CreateDirectory(pending);
                 try{string zip=Path.Combine(pending,"release.zip");await client.Download(release,zip,new TransferProgress(snapshot=>{Label("TransferDetails",snapshot.Summary);Find<Control>("TransferDetails").IsVisible=true;Find<ProgressBar>("UpdateProgress").Value=snapshot.Percent;}),operation.Token,Core.PathIn(root,".launcher/downloads/game"));
-                    await Task.Run(()=>Core.Unpack(zip,Path.Combine(pending,"payload"),release.Tag,operation.Token));Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new{version=release.Tag}));File.Delete(zip);await Task.Run(()=>Core.InstallPending(root));Status("Installed "+release.Tag+".");}
-                catch{Core.DiscardGameStaging(root);throw;}
-            }finally{busy=false;operation.Dispose();operation=null;Find<Control>("PauseDownloadButton").IsVisible=false;Find<Control>("TransferDetails").IsVisible=false;Find<Control>("UpdateProgress").IsVisible=false;Refresh();}
+                    await Task.Run(()=>Core.Unpack(zip,Path.Combine(pending,"payload"),release.Tag,operation.Token));operation.Token.ThrowIfCancellationRequested();
+                    Core.Write(Path.Combine(pending,"release.json"),Json.Encode(new{version=release.Tag}));File.Delete(zip);Status("Restarting the launcher to install "+release.Tag+"…");NativeStartup.HandoffGame(root);}
+                catch{if(!NativeStartup.HandingOff)Core.DiscardGameStaging(root);throw;}
+            }finally{operation.Dispose();operation=null;if(!NativeStartup.HandingOff){busy=false;Find<Control>("PauseDownloadButton").IsVisible=false;Find<Control>("TransferDetails").IsVisible=false;Find<Control>("UpdateProgress").IsVisible=false;Refresh();}}
         }
-        async Task Rollback(){if(busy||gameRunning)return;if(await Confirm("Restore previous game?","Your saves and settings stay unchanged.")){if(busy||gameRunning)return;busy=true;Refresh();try{await Task.Run(()=>Core.Rollback(root));Status("Previous game restored.");}finally{busy=false;Refresh();}}}
+        async Task Rollback(){if(busy||gameRunning)return;if(await Confirm("Restore previous game?","The launcher restarts after restoring the previous game. Your saves and settings stay unchanged.")){if(busy||gameRunning)return;busy=true;Refresh();try{NativeStartup.HandoffGame(root,true);}finally{if(!NativeStartup.HandingOff){busy=false;Refresh();}}}}
         void ShowSettings(){if(gameRunning||busy){Status("Close the game and finish operations before changing settings.");return;}if(settings==null){settings=new SettingsPage(new ResourceDictionary(),root,render);settings.Saved+=()=>{Status("Settings saved.");Refresh();};settings.Cancelled+=()=>{Page("CommandCenter");Find<ContentControl>("SettingsHost").Content=null;settings=null;Status("Unsaved settings discarded.");};Find<ContentControl>("SettingsHost").Content=settings.View;}Page("SettingsHost");}
         async Task News()
         {
@@ -165,7 +168,7 @@ namespace TimeSplitters.Launcher
         internal async Task Maintain(Func<CancellationToken,Task> action)
         {
             Core.Require(!busy,"Finish the current operation first.");busy=true;operation=new CancellationTokenSource();Refresh();
-            try{await action(operation.Token);}finally{operation.Dispose();operation=null;busy=false;Refresh();}
+            try{await action(operation.Token);}finally{operation.Dispose();operation=null;if(!NativeStartup.HandingOff){busy=false;Refresh();}}
         }
         internal void CancelMaintenance(){operation?.Cancel();}
         internal async Task Repair(bool launcher,CancellationToken token)
@@ -173,7 +176,7 @@ namespace TimeSplitters.Launcher
             Core.Require(!gameRunning&&!Core.GameRunning(),"Close the game before repairing files.");
             Core.Require(!LauncherPlatform.Checkout(root),"Rebuild development files from source. Release repair is available in portable installations.");
             if(launcher){var release=await client.FindLauncher(LauncherVersion.Value,token);Core.Require(await SelfUpdate.Prepare(root,release,client,null,token,true),"Launcher repair could not be staged.");NativeStartup.Handoff(root);}
-            else {await InstallationMaintenance.PrepareGameRepair(root,Core.InstalledVersion(root),client,null,token);token.ThrowIfCancellationRequested();await Task.Run(()=>Core.InstallPending(root));}
+            else {await InstallationMaintenance.PrepareGameRepair(root,Core.InstalledVersion(root),client,null,token);token.ThrowIfCancellationRequested();NativeStartup.HandoffGame(root);}
         }
         public static TextBlock Text(string text,int size=13)=>new TextBlock{Text=text,FontSize=size,Foreground=Brush.Parse("#E4EDF5"),TextWrapping=TextWrapping.Wrap,Margin=new Thickness(0,0,0,10)};
         public static Button Button(string label,Action action){var b=new Button{Content=label,Margin=new Thickness(0,4,0,8),Padding=new Thickness(16,10),HorizontalAlignment=HorizontalAlignment.Left};b.Click+=(s,e)=>action();return b;}

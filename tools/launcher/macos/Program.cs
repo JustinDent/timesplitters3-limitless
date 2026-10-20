@@ -21,6 +21,8 @@ namespace TimeSplitters.Launcher
             Arguments=args;
             if(args.Length==3 && args[0]=="--test-self-helper")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]),true);
             if(args.Length==3 && args[0]=="--apply-self")return NativeStartup.Apply(Path.GetFullPath(args[1]),Int32.Parse(args[2]));
+            if(args.Length==3 && (args[0]=="--apply-game" || args[0]=="--rollback-game" || args[0]=="--test-game-helper"))
+                return NativeStartup.ApplyGame(Path.GetFullPath(args[1]),Int32.Parse(args[2]),args[0]=="--rollback-game",args[0]=="--test-game-helper");
             if(args.Length==3 && args[0]=="--extract-art") { ExtractArt(args[1],args[2]);return 0; }
             if(args.Length==1 && args[0]=="--test")return NativeTests.Run();
             if(args.Length==3 && args[0]=="--verify-package")return NativeTests.VerifyPackage(args[1],args[2]);

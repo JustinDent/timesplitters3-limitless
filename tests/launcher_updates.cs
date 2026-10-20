@@ -171,6 +171,13 @@ static class LauncherTests
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();
         if (args.Length == 2 && args[0] == "--helper")
             return Program.RunHelper("--apply", args[1], Int32.MaxValue, false);
+        if (args.Length == 1 && args[0] == "--restart-parent") { Thread.Sleep(2000); return 0; }
+        if (args.Length == 3 && args[0] == "--restart-helper")
+            return Program.RunHelper("--apply", args[1], Int32.Parse(args[2]), true);
+        if (args.Length == 1 && args[0] == "--after-self-update") {
+            string root = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            Core.Write(Core.PathIn(root,"restart-receipt.txt"),Core.InstalledVersion(root)); return 0;
+        }
         if (args.Length == 2 && args[0] == "--self-helper")
             return Bootstrap.RunHelper(args[1], Int32.MaxValue, false);
         if (args.Length == 1 && args[0] == "--live-launcher")
@@ -241,6 +248,7 @@ static class LauncherTests
             }
             CleanupTests();
             GameCleanupTests();
+            Test("shared update restart and failure recovery", LauncherRestartChecks.Run);
             Test("cloud storage tags do not admit redirected or unknown paths", () => {
                 for (uint variant=0; variant<16; variant++) Assert(LauncherPlatform.IsCloudTag(0x9000001Au | (variant<<12)));
                 foreach (uint tag in new uint[]{0,0xA0000003u,0xA000000Cu,0x9000001Bu,0x9001001Au,0xB000001Au})
@@ -414,6 +422,25 @@ static class LauncherTests
                 Assert(Core.InstalledVersion(root) == "v1.1.0");
                 Assert(File.ReadAllText(Path.Combine(root, ".launcher/last-result.txt")).Contains("successfully"));
                 Assert(!Directory.Exists(pending)); Personal(root);
+            });
+            Test("game helper waits for the old process and restarts the newly installed launcher", () => {
+                string root = NewRoot("automatic restart with spaces");
+                string exe = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                LauncherRestartChecks.Stage(root,"v1.1.0",new Dictionary<string,byte[]> {
+                    {Core.LauncherName,File.ReadAllBytes(exe)}
+                });
+                using(var parent=Process.Start(new ProcessStartInfo(exe,"--restart-parent"){UseShellExecute=false,CreateNoWindow=true}))
+                using(var helper=Process.Start(new ProcessStartInfo(exe,"--restart-helper "+LauncherWindow.Quote(root)+" "+parent.Id){UseShellExecute=false,CreateNoWindow=true})) {
+                    Thread.Sleep(250);
+                    Assert(!parent.HasExited && Core.InstalledVersion(root)=="v1.0.0");
+                    if(!helper.WaitForExit(15000)){helper.Kill();helper.WaitForExit(3000);throw new Exception("Restart helper timed out");}
+                    Assert(helper.ExitCode==0);
+                }
+                string receipt=Core.PathIn(root,"restart-receipt.txt");
+                var deadline=Stopwatch.StartNew();
+                while(!File.Exists(receipt)&&deadline.ElapsedMilliseconds<10000)Thread.Sleep(20);
+                Assert(File.Exists(receipt)&&File.ReadAllText(receipt)=="v1.1.0");
+                Assert(!Directory.Exists(Core.PathIn(root,".launcher/pending")));Personal(root);
             });
             Test("ISO importer rejects truncated images without writing Data", () => {
                 string iso = Path.Combine(temp, "truncated.iso"); File.WriteAllText(iso, "not an ISO");
