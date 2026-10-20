@@ -1,5 +1,46 @@
 # Measured progress
 
+## Texture batch 209: environment materials and damaged-wall detail (2026-10-20)
+
+Eight individual edits passed offline original/compiled-DDS and 2x2 repetition
+review: brushed metal strip, technical plate, tangled fibrous surface, damaged
+wall with exposed mechanism, framed wood, pale plaster, green-gray masonry and
+dark red trim. Reviewed major boundaries, opening silhouette, hardware, molding,
+block courses and edge continuity. Material detail is modernized while retaining
+these cues; exact mapped adjacency and scene appearance remain unverified.
+All eight installed, with no new held drafts. Prior 126 drafts remain incomplete.
+
+Actual generated sources: four 1254x1254 squares and four 1774x887 landscapes.
+LANCZOS downsampling produces four 1024x1024 and four 1024x512 DXT1 files,
+each with 11 mips. No cropping, aspect stretching, synthetic padding or color
+repair. These are appropriately sized replacements, not native 4K generated art.
+
+Reviewed 64 further hash-verified original RGB/alpha pairs, in four RGB and
+four separate alpha sheets. Classification now covers 4,585 of 6,812 keys
+(67.31%), with 2,227 unclassified. Portraits, reticles, weapon silhouettes,
+warning text, creature/equipment atlases, partial-alpha panels and functional
+black/white swatches retain specialist handling. Flat RGB can hide meaningful
+alpha content. Classification is provisional routing, not category completion.
+
+Full Python pack audit passed: format, metadata, dimensions, aspect, hashes and
+mips. Eight new DDS files passed the existing Windows native parser; all 1,333
+prior hashes and checker identity match carried-forward evidence. Total 1,341
+installed, 5,345 needing art and 126 held drafts. Queue/worklist refreshed.
+No runtime, format or adapter changes; the 512 MiB residency policy remains.
+
+Pack 1,089,517,594 bytes (1039.04 MiB), including metadata;
+this batch adds 4.00 MiB. Temporary output
+225.11 MiB, below 256 MiB. Texture workspace including retained source art
+6284.81 MiB logical/allocated by existing helper;
+disk free 83.98 GiB. One active pack under the 6144 MiB cap. No duplicate
+extracts, builds, staging or ZIPs; original game, saves and settings untouched.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation. Full category
+review, other-encoding/procedural discovery and final scene/GPU validation are
+unfinished. Private evidence: review/hybrid-209-acceptance.json, source and
+prompt provenance, selection, compiled comparisons, metrics, decisions, native
+audit and triage RGB/alpha records. Partial coverage is not a full remaster.
+
 ## Texture batch 208: metal panels and atlas detail (2026-10-20)
 
 Generated eight individual material edits from hash-verified opaque originals.
