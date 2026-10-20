@@ -136,6 +136,10 @@ these checks on an ARM64 Mac runner alongside existing Windows launcher checks.
 
 The executable also supports `--render-preview output.png`,
 `--render-game-data-preview output.png` (expanded Home game-data section),
+`--render-download-preview output.png` (sample transfer status),
+`--render-download-compact output.png` (the same transfer at the minimum
+1000 × 720 layout size), and `--render-download-compact-scrolled output.png`
+(the compact view scrolled to the download controls),
 `--render-settings-preview output.png`, `--render-settings-graphics output.png`,
 `--render-settings-discord output.png`, `--render-news-preview output.png`,
 `--render-diagnostics-preview output.png`, and `--render-repair-preview output.png`.
