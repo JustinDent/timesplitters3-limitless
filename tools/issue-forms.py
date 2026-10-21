@@ -170,8 +170,8 @@ def publish_version_pr(client, root, changed, base_branch, base_sha):
         'head': branch, 'base': base_branch,
         'body': '## Change\n\nRefresh the published game and launcher version references.\n\n'
                 '## Cause and fix\n\nPublished releases changed. Regenerate only the bug '
-                'form reference lists; required inputs remain empty and the improvement '
-                'form is unchanged. This PR follows main branch protection.\n\n'
+                'form reference lists; required inputs remain empty and enhancement '
+                'requests continue to use Ideas discussions. This PR follows main branch protection.\n\n'
                 '## Validation\n\nApprove workflows to run if GitHub requests approval, '
                 'then wait for the required checks. Enable auto-merge if desired.\n\n'
                 '## Mac port backlog\n\nNot applicable: issue-form reference data only; '

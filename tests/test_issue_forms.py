@@ -89,6 +89,9 @@ class VersionPullRequestTests(unittest.TestCase):
         self.client.request.assert_any_call('POST', 'git/refs',
             {'ref': 'refs/heads/automation/issue-form-versions', 'sha': 'new-commit'})
         self.assertFalse(any(call.args[1].startswith('git/refs/heads/main') for call in calls))
+        proposal = next(call.args[2] for call in calls if call.args[:2] == ('POST', 'pulls'))
+        self.assertIn('enhancement requests continue to use Ideas discussions', proposal['body'])
+        self.assertNotIn('improvement form', proposal['body'])
 
     def test_existing_pr_preserves_both_ancestors_without_force_push(self):
         self.previous = 'b' * 40
@@ -204,8 +207,8 @@ class VersionTests(unittest.TestCase):
                 forms.refresh_versions(root, [release('v3.0.0')])
             self.assertEqual(first.read_bytes(), before)
 
-    def test_enhancement_stays_without_versions_or_platform_after_refresh(self):
-        relative = '.github/ISSUE_TEMPLATE/02-enhancement.yml'
+    def test_version_refresh_preserves_ideas_routing_without_recreating_enhancement_form(self):
+        relative = '.github/ISSUE_TEMPLATE/config.yml'
         with tempfile.TemporaryDirectory(prefix='tsfp-issue-forms-test-') as directory:
             root = Path(directory)
             for name in (*forms.FORMS, relative):
@@ -213,11 +216,11 @@ class VersionTests(unittest.TestCase):
                 shutil.copyfile(ROOT / name, root / name)
             path = root / relative
             before = path.read_bytes()
+            self.assertIn('url: https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/new?category=ideas', path.read_text())
+            self.assertFalse((ROOT / '.github/ISSUE_TEMPLATE/02-enhancement.yml').exists())
             forms.refresh_versions(root, [release('v3.0.0'), release('launcher-v4.0.0')])
             self.assertEqual(path.read_bytes(), before)
-            for removed in ('game-version', 'launcher-version', 'id: platform', 'id: reason', 'id: extra', 'id: diagnostics', 'AUTO GAME', 'AUTO LAUNCHER'):
-                self.assertNotIn(removed, path.read_text())
-            self.assertEqual(path.read_text().count('  - type: textarea'), 1)
+            self.assertFalse((root / '.github/ISSUE_TEMPLATE/02-enhancement.yml').exists())
 
 
 class LabelTests(unittest.TestCase):
@@ -294,21 +297,16 @@ class LabelTests(unittest.TestCase):
 
 
 class LauncherDiagnosticsForms(unittest.TestCase):
-    def test_launcher_diagnostics_field_is_optional_and_only_in_bug_form(self):
+    def test_launcher_diagnostics_field_is_optional_in_bug_form(self):
         source = (ROOT / 'tools/launcher/DiagnosticIssueDraft.cs').read_text(encoding='utf-8')
         field = re.search(r'const string DiagnosticsField\s*=\s*"([a-z-]+)"', source).group(1)
-        for filename in ['01-bug-report.yml', '02-enhancement.yml']:
-            with self.subTest(filename=filename):
-                text = (ROOT / '.github/ISSUE_TEMPLATE' / filename).read_text(encoding='utf-8')
-                ids = re.findall(r'^    id: (.+)$', text, re.M)
-                if filename == '02-enhancement.yml':
-                    self.assertEqual(ids, ['idea'])
-                    continue
-                self.assertEqual(ids.count(field), 1)
-                section = text.split('    id: ' + field + '\n', 1)[1].split('\n  - type:', 1)[0]
-                self.assertIn('label: Launcher diagnostics (optional)', section)
-                self.assertIn('render: text', section)
-                self.assertNotIn('required: true', section)
+        text = (ROOT / '.github/ISSUE_TEMPLATE/01-bug-report.yml').read_text(encoding='utf-8')
+        ids = re.findall(r'^    id: (.+)$', text, re.M)
+        self.assertEqual(ids.count(field), 1)
+        section = text.split('    id: ' + field + '\n', 1)[1].split('\n  - type:', 1)[0]
+        self.assertIn('label: Launcher diagnostics (optional)', section)
+        self.assertIn('render: text', section)
+        self.assertNotIn('required: true', section)
 
 
 if __name__ == '__main__':
