@@ -1,5 +1,47 @@
 # Measured progress
 
+## Ghost Gun living-character alignment (issue #181, 2026-10-20)
+
+Implemented in the commit carrying this entry on
+`181-bug-ghost-gun-past-cortez-issue`, based on main
+`a0deeea`. The issue video shows Past Cortez's pale Ghost Gun reveal displaced
+from his ordinary model. The US actor effect dispatcher selects
+`sub_00122F10` for living actors while weapon 15 is equipped; humanoid ghosts
+use the separate `sub_00121F50` path from issue #111.
+
+The living-actor effect projects the actor into screen coordinates, filters
+its image through five 256x256 blur draws, then composites the image at those
+projected bounds. That final partial-screen rectangle was classified as a
+centered HUD widget. At non-4:3 ratios the resulting viewport transform moves
+and resizes the reveal independently of the world model. The existing shared
+primitive hook now gives only that final draw (return PC `0x001232A9`)
+full-view placement and flushes before restoring the enclosing placement.
+Original coordinates, texture coordinates, colour, blur passes, world camera,
+4:3 and split-view policy are preserved. No new runtime patch is necessary:
+both platform configurations already install this primitive hook.
+
+Validation: Windows x64, Python 3.12.14, MSVC 19.44, D3D11. The complete patch
+stack verifies and the supported `tsfp.ps1 Build` completes with its native
+build tests. Executable SHA-256:
+`cde11b846b67d374ec8022d9be749b211498d00e3b3412ff16d4979285456172`.
+Seven new checks pass, including old-placement/no-flush/no-restore
+mutations, both platform wrapper configurations, and execution of the original
+checksum-verified US `sub_00122F10` with isolated guest memory and render stubs.
+The original-routine test verifies all five blur passes, unchanged final draw
+arguments and preserved callee-saved registers across moving actor bounds and
+five display shapes. Asset-free placement checks cover seven resolutions.
+Existing UI and projection tests also pass (20 focused checks total). Another
+37 patch-tracking, patch-transition, spirit and ghost-target fixture checks pass,
+as does the Mac backlog contract: 58 pytest checks in total. The new tests run
+in the shared Windows/macOS runtime workflow; the original-XBE test skips
+without local assets.
+
+The user tested this build in the unlocked, isolated Windows Test Lab session
+and confirmed: "The overlay stays on Cortez now." The session was launched at
+1920x1080. This is live user confirmation of the reported encounter; macOS
+execution and visual validation at other display ratios remain pending (MAC-036).
+Personal saves/settings were preserved.
+
 ## Fixed-60 settings fixture repair (2026-10-20)
 
 Committed repair in PR #219 (`0f01b2ce`), for PR #216 source head
