@@ -40,6 +40,37 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Animation timeline and event coupling
+
+On the `60f140c` runtime, the new `native_animation_clock.c` fixture executes
+complete original US timeline updater `0x5ADC0..0x5AFAA` together with event
+reader `0x61570`, bounds converter `0x585E0` and track selector `0x59CF0`.
+Unlike the earlier script fixture, it obtains event bounds from the original
+animation update instead of setting them by hand. The pinned XBE supplies
+code and referenced scalar constants; clip metadata, root samples and the
+loop callback are controlled services.
+
+All 32 sequences pass: original 60 and native 60/120/144, normal and quarter
+speed, looping and clamped clips, forward and reverse playback. Each covers
+three game seconds starting at phase 0.137 of a one-second clip. Every
+nonterminal advancing sample changes. Looping clips wrap three times and
+produce the same accumulated three-axis root displacement at every rate;
+forward loop callbacks occur three times. Forward frame-23 events occur once
+for a clamped clip and three times for a loop, each no later than one update
+after its authored time (plus 0.1 ms float tolerance). Pausing after every
+update changes neither time nor root/callback counts and produces no event.
+A three-tick catch-up across a boundary and a zero-duration clip also pass.
+
+The updater already integrates `0x4E794C`; no runtime correction is justified
+by this result. `logs/native-animation-clock.log` records the standalone
+fixture. The coupled clock, script handoff, NPC dispatcher, weapon sway and
+NPC weapon-event fixtures pass together (five checks) in
+`logs/native-animation-clock-related.log`. Existing parametrized CI includes
+the new fixture. No binary rebuild is needed for these test/document changes.
+This is timeline/event evidence, not rendered skeleton or physical root-motion
+acceptance. Reverse event semantics, blend transitions, real asset decoding,
+full caller coverage and Mac execution remain unverified.
+
 ## Native weapon sway
 
 The complete original weapon dispatcher `0x1c4400..0x1c4a4b` samples a sine

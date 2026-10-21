@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Animation timeline/event coupling (this revision):** A new fixture executes
+  the complete original animation clock and event readers together. All 32
+  sequences pass across original 60/native 60/120/144, normal/quarter speed,
+  forward/reverse and looping/clamped playback, with pause after each update.
+  Forward event counts/timing and loop root displacement match; no intermediate
+  clock holds are observed. Five related fixtures pass. This path already uses
+  fractional time, so runtime source is unchanged. Real skeletal rendering,
+  blend transitions and Mac execution remain open. See
+  [coupled animation evidence](docs/native-high-refresh-regressions.md#animation-timeline-and-event-coupling).
 - **Native weapon sway (this revision):** The weapon dispatcher still sampled
   integer level time, repeating its motion value on 720 of 1,440 native-120
   updates in a 12-second original-routine fixture. Shared policy now samples
