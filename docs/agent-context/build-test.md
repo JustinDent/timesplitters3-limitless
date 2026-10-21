@@ -25,6 +25,14 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+Hosted-only contributors need no local model, Ollama service or installed router.
+The context/maintenance checker uses Python and Git. The optional broker's Node
+contract tests run in CI with disposable/mocked fixtures; they invoke no hosted
+or local models. Running those contracts locally needs Node, while the supported
+game builders retain their existing dependencies. Guide/index upkeep applies
+equally to human and model-assisted changes and can produce a new CI failure
+when a covered system changes without its documentation update.
+
 | Change | First checks | Further evidence |
 | --- | --- | --- |
 | Agent context/index | `python tools/repo-context.py check`; `python -m pytest tests/test_repo_context.py -q` | Changed-path maintenance check against base |

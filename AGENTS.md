@@ -8,6 +8,13 @@ reproducibility, and validation requirements.
 
 ## Repository knowledge and investigation memory
 
+The guides and maintenance checks apply to every contributor. Ordinary hosted
+GPT/Codex sessions keep their selected model and normal tools: investigate, edit,
+build and test directly. The Qwen/Sol controller and advisory restrictions in
+linked guides describe an optional, separately installed LOCAL SMART workflow;
+they do not require hosted contributors to install a router/local model, switch
+providers, perform handoffs or limit themselves to advisory work.
+
 - Before exploring a subsystem, read `docs/agent-context/README.md`, then the
   relevant linked guide. Use `.venv/Scripts/python.exe tools/repo-context.py
   find <symbol-or-path>` on Windows (`.venv/bin/python` on Mac) before broad

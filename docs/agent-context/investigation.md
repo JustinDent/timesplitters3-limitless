@@ -35,6 +35,11 @@ code may mean the name is stripped; it does not mean the feature has no path.
 
 ## Sol context
 
+This section describes the optional local supervisor. In an ordinary hosted
+GPT/Codex session, the selected agent performs investigation, implementation and
+validation with its normal tools. Reading this guide does not activate routing,
+require another model or make a normal hosted session advisory-only.
+
 The supervised local workflow injects the map plus selected guide summaries
 into local planning/continuations and automatic Sol evidence packages. These
 are bounded, task-selected repository facts, not unrestricted repository access.

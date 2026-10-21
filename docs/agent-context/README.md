@@ -5,6 +5,11 @@ working-memory layer, not a replacement for root `AGENTS.md`, source, or tests.
 It describes the tracked baseline; uncommitted patches and installed binaries
 may differ. Check branch, diff and build provenance before drawing conclusions.
 
+Hosted GPT/Codex contributors use these guides with their usual model and tools.
+The separately installed LOCAL SMART controller is optional. Its Sol advisory
+roles, budgets and evidence protocol apply to that integration; ordinary hosted
+agents can implement/build/test directly without Qwen, Ollama or a router.
+
 <!-- packet:start -->
 This repo wraps a pinned Xbox static-recompilation runtime. Authoritative edits
 live in tracked `src/`, `tools/`, `config/` defaults and `patches/*.patch`.
