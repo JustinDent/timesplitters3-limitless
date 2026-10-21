@@ -109,8 +109,8 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     # Historical state: controls/debug/prompts applied before display/textures
     # and the later Mac bring-up patch. Upgrade it with the complete stack.
     for patch in sorted(PATCHES.glob('*.patch')):
-        if patch.name.endswith('-auto-display.patch'):
-            continue  # Depends on display, cutscene and fullscreen-effect hooks installed by migration.
+        if patch.name.endswith(('-auto-display.patch', '-crane-vignette.patch')):
+            continue  # Depends on display/viewport hooks installed by the complete migration.
         if patch.name.endswith(('-texture-mode-shared.patch', '-texture-mode-ui.patch')):
             continue  # Depends on the common native renderer added by migration.
         if patch.name.endswith(('-discord-presence.patch', '-shared-renderer-host.patch', '-shared-vulkan-mac.patch', '-shared-native-renderer.patch', '-shared-interpolation-depth.patch', '-shared-present-metrics.patch', '-native-launcher-services.patch', '-shared-screen-copy-clipping.patch', '-vulkan-portability-swizzle.patch', '-shared-interpolation-capture.patch')):
@@ -158,6 +158,9 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
     manual = checkout / 'titles/futureperfect/src/recomp_manual.c'
     manual.write_bytes(manual.read_bytes() + b'\r\n/* unrelated local edit */\r\n')
     assert installer.apply_patches(checkout, PATCHES)
+    assert b'pc_display_aim_panel(sub_00137010_gen,0x00137010u);' in manual.read_bytes()
+    device = (checkout / 'src/d3d/d3d8_device.c').read_bytes()
+    assert b'pc_ui_vignette_clip(g_2d_tag,g_2d_placement,clip);' in device
     assert b'pc_display_camera' in manual.read_bytes()
     assert b'pc_prompt_guest' in manual.read_bytes()
     assert b'PcDisplayMode mode = pc_display_effective();' in manual.read_bytes()

@@ -13325,3 +13325,14 @@ Follow-up Windows executable SHA-256: `60472f48e75eefb24a855e817342a5a570d88f4ef
 Final Windows acceptance: the user confirmed the corrected crane overlay looks good.
 The combined UI/crane suite passed all 14 tests before publication. Native Mac
 live validation remains pending under MAC-058.
+
+### PR #252 CI follow-up — 2026-10-21
+
+Both patch-upgrade jobs failed while constructing the historical controls-only
+fixture: it applied the new crane patch before its display/viewport dependencies
+existed. The fixture now defers that patch to complete-stack migration and
+asserts the crane wrapper and scissor hook afterward. This changes tests only.
+The failure reproduced locally before the correction; all 34 patch-tracking
+and upgrade tests pass afterward (352.49 seconds). Context and whitespace
+checks pass. Both original native-runtime jobs and both launcher jobs passed;
+new-head hosted validation will run after the correction is pushed.

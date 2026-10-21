@@ -200,3 +200,9 @@ full edge coverage plus nonmatching-tag/partial-clip exclusions. The production
 RHI extraction in `ui_viewport.c` checks the same captured 639,479 clip at seven
 ratios and asserts stored guest state is unchanged. These fixture checks run
 on both CI hosts; they are not native Mac gameplay validation.
+
+The historical controls-only upgrade fixture defers `-crane-vignette.patch`
+until the complete stack installs the display/viewport prerequisites. The
+post-upgrade assertions require both the crane wrapper and renderer clip hook,
+alongside preservation of local edits and idempotent reapplication. This does
+not omit the patch from fresh/current-stack or renderer regression tests.
