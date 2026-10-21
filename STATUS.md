@@ -15,6 +15,34 @@ uploads. This proves loading, not full scene coverage or visual F10 acceptance.
 The native Mac unlocked runner receives the same shared environment; Mac runtime
 validation remains pending under MAC-011. Personal saves/settings were untouched.
 
+## 2026-10-21 — Mac mini worker deployment verified
+
+PR #248 merged at `b685e43` after its documentation conflicts with newer main
+were resolved without discarding keyboard-input evidence. Follow-up
+`codex/worker-upgrade-preservation` / PR #249 adds the dashboard-preserving
+upgrade and fixes the review finding that a reinstall could inherit an earlier
+auto-merge opt-in. Worker source at `c125b36` has SHA-256
+`8ccf98ff548a1df3883e8f59e419ef26c563a12f74ec7cf389ba625f9d9d5e87`.
+
+Dan's Mac mini, macOS 27.0.1 ARM64 / Python 3.12: all 28 worker tests pass
+(0.787 s). The installed source hash matches the checkout. Explicit auto-merge
+mode is enabled; preflight verified existing GitHub/ChatGPT authentication and
+strict main rules. Upgrade preserved the LaunchAgent, dashboard runner and
+worker state byte-for-byte. A real LaunchAgent poll through that dashboard
+wrapper advanced its run count 113 to 114, exited 0 at 04:37:51 UTC, and reported
+no new actionable failures. The worker is unpaused, idle between scheduled
+polls, with unchanged historical attempts. Dry-run found no pending merges and
+made no model call. No credentials, game data or personal settings moved.
+
+Local macOS/Python 3.13 also passes all 28 tests and context/index checks.
+Windows/macOS CI gates and launcher compatibility passed on `c125b36`.
+Read-only live GitHub validation of that PR returned protected-main checks valid
+and `ready_to_merge=true`; no merge was executed by this verification. Service
+and policy validation do not prove a new live repair-through-main cycle, which
+remains unobserved. Existing repair records are not automatically enrolled,
+conflicts and failed follow-ups stop for inspection, and releases remain manual.
+No game build, GPU test or playthrough is relevant to this controller update.
+
 ## 2026-10-21 — Mac mini repair publication and checked merge follow-through
 
 Focused branch `codex/worker-repair-merge`, based on main `22e6a56`. The installed
@@ -34,8 +62,8 @@ records and unrelated green PRs are not silently enrolled.
 
 Local macOS ARM64: 23 asset-free worker tests pass, including Git publication,
 restart recovery, stale/changed heads, missing/failed checks, review requirements
-and disabled/paused/legacy state. Windows/macOS CI and upgraded mini deployment
-are pending below. No game build or playthrough is relevant to this controller.
+and disabled/paused/legacy state. Subsequent CI and upgraded mini deployment
+are recorded above. No game build or playthrough is relevant to this controller.
 
 ## Physical keyboard text entry — issue #136 (2026-10-20)
 
