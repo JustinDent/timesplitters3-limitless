@@ -6,6 +6,17 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Venice pacing and gameplay (this revision):** A new native-144 capture run
+  reaches Venice deathmatch, fires, moves/aims, pauses/resumes and later shows
+  results. Separate original-60/native-144 runs use the same replay with captures
+  disabled. Guest Present rates are 59.999/143.648 FPS; p99 intervals are
+  17.950/8.278 ms, with no intervals above 33.33 ms in either measured window.
+  Native update cadence is 143.720/s and game-time/wall-time ratio is 1.000000.
+  Both runs consume two revolver rounds and turn the same 30 degrees, with
+  unchanged signed profiles/fixture. Windows Build is unchanged from `dbb84e3`.
+  Bot outcomes differ; these are API timings, not scanout or full-game proof.
+  [Venice scope and evidence](docs/native-high-refresh-regressions.md#venice-gameplay-and-presentation-pacing-2026-10-21).
+
 - **Settings ordering (this revision):** The shared Settings constructor now
   lists Audio, Video, Controls and Copy Profile, with Cheats last when the
   original unlock condition permits it. All entries use the same left-aligned

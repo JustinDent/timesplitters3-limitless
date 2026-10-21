@@ -2960,6 +2960,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Venice comparison (this revision):** The existing shared recorder now has
+  an opt-in `--profile-presents` route in the Windows bounded session runner,
+  usable for original and native timing. Same-replay Venice comparisons show
+  59.999/143.648 guest presentations/s and correct native clock speed, with
+  explicit bot-workload/scanout limitations in STATUS. This changes test tooling,
+  not platform gameplay. The Mac recorder remains shared; actual Mac Venice,
+  pacing and gameplay acceptance require the native Mac runner and hardware.
+
 - **Settings ordering (this revision):** The common guest Settings constructor
   orders Audio, Video, Controls, Copy Profile and conditional Cheats, using
   consistent alignment without the old divider. It retains the native actions

@@ -40,6 +40,67 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Venice gameplay and presentation pacing (2026-10-21)
+
+Windows x64/D3D11, gameplay source `dbb84e3` and documentation head `6392b6e`,
+executable SHA-256
+`b9f21b2537d132f8d62c908e0c2f5d438f37f40caaf49d5477e99808fa0a28b1`.
+A bounded native-144 renderer-capture session reaches Venice (scene 46), shows
+its revolver, fires three rounds, moves/turns, opens/closes pause and continues
+through combat. It eventually reaches match results. This adds an arena beyond
+Vietnam/Hotel; it does not validate every Venice route or animated surface.
+Selected captures are in `private/test-saves/broader-arcade-review`.
+
+Two separate runs then replay the same commands at original 60 and native 144,
+using recommended bots/weapons, 15-point/10-minute defaults, isolated Test Lab
+saves, 1280x720 windowed rendering and no image captures. These windows are not
+minimized. The shared recorder measures accepted host Present intervals with
+`--profile-presents`, and records a separate CSV for each process restart.
+The replay is retained in `tests/fixtures/venice-pacing-commands.json`; the
+local orchestration and summary scripts are in `private/pipeline` as
+`check-venice-pacing.py` and `summarize-venice-pacing.py`. No personal settings
+or saves are used.
+
+| Measurement | Original 60 | Native 144 |
+| --- | ---: | ---: |
+| Guest-frame presentations/s | 59.999 | 143.648 |
+| Median interval | 16.669 ms | 6.970 ms |
+| 95th percentile | 17.559 ms | 7.830 ms |
+| 99th percentile | 17.950 ms | 8.278 ms |
+| Worst measured interval | 18.331 ms | 10.702 ms |
+| Intervals over 33.33 ms | 0 | 0 |
+| Recorded presentations in window | 1,524 | 3,654 |
+| Level-clock seconds/wall second | 0.99977 | 0.99931 |
+
+The native clock trace independently records 7,199 consecutive unpaused
+scene-46 update intervals over 50.091 s: 143.720 updates/s, median 6.981 ms,
+p99 8.240 ms, and game-time/wall-time ratio 1.000000. During pause it records
+488 consecutive zero-game-delta updates spanning 3.382 s. Both replays consume
+two revolver rounds before a weapon pickup and turn from yaw 132 to 102 with
+the same 300-count synthetic mouse input. Position and health stay unchanged
+between the pause/resume command snapshots in both runs. Physical input
+latency and every intermediate paused frame are not measured by those snapshots.
+
+Host windows are selected between the explicit pacing markers, trimmed by two
+seconds at each end: 78.938–104.328 s at original 60 and 78.922–104.359 s at
+native 144. CSV time begins at the first accepted Present, while runner time
+begins before launch; trimming allows startup-offset uncertainty, rather than
+claiming millisecond-exact workload alignment. All sampled states inside the
+marker spans remain scene 46, active match state 7, unpaused. Both windows
+include deaths/respawns and different bot outcomes/positions; this is a
+representative match comparison, not deterministic gameplay or movement-speed
+parity. API acceptance does not prove GPU completion, monitor scanout, or
+unique pixels in every submitted frame. No interpolated presents or failed
+presents are reported.
+
+Both runs exit normally, preserve the fixture and keep signed test profiles
+unchanged. Reports, input/state observations, CSVs and `pacing-summary.json`
+are under `private/test-saves/venice-pacing-60` and `venice-pacing-144`;
+matching logs are under `logs/`. The frame-statistics tests pass (2 tests).
+Full-match completion is supported only by the separate capture run here;
+the two pacing runs end during an active match. Other arenas/modes, network
+peers, physical aiming, live force regions and native Mac acceptance remain open.
+
 ## Region-driven player force and drag
 
 The original player mode `0x800` updater (`0xD4820..0xD4AFF`) adds vertical
