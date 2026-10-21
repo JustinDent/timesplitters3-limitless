@@ -316,6 +316,9 @@ This is a partial overhaul; 4K output does not imply native 4K source detail.
 
 ## Guides & support
 
+For repository work, start with the [agent repository map](docs/agent-context/README.md)
+for source ownership, patch/symbol lookup, subsystem guides and context maintenance.
+
 | Player guides | Developer guides |
 | --- | --- |
 | [Windows launcher](docs/launcher.md) — installation, updates and recovery | [Build guide](docs/building.md) — prerequisites, setup and patch workflow |
