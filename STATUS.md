@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Additional gameplay pacing (this revision):** The current `d336cd9`
+  Windows build completes a bounded, no-capture What Lies Below input/weapon/
+  pause/movement sequence. All qualifying active-gameplay intervals total
+  62.485569 seconds at 143.825 fresh updates/s, with p99 8.0834 ms, maximum
+  12.3813 ms and no interval above 16.67 ms. Game-time ratio is 1.000000.
+  Presentation counters report guest frames only. This is minimized/background
+  CPU/API evidence, not physical input latency, GPU completion or scanout.
+  Test profiles and personal controls/display settings remain unchanged.
+  [Pacing selection and limits](docs/native-high-refresh-regressions.md#what-lies-below-frame-pacing-without-captures).
 - **FPS overlay beta label (this revision):** Shared `pc_debug.c` displays
   `target 120 (Beta)` and `target 144 (Beta)` for the active high-refresh preset.
   Original and native 60 retain their existing labels. The full Windows Build

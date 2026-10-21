@@ -2960,6 +2960,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Additional Windows pacing evidence (this revision):** A bounded no-capture
+  What Lies Below run on `d336cd9` measures 143.825 fresh CPU updates/s across
+  62.485569 active gameplay seconds, p99 8.0834 ms and no interval over 16.67 ms.
+  No source/adapter changes accompany this measurement. These minimized Windows
+  results do not validate Mac pacing or monitor output; equivalent Mac scene
+  measurements and platform acceptance remain pending. See STATUS and its
+  linked regression record for the selection, provenance and remaining limits.
+
 - **FPS overlay beta label (this revision):** Shared `src/pc_debug.c` appends
   `(Beta)` to active 120/144 targets and preserves original/native 60 labels.
   Existing Windows overlay checks cover all four cases; the full supported

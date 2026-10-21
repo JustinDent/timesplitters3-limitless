@@ -40,6 +40,50 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## What Lies Below frame pacing without captures
+
+The Windows x64/D3D11 `later-story-pacing-144` run uses the `d336cd9` beta-overlay
+build, SHA-256
+`0358d1725a61424d2398f09ac27f811e412c082f0b0fc9a19a73d74a2e7bc976`.
+It replays aiming, movement, revolver firing/reload and pause/resume, then four
+forward/backward movement pairs with mouse turns. Screenshot readback is
+explicitly disabled. The isolated minimized/background run completes normally
+at about 119 seconds with unchanged test profiles and personal settings.
+
+Selection retains every interval between consecutive trace rows that both
+have scene 17, flags 524296 and positive game delta. This produces two active
+gameplay spans separated by pause; 613 scene rows have zero game delta and
+are excluded, as are menu/cinematic transitions. The 16,573-row trace ends
+before its 20,000-row cap. No percentile-based outlier removal is applied.
+
+| Active gameplay measure | Native 144 result |
+| --- | ---: |
+| Intervals / summed host time | 8,987 / 62.485569 s |
+| Mean fresh update rate | 143.825 FPS |
+| Median / p95 / p99 interval | 7.0382 / 7.3593 / 8.0834 ms |
+| Minimum / maximum interval | 3.7714 / 12.3813 ms |
+| Intervals above 16.67 / 33.33 ms | 0 / 0 |
+| Game seconds per host second | 1.000000 |
+
+The last presentation record reports 16,500 guest, zero interpolated/other,
+and zero skipped/failed presentations across the run. Those cumulative API
+counters have a different window from the CPU timing table. Neither measures
+GPU completion, monitor scanout, physical-device latency or foreground load.
+This scene result supports current pacing; it does not justify a new pacing
+algorithm or prove full-game performance.
+
+This no-capture replay consumes four revolver rounds for four synthetic presses
+and reloads to 6 loaded/26 reserve, whereas the earlier captured comparisons
+consumed three at both original 60 and native 144. Synthetic firing results
+are therefore sensitive to the run's timing; do not treat one sequence as
+universal weapon cadence or assign the difference to high refresh alone.
+
+Evidence: `private/test-saves/later-story-pacing-144/{provenance.json,
+native-frames.csv,report.json,pacing-summary.json,run0.err}`,
+`logs/later-story-pacing-144.log`, and the local reproducible coordinator,
+commands and summarizer in `private/pipeline` (`check-later-pacing.py`,
+`later-story-pacing-inputs.json`, `summarize-later-pacing.py`).
+
 ## Broader player-facing check: What Lies Below
 
 After the user requested broader priorities, two bounded Windows x64/D3D11
