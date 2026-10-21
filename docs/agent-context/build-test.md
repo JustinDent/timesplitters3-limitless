@@ -136,3 +136,15 @@ the same source as CI; conflicts and post-repair base drift need inspection.
 `tests/test_compatibility_worker.py` simulates these boundaries with local Git
 and mocked GitHub/Codex, under the existing Windows/macOS gate jobs. No game
 rebuild is needed. See `docs/launcher-compatibility.md` for installation/recovery.
+
+## Text-entry regression route (#136)
+
+`tests/test_menu_text.py` runs in the Windows/macOS runtime workflow. Its asset-free
+fixture covers queue bounds, owner changes, character/command routing and embedded
+keyboard recognition. An optional local case translates original insertion,
+deletion and cursor routines from the checksum-verified US XBE and checks real
+editing/length/font-width behavior; CI without that asset skips this case.
+`tests/pc_controls.c` covers Windows message delivery and focus changes;
+`src/native/menu_input_selftest.inc` adds SDL event/text-session checks. Shared
+fixture success does not establish physical Mac typing. Live Windows Create
+Profile typing and Enter were confirmed by the user with isolated Test Lab saves.

@@ -20,6 +20,52 @@ restart recovery, stale/changed heads, missing/failed checks, review requirement
 and disabled/paused/legacy state. Windows/macOS CI and upgraded mini deployment
 are pending below. No game build or playthrough is relevant to this controller.
 
+## Physical keyboard text entry — issue #136 (2026-10-20)
+
+Uncommitted work on `136-enhancement-write-better-with-a-real-keyboard`, based
+on main `c932bee`. Shared dialog code routes character input through US
+`sub_0007DB20` and the existing editing/Done/Back callbacks. Windows character
+messages and SDL UTF-8 text events feed a bounded, locked queue; dialog changes
+and focus loss clear pending events. Character pages preserve the original
+Latin-1 glyph set and original byte/visible-width limits. Editing keys do not
+become E/F/Y/WASD menu actions. Numeric-only dialogs and clipboard paste are not
+part of this change.
+
+Validation: Windows x64, Python 3.12.14, MSVC 19.44, pinned runtime and verified
+US XBE SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+`tsfp.ps1 Build -SkipTextures` passed, including its normal executable checks;
+the texture audit was skipped for this local input-only build, not packaging.
+77 selected pytest checks passed with one host-specific skip. New tests execute
+the original US insertion, deletion and cursor routines against disposable RAM,
+including full-buffer rejection and font-width rejection. The rebuilt Windows
+input test directly exercises WM_CHAR character/command routing, repeated Enter,
+focus loss and dialog changes; it passes without desktop input injection.
+
+The first live test failed: physical letters still triggered menu actions in
+Create Profile. Read-only capture on 2026-10-21 identified its embedded keyboard
+(descriptor 0x4e8d54) rather than the standalone descriptor. Recognition now uses
+the original character-row callbacks, so embedded profile/multiplayer keyboards
+are included and stale edit buffers on non-keyboard pages are excluded. Escape
+uses the owning menu's original Back action. The shared tests now reproduce the
+captured embedded layout and run original editing routines against it. The
+corrected build passes the Windows build checks and the same 77 selected pytest
+checks (one skip), plus the Mac backlog check. The user then confirmed physical
+typing and Enter work in Create Profile, testing single-press “Efy Test” entry
+and the Backspace/Enter prompt. No claim of full dialog-matrix validation.
+Executable SHA-256:
+`2c88e55e1e4c94f1974afa072e8261bf34f125e2bd1e39423e4ba90c6afae1f8`.
+The game uses isolated Test Lab saves. Desktop-control APIs expose no native
+windows in this session; physical validation is performed by the user.
+Native Mac compile, SDL host self-test, physical keyboards and the full text-dialog
+matrix remain unverified; see MAC-059. No personal settings/saves were changed.
+
+PR #247 contains implementation commit `d23d9dc`. Integrated main `ea74e15`
+without changing keyboard source, preserving both CI test registrations and
+validation records. After integration, 91 selected keyboard/menu, CI scope,
+backlog, repository-context and Ghost Gun checks passed. Context/index maintenance
+passes against main. The executable hash and user confirmation above describe
+the pre-integration input build; the combined head has not had another playtest.
+
 ## Texture preservation on version bumps — 2026-10-20
 
 PR #234 now follows the Git LFS/bundled delivery merged by #235. It preserves
