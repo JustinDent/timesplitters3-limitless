@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Settings ordering (this revision):** The shared Settings constructor now
+  lists Audio, Video, Controls and Copy Profile, with Cheats last when the
+  original unlock condition permits it. All entries use the same left-aligned
+  row style, and the divider beneath Cheats is removed. The existing native
+  actions, profile selector and Back/save flow remain in use. Windows Build
+  and the display callback checks pass. A bounded Windows capture verifies the
+  requested order, matching alignment and absent divider. Mac execution and
+  multiplayer profile selection remain unverified.
+
 - **Unified Video Options and Audio labels (this revision):** One page stages
   aspect/resolution, FOV, texture style, FPS and Subtitles behind one Apply row.
   Apply uses the native disabled/gray state until dirty and returns to it after

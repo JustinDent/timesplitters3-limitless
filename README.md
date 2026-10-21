@@ -187,7 +187,7 @@ In the main, pause and Tab/Objectives menus, hover to highlight, **left-click** 
 menu rows, including the level-selection list; click to activate a level.
 Scrolling takes priority over hover until you briefly pause the gesture; clicks
 remain immediate.
-In Windows **Audio/Video Options**, click either Music Volume or Sound Volume bar
+In Windows **Audio Options**, click either Music Volume or Sound Volume bar
 to set its level, or hold left-click and drag. This works from Settings and Pause.
 **Accept** saves the changes; **Cancel** restores the previous levels.
 Click either arrow beside a menu choice to change its value. In multiplayer
@@ -201,7 +201,7 @@ The team chooser supports its left/right arrows and **Select/Back** footer;
 The **Controls** sensitivity bar and **Video Options** FOV bar also support
 clicking and dragging. Sensitivity changes the selected player's controller
 setting; mouse sensitivity remains in PC Settings. FOV changes stay pending
-until **Apply field of view**; **Back** discards them.
+until **Apply**; **Back** discards them.
 Visible, enabled prompts along the bottom (Select, Back, Player Progress and
 other shortcuts) turn light blue on hover and accept left-click. This also applies
 to the profile picker's Select, Back and Delete Profile prompts. Disabled prompts
@@ -298,7 +298,7 @@ keep storage and memory bounded. The **optional alpha pack** contains 1,242
 replacements (about 990 MiB installed); much of the game still uses original art.
 In launchers containing the texture installer, choose **Game settings → Graphics
 & resolution → Download 4K texture pack**, then enable **Enhanced** in the game's
-**Video Options → Textures**. The pack is hosted separately on GitHub and is never downloaded
+**Video Options → Texture style**. The pack is hosted separately on GitHub and is never downloaded
 by cloning the repository. 4K output does not imply native 4K source detail.
 [Texture guide →](docs/textures.md)
 

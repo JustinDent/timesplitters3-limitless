@@ -2960,6 +2960,12 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Settings ordering (this revision):** The common guest Settings constructor
+  orders Audio, Video, Controls, Copy Profile and conditional Cheats, using
+  consistent alignment without the old divider. It retains the native actions
+  and multiplayer profile selector. Windows Build passes; Mac menu navigation,
+  alignment and multiplayer profile selection require validation.
+
 - **Unified Video/Audio Options (this revision):** Shared `pc_display_menu.c`
   stages resolution, FOV, texture style, FPS and Subtitles in one Video Options
   page, with a disabled-until-dirty Apply and native silver divider. It removes

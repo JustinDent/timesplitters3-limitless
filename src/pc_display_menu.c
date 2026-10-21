@@ -594,6 +594,40 @@ static void audio_options_build(void)
     uint32_t caption=audio_options_caption();
     if(caption && guest_writable(menu,0x208))WORD_AT(menu+0x204)=caption;
 }
+/* Reuse the title's Settings actions and profile selector, with a single
+ * left-aligned list and Cheats last. The native back/save flow is unchanged. */
+static void settings_build(void)
+{
+    extern void sub_0003D7B0(void),sub_001CD120(void),sub_00069720(void);
+    extern void sub_00071CF0(void);
+    static uint32_t video_caption;
+    GuestRegisters r;uint32_t menu=WORD_AT(g_esp+4);save_registers(&r);
+    if(!video_caption) {
+        const char label[]="Video Options";
+        video_caption=xbox_HeapAlloc(sizeof label,4);
+        if(video_caption)memcpy((void *)((uintptr_t)video_caption+g_xbox_mem_offset),label,sizeof label);
+    }
+    guest_call(sub_00075B70,5,0x8008000u,guest_call(sub_0003D7B0,1,0x409u),bits(70.f),0u,0x002CBFA0u);
+    WORD_AT(menu+0x218)=9u;
+    guest_call(sub_00071B10,4,1u,bits(2.f),1u,1u);
+    guest_call(sub_00071C50,1,0x26200u);
+    guest_call(sub_00079D60_gen,6,audio_options_caption(),UINT32_MAX,0u,0u,0x002CBE10u,0u);
+    guest_call(sub_00079D60_gen,6,video_caption,UINT32_MAX,0u,0u,PC_DISPLAY_MENU_CALLBACK,0u);
+    guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x17A4u),UINT32_MAX,0u,0u,0x002CBE50u,0u);
+    if(WORD_AT(0x005236C4u)>1u) {
+        uint32_t selector=guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x39Cu),0u,0u,0u,0u,0u);
+        guest_call(sub_0007D480,2,0xA000u,0u);
+        for(uint32_t i=0;i<WORD_AT(0x005236C4u);i++)
+            guest_call(sub_000717D0,1,guest_call(sub_00069720,1,i));
+        guest_call(sub_00071CF0,2,selector,0x002CBEE0u);
+        guest_call(sub_00075430,2,selector,WORD_AT(0x0078AD34u));
+    }
+    guest_call(sub_00079D60_gen,6,0x0047602Cu,1u,0u,0u,0x002CBEC0u,0u);
+    if(guest_call(sub_001CD120,0))
+        guest_call(sub_00079D60_gen,6,guest_call(sub_0003D7B0,1,0x1A0Fu),UINT32_MAX,0u,0u,0x002CBE30u,0u);
+    guest_call(sub_000771D0,1,menu);
+    restore_registers(&r);g_esp+=4;
+}
 static void row(int id,const char *label)
 {
     guest_call(sub_00079D60_gen,6,text_at(id+1,"%s",label),(uint32_t)id,0u,0u,SELECT_CB,0u);
@@ -909,6 +943,7 @@ void (*pc_display_menu_lookup(uint32_t address))(void)
 {
     if(address==0x002D9390u)return display_highlight_draw;
     if(address==0x002C3E20u)return audio_options_build;
+    if(address==0x002CBFC0u)return settings_build;
     switch(address) {
     case PC_DISPLAY_MENU_CALLBACK: return activate;
     case BUILD_CB: return build_menu;
