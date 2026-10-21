@@ -1,3 +1,18 @@
+## Texture preservation on version bumps — 2026-10-20
+
+PR #234 now follows the Git LFS/bundled delivery merged by #235. It preserves
+current main and adds VERSION, LauncherVersion.cs, both game packagers and the
+publisher to the Repository texture pack PR/main-push triggers. The workflow
+hydrates and audits the committed pack, including hashes, metadata, count/size
+and the 6 GiB budget; no separate texture release is required.
+
+The previous failure came from the obsolete published-release lookup. Shared
+rules, release documentation and MAC-057 now describe repository delivery.
+No runtime code, textures, personal settings or saves changed; no playtest or
+new pack copy is needed. Thirteen focused local contract checks and three
+subtests pass on Windows; final CI is recorded in PR #234. MAC-057/MAC-011
+scene and host-interaction gaps remain explicit.
+
 ## 2026-10-20 — Repository texture delivery correction
 
 The user requires compiled textures in main, bundled with normal game releases.

@@ -3,6 +3,11 @@ name: Repository texture pack
 on:
   pull_request:
     paths:
+      - 'VERSION'
+      - 'tools/launcher/LauncherVersion.cs'
+      - 'tools/package-release.py'
+      - 'tools/package-native-mac.py'
+      - 'tools/publish-release.py'
       - 'assets/textures/**'
       - '.gitattributes'
       - 'config/texture-pack.json'
@@ -14,6 +19,11 @@ on:
   push:
     branches: [main]
     paths:
+      - 'VERSION'
+      - 'tools/launcher/LauncherVersion.cs'
+      - 'tools/package-release.py'
+      - 'tools/package-native-mac.py'
+      - 'tools/publish-release.py'
       - 'assets/textures/**'
       - 'config/texture-pack.json'
       - 'tools/build_textures.py'

@@ -47,6 +47,24 @@ without system Python/Git on PATH. Real router forwarding still needs validation
 
 ## Publish a release from main
 
+### Preserve texture enhancements across version bumps
+
+Keep the shared replacement loader, Classic/Enhanced controls, pack installer,
+`assets/textures`, `config/texture-pack.json` and default bundled-game delivery
+in the next game/launcher version and later releases. Version bumps must not
+reset installed textures or unrelated settings during upgrades, repairs or
+rollbacks. Keep the existing preservation checks in release validation.
+
+Require **Repository texture pack** to pass before merging a version bump or
+changing either host's game packager or the publisher. The workflow runs on
+those PRs and matching main pushes, checks out actual Git LFS content, and audits
+DDS/mips, sanitized metadata hashes, the declared count/size and the 6 GiB limit.
+It does not require a separately published texture release. Commit reviewed
+texture changes through Git LFS; ordinary version bumps reuse the committed pack.
+These delivery checks do not establish full-game scene fidelity.
+
+### Repository texture pack
+
 Compiled replacements are committed under `assets/textures` through Git LFS.
 Run `git lfs pull` before building; the normal game ZIP includes these files
 without a separate texture release. Commit reviewed texture updates alongside
