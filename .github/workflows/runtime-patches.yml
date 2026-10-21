@@ -12,6 +12,7 @@ on:
       - requirements.txt
       - tsfp.ps1
       - AGENTS.md
+      - docs/agent-context/**
       - MAC_PORT_BACKLOG.md
       - .github/workflows/runtime-patches.yml
       - .github/workflows/launcher*.yml
@@ -63,7 +64,11 @@ jobs:
           subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
           PY
       - name: Test CI suite selection and feature handoff index
-        run: python -m pytest tests/test_ci_runtime_scope.py tests/test_mac_backlog.py -q --tb=short
+        run: python -m pytest tests/test_ci_runtime_scope.py tests/test_mac_backlog.py tests/test_repo_context.py -q --tb=short
+      - name: Validate repository context and affected-system guide updates
+        run: python tools/repo-context.py check --ci
+      - name: Test optional local-router context reader
+        run: node --test tests/repository-context.test.mjs tests/repository-evidence.test.mjs
 
   patches:
     name: Patch upgrades (${{ matrix.os }})
@@ -189,7 +194,7 @@ jobs:
             tests/test_renderer_host.py tests/test_vulkan_sdk.py tests/test_rhi_menu_sampling.py
             tests/test_frame_replay.py
             tests/test_debug_settings_model.py
-            tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_menu_text.py tests/test_quit_menu.py tests/test_ui_layout.py tests/test_camera_feed.py
+            tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_menu_text.py tests/test_quit_menu.py tests/test_ui_layout.py tests/test_camera_feed.py tests/test_ghost_actor_overlay.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             tests+=(tests/test_frame_interpolation.py tests/test_prediction_targets.py tests/test_config_initialization.py tests/test_pc_refresh.py tests/test_pc_display_modes.py tests/test_window_theme.py tests/test_online_theme.py tests/test_online.py tests/test_online_host.py tests/test_network_identity.py)

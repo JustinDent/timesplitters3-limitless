@@ -37,6 +37,28 @@ windows in this session; physical validation is performed by the user.
 Native Mac compile, SDL host self-test, physical keyboards and the full text-dialog
 matrix remain unverified; see MAC-059. No personal settings/saves were changed.
 
+PR #247 contains implementation commit `d23d9dc`. Integrated main `ea74e15`
+without changing keyboard source, preserving both CI test registrations and
+validation records. After integration, 91 selected keyboard/menu, CI scope,
+backlog, repository-context and Ghost Gun checks passed. Context/index maintenance
+passes against main. The executable hash and user confirmation above describe
+the pre-integration input build; the combined head has not had another playtest.
+
+## Texture preservation on version bumps — 2026-10-20
+
+PR #234 now follows the Git LFS/bundled delivery merged by #235. It preserves
+current main and adds VERSION, LauncherVersion.cs, both game packagers and the
+publisher to the Repository texture pack PR/main-push triggers. The workflow
+hydrates and audits the committed pack, including hashes, metadata, count/size
+and the 6 GiB budget; no separate texture release is required.
+
+The previous failure came from the obsolete published-release lookup. Shared
+rules, release documentation and MAC-057 now describe repository delivery.
+No runtime code, textures, personal settings or saves changed; no playtest or
+new pack copy is needed. Thirteen focused local contract checks and three
+subtests pass on Windows; final CI is recorded in PR #234. MAC-057/MAC-011
+scene and host-interaction gaps remain explicit.
+
 ## 2026-10-20 — Repository texture delivery correction
 
 The user requires compiled textures in main, bundled with normal game releases.
@@ -51,6 +73,48 @@ Local launcher tests reach the new large-manifest test but stop at
 the running-game guard for another checkout; host CI supplies the full tests.
 
 # Measured progress
+
+## Ghost Gun living-character alignment (issue #181, 2026-10-20)
+
+Implemented in the commit carrying this entry on
+`181-bug-ghost-gun-past-cortez-issue`, based on main
+`a0deeea`. The issue video shows Past Cortez's pale Ghost Gun reveal displaced
+from his ordinary model. The US actor effect dispatcher selects
+`sub_00122F10` for living actors while weapon 15 is equipped; humanoid ghosts
+use the separate `sub_00121F50` path from issue #111.
+
+The living-actor effect projects the actor into screen coordinates, filters
+its image through five 256x256 blur draws, then composites the image at those
+projected bounds. That final partial-screen rectangle was classified as a
+centered HUD widget. At non-4:3 ratios the resulting viewport transform moves
+and resizes the reveal independently of the world model. The existing shared
+primitive hook now gives only that final draw (return PC `0x001232A9`)
+full-view placement and flushes before restoring the enclosing placement.
+Original coordinates, texture coordinates, colour, blur passes, world camera,
+4:3 and split-view policy are preserved. No new runtime patch is necessary:
+both platform configurations already install this primitive hook.
+
+Validation: Windows x64, Python 3.12.14, MSVC 19.44, D3D11. The complete patch
+stack verifies and the supported `tsfp.ps1 Build` completes with its native
+build tests. Executable SHA-256:
+`cde11b846b67d374ec8022d9be749b211498d00e3b3412ff16d4979285456172`.
+Seven new checks pass, including old-placement/no-flush/no-restore
+mutations, both platform wrapper configurations, and execution of the original
+checksum-verified US `sub_00122F10` with isolated guest memory and render stubs.
+The original-routine test verifies all five blur passes, unchanged final draw
+arguments and preserved callee-saved registers across moving actor bounds and
+five display shapes. Asset-free placement checks cover seven resolutions.
+Existing UI and projection tests also pass (20 focused checks total). Another
+37 patch-tracking, patch-transition, spirit and ghost-target fixture checks pass,
+as does the Mac backlog contract: 58 pytest checks in total. The new tests run
+in the shared Windows/macOS runtime workflow; the original-XBE test skips
+without local assets.
+
+The user tested this build in the unlocked, isolated Windows Test Lab session
+and confirmed: "The overlay stays on Cortez now." The session was launched at
+1920x1080. This is live user confirmation of the reported encounter; macOS
+execution and visual validation at other display ratios remain pending (MAC-036).
+Personal saves/settings were preserved.
 
 ## Bundled texture dependency for game releases (2026-10-20)
 
@@ -13060,3 +13124,25 @@ published assets, stale-alias exclusion and exact eight-asset completeness.
 Windows/Mac hosted checks are pending on the release preparation PR; publication
 still requires its merge to main. The native-FPS game runtime is not included in
 this launcher release, and its beta choices explicitly require a compatible game.
+
+## Launcher bundled texture toggle (2026-10-20)
+
+Based on main `c932bee`, the commit carrying this entry on
+`feature/launcher-texture-toggle` replaces separate texture installation actions
+with **Use enhanced textures (Beta)** in the shared graphics settings page.
+The optional `launcher.enhanced_textures` boolean defaults off, uses existing
+transactional settings persistence, and selects `TSFP_TEXTURE_MODE=4k/classic`
+at launch. Game releases supply the textures. Missing replacements fall back to
+originals; Display-menu/F10 changes remain session-only. Both Windows and Mac
+adapters remove the old actions but retain recovery for interrupted legacy
+texture installations. No game source or personal game files were changed.
+
+Windows .NET Framework launcher/bootstrap/test compilation passed with required
+artwork. All 13 shared UI groups and 35 settings checks passed, including toggle
+save/cancel, reopening, launch mode, missing packs, malformed values and preservation
+of texture files and unrelated settings. Inspected the 900×720 WPF graphics page:
+the checkbox, Beta/fallback guidance and Save/Cancel controls remain readable.
+Three portable shared UI checks and nine compatibility-policy checks passed.
+The Mac backlog consistency check also passed.
+Native Mac compilation and UI execution are unavailable on this
+Windows host and remain pending. No release is published by this change.

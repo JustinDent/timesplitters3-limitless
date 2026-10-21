@@ -2,6 +2,9 @@
 <#
 .SYNOPSIS
 Build, validate, package and publish the VERSION on a clean, up-to-date main.
+.DESCRIPTION
+Requires the complete bundled repository textures. Run git lfs pull first.
+Missing, incomplete or unhydrated textures stop preparation and publication.
 .EXAMPLE
 .\Publish-Release.ps1 -PrepareOnly
 .EXAMPLE
