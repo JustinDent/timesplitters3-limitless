@@ -5,6 +5,11 @@ working-memory layer, not a replacement for root `AGENTS.md`, source, or tests.
 It describes the tracked baseline; uncommitted patches and installed binaries
 may differ. Check branch, diff and build provenance before drawing conclusions.
 
+Hosted GPT/Codex contributors use these guides with their usual model and tools.
+The separately installed LOCAL SMART controller is optional. Its Sol advisory
+roles, budgets and evidence protocol apply to that integration; ordinary hosted
+agents can implement/build/test directly without Qwen, Ollama or a router.
+
 <!-- packet:start -->
 This repo wraps a pinned Xbox static-recompilation runtime. Authoritative edits
 live in tracked `src/`, `tools/`, `config/` defaults and `patches/*.patch`.
@@ -45,6 +50,7 @@ repo or local runtime automatically. Advice is a hypothesis until locally tested
 | Launcher UI, install/update, versions, platform paths | [Launcher](launcher.md) |
 | Build/generate, test selection, isolation, CI | [Build and test](build-test.md) |
 | Debugging, repeat searches, compaction, Sol handoff | [Investigation](investigation.md) |
+| Sol requests for missing code, revisions, limits | [Evidence retrieval](evidence.md) |
 
 See [the #105 run review](issue-105-review.md) for the evidence behind this map.
 `manifest.json` maps changed source to guide ownership and selects advisory

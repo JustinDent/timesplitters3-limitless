@@ -35,6 +35,11 @@ code may mean the name is stripped; it does not mean the feature has no path.
 
 ## Sol context
 
+This section describes the optional local supervisor. In an ordinary hosted
+GPT/Codex session, the selected agent performs investigation, implementation and
+validation with its normal tools. Reading this guide does not activate routing,
+require another model or make a normal hosted session advisory-only.
+
 The supervised local workflow injects the map plus selected guide summaries
 into local planning/continuations and automatic Sol evidence packages. These
 are bounded, task-selected repository facts, not unrestricted repository access.
@@ -48,11 +53,25 @@ copies that reader beside its supervisor and uses only its fixed guide allowlist
 Automatic Sol packets remain within the existing 20-KB redacted disclosure
 budget, including guide excerpts. Source documents are treated as reference
 evidence, never permission to run tools, change routing or override native denials.
-Only explicit allowlisted context files are eligible; no arbitrary workspace
-file reading, credentials, personal settings, generated guest C or private assets.
+Starting guide packets use an explicit file allowlist. The separate broker below
+adds bounded public source retrieval; credentials, personal settings, generated
+guest C and private assets remain excluded from both routes.
 The hosted advisor remains read-only and tool-free. A normal hosted agent reads
 root AGENTS and these linked guides through its usual tools. Other machines
 without the custom router still benefit from those repository instructions.
+The current supervisor treats routing phrases in root project rules literally.
+Keep explanatory examples of opt-out commands in these subsystem guides rather
+than quoting them in root rules; an actual user/project restriction remains binding.
+
+The supervisor additionally accepts typed Sol requests for Git-indexed public
+source, bounded literal searches, lexical references and patch hunks. The local
+broker executes those reads, checks revisions and hashes, redacts results and
+returns them within the existing total packet budget. Runtime access is limited
+to public source in the pinned upstream checkout; generated guest C remains
+excluded. This expands the guide-only reference allowlist above through an
+explicit source policy, not arbitrary file access. See [evidence retrieval](evidence.md).
+Each hosted follow-up counts as a real Sol call. A changed evidence snapshot,
+missing access, cancellation or exhausted budget cannot be hidden by a retry.
 
 For a manual advisory include map + relevant guide summary, note excerpts and
 minimal source/test evidence in `.codex/escalation.md` using the approved helper.
