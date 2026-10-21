@@ -183,3 +183,20 @@ The historical controls-only fixture in `test_patch_updates.py` excludes
 cutscene and fullscreen-effect prerequisites. It then asserts effective-size
 hooks in the migrated title and renderer, preservation of local edits, and
 idempotent reapplication. Fresh/current-stack tests still apply the Auto patch.
+
+## Crane vignette validation (#221)
+
+`tests/test_crane_overlay.py` checks manual wrapper registration and, when the
+checksum-verified local US XBE is available, executes its original vignette
+routine using both platform wrapper defines. `crane_overlay` in
+`tests/test_ui_layout.py` exercises the production placement helper across nine
+shapes, batch boundaries, partial viewports and multiplayer guards without game
+assets. Both run in the Windows/macOS runtime workflow. Original-code tests
+skip without the proprietary executable; fixture execution is distinct from
+a live crane encounter or native Mac graphics validation (MAC-058).
+
+`crane_scissor.c` executes the production legacy GL clip adapter and verifies
+full edge coverage plus nonmatching-tag/partial-clip exclusions. The production
+RHI extraction in `ui_viewport.c` checks the same captured 639,479 clip at seven
+ratios and asserts stored guest state is unchanged. These fixture checks run
+on both CI hosts; they are not native Mac gameplay validation.

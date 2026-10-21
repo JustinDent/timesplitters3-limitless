@@ -870,6 +870,14 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-crane-vignette.patch",
+      "sha256": "f1ec7a7cdf60abeae1410d32327ce2c669f217ec4f09ff8ecce49d90d3c94a16",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-texture-mode-shared.patch",
       "sha256": "f55605231bd56af79bcec8cf2fbb2b78f182f5ed8f59c06f23c0d161b7e70137",
       "targets": [

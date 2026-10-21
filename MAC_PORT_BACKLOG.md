@@ -192,6 +192,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-055 | Persist accepted frontend Controls before quitting Settings | Awaiting validation |
 | MAC-056 | Texture-camera composition alignment (issue #49) | Awaiting validation |
 | MAC-057 | Optional texture pack delivery through the launcher | Awaiting validation |
+| MAC-058 | Crane and remote-view vignette sizing (issue #221) | Awaiting validation |
 | MAC-059 | Physical keyboard entry in original text dialogs (issue #136) | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
@@ -3079,6 +3080,35 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   is ignored rather than corrupting saved text.
 - **Mac implementation and evidence:** Adapter is included on the source branch;
   no Apple Silicon host available. See the issue #136 entry in `STATUS.md` for local evidence.
+
+### MAC-058 — Crane and remote-view vignette sizing (issue #221)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The Scotland the Brave crane's four mirrored `holoedge`
+  texture pieces scale together to the output viewport, removing the central
+  4:3 boundary. Control text remains outside the stretching scope. The same
+  original vignette helper is used by remote-camera/gun and microscope views.
+  Its inclusive full-canvas clip is normalized through shared `pc_ui_vignette_clip`
+  in both RHI and legacy GL; the guest clip and unrelated widgets stay unchanged.
+- **PC source:** `221-bug-scotland-the-brave-crane-widescreen-issue` (uncommitted);
+  additive `*-crane-vignette.patch`, existing shared
+  `src/pc_display_ui.inc` placement helper and `tests/test_crane_overlay.py` /
+  `tests/crane_overlay.c`. No renderer-specific shader or OS policy is added.
+- **PC validation:** See `STATUS.md`, “Crane vignette widescreen (#221)”.
+  Asset-free scope checks and original US guest-routine execution pass on
+  Windows x64. The user confirmed the corrected crane overlay looks good.
+  Desert encounter and Mac scene checks remain pending.
+- **Existing Mac support:** The wrapper uses `TSFP_NATIVE_DISPLAY` and the
+  existing shared placement API. Its native-display preprocessor path was
+  exercised by the Windows C fixture; this is not native Mac validation.
+- **Mac adaptation needed:** None identified. Validate the existing common
+  renderer and legacy GL placement implementations on their respective hosts.
+- **Mac acceptance checks:** At 4:3, 16:9 and ultrawide, enter the Scotland crane;
+  verify the dark edge overlay has no vertical 4:3 seams, retains transparency,
+  and leaves control labels proportional. Leave the crane and verify HUD
+  placement restores. Check remote views and split-screen viewport boundaries.
+  The separate desert shattered-glass report is not yet reproduced or claimed
+  fixed by this vignette change.
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 
