@@ -13250,3 +13250,14 @@ window/fullscreen and physical multi-monitor checks remain unverified.
 See MAC-024. Logs: `logs/auto-game-build.log`, `auto-regressions.log`,
 `auto-settings-test.log`, `auto-shared-ui-test.log`, `auto-contracts.log`, and
 `private/test-saves/auto-resolution/game.err`. Personal saves/settings untouched.
+
+### PR #251 CI fixture correction
+
+The historical controls-only fixture accidentally included the Auto patch before
+its display/cutscene/fullscreen-effect prerequisites, failing setup on both
+Windows and Mac. The fixture now defers it to the complete-stack migration,
+then checks effective-size hooks in the title and both renderer files, local
+edit preservation and idempotence. All 34 patch-tracking and historical-upgrade
+regressions passed on Windows (`logs/auto-ci-patch-upgrades.log`).
+Both native-runtime CI jobs and the Windows/Mac launcher checks passed on
+`c46cc8c`; this does not establish full Mac game or physical display validation.

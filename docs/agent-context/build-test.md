@@ -177,3 +177,9 @@ the effective-output hook after the complete patch stack is applied. Launcher
 settings checks cover Auto UI/filter/save, fresh defaults, existing manual
 settings, and older package capability gating. Native Cocoa's graphics self-test
 recognizes the Auto choice; physical Retina/multi-display validation needs Mac.
+
+The historical controls-only fixture in `test_patch_updates.py` excludes
+`-auto-display.patch` until the complete-stack migration installs its display,
+cutscene and fullscreen-effect prerequisites. It then asserts effective-size
+hooks in the migrated title and renderer, preservation of local edits, and
+idempotent reapplication. Fresh/current-stack tests still apply the Auto patch.
