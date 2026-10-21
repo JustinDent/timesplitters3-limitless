@@ -23,6 +23,17 @@ published release or a full-game 144 FPS certification.
   closed normally before completion; their exit traces are not crashes.
   Controller/physical mouse checks and Mac execution remain unverified.
   Arcade acceptance is tracked separately below.
+- **Scotland route under fire (this revision):** Read-only player-health
+  observations now distinguish combat deaths from stalls. A repeated route
+  at original 60/native 120/144 reaches the ruins, takes damage and is pushed
+  below the upper path at all three rates. Original 60 dies during the final
+  firing sequence; native runs survive with different health/ammo. These
+  uncontrolled combat outcomes do not establish damage, knockback or firing
+  parity, and do not establish a native-specific defect. All five exploratory
+  and comparison sessions exit normally with unchanged isolated profiles.
+  The next comparison needs combat-aware navigation; castle/jeep/full mission
+  acceptance remains open. No executable or gameplay change was made.
+  [Route evidence](docs/native-high-refresh-regressions.md#scotland-route-under-fire).
 - **Live aiming and shore movement (this revision):** The bounded Windows
   runner now supports sequenced synthetic mouse packets and position/level-clock
   samples during short key holds. On the unchanged HUD-fix binary, Scotland

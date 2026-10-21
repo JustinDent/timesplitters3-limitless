@@ -2960,6 +2960,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Scotland route diagnostics (this revision):** The Windows bounded runner
+  adds read-only player health. Repeated original-60/native-120/native-144
+  routes all take damage and move below the upper path under fire; original
+  60 dies in the final firing sequence. This prevents treating that route
+  failure alone as a native regression, but damage, collision, firing and jeep
+  parity remain unverified. Five sessions exit normally with preserved
+  profiles. No gameplay or Mac adapter changes; Mac execution remains pending.
+  See the Scotland route under fire section of the native regression record.
+
 - **Live aiming/movement diagnostics (this revision):** Windows bounded runner
   `tests/stability_transitions_game.py` adds sequenced synthetic mouse packets
   and position/level-clock samples during short key holds. Scotland camera

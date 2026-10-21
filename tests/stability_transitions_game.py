@@ -93,6 +93,11 @@ def main():
         actor=word(entity+0x7c) if entity else None
         result=dict(player=player,position=floats(player+0xb4,3),look=floats(player+0x100,2),
                     equipped=[word(player+0x1b4),word(player+0x58c)],ammo=[])
+        # Original actor damage updates entity+0x1cc (native_sniper_damage.c).
+        # Read-only observation helps distinguish route/combat deaths from stalls.
+        if entity is not None and 0x80000000<=entity<0x84000000:
+            health=floats(entity+0x1cc,1)
+            if health is not None:result['health']=health[0]
         if actor is None or not 0x80000000<=actor<0x84000000:return result
         loadout=word(actor+0x98);table=word(0x4f9bac)
         if loadout is None or not 0<=loadout<256 or not table:return result

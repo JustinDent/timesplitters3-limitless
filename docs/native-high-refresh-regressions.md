@@ -40,6 +40,72 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Scotland route under fire
+
+Windows x64/D3D11, unchanged HUD-fix executable SHA-256
+`167e9bce3b96d4ff8ceaab378d52aaadb9d0b923fa3a7a42374a1364db413397`.
+The bounded runner now reads player entity health at `entity+0x1cc`, the
+field written by the original damage routine exercised in
+`tests/native_sniper_damage.c`. It does not modify health, position, enemies
+or gameplay. Health is reported in original units, not a percentage. This
+lets a navigation failure or combat death be distinguished from a frozen
+simulation; it does not identify the attacker or damage cause.
+
+The exploratory `scotland-route-144` run reached the arch, was left exposed,
+and reached Game Over. Retry returned directly to gameplay; mistaken menu
+inputs then paused it and entered Display settings. Those navigation mistakes
+are not timing regressions. A later resumed route reached the ruined building.
+The exploratory `scotland-route-60` run mapped the bends toward the castle,
+received damage and emptied the pistol at the approach. It used longer
+operator pauses and is not the matched baseline below.
+
+The three `scotland-route-compare-{60,120,144}` runs replay the same bounded
+route with short pauses: dock handoff; yaw 65 forward three seconds; yaw 77
+forward three then two seconds through the arch; yaw 167 forward three
+seconds; yaw 212, 152, 92 and 182 forward three seconds each; then eight
+pistol-button presses with 0.18-second holds and 0.25-second gaps. Original
+60 leaves native timing disabled. Native 120/144 use the actual fractional
+clock. Renderer captures are enabled, so these are not pacing measurements.
+The 60/144 repeats additionally sample movement/health every approximately
+50 ms during holds; 120 records command endpoints only.
+
+All begin at the identical dock position with health 35 and pistol 8/52.
+Through the `switchback` command the largest observed endpoint separation
+from the matched original-60 replay is 0.415 world units. On the following
+`upper-path` segment, incoming fire and backward displacement occur in the
+original-60 repeat as well as at 120/144. Reviewed captures put all three
+below the upper path near the wall. The first exploratory 60 run had stayed
+farther up the path, illustrating why a single route result is insufficient.
+The repeated original-60 run eventually dies; both native runs remain alive
+at the final observation. This does not establish equal damage or difficulty.
+
+| Observation | Original 60 health | Native 120 health | Native 144 health |
+| --- | ---: | ---: | ---: |
+| Dock | 35.0 | 35.0 | 35.0 |
+| Around ruin | 32.6 | 33.8 | 33.8 |
+| Switchback | 31.6 | 33.2 | 33.8 |
+| Upper path | 5.1 | 20.3 | 18.5 |
+| Upper turn | 3.0 | 19.3 | 15.8 |
+| After return-fire inputs | 0.0 (Game Over) | 12.4 | 3.2 |
+
+The final native-120 pistol is empty; native 144 retains two rounds after
+those eight presses. The original-60 player dies during that sequence and
+switches to the death weapon. These are not equivalent firing conditions,
+so neither shot-count parity nor a firing regression is established. Damage
+reactions, collision, enemy decisions and input delivery need a controlled
+follow-up. Do not claim the castle fight, jeep, or complete Scotland mission
+passed from these runs. The next route should clear threatening enemies
+before advancing rather than use this exposed walk as a physics benchmark.
+
+All five sessions exit normally, retain unchanged isolated profiles and
+preserve the canonical fixture. Personal controls/display hashes still match
+the preceding check. No gameplay source, executable or Mac adapter changed;
+Mac execution remains unverified. Local evidence includes the run folders,
+matching `logs/scotland-route*.log`, `private/pipeline/scotland-route-inputs.json`,
+`check-scotland-route.py`, `summarize-scotland-route.py`, and
+`scotland-route-validation.json`. The matched runner SHA-256 is
+`21ad347de718d4242fb76e1451954401e0859a885de18b645d2cd9b4241aaf2f`.
+
 ## Scotland aiming and shore movement
 
 Windows x64/D3D11, the unchanged `6540b5c` HUD-fix source binary SHA-256
