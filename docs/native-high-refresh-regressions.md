@@ -40,6 +40,70 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Scotland opening comparison
+
+The same Windows x64/D3D11 countdown-fix binary (`a0a7214` source, SHA-256
+`41ca454f88d9d11279fe57cbf24fbd56dbca9b72a5d5550c154c20898a91fa43`)
+completed bounded original-60 and native-144 runs using separate disposable
+Test Lab profiles. Evidence is in `private/test-saves/scotland-original60`
+and `scotland-native144`, with matching logs under `logs/`.
+
+Both runs select Scotland the Brave, reach the boat cinematic (scene 30),
+skip into dock gameplay (scene 4, mission 1), fire, move, pause and resume.
+The initial position and look values match exactly. A 1.5-second synthetic
+fire hold consumes three pistol rounds at both rates (8 to 5, reserve 52).
+A three-second forward hold ends at `[1.616877, -46.362591, 103.591850]`
+at original 60 and `[1.603127, -46.362701, 103.577972]` at native 144.
+The endpoints differ by approximately 0.020 world units; input delivery and
+sampling are not frame-identical. Both pause states suppress input and keep
+position fixed, and both resume with suppression cleared. Reviewed opening
+and post-movement captures show the same dock/wall location and ammunition.
+Objective-message timing and animation phase are not established by these
+non-synchronized captures. Both runs exit normally with unchanged, valid
+profile signatures.
+
+This covers basic opening controls only. Movement ends at the nearby wall;
+it does not establish unobstructed movement speed or collision behavior
+throughout the level. The jeep encounter, companion dismount/remount, combat,
+mission completion and audio synchronization remain unverified at native 144.
+The native trace cap was reached before gameplay, so this run supplies no
+Scotland frame-pacing result. Native 120 Scotland and Mac execution remain
+unverified.
+
+## Arcade pacing without renderer captures
+
+After the countdown correction, both native targets were measured on the same
+Windows x64/D3D11 executable (`a0a7214` source, binary SHA-256
+`41ca454f88d9d11279fe57cbf24fbd56dbca9b72a5d5550c154c20898a91fa43`).
+`tests/stability_transitions_game.py --no-captures` omits all renderer dump
+settings and skips screenshot labels, while preserving state observations,
+bounded CPU timing CSV, logs and isolated Test Lab saves. Its provenance
+records `captures: false`; neither run produced renderer BMPs. No game
+source or pacing policy changed for this comparison.
+
+| Target | Measured CPU updates/s | Intervals / seconds | p50 / p95 / p99 ms | Worst ms | Game/wall time |
+| --- | ---: | --- | --- | ---: | ---: |
+| 120 | 119.958 | 5,752 / 47.9502 | 8.3309 / 8.7218 / 8.9563 | 12.6748 | 1.000000 |
+| 144 | 143.936 | 6,869 / 47.7225 | 6.9785 / 7.3793 / 7.9785 | 11.5586 | 1.000000 |
+
+Evidence directories are `private/test-saves/arcade-pacing-120` and
+`arcade-pacing-144`; logs use the corresponding names under `logs/`.
+`update-stats.json` summarizes unpaused scene-48 intervals after trace second
+62 / 58 respectively. The runs include combat/death/respawn states and are
+not identical camera/AI workloads. Initial firing consumes six rounds and
+forward movement changes position at each rate. At 120, later observations
+confirm respawn with dual pistols and a further ten rounds consumed. The 144
+late weapon-37 state does not prove a second firearm check. Both sessions
+exit normally and retain unchanged, valid profile signatures. Personal
+controls/display hashes remain unchanged.
+
+Earlier capture-heavy runs had p99 near 33 ms. The much lower no-capture
+intervals support screenshot overhead as a substantial contributor, not a
+proven isolated causal measurement. Short scene CPU samples do not establish
+full-game 144 FPS, GPU completion, monitor scanout, physical input latency,
+4K/ultrawide performance, or other hardware/OS behavior. Retain captures for
+visual checks separately from primary pacing measurements.
+
 ## Arcade Vietnam comparison
 
 ### Match-start countdown diagnosis

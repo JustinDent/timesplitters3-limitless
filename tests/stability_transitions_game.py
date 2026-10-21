@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--run-name',default='stability-transitions')
     parser.add_argument('--native-fps',type=int,choices=(60,120,144))
     parser.add_argument('--manual-start',action='store_true')
+    parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--watch-input',action='store_true',help='Trace changes to player-one input suppression in the bounded log')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
@@ -48,6 +49,9 @@ def main():
         RECOMP_WINDOW_BACKGROUND='1',RECOMP_PC_MOUSE='1',TSFP_DISCORD_CONFIG=str(run/'discord.ini'),
         RECOMP_HLE_D3D8_DUMP=str(run/'frame'),RECOMP_HLE_D3D8_DUMP_EVERY='30',
         RECOMP_HLE_D3D8_DUMP_KEEP_LAST='3',RECOMP_FPS='5',RECOMP_INTERP_DEBUG='1')
+    if args.no_captures:
+        for key in ('RECOMP_HLE_D3D8_DUMP','RECOMP_HLE_D3D8_DUMP_EVERY','RECOMP_HLE_D3D8_DUMP_KEEP_LAST'):
+            env.pop(key,None)
     if args.native_fps:
         env.update(TSFP_NATIVE_FPS=str(args.native_fps),RECOMP_FRAME_TARGET='0',RECOMP_FRAME_INTERP='1',
                    TSFP_NATIVE_TRACE=str(run/'native-frames.csv'))
@@ -134,6 +138,7 @@ def main():
         for t in threads:t.join(5)
         threads.clear()
     def capture(label):
+        if args.no_captures:return
         assert label.replace('-','').isalnum() and len(label)<48
         assert (run/(label+'.png')).exists() or len(list(run.glob('*.png')))<48
         for _ in range(20):
@@ -155,7 +160,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        native_fps=args.native_fps or 0,seconds=args.seconds),indent=2))
+        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)

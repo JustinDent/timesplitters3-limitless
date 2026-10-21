@@ -23,6 +23,22 @@ published release or a full-game 144 FPS certification.
   closed normally before completion; their exit traces are not crashes.
   Controller/physical mouse checks and Mac execution remain unverified.
   Arcade acceptance is tracked separately below.
+- **Scotland opening comparison (this revision):** On the same corrected
+  Windows binary, original 60 and native 144 reach the boat intro and dock,
+  consume three pistol rounds, move to the nearby wall and pause/resume.
+  Starting state matches; movement endpoints differ by about 0.020 world
+  units. Both isolated profiles remain unchanged and sessions exit normally.
+  This does not verify free movement speed, objective-message timing, the
+  jeep encounter, combat, full-level completion or Scotland frame pacing.
+  [Opening evidence](docs/native-high-refresh-regressions.md#scotland-opening-comparison).
+- **Arcade pacing without screenshots (this revision):** Same corrected
+  Windows binary, isolated Test Lab, no renderer BMP capture. Native 120/144
+  averages 119.958/143.936 CPU updates/s across roughly 48 unpaused seconds
+  each, with game/wall time 1.000000. p99 intervals are 8.9563/7.9785 ms,
+  worst 12.6748/11.5586 ms. Both runs verify initial movement/fire; 120 also
+  verifies later respawn/fire. These are short mixed combat/death scene samples,
+  not scanout, physical latency or full-game target certification.
+  [Pacing evidence](docs/native-high-refresh-regressions.md#arcade-pacing-without-renderer-captures).
 - **Arcade match-start countdown (this revision):** The integer countdown
   discarded each sub-tick float addition at native 120/144, leaving the
   original input suppression active. The shared numeric policy now supplies

@@ -2960,6 +2960,22 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Scotland opening follow-up (this revision):** Windows original-60/native-144
+  comparison verifies intro-to-dock transition, three pistol rounds, short
+  movement and pause/resume on the unchanged countdown-fix binary. This is
+  opening-only evidence; jeep behavior, mission completion, pacing and Mac
+  execution remain unverified. No shared source or OS adapter changed.
+  See the Scotland opening comparison in the native regression record.
+
+- **Pacing measurement follow-up (this revision):** The Windows bounded
+  transition runner can disable renderer dumps and records that choice in
+  provenance. On the unchanged countdown-fix binary, approximately 48-second
+  Arcade samples average 119.958/143.936 CPU updates/s at 120/144, with 1.0
+  game/wall time and p99 8.9563/7.9785 ms. These are scene CPU measurements,
+  not full-game, scanout, physical latency or Mac validation. The existing
+  Mac runner already makes capture optional; this Windows diagnostic option
+  introduces no shared gameplay or host adapter change. See STATUS.md.
+
 - **Arcade countdown (this revision):** Shared `src/pc_native_numeric.h` keeps
   the integer match-start counter on accumulated raw whole ticks at its one
   float-add site. Truncating fractional additions otherwise freezes native
