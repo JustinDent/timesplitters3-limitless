@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Explicit network reference:** Corrected setup selects Vietnam Deathmatch
+  with no bots. Original 60/60 and native 144/120 pairs both move in each
+  direction and deliver identical settled positions to the peer. Spawn/terrain
+  differ; this verifies endpoint delivery, not speed parity or moving-pose
+  smoothness. The new summary checker rejects stationary/wrong-scene/stale
+  observations; 70 summary/CI-scope checks pass. Four bounded sessions exit
+  normally with unchanged profiles and fixture. No production change/rebuild.
+  [Corrected reference evidence](docs/native-high-refresh-regressions.md#explicit-vietnam-network-reference-2026-10-21).
+
 - **Mixed-rate loopback session:** A native-144 host and native-120 client join
   Subway Thief and replicate movement in both directions. After separate
   two-second walks, each peer reports exactly the same settled actor position.

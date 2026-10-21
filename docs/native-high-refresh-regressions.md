@@ -1778,6 +1778,54 @@ Run labels are `60-natural-intro-handoff-none-camera-track` and
 observations establish exercised track progression and completion, not
 per-frame visual smoothness, full cinematics or full-game acceptance.
 
+## Explicit Vietnam network reference (2026-10-21)
+
+A corrected original-60 pair and a native-144 host/native-120 client pair now
+both select Vietnam, Deathmatch and Bot Set None explicitly through the menus.
+Each reaches scene 48/network state 15 with two human slots and zero bots.
+Reviewed captures show first-person gameplay, not team selection. After separate
+two-second forward holds, the remote actor reaches the same settled position:
+
+| Configuration | Moving player | Displacement | Settled endpoint error |
+| --- | --- | ---: | ---: |
+| Original 60 / original 60 | Host | 15.88007 | 0.0 |
+| Original 60 / original 60 | Client | 15.76641 | 0.0 |
+| Native 144 / native 120 | Host | 15.91010 | 0.0 |
+| Native 144 / native 120 | Client | 15.98143 | 0.0 |
+
+Distances are in game world units. Spawn locations/headings and terrain differ;
+this comparison establishes bidirectional movement delivery after stopping,
+not precise speed parity, continuous remote motion, packet latency or frame
+pacing. Both pairs use minimized 1280x720 renderer capture sessions on one
+Windows PC, with the unchanged `dbb84e3` executable and SHA-256 recorded below.
+All four processes exit normally, preserving signed profiles and the fixture;
+their disposable partition images are recycled. No production game changes or
+rebuild were needed. Actual Mac and cross-machine LAN/WAN remain unverified.
+
+The original pair uses operator-steered waits between explicit setup choices;
+the native pair replays the corrected `tests/fixtures/lan-movement-commands.json`
+automatically. The fixture now includes the mode/map/no-bot selections, replacing
+the rejected default-lobby route. It is a bounded input recipe, not a guarantee
+that a session passes. `tools/network_movement_stats.py HOST_DIR CLIENT_DIR`
+requires an active matching scene, finite actor coordinates, at least 0.01 units
+of actual displacement and at most 0.01 units of settled endpoint difference.
+The comparison explicitly rejects equal stationary endpoints. Its five tests
+include frozen peers, stale coordinates, wrong scenes and non-finite data; it
+is included in the shared runtime CI workflow. The previously rejected original
+run fails this checker, while both corrected pairs and the earlier mixed-rate
+Subway movement pass. No automated check here certifies in-motion smoothness.
+
+Evidence directories are `private/test-saves/lan-explicit-60-host`,
+`lan-explicit-60-client`, `lan-explicit-native-host`, and
+`lan-explicit-native-client`. Endpoint summaries are retained in
+`private/pipeline/lan-explicit-60-summary.json` and
+`lan-explicit-native-summary.json`. All four use runner SHA-256
+`1b412b3f165b10bf294230d2dc31340d78062842bfe0f5f3b347f6b82b120cee`.
+The network-summary and CI-scope checks have 70 passes in 0.16 s
+(`logs/network-movement-stats-tests.log`). The final selection including the
+Mac backlog check has 71 passes in 0.17 s (`logs/network-movement-stats-final.log`);
+Mac runtime acceptance is separate.
+
 ## Mixed-rate loopback movement (2026-10-21)
 
 A bounded two-process Windows x64/D3D11 System Link session uses the unchanged
@@ -1831,8 +1879,8 @@ this run is rejected as a behavioral reference. It is not a high-refresh defect
 reproduction. Explicit mode/map selection and team-selection completion are
 required for the next original-60 comparison.
 
-The rejected route is retained, with its limitation, in
-`tests/fixtures/lan-movement-commands.json`. Raw observations/captures are under
+The rejected route is retained in each run directory's `commands.jsonl`.
+The tracked replay has since been corrected as recorded above. Raw observations/captures are under
 `private/test-saves/lan-original-host` and `lan-original-client`; the local
 summary is explicitly marked `movement_validated=false`. These processes also
 exit normally with unchanged profiles/fixture. Their runner hash is
@@ -1842,9 +1890,9 @@ exit normally with unchanged profiles/fixture. Their runner hash is
 existing multiplayer build/content, configures only the loopback peer, and adds
 network state/role/actor observations to the existing bounded isolated runner.
 Each instance needs a distinct run name; only one pair may use these addresses
-at a time. This adds test tooling, not production transport behavior. A valid
-original-60 movement reference, intermediate remote smoothness, cross-machine
-LAN/WAN, bot lifecycle, mixed-rate match completion and native Mac remain open.
+at a time. This adds test tooling, not production transport behavior. The corrected original-60 settled-movement reference is recorded above.
+Intermediate remote smoothness, cross-machine LAN/WAN, bot lifecycle,
+mixed-rate match completion and native Mac remain open.
 
 ## Native clock and network movement cadence (2026-10-21)
 

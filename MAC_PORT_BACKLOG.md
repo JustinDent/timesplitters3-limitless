@@ -2968,6 +2968,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   not platform gameplay. The Mac recorder remains shared; actual Mac Venice,
   pacing and gameplay acceptance require the native Mac runner and hardware.
 
+- **Corrected original/mixed-rate comparison:** Explicit Vietnam Deathmatch
+  with no bots passes bidirectional settled-position delivery at original 60/60
+  and native 144/120 on Windows. `network_movement_stats.py` and its portable
+  tests reject stationary peers, wrong scenes and stale/non-finite endpoints;
+  the tests join shared runtime CI. No production or Mac transport change was
+  made. Mac execution, continuous remote motion and cross-machine latency still
+  require independent acceptance.
+
 - **Mixed-rate loopback acceptance:** Windows System Link at native 144 host /
   native 120 client reaches a two-human Subway Thief match, with bidirectional
   settled-position delivery and client movement while the host menu is open.

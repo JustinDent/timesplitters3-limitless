@@ -1,5 +1,5 @@
 {
-  "_scope": "Recorded original-60 attempt: discovery/join succeeded, but default Team Deathmatch/Chinese stayed at team selection. This is not a validated movement replay; explicitly select the mode/map and complete team selection before reuse.",
+  "_scope": "Explicit Vietnam Deathmatch with no bots; host/client must run concurrently on isolated loopback addresses. Validate actual movement with tools/network_movement_stats.py; menu timing alone is not acceptance.",
   "host": [
     {
       "wait": 24
@@ -34,7 +34,51 @@
       "label": "host-lobby"
     },
     {
-      "wait": 25,
+      "keys": [
+        89
+      ],
+      "hold": 0.25,
+      "wait": 3,
+      "label": "match-options"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 2,
+      "label": "select-mode"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 2,
+      "label": "match-settings"
+    },
+    {
+      "keys": [
+        38,
+        37
+      ],
+      "hold": 0.25,
+      "gap": 0.5,
+      "wait": 1,
+      "label": "bot-selection"
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.5,
+      "wait": 3,
+      "label": "configured-lobby"
+    },
+    {
+      "wait": 12,
       "label": "paired-lobby"
     },
     {
@@ -56,7 +100,7 @@
       "label": "host-walk-settled"
     },
     {
-      "wait": 16,
+      "wait": 22,
       "label": "client-walk-observed"
     },
     {
@@ -89,8 +133,15 @@
       "label": "lan-browser"
     },
     {
-      "wait": 8,
+      "wait": 18,
       "label": "client-browser"
+    },
+    {
+      "keys": [
+        82
+      ],
+      "hold": 0.25,
+      "wait": 2
     },
     {
       "keys": [
@@ -125,7 +176,7 @@
       "label": "client-walk-settled"
     },
     {
-      "wait": 8,
+      "wait": 10,
       "label": "settled"
     },
     {
