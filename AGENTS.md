@@ -271,6 +271,14 @@ providers, perform handoffs or limit themselves to advisory work.
 
 ## Project storage and texture work
 
+- Preserve texture enhancements across game/launcher version bumps: the shared
+  loader, Classic/Enhanced controls, installer, repository DDS/JSON and bundled
+  game packaging must carry forward. Require Repository texture pack to pass
+  on version-bump and game-packaging PRs; it verifies hydrated Git LFS files,
+  DDS/mips, sanitized metadata hashes, declared count/size and the 6 GiB limit.
+  Upgrade, repair and rollback checks must preserve installed textures and
+  personal settings. Do not restore a separate texture-release dependency.
+
 - The user requires compiled replacement textures committed to main and bundled
   with ordinary game-version releases (2026-10-20). Store sanitized DDS/JSON in
   assets/textures, with DDS tracked through Git LFS. Do not publish separate

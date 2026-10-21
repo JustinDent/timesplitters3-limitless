@@ -1,3 +1,18 @@
+## Texture preservation on version bumps — 2026-10-20
+
+PR #234 now follows the Git LFS/bundled delivery merged by #235. It preserves
+current main and adds VERSION, LauncherVersion.cs, both game packagers and the
+publisher to the Repository texture pack PR/main-push triggers. The workflow
+hydrates and audits the committed pack, including hashes, metadata, count/size
+and the 6 GiB budget; no separate texture release is required.
+
+The previous failure came from the obsolete published-release lookup. Shared
+rules, release documentation and MAC-057 now describe repository delivery.
+No runtime code, textures, personal settings or saves changed; no playtest or
+new pack copy is needed. Thirteen focused local contract checks and three
+subtests pass on Windows; final CI is recorded in PR #234. MAC-057/MAC-011
+scene and host-interaction gaps remain explicit.
+
 ## 2026-10-20 — Repository texture delivery correction
 
 The user requires compiled textures in main, bundled with normal game releases.
@@ -13021,3 +13036,25 @@ published assets, stale-alias exclusion and exact eight-asset completeness.
 Windows/Mac hosted checks are pending on the release preparation PR; publication
 still requires its merge to main. The native-FPS game runtime is not included in
 this launcher release, and its beta choices explicitly require a compatible game.
+
+## Launcher bundled texture toggle (2026-10-20)
+
+Based on main `c932bee`, the commit carrying this entry on
+`feature/launcher-texture-toggle` replaces separate texture installation actions
+with **Use enhanced textures (Beta)** in the shared graphics settings page.
+The optional `launcher.enhanced_textures` boolean defaults off, uses existing
+transactional settings persistence, and selects `TSFP_TEXTURE_MODE=4k/classic`
+at launch. Game releases supply the textures. Missing replacements fall back to
+originals; Display-menu/F10 changes remain session-only. Both Windows and Mac
+adapters remove the old actions but retain recovery for interrupted legacy
+texture installations. No game source or personal game files were changed.
+
+Windows .NET Framework launcher/bootstrap/test compilation passed with required
+artwork. All 13 shared UI groups and 35 settings checks passed, including toggle
+save/cancel, reopening, launch mode, missing packs, malformed values and preservation
+of texture files and unrelated settings. Inspected the 900×720 WPF graphics page:
+the checkbox, Beta/fallback guidance and Save/Cancel controls remain readable.
+Three portable shared UI checks and nine compatibility-policy checks passed.
+The Mac backlog consistency check also passed.
+Native Mac compilation and UI execution are unavailable on this
+Windows host and remain pending. No release is published by this change.
