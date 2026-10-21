@@ -120,7 +120,7 @@ def main():
         return dict(pid=process.pid,scene=word(0x79094C),flags=word(0x7DE458),
             paused=word(pointer)&1 if pointer else 0,mission=word(0x78AD48),
             held=word(0x6B93DC),pressed=word(0x6B93E0),suppression=word(0x6B9408),
-            raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),
+            raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),level_ticks=word(0x7DE318),
             match_state=word(0x7DE30C),countdown=word(0x4D2878),countdown_ticks=word(0x4D287C),
             player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}))
     def drain(pipe,path):
@@ -172,7 +172,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud),indent=2))
+        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,minimized=args.minimized),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)
@@ -189,7 +189,11 @@ def main():
                 hold=command.get('hold',.18)
                 assert .05<=hold<=3
                 assert 0<=command.get('wait',2.5)<=30
-                budget=len(command.get('keys',[]))*(hold+command.get('gap',.7))+command.get('wait',2.5)
+                motion=command.get('mouse')
+                if motion is not None:
+                    assert isinstance(motion,list) and len(motion)==2
+                    assert all(type(value) is int and -4096<=value<=4096 for value in motion)
+                budget=len(command.get('keys',[]))*(hold+command.get('gap',.7))+command.get('wait',2.5)+(.1 if motion is not None else 0)
                 if elapsed+budget+(22 if command.get('restart') else 0)>args.seconds:break
                 if command.get('stop'):break
                 if command.get('restart'):
@@ -197,8 +201,21 @@ def main():
                     report.append(dict(restart_saved_profiles=profiles(),before_exit_profiles=before,exit_code=process.returncode))
                     assert process.returncode==0,'Game did not exit cleanly'
                     index+=1;assert index<=3;launch(index)
+                if motion is not None:
+                    state.write_text(f'0 0 {seen} {motion[0]} {motion[1]}\n')
+                    time.sleep(.1)
+                hold_samples=[]
                 for key in command.get('keys',[]):
-                    state.write_text(f'{key} 1\n');time.sleep(hold);state.write_text('0 0\n');time.sleep(command.get('gap',.7))
+                    state.write_text(f'{key} 1\n')
+                    held_at=time.monotonic()
+                    if command.get('sample_hold'):
+                        while time.monotonic()-held_at<hold:
+                            hold_samples.append(dict(seconds=round(time.monotonic()-start,6),
+                                held_seconds=round(time.monotonic()-held_at,6),key=key,
+                                **snapshot()))
+                            time.sleep(min(.05,max(0,hold-(time.monotonic()-held_at))))
+                    else:time.sleep(hold)
+                    state.write_text('0 0\n');time.sleep(command.get('gap',.7))
                 if command.get('window')=='toggle':user.PostMessageW(window,0x104,13,1<<29)
                 if command.get('window')=='focus':
                     user.ShowWindow(window,6);time.sleep(1)
@@ -207,6 +224,7 @@ def main():
                     report.append(dict(focus_lost=lost,focus_restored=user.GetForegroundWindow()==window))
                 time.sleep(command.get('wait',2.5))
                 item=dict(seconds=round(time.monotonic()-start,3),command=command,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
+                if hold_samples:item['hold_samples']=hold_samples
                 if 'label' in command:capture(command['label'])
                 report.append(item);(run/'report.json').write_text(json.dumps(report,indent=2))
                 print(json.dumps(item),flush=True)

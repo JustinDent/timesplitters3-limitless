@@ -2960,6 +2960,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Live aiming/movement diagnostics (this revision):** Windows bounded runner
+  `tests/stability_transitions_game.py` adds sequenced synthetic mouse packets
+  and position/level-clock samples during short key holds. Scotland camera
+  turns/reversal and pause-input discard match at original 60/native 120/144;
+  the short shore path is visually checked. Separate no-capture, three-second
+  holds give game-time speed estimates within 0.227% of original 60 on this
+  route. Short asynchronous observations are not exact-physics certification;
+  see the native regression record. No shared gameplay or host adapter is
+  changed by this diagnostic;
+  native Mac/physical-device/scanout validation remains pending.
+
 - **HUD message timing (this revision):** Shared `src/pc_native_numeric.h`
   opens the audited HUD message pause gate on fractional game intervals,
   preserving authored delays, expiry, queue ordering and sound holds. The

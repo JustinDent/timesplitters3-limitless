@@ -23,6 +23,18 @@ published release or a full-game 144 FPS certification.
   closed normally before completion; their exit traces are not crashes.
   Controller/physical mouse checks and Mac execution remain unverified.
   Arcade acceptance is tracked separately below.
+- **Live aiming and shore movement (this revision):** The bounded Windows
+  runner now supports sequenced synthetic mouse packets and position/level-clock
+  samples during short key holds. On the unchanged HUD-fix binary, Scotland
+  comparisons at original 60/native 120/native 144 produce identical tested
+  camera turns, reversed aim and paused-input discard. Captures establish an
+  unobstructed shore path; separate three-second holds without screenshots
+  yield game-time speed estimates within 0.227% of original 60. These short
+  asynchronous measurements do not establish exact physics or physical input
+  latency. All six completed sessions exit normally and preserve profiles.
+  No production source or executable changed; Mac execution, full missions,
+  vehicles and multiplayer remain open.
+  [Movement evidence](docs/native-high-refresh-regressions.md#scotland-aiming-and-shore-movement).
 - **HUD message timing (this revision):** The HUD queue previously discarded
   fractional intervals, doubling a one-second notice at native 120. Its shared
   pause gate now accepts every advancing interval. Complete original-routine

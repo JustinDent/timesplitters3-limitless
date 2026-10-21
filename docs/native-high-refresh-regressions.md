@@ -40,6 +40,81 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Scotland aiming and shore movement
+
+Windows x64/D3D11, the unchanged `6540b5c` HUD-fix source binary SHA-256
+`167e9bce3b96d4ff8ceaab378d52aaadb9d0b923fa3a7a42374a1364db413397`.
+The bounded transition runner now accepts one sequenced synthetic mouse packet
+per command (`mouse: [dx, dy]`, each count bounded to +/-4096) and optional
+50 ms position/clock observations during its existing <=3-second key holds
+(`sample_hold: true`). Packets use the game's existing test input adapter;
+this is not physical mouse delivery or input-to-display latency measurement.
+The runner also records the absolute level tick and whether it is minimized.
+There is no new gameplay, timing, input policy or executable change here.
+
+The isolated `scotland-locomotion-min-{60,120,144}` comparisons select Scotland,
+skip the boat intro and wait for the pistol handoff. From the identical starting
+look `[110.005348, 0.001624]`, 900 horizontal counts turn to yaw 20.005346;
+-450 counts then set yaw 65.005348 toward the shore path. Both results match
+at original 60 and native 120/144. After two seconds forward and two backward,
+`[100,50]` changes aim to `[55.005348,-4.998376]`; `[-100,-50]` restores it to
+`[65.005348,0.001624]` at all rates. A paused `[900,500]` packet changes neither
+position nor aim, and resume produces no retained-motion jump. The same
+isolated mouse sensitivity (0.1) and original unzoomed FOV apply throughout.
+
+Reviewed renderer captures establish that this path is unobstructed over the
+short walk. It advances from the dock onto the shore, unlike the earlier
+wall-facing comparison. Linear least-squares fits to 50 ms position samples
+between held seconds 0.5 and 1.8 give the following world-unit/second estimates:
+
+| Mode | Forward | Backward |
+| --- | ---: | ---: |
+| Original 60 | 6.189483 | 6.260947 |
+| Native 120 | 6.248019 | 6.206928 |
+| Native 144 | 6.281620 | 6.166030 |
+
+These capture-heavy short estimates vary by about 1.5% between rates and
+have up to 0.168 world-unit fit residuals. They do not establish exact speed
+parity. Separate three-second holds without renderer dumps use the same
+binary, route, isolated controls and minimized window. Fitting held seconds
+0.5 through 2.8 (46 samples, about 2.26 seconds per segment) to both observer
+wall time and the absolute level clock gives:
+
+| Mode | Forward / wall second | Backward / wall second | Forward / game second | Backward / game second |
+| --- | ---: | ---: | ---: | ---: |
+| Original 60 | 6.256263 | 6.150714 | 6.250089 | 6.179163 |
+| Native 120 | 6.255006 | 6.182455 | 6.248912 | 6.167250 |
+| Native 144 | 6.243758 | 6.185598 | 6.235904 | 6.186768 |
+
+Compared to original 60, game-time movement estimates differ by at most
+0.227%. The original path itself has slightly different forward/backward
+speeds over this dock/shore transition. Game/wall clock fit ratios range from
+0.995362 to 1.002430; position residuals reach 0.115 world units. These short,
+asynchronous observations of a discrete level clock establish close behavior
+on this route, not bit-exact physics or a universal speed tolerance. Initial
+acceleration, key-delivery delay and release are outside the fitted window;
+final return positions are therefore not used as a speed-parity assertion.
+The additional runs also reproduce the same aim angles and pause discard,
+and position remains fixed after releasing movement through pause/resume.
+
+Evidence lives in `private/test-saves/scotland-locomotion-timing-{60,120,144}`
+and matching logs. Each provenance records `captures: false`, `minimized: true`,
+and runner SHA-256
+`393a52cd23ea1c5f5a92eee3e8edcde0990ec6baaa16b5516ca7fdfce356af71`.
+No renderer BMP dumps are produced. The local
+`private/pipeline/locomotion-timing-validation.json` records both fits;
+`locomotion-validation.json` retains the separate captured comparison.
+All six completed sessions exit normally with unchanged valid test profiles.
+
+All three completed captured sessions exit normally and preserve their
+isolated profile signatures. Tests run minimized to avoid interrupting the
+user; renderer captures are not monitor scanout. An earlier exploratory run
+only validated the first camera turn before its duration limit; a separate
+startup run received a normal window-close exit before gameplay. Neither is
+counted as a completed movement comparison. Full acceleration/collision,
+vehicles, physical input, multiplayer, complete levels and Mac execution
+remain unverified by these checks.
+
 ## HUD message timing
 
 The opening comparison led to an audit of delayed objectives and HUD notices.
