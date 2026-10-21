@@ -10,7 +10,7 @@ Please follow the [code of conduct](CODE_OF_CONDUCT.md).
   then use [Report a problem](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml).
   Enter your installed game version, launcher version and platform, then explain
   what happened and how to reproduce it. Screenshots and relevant logs help.
-- **An improvement?** Use [Suggest an improvement](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml).
+- **An improvement?** Check [existing Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/categories/ideas), then [start an Ideas discussion](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/new?category=ideas). Share one suggestion per discussion.
 - **Questions or an idea to talk through?** Use [Discussions](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions).
 - **A security vulnerability?** Follow [SECURITY.md](SECURITY.md) and report it privately.
 

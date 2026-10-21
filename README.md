@@ -336,11 +336,12 @@ for source ownership, patch/symbol lookup, subsystem guides and context maintena
 | [Mac renderer development](docs/macos.md#common-renderer-development-probe) — shared game renderer and asset-free checks | [Shared PC/Mac architecture](docs/shared-platform.md) — common code and adapters |
 
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
-or **[request an enhancement](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)**.
+or **[suggest an enhancement in Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/new?category=ideas)**.
 For bugs, enter your installed versions and platform, then describe the problem. For an
-improvement, just share your idea. Screenshots and logs
-are optional. Published version references stay up to date automatically; both forms
-receive labels automatically.
+improvement, check [existing Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/categories/ideas)
+and start a separate discussion for each suggestion. Screenshots and logs
+are optional. The bug form's published version references stay up to date
+automatically, and bug reports receive labels automatically.
 [Find your build version and logs](docs/launcher.md#report-a-problem-or-request-an-improvement);
 keep personal saves and game data private.
 

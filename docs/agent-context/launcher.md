@@ -74,9 +74,22 @@ launcher `v1.2.22`. This is reference data in
 `tools/issue-forms.py` release-list refresh. Required version/platform inputs
 remain empty for the reporter to fill in; the enhancement form is unchanged.
 No launcher executable, installer, update policy or game behavior changes.
-`tests/test_issue_forms.py` covers bounded/sorted release references, empty
-required inputs and preservation of the enhancement form. The repository-context
+`tests/test_issue_forms.py` covers bounded/sorted release references and empty
+required inputs. The repository-context
 check also requires this owning guide to acknowledge issue-form changes.
+
+### Enhancement requests in Ideas
+
+The issue chooser's `config.yml` uses a contact link to
+`discussions/new?category=ideas`; the former `02-enhancement.yml` form is removed.
+Bug reports retain their form, release references and automatic labels. Existing
+enhancement bodies remain recognized by the label helper for historical issues.
+The shared `DiagnosticIssueDraft.Create(true, ...)` opens the same Ideas URL for
+both launcher hosts without attaching diagnostics or changing the clipboard
+payload contract. Installed launchers require a future release to get this link.
+README, contribution and launcher guidance use the discussion route. The version
+refresh test verifies that chooser links survive and the old form stays absent;
+the existing launcher maintenance fixture checks destination and diagnostic isolation.
 
 ## Auto display selection
 

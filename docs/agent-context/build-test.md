@@ -43,6 +43,14 @@ when a covered system changes without its documentation update.
 | Launcher | `python tools/launcher-compatibility.py --local` | Host build/lifecycle and affected `tests/launcher_*` fixtures |
 | Issue automation | `tests/test_issue_forms.py`, `tests/test_issue_resolution.py` | Read-only fixtures, workflow checks; no posting for tests |
 
+Enhancement routing uses the Ideas contact link in the issue chooser. The existing
+`test_issue_forms.py` refresh fixture verifies that release updates preserve that
+link and do not restore the removed enhancement issue form. The existing Windows
+`launcher_maintenance.cs` draft checks cover the shared launcher Ideas destination,
+empty diagnostics payload and unchanged bug-report round trip. These run in the
+already registered issue-form and launcher workflows; native Mac builds consume
+the same `DiagnosticIssueDraft.cs` URL policy.
+
 Read each harness before assuming it is asset-free. Patch transition tests can
 need pristine pinned upstream files and Git access. Use existing dependencies;
 do not download/setup everything for a documentation edit. On Windows call

@@ -110,6 +110,6 @@ body:
     id: diagnostics
     attributes:
       label: Launcher diagnostics (optional)
-      description: Open Diagnostics in the launcher and choose Report a bug or Request enhancement. If the launcher copied a longer report, paste the complete report here. Review before submitting; do not include private paths, raw logs, game files or saves.
+      description: Open Diagnostics in the launcher and choose Report a bug. If the launcher copied a longer report, paste the complete report here. Review before submitting; do not include private paths, raw logs, game files or saves.
       placeholder: Paste the filtered diagnostic report from the launcher here.
       render: text
