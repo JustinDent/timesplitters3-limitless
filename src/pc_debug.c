@@ -158,7 +158,8 @@ int pc_debug_overlay(char *text, size_t bytes, const char *cap)
             (options.show_latency && stats.network_mode);
     if (options.show_fps) {
         int native_rate = pc_native_rate();
-        if (native_rate) snprintf(cap_text, sizeof cap_text, " target %d", native_rate);
+        if (native_rate) snprintf(cap_text, sizeof cap_text, " target %d%s", native_rate,
+                                  native_rate > 60 ? " (Beta)" : "");
         else if(cap && *cap)snprintf(cap_text, sizeof cap_text, " cap %s", cap);
         if (!stats.fps) snprintf(fps, sizeof fps, "-- fps  ");
         else if (stats.shown_fps > stats.fps + .1)

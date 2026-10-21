@@ -133,13 +133,13 @@ int main(int argc, char **argv)
     CHECK(strstr(overlay,"60.0/120.0 fps") && strstr(overlay,"16.7 ms") && strstr(overlay,"E:2 W:1"));
     CHECK(!strstr(overlay,"RTT:"));
     _putenv_s("TSFP_NATIVE_FPS","144");
-    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 144") && !strstr(overlay,"cap 60"));
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 144 (Beta)") && !strstr(overlay,"cap 60"));
     _putenv_s("TSFP_NATIVE_FPS","120");
-    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 120"));
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 120 (Beta)"));
     _putenv_s("TSFP_NATIVE_FPS","60");
-    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 60"));
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"target 60") && !strstr(overlay,"Beta"));
     _putenv_s("TSFP_NATIVE_FPS","0");
-    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"cap 60") && !strstr(overlay,"target"));
+    CHECK(pc_debug_overlay(overlay,sizeof overlay,"60") && strstr(overlay,"cap 60") && !strstr(overlay,"target") && !strstr(overlay,"Beta"));
     _putenv_s("TSFP_NATIVE_FPS","");
     memset(&readback,0,sizeof readback); readback.show_latency=1;
     pc_debug_set(&readback);

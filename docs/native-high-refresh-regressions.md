@@ -40,6 +40,32 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Broader player-facing check: What Lies Below
+
+After the user requested broader priorities, two bounded Windows x64/D3D11
+runs of What Lies Below (mission 5, scene 17) exercise the same movement,
+mouse-look, firing, reload and pause/resume sequence at original 60 and native
+144. Both use the hit-response build from `319191e`, SHA-256
+`f0a3a1e11dfc77f334961d011b861717cf911bf75d866d8e8fd5a1f06f8ec42e`.
+Both exit normally after about 90 seconds with unchanged profiles.
+
+The starting revolver has 6 loaded/30 reserve rounds. Four synthetic presses
+consume three rounds at both rates; reloading restores 6 loaded/27 reserve.
+Thus this particular firing sequence matches the original path; it does not
+establish that every press fires or resolve the earlier Scotland pistol report.
+Mouse-look endpoints match at 209, 149 and 209 degrees. The first movement
+endpoint differs by about 0.000093 world units; the post-resume endpoint differs
+by about 0.280 units after moving against geometry. Health remains 35. Pause is
+entered and exited, and movement works afterward. This is a short input/weapon/
+transition comparison, not combat, complete level progression, exact animation
+frame analysis or a frame-pacing measurement (renderer captures were enabled).
+
+Reviewed native captures show the level-selection title, visible basement
+geometry, starting revolver and readable objective. Evidence is in
+`private/test-saves/later-story-experience-{60,144}`, the matching logs, and
+`private/pipeline/later-story-validation.json`. These checks broaden scene
+coverage without reopening the deferred Scotland investigation.
+
 ## Player hit displacement and recovery
 
 The active-player dispatcher decayed the three hit-response channels at
@@ -113,6 +139,15 @@ not a successful gameplay check. The canonical profile remained unchanged.
 Evidence is `logs/scotland-hit-decay-144.log` and
 `private/test-saves/scotland-hit-decay-144/run0.err`. Live acceptance of this
 build remains open; the early window close is not evidence of a crash.
+
+The bounded retry `scotland-hit-decay-retry-144` completed normally with
+unchanged profiles, movement, aiming, firing and pause/resume. Health stayed
+at 35 and every sampled hit vector was zero, so this run did not exercise the
+hit correction in combat. Eight synthetic fire presses consumed six pistol
+rounds; that observation remains unresolved rather than counted as weapon
+parity. Evidence is the run's `report.json`, `states.json`, captures and
+`logs/scotland-hit-decay-retry-144.log`. At the user's request, further Scotland
+investigation is deferred in favor of broad player-facing coverage.
 
 ## Scotland route under fire
 

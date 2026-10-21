@@ -29,8 +29,9 @@ staged until Apply; texture arrows still apply immediately. The same guest
 menu and preference policy serve Windows and Mac. This is a development
 checkout entry point, not a launcher update for an installed release.
 
-The FPS overlay shows `target 144` (or the selected native rate) alongside
-measured FPS. Original timing still shows `cap 60`. Network RTT appears only
+The FPS overlay shows `target 120 (Beta)` or `target 144 (Beta)` alongside
+measured FPS for the high-refresh presets. Native 60 shows `target 60` and
+original timing shows `cap 60`, without a beta label. Network RTT appears only
 when a network mode is active; offline play hides the latency readout.
 
 For a direct game launch on either host, set `TSFP_NATIVE_FPS=144` or put
@@ -131,6 +132,18 @@ updates and draws costs CPU and GPU time. The renderer's normal scene remains
 in use, including its effects and UI.
 
 ## Validation and remaining work
+
+### Current work priority (2026-10-21)
+
+The user asks to prioritize improvements that matter during normal play and
+stop spending disproportionate time on one mission. Prioritize consistent
+frame pacing, responsive aiming, weapon/animation behavior and ordinary menu,
+pause and level transitions across representative scenes and modes. Keep
+Scotland's unresolved route/combat observations in the regression record;
+do not make repeated investigation of that mission a prerequisite for broader
+progress. Use short, focused scene checks and return to a specific scene when
+new evidence or a relevant fix gives a concrete reason. This changes work
+order, not the full-game acceptance scope below.
 
 ### Goal and acceptance criteria
 

@@ -6,6 +6,16 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **FPS overlay beta label (this revision):** Shared `pc_debug.c` displays
+  `target 120 (Beta)` and `target 144 (Beta)` for the active high-refresh preset.
+  Original and native 60 retain their existing labels. The full Windows Build
+  and built-in checks pass, including both beta labels and absence at 60;
+  69 debug-model, CI-scope and backlog checks pass. Personal controls/display
+  hashes are unchanged. Binary SHA-256 is
+  `0358d1725a61424d2398f09ac27f811e412c082f0b0fc9a19a73d74a2e7bc976`
+  (compiled parent label `319191e` plus this revision). Build logs are
+  `logs/fps-beta-overlay-build.log` and `.err`. No timing policy changes.
+  Mac uses the shared formatter; Mac execution remains unverified.
 - **Display settings reorganization (this revision):** Screen, Camera, Textures
   and Frame rate are separate guest pages. Saved 60 FPS Original or beta
   120/144 FPS applies on restart; the page explains beta gameplay issues and
@@ -23,6 +33,15 @@ published release or a full-game 144 FPS certification.
   closed normally before completion; their exit traces are not crashes.
   Controller/physical mouse checks and Mac execution remain unverified.
   Arcade acceptance is tracked separately below.
+- **Broader player-facing coverage:** At the user's request, repeated Scotland
+  investigation is deferred. Original-60/native-144 bounded What Lies Below
+  checks on `319191e` match the starting revolver ammunition sequence and
+  mouse-look endpoints; reload, pause/resume and subsequent movement work.
+  Both runs exit normally with profiles unchanged. Post-resume movement against
+  geometry differs by about 0.280 units; this is not full physics/combat parity
+  or a frame-pacing benchmark. The Scotland retry also exits normally but takes
+  no hits, so it does not validate the new hit-response correction in combat.
+  [Broader scene evidence](docs/native-high-refresh-regressions.md#broader-player-facing-check-what-lies-below).
 - **Player hit displacement/recovery (this revision):** The hit vector lost
   10% per update and was added to movement once per update. Shared policy now
   normalizes both decay and displacement to elapsed game ticks, preserving

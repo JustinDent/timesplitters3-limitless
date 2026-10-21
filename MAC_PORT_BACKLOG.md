@@ -2960,6 +2960,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **FPS overlay beta label (this revision):** Shared `src/pc_debug.c` appends
+  `(Beta)` to active 120/144 targets and preserves original/native 60 labels.
+  Existing Windows overlay checks cover all four cases; the full supported
+  Windows Build passes. Both hosts consume the same formatter, so no Mac
+  adapter is needed. Actual Mac build/display validation remains pending.
+  The broader What Lies Below movement/fire/reload/pause comparison recorded
+  in STATUS is Windows evidence only, not Mac acceptance.
+
 - **Player hit displacement/recovery (this revision):** Shared numeric policy
   normalizes both the hit-vector decay and its walking-position contribution
   to fractional game time. Updating decay alone would increase displacement.
