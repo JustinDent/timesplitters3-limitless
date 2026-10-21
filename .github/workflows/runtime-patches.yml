@@ -12,6 +12,7 @@ on:
       - requirements.txt
       - tsfp.ps1
       - AGENTS.md
+      - docs/agent-context/**
       - MAC_PORT_BACKLOG.md
       - .github/workflows/runtime-patches.yml
       - .github/workflows/launcher*.yml
@@ -63,7 +64,11 @@ jobs:
           subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
           PY
       - name: Test CI suite selection and feature handoff index
-        run: python -m pytest tests/test_ci_runtime_scope.py tests/test_mac_backlog.py -q --tb=short
+        run: python -m pytest tests/test_ci_runtime_scope.py tests/test_mac_backlog.py tests/test_repo_context.py -q --tb=short
+      - name: Validate repository context and affected-system guide updates
+        run: python tools/repo-context.py check --ci
+      - name: Test optional local-router context reader
+        run: node --test tests/repository-context.test.mjs
 
   patches:
     name: Patch upgrades (${{ matrix.os }})

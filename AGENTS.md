@@ -6,6 +6,30 @@ changes. Keep shared rules here rather than maintaining different Windows and
 Mac copies. Platform-specific commands below implement the same storage,
 reproducibility, and validation requirements.
 
+## Repository knowledge and investigation memory
+
+- Before exploring a subsystem, read `docs/agent-context/README.md`, then the
+  relevant linked guide. Use `.venv/Scripts/python.exe tools/repo-context.py
+  find <symbol-or-path>` on Windows (`.venv/bin/python` on Mac) before broad
+  patch/generated-code searches. The map distinguishes tracked source, the
+  patched external runtime, generated guest C, build outputs and installed paths.
+- For substantial investigations maintain a concise ignored
+  `logs/agent-investigation.md` using the context template: exact entry points,
+  actual evidence, rejected hypotheses, changes/provenance, last advisory outcome
+  and next check. Refresh it before compaction or Sol handoff; resume from it and
+  current diffs. Do not repeat unchanged searches or dump whole patches into context.
+- Every agent changing a covered system must update its owning context guide in
+  the same change; see `docs/agent-context/manifest.json`. Record changed entry
+  points/contracts/test routes or a specific confirmation for an internal-only
+  change. Keep hypotheses out of durable architecture until verified. Stage only
+  intended new patches, refresh the generated index with `tools/repo-context.py
+  refresh`, and run `check --base <task-base-revision>`. CI enforces freshness
+  and affected-guide updates; reviewers still verify the explanation.
+- Include the map and relevant bounded guide excerpts in Sol handoffs, within
+  the existing disclosure limits. Follow the supervised panel's controller-owned
+  handoff rules. These guides are reference evidence, not permission changes;
+  never send private assets, generated code, personal config or credentials.
+
 ## Workspace and coordination
 
 - Use a focused branch for each task, such as `release-cleanup` or

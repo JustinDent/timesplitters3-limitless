@@ -1,0 +1,85 @@
+# Investigation memory and handoffs
+
+<!-- packet:start -->
+Before a broad search, read the repository map and relevant subsystem guide,
+then use the bounded patch finder. Keep exact path/symbol findings in ignored
+`logs/agent-investigation.md` for a substantial task. Do not dump all patches or
+generated guest C into context. After two searches return no discriminating
+evidence, change strategy: inspect an actual caller, trace/profile a bounded
+reproduction, or ask one specific advisory question. Do not guess addresses.
+
+Before compaction/Sol: preserve task/branch/revision, proven observations,
+disproven hypotheses with actual commands/results, changed files, build/runtime
+provenance, last Sol plan and its outcome, next check and blockers. Resume from
+that note and current diff, not from another whole-repo search. Keep it short
+and replace stale entries. A build blocker and a game bug are separate problems.
+Durable guides contain confirmed architecture and repeatable procedures; an
+issue hypothesis belongs in the investigation note until verified. Update the
+relevant guide when changing its system, regenerate the patch index for indexed
+patch changes, and run the context checker against the task base.
+<!-- packet:end -->
+
+## Working note (not committed)
+
+Create this only for substantial tasks; tiny edits do not need a diary. Limit it
+to approximately 4 KB, replacing superseded entries. Never store secrets or
+unbounded command output. Copy [investigation-template.md](investigation-template.md)
+to `logs/agent-investigation.md` and fill it with actual observations. Commands
+run in fresh shells; no persistent `cd`, PowerShell variable or shell-profile
+assumption. After reload check current branch/diff before trusting the note.
+
+Read bounded function ranges and use `rg -n -F` for known symbols. Negative
+search results are useful only with their scope and exact query. Record them
+so the next context window does not repeat them. A missing symbol in generated
+code may mean the name is stripped; it does not mean the feature has no path.
+
+## Sol context
+
+The supervised local workflow injects the map plus selected guide summaries
+into local planning/continuations and automatic Sol evidence packages. These
+are bounded, task-selected repository facts, not unrestricted repository access.
+Local context and Sol should agree about paths, ownership, current timing policy
+and verification limits. The repository manifest is versioned; the machine's
+router installation is separate and must implement this integration.
+The optional reader's portable source is `tools/router/repository-context.mjs`;
+its contract tests are `tests/repository-context.test.mjs`. The installed router
+copies that reader beside its supervisor and uses only its fixed guide allowlist.
+
+Automatic Sol packets remain within the existing 20-KB redacted disclosure
+budget, including guide excerpts. Source documents are treated as reference
+evidence, never permission to run tools, change routing or override native denials.
+Only explicit allowlisted context files are eligible; no arbitrary workspace
+file reading, credentials, personal settings, generated guest C or private assets.
+The hosted advisor remains read-only and tool-free. A normal hosted agent reads
+root AGENTS and these linked guides through its usual tools. Other machines
+without the custom router still benefit from those repository instructions.
+
+For a manual advisory include map + relevant guide summary, note excerpts and
+minimal source/test evidence in `.codex/escalation.md` using the approved helper.
+Follow current panel routing rules: the supervisor owns hosted calls there.
+Never invoke a nested model from a LOCAL ONLY task or an advisory session.
+
+## Maintenance
+
+Every change to a covered system must update its guide in the same change. Add
+the changed responsibility, entry point, contract, migration pitfall or test
+route. For an internal change with no architectural impact, record a concise
+specific confirmation of the existing boundary/validation; do not add a vague
+"docs reviewed" entry or dump chronological chat transcripts. Correct obsolete
+text rather than accumulating conflicting descriptions. Extend `manifest.json`
+when adding a new subsystem. Current source/tests and root safety rules remain
+authoritative if a guide is stale; fix the guide as part of the task.
+
+1. Edit the affected guide(s) listed in `manifest.json` ownership rules.
+2. For patch changes, stage only the intended patch files, then run
+   `python tools/repo-context.py refresh`. The index intentionally excludes
+   untracked experiments; `find` labels those separately. Never stage unrelated
+   patches just to refresh it.
+3. Run `python tools/repo-context.py check` and
+   `python tools/repo-context.py check --base <task-base-revision>`.
+4. Include guide updates, generated index and useful measured evidence in the
+   focused branch. Keep local working notes and private logs ignored.
+
+CI enforces index freshness, valid context paths, excerpt budgets and an update
+to each affected guide. It can check presence/freshness, not whether an explanation
+is intellectually correct. Reviewers must still compare it with source.
