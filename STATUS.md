@@ -1,3 +1,25 @@
+## 2026-10-21 — Mac mini repair publication and checked merge follow-through
+
+Focused branch `codex/worker-repair-merge`, based on main `22e6a56`. The installed
+mini controller matched the tracked SHA-256
+`7f4f18721ec70b38c00466bc9cbcf0871472281ee20bf19a1b0ad9127d83659f`.
+Screen Sharing terminal verification confirmed GitHub maintainer/ChatGPT login,
+loaded LaunchAgent (111 invocations, last exit 0, idle between polls), a prior
+published repair for #216 and a no-change #246 attempt blocked by source/CI
+revision mismatch. No credentials were copied. The Desktop checkout revision
+matched `22e6a56`; status initially failed because git-lfs was missing from PATH.
+
+The controller now supports explicitly enabled repair and parent merges through
+GitHub after exact-head checks/reviews and effective main rules pass. It retains
+pause, bounded repairs, protected paths, no paid/API fallback and no releases.
+Before repair it refreshes a source behind main and waits for new CI. Existing
+records and unrelated green PRs are not silently enrolled.
+
+Local macOS ARM64: 23 asset-free worker tests pass, including Git publication,
+restart recovery, stale/changed heads, missing/failed checks, review requirements
+and disabled/paused/legacy state. Windows/macOS CI and upgraded mini deployment
+are pending below. No game build or playthrough is relevant to this controller.
+
 ## Texture preservation on version bumps — 2026-10-20
 
 PR #234 now follows the Git LFS/bundled delivery merged by #235. It preserves
