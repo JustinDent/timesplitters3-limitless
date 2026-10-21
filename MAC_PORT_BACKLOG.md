@@ -2960,6 +2960,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Fresh analogue input (2026-10-21):** Shared `pc_native_input_guest` in
+  `pc_native_timing_guest.inc` now runs original axis/connection decoding on
+  fractional native updates while preserving the published digital held/edge
+  cadence. It removes an unintended 60 Hz hold without duplicating dead-zone
+  policy or changing raw mouse handling. Original-code four-port 60/120/144
+  checks verify stick/trigger freshness and unchanged absolute rumble commands;
+  Windows build and live menu/gameplay checks pass. The existing shared timing
+  test entry includes this XBE-dependent fixture when the supported asset is
+  available. No new OS adapter is introduced, but native Mac controller/keyboard
+  sampling, menus, pause/hotplug and physical rumble/latency still need actual
+  host validation. See STATUS and the linked input regression record.
+
 - **Completed-update pose observation (2026-10-21):** Shared
   `pc_native_pose_trace.h` / `pc_native_timing_guest.inc` add a disabled-by-default,
   bounded observer at the original gameplay clock boundary. Both timing paths

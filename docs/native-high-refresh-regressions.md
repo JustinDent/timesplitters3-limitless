@@ -6,6 +6,74 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Fresh analogue input at native cadence (2026-10-21)
+
+The native pad wrapper previously skipped the complete original decoder on
+zero-whole-tick updates to retain frontend button edges. That also held all
+stick/trigger axes at 60 samples/s, including keyboard movement mapped to the
+left stick. This was a separate bottleneck from raw mouse motion, which already
+has its own native-rate path. The new original-code fixture passes original
+60 and native 60, then fails on the first native-120 fractional poll before the
+fix (`logs/native-analog-before.log`).
+
+`pc_native_input_guest` now calls the original `sub_0018FF70` on intervening
+native updates too, retaining its connection checks, original dead zones and
+axis ranges. It restores the previously published digital held state and
+clears digital edge fields on those fractional updates. The next whole-tick
+sample therefore still produces each press/release exactly once. Whole-tick
+and disabled-native calls remain original; a null fractional record retains
+its safe return. This refreshes input rather than interpolating old samples.
+
+`tests/native_analog_input.c` lifts the complete US decoder and neutral-reset
+routine from the pinned/hash-verified XBE, including its original button tables
+and conversion constants. Controlled XInput devices vary all four stick axes
+for all four ports at original 60 and native 60/120/144; every native poll sees
+the changed axes. Separate trigger cases check fresh analogue values while
+preserving the digital firing-edge cadence. Pause, catch-up (one poll), device
+disappearance, original zero-tick behavior and stack/callee-saved invariants
+pass. The decoder submits absolute rumble values more frequently, but the
+fixture verifies identical commands across rates; the host feedback adapter
+sets those values rather than accumulating elapsed vibration. Physical device
+polling/latency and rumble still need hardware testing.
+
+Six focused checks pass in 8.40 s, including the 864 pause/resume input schedules,
+raw mouse cadence and network-gate mutations (`logs/native-analog-fixed.log`).
+Ten menu/FOV/profile/terminal/backlog checks pass, with one Mac-only compile check
+skipped (`logs/native-analog-input-regressions.log`). Windows PowerShell
+`tsfp.ps1 Build` and its required checks pass (`logs/native-analog-build.log`).
+The original routine is shared by both hosts; no Windows-only gameplay path
+was added, but actual native Mac behavior is unverified.
+
+### Live input regression check
+
+On the rebuilt Windows executable, isolated synthetic keyboard/mouse runs
+navigate Settings → Video Options, apply 120 FPS in-process from 144, open
+Controls, and return to the main menu. Reviewed captures show 120 FPS (Beta)
+with gray Apply, the actual Controls page, and the main menu. The runtime log
+confirms the 144-to-120 target transition. One initial scripted Controls step
+returned to Video because the parent selection resets; the corrected replay
+uses two Down presses and its final captures verify the intended route.
+
+A separate native-144 Venice run consumes two revolver rounds (6 → 4), turns
+30 degrees from 300 mouse counts, and changes position by 17.099 units. Pause
+has 444 updates with zero game delta spanning 3.402 raw seconds; Continue
+resumes the world. The player is then killed by Viola (reviewed capture and
+health 0), so this is not surviving/full-match acceptance. Capture-enabled,
+minimized concurrent sessions are behavior checks, not performance or physical
+input-latency measurements.
+
+Both final sessions exit cleanly, retain identical signed profiles and the
+canonical fixture, and recycle their disposable partitions. Evidence resides
+in `private/test-saves/native-analog-{menu,game}` and
+`private/pipeline/native-analog-live-summary.json`. Build source is `8b8deaf`
+plus this revision's input wrapper; executable SHA-256 is
+`cd0d7679a40d12f86fda79c74fa2e7287ca48a6fa75c9478ef02ebe56d8b83d8`.
+The bounded runner hash is
+`9289c332daf11eb7e73ceff458a7efd28376dc5eddfa26017b7e00278eff8bec`.
+Hardware controller latency/rumble, hotplug behavior, native Mac execution and
+full-game coverage remain open. The lifted original-code fixture requires the
+private supported XBE; shared CI selection alone does not prove it executed.
+
 ## Completed-update multiplayer poses (2026-10-21)
 
 The shared clock hook now has an opt-in `TSFP_NATIVE_POSE_TRACE` recorder in

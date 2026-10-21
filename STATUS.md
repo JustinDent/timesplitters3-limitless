@@ -6,6 +6,20 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Native analogue input freshness (2026-10-21):** Fixed a real 60 Hz hold in
+  the native pad wrapper: it now refreshes original stick/trigger decoding on
+  every native update while retaining digital press/release delivery on whole
+  ticks. Raw mouse behavior and original-60 input remain unchanged. The lifted
+  original decoder confirms fresh axes across four ports at 60/120/144; trigger,
+  disconnect, pause, catch-up and identical absolute rumble-command checks pass.
+  Six focused checks (including 864 edge/pause schedules) and ten input/menu
+  regression checks pass, with one Mac-only check skipped. Windows Build passes.
+  Live captures verify 144→120 application, Controls navigation and return to
+  main; Venice fires two rounds, moves/aims and pauses/resumes before an enemy
+  kills the player. Profiles/fixture are unchanged; test disks are recycled.
+  [Input scope and evidence](docs/native-high-refresh-regressions.md#fresh-analogue-input-at-native-cadence-2026-10-21).
+  Physical controller latency/rumble, native Mac and full-game checks remain open.
+
 - **Completed-update multiplayer comparison (2026-10-21):** A shared opt-in
   observer now samples after the gameplay update, avoiding temporary positions
   counted by asynchronous polling. Five original-60 and native 144/120 movement

@@ -241,6 +241,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 
 
 @pytest.mark.parametrize('harness_name,ranges', [
+    ('native_analog_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d)]),
     ('native_network_correction.c', [(0x356e20,0x3570c7)]),
     ('native_surface_cache.c', [(0x127400,0x127494),(0x127500,0x12782c),
                                (0x194b00,0x194bb0),(0x1956a0,0x19576d)]),
@@ -338,6 +339,11 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
+        if harness_name=='native_analog_input.c':
+            import struct
+            addresses=[0x475d24,0x4783a8,*range(0x47df00,0x47df80,4)]
+            constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
+                                for address in addresses)
         if harness_name=='native_network_correction.c':
             import struct
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
@@ -538,6 +544,11 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     finally:
         vars(config).update(previous)
     harness=(ROOT/'tests'/harness_name).read_text()
+    if harness_name=='native_analog_input.c':
+        wrapper=(ROOT/'src/pc_native_timing_guest.inc').read_text(encoding='utf-8')
+        start=wrapper.index('static void pc_native_input_guest(')
+        end=wrapper.index('static float pc_native_save_animation_delta(',start)
+        harness=harness.replace('/* INPUT_WRAPPER */',wrapper[start:end])
     policy=f'#define RECOMP_NUMERIC_POLICY_HEADER "{(ROOT / "src/pc_native_numeric.h").as_posix()}"'
     output=compile_and_run(tmp_path,harness.replace('/* NUMERIC_POLICY */',policy)
                            .replace('/* FIRE_POLICY */',
@@ -552,7 +563,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
-    if harness_name in ('native_network_correction.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_hud_messages.c','native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
+    if harness_name in ('native_analog_input.c','native_network_correction.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_hud_messages.c','native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
     if harness_name=='native_projectile_coupled.c':

@@ -112,7 +112,7 @@ static void input_after_pause(void)
         }
         assert(edges==1 && releases==1 && WORD(0x200C)==0);
         assert(game_observations>0);
-        /* Sampling remains bounded by one original 60-Hz input interval. */
+        /* Digital edges remain bounded by one original 60-Hz input interval. */
         assert(first_edge>=press_frame && first_edge-press_frame<(rate+59)/60);
         assert(last_release>=press_frame+held_frames &&
                last_release-press_frame-held_frames<(rate+59)/60);

@@ -29,16 +29,20 @@ static void pc_native_input_guest(void (*original)(void))
         original();
         return;
     }
-    /* The US frontend consumes edge-triggered actions on whole ticks. Polling
-     * the pad on intervening native frames cleared an edge before that tick.
-     * Retain the original 60-Hz button sampling cadence, and consume each
-     * edge once. Raw mouse look and continuous render/motion updates remain
-     * independent. The four input records keep their original layout/ABI. */
+    /* Refresh axes/connection state each native update. The US frontend
+     * consumes digital edges on whole ticks, so retain its published held
+     * state between ticks: the next full poll still sees the right prior state
+     * and emits each press/release once. The original decoder owns dead zones,
+     * axis ranges and absolute rumble output; no elapsed-time counter runs here. */
     uint32_t record = NT_WORD(g_esp + 4u);
     if (record) {
-        NT_WORD(record + 8u) = NT_WORD(record + 12u);
+        uint32_t held = NT_WORD(record + 12u);
+        original();
+        NT_WORD(record + 8u) = held;
+        NT_WORD(record + 12u) = held;
         NT_WORD(record + 16u) = 0;
         NT_WORD(record + 20u) = 0;
+        return;
     }
     g_esp += 4u;
 }
