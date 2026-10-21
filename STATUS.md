@@ -1,3 +1,20 @@
+## 2026-10-21 — Test Lab texture-pack launch correction
+
+Implemented on `fix/test-profile-texture-pack`, based on main `b685e43`.
+The isolated runner discarded the inherited pack path without supplying the
+repository pack, so F10 changed modes but had no replacements to load.
+`prepare_run` now supplies `assets/textures` and explicit Classic mode while
+continuing to discard inherited dump/diagnostic overrides.
+
+Windows x64: 33 preparation/native-tool tests passed, one platform skip;
+context maintenance and diff checks passed. The unchanged MSVC/D3D11 main
+executable (SHA-256 `ff5d4ffeb21b6cc3b1a239269f5464eb7efe270db5b6f5e24cbc8ee4f6f4d144`)
+was reopened for a bounded 600-second isolated Test Lab session. Its log now
+reports the repository pack directory and successful 64x64-to-256x256 replacement
+uploads. This proves loading, not full scene coverage or visual F10 acceptance.
+The native Mac unlocked runner receives the same shared environment; Mac runtime
+validation remains pending under MAC-011. Personal saves/settings were untouched.
+
 ## 2026-10-21 — Mac mini worker deployment verified
 
 PR #248 merged at `b685e43` after its documentation conflicts with newer main
