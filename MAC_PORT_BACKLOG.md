@@ -2990,6 +2990,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   Same-process frontend preset changes pass on Windows; Mac menu rendering,
   atomic persistence, live switching and gameplay acceptance remain pending.
 
+- **Region-driven force/drag (this revision):** Shared `pc_native_numeric.h`
+  normalizes mode-0x800 force/drag and view settling while preserving original
+  post-drag speed limits. The complete original selector, state setter, movement
+  and falling routines pass 76 controlled normal/quarter/accelerated sequences,
+  irregular frame intervals and unchanged catch-up checks on Windows. No host
+  adapter is required. Mac execution, live region/geometry behavior and network
+  peers remain pending. See STATUS and the native regression record for measured
+  integration differences and the one-ULP speed-ratio correction.
+
 - **Airborne view-height damping (this revision):** Shared numeric policy at
   `0xD41D0`/`0xD46B4` preserves original view-offset settling at fractional raw
   rates, including slow game time. The shared original-routine fixture covers

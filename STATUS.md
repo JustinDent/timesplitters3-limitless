@@ -63,6 +63,18 @@ published release or a full-game 144 FPS certification.
   uncommitted force/drag work. Gameplay transitions and Mac execution remain
   unverified.
 
+- **Region-driven player force/drag (this revision):** Mode 0x800 rounded each
+  positive fractional update up to a whole drag step. Shared policy now splits
+  drag and force consistently and preserves original speed limits and view
+  settling, including 1.5x/2x/3x game time. A reproduced one-ULP speed-ratio error
+  under irregular intervals is corrected before choosing the drag count.
+  Complete original selector/state/movement/falling fixtures cover 76 sequences
+  across original 60/native 60/120/144 and normal/quarter/accelerated time, plus
+  pause, bounds, isolation and unchanged catch-up. The prior 159-check suite and
+  new 63-check timing/observer suite pass; the final rounding fixture also passes.
+  Measured integration differences, live scene/network coverage and Mac
+  validation remain open.
+  [Force/drag evidence](docs/native-high-refresh-regressions.md#region-driven-player-force-and-drag).
 - **Airborne view-height damping (this revision):** Two shared numeric sites
   now preserve the original 0.8-per-update settling response at 120/144 FPS,
   including quarter-speed game time. Complete original-routine tests pass 32

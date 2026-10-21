@@ -165,9 +165,37 @@ static inline float pc_native_hit_add(float left,float right)
     }
     return left+right;
 }
+/* Region-driven player motion adds force before damping. Splitting only the
+ * damping would also change the accumulated force. Preserve the original
+ * affine step v' = Q*(v+a) when dividing one raw interval. Q is q raised
+ * to the original ceil(game-speed) drag count, including fast/slow game time.
+ * Below the authored drag threshold the original is linear. */
+/* Multiplication and division can put an exact integer speed one float ULP
+ * above that integer. Do not let frame-time jitter add an entire drag step. */
+static inline float pc_native_force_drag_count(float raw,float game)
+{
+    return fmaxf(1.f,ceilf(nextafterf(game/raw,0.f)));
+}
+static inline float pc_native_force_add(float force,float velocity)
+{
+    if(g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        float threshold=*(const float *)((uintptr_t)0x47D6A8u+g_xbox_mem_offset);
+        if(raw>0.f && raw<1.f && game>0.f && isfinite(game/raw) && fabsf(force+velocity)>threshold) {
+            float q=*(const float *)((uintptr_t)0x47D56Cu+g_xbox_mem_offset);
+            if(q>0.f && q<1.f) {
+                q=powf(q,pc_native_force_drag_count(raw,game));
+                force*=powf(q,1.f-raw)*(-expm1f(raw*logf(q)))/((1.f-q)*raw);
+            }
+        }
+    }
+    return force+velocity;
+}
 #define RECOMP_F32_ADD_AT(site,left,right) \
     (((site)==0x259352u || (site)==0x259368u || (site)==0x25937Fu) ? \
     pc_native_hit_add((float)(left),(float)(right)) : \
+    (site)==0xD4853u ? pc_native_force_add((float)(left),(float)(right)) : \
     (site)==0x69043u ? pc_native_countdown_add((float)(left),(float)(right)) : \
     ((site)==0xA85F2u || (site)==0xA863Du || (site)==0xA8651u) ? \
     pc_native_rocking_add((uint32_t)(site),(float)(left),(float)(right)) : ((left)+(right)))
@@ -190,11 +218,27 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
      * using game time would change the original slow-motion response. The
      * caller normally skips paused updates; preserve the offset if reached
      * with zero game time too. Whole/catch-up updates retain their one factor. */
-    if ((site == 0xD41D0u || site == 0xD46B4u) && g_tsfp_native_timing_active) {
+    if ((site == 0xD41D0u || site == 0xD46B4u || site == 0xD498Fu) && g_tsfp_native_timing_active) {
         float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
         float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
         if (game<=0.f) return left;
         if (raw>0.f && raw<1.f) right=powf(right,raw);
+    }
+    /* Original 60-Hz force mode applies ceil(game-speed) drag iterations.
+     * Spread that exponent over the actual fractional loop count. The first
+     * clamp leaves room for the remaining multiplies to reach the original
+     * post-drag speed limit; later iterations can only reduce magnitude. */
+    if (site == 0xD48D8u && g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if(raw>0.f && raw<1.f && game>0.f && isfinite(game/raw)) {
+            float ticks=pc_native_force_drag_count(raw,game),loops=ceilf(game);
+            float exponent=ticks*raw/loops;
+            float limit=powf(right,ticks-exponent*(loops-1.f));
+            float low=*(const float *)((uintptr_t)0x47D6A4u+g_xbox_mem_offset)*limit;
+            float high=*(const float *)((uintptr_t)0x475CC8u+g_xbox_mem_offset)*limit;
+            return fminf(high,fmaxf(low,left*powf(right,exponent)));
+        }
     }
     /* The player aim/weapon-offset easing already multiplies the error by
      * game delta before these six coefficient multiplies. Linear subdivision

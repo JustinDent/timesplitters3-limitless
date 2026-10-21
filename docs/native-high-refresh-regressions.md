@@ -40,6 +40,94 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Region-driven player force and drag
+
+The original player mode `0x800` updater (`0xD4820..0xD4AFF`) adds vertical
+force, clamps speed, then loops over a 0.99 drag factor while an integer loop
+counter is below the floating game delta. Every positive fractional update
+therefore applies a whole drag step. At 120/144 this caused excessive drag.
+The original selector `0x225C70..0x225DEE` supplies force from height inside
+four cylindrical regions and uses state setter `0xD2CE0..0xD2D16` to enter
+mode 0x800 or return to falling (4). The level dispatcher calls this selector
+for scene 52 at `0x68207..0x68210`; the fixture does not execute that dispatcher.
+
+Shared numeric policy now splits the drag factor over fractional raw intervals,
+normalizes the force increment for the same original affine response, and
+retains the original post-drag speed limits (+/-0.594). The view-height 0.8
+factor at `0xD498F` receives the same raw-time correction as the two airborne
+paths. Normal, slower and accelerated game time are handled. Whole/catch-up
+updates remain original. For speed s, the original per-raw-tick drag is
+Q = 0.99^ceil(s). Fractional updates split this affine force/drag response;
+when the guest loop executes more than once, its exponent is divided between
+those iterations. The clamp accounts for remaining iterations so the final
+speed limit remains the original 0.6*Q. A one-ULP correction prevents an exact
+integer speed from acquiring an extra drag step through float round-off.
+
+`tests/native_player_force.c` executes all four complete routines plus the
+original falling continuation `0xD4100`. Region records and a flat-floor collision
+service are controlled; the selector, state setter, force, clamping, movement,
+view offset and landing code are original. Existing CI collects this fixture
+through `test_native_timing.py`. The pinned US XBE supplies code and constants.
+
+| Two game seconds, upward force 1 from Y=100 | Original 60 | Native 120 | Native 144 |
+| --- | --- | --- | --- |
+| Before correction, normal speed | 148.612564 | 137.141251 | 133.471725 |
+| After correction, normal speed | 148.612564 | 148.464554 | 148.438110 |
+| Final vertical speed | 0.594000 | 0.594000 | 0.594000 |
+| After correction, quarter speed | 123.671913 | 123.656326 | 123.651520 |
+
+All 24 constant-force sequences pass across original 60/native 60/120/144,
+normal/quarter time and upward/balanced/downward force. Eight six-game-second
+sequences run the real selector and movement together; maximum sampled position
+differences are 0.046669/0.052988 units at native 120/144, or 0.007625/0.008889
+at quarter speed. These are bounded integration differences, not exact parity.
+
+Eight more sequences move out of the cylinder, return to falling and land:
+entry, exit and landing each occur once. Normal-speed original/native-144 exit
+times are 3.350000/3.333333 seconds and land times 3.966667/3.951389; quarter
+speed gives 13.333333/13.340278 and 16.100000/16.097222. Additional checks cover
+region radius/height boundaries and ordering, two-player isolation, death-state
+transition protection, pause, uneven intervals, original 1/2/3-tick catch-up,
+native-disabled and neighboring-site scope. No network-peer claim is made.
+
+Windows x64 results: all 159 related regression checks pass in 146.51 seconds
+(`logs/native-player-force-regressions.log`). The pre-fix fixture failure is
+`logs/native-player-force-red.log`; full numerical results are in
+`logs/native-player-force-green.log`. The earlier independent diagnostic is
+`logs/native-state800-probe.log`. Build/scene results follow after validation.
+Mac execution, actual level geometry and network synchronization remain open.
+This does not certify full-game movement or physics.
+
+
+### Accelerated force/drag and irregular frame intervals
+
+The continued audit adds 24 constant-force sequences at 1.5x, 2x and 3x speed
+across original 60/native 60/120/144. Before the extension, native 120 at 1.5x
+speed differed from the original downward terminal velocity by -0.005940020
+(`logs/native-force-fast-red.log`). All final terminal-speed differences are
+below 0.00001; whole-raw-tick execution is unchanged. Position integration
+remains approximate: at native 144 the upward two-second displacement differs
+by -0.270035, -0.330566 and -0.517395 units respectively.
+
+Twelve additional six-second sequences execute the real region selector and
+force updater together. Maximum native-144 position/velocity differences are
+0.074510/0.000422 at 1.5x, 0.106811/0.000386 at 2x, and 0.169543/0.000868 at 3x.
+The fixture now covers 76 constant-force/region/exit sequences overall, plus
+pause, ABI, player isolation, bounds, uneven intervals and catch-up checks.
+
+Irregular raw intervals 0.18168/0.81832/0.27/0.73 exposed an additional float
+boundary: recovering 3x speed from game/raw sometimes produced 3.000000238,
+incorrectly requesting four drag steps. The fixture failed before the one-ULP
+correction (`logs/native-force-fast-jitter-red.log`) and now matches the
+original velocity within 0.000000045 at a shared elapsed time. Nine accelerated
+1/2/3-raw-tick catch-up comparisons remain bit-identical to original execution.
+These are controlled original-code comparisons, not live scene-52 acceptance.
+
+The focused original-code fixture passes (`logs/native-force-fast-green.log`).
+The wider timing/frame/entity/effect/backlog suite passed 63 tests in 91.77 s
+before the last rounding correction; the focused fixture was rerun afterward.
+Windows build verification and native Mac execution are recorded separately.
+
 ## Airborne view offset and controlled landing
 
 The complete original US falling routine `0xD4100..0xD4609` and fixed-speed
@@ -96,8 +184,8 @@ from Y=100 to 148.612564 at original 60, but only 137.141251/133.471725 at nativ
 120/144. Force 0 gives the symmetric downward discrepancy; force 0.5 balances
 gravity. These are controlled inputs, not a claim about an observed live scene.
 The original caller `0x225C70` supplies this force from height within cylindrical
-regions and enters/exits state 0x800. A follow-up must exercise that coupled
-caller as well as damping/clamps before claiming a repair.
+regions and enters/exits state 0x800. The subsequent region-driven force section above records the coupled
+caller/damping/clamp repair and its remaining integration differences.
 
 Two bounded native-120 Windows attempts (`player-fall-smoke-120` and
 `player-fall-gameplay-120`) remained in frontend scene 101. The first scripted
