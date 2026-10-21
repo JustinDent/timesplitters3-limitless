@@ -9,6 +9,8 @@
 extern void d3d8_display_output_shape(unsigned,unsigned,unsigned *,unsigned *);
 #define FLOAT_AT(a) (*(float *)((uintptr_t)(uint32_t)(a)+g_xbox_mem_offset))
 extern void sub_00074760(void),sub_00076EF0(void),sub_00076510(void),sub_0003FCF0(void),sub_002E6D40(void);
+#include "pc_menu_text.inc"
+
 static PcMenuMouse menu_mouse;
 
 /* Some frontend callbacks (notably sub_002D2260) scan the original pad
@@ -67,6 +69,7 @@ void pc_display_menu_mouse_mode(void)
 {
     int enabled=menu_mouse_context();
     pc_controls_menu_mode(enabled);
+    if(!enabled)pc_controls_text_mode(0);
     if(!enabled) {
         memset(&menu_mouse,0,sizeof menu_mouse);
         menu_slider_drag=0;
@@ -360,6 +363,7 @@ void pc_display_menu_mouse_input(void (*original)(void))
     float x,y,gw,gh;
     unsigned sw,sh;
     original();
+    menu_text_input(menu);
     if(!s || s->sampled || s->menu!=menu || !menu_mouse_context() || !guest_writable(menu,0x23c) ||
        WORD_AT(menu+0x38)!=0 || WORD_AT(menu+0x1b0)!=3) return;
     save_registers(&r);
@@ -405,6 +409,7 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
     MenuMouseDispatch *previous=menu_mouse_dispatch;
     menu_mouse_dispatch=&state;
     menu_character_input(&state);
+    menu_text_focus(state.menu);
     original();
     if(state.injected)
         WORD_AT(state.pressed_address)=(WORD_AT(state.pressed_address)&~state.injected)|(state.pressed&state.injected);
@@ -424,6 +429,7 @@ void pc_display_menu_mouse_dispatch(void (*original)(void))
         menu_mouse_change_tab(state.tab_menu,state.tab_target);
     }
     pc_display_menu_mouse_mode();
+    if(menu_mouse_context())menu_text_events(state.menu);
 }
 
 void pc_display_menu_mouse(void (*original)(void))
