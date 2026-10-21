@@ -1585,6 +1585,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **Bundled texture toggle (2026-10-20, commit carrying this entry on
+  `feature/launcher-texture-toggle`):** Shared `GameSettings.cs` and
+  `SettingsPage.cs` replace texture download/ZIP/folder controls with an
+  off-by-default **Use enhanced textures (Beta)** checkbox. Both host adapters
+  remove the obsolete install actions while retaining interrupted-install
+  recovery. The saved launcher preference sets `TSFP_TEXTURE_MODE` to `4k` or
+  `classic`; in-game/F10 changes remain session-only. No new native adapter is
+  needed. Windows compilation, 13 shared UI groups and 35 settings checks pass.
+  Mac compilation and UI execution remain pending on a Mac host; acceptance
+  covers save/cancel, reopening, launch environment and unchanged texture files.
+  [Evidence](STATUS.md#launcher-bundled-texture-toggle-2026-10-20).
+
 - **v1.2.22 publication preparation (2026-10-20):** Restores the common publisher's
   one-versioned-ZIP-per-host policy and Latest release-page download links.
   Platform update manifests retain their existing names and package formats.
@@ -2950,6 +2962,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **PC evidence:** See the issue #49 section in STATUS.md.
 
 ### MAC-057 — Optional texture pack delivery through the launcher
+
+- **Release preservation follow-up (2026-10-20, PR #234):** Game/launcher
+  version bumps retain the loader, controls, installer, repository texture pack
+  and default bundled-game delivery. Repository texture pack now runs on both
+  version files and either host's game packager/publisher changes, for PRs and
+  main pushes. It hydrates Git LFS and audits the committed DDS/JSON; the obsolete
+  separate-release check is removed. This is shared CI policy with no host
+  adapter changes. Upgrade/repair/rollback preservation remains required.
+  Actual Mac installer interaction and scene fidelity remain awaiting validation;
+  see [validation](STATUS.md#texture-preservation-on-version-bumps--2026-10-20).
 
 - **Status:** Awaiting validation
 - **Behavior:** Players explicitly download the optional GitHub texture pack or
