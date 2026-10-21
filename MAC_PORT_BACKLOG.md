@@ -1132,6 +1132,19 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-20 bundled texture delivery: shared tools/build_textures.py prepares
+  the Git LFS pack in assets/textures for Windows and native Mac (PR #235);
+  both game packagers stream it
+  directly into their ZIP. Shared Core.cs accepts bounded texture members,
+  preserves existing pairs and settings, and cleans only staged payloads with
+  existing OneDrive/link checks. Launcher 1.2.22 includes this behavior. Local
+  Windows build/regressions passed before the delivery correction; 221 Python
+  tests pass after it (one platform skip). Updated host CI is required.
+  Native Mac install/cleanup fixture is registered in NativeTests.cs; host
+  execution is evaluated in PR CI. **Awaiting validation** remains for real
+  texture scene/GPU/display/residency coverage. See STATUS.md bundled texture
+  dependency entry. No graphics adapter or guest-clock behavior changed.
+
 - **Status:** Awaiting validation
 - **Windows replay link fix (2026-10-20, `fix/replay-texture-mode-link`):**
   `patches/replay-texture-mode-link.patch` supplies the existing shared
@@ -1587,6 +1600,24 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   60/120 FPS. Mac compilation, GPU execution and other-device sync are unverified.
 
 ### MAC-021 — Published-release launcher and pre-game settings
+
+- **v1.2.22 publication preparation (2026-10-20):** Restores the common publisher's
+  one-versioned-ZIP-per-host policy and Latest release-page download links.
+  Platform update manifests retain their existing names and package formats.
+  All 25 portable publisher regressions pass. Both host checks on the preparation
+  PR remain pending; native Mac validation is not inferred from Windows results.
+
+- **Native frame-rate selector (2026-10-20, commit carrying this entry on
+  `feature/launcher-native-frame-rate`):** Shared `GameSettings.cs` and
+  `SettingsPage.cs` provide original 60 / beta 120 / beta 144 FPS, with restart,
+  compatible-game and Arcade-regression guidance. Both platform adapters locate
+  `pc-frame-rate.ini` beside the display preference. Shared tests cover default,
+  cancel/save, game-menu edits, launch overrides, malformed/concurrent edits and
+  rollback. No new OS adapter is required. Windows build, settings and shared UI
+  regressions pass; Mac native compilation, execution and prerequisites remain
+  unrun on this Windows host. Requires the separate native-high-refresh runtime;
+  this does not certify its gameplay or merge that branch. Wider status remains
+  Awaiting validation. [Evidence](STATUS.md#launcher-native-frame-rate-selector-2026-10-20).
 
 - **Native confirmation dialog layout (2026-10-20, commit carrying this entry
   on `codex/launcher-dialog-layout`):** Windows uses native message boxes with a
