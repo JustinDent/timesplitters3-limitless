@@ -18,3 +18,21 @@ float pc_native_visual_sample(uint32_t value)
 {
     return (float)pc_native_visual_time_sample(&pc_native_level_visual_time,value);
 }
+/* The US weapon dispatcher samples an integer-clock sine wave, then chooses
+ * a new amplitude at an authored crossing. Only resample its final visual
+ * value: changing the crossing would move shared RNG calls between frames. */
+float pc_native_weapon_sway(float original)
+{
+    uint32_t tick=*(const uint32_t *)((uintptr_t)0x7DE318u+g_xbox_mem_offset);
+    const PcNativeVisualTime *clock=&pc_native_level_visual_time;
+    if(!clock->valid || clock->integer!=tick || clock->offset==0)return original;
+    const float degrees=*(const float *)((uintptr_t)0x475D0Cu+g_xbox_mem_offset);
+    const float scale=*(const float *)((uintptr_t)0x475CE0u+g_xbox_mem_offset);
+    const float half=*(const float *)((uintptr_t)0x475CD4u+g_xbox_mem_offset);
+    float phase=pc_native_visual_sample(tick)*degrees;
+    phase=phase*scale+half;
+    /* Preserve the original fallback if the signed conversion cannot fit. */
+    if(!isfinite(phase) || phase>=2147483648.f || phase< -2147483648.f)return original;
+    unsigned index=(uint32_t)(int32_t)phase&0x7ffu;
+    return *(const float *)((uintptr_t)(0x7A38A0u+index*4u)+g_xbox_mem_offset)-half;
+}

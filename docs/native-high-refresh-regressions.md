@@ -40,6 +40,63 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Native weapon sway
+
+The complete original weapon dispatcher `0x1c4400..0x1c4a4b` samples a sine
+wave from the integer level clock, chooses a random amplitude at an authored
+crossing, and passes the resulting motion value to its three weapon updates.
+Before this correction the 12-second native-120 fixture repeats that value on
+720 of 1,440 updates, while original 60 has no repeats. The failure is captured
+in `logs/native-weapon-sway-red.log`.
+
+Shared numeric policy changes only the final multiplication at `0x1c4539`.
+`pc_native_weapon_sway` uses the existing observed fractional level clock and
+the original constants and 2,048-entry sine table to resample its left operand.
+The original integer samples, crossing comparison, RNG calls and amplitude
+stores remain untouched. No draw advances time. Zero phase offset, invalid or
+unobserved clock state, rebases and out-of-range phase conversion retain the
+incoming value; disabled native mode retains the original multiply.
+
+`tests/native_weapon_sway.c` runs the complete original dispatcher and sine
+initializer, and executes both original consumer blocks through their model
+C8 stores (`0x1c3659..0x1c3680` and `0x1c37cf..0x1c37e9`). The first preserves
+the authored sway-disabled weapon flag. Weapon-state, input, render and other
+services are explicitly mocked; these are numeric/model-store checks, not GPU
+output or complete firing/animation acceptance. All three weapon slots receive
+the same motion argument. Constants come from the pinned supported US XBE.
+
+The corrected normal-speed sequence has no repeated motion values at 60,
+120 or 144, preserves two RNG events at the same original tick boundaries,
+and ends at the original value 0.456892014. Equal whole-time samples match the
+original reference. Quarter speed, pause between every update, repeated visual
+sampling, disabled native behavior, unrelated sites, rebase/unobserved-clock
+fallbacks and signed-conversion overflow are covered. At quarter speed the
+original lookup-table resolution still produces 416/704 repeated samples at
+120/144; these are retained and are not claimed as fresh unique poses.
+
+The broader validation run has 154 passing checks and a test-only unresolved
+sway-policy reference in the player fixture's variable-site checks. An
+abort-on-use boundary repairs that dependency; the player and expanded model
+consumer fixtures then both pass. Logs are
+`logs/native-weapon-sway-regressions.log` and
+`logs/native-weapon-sway-model-fixture.log`. Existing CI includes the new
+parametrized fixture. The full Windows Build and built-in checks pass; logs
+are `logs/native-weapon-sway-build.log` and `.err`. The resulting binary has
+SHA-256 `5bb5eab308ba236056c22ae0ca8121e7bc02e4c96eba160068020ca1682200cb`,
+compiled with parent label `500f8be` plus this revision's source changes.
+The bounded native-144 smoke reached What Lies Below gameplay, displayed the
+revolver and hands, changed yaw from 209 to 149 degrees, moved the player,
+and fired three rounds (6/30 to 3/30). The captured-input firing count matches
+the preceding original-60/native-144 comparison. The window then closed via
+the normal user-close path (`ExitProcess(0)`) before the reload checkpoint;
+the runner consequently failed its unexpected-exit assertion. This is an
+incomplete smoke, not a passing reload/pause/resume test or a crash. Evidence:
+`private/test-saves/weapon-sway-smoke-144` and
+`logs/weapon-sway-smoke-144.log`. The fixture and personal controls/display
+hashes are unchanged. Other sessions using the separate menu-footer build
+were left untouched. Mac compilation and perceptual smoothness remain
+unverified.
+
 ## Button delivery after fractional pause offsets
 
 The raw clock continues during pause while game time stops, so their carried

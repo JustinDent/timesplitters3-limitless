@@ -6,6 +6,23 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Native weapon sway (this revision):** The weapon dispatcher still sampled
+  integer level time, repeating its motion value on 720 of 1,440 native-120
+  updates in a 12-second original-routine fixture. Shared policy now samples
+  fractional time only for the final visual value, preserving original sine
+  crossings and RNG event timing. Tests execute the complete dispatcher and
+  both original model C8 consumer stores, including the sway-disabled flag.
+  Normal-speed 60/120/144 sequences have no repeats and match original whole-
+  time samples; pause, quarter speed and fallback cases pass. Quarter speed
+  retains authored sine-table quantization. The full Windows Build and built-in
+  checks pass; 154 broader checks pass plus both repaired/expanded fixtures.
+  Binary SHA-256 is
+  `5bb5eab308ba236056c22ae0ca8121e7bc02e4c96eba160068020ca1682200cb`
+  (compiled parent label `500f8be` plus this revision). Mac and perceptual
+  smoothness remain unverified. The bounded 144 smoke reached visible gameplay,
+  aiming, movement and firing; a normal window-close interrupted it before
+  reload/pause/resume verification. Fixture and personal settings are unchanged.
+  [Weapon sway evidence and scope](docs/native-high-refresh-regressions.md#native-weapon-sway).
 - **Input across pause/resume (this revision):** The real native clock/input
   wrapper passes 864 schedules covering 60/120/144 FPS, 24 fractional pause
   durations and 12 press phases. Held presses reach a game-tick consumer and

@@ -2960,6 +2960,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Native weapon sway (this revision):** Shared `pc_native_numeric.h` and
+  `pc_native_visual_time_guest.inc` sample the final weapon motion value at
+  fractional level time. Integer crossings, RNG calls and authored disabling
+  remain original. Complete-dispatcher and original model-store fixtures cover
+  60/120/144, pause, quarter speed and fallback. Full Windows Build passes;
+  actual Mac compilation, model rendering and perceptual smoothness remain
+  pending. No adapter is needed because the existing observed visual clock and
+  numeric hook are shared. See STATUS and the native regression record.
+
 - **Pause/input phase coverage (this revision):** Shared timing/input tests now
   combine fractional pause offsets with button edges and held-state delivery
   across 60/120/144. All 864 schedules and all 50 native timing checks pass on

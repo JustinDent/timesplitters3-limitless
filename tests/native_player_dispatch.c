@@ -21,6 +21,9 @@ RECOMP_TLS int g_fp_top;
 float pc_native_rocking_add(uint32_t site,float left,float right) {
     (void)site;(void)left;(void)right;assert(!"unexpected rocking policy");return 0;
 }
+float pc_native_weapon_sway(float original) {
+    (void)original;assert(!"unexpected weapon sway policy");return 0;
+}
 static int active_case;
 static unsigned movement_calls;
 #define UNUSED(name) void name(void) { assert(active_case); g_eax=0; g_esp+=4; }

@@ -22,6 +22,7 @@ static inline double pc_native_numeric(uint32_t address, int32_t value)
 #define RECOMP_I32_TO_F64(address, value) pc_native_numeric((uint32_t)(address), (int32_t)(value))
 extern uint32_t pc_native_visual_store(uint32_t site,uint32_t value);
 extern float pc_native_visual_sample(uint32_t value);
+extern float pc_native_weapon_sway(float original);
 /* Observe only the level clock's direct stores, without changing their
  * values. Smooth only the audited mesh/strip distortion absolute-time reads.
  * Discrete counters and every other absolute-time consumer remain original. */
@@ -197,8 +198,12 @@ static inline float pc_native_multiply(uint32_t site, float left, float right)
     }
     return left*right;
 }
+/* Smooth only the final visual sway value passed to weapon updates. Keep the
+ * integer sine crossing and its random-amplitude event unchanged. */
 #define RECOMP_F32_MUL_AT(site, left, right) \
-    pc_native_multiply((uint32_t)(site), (float)(left), (float)(right))
+    ((site)==0x1C4539u && g_tsfp_native_timing_active ? \
+     pc_native_weapon_sway((float)(left))*(float)(right) : \
+     pc_native_multiply((uint32_t)(site), (float)(left), (float)(right)))
 /* Scripted camera direction closes 1 / remaining_ticks of the angular gap
  * per original update. Normalize that decay to the live game interval,
  * preserving the original coefficient for one tick. Scaling the pause gate
