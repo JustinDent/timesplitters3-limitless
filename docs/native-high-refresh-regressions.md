@@ -40,6 +40,57 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Hotel deathmatch completion and results flow
+
+Windows x64/D3D11 source `2adcf29`, executable SHA-256
+`858ce97b290710485935f282c388ac71131eababe8244cb1b75b7147acb1a0ef`, completes
+one local Hotel deathmatch at original 60 and native 144. Both use the isolated
+Test Lab fixture, Cortez, recommended weapons/bots, five-point score limit,
+three-minute time limit and the same normal menu setup. The original run's
+interactive setup inspection takes longer; these are not identical wall-time
+or bot-RNG replays. No game source change accompanies this validation.
+
+| Check | Original 60 | Native 144 |
+| --- | --- | --- |
+| Gameplay | Scene 39, match state 7, dual pistols visible | Same scene/state and initial loadout |
+| Combat/death | Health falls to zero; final scoreboard records two player deaths | Continuous read-only observer records three deaths and two intervening respawns |
+| Match finish | State 8, results pause; reviewed Scores page shows The Freak winning with 5 points | State 8, results pause; reviewed Results page shows the completed standings |
+| Continue after results | Not exercised before the bounded run ended | Three Next presses start a fresh state-5 countdown, visible dual pistols, health restored |
+| Exit/data | Normal runner exit, valid unchanged fixture/profile | Same; personal controls/display hashes also unchanged |
+
+Evidence directories are `private/test-saves/arcade-flow-60` and
+`arcade-flow-144`; logs have matching names under `logs/`. Reviewed captures
+include setup limits, original `continue-or-respawn.png` (Scores), native
+`continue-or-respawn.png` (Results) and native `after-results.png` (new match
+countdown). The original session reaches its 240-second bound after setup
+inspection; the native session stops normally around 150 seconds. The second
+match is not claimed as played or completed. No network peer was present.
+
+The runner samples state between commands, so its multi-second waits leave
+observation gaps. Its summary alone cannot count every death/respawn. The
+native run additionally has `flow-observer.jsonl`, a read-only 250-ms process
+observer. It sees initial countdown -> active play -> results, with positive
+health at level ticks 198, death at 491, respawn at 1100, death at 1616,
+respawn at 2216 and death at 2619. Counts and first-observed times have the
+sampling granularity of that observer. Original respawns are supported by the
+final death count, not a complete continuous trace. `flow-summary.json` in each
+run retains the coarser command-state summary separately.
+
+The first native setup attempt ended in the test runner's 16-key command
+limit assertion; it did not crash the game. Its log is retained as
+`logs/arcade-flow-144-command-limit.log`. Splitting the setup command allowed
+the subsequent complete run. A late request for an intermediate Scores capture
+arrived after results navigation had already executed; the native evidence is
+Results plus rematch countdown, not a reviewed native Scores page.
+
+Bots kill the idle test player early, so these runs do not establish new
+player-firing/reload acceptance. The different bot outcomes and match lengths
+are not evidence of a game-speed mismatch. Captures/minimized execution and
+unequal workloads also make these unsuitable for a pacing comparison. They
+expand evidence beyond the prior partial Vietnam matches to one complete
+Hotel match and native results-to-rematch transition. Other arenas/modes,
+network peers, physical play, full-game correctness and Mac remain open.
+
 ## Aim and weapon-offset easing
 
 The original player routine `0x25A7F0` eases offsets later consumed by the

@@ -6,6 +6,13 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Complete local Arcade match (this revision):** On the `2adcf29` Windows
+  build, original 60 and native 144 both complete a Hotel deathmatch and show
+  results. Native read-only observation confirms deaths and respawns; continuing
+  through results starts a fresh countdown with visible dual pistols. Test
+  profiles and personal settings remain unchanged. This expands scene/flow
+  coverage, not full Arcade/network/Mac certification or a pacing comparison.
+  [Hotel evidence and limits](docs/native-high-refresh-regressions.md#hotel-deathmatch-completion-and-results-flow).
 - **Aim/weapon-offset easing (this revision):** Original fractional linear
   easing settled more slowly at higher refresh rates. Six audited shared
   coefficient sites now preserve the original 60-Hz response at the live game

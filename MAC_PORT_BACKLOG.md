@@ -2960,6 +2960,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Hotel match-flow evidence (this revision):** Windows build `2adcf29` completes
+  local Hotel deathmatches at original 60/native 144 and displays results;
+  native results navigation also starts a new countdown. Saves/settings remain
+  unchanged. No runtime or adapter change accompanies this check. Equivalent
+  Mac match/respawn/results validation, online peers and other modes remain
+  pending; see STATUS and the Hotel section of the native regression record.
+
 - **Aim/weapon-offset easing (this revision):** Shared numeric policy now splits
   six original easing coefficients over fractional raw intervals, preserving
   original 60-Hz normal/slow-motion response. Original-block Windows tests cover
