@@ -86,7 +86,10 @@ Bug reports retain their form, release references and automatic labels. Existing
 enhancement bodies remain recognized by the label helper for historical issues.
 The shared `DiagnosticIssueDraft.Create(true, ...)` opens the same Ideas URL for
 both launcher hosts without attaching diagnostics or changing the clipboard
-payload contract. Installed launchers require a future release to get this link.
+payload contract. Launcher v1.2.23 is the first version carrying this link for
+Windows x64 and native Mac ARM64. The shared version and numeric assembly
+attributes advance together; publishing still requires the dual-platform
+release workflow's successful builds, package checks and verified upload.
 README, contribution and launcher guidance use the discussion route. The version
 refresh test verifies that chooser links survive and the old form stays absent;
 the existing launcher maintenance fixture checks destination and diagnostic isolation.
