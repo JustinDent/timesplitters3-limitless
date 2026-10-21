@@ -1,3 +1,29 @@
+## Launcher v1.2.23 release preparation - 2026-10-21
+
+Source `d35e1df9ab920e176ba0ca87d4e922a4ad3fe55a`, based on main
+`79956542e5690832e987e889628efe56c8f8d470`, advances the shared launcher and
+assembly versions to 1.2.23. The merged enhancement-button policy opens a new
+Ideas discussion on Windows x64 and native Mac ARM64 without attaching
+diagnostics. The bug-report route remains unchanged.
+
+Local macOS 27.0.1 ARM64 / Python 3.13: 25 release-policy, 9 compatibility-policy
+and 23 issue-form tests passed (57 total). Context refresh/check against the base
+and `git diff --check` passed. These are asset-free policy checks; no game or
+personal settings/save paths were used, and no graphics backend was exercised.
+
+At this snapshot, [PR #282 launcher CI](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39692328025)
+has passed the Windows build/regressions/package checks. The Repository texture
+pack audit, issue-form/resolution checks and both runtime gate jobs also passed.
+Native Mac build/regressions and packaged update/repair/restart checks are still
+pending, followed by complete dual-platform verification. The final PR revision
+must pass fresh CI before merge; publication then rebuilds and verifies both
+packages from the merged revision through `launcher-release.yml`.
+
+This entry records preparation, not a published release or game validation.
+Publication, all eight public assets and both update manifests remain unverified
+until that workflow completes. Existing Mac ad-hoc-signing/Gatekeeper limits and
+the v1.2.19 manual migration remain documented in `docs/launcher-releases.md`.
+
 ## Issue #105 weapon-set performance repair - 2026-10-21
 
 Validated locally on Windows x64, MSVC 14.42, SDL 3.4.16, default fixed-60
