@@ -12,6 +12,7 @@ static uint32_t g_esp;
 static int64_t counter, deadline;
 static unsigned paused_calls, resume_calls, original_calls, frames;
 static const char *setting;
+void recomp_config_commit_native_rate(void) {}
 const char *recomp_config_lookup(const char *env, const char *key)
 { assert(!strcmp(env,"TSFP_NATIVE_FPS") && !strcmp(key,"native_fps")); return setting; }
 static BOOL test_qpf(LARGE_INTEGER *v) { v->QuadPart = 144000000; return TRUE; }
@@ -126,6 +127,43 @@ static void frame(void)
     assert(WORD(0x563918)==123); /* ISR state was never used as a fake frame counter. */
     frames++;
 }
+static void live_rates(void)
+{
+    /* Start at a nonzero tick phase. Native switches must retain it rather
+     * than repeatedly losing fractions or running at the old schedule. */
+    const char *rates[]={"120","144","120","144"};
+    uint32_t raw_before=WORD(0x7497B0);
+    int64_t started=counter;
+    double ticks=0;
+    for(unsigned r=0;r<4;r++) {
+        setting=rates[r];int rate=atoi(setting);
+        for(int i=0;i<rate;i++) {
+            frame();ticks+=FLOAT(0x4E7948);
+            assert(g_tsfp_native_timing_active && FLOAT(0x4E7948)<1.01f);
+        }
+    }
+    double elapsed=(double)(counter-started)*60/144000000;
+    assert(fabs(ticks-elapsed)<.001);
+    assert(fabs((double)(WORD(0x7497B0)-raw_before)-elapsed)<1.001);
+    assert(elapsed>239.99 && elapsed<240.01);
+    WORD(0x7497B4)=1;
+    setting="120";frame();assert(FLOAT(0x4E794C)==0);
+    setting="144";frame();assert(FLOAT(0x4E794C)==0);
+    unsigned old_calls=original_calls;
+    setting="0";frame();
+    assert(original_calls==old_calls+1 && !g_tsfp_native_timing_active);
+    assert(WORD(0x7A58B0)==WORD(0x563918));
+    assert(RECOMP_I32_TO_F32(0x4E7944,1)==1);
+    counter+=144000000*10; /* Time spent in the original clock must not leak. */
+    setting="120";frame();
+    assert(g_tsfp_native_timing_active && FLOAT(0x4E7948)==0 && FLOAT(0x4E794C)==0);
+    frame();assert(FLOAT(0x4E7948)>.499f && FLOAT(0x4E7948)<.501f);
+    WORD(0x7497B4)=UINT32_MAX;frame();assert(FLOAT(0x4E794C)>.499f);
+    setting="0";frame();assert(!g_tsfp_native_timing_active);
+    setting="144";frame();assert(FLOAT(0x4E7948)==0);
+    frame();assert(FLOAT(0x4E7948)>.416f && FLOAT(0x4E7948)<.417f);
+    puts("PASS: live 60/120/144 transitions, pacing, remainder continuity, pause/resume and stale clock reset");
+}
 int main(void)
 {
     g_xbox_mem_offset=(ptrdiff_t)(uintptr_t)memory;
@@ -161,6 +199,7 @@ int main(void)
     WORD(0x7497B4)=UINT32_MAX; frame();
     assert(resume_calls==1 && WORD(0x7497B4)==0 && FLOAT(0x4E794C)>0);
     assert(original_calls==3 && frames==293);
+    live_rates();
     input_edges();
     input_after_pause();
     puts("Native guest timing: original fallback, 144 distinct steps, ABI, pause and console clock passed");

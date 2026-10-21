@@ -566,6 +566,15 @@ static void note(int slot,const char *label)
 {
     guest_call(sub_00079D60_gen,6,text_at(slot,"%s",label),(uint32_t)slot,4u,0u,0u,0u);
 }
+static void rate_note(int slot,const char *label)
+{
+    /* Native text size escape is honored by both measuring and drawing.
+     * Scope it to these helper rows; selectors and buttons retain full size. */
+    uint32_t item=guest_call(sub_00079D60_gen,6,text_at(slot,"\vs75%s\vs100",label),(uint32_t)slot,4u,0u,0u,0u);
+    /* The menu's automatic uppercasing also changes the lowercase size escape
+     * into a controller token. Preserve case on these explanatory rows. */
+    if(guest_writable(item,0x2c))WORD_AT(item+0x28)&=~0x2000u;
+}
 static void labels(void)
 {
     resolution_row=aspect_row=texture_row=rate_row=0;
@@ -605,10 +614,10 @@ static void labels(void)
         for(int i=0;i<PC_FRAME_RATE_COUNT;i++)
             guest_call(sub_000717D0,1,text_at(24+i,"%s",pc_frame_rate_label(i)));
         guest_call(sub_00075430,2,rate_row,(uint32_t)staged_rate);
-        note(20,"High refresh is beta; issues may occur.");
-        note(21,"Try 60 FPS if you encounter issues.");
-        note(22,"Restart the game after saving.");
-        row(3,"Save frame rate");row(5,"Back");
+        rate_note(20,"High refresh is beta; issues may occur.");
+        rate_note(21,"Try 60 FPS if you encounter issues.");
+        rate_note(22,PC_FRAME_RATE_APPLY);
+        row(3,"Apply frame rate");row(5,"Back");
     } else if(page==DISPLAY_CONFIRM) { row(0,"Keep resolution");row(1,"Revert"); }
     else { note(20,status);row(0,"Back"); }
 }
@@ -723,9 +732,11 @@ static void select_callback(void)
     } else if(page==DISPLAY_RATE && selected==3) {
         unsigned choice=rate_row?WORD_AT(rate_row+0xc8):(unsigned)staged_rate;
         if(choice<PC_FRAME_RATE_COUNT)staged_rate=(int)choice;
-        int ok=pc_frame_rate_save(pc_frame_rate_value(staged_rate));
+        int rate=pc_frame_rate_value(staged_rate);
+        int ok=pc_frame_rate_save(rate);
+        if(ok)recomp_config_request_native_rate(rate);
         feedback_page=DISPLAY_RATE;
-        snprintf(status,sizeof status,ok?"Frame rate saved. Restart the game.":"Could not save frame rate");refresh(DISPLAY_STATUS,0);
+        snprintf(status,sizeof status,ok?"Frame rate applied and saved.":"Could not save frame rate");refresh(DISPLAY_STATUS,0);
     } else if(page==DISPLAY_CONFIRM) {
         if(selected==0) {
             if(pc_display_save()){deadline=0;refresh(DISPLAY_SCREEN,0);}

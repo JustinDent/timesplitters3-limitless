@@ -1,6 +1,5 @@
-/* Shared in-game frame-rate preference. Changes are deliberately startup-only:
- * switching the original console clock and native clock mid-mission is unsafe.
- * Keep this sidecar separate from resolution previews and launcher settings. */
+/* Shared persistent frame-rate preference. The menu queues a live update only
+ * after saving succeeds. Keep this separate from resolution previews. */
 #ifndef TSFP_PC_FRAME_RATE_SETTINGS_H
 #define TSFP_PC_FRAME_RATE_SETTINGS_H
 #include <stdio.h>
@@ -11,7 +10,7 @@
 #endif
 #define PC_FRAME_RATE_COUNT 3
 #define PC_FRAME_RATE_BETA "High refresh is in beta. Gameplay issues may occur."
-#define PC_FRAME_RATE_RESTART "Saved changes take effect after restarting the game."
+#define PC_FRAME_RATE_APPLY "Changes apply without restarting."
 static int pc_frame_rate_value(int choice)
 { return choice==1?120:choice==2?144:0; }
 static int pc_frame_rate_choice(int rate)

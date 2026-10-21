@@ -6,6 +6,31 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Live FPS presets and smaller helper text (this revision):** Frame rate now
+  offers Apply instead of requiring a restart. A successful atomic save queues
+  the choice; the guest timing boundary publishes it to all rate consumers.
+  Native 120/144 switches preserve timer remainders and reset the pacing
+  deadline; returning to original 60 rebases against the real console tick and
+  disables fractional hooks. Re-entering native mode starts a fresh elapsed
+  clock. Back and failed saves leave the running rate unchanged. The beta/helper
+  rows use 75% native text scaling with case conversion disabled on those rows.
+  Shared configuration, guest timing and menu checks pass, including repeated
+  changes, pause/resume, invalid choices and failed persistence. The full
+  regression run had 142 passes, one Mac-only skip and three old patch-history
+  fixture failures; all three pass after excluding the new dependent patch from
+  those historical stacks. The final menu fixture also passes. Windows Build
+  passes; its focus-dependent virtual-pad check is skipped when Windows refuses
+  foreground activation. Two isolated frontend sessions apply 144 -> 120 ->
+  original 60 -> 144 in the same process and exit normally with unchanged
+  profiles. Read-only sampling confirms pacing changes while console-unit time
+  remains near 60 ticks/s; renderer captures add overhead, so these are not FPS
+  benchmarks. A third isolated run visually verifies the final smaller,
+  sentence-case helper text at 1280x720. Final Windows executable SHA-256:
+  `15d306303ab84d363c1f09af8ca398c58d1e82b61f4f2806a31979f2989b7ff8`.
+  It contains parent `c084804`, this live-FPS change and the pre-existing
+  uncommitted force/drag work. Gameplay transitions and Mac execution remain
+  unverified.
+
 - **Airborne view-height damping (this revision):** Two shared numeric sites
   now preserve the original 0.8-per-update settling response at 120/144 FPS,
   including quarter-speed game time. Complete original-routine tests pass 32

@@ -12,9 +12,11 @@ These launch defaults do not rewrite saved graphics preferences.
 
 In **Settings → Display settings → Frame rate** (also in paused Options),
 choose **60 FPS (Original)**, **120 FPS (Beta)** or **144 FPS (Beta)**, select
-**Save frame rate**, then restart the game. The page warns that high refresh
-is beta and can cause gameplay issues. Original 60 FPS is the compatibility
-fallback. Saving does not switch the clock during the current session.
+**Apply frame rate**. The change takes effect on the next game update without
+restarting, and the FPS counter reflects the active target. The smaller helper
+text warns that high refresh is beta and can cause gameplay issues. Original
+60 FPS is the compatibility fallback. Back discards an unapplied choice; a
+save failure leaves the active rate unchanged.
 The selection lives in `pc-frame-rate.ini` beside `pc-display.ini` (or beside
 input settings when no display path is specified), independently of resolution,
 FOV, texture choices and saves. A valid saved choice takes precedence over

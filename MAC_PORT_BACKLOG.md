@@ -2960,6 +2960,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Live FPS application (this revision):** Shared `pc_frame_rate_live.inc`,
+  `pc_native_timing_guest.inc` and `pc_display_menu.c` apply saved 60/120/144
+  choices at an update boundary, preserve native timer remainders, reset stale
+  pacing state and return to original timing without restarting. Failed saves
+  do not queue a change. The helper/disclaimer rows use 75% native text scale.
+  Windows uses Interlocked publication; the existing C11 native Mac config
+  build uses atomics, with immutable strings for concurrent readers. No separate
+  Mac feature implementation is needed. Windows configuration/timing/menu,
+  patch migration and Build checks pass (one focus-dependent routing skip).
+  Same-process frontend preset changes pass on Windows; Mac menu rendering,
+  atomic persistence, live switching and gameplay acceptance remain pending.
+
 - **Airborne view-height damping (this revision):** Shared numeric policy at
   `0xD41D0`/`0xD46B4` preserves original view-offset settling at fractional raw
   rates, including slow game time. The shared original-routine fixture covers

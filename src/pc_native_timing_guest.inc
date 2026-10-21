@@ -78,11 +78,30 @@ static void pc_native_timing_guest(void (*original)(void))
     static HANDLE timer;
     static int announced;
     LARGE_INTEGER now, frequency;
+    recomp_config_commit_native_rate();
     int rate = pc_native_rate();
-    if (!rate) { original(); return; }
+    if (!rate) {
+        if (g_tsfp_native_timing_active) {
+            /* The original waits relative to 7A58B0. Rebase to the real ISR
+             * counter so a stale native/menu deadline cannot cause catch-up. */
+            uint32_t vblank=NT_WORD(0x563918u);
+            NT_WORD(0x7497A8u)=NT_WORD(0x7497ACu)=NT_WORD(0x7A58B0u)=vblank;
+            clock=(PcNativeTiming){0}; pacing=(PcNativeClock){0};
+            announced=0;
+            g_tsfp_native_timing_active=0;
+            fprintf(stderr,"[NATIVE-TIMING] 60 FPS original clock applied live\n");
+        }
+        original(); return;
+    }
     g_tsfp_native_timing_active = 1;
     QueryPerformanceFrequency(&frequency);
     QueryPerformanceCounter(&now);
+    if (pacing.rate && pacing.rate != rate) {
+        /* Preserve elapsed time and both whole-tick remainders when changing
+         * native targets. Only the future pacing schedule changes. */
+        pc_native_clock_reset(&pacing, now.QuadPart, frequency.QuadPart, rate);
+        announced=0;
+    }
     if (!pacing.rate) {
         pc_native_clock_reset(&pacing, now.QuadPart, frequency.QuadPart, rate);
     } else {

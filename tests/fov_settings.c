@@ -18,6 +18,8 @@ RECOMP_TLS uint16_t g_fp_cc,g_fp_control_word;
 static int available=1,returned;
 static unsigned built_rows, built_row_count, built_ids[32];
 static char runtime_path[MAX_PATH];
+static int requested_rate=-1;
+int recomp_config_request_native_rate(int rate) { requested_rate=rate;return 1; }
 const char *recomp_config_lookup(const char *env,const char *key)
 { (void)env;(void)key;return "144"; }
 uint32_t recomp_config_title_id(void) { return 0x45410066; }
@@ -99,8 +101,9 @@ void sub_00154FE0(void) { g_eax=WORD_AT(g_esp+4);g_esp+=4; }
 void sub_00079B70(void) { returned++;g_esp+=4; }
 void sub_00079D60_gen(void) {
     unsigned id=WORD_AT(g_esp+8);CHECK(id<32);
+    if(page==DISPLAY_RATE && id>=20 && id<=22)CHECK(!strncmp((char *)(g_xbox_mem_offset+WORD_AT(g_esp+4)),"\vs75",4));
     built_rows|=1u<<id;built_ids[built_row_count++]=id;
-    g_eax=0x200000+id*0x200;g_esp+=4;
+    g_eax=0x200000+id*0x200;WORD_AT(g_eax+0x28)=WORD_AT(g_esp+12)|0x2000u;g_esp+=4;
 }
 static void call(uint32_t address,int selected,unsigned buttons)
 {
@@ -199,18 +202,20 @@ int main(int argc,char **argv)
     content("TSFP_DISPLAY_V2 1920 1080 75\n");
     call(BACK_CB,0,0);call(SELECT_CB,3,0);CHECK(page==DISPLAY_RATE && staged_rate==2 && WORD_AT(0x30018c)==8);
     CHECK(strstr((char *)(g_xbox_mem_offset+TEXT_ADDRESS(20)),"beta"));
-    CHECK(strstr((char *)(g_xbox_mem_offset+TEXT_ADDRESS(22)),"Restart"));
+    for(unsigned slot=20;slot<=22;slot++)CHECK(!(WORD_AT(0x200000+slot*0x200+0x28)&0x2000));
+    CHECK(WORD_AT(rate_row+0x28)&0x2000); /* Normal selector retains its style. */
+    CHECK(strstr((char *)(g_xbox_mem_offset+TEXT_ADDRESS(22)),"without restarting"));
     WORD_AT(rate_row+0xc8)=1;call(TICK_CB,8,0);call(BACK_CB,0,0);
-    CHECK(pc_frame_rate_read()==-1); /* Back discards unsaved rate. */
+    CHECK(pc_frame_rate_read()==-1 && requested_rate==-1); /* Back discards unsaved rate. */
     call(SELECT_CB,3,0);CHECK(staged_rate==2);
     WORD_AT(rate_row+0xc8)=1;call(SELECT_CB,3,0);
-    CHECK(page==DISPLAY_STATUS && pc_frame_rate_read()==120 && pc_native_rate()==144);
+    CHECK(page==DISPLAY_STATUS && pc_frame_rate_read()==120 && pc_native_rate()==144 && requested_rate==120);
     call(BACK_CB,0,0);CHECK(page==DISPLAY_RATE && WORD_AT(rate_row+0xc8)==1);
     char rate_path[32768];CHECK(pc_frame_rate_path(rate_path,sizeof rate_path));
     CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_READONLY));WORD_AT(rate_row+0xc8)=0;
-    call(SELECT_CB,3,0);CHECK(strstr(status,"Could not") && pc_frame_rate_read()==120);
+    call(SELECT_CB,3,0);CHECK(strstr(status,"Could not") && pc_frame_rate_read()==120 && requested_rate==120);
     CHECK(SetFileAttributesA(rate_path,FILE_ATTRIBUTE_NORMAL));call(BACK_CB,0,0);
-    WORD_AT(rate_row+0xc8)=0;call(SELECT_CB,3,0);CHECK(pc_frame_rate_read()==0);
+    WORD_AT(rate_row+0xc8)=0;call(SELECT_CB,3,0);CHECK(pc_frame_rate_read()==0 && requested_rate==0);
     content("TSFP_DISPLAY_V2 1920 1080 75\n");
     call(BACK_CB,0,0);call(BACK_CB,0,0);
     CHECK(page==DISPLAY_HOME && built_row_count==5);
