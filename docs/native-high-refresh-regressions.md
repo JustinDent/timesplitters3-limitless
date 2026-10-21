@@ -42,6 +42,79 @@ does not replace the relevant current check.
 
 ## Arcade Vietnam comparison
 
+### Match-start countdown diagnosis
+
+A bounded replay on Windows build SHA-256
+`6934be7528dfe9635b34c0ca9579f3a93e5183e2373291dec2ad9ff7a88770f2`
+reproduces stationary position and unchanged ammunition at native 144
+(`private/test-saves/arcade-input-trace`, `logs/arcade-input-trace.log`).
+The input watch observes the suppression mask reset to zero each frame,
+then set to `0xFFFFFDFF` before the next suppression call, and finally
+`0xFFFFFFFF` before `sub_0025F0C0`. This rules out a missing controller-mask
+reset. Original dispatcher `0x68830` applies `0xFFFFFDFF` to all four ports
+while the match-start countdown is active.
+
+At `0x69043` it adds raw fractional time to integer counter `0x4D287C`,
+then truncates back to integer at `0x69051`. Sub-tick additions disappear
+at 120/144 FPS, so the start state cannot finish. The site-specific shared
+numeric policy consumes the timing system's accumulated whole raw ticks
+for this counter. Other additions keep their fractional values; the
+original-60 path is unchanged. No input mask or match state is forcibly
+cleared.
+
+`tests/native_arcade_countdown.c` executes the complete checksum-verified US
+state dispatcher and original mask writer. Rendering/messages/sound services
+are spies and unrelated branches abort. Before the correction, original 60
+and native 60 reach state 7 at tick 184 with four cues; native 120 remains in
+state 5 with zero cues after 300 ticks. After the correction, original 60 and
+native 60/120/144 reach state 7 at tick 184 with the same four cue IDs. The
+fixture also checks all four input masks, guest return-stack preservation,
+zero raw time, accumulated multi-tick input, adjacent-site scope and disabled
+native policy. The full Windows Release build and its built-in checks pass, as do 132
+shared timing/translation/CI checks. Final scope/Arcade-statistics checks
+pass separately. These original-code checks alone do not establish playable
+Arcade.
+
+The first corrected live run (`arcade-countdown-120`) uses executable SHA-256
+`41ca454f88d9d11279fe57cbf24fbd56dbca9b72a5d5550c154c20898a91fa43`.
+The match reaches state 7 and the input suppression mask clears. After the
+three-second forward command the player moves from `[48.9512, 0.3954, 66.0679]`
+to `[66.2618, -0.4588, 52.9205]`. Firing reduces the dual magazines from 18/18
+to 13/13 with shared reserve 24; the reviewed fire capture shows these counts
+and bullet impacts. Pause/resume toggles the pause state correctly. The later
+weapon-37/death state means the post-resume command is not a second firearm
+acceptance check. Test profiles remain unchanged; the runner exits cleanly.
+
+`native_update_stats.py --scene 48` filters Arcade intervals explicitly; the
+default remains Story scene 2. The 120 trace after second 58 includes 2,057
+unpaused intervals over 19.0999 seconds: 107.697 updates/s, p50/p95/p99
+8.3202/9.8263/32.5744 ms, worst 318.0451 ms. Raw/game time ratios are both
+0.979667; the existing three-tick catch-up clamp discards time during long
+stalls. Renderer capture and scripted input were active. This diagnoses
+remaining pacing limits, not stable target performance or monitor scanout.
+
+The final native-144 replay (`arcade-countdown-144-final`) passes match start,
+movement, firing and pause/resume on the same executable. The player moves
+from `[48.9512, 0.3954, 66.0679]` to `[68.0795, -0.1995, 51.7039]` during the
+three-second forward command. The earlier 1.5-second fire command reduces
+both magazines from 18 to 15, with reserve 24; reviewed captures agree. The
+input mask clears after start and resume. The run exits normally, preserves
+profile signatures and contents, and reports no crash/unresolved call. The
+first 144 attempt is partial evidence only: it confirms movement, then the
+player is killed by Goddard and a disappearing rotating BMP stops the test
+helper. The helper now tolerates that enumeration race; no game crash occurred.
+
+The final 144 trace after second 56 includes 1,344 unpaused Arcade intervals
+over 10.3235 seconds: 130.188 updates/s, p50/p95/p99 6.9124/8.2455/33.0204 ms,
+worst 37.9402 ms. Raw/game time both advance at 1.0 seconds per wall second.
+These short, capture-heavy scene samples establish neither sustained 144 FPS
+nor full-game correctness. Full matches, other arenas/modes, online peers,
+physical aiming, stable pacing and Mac execution remain open. Personal
+controls/display SHA-256 values remain unchanged and no personal FPS sidecar
+was created. Disposable test disks are recycled by the runner.
+
+### Earlier baseline
+
 Windows x64 build `c4171db` was tested through the normal Arcade menus using
 isolated Test Lab profiles: Deathmatch, Vietnam, recommended weapons/bots,
 Cortez. Executable SHA-256:

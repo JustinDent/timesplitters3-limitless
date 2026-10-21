@@ -2960,6 +2960,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Arcade countdown (this revision):** Shared `src/pc_native_numeric.h` keeps
+  the integer match-start counter on accumulated raw whole ticks at its one
+  float-add site. Truncating fractional additions otherwise freezes native
+  120/144 match start and suppresses controls. The complete original state
+  dispatcher/mask-writer fixture passes at original 60 and native 60/120/144
+  on Windows; 132 shared timing/regression checks pass. Full Windows build
+  and live Vietnam match start/movement/fire/pause at 120/144 pass. Capture-heavy
+  intervals still show pacing gaps. Source and test entry
+  are shared with Mac; no additional OS adapter is required. Native Mac build,
+  start/cue behavior and live control acceptance remain unverified. See the
+  Arcade countdown diagnosis in `docs/native-high-refresh-regressions.md`.
+
 - **Display menu / FPS preference (this revision):** Shared `pc_display_menu.c`
   groups Screen, Camera, Textures and Frame rate. `pc_frame_rate_settings.h`
   and the additive `native-frame-rate-settings` patch save original 60 or beta

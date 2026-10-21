@@ -134,8 +134,19 @@ extern int pc_native_rocking_branch(uint32_t site,int taken);
 extern uint32_t pc_native_rocking_gate(uint32_t site,uint32_t value);
 extern float pc_native_rocking_add(uint32_t site,float left,float right);
 extern float pc_native_rocking_sub(float left,float right);
+/* Arcade's match-start countdown adds raw float time, then truncates back
+ * to an integer at 0x69051 on every update. A sub-tick interval therefore
+ * never advances it. Consume the existing accumulated whole raw ticks at
+ * this one integer counter; keep motion/animation additions fractional. */
+static inline float pc_native_countdown_add(float left,float right)
+{
+    if(g_tsfp_native_timing_active && right>0.f)
+        right=(float)*(const uint32_t *)((uintptr_t)0x4E7940u+g_xbox_mem_offset);
+    return left+right;
+}
 #define RECOMP_F32_ADD_AT(site,left,right) \
-    (((site)==0xA85F2u || (site)==0xA863Du || (site)==0xA8651u) ? \
+    ((site)==0x69043u ? pc_native_countdown_add((float)(left),(float)(right)) : \
+    ((site)==0xA85F2u || (site)==0xA863Du || (site)==0xA8651u) ? \
     pc_native_rocking_add((uint32_t)(site),(float)(left),(float)(right)) : ((left)+(right)))
 #define RECOMP_F32_SUB_AT(site,left,right) \
     ((site)==0xA8645u ? pc_native_rocking_sub((float)(left),(float)(right)) : ((left)-(right)))

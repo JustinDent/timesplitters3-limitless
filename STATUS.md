@@ -22,16 +22,22 @@ published release or a full-game 144 FPS certification.
   personal controls/display files remain unchanged. Earlier test windows were
   closed normally before completion; their exit traces are not crashes.
   Controller/physical mouse checks and Mac execution remain unverified.
-  The open Arcade regression below remains unresolved.
-- **Open Arcade regression:** A live Vietnam Deathmatch on Windows build
-  `c4171db` renders at the native-144 target and accepts pause/resume, but the
-  player's position and ammunition do not respond to movement/fire commands.
-  The same binary in original-60 mode shows combat, death/respawn and firing
-  consuming nine rounds. Native game time advances normally; reaching the
-  arena and a high present count do not establish functioning gameplay.
-  This comparison expands coverage beyond the opening mission and fails
-  native Arcade acceptance. Root cause and correction remain open.
-  [Arcade comparison](docs/native-high-refresh-regressions.md#arcade-vietnam-comparison).
+  Arcade acceptance is tracked separately below.
+- **Arcade match-start countdown (this revision):** The integer countdown
+  discarded each sub-tick float addition at native 120/144, leaving the
+  original input suppression active. The shared numeric policy now supplies
+  accumulated raw whole ticks at that one counter. Original 60 and native
+  60/120/144 execute the complete original dispatcher and reach gameplay at
+  tick 184 with identical four cue IDs; 132 timing/translation/CI checks pass.
+  Full Windows Release build and built-in tests pass. The live 120 Vietnam
+  match now starts, moves and consumes ten rounds, with pause/resume verified.
+  The final live 144 match starts, moves and consumes six rounds, and
+  pause/resume works. The bounded runs preserve profiles and exit normally.
+  Capture-heavy 120/144 samples average 107.697/130.188 updates/s, with
+  p99 intervals 32.57/33.02 ms. Stable target pacing and full Arcade coverage
+  remain open; these samples are not scanout or physical latency measurements.
+  Mac execution and online multiplayer are unverified.
+  [Arcade evidence](docs/native-high-refresh-regressions.md#match-start-countdown-diagnosis).
 - Terminal mouse motion now uses the shared batch-consumption helper and,
   in native mode, the fractional game-time pause gate. A 1,000 Hz input
   fixture reproduces only 39.1 units of a requested 100-unit horizontal move

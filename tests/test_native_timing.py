@@ -92,6 +92,10 @@ def test_native_update_statistics():
           for i in range(145)]
     result=summarize(rows,0)
     assert result['mean_update_fps']==144
+    arcade=[dict(row,scene=48) for row in rows]
+    with pytest.raises(ValueError): summarize(arcade,0)
+    arcade_result=summarize(arcade,0,48)
+    assert arcade_result['mean_update_fps']==144 and 'Arcade' in arcade_result['scope']
     assert result['game_seconds_per_wall_second']==1
     assert result['raw_seconds_per_wall_second']==1
     assert result['frame_ms']['p99']==6.9444
@@ -225,6 +229,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                (0x61570,0x6160f),(0x585e0,0x5861b),(0x59cf0,0x59d14)]),
     ('native_npc_dispatch.c', [(0x15eae0,0x15f0ca)]),
     ('native_player_dispatch.c', [(0xd5eb0,0xd683d)]),
+    ('native_arcade_countdown.c', [(0x68830,0x69587),(0x42830,0x4286a)]),
     ('native_camera_motion.c', [(0xc73c0,0xc760e),(0xc7610,0xc77bc)]),
     ('native_camera_effects.c', [(0x151e80,0x151f1c),(0x1533e0,0x153431),
                                (0x153440,0x153490),(0xc79c0,0xc8114),
@@ -294,6 +299,10 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
+        if harness_name=='native_arcade_countdown.c':
+            import struct
+            constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
+                                for address in range(0x69588,0x695b8,4))
         if harness_name=='native_visual_time_guest.c':
             # Execute each real direct clock store. Append RET at the next
             # instruction; this tests store dispatch/ABI, not enclosing paths.

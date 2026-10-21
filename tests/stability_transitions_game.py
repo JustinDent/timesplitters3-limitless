@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--run-name',default='stability-transitions')
     parser.add_argument('--native-fps',type=int,choices=(60,120,144))
     parser.add_argument('--manual-start',action='store_true')
+    parser.add_argument('--watch-input',action='store_true',help='Trace changes to player-one input suppression in the bounded log')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
     args=parser.parse_args()
@@ -50,6 +51,8 @@ def main():
     if args.native_fps:
         env.update(TSFP_NATIVE_FPS=str(args.native_fps),RECOMP_FRAME_TARGET='0',RECOMP_FRAME_INTERP='1',
                    TSFP_NATIVE_TRACE=str(run/'native-frames.csv'))
+    if args.watch_input:
+        env.update(RECOMP_WATCH_VA='0x6B9408', RECOMP_TRACE_ONLY='sub_00042830,sub_00042870,sub_000428D0', RECOMP_TRACE_ONLY_MAX='32')
     if args.manual_start: replay.write_text('')
     def profiles():
         result={}
@@ -100,8 +103,10 @@ def main():
         pointer=word(0x761C48)
         return dict(pid=process.pid,scene=word(0x79094C),flags=word(0x7DE458),
             paused=word(pointer)&1 if pointer else 0,mission=word(0x78AD48),
-            held=word(0x6B93DC),pressed=word(0x6B93E0),previous=word(0x6B9408),
-            raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),player=player_snapshot())
+            held=word(0x6B93DC),pressed=word(0x6B93E0),suppression=word(0x6B9408),
+            raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),
+            match_state=word(0x7DE30C),countdown=word(0x4D2878),countdown_ticks=word(0x4D287C),
+            player=player_snapshot())
     def drain(pipe,path):
         with path.open('wb') as out:
             left=4*1024*1024
@@ -132,10 +137,15 @@ def main():
         assert label.replace('-','').isalnum() and len(label)<48
         assert (run/(label+'.png')).exists() or len(list(run.glob('*.png')))<48
         for _ in range(20):
-            frames=sorted(run.glob('frame*.bmp'),key=lambda p:p.stat().st_mtime_ns)
+            # The renderer rotates dumps while this process enumerates them.
+            frames=[]
+            for path in run.glob('frame*.bmp'):
+                try: frames.append((path.stat().st_mtime_ns,path))
+                except FileNotFoundError: continue
+            frames.sort()
             if frames:
                 try:
-                    with Image.open(frames[-1]) as im:im.save(run/(label+'.png'))
+                    with Image.open(frames[-1][1]) as im:im.save(run/(label+'.png'))
                     return
                 except OSError:pass
             time.sleep(.1)
