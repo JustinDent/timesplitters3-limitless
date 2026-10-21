@@ -120,3 +120,31 @@ from retired interpolation), and distinguish API presents, GPU completion and sc
 Use [testing-profile](../testing-profile.md), [building](../building.md) and
 [macos](../macos.md) for full commands. Never auto-test through personal saves,
 interactive launchers or persistent user settings.
+
+## Compatibility repair controller
+
+`tools/compatibility-worker.py` runs on the designated Mac outside CI. Install
+with `--auto-merge` only for authorized repair follow-through. It publishes a
+repair PR against its original branch, waits for both host workflows/checks and
+reviews, merges the exact repair SHA, then requires fresh parent CI before its
+SHA-conditional merge into protected main. It refuses missing effective gates,
+changed revisions and failed follow-up CI. Legacy state is not automatically
+enrolled. `status` includes the installed controller hash and merge mode.
+
+A stale source is updated from main before a repair attempt so the agent sees
+the same source as CI; conflicts and post-repair base drift need inspection.
+`tests/test_compatibility_worker.py` simulates these boundaries with local Git
+and mocked GitHub/Codex, under the existing Windows/macOS gate jobs. No game
+rebuild is needed. See `docs/launcher-compatibility.md` for installation/recovery.
+
+## Text-entry regression route (#136)
+
+`tests/test_menu_text.py` runs in the Windows/macOS runtime workflow. Its asset-free
+fixture covers queue bounds, owner changes, character/command routing and embedded
+keyboard recognition. An optional local case translates original insertion,
+deletion and cursor routines from the checksum-verified US XBE and checks real
+editing/length/font-width behavior; CI without that asset skips this case.
+`tests/pc_controls.c` covers Windows message delivery and focus changes;
+`src/native/menu_input_selftest.inc` adds SDL event/text-session checks. Shared
+fixture success does not establish physical Mac typing. Live Windows Create
+Profile typing and Enter were confirmed by the user with isolated Test Lab saves.

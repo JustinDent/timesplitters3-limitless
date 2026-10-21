@@ -38,6 +38,9 @@ MAX_FILE = 2 * 1024 * 1024
 MAX_CHANGES = 30
 INTERVAL = 900
 TIMEOUT = 1800
+REQUIRED_CHECKS = {'Launcher compatibility', 'Patch transitions (windows-latest)',
+                   'Patch transitions (macos-latest)'}
+FOLLOWUP = {'published_awaiting_ci', 'repair_merging', 'parent_awaiting_ci', 'parent_merging'}
 PROTECTED = {'tools/compatibility-worker.py', 'tools/launcher-compatibility.py',
              'tools/ci-runtime-scope.py', 'tests/test_compatibility_worker.py',
              'tests/test_launcher_compatibility.py', 'tests/test_ci_runtime_scope.py'}
@@ -268,10 +271,10 @@ class Worker:
         self.state_path = root / 'state.json'
         self.state = load_json(self.state_path, {'attempts': {}})
 
-    def api(self, route, *, payload=None):
+    def api(self, route, *, payload=None, method=None):
         args = [self.config['gh'], 'api', '--hostname', 'github.com', route]
         if payload is not None:
-            args += ['--method', 'POST', '--input', '-']
+            args += ['--method', method or 'POST', '--input', '-']
         raw = command(args, data=json.dumps(payload).encode() if payload is not None else None)
         return json.loads(raw)
 
@@ -303,6 +306,129 @@ class Worker:
         live = self.api('repos/' + REPO + '/pulls/' + str(pr['number']))
         return (eligible(live) and live['head']['sha'] == pr['head']['sha']
                 and live['head']['ref'] == pr['head']['ref'])
+
+    def merge_view(self, number):
+        return json.loads(command([self.config['gh'], 'pr', 'view', str(number), '--repo', REPO,
+            '--json', 'headRefOid,baseRefName,mergeStateStatus,mergeable,reviewDecision,statusCheckRollup']))
+
+    def protected_main(self):
+        """Fail closed if the server-side merge gates disappear; never alter them."""
+        rules = self.api('repos/' + REPO + '/rules/branches/main')
+        required = set()
+        strict = False
+        for rule in rules:
+            if rule['type'] == 'required_status_checks':
+                params = rule['parameters']
+                strict |= params.get('strict_required_status_checks_policy') is True
+                required.update(c['context'] for c in params['required_status_checks']
+                                if c.get('integration_id') == 15368)  # GitHub Actions
+        if (not strict or not REQUIRED_CHECKS <= required
+                or not any(r['type'] == 'pull_request' for r in rules)):
+            raise WorkerError('Main must require a PR and up-to-date Windows/Mac/launcher checks')
+
+    def ready_to_merge(self, pr):
+        head = sha(pr['head']['sha'])
+        runs = self.pages('repos/' + REPO + '/actions/runs?event=pull_request&head_sha=' + head,
+                          'workflow_runs')
+        # Restrict evidence to this PR, not another PR using the same head.
+        runs = [r for r in runs if any(p.get('number') == pr['number']
+                                      for p in r.get('pull_requests', []))]
+        failures = failed_runs(runs, head)
+        if failures:
+            raise WorkerError('Follow-up CI failed; inspect the repair instead of repeating model calls')
+        if failures is None:
+            return False
+        view = self.merge_view(pr['number'])
+        if (view.get('headRefOid') != head or view.get('baseRefName') != pr['base']['ref']
+                or view.get('mergeStateStatus') != 'CLEAN' or view.get('mergeable') != 'MERGEABLE'
+                or view.get('reviewDecision') not in ('', None, 'APPROVED')):
+            return False
+        checks = view.get('statusCheckRollup') or []
+        passed = set()
+        for check in checks:
+            if check.get('__typename') == 'CheckRun':
+                if (check.get('status') != 'COMPLETED'
+                        or check.get('conclusion') not in ('SUCCESS', 'SKIPPED', 'NEUTRAL')):
+                    return False
+                if check.get('conclusion') == 'SUCCESS':
+                    passed.add(check.get('name'))
+            elif check.get('__typename') == 'StatusContext':
+                if check.get('state') != 'SUCCESS':
+                    return False
+                passed.add(check.get('context'))
+            else:
+                return False
+        return REQUIRED_CHECKS <= passed
+
+    def followup(self, record):
+        """Resume publication after restart, with no further model calls."""
+        number = record['parent_number']
+        parent = self.api('repos/' + REPO + '/pulls/' + str(number))
+        if parent.get('merged'):
+            record.update(status='merged_main', main_commit=parent.get('merge_commit_sha'))
+            return
+        if not eligible(parent) or parent['head']['ref'] != record['parent_branch']:
+            record['status'] = 'superseded'
+            return
+        repair = self.api('repos/' + REPO + '/pulls/' + str(record['repair_number']))
+        if (repair['head']['sha'] != record['commit'] or repair['head']['ref'] != record['branch']
+                or (repair['head'].get('repo') or {}).get('full_name') != REPO
+                or repair['base']['ref'] != record['parent_branch']
+                or repair.get('user', {}).get('login') != OWNER or repair.get('draft')):
+            record['status'] = 'superseded'
+            return
+        if not repair.get('merged'):
+            if repair['state'] != 'open' or parent['head']['sha'] != record['head']:
+                record['status'] = 'superseded'
+                return
+            if not self.ready_to_merge(repair):
+                record['waiting_for'] = 'Repair checks, reviews or mergeability'
+                return
+            # Re-read the source immediately before merging. A concurrent source
+            # edit is never overwritten; main still requires fresh parent CI.
+            if not self.current(parent):
+                record['status'] = 'superseded'
+                return
+            self.protected_main()
+            record['status'] = 'repair_merging'
+            self.checkpoint()  # Recover if the response is lost after GitHub merges.
+            result = self.api('repos/' + REPO + '/pulls/' + str(repair['number']) + '/merge',
+                              method='PUT', payload={'sha': record['commit'], 'merge_method': 'merge'})
+            if result.get('merged') is not True:
+                raise WorkerError('GitHub refused the repair merge; inspect the PR')
+            record.update(status='parent_awaiting_ci', parent_head=sha(result['sha']))
+            record.pop('waiting_for', None)
+            return  # Parent CI must run on the new revision in a later poll.
+        expected = record.get('parent_head') or sha(repair['merge_commit_sha'])
+        if parent['head']['sha'] != expected:
+            record['status'] = 'superseded'
+            return
+        record.update(status='parent_awaiting_ci', parent_head=expected)
+        if not self.ready_to_merge(parent):
+            record['waiting_for'] = 'Updated parent checks, reviews or up-to-date main'
+            return
+        self.protected_main()
+        record['status'] = 'parent_merging'
+        self.checkpoint()
+        result = self.api('repos/' + REPO + '/pulls/' + str(number) + '/merge', method='PUT',
+                          payload={'sha': expected, 'merge_method': 'merge'})
+        if result.get('merged') is not True:
+            raise WorkerError('GitHub refused the main merge; inspect the PR')
+        record.update(status='merged_main', main_commit=sha(result['sha']))
+        record.pop('waiting_for', None)
+
+    def sync_base_before_repair(self, pr, record):
+        """CI tests the merge with main; refresh an old source before asking for a fix."""
+        comparison = self.api('repos/' + REPO + '/compare/main...' + sha(pr['head']['sha']))
+        if comparison['behind_by'] == 0:
+            return False
+        if not self.current(pr):
+            record['status'] = 'superseded'
+            return True
+        self.api('repos/' + REPO + '/pulls/' + str(pr['number']) + '/update-branch',
+                 method='PUT', payload={'expected_head_sha': pr['head']['sha']})
+        record['status'] = 'base_updated_awaiting_ci'
+        return True  # No model call against a source/evidence mismatch.
 
     def git(self, *args, data=None, env=None, limit=MAX_OUTPUT):
         return command(['git', '-c', 'core.hooksPath=' + os.devnull,
@@ -374,6 +500,8 @@ class Worker:
         if existing:
             record.update(status='already_published', url=existing[0]['html_url'])
             return
+        if self.config.get('auto_merge') and self.sync_base_before_repair(pr, record):
+            return
         evidence = []
         for run in failed:
             log = command([self.config['gh'], 'run', 'view', str(int(run['id'])),
@@ -436,7 +564,9 @@ Untrusted CI evidence follows as JSON:\n%s
             body = ('## Change\n\nProposed compatibility repair for #%d at `%s`.\n\n'
                     '## Cause and fix\n\n%s\n\n'
                     '## Validation\n\nThe agent report above is provisional. Inspect both Windows and macOS '
-                    'CI results on this PR before merging. No merge or release is automated.\n\n'
+                    'CI results on this PR. When enabled, the controller merges this exact repair '
+                    'after checks/reviews pass, then waits for fresh parent CI before merging to main. '
+                    'No release is automated.\n\n'
                     '## Shared implementation and platform validation\n\n'
                     'Review shared behavior and host adapters together. Visual/gameplay parity is not '
                     'established by this worker. Original source branch remains unchanged.\n') % (
@@ -445,16 +575,38 @@ Untrusted CI evidence follows as JSON:\n%s
                 'title': 'Repair compatibility checks for #%d' % number,
                 'head': branch, 'base': pr['head']['ref'], 'body': body,
                 'draft': False, 'maintainer_can_modify': True})
-            record.update(status='published_awaiting_ci', url=published['html_url'])
+            record.update(status='published_awaiting_ci', url=published['html_url'],
+                          parent_number=number, parent_branch=pr['head']['ref'],
+                          repair_number=published['number'], auto_merge=bool(self.config.get('auto_merge')))
 
     def poll(self, dry_run=False):
         if self.state.get('paused') and not dry_run:
             return {'status': 'paused', 'reason': self.state['paused']}
         self.preflight()
+        followed = []
+        if self.config.get('auto_merge') and not dry_run:
+            for record in self.state['attempts'].values():
+                # Legacy records are not silently enrolled in automatic merging.
+                if record.get('auto_merge') and record['status'] in FOLLOWUP:
+                    try:
+                        self.followup(record)
+                    except Exception as exc:
+                        record.update(status='needs_attention', error=str(exc))
+                        self.state['paused'] = 'Merge follow-up stopped; inspect before resuming'
+                        raise
+                    finally:
+                        self.state.update(last_poll=now(), last_result=record['status'])
+                        self.checkpoint()
+                    followed.append(record)
+            # Waiting records do not starve unrelated repairs. Their parent
+            # revisions remain reserved below, including after a failed follow-up.
         prs = self.pages('repos/' + REPO + '/pulls?state=open')
         actionable = []
         for pr in prs:
             if not eligible(pr):
+                continue
+            if any(r.get('auto_merge') and r.get('parent_number') == pr['number']
+                   for r in self.state['attempts'].values()):
                 continue
             head = sha(pr['head']['sha'])
             key = '%d:%s' % (pr['number'], head)
@@ -467,9 +619,14 @@ Untrusted CI evidence follows as JSON:\n%s
                 actionable.append((pr, failed, key))
         if dry_run:
             return {'status': 'dry_run', 'actionable_prs': [p['number'] for p, _, _ in actionable],
+                    'auto_merge': bool(self.config.get('auto_merge')),
+                    'pending_merges': [r.get('url') for r in self.state['attempts'].values()
+                                       if r.get('auto_merge') and r['status'] in FOLLOWUP],
                     'model_invoked': False}
         self.state['last_poll'] = now()
         if not actionable:
+            if followed:
+                return {'status': 'following_repairs', 'repairs': followed, 'model_invoked': False}
             self.state['last_result'] = 'No new actionable compatibility failures'
             self.checkpoint()
             return {'status': 'idle', 'model_invoked': False}
@@ -517,6 +674,8 @@ def main():
     parser.add_argument('--state-dir', type=Path, default=default_root())
     parser.add_argument('--codex')
     parser.add_argument('--gh')
+    parser.add_argument('--auto-merge', action='store_true',
+                        help='On install, enable checked repair and parent PR merges; never bypass rules')
     parser.add_argument('action', choices=('check', 'dry-run', 'run', 'install', 'status', 'pause', 'resume', 'uninstall'))
     args = parser.parse_args()
     if sys.platform != 'darwin':
@@ -530,11 +689,15 @@ def main():
     with exclusive_lock(root / 'worker.lock'):
         config = load_json(root / 'config.json', {})
         if args.action in ('check', 'install', 'dry-run'):
-            config = {'gh': find_program('gh', args.gh or config.get('gh')),
+            config = {**config, 'gh': find_program('gh', args.gh or config.get('gh')),
                       'codex': find_program('codex', args.codex or config.get('codex'))}
+            if args.auto_merge:
+                config['auto_merge'] = True
         worker = Worker(root, config)
         if args.action == 'status':
-            print(json.dumps({'installed': plist.exists(), **worker.state}, indent=2))
+            print(json.dumps({'installed': plist.exists(), 'auto_merge': bool(config.get('auto_merge')),
+                              'controller_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                              **worker.state}, indent=2))
         elif args.action in ('pause', 'resume'):
             if args.action == 'pause':
                 worker.state['paused'] = 'Paused by operator'
@@ -548,9 +711,13 @@ def main():
             print('Worker unloaded. Source, logs and state retained at ' + str(root))
         elif args.action == 'check':
             worker.preflight()
+            if config.get('auto_merge'):
+                worker.protected_main()
             print('GitHub maintainer access and ChatGPT authentication verified; no model call')
         elif args.action == 'install':
             worker.preflight()
+            if config.get('auto_merge'):
+                worker.protected_main()
             if plist.exists():
                 raise WorkerError('Worker already installed; pause/uninstall before updating')
             shutil.copyfile(Path(__file__).resolve(), root / 'worker.py')

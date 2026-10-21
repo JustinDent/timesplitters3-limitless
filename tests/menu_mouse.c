@@ -5,13 +5,20 @@
 #include <stdarg.h>
 #include <string.h>
 #define CHECK(x) do { if(!(x)) { fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x);exit(1); } } while(0)
-static uint32_t memory[0x800000/4],g_esp,g_esi,g_ebp,g_edi,g_ecx,g_edx;
+static uint32_t memory[0x800000/4],g_esp,g_ebx,g_esi,g_ebp,g_edi,g_ecx,g_edx;
 static intptr_t g_xbox_mem_offset;
 #define WORD_AT(a) (*(uint32_t *)((uintptr_t)(a)+g_xbox_mem_offset))
 typedef struct GuestRegisters { uint32_t sp,c,d,di; } GuestRegisters;
 static void save_registers(GuestRegisters *r) { r->sp=g_esp;r->c=g_ecx;r->d=g_edx;r->di=g_edi; }
 static void restore_registers(GuestRegisters *r) { g_esp=r->sp;g_ecx=r->c;g_edx=r->d;g_edi=r->di; }
 static int guest_writable(uint32_t p,unsigned n) { return p>=0x1000 && p<sizeof memory && n<=sizeof memory-p; }
+void pc_controls_text_mode(uint32_t owner) {(void)owner;}
+unsigned pc_controls_text_event(uint32_t owner) {(void)owner;return 0;}
+void sub_0007DB20(void) {} void sub_0007C410(void) {}
+void sub_0007C300(void) {} void sub_0007C390(void) {}
+void sub_0007C4F0(void) {} void sub_0007CDE0(void) {}
+void sub_000746D0(void) {} void sub_0007CCA0(void) {}
+void sub_00071940(void) {}
 static PcMenuPointer cursor;
 static int active=1,mode,original_calls,selections;
 static uint32_t navigation;
