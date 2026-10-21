@@ -22,7 +22,10 @@ The game ZIP includes the audited compiled textures in `Textures/` by default.
 They stream directly from the single active pack into the ZIP, with sanitized
 metadata and per-file hashes in `BUILD.json`; no texture staging copy is made.
 Use `--texture-pack <folder>` to select another audited pack, or
-`--without-textures` for a lightweight distribution. The staging folder alone
+`--without-textures` for a lightweight local test package. Official releases
+through `Publish-Release.ps1` require the complete repository pack; artist
+overrides and texture-free packages cannot be published with that script.
+The staging folder alone
 does not contain the streamed textures; use the finished ZIP to test delivery.
 The launcher seeds missing replacement keys while preserving existing texture
 pairs and personal settings. Updating an already installed artist pack remains
@@ -69,6 +72,15 @@ Compiled replacements are committed under `assets/textures` through Git LFS.
 Run `git lfs pull` before building; the normal game ZIP includes these files
 without a separate texture release. Commit reviewed texture updates alongside
 source changes. See [updating repository textures](textures.md#publish-pack-updates).
+
+`Publish-Release.ps1` requires this pack, including `-PrepareOnly` and `-Draft`.
+Before building, it audits hydrated DDS files, mip chains, sanitized metadata,
+the manifest's bundled delivery/path, count/size and the 6 GiB limit. Before
+uploading, every required DDS/JSON entry and hash in the finished ZIP must match
+the audited repository pack. Missing textures, Git LFS pointers, artist overrides
+and incomplete packs stop the release. Resuming a prepared release repeats the
+ZIP checks even after its staging folder has been recycled. The compatible
+Windows/Mac launcher requirement also applies to every official game release.
 
 Commit the intended `VERSION` and merge the changes, including these release
 scripts, into `main`. Install [GitHub CLI](https://cli.github.com/) and authenticate
