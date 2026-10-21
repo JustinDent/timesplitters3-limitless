@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Input across pause/resume (this revision):** The real native clock/input
+  wrapper passes 864 schedules covering 60/120/144 FPS, 24 fractional pause
+  durations and 12 press phases. Held presses reach a game-tick consumer and
+  press/release edges occur exactly once, including 9,084 misaligned raw/game
+  clock frames. The pad service is mocked; physical latency, very short taps
+  and full weapon caller behavior remain unverified. All 50 native timing
+  checks pass (`logs/input-weapon-phase-checks.log`). No production timing
+  change or game rebuild accompanies this test extension.
+  [Input audit scope](docs/native-high-refresh-regressions.md#button-delivery-after-fractional-pause-offsets).
 - **Additional gameplay pacing (this revision):** The current `d336cd9`
   Windows build completes a bounded, no-capture What Lies Below input/weapon/
   pause/movement sequence. All qualifying active-gameplay intervals total

@@ -70,6 +70,53 @@ static void input_edges(void)
     assert(g_esp==0x1004 && WORD(0x2010)==128); /* Original path is ungated. */
     g_tsfp_native_timing_active=1;
 }
+/* Exercise the real raw/game remainder clocks together with input delivery.
+ * Pause durations deliberately leave their whole-tick phases misaligned.
+ * The pad service is a boundary: held/pressed/released use the original
+ * record layout, while physical polling and weapon state machines are not
+ * simulated here. A held press must reach a game-tick consumer after resume;
+ * edge-triggered actions must still be delivered exactly once. */
+static void input_after_pause(void)
+{
+    const int rates[]={60,120,144};
+    unsigned scenarios=0,misaligned=0;
+    for(unsigned r=0;r<3;r++) for(int pause_frames=1;pause_frames<=24;pause_frames++)
+    for(int phase=0;phase<12;phase++) {
+        int rate=rates[r],held_frames=(rate+9)/10;
+        int press_frame=7+pause_frames+phase;
+        PcNativeTiming local={0};
+        unsigned edges=0,releases=0,game_observations=0;
+        int first_edge=-1,last_release=-1;
+        memset(memory+0x2000,0,64);
+        pc_native_timing_step(&local,0,720000,rate,0);
+        for(int i=1;i<=press_frame+held_frames+12;i++) {
+            int paused=i>=7 && i<7+pause_frames;
+            PcNativeStep step=pc_native_timing_step(&local,
+                (int64_t)i*720000/rate,720000,rate,paused);
+            test_button=i>=press_frame && i<press_frame+held_frames;
+            WORD(0x4E7940)=step.raw_ticks;WORD(0x4E7944)=step.game_ticks;
+            FLOAT(0x4E7948)=step.raw_delta;FLOAT(0x4E794C)=step.game_delta;
+            g_esp=0x1000;WORD(g_esp+4)=0x2000;
+            pc_native_input_guest(sample_pad);
+            assert(g_esp==0x1004);
+            if(WORD(0x2010)) { edges++;first_edge=i; }
+            if(WORD(0x2014)) { releases++;last_release=i; }
+            if(!paused && step.raw_ticks!=step.game_ticks)misaligned++;
+            if(step.game_ticks && WORD(0x200C)==128)game_observations++;
+            if(paused)assert(step.game_ticks==0 && step.game_delta==0);
+        }
+        assert(edges==1 && releases==1 && WORD(0x200C)==0);
+        assert(game_observations>0);
+        /* Sampling remains bounded by one original 60-Hz input interval. */
+        assert(first_edge>=press_frame && first_edge-press_frame<(rate+59)/60);
+        assert(last_release>=press_frame+held_frames &&
+               last_release-press_frame-held_frames<(rate+59)/60);
+        scenarios++;
+    }
+    assert(misaligned>0);
+    printf("PASS: %u input schedules across 60/120/144 and fractional pause offsets; %u misaligned clock frames\n",
+           scenarios,misaligned);
+}
 static void frame(void)
 {
     g_esp=0x1000;
@@ -115,6 +162,7 @@ int main(void)
     assert(resume_calls==1 && WORD(0x7497B4)==0 && FLOAT(0x4E794C)>0);
     assert(original_calls==3 && frames==293);
     input_edges();
+    input_after_pause();
     puts("Native guest timing: original fallback, 144 distinct steps, ABI, pause and console clock passed");
     return 0;
 }

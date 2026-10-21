@@ -2960,6 +2960,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Pause/input phase coverage (this revision):** Shared timing/input tests now
+  combine fractional pause offsets with button edges and held-state delivery
+  across 60/120/144. All 864 schedules and all 50 native timing checks pass on
+  Windows. No runtime or adapter behavior changes. The expanded fixture is
+  already in shared CI scope; actual Mac execution remains pending. See the
+  button-delivery section of the native regression record for mocked boundaries.
+
 - **Additional Windows pacing evidence (this revision):** A bounded no-capture
   What Lies Below run on `d336cd9` measures 143.825 fresh CPU updates/s across
   62.485569 active gameplay seconds, p99 8.0834 ms and no interval over 16.67 ms.

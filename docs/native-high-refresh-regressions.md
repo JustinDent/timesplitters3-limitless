@@ -40,6 +40,39 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Button delivery after fractional pause offsets
+
+The raw clock continues during pause while game time stops, so their carried
+whole ticks can occur on different native frames after resume. The expanded
+`tests/native_timing_guest.c` now runs the real timing step and input wrapper
+together across 864 schedules: 60/120/144 FPS, 24 pause durations and 12 press
+phases per rate. Each press is held for at least 100 ms. These runs include
+9,084 frames with different raw/game tick counts. Every schedule delivers one
+press edge and one release edge, retains held state for a game-tick consumer,
+and delivers each edge within one original 60-Hz sampling interval. Paused
+intervals advance no game time. The existing disabled-path/ABI checks remain.
+
+The pad-poll service is mocked using the original input-record layout. This
+checks clock/edge coordination, not physical-device latency, short taps below
+the sampling interval or the complete weapon state machine. Existing CI
+already includes this fixture in `tests/test_native_timing.py`.
+
+Inspection of the pinned US executable also distinguishes held-input reader
+`0x42760` from pressed-edge reader `0x427b0`. The generic firing call sites at
+`0x1c3317` and `0x1c33af` are selected using held input; weapon-selection
+handling at `0x1bf140` uses pressed edges. Therefore a mismatch between raw and
+game tick phases is not by itself evidence that the observed held-fire shots
+were lost. No clock alignment, edge buffering or weapon cadence change is
+made on that hypothesis. Complete firing eligibility, animation and reload
+caller coverage remain separate work; earlier live firing differences remain
+open. Local disassembly evidence is `private/pipeline/input-audit-*.asm` and
+`audit-001C3100.asm`.
+The complete native timing suite passes all 50 checks, including the expanded
+input schedules and existing original weapon/NPC firing, sound and cooldown
+fixtures. Evidence is `logs/input-weapon-phase-checks.log`. This revision changes
+only tests and evidence; the executable remains the tested `d336cd9` build.
+Mac execution of the expanded fixture remains unverified.
+
 ## What Lies Below frame pacing without captures
 
 The Windows x64/D3D11 `later-story-pacing-144` run uses the `d336cd9` beta-overlay
