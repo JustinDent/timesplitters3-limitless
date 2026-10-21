@@ -71,3 +71,21 @@ For installed layouts, use the launcher platform adapter instead of assuming
 checkout names. Never include private data, generated guest code, credentials,
 environment dumps or personal configuration in durable context. Store paths,
 symbols, semantics and sanitized measured conclusions instead.
+
+## Physical keyboard text entry (#136)
+
+`src/pc_text_input.h` defines the shared bounded per-dialog text queue and edit
+commands. Windows `pc_controls.c` supplies WM_CHAR/WM_UNICHAR; native Mac
+`input_sdl.c` supplies SDL text events and starts/stops text input on its main
+thread. Both adapters suppress keyboard menu bindings while a text owner is active
+and discard queued text on focus loss or owner changes.
+
+`src/pc_menu_text.inc`, included by `pc_menu_mouse_guest.inc`, recognizes live
+character-row callbacks (`0x0007DB20`) rather than one dialog descriptor. Create
+Profile embeds this keyboard in descriptor `0x004E8D54`; testing only standalone
+`0x004D8D78` misses it. The original guest insertion/edit/Done routines retain
+selection replacement, limits and save behavior. Escape queues the owning menu's
+Back action, preserving embedded-menu callbacks. Numeric descriptor `0x004D94D4`
+is excluded. Supported input follows the original Latin-1 tables; paste and
+arbitrary Unicode are outside this change. See MAC-059 and the #136 STATUS entry
+for physical Windows confirmation and pending Mac/dialog-matrix validation.

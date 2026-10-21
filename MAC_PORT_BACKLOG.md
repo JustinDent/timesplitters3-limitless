@@ -192,6 +192,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-055 | Persist accepted frontend Controls before quitting Settings | Awaiting validation |
 | MAC-056 | Texture-camera composition alignment (issue #49) | Awaiting validation |
 | MAC-057 | Optional texture pack delivery through the launcher | Awaiting validation |
+| MAC-059 | Physical keyboard entry in original text dialogs (issue #136) | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -3018,6 +3019,43 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   verify opt-in confirmation, cancellation, installation under a portable root
   and a source checkout, then reuse existing loader evidence. Actual Mac texture
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
+
+### MAC-059 — Physical keyboard entry in original text dialogs (issue #136)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Physical letters, numbers, supported Latin-1 accents and spaces
+  feed the original on-screen keyboard insertion routine. Backspace/Delete,
+  Left/Right, Home/End, Ctrl+A, Enter and Escape edit/accept/cancel. Original
+  selection replacement, length/width limits and save callbacks remain in charge.
+  Typed E/F/Y do not trigger the normal menu shortcuts. Mouse/controller input
+  remains available. Numeric-only dialogs, arbitrary Unicode and paste are outside
+  this change.
+- **PC source:** `136-enhancement-write-better-with-a-real-keyboard`,
+  based on main `c932bee`; `src/pc_text_input.h`, `src/pc_menu_text.inc`,
+  `src/pc_menu_mouse_guest.inc`, `src/pc_controls.c`; shared behavior tests in
+  `tests/test_menu_text.py` and Windows adapter coverage in `tests/pc_controls.c`.
+- **PC validation:** Windows x64 Release build and build tests pass. 77 selected
+  pytest checks pass, one host-specific skip. Original checksum-verified US text
+  insertion/edit routines pass replacement, cursor, maximum length and font-width
+  rejection tests. Direct Windows message-handler tests pass. The initial live
+  test exposed an embedded profile keyboard missed by descriptor-only detection;
+  the shared code now recognizes the original character rows across descriptors.
+  On 2026-10-21 the user confirmed physical typing and Enter work in Create
+  Profile. Other dialogs and Mac physical input still need validation.
+- **Existing Mac support:** Same queue and guest callbacks; `src/native/input_sdl.c`
+  consumes SDL text events under the existing input mutex. Main-thread frame work
+  enables/disables SDL text input; focus loss clears queued text. Added native
+  input self-test coverage in `src/native/menu_input_selftest.inc`.
+- **Mac adaptation needed:** None identified; compile and host validation pending.
+  Cocoa composition/physical keyboard delivery is not established by Windows tests.
+- **Mac acceptance checks:** Run native input self-tests and shared menu tests;
+  create/edit a disposable profile and MapMaker name, including E/F/Y, Shift/Caps,
+  supported accents, selection replacement, Backspace/Delete, Enter/Escape,
+  blank/overlong input and focus loss. Verify mouse/controller on-screen keys and
+  normal gameplay/menu bindings after closing. Check that unsupported Unicode
+  is ignored rather than corrupting saved text.
+- **Mac implementation and evidence:** Adapter is included on the source branch;
+  no Apple Silicon host available. See the issue #136 entry in `STATUS.md` for local evidence.
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 

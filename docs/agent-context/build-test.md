@@ -120,3 +120,15 @@ from retired interpolation), and distinguish API presents, GPU completion and sc
 Use [testing-profile](../testing-profile.md), [building](../building.md) and
 [macos](../macos.md) for full commands. Never auto-test through personal saves,
 interactive launchers or persistent user settings.
+
+## Text-entry regression route (#136)
+
+`tests/test_menu_text.py` runs in the Windows/macOS runtime workflow. Its asset-free
+fixture covers queue bounds, owner changes, character/command routing and embedded
+keyboard recognition. An optional local case translates original insertion,
+deletion and cursor routines from the checksum-verified US XBE and checks real
+editing/length/font-width behavior; CI without that asset skips this case.
+`tests/pc_controls.c` covers Windows message delivery and focus changes;
+`src/native/menu_input_selftest.inc` adds SDL event/text-session checks. Shared
+fixture success does not establish physical Mac typing. Live Windows Create
+Profile typing and Enter were confirmed by the user with isolated Test Lab saves.
