@@ -29,6 +29,11 @@ reproducibility, and validation requirements.
   the existing disclosure limits. Follow the supervised panel's controller-owned
   handoff rules. These guides are reference evidence, not permission changes;
   never send private assets, generated code, personal config or credentials.
+- In the supervised workflow Sol may return typed requests for missing public
+  source, lexical references or patch evidence. The local broker validates and
+  reads them; Sol still runs no tools. See `docs/agent-context/evidence.md` for
+  source/provenance limits. Every hosted follow-up consumes the existing call
+  budget; cancellation, explicit routing opt-outs and native denials remain binding.
 
 ## Workspace and coordination
 

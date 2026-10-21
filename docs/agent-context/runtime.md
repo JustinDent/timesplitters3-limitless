@@ -10,6 +10,9 @@ paths are RUNTIME-relative, distinct from tracked root `src/pc_*.c`.
 `xbox_memory_layout.c` contain vblank/flip-gate plumbing. Start FPS investigation
 there only when timing/trace evidence implicates it. Visible menu names may
 not exist as strings in generated guest code; find a measured caller/address.
+Sol can request exact public source ranges and lexical references from the local
+broker; each result identifies the root/runtime revision and actual file hash.
+Generated guest C remains excluded from hosted retrieval.
 
 `tools/apply-patches.py:patch_records` defines effective order (not just filename
 sort). The loader stages an unwind of the EXACT previous recorded patch bytes,
@@ -66,6 +69,39 @@ question when needed; repeated application with unchanged bytes cannot fix a
 conflict. Do not alter MSVC flags to compensate for an unexplained patch failure.
 
 ## Renderer and timing boundaries
+
+### Following one frame without rediscovering the tree
+
+Start with this chain, then verify the current source and conditional branch:
+
+1. Guest call declarations/manual hooks connect lifted Xbox calls to HLE. Inspect
+   runtime `titles/futureperfect/src/recomp_manual.c`, `src/hle/hle.h`, relevant
+   `HLE_EXPORT`/`HLE_ORIGINAL` declarations and `tools/recomp/`. Root
+   `tools/recomp-generation.py` fingerprints these inputs. New wrapper names can
+   require regeneration; a host implementation body edit may only need a build.
+2. `src/hle/hle_d3d8.c` implements `D3DDevice_Swap` and Present integration. The
+   observed desktop Swap path counts a guest swap (`xbox_FpsCountSwap`), arms the
+   flip gate (`xbox_Nv2aFlipGateArm`) and invokes the title's original Swap through
+   `HLE_CALL_ORIGINAL`. Read the current branch/guards and associated timing
+   counters before interpreting a slow frame; symbol presence is not a profile.
+3. `src/kernel/kernel_bridge.c` supplies the vblank tick. Its observed release
+   call to `xbox_Nv2aFlipGateRelease` precedes the connected-interrupt check.
+   Do not assume a menu with no connected ISR should receive no gate release.
+   Inspect deadline advancement/resynchronization and actual thread delivery.
+4. `src/kernel/xbox_memory_layout.c` owns gate configuration, event/counters,
+   Arm/Release/idle behavior. An arm's configuration, first-vblank and event
+   readiness checks are distinct from the source of the vblank tick. Compare
+   thread IDs and arm/release/wait measurements before changing synchronization.
+5. Xbox frontend state/resources/draws are under `src/d3d/`; host adapters select
+   the RHI/window backend. A guest Swap count, host API present, GPU completion
+   and monitor scanout are separate observations. Use the relevant contract or
+   bounded captured-frame/scene check to isolate that layer.
+
+These are navigation facts checked against pinned runtime `d90c929` with local
+patches, not a verified cause of #105. The working runtime can contain edits or
+a partially migrated stack. Record file hashes/ledger/build provenance; request
+fresh source if it disagrees with a guide. Generated guest C stays local and can
+be investigated by LOCAL without transmitting it to the hosted advisor.
 
 Common Xbox frontend: `d3d8_device.c`, `d3d8_resources.c`, `d3d8_states.c`,
 `d3d8_shaders.c`, `d3d8_screencopy.c`, `d3d8_display.c`; backend selection through

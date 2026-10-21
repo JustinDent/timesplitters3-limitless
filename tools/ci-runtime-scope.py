@@ -64,7 +64,8 @@ def affected(paths, *, full=False):
         elif path in ('tools/compatibility-worker.py', 'tests/test_compatibility_worker.py',
                       'tests/test_mac_backlog.py', 'tools/repo-context.py',
                       'tests/test_repo_context.py', 'tools/router/repository-context.mjs',
-                      'tests/repository-context.test.mjs'):
+                      'tests/repository-context.test.mjs', 'tests/repository-evidence.test.mjs',
+                      'tools/router/repository-evidence.mjs', 'tools/router/advisory-evidence.mjs'):
             continue  # The lightweight plan/gate jobs always run these contracts.
         elif path.startswith(('tools/', 'tests/', 'config/')):
             selected.update(('native', 'gpu'))

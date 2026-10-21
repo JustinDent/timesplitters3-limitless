@@ -68,7 +68,7 @@ jobs:
       - name: Validate repository context and affected-system guide updates
         run: python tools/repo-context.py check --ci
       - name: Test optional local-router context reader
-        run: node --test tests/repository-context.test.mjs
+        run: node --test tests/repository-context.test.mjs tests/repository-evidence.test.mjs
 
   patches:
     name: Patch upgrades (${{ matrix.os }})

@@ -70,6 +70,11 @@ The optional router context-reader contracts use Node's built-in test runner
 (`node --test tests/repository-context.test.mjs`); game building still uses the
 existing Python/native dependencies. Patch-index loader fingerprints normalize
 text line endings so an older Windows CRLF worktree agrees with fresh LF clones.
+`tests/repository-evidence.test.mjs` adds disposable Git/junction, source
+provenance, redaction, budget and cancellation contracts for the optional broker;
+the same lightweight plan runs both Node test files. No game build or GPU is
+needed for these helpers. Native controller regressions and signed-in model
+acceptance are machine-local checks, separate from repository CI.
 
 From `c932bee`, builders audit repository `assets/textures` by default. A source-only
 checkout can retain LFS pointers, but normal build/package must stop rather than
