@@ -1778,6 +1778,74 @@ Run labels are `60-natural-intro-handoff-none-camera-track` and
 observations establish exercised track progression and completion, not
 per-frame visual smoothness, full cinematics or full-game acceptance.
 
+## Mixed-rate loopback movement (2026-10-21)
+
+A bounded two-process Windows x64/D3D11 System Link session uses the unchanged
+`dbb84e3` game executable, SHA-256
+`b9f21b2537d132f8d62c908e0c2f5d438f37f40caaf49d5477e99808fa0a28b1`.
+The host targets native 144 and the client native 120. Both use isolated Test
+Lab saves/settings, loopback addresses 127.0.0.2/3, minimized 1280x720 windows,
+rotating renderer captures and a 300-second bound. They join the same Subway
+Thief match (scene 3, network state 15), with two human players and no selected
+bots. Captures verify the ready lobby, gameplay, remote player model and menu.
+These conditions do not measure sustained FPS, scanout or real-network latency.
+
+Read-only actor observations establish bidirectional settled-position delivery:
+
+| Input | Local displacement | Local/remote endpoint difference |
+| --- | ---: | ---: |
+| Host holds forward for 2 s | 11.02293 units | 0.0 units |
+| Client holds forward for 2 s | 15.69957 units | 0.0 units |
+
+The two players start at different positions/headings and encounter different
+geometry; displacement values are not a speed-parity comparison. The endpoint
+check uses actor slot 0 for the host and slot 1 for the client. Other allocated
+actor records are not evidence of active players or bots. The generic `player`
+snapshot uses a current-view pointer that can point at different players during
+network processing; it must not be treated as a stable local-player identity.
+
+The client then moves backward while the host's Options menu is open. Its
+position [46.005505, -12, 6.334576] reaches the host's actor record while the
+menu snapshot reports paused=1. Continue returns the host to gameplay, and
+both instances remain connected. This checks menu/transport coexistence, not
+physical input latency or every intermediate remote pose. Host dual-pistol
+ammunition decreases during firing, but no player damage occurs. The first
+capture shows aim beside the target; the second has a wall in the sight line.
+Damage/death/respawn/score replication is therefore not validated by this run.
+
+Evidence: `private/test-saves/lan-native-host` and `lan-native-client`, with
+summarized endpoints in `private/pipeline/lan-native-summary.json`. The exact
+runner hash for this pair is
+`7aed4f432dc99c9e410e2e957c5c6732140337adc0358c8f72415795a16827fc`.
+Both processes exit normally; signed profiles and the canonical fixture remain
+unchanged, and disposable partition images/frame dumps are cleaned up.
+
+### Original-60 reference attempt rejected
+
+A subsequent original-60 pair discovers, joins and starts a session, but the
+default setup selects Team Deathmatch / Chinese (scene 25). Its reviewed
+`match-start.png` shows the team-selection screen. Both players remain at
+exactly their starting positions during the movement commands. Equal remote
+coordinates cannot establish movement replication when neither player moves;
+this run is rejected as a behavioral reference. It is not a high-refresh defect
+reproduction. Explicit mode/map selection and team-selection completion are
+required for the next original-60 comparison.
+
+The rejected route is retained, with its limitation, in
+`tests/fixtures/lan-movement-commands.json`. Raw observations/captures are under
+`private/test-saves/lan-original-host` and `lan-original-client`; the local
+summary is explicitly marked `movement_validated=false`. These processes also
+exit normally with unchanged profiles/fixture. Their runner hash is
+`1b412b3f165b10bf294230d2dc31340d78062842bfe0f5f3b347f6b82b120cee`.
+
+`tests/stability_transitions_game.py --lan-role host|client` now verifies the
+existing multiplayer build/content, configures only the loopback peer, and adds
+network state/role/actor observations to the existing bounded isolated runner.
+Each instance needs a distinct run name; only one pair may use these addresses
+at a time. This adds test tooling, not production transport behavior. A valid
+original-60 movement reference, intermediate remote smoothness, cross-machine
+LAN/WAN, bot lifecycle, mixed-rate match completion and native Mac remain open.
+
 ## Native clock and network movement cadence (2026-10-21)
 
 `tests/native_network_cadence.c` composes the production

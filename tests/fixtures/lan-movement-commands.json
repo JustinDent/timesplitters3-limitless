@@ -1,0 +1,135 @@
+{
+  "_scope": "Recorded original-60 attempt: discovery/join succeeded, but default Team Deathmatch/Chinese stayed at team selection. This is not a validated movement replay; explicitly select the mode/map and complete team selection before reuse.",
+  "host": [
+    {
+      "wait": 24
+    },
+    {
+      "keys": [
+        40,
+        40,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.6,
+      "wait": 2
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 4,
+      "label": "lan-browser"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 5,
+      "label": "host-lobby"
+    },
+    {
+      "wait": 25,
+      "label": "paired-lobby"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 15,
+      "label": "match-start"
+    },
+    {
+      "keys": [
+        87
+      ],
+      "hold": 2,
+      "gap": 0.2,
+      "wait": 3,
+      "sample_hold": true,
+      "label": "host-walk-settled"
+    },
+    {
+      "wait": 16,
+      "label": "client-walk-observed"
+    },
+    {
+      "stop": true
+    }
+  ],
+  "client": [
+    {
+      "wait": 24
+    },
+    {
+      "keys": [
+        40,
+        40,
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 0.6,
+      "wait": 2
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 4,
+      "label": "lan-browser"
+    },
+    {
+      "wait": 8,
+      "label": "client-browser"
+    },
+    {
+      "keys": [
+        40,
+        69
+      ],
+      "hold": 0.25,
+      "gap": 1,
+      "wait": 4,
+      "label": "joined"
+    },
+    {
+      "keys": [
+        69
+      ],
+      "hold": 0.25,
+      "wait": 3,
+      "label": "ready"
+    },
+    {
+      "wait": 30,
+      "label": "host-walk-observed"
+    },
+    {
+      "keys": [
+        87
+      ],
+      "hold": 2,
+      "gap": 0.2,
+      "wait": 3,
+      "sample_hold": true,
+      "label": "client-walk-settled"
+    },
+    {
+      "wait": 8,
+      "label": "settled"
+    },
+    {
+      "stop": true
+    }
+  ]
+}

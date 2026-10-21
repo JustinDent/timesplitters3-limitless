@@ -6,6 +6,17 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Mixed-rate loopback session:** A native-144 host and native-120 client join
+  Subway Thief and replicate movement in both directions. After separate
+  two-second walks, each peer reports exactly the same settled actor position.
+  Client movement reaches the host while its menu is open; Continue resumes.
+  A subsequent original-60 attempt is rejected as a movement reference because
+  Team Deathmatch remains at team selection and both players stay still.
+  Four test processes exit normally with unchanged profiles/fixture. Captured,
+  minimized same-PC runs do not establish performance or real-network latency;
+  damage, continuous remote smoothness, original-60 parity and Mac remain open.
+  [Loopback scope and rejected reference](docs/native-high-refresh-regressions.md#mixed-rate-loopback-movement-2026-10-21).
+
 - **Native network cadence audit:** A new composed clock/adapter fixture
   preserves 60 movement-send opportunities/s and 20 unchanged full-state
   refreshes/s per local player at native 60/120/144. Counter wraparound,

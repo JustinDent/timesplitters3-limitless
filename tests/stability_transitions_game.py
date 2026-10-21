@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--run-name',default='stability-transitions')
     parser.add_argument('--native-fps',type=int,choices=(60,120,144))
     parser.add_argument('--manual-start',action='store_true')
+    parser.add_argument('--lan-role',choices=('host','client'),help='Use isolated loopback peers 127.0.0.2/3 for a bounded LAN session')
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
@@ -36,7 +37,14 @@ def main():
     assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
     assert os.name=='nt'
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest()==XBE_SHA256
+    if args.lan_role:
+        subprocess.run([sys.executable,str(ROOT/'tools/network-identity.py'),'--verify',
+                        '--executable',str(ROOT/'build/windows/Release/futureperfect_recomp.exe')],check=True)
     run=ROOT/'private/test-saves'/args.run_name;env=prepare_run(ROOT,run)
+    if args.lan_role:
+        env.update(TSFP_NETWORK='1',
+                   TSFP_NET_BIND='127.0.0.2' if args.lan_role=='host' else '127.0.0.3',
+                   TSFP_NET_PEERS='127.0.0.3' if args.lan_role=='host' else '127.0.0.2')
     # This owned, unlocked test directory starts from the requested CLI rate.
     # In-session restarts retain any preference saved by the menu under test.
     (run/'pc-frame-rate.ini').unlink(missing_ok=True)
@@ -122,6 +130,17 @@ def main():
             messages.append(dict(slot=slot,kind=kind,text=text.value.decode('latin-1'),
                 timing=floats(address+0x144,5)))
         return messages
+    def network_snapshot():
+        actors=[];pool=word(0x7356d8);roster=word(0x7de400) or 0
+        humans,bots=roster&255,(roster>>16)&255
+        if pool is not None and 0x80000000<=pool<0x84000000:
+            for slot in range(min(16,humans+bots)):
+                entity=word(pool+slot*0xea0)
+                if entity is not None and 0x80000000<=entity<0x84000000:
+                    actors.append(dict(slot=slot,entity=entity,position=floats(entity+0x64,3),
+                                       health=floats(entity+0x1cc,1)))
+        return dict(state=word(0x76b1a4),role=word(0x76b140),human_slots=humans,bot_slots=bots,
+                    peers=[i for i in range(16) if word(0x666040+i*4)],actors=actors)
     def snapshot():
         pointer=word(0x761C48)
         return dict(pid=process.pid,scene=word(0x79094C),flags=word(0x7DE458),
@@ -129,7 +148,8 @@ def main():
             held=word(0x6B93DC),pressed=word(0x6B93E0),suppression=word(0x6B9408),
             raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),level_ticks=word(0x7DE318),
             match_state=word(0x7DE30C),countdown=word(0x4D2878),countdown_ticks=word(0x4D287C),
-            player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}))
+            player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}),
+            **(dict(network=network_snapshot()) if args.lan_role else {}))
     def drain(pipe,path):
         with path.open('wb') as out:
             left=4*1024*1024
@@ -181,7 +201,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,minimized=args.minimized,profile_presents=args.profile_presents),indent=2))
+        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)

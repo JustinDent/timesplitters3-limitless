@@ -2968,6 +2968,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   not platform gameplay. The Mac recorder remains shared; actual Mac Venice,
   pacing and gameplay acceptance require the native Mac runner and hardware.
 
+- **Mixed-rate loopback acceptance:** Windows System Link at native 144 host /
+  native 120 client reaches a two-human Subway Thief match, with bidirectional
+  settled-position delivery and client movement while the host menu is open.
+  The original-60 attempt remains at team selection and is rejected for movement
+  parity. `stability_transitions_game.py --lan-role` adds isolated loopback
+  observation only. It needs Windows process-memory/window APIs; the unchanged
+  shared timing code still needs actual Mac acceptance and a Mac transport.
+  Cross-machine networking, remote pose smoothness and combat remain open.
+
 - **Native network cadence audit:** Portable test composition of the shared
   native clock and Windows guest network adapters preserves console-clock
   packet gates at native 60/120/144, including wraparound, live rate switches,
