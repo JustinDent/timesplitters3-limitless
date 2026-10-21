@@ -75,6 +75,8 @@ void host_SetTwoDPlacement(int value,uint32_t t)
 /* Character hit capture belongs to the menu adapter (covered by menu_mouse.c).
  * These placement fixtures have no active character carousel. */
 static void menu_character_quad(void) {}
+void pc_prompts_layout_begin(void){}
+void pc_prompts_layout_end(void){}
 #include "pc_display_ui.inc"
 static void draw(void){pending=1;g_esp+=4;}
 static void rank_widget(void)

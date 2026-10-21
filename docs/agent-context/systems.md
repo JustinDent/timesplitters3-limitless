@@ -72,6 +72,21 @@ checkout names. Never include private data, generated guest code, credentials,
 environment dumps or personal configuration in durable context. Store paths,
 symbols, semantics and sanitized measured conclusions instead.
 
+## Prompt text layout read scopes
+
+`pc_prompt_guest.inc` reads through `pc_prompts_read_region`; the bounded
+thread-local `pc_text_read_scope.h` cache uses existing OS VM query adapters.
+It is valid only during synchronous text layout, with no mapping/protection
+changes or event dispatch. Nested scopes retain intervals; the next outer scope
+clears them. Scratch writes still use a fresh protection query. Scope wrapping,
+label construction/drawing and nested prompt measurement through the shared
+hooks in `pc_tutorial_ui.inc`, `pc_display_ui.inc` and `pc_prompt_guest.inc`.
+`pc_display_menu.c` includes `pc_prompts.h` before the .inc callers to avoid
+implicit declarations. Do not extend caches across menu ticks or frames.
+Tests cover region boundaries/expiry and actual prompt-hook scratch ABI/fallbacks.
+Issue #105 also requires the runtime late-frame pacing patch; caching alone
+measured 30 FPS. See STATUS.md for measured acceptance and Mac limits.
+
 ## Physical keyboard text entry (#136)
 
 `src/pc_text_input.h` defines the shared bounded per-dialog text queue and edit

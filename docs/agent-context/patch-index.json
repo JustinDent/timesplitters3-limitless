@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "51b22f0715793bf9aa6118defffa17ea21ca9e40aae6ac0c6eb2c77f6b1152ba",
+  "loaderSha256": "b2360c983f8e82eea9b7217f0777703e198581b2277ae4c9e463c8381793cfd0",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -950,6 +950,13 @@
         "src/kernel/xbox_memory_layout.c",
         "src/launcher/launcher.c",
         "titles/futureperfect/src/main.c"
+      ]
+    },
+    {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-late-frame-pacing.patch",
+      "sha256": "b50aa4787339106f31cd6afd2848188b6bf2a46c49002d70d4b2f2ad53a228f3",
+      "targets": [
+        "src/kernel/xbox_memory_layout.c"
       ]
     }
   ]
