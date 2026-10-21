@@ -185,6 +185,23 @@ extern uint32_t pc_native_kind35_gate(uint32_t value);
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
+    /* The player aim/weapon-offset easing already multiplies the error by
+     * game delta before these six coefficient multiplies. Linear subdivision
+     * changes its settling rate. Match the original 60-Hz response at the
+     * current game speed: scale the authored weight to one raw tick, then
+     * split its remaining-error factor over this fractional raw interval.
+     * Keep whole/catch-up updates and the original snap branches unchanged. */
+    if ((site == 0x25ABCEu || site == 0x25AC1Eu || site == 0x25AC80u ||
+         site == 0x25ACCAu || site == 0x25B13Cu || site == 0x25B16Du) &&
+        g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if (raw>0.f && raw<1.f && game>0.f) {
+            float weight=right*(game/raw);
+            if (weight>0.f && weight<1.f)
+                right=-expm1f(raw*log1pf(-weight))/game;
+        }
+    }
     if ((site == 0xD5F60u || site == 0xD64A4u ||
          site == 0xD64BDu || site == 0xD64D6u) && g_tsfp_native_timing_active) {
         float delta=*(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset);

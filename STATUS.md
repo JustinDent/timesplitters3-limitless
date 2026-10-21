@@ -6,6 +6,16 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Aim/weapon-offset easing (this revision):** Original fractional linear
+  easing settled more slowly at higher refresh rates. Six audited shared
+  coefficient sites now preserve the original 60-Hz response at the live game
+  speed, including quarter speed. Whole/catch-up updates and snap behavior are
+  unchanged. Original-block tests cover both paths, 60/120/144, pause, uneven
+  intervals and scope. All 157 related checks and the supported Windows Build
+  pass. A bounded 144 gameplay smoke completes aiming, movement, firing, reload
+  and pause/resume, with unchanged personal settings and fixture. Full
+  caller/physical aiming and Mac execution remain
+  open. [Easing evidence](docs/native-high-refresh-regressions.md#aim-and-weapon-offset-easing).
 - **Animation timeline/event coupling (this revision):** A new fixture executes
   the complete original animation clock and event readers together. All 32
   sequences pass across original 60/native 60/120/144, normal/quarter speed,

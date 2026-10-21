@@ -40,6 +40,64 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Aim and weapon-offset easing
+
+The original player routine `0x25A7F0` eases offsets later consumed by the
+weapon model (`player+F64/F68`) and aim direction (`+F6C/F70`). Its fractional
+updates multiply error by game delta and the authored 0.1 coefficient.
+Subdividing this linear update changes its settling rate: the actual original
+block's first 120-FPS step towards 8 is 0.400000006, whereas subdividing the
+original 60-Hz response gives 0.410533622. The failing behavioral check is in
+`logs/native-aim-easing-red.log` (after a corrected test-only XMM field name).
+
+Shared `pc_native_numeric.h` corrects only the final six coefficient
+multiplications at `25ABCE`, `25AC1E`, `25AC80`, `25ACCA`, `25B13C` and `25B16D`.
+For raw intervals below one tick it derives the original one-raw-tick weight
+at the current game speed (`weight = coefficient * game_delta / raw_delta`)
+and splits its remaining-error factor over the raw interval. This retains
+original normal/slow-motion response at 60 FPS. Whole/catch-up updates, original
+mode, target acquisition and authored snap branches remain unchanged. Raw
+mouse packet consumption is outside this correction.
+
+`native_aim_easing.c` executes both original easing blocks through their stores,
+including the first block's snap branches. Their outgoing join instructions
+are replaced by RET only in the fixture. The pinned XBE supplies original
+instructions/constants. Incoming target vectors are controlled. All 16 steady
+sequences pass across original 60/native 60/120/144 and normal/quarter speed.
+Every step is compared with the original 60-Hz response; pause leaves offsets
+unchanged. Uneven fractional intervals also match repeated original updates.
+One/two/three-tick catch-up matches original results exactly. Snap thresholds,
+neighboring sites, disabled native mode and limiting coefficients are covered.
+For a target offset of 6 after 30 game ticks, normal-speed final values are
+5.745652676 / 5.745653152 / 5.745652676 at 60/120/144; quarter-speed values are
+5.712455750 / 5.712455273 / 5.712454796. The preliminary focused result is in
+`logs/native-aim-easing-green.log`.
+
+The expanded timing, float/vehicle translator, auto-look, CI-scope and Mac
+backlog suites pass all 157 checks (`logs/native-aim-easing-regressions.log`).
+The supported Windows Build and its built-in checks pass
+(`logs/native-aim-easing-build.log` / `.err`). The binary SHA-256 is
+`858ce97b290710485935f282c388ac71131eababe8244cb1b75b7147acb1a0ef`,
+compiled with parent label `0c905e6` plus this revision's easing source.
+
+The bounded native-144 What Lies Below smoke completes normally at about
+97 seconds (`private/test-saves/aim-easing-smoke-144`,
+`logs/aim-easing-smoke-144.log`). Yaw goes 209 -> 149 -> 209 degrees; movement
+continues after pause/resume. Revolver ammunition goes 6/30 -> 3/30 -> 6/27,
+matching the prior captured-input original-60/native-144 route (four synthetic
+presses produce three rounds in that route). Pause changes to 1 and resumes
+to 0. Health remains 35. Reviewed move/after-resume captures show the weapon,
+hand, environment and HUD. The last cumulative API-present report has 12,000
+guest frames with zero interpolated/other/skipped/failed frames; this includes
+menus and is not a pacing or scanout measurement. Fixture and personal settings
+hashes are unchanged. The separately running menu-footer-source game was not
+stopped or controlled. This smoke also completes the reload/pause integration
+checks that were interrupted on the preceding weapon-sway build.
+
+Full caller/target-acquisition behavior, physical aiming feel and Mac execution
+remain separate acceptance work. This is a small response-consistency change,
+not a measured latency or performance improvement.
+
 ## Animation timeline and event coupling
 
 On the `60f140c` runtime, the new `native_animation_clock.c` fixture executes

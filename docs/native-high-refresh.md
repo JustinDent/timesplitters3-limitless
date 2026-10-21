@@ -102,6 +102,12 @@ original half-life. The original dispatchers and event readers are exercised
 by `tests/native_script_events.c`, `tests/native_npc_dispatch.c` and
 `tests/native_player_dispatch.c`.
 
+Player aim and weapon-offset easing split their original response over
+fractional raw intervals, accounting for live game speed. This preserves the
+original 60-Hz normal/slow-motion settling rate at higher refresh targets.
+The six audited coefficient sites retain whole/catch-up updates and authored
+snap thresholds; raw mouse packet consumption is unchanged.
+
 Weapon sway also samples fractional level time at its final visual multiply.
 The original integer sine crossing still chooses random amplitudes at the
 same authored tick, preserving event cadence. Both original weapon-model

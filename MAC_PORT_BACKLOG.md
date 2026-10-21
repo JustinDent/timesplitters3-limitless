@@ -2960,6 +2960,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Aim/weapon-offset easing (this revision):** Shared numeric policy now splits
+  six original easing coefficients over fractional raw intervals, preserving
+  original 60-Hz normal/slow-motion response. Original-block Windows tests cover
+  both paths, 60/120/144, pause, snap, uneven steps and unchanged catch-up. No
+  platform adapter is needed. All 157 related Windows checks and the full Build
+  pass. Actual Mac execution and physical/visual aiming
+  acceptance remain pending; see the native regression record and STATUS.
+
 - **Animation timeline coverage (this revision):** Shared test coverage executes
   the complete original timeline and event readers at original 60/native
   60/120/144, including normal/quarter speed, reverse, loops, clamping, pause
