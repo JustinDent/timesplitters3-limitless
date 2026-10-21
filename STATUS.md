@@ -6,6 +6,22 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Remote correction and in-motion observation (2026-10-21):** The lifted
+  original remote-position correction already advances on fractional deltas;
+  eight original/native normal/quarter-speed sequences plus guard cases pass.
+  The timing/network suite passes 68 checks. A new bounded background sampler
+  fixes a 15.625 ms Python observation-clock limitation by using QPC. In the
+  capture-free Vietnam comparison, original local changes measure about 60/s;
+  native host changes measure 144.367/s locally and 124.003/s on its 120 peer.
+  Both directions deliver identical settled positions. The 120 client stops
+  locally as well as remotely, and a captured reverse-direction attempt also
+  stops; these are not uninterrupted-movement passes. Memory observations can
+  include changes within a frame, so they do not establish rendered-pose
+  smoothness. Six corrected sessions exit cleanly with profiles/fixture intact
+  and disks recycled. Statistics/CI/backlog checks pass 72 tests. No production
+  change/rebuild; native Mac, frame-boundary pose capture and an unobstructed
+  120 route remain open. [Evidence and limits](docs/native-high-refresh-regressions.md#in-motion-loopback-observations-2026-10-21).
+
 - **Explicit network reference:** Corrected setup selects Vietnam Deathmatch
   with no bots. Original 60/60 and native 144/120 pairs both move in each
   direction and deliver identical settled positions to the peer. Spawn/terrain

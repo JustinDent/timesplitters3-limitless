@@ -238,6 +238,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 
 
 @pytest.mark.parametrize('harness_name,ranges', [
+    ('native_network_correction.c', [(0x356e20,0x3570c7)]),
     ('native_surface_cache.c', [(0x127400,0x127494),(0x127500,0x12782c),
                                (0x194b00,0x194bb0),(0x1956a0,0x19576d)]),
     ('native_visual_time_guest.c', [(0x43595,0x4359c),(0x670e8,0x670ef),
@@ -334,6 +335,10 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
+        if harness_name=='native_network_correction.c':
+            import struct
+            constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
+                                for address in (0x4785e4,0x4782c4))
         if harness_name=='native_hud_messages.c':
             import struct
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
@@ -544,7 +549,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
-    if harness_name in ('native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_hud_messages.c','native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
+    if harness_name in ('native_network_correction.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_hud_messages.c','native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
     if harness_name=='native_projectile_coupled.c':

@@ -6,6 +6,107 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## In-motion loopback observations (2026-10-21)
+
+`stability_transitions_game.py --sample-network-ms 2` now samples both actor
+slots independently of input waits, with read-begin/read-end timestamps and a
+32 MiB per-session bound. Python 3.12 on this Windows host implements
+`monotonic()` using GetTickCount64 (15.625 ms resolution), which produced
+repeated timestamps in the first attempt. That timing evidence was rejected;
+one subsequent coarse-clock attempt was stopped cleanly before gameplay.
+The runner now uses `perf_counter()` (QueryPerformanceCounter, 100 ns reported
+resolution) consistently for holds, duration and observations, with Python's
+high-resolution sleep. All sessions remain bounded and isolated.
+
+The corrected original-60 and native 144-host/120-client pairs use the explicit
+Vietnam Deathmatch/no-bot replay, with renderer captures disabled and windows
+minimized. Both directions move and agree exactly at the settled endpoint.
+`tools/network_motion_stats.py` measures the central approximately 1.56 seconds
+of each two-second hold, preserving all samples in that predeclared window.
+
+| Pair / moving actor | Local observed changes/s | Remote observed changes/s | Local / remote longest observed unchanged interval |
+| --- | --- | --- | --- |
+| Original 60/60, host | 60.077 | 65.169 | 19.194 / 18.756 ms |
+| Original 60/60, client | 60.026 | 72.158 | 19.381 / 19.660 ms |
+| Native 144/120, host | 144.367 | 124.003 | 10.131 / 11.143 ms |
+| Native 144/120, client | 100.229 | 127.679 | 264.940 / 244.744 ms |
+
+Observation-gap p99 is 2.560–2.801 ms; no gap in these windows exceeds the
+observer's target frame duration. Remote counts above the rendering target
+show why memory changes must not be described as distinct rendered frames:
+the original prediction/correction code can modify the position within an
+update. This read-only evidence is also not packet latency or scanout.
+
+The native client's final quarter-second is stationary on both local and
+remote machines. Its level clock continues, health stays 1.75, and the input
+hold remains requested. Motion changes direction just before stopping, which
+is consistent with contact, but the uncaptured run cannot establish the cause.
+This segment is not accepted as uninterrupted 120 FPS movement; do not hide
+its stationary tail by selecting a shorter post-hoc analysis window. Different
+spawns and headings also prevent a speed-parity claim from these distances.
+
+The six new statistics tests reject frozen, wrong-scene, non-finite and invalid
+timestamp evidence, and explicitly report undersampling. Together with shared
+CI/backlog checks, 72 tests pass in 0.17 s (`logs/network-motion-tooling.log`).
+The portable analyzer joins both host jobs; Windows process-memory sampling
+needs a separate Mac equivalent. Full rendered-pose smoothness remains open.
+
+Evidence: `private/test-saves/lan-motion-{60,native}-{host,client}` and
+`private/pipeline/lan-motion-{60,native}-summary.json`. The four corrected
+sessions exit normally with unchanged signed profiles and canonical fixture;
+their disposable virtual disks are recycled. They use Windows x64 Release
+from the menu-separator source (committed as `1f93646`), executable SHA-256
+`ae7e026fca5c345426a779192765e990304379c19227d495c66c89d08edb4e2a`,
+and runner SHA-256
+`5e2f65212e4a01152e3bbbda0485ffef72186b03c72948867f6e62886b85dde3`.
+No new gameplay change or build was made for this audit. Mac runtime,
+cross-machine transport, combat, sustained motion and frame-boundary poses
+remain unverified.
+
+### Captured reverse-direction follow-up
+
+A third pair (`lan-motion-reverse-{host,client}`) uses the same binary and
+runner, with the client holding S instead of W and renderer captures enabled.
+The captured scene is Vietnam with both humans visible; the client's settled
+view faces the waterfall basin from a bank. This does not reveal the surface
+behind the player or reproduce the earlier spawn/heading.
+
+Both settled endpoints again agree exactly. The host's trimmed window records
+131.078 local and 115.698 remote changes/s, with approximately 34.7 ms maximum
+unchanged intervals. The client travels only 1.923 units in its measured window
+and is stationary for 1.144 s locally and 1.118 s remotely. This is another
+unsuitable uninterrupted-movement route, not evidence of network stalling and
+not acceptance of continuous 120 FPS movement. Capture-enabled observations
+must not replace the earlier capture-free pacing measurements. The exact
+reason for local stopping remains unresolved; a controlled unobstructed route
+and frame-boundary pose capture are the next meaningful acceptance steps.
+
+Both sessions exit normally, signed profiles/fixture remain unchanged, and
+disposable disks/rotating BMPs are removed. The selected captures and summary
+remain in the two run directories and
+`private/pipeline/lan-motion-reverse-summary.json`. This follow-up adds no
+production changes and makes no frame-perfect, latency or full-game claim.
+
+## Remote-position correction audit (2026-10-21)
+
+`tests/native_network_correction.c` executes the complete original US routine
+`sub_00356E20` (0x356E20..0x3570C7), lifted from the hash-verified executable.
+Its maximum correction already reads the float game delta at 0x4E794C and
+multiplies it by the original 0.2 constant. No gameplay patch is required here.
+The test supplies a controlled prediction callback and network eligibility;
+it does not execute remote prediction, transport, or the rendered frame.
+
+Eight half-second sequences cover original 60 and native 60/120/144 at normal
+and quarter speed. Every update advances, including zero-whole-tick updates;
+total correction is 6 units at normal speed and 1.5 at quarter speed. Pause,
+a fractional update, a three-tick catch-up, diagonal normalization, a small
+error, the 20-unit teleport cutoff, stale-peer handling, local updates and
+offline dispatch retain their original behavior. Stack/register and game-delta
+invariants are checked. The timing/network/movement/backlog suite passes
+68 tests in 64.82 s (`logs/network-correction-suite.log`). This is Windows x64
+fixture evidence; the XBE-dependent case is not proof of an asset-free CI run
+or native Mac execution. Gameplay code and timing policy are unchanged.
+
 ## Current evidence
 
 Windows x64, supported US XBE, pinned runtime, local development branch

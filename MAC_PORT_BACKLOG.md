@@ -2960,6 +2960,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Remote correction/observation audit (2026-10-21):** The portable lifted
+  `sub_00356E20` fixture verifies fractional correction and original guard paths;
+  no production change is required for that routine. Windows read-only paired
+  observations now use QPC and bounded background sampling instead of a coarse
+  Python clock. `network_motion_stats.py` and its six portable tests join shared
+  CI; Windows checks pass, but the process-memory sampler is Windows-specific.
+  Implement equivalent bounded observation in the Mac runner for host validation;
+  do not treat these loopback endpoints or intermediate memory changes as Mac
+  transport, rendered-pose or latency acceptance. Native Mac gameplay, sustained
+  remote smoothness and its transport adapter remain open. See the in-motion
+  network audit in STATUS and the linked detailed regression record.
+
 - **Venice comparison (this revision):** The existing shared recorder now has
   an opt-in `--profile-presents` route in the Windows bounded session runner,
   usable for original and native timing. Same-replay Venice comparisons show

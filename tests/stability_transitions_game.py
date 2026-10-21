@@ -7,6 +7,7 @@ The entire session is limited to ten minutes, including process restarts.
 """
 import argparse
 import ctypes as c
+import csv
 import hashlib
 import json
 import os
@@ -27,6 +28,7 @@ def main():
     parser.add_argument('--native-fps',type=int,choices=(60,120,144))
     parser.add_argument('--manual-start',action='store_true')
     parser.add_argument('--lan-role',choices=('host','client'),help='Use isolated loopback peers 127.0.0.2/3 for a bounded LAN session')
+    parser.add_argument('--sample-network-ms',type=int,choices=range(2,21),help='Read both actor positions in a background sampler; records observation timing, not rendered frames')
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
@@ -34,6 +36,7 @@ def main():
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
     args=parser.parse_args()
+    assert not args.sample_network_ms or args.lan_role
     assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
     assert os.name=='nt'
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest()==XBE_SHA256
@@ -77,6 +80,7 @@ def main():
         assert result
         return result
     original=profiles();report=[];samples=[];threads=[];process=None;handle=None
+    motion_stop=threading.Event();motion_thread=None;motion_errors=[]
     kernel=c.WinDLL('kernel32',use_last_error=True)
     kernel.OpenProcess.restype=c.c_void_p
     kernel.ReadProcessMemory.argtypes=[c.c_void_p,c.c_void_p,c.c_void_p,c.c_size_t,c.c_void_p]
@@ -154,8 +158,32 @@ def main():
         with path.open('wb') as out:
             left=4*1024*1024
             while chunk:=pipe.read(4096):out.write(chunk[:left]);left=max(0,left-len(chunk))
+    def sample_motion(path):
+        # Independent of command waits. Timestamp the whole observation because
+        # RPM reads are not an atomic game-frame snapshot. Each XYZ is one read.
+        try:
+            with path.open('w',newline='') as out:
+                writer=csv.writer(out)
+                writer.writerow(['begin','end','scene','network','match','level_ticks',
+                                 'x0','y0','z0','x1','y1','z1'])
+                while not motion_stop.is_set():
+                    began=time.perf_counter()
+                    scene,network,match=word(0x79094c),word(0x76b1a4),word(0x7de30c)
+                    if network==15 and match==7:
+                        pool=word(0x7356d8);positions=[]
+                        for slot in range(2):
+                            entity=word(pool+slot*0xea0) if pool and 0x80000000<=pool<0x84000000 else None
+                            xyz=floats(entity+0x64,3) if entity and 0x80000000<=entity<0x84000000 else None
+                            positions.extend(xyz or [None]*3)
+                        tick=word(0x7de318)
+                        writer.writerow([began,time.perf_counter(),scene,network,match,tick,*positions])
+                        if out.tell()>32*1024*1024:raise RuntimeError('Network observation exceeded 32 MiB bound')
+                    # CPython uses a high-resolution waitable timer for sleep
+                    # on Windows; Event.wait can round a 2 ms wait to ~16 ms.
+                    time.sleep(max(0,args.sample_network_ms/1000-(time.perf_counter()-began)))
+        except Exception as exc:motion_errors.append(repr(exc))
     def launch(index):
-        nonlocal process,handle,window
+        nonlocal process,handle,window,motion_thread
         state.write_text('0 0\n')
         if args.profile_presents:
             env['TSFP_FRAME_PROFILE']=str(run/f'run{index}-presents.csv')
@@ -165,12 +193,21 @@ def main():
         for pipe,ext in [(process.stdout,'out'),(process.stderr,'err')]:
             t=threading.Thread(target=drain,args=(pipe,run/f'run{index}.{ext}'),daemon=True);t.start();threads.append(t)
         window=ui.wait_window(process.pid,'TimeSplitters FP')
+        if args.sample_network_ms:
+            motion_stop.clear()
+            motion_thread=threading.Thread(target=sample_motion,args=(run/f'run{index}-network-motion.csv',),daemon=True)
+            motion_thread.start()
         if args.minimized:
             user.ShowWindow.argtypes=[c.c_void_p,c.c_int]
             user.ShowWindow(window,6)
         print('Child',index,process.pid,flush=True)
     def close():
-        nonlocal handle
+        nonlocal handle,motion_thread
+        motion_stop.set()
+        if motion_thread:
+            motion_thread.join(5)
+            assert not motion_thread.is_alive(),'Motion sampler did not stop before handle close'
+            motion_thread=None
         if process and process.poll() is None:
             user.PostMessageW(window,0x10,0,0)
             try:process.wait(10)
@@ -196,18 +233,18 @@ def main():
                 except OSError:pass
             time.sleep(.1)
         raise AssertionError('No renderer capture')
-    window=None;index=0;seen=0;start=time.monotonic();next_sample=0
+    window=None;index=0;seen=0;start=time.perf_counter();next_sample=0
     lock=run/'run.lock'
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,started_monotonic=start),indent=2))
+        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)
-        while time.monotonic()-start<args.seconds:
+        while time.perf_counter()-start<args.seconds:
             assert process.poll() is None,'Unexpected game exit'
-            elapsed=time.monotonic()-start
+            elapsed=time.perf_counter()-start
             if elapsed>=next_sample:
                 item=dict(seconds=round(elapsed,2),**snapshot());samples.append(item)
                 (run/'current.json').write_text(json.dumps(item));next_sample=elapsed+1
@@ -236,13 +273,13 @@ def main():
                 hold_samples=[]
                 for key in command.get('keys',[]):
                     state.write_text(f'{key} 1\n')
-                    held_at=time.monotonic()
+                    held_at=time.perf_counter()
                     if command.get('sample_hold'):
-                        while time.monotonic()-held_at<hold:
-                            hold_samples.append(dict(seconds=round(time.monotonic()-start,6),
-                                held_seconds=round(time.monotonic()-held_at,6),key=key,
+                        while time.perf_counter()-held_at<hold:
+                            hold_samples.append(dict(seconds=round(time.perf_counter()-start,6),
+                                held_seconds=round(time.perf_counter()-held_at,6),key=key,
                                 **snapshot()))
-                            time.sleep(min(.05,max(0,hold-(time.monotonic()-held_at))))
+                            time.sleep(min(.05,max(0,hold-(time.perf_counter()-held_at))))
                     else:time.sleep(hold)
                     state.write_text('0 0\n');time.sleep(command.get('gap',.7))
                 if command.get('window')=='toggle':user.PostMessageW(window,0x104,13,1<<29)
@@ -252,7 +289,7 @@ def main():
                     user.ShowWindow(window,9);user.SetForegroundWindow(window);time.sleep(1)
                     report.append(dict(focus_lost=lost,focus_restored=user.GetForegroundWindow()==window))
                 time.sleep(command.get('wait',2.5))
-                item=dict(seconds=round(time.monotonic()-start,3),command=command,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
+                item=dict(seconds=round(time.perf_counter()-start,3),command=command,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
                 if hold_samples:item['hold_samples']=hold_samples
                 if 'label' in command:capture(command['label'])
                 report.append(item);(run/'report.json').write_text(json.dumps(report,indent=2))
@@ -272,6 +309,7 @@ def main():
         text=log.read_text(errors='replace')
         assert '[CRASH]' not in text and '[ICALL] unresolved' not in text,log
     assert process.returncode==0,'Final game exit was not clean'
+    assert not motion_errors,motion_errors
     print('PASS: bounded session completed; inspect report and captures for scenario coverage',flush=True)
 
 if __name__=='__main__':main()
