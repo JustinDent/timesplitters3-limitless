@@ -123,3 +123,12 @@ Unsupported/empty sizes retain the last valid output (guest output before a wind
 exists); current supported limits remain landscape 640x480 through 7680x4320,
 no wider than 4:1. Manual selection disables this tracking. Desktop resolution
 and refresh rate are never changed.
+
+## Crane viewport edge clipping (#221)
+
+`pc_ui_vignette_clip` in `pc_ui_layout.h` converts the crane/remote-view
+vignette's full 0,0..639,479 clip to host-exclusive 640,480 bounds only for
+STRETCH tag `0x00137010`. Shared RHI `d3d8_GetScissor` and legacy GL
+`native_apply_scissor` apply this policy before output scaling. Stored guest
+clips, other tags and partial rectangles remain unchanged. The title helper
+scope supplies the tag only for complete single-player non-4:3 views.

@@ -138,3 +138,17 @@ for camera/UI adaptation, retaining guest output if no usable window exists,
 while menu save/preview code retains the
 selected Auto sentinel. Apply after the original cutscene-letterbox patch;
 `test_cutscene_letterbox.py` checks the resulting production wrapper.
+
+## Crane and remote-view vignette (#221)
+
+`*-crane-vignette.patch` wraps the US `sub_00137010` drawing helper through
+`pc_display_aim_panel`. Its four mirrored `holoedge` quadrants and optional
+side fills share full-view placement, flushed before and after the group.
+Crane (`sub_001371A0`), microscope (`sub_00137720`) and remote-gun/view
+(`sub_00137E30`) callers keep their following text outside this scope. The
+existing full-view guard retains original 4:3, partial and multiplayer paths.
+
+The captured crane also uses an inclusive 639x479 last-pixel scissor. The
+crane patch's RHI hunk applies shared `pc_ui_vignette_clip` to a temporary
+rectangle before scaling; it never changes the guest-readable scissor state.
+Legacy GL uses the same helper. This prevents the amplified right/bottom gap.

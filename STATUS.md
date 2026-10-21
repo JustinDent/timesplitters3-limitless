@@ -13306,3 +13306,78 @@ edit preservation and idempotence. All 34 patch-tracking and historical-upgrade
 regressions passed on Windows (`logs/auto-ci-patch-upgrades.log`).
 Both native-runtime CI jobs and the Windows/Mac launcher checks passed on
 `c46cc8c`; this does not establish full Mac game or physical display validation.
+
+
+## Crane vignette widescreen (#221) — 2026-10-21
+
+Implemented on `221-bug-scotland-the-brave-crane-widescreen-issue`,
+based on main `7a9507a`. Recovered the earlier focused experiment from its
+preserved stash and revalidated it against this baseline. MAC-058 tracks native
+scene validation.
+
+The verified US XBE's crane HUD (`sub_001371A0`, strings Exit/Lower/Move crane)
+calls `sub_00137010`, which draws four mirrored `holoedge` quadrants plus
+optional side fills. Separate pieces inherited proportional HUD placement,
+leaving a central 4:3 tinted rectangle. The new shared manual wrapper uses
+`pc_display_aim_panel` to give the complete art group full-view placement,
+flushing deferred sprites on entry/exit and restoring the caller's placement.
+Its following text remains proportional. Original 4:3, partial viewports,
+multiplayer and invalid view data retain the existing path. The same helper
+serves microscope and remote-camera/gun views.
+
+Windows x64: full patch-stack application passed. All 18 focused UI, crane and
+camera-feed tests passed; these include original supported-US vignette execution
+with both PC and native-display wrapper defines, unchanged geometry/UVs/alpha
+and guest ABI, nine display shapes, deferred batch boundaries and view guards.
+Another 16 patch-tracking, Mac-backlog and generation tests passed. The tests
+are registered in the Windows/macOS runtime workflow. Local original-code
+tests require the supported XBE and skip in asset-free CI; this is not native
+Mac execution. The supported Windows Release build and built-in checks passed
+(`logs/issue221-build.log`), executable SHA-256
+`ebe070c0192c55795367eeb805756be6889b700a8aa852b3f12fdacf3b8fa546`.
+The isolated Test Lab build opened successfully with Auto resolution/fullscreen;
+Initial live crane testing identified the edge correction described below.
+Native Mac scene validation remains pending.
+
+The desert shattered-glass comment remains unverified. The named bugshatter
+textures traced so far are instantiated as world entities, so they have not
+been changed based only on their names. No desert scene fix is claimed.
+Personal saves/settings are preserved; testing uses a disposable unlocked profile.
+
+
+### Crane right/bottom edge follow-up — 2026-10-21
+
+User confirmed the wider crane overlay but reported a right-edge misalignment.
+The saved frame identifies the tagged vignette draw with a full viewport and
+scissor `(0,0,639,479)`. Its vertices extend beyond every screen edge, so the
+remaining gap is clipping, not texture dimensions. Shared `pc_ui_vignette_clip`
+normalizes only that full-canvas tagged clip to exclusive 640x480 bounds in the
+RHI and legacy GL adapters; stored guest clips and partial/unrelated UI clips
+are untouched. No game assets or captured frames are tracked.
+
+Windows Release rebuild and built-in tests passed. Original crane routine,
+UI placement and RHI scissor checks passed (13 tests), followed by four crane
+checks including production legacy GL clipping. The frame replay has incomplete
+prior-frame render-target contents, so it is not used as full-scene visual proof.
+Isolating its original vignette over a white diagnostic background does reproduce
+the reported gap: before, columns 3434–3439 and rows 1437–1439 remain white at
+3440x1440; after, the original vignette shades those pixels continuously. Both
+replays report zero host-call failures or malformed chunks. Local evidence is
+under `private/issue221/replay`; native Mac live validation remains pending.
+
+Follow-up Windows executable SHA-256: `60472f48e75eefb24a855e817342a5a570d88f4ef54eb0bd771ee5984d751267`. Built-in build tests passed; the added extracted native-GL scissor fixture also passed (four crane tests total).
+
+Final Windows acceptance: the user confirmed the corrected crane overlay looks good.
+The combined UI/crane suite passed all 14 tests before publication. Native Mac
+live validation remains pending under MAC-058.
+
+### PR #252 CI follow-up — 2026-10-21
+
+Both patch-upgrade jobs failed while constructing the historical controls-only
+fixture: it applied the new crane patch before its display/viewport dependencies
+existed. The fixture now defers that patch to complete-stack migration and
+asserts the crane wrapper and scissor hook afterward. This changes tests only.
+The failure reproduced locally before the correction; all 34 patch-tracking
+and upgrade tests pass afterward (352.49 seconds). Context and whitespace
+checks pass. Both original native-runtime jobs and both launcher jobs passed;
+new-head hosted validation will run after the correction is pushed.
