@@ -148,8 +148,26 @@ static inline float pc_native_countdown_add(float left,float right)
         right=(float)*(const uint32_t *)((uintptr_t)0x4E7940u+g_xbox_mem_offset);
     return left+right;
 }
+/* The walking integrator adds the hit vector once before its 0.9 decay.
+ * Integrate that same geometric sequence over fractional ticks as well as
+ * normalizing the decay below. Scaling decay alone would increase total
+ * knockback with refresh rate. Preserve each original one-tick addition. */
+static inline float pc_native_hit_add(float left,float right)
+{
+    if(g_tsfp_native_timing_active) {
+        float delta=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if(delta<=0.f)return right;
+        if(delta!=1.f) {
+            float decay=*(const float *)((uintptr_t)0x476040u+g_xbox_mem_offset);
+            left*=-expm1f(delta*logf(decay))/(1.f-decay);
+        }
+    }
+    return left+right;
+}
 #define RECOMP_F32_ADD_AT(site,left,right) \
-    ((site)==0x69043u ? pc_native_countdown_add((float)(left),(float)(right)) : \
+    (((site)==0x259352u || (site)==0x259368u || (site)==0x25937Fu) ? \
+    pc_native_hit_add((float)(left),(float)(right)) : \
+    (site)==0x69043u ? pc_native_countdown_add((float)(left),(float)(right)) : \
     ((site)==0xA85F2u || (site)==0xA863Du || (site)==0xA8651u) ? \
     pc_native_rocking_add((uint32_t)(site),(float)(left),(float)(right)) : ((left)+(right)))
 #define RECOMP_F32_SUB_AT(site,left,right) \
@@ -160,14 +178,16 @@ extern uint32_t pc_native_kind35_gate(uint32_t value);
     ((site)==0xA8595u || (site)==0xA8980u) ? \
     pc_native_rocking_gate((uint32_t)(site),pc_native_global_load((uint32_t)(site),(uint32_t)(address),(uint32_t)(value))) : \
     pc_native_global_load((uint32_t)(site), (uint32_t)(address), (uint32_t)(value)))
-/* Player+0x1008 is halved by the US update at 0xD5F60. Once the update
- * runs every fractional frame, retain the same half-life in game time.
+/* Player+0x1008 is halved by the US update at 0xD5F60. Its hit-response
+ * vector (+0xF4/+0xF8/+0xFC) likewise decays by 0.9 after each world step.
+ * Once the update runs every fractional frame, retain these decay rates in game time.
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
-    if (site == 0xD5F60u && g_tsfp_native_timing_active) {
+    if ((site == 0xD5F60u || site == 0xD64A4u ||
+         site == 0xD64BDu || site == 0xD64D6u) && g_tsfp_native_timing_active) {
         float delta=*(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset);
-        right=powf(right,delta);
+        if (delta != 1.0f) right=powf(right,delta);
     }
     /* Here the left operand is the decay factor, unlike player damping.
      * The original camera-kick setter supplies 0.8 for both channels. */

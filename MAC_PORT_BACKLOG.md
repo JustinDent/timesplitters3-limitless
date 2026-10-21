@@ -2960,6 +2960,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Player hit displacement/recovery (this revision):** Shared numeric policy
+  normalizes both the hit-vector decay and its walking-position contribution
+  to fractional game time. Updating decay alone would increase displacement.
+  Expanded original-routine tests execute the hit initializer, active player
+  dispatcher and actual three-channel position-add block, with collision/world
+  boundaries explicitly mocked. Equal-time displacement/decay, quarter-speed,
+  uneven steps, repeat hits, pause and original behavior are checked. No new
+  Mac adapter is required; native Mac compilation and actual combat remain
+  unverified. See the player hit section in the native regression record.
+
 - **Scotland route diagnostics (this revision):** The Windows bounded runner
   adds read-only player health. Repeated original-60/native-120/native-144
   routes all take damage and move below the upper path under fire; original

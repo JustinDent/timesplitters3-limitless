@@ -23,6 +23,21 @@ published release or a full-game 144 FPS certification.
   closed normally before completion; their exit traces are not crashes.
   Controller/physical mouse checks and Mac execution remain unverified.
   Arcade acceptance is tracked separately below.
+- **Player hit displacement/recovery (this revision):** The hit vector lost
+  10% per update and was added to movement once per update. Shared policy now
+  normalizes both decay and displacement to elapsed game ticks, preserving
+  original 60 FPS arithmetic and total response. The expanded original-routine
+  fixture reproduces the faster decay, rejects a decay-only fix, and checks
+  all three channels, quarter-speed, uneven intervals, repeat hits and pause.
+  The full Windows Build and built-in checks pass. There are 153 passing
+  broader regressions plus the final expanded fixture pass after correcting
+  its test-only linker dependency. Binary SHA-256 is
+  `f0a3a1e11dfc77f334961d011b861717cf911bf75d866d8e8fd5a1f06f8ec42e`.
+  The isolated 144 FPS smoke window was closed before gameplay; its log
+  records a normal user window close, so live acceptance remains open.
+  Full collision/combat parity, the earlier route/firing differences and Mac
+  execution remain unverified.
+  [Hit-response evidence](docs/native-high-refresh-regressions.md#player-hit-displacement-and-recovery).
 - **Scotland route under fire (this revision):** Read-only player-health
   observations now distinguish combat deaths from stalls. A repeated route
   at original 60/native 120/144 reaches the ruins, takes damage and is pushed

@@ -40,6 +40,80 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Player hit displacement and recovery
+
+The active-player dispatcher decayed the three hit-response channels at
+`player+0xf4/+0xf8/+0xfc` by the original 0.9 factor on every native update.
+Their setter is `0xb9510`; walking movement at `0x259344..0x259388` adds the
+channels directly to the candidate position before that decay. At native
+120/144 this compresses the hit response into less game time. Correcting
+only the decay would instead increase total displacement, because movement
+would still add the full value more often.
+
+Shared `src/pc_native_numeric.h` now handles both halves at six audited
+instructions. Decays at `0xd64a4`, `0xd64bd` and `0xd64d6` use `q^dt`, where
+`q` is the original 0.9 constant and `dt` is the live fractional game tick.
+The corresponding additions at `0x259352`, `0x259368` and `0x25937f` multiply
+the incoming channel by `(1-q^dt)/(1-q)`. This extends the original geometric
+sum to fractional intervals, so original tick boundaries retain the same
+unobstructed displacement and remaining response. One-tick arithmetic and
+the disabled native path retain the original operations. The live pause gate
+still prevents the whole active dispatcher from advancing at zero game time;
+the new addition policy also contributes zero displacement at zero time.
+No shared constant, damage amount, hit probability, collision decision,
+weapon state, or saved setting is rewritten.
+
+The expanded `tests/native_player_dispatch.c` executes the complete original
+active/inactive dispatcher and complete original hit initializer `0xb9510`
+and damage-response setup `0xb9270`. A world-step spy executes the three real
+movement additions and stores, ending that block at its outgoing join before
+collision processing. It supplies the incoming position and z register as
+the original walking caller does. Collision, other world/input services,
+HUD/rumble and optional camera-kick services remain boundaries. This is
+coupled integration/decay evidence, not an end-to-end collision or combat test.
+Constants and the selected original hit-profile table come from the pinned
+supported US XBE. Existing CI already runs this parametrized fixture.
+
+Before the decay correction, a synthetic initial channel of 8 becomes
+2.789426804 at original 60 after ten ticks, but 0.972612739 at native 120.
+The coupled test also rejects a decay-only correction: at quarter-speed
+native 60 it produces displacement 0.623538136 instead of 0.162096575.
+Local reproductions are `logs/native-player-hit-red.log` and
+`logs/native-player-hit-coupled-red.log`.
+
+With both corrections, an original profile-9 hit initializes the x channel
+to approximately 0.07. After ten game ticks the original-60/native-60/native-120/
+native-144 displacements are 0.455925107, 0.455925107, 0.455925018 and
+0.455924898. The remaining x channel is approximately 0.02440748 in each
+case; negative y and positive z channels are checked as well. Quarter-speed,
+uneven intervals totaling ten ticks, a new hit after decay, paused/stale-whole
+intervals, one-tick exact arithmetic, disabled behavior and adjacent unrelated
+instruction sites are covered. The fixture checks that each advancing native
+interval reaches the world step. Live geometry, hit interruptions during
+firing and the previously observed Scotland route differences still require
+separate acceptance; this fix is not evidence that those reports are resolved.
+
+The final full Windows Build and built-in checks pass; matching symbols were
+regenerated. Binary SHA-256 is
+`f0a3a1e11dfc77f334961d011b861717cf911bf75d866d8e8fd5a1f06f8ec42e`,
+compiled with parent label `01f99ab` plus this revision's source changes.
+The broader run passes 153 checks; the expanded fixture initially needed an
+abort-on-use rocking-policy boundary for its variable-site scope checks and
+passes after that test-only linker repair. Evidence is in
+`logs/native-player-hit-final-build.log`, its `.err`,
+`logs/native-player-hit-final-regressions.log` and
+`logs/native-player-hit-final-fixture.log`. The first decay-only build was
+superseded by this complete build before gameplay validation. Shared source
+requires no new Mac adapter; actual Mac compilation/execution remains open.
+
+The isolated minimized `scotland-hit-decay-144` smoke attempt ended before
+reaching gameplay. Its runtime log records `window closed by the user` and
+`ExitProcess(0x00000000)`; the runner correctly reports an incomplete test,
+not a successful gameplay check. The canonical profile remained unchanged.
+Evidence is `logs/scotland-hit-decay-144.log` and
+`private/test-saves/scotland-hit-decay-144/run0.err`. Live acceptance of this
+build remains open; the early window close is not evidence of a crash.
+
 ## Scotland route under fire
 
 Windows x64/D3D11, unchanged HUD-fix executable SHA-256

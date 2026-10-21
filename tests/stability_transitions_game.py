@@ -92,6 +92,7 @@ def main():
         entity=word(player+0x14)
         actor=word(entity+0x7c) if entity else None
         result=dict(player=player,position=floats(player+0xb4,3),look=floats(player+0x100,2),
+                    hit_response=floats(player+0xf4,3),
                     equipped=[word(player+0x1b4),word(player+0x58c)],ammo=[])
         # Original actor damage updates entity+0x1cc (native_sniper_damage.c).
         # Read-only observation helps distinguish route/combat deaths from stalls.
