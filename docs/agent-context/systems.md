@@ -41,6 +41,19 @@ applicable adapter plus one relevant test. Tests may encode historical migration
 or compatibility behavior, so confirm current defaults in root instructions and
 effective source. Preserve unknown/unsupported saved settings across hosts.
 
+Ghost Gun living-actor reveal alignment (#181/#241) is handled by
+`pc_display_weapon_effect` in `src/pc_display_ui.inc`. The integer rectangle
+returning to US caller `0x001232A9` is the final filtered screen-copy composite
+over the actor's projected bounds. In a full widescreen view it uses full-view
+placement, with deferred draws flushed before restoring the surrounding UI
+placement. Guest coordinates, UVs/tint and the five preceding blur passes stay
+unchanged. The separate humanoid ghost composite retains its existing guarded
+call site. Original 4:3 and split-view paths keep their existing behavior.
+`tests/test_ghost_actor_overlay.py` covers placement, deferred batches, ABI,
+both platform wrappers and a local supported-US-routine check; see build/test
+for test prerequisites. Windows scene confirmation is recorded in `STATUS.md`;
+native Mac visual validation remains pending under MAC-036.
+
 ## State and data boundaries
 
 `config/*.default.*` is tracked default configuration; `config/pc-controls.json`
@@ -73,3 +86,40 @@ implicit declarations. Do not extend caches across menu ticks or frames.
 Tests cover region boundaries/expiry and actual prompt-hook scratch ABI/fallbacks.
 Issue #105 also requires the runtime late-frame pacing patch; caching alone
 measured 30 FPS. See STATUS.md for measured acceptance and Mac limits.
+
+## Physical keyboard text entry (#136)
+
+`src/pc_text_input.h` defines the shared bounded per-dialog text queue and edit
+commands. Windows `pc_controls.c` supplies WM_CHAR/WM_UNICHAR; native Mac
+`input_sdl.c` supplies SDL text events and starts/stops text input on its main
+thread. Both adapters suppress keyboard menu bindings while a text owner is active
+and discard queued text on focus loss or owner changes.
+
+`src/pc_menu_text.inc`, included by `pc_menu_mouse_guest.inc`, recognizes live
+character-row callbacks (`0x0007DB20`) rather than one dialog descriptor. Create
+Profile embeds this keyboard in descriptor `0x004E8D54`; testing only standalone
+`0x004D8D78` misses it. The original guest insertion/edit/Done routines retain
+selection replacement, limits and save behavior. Escape queues the owning menu's
+Back action, preserving embedded-menu callbacks. Numeric descriptor `0x004D94D4`
+is excluded. Supported input follows the original Latin-1 tables; paste and
+arbitrary Unicode are outside this change. See MAC-059 and the #136 STATUS entry
+for physical Windows confirmation and pending Mac/dialog-matrix validation.
+
+## Automatic display size
+
+`pc_display_current()` is the selected/persisted mode: `0,0` retains console
+resolution, `1,1` means Auto, and other valid dimensions are manual. New missing
+settings default to Auto; existing settings are preserved. Render/camera/UI code
+must use `pc_display_effective()` or the shape/scale helpers, never interpret
+the Auto sentinel as physical pixels. The shared catalog appends Auto without
+renumbering existing ratio groups. Guest Display settings and Cocoa expose it.
+
+On Windows Auto reads the fullscreen window's nearest monitor desktop mode,
+or its non-minimized client pixels in windowed mode. The SDL main thread
+publishes drawable pixels via `pc_display_host_size`; the render thread reads
+an atomic snapshot. Frame completion checks at most four times per second;
+GPU allocation failure retains the last effective size and retries later.
+Unsupported/empty sizes retain the last valid output (guest output before a window
+exists); current supported limits remain landscape 640x480 through 7680x4320,
+no wider than 4:1. Manual selection disables this tracking. Desktop resolution
+and refresh rate are never changed.

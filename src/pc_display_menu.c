@@ -78,7 +78,7 @@ static int guest_writable(uint32_t address,size_t bytes)
 
 static float cutscene_camera_zoom(void)
 {
-    PcDisplayMode mode = pc_display_current();
+    PcDisplayMode mode = pc_display_effective();
     uint32_t viewport = WORD_AT(0x007E71C8u);
     int height, full, animated;
     if (WORD_AT(0x007DE458u) & 0x20000000u) {
@@ -575,7 +575,7 @@ static void labels(void)
            parameter is extra row height, not a horizontal offset. */
         guest_call(sub_0007D480,2,0x8400u,0u);
         for(i=0;i<mode_count;i++) {
-            uint32_t caption=modes[i].width?text_at(12+i,"%u x %u",modes[i].width,modes[i].height):
+            uint32_t caption=pc_display_is_auto(modes[i])?text_at(12+i,"Auto"):modes[i].width?text_at(12+i,"%u x %u",modes[i].width,modes[i].height):
                 text_at(12+i,"Original");
             guest_call(sub_000717D0,1,caption);
         }

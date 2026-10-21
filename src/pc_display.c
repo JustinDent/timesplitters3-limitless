@@ -13,7 +13,46 @@
 #define GetTickCount64 SDL_GetTicks
 #endif
 
-static PcDisplayMode current;
+static PcDisplayMode current={1,1};
+static PcDisplayMode automatic; /* Use guest output until a valid window is available. */
+static ULONGLONG automatic_checked;
+#ifndef _WIN32
+static SDL_AtomicInt host_pixels;
+#endif
+
+void pc_display_host_size(unsigned width,unsigned height)
+{
+#ifndef _WIN32
+    if(width<=65535 && height<=65535)
+        SDL_SetAtomicInt(&host_pixels,(int)((width<<16)|height));
+#else
+    (void)width;(void)height;
+#endif
+}
+
+static PcDisplayMode detected_mode(void)
+{
+    PcDisplayMode mode={0,0};
+#ifdef _WIN32
+    HWND window=xbox_D3D8Window();
+    RECT client;
+    if(window && (GetWindowLongPtrA(window,GWL_STYLE)&WS_POPUP)) {
+        MONITORINFOEXA monitor;DEVMODEA desktop;
+        memset(&monitor,0,sizeof monitor);monitor.cbSize=sizeof monitor;
+        memset(&desktop,0,sizeof desktop);desktop.dmSize=sizeof desktop;
+        if(GetMonitorInfoA(MonitorFromWindow(window,MONITOR_DEFAULTTONEAREST),(MONITORINFO *)&monitor) &&
+           EnumDisplaySettingsA(monitor.szDevice,ENUM_CURRENT_SETTINGS,&desktop)) {
+            mode.width=desktop.dmPelsWidth;mode.height=desktop.dmPelsHeight;
+        }
+    } else if(window && !IsIconic(window) && GetClientRect(window,&client)) {
+        mode.width=client.right-client.left;mode.height=client.bottom-client.top;
+    }
+#else
+    unsigned pixels=(unsigned)SDL_GetAtomicInt(&host_pixels);
+    mode.width=pixels>>16;mode.height=pixels&65535u;
+#endif
+    return mode.width>=640 && pc_display_valid(mode)?mode:automatic;
+}
 static int initialized;
 static int vertical_fov=PC_FOV_DEFAULT, preview_fov;
 static int camera_frame;
@@ -38,7 +77,7 @@ static char path[32768];
 
 int pc_display_valid(PcDisplayMode m)
 {
-    return (!m.width && !m.height) || (m.width >= 640 && m.height >= 480 &&
+    return pc_display_is_auto(m) || (!m.width && !m.height) || (m.width >= 640 && m.height >= 480 &&
         m.width <= 7680 && m.height <= 4320 &&
         (unsigned long long)m.width * m.height <= 33177600 &&
         m.width >= m.height && m.width <= 4 * m.height);
@@ -98,6 +137,7 @@ static void config_text(char *text,size_t size)
 }
 
 PcDisplayMode pc_display_current(void) { init(); return current; }
+PcDisplayMode pc_display_effective(void) { init(); return pc_display_is_auto(current)?automatic:current; }
 
 typedef struct PcAspect { const char *name; unsigned width,height; } PcAspect;
 static const PcAspect aspects[]={ {"All",0,0},
@@ -119,8 +159,9 @@ const char *pc_display_aspect_name(int aspect)
 int pc_display_aspect(PcDisplayMode mode)
 {
     if(!mode.width && !mode.height) return 1; /* Original 4:3 picture. */
+    if(pc_display_is_auto(mode)) return PC_DISPLAY_ASPECT_COUNT-1;
     if(!pc_display_valid(mode)) return -1;
-    for(int i=1;i<PC_DISPLAY_ASPECT_COUNT;i++) {
+    for(int i=1;i<PC_DISPLAY_ASPECT_COUNT-1;i++) {
         double ratio=(double)mode.width*aspects[i].height/(mode.height*aspects[i].width);
         /* Marketed 21:9 modes include 2560x1080 and 3440x1440; other
            groups tolerate only pixel rounding (e.g. 1366x768). */
@@ -182,18 +223,21 @@ int pc_display_modes(HWND window,PcDisplayMode *out,int capacity)
         if(left.width<right.width || (left.width==right.width && left.height<=right.height)) break;
         out[b-1]=right; out[b]=left;
     }
+    add_mode(out,&count,reported_capacity,1,1);
     init(); add_mode(out,&count,capacity,current.width,current.height);
     return count;
 }
 
 int pc_display_apply(PcDisplayMode m)
 {
-    PcDisplayMode before;
+    PcDisplayMode before,old_automatic=automatic,target;
     init();
     if(!pc_display_valid(m)) return 0;
     before=current;
     current=m;
-    if(!xbox_D3D8ChangeResolution(m.width,m.height)) { current=before; return 0; }
+    if(pc_display_is_auto(m)) automatic=detected_mode();
+    target=pc_display_effective();
+    if(!xbox_D3D8ChangeResolution(target.width,target.height)) { current=before; automatic=old_automatic; return 0; }
     preview_deadline=0;
     fprintf(stderr,"[PC-DISPLAY] Applied %ux%u\n",m.width,m.height);
     return 1;
@@ -234,34 +278,47 @@ int pc_display_save(void)
 void pc_display_scene_size(unsigned gw,unsigned gh,unsigned *w,unsigned *h)
 {
     init();
-    if(w) *w=current.width?current.width:gw;
-    if(h) *h=current.height?current.height:gh;
+    if(pc_display_is_auto(current)) automatic=detected_mode();
+    PcDisplayMode output=pc_display_effective();
+    if(w) *w=output.width?output.width:gw;
+    if(h) *h=output.height?output.height:gh;
 }
 
 void pc_display_shape(unsigned *w,unsigned *h)
 {
     init();
     /* Backgrounds use the complete canvas; 2D widgets fit proportionally. */
-    int output=current.width!=0;
-    if(w) *w=output?current.width:4;
-    if(h) *h=output?current.height:3;
+    PcDisplayMode output=pc_display_effective();
+    if(w) *w=output.width?output.width:4;
+    if(h) *h=output.height?output.height:3;
 }
 
 float pc_display_camera_factor(void)
 {
     init(); camera_frame=1;
-    return current.height?(float)current.width*3.f/((float)current.height*4.f):1.f;
+    PcDisplayMode output=pc_display_effective();
+    return output.height?(float)output.width*3.f/((float)output.height*4.f):1.f;
 }
 float pc_display_hud_scale(void)
 {
-    init();return current.width?(4.f*(float)current.height)/(3.f*(float)current.width):1.f;
+    PcDisplayMode output=pc_display_effective();
+    return output.width?(4.f*(float)output.height)/(3.f*(float)output.width):1.f;
 }
-int pc_display_wide_now(void) { init(); return current.width && current.width*3u!=current.height*4u; }
+int pc_display_wide_now(void) { PcDisplayMode output=pc_display_effective(); return output.width && output.width*3u!=output.height*4u; }
 void pc_display_frame_done(void)
 {
     menu_filter_frame=0;
     menu_font_filter=0;
     camera_frame=0;
+    if(pc_display_is_auto(pc_display_current()) && GetTickCount64()-automatic_checked>=250) {
+        PcDisplayMode wanted=detected_mode(),before=automatic;
+        automatic_checked=GetTickCount64();
+        if(wanted.width!=before.width || wanted.height!=before.height) {
+            automatic=wanted;
+            if(!xbox_D3D8ChangeResolution(wanted.width,wanted.height)) automatic=before;
+            else fprintf(stderr,"[PC-DISPLAY] Auto output %ux%u\n",wanted.width,wanted.height);
+        }
+    }
     /* Covers leaving the guest menu through a global pause/Start action too.
        Never persist a preview; a crash or forced exit also reloads the old mode. */
     if(preview_deadline && GetTickCount64()>=preview_deadline && pc_display_apply(preview_previous)) {

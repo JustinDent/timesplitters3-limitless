@@ -44,8 +44,9 @@ and clean-machine delivery may need additional host checks. Record gaps in
 Merge the shared launcher/dual-platform release stack after its checks pass.
 Add **Launcher compatibility** from GitHub Actions to the default branch's
 required checks after its first successful PR run, preserving existing Windows/Mac
-checks and the up-to-date requirement. Keep human merging. The workflow can also
-be dispatched manually to validate the selected branch; it never publishes.
+checks and the up-to-date requirement. Human merging is the default; the dedicated
+worker can be explicitly installed with checked merge follow-through below.
+The workflow can also be dispatched manually to validate the selected branch; it never publishes.
 
 No enable variable or API secret is used. Repository setup removed
 `OPENAI_API_KEY` and `LAUNCHER_COMPATIBILITY_ENABLED`. The ignored local API key
@@ -109,7 +110,9 @@ and [scheduled tasks](https://learn.chatgpt.com/docs/automations) documentation.
 It polls every 15 minutes while the selected Mac is awake, online and logged in.
 It uses that Mac's GitHub CLI account and existing ChatGPT-authenticated Codex
 CLI. It does not copy credentials from another device or load `.env.local`.
-There is no API fallback, purchased-usage setup, auto-merge or automatic release.
+There is no API fallback, purchased-usage setup or automatic release. Automatic
+repair/parent merging is an explicit installation option, authorized by the
+maintainer on 2026-10-21; it never bypasses repository rules or required reviews.
 ChatGPT plan allowances still apply. Install on **one Mac only**.
 
 The initial trigger is a failed current-head `Launcher compatibility checks` or
@@ -124,8 +127,34 @@ access or approval escalation, and app/plugin integrations are disabled. The
 controller accepts only bounded ordinary source/test/doc/patch changes; workflow,
 credential, dependency pin, agent policy and worker changes need manual handling.
 The controller creates `codex/compat-repair-<PR>-<head>` and opens a repair PR
-**against the original PR branch**. It leaves that source branch unchanged.
-Review both hosts' CI results before merging the proposed fix into its parent PR.
+**against the original PR branch**. Publication alone leaves that source branch
+unchanged. In default mode a maintainer reviews/merges the proposed fix. With
+`--auto-merge`, the trusted controller follows new repairs across restarts:
+
+1. Wait for both current-head workflows associated with the repair PR, the
+   three required gate jobs, every other reported check, and GitHub's clean
+   mergeability/review decision. Missing, pending or cancelled runs cannot pass.
+2. Recheck the original head and merge only the recorded repair commit into
+   that branch, using GitHub's SHA-conditional merge endpoint.
+3. Wait for fresh Windows/Mac/launcher checks on the resulting parent revision.
+   Merge that exact parent PR into main only when GitHub reports it clean and
+   its required checks/reviews pass. Main must have effective rules requiring a
+   PR, strict up-to-date checks and all three gates from GitHub Actions.
+
+No direct push to main, admin bypass, protection changes, force push, release or
+second model repair is part of follow-through. Source/repair edits, retargeting,
+closure or forks stop the chain. A failed follow-up pauses the worker for manual
+inspection; a behind-main parent waits for an operator to update/review it.
+Legacy published records are not automatically enrolled. Only newly published
+repairs created with the option enabled can cause a main merge; unrelated green
+PRs are not merged. Pause stops subsequent worker actions.
+
+Before attempting a repair on an out-of-date source, this mode asks GitHub to
+merge main into its branch using `expected_head_sha`, then waits for new CI.
+This prevents giving the agent an older source snapshot than CI tested. If that
+refresh alone makes CI green, the parent remains for manual review; if it still
+fails, the next revision is eligible for one bounded repair. Conflicts stop for
+inspection. No game data or personal settings are touched.
 No source repair is certified merely because Codex returned successfully.
 
 Local state prevents duplicate model calls, including after crashes. A published
@@ -141,7 +170,13 @@ From a trusted checkout of this branch on the selected Mac:
 python3 tools/compatibility-worker.py check
 python3 tools/compatibility-worker.py dry-run
 python3 tools/compatibility-worker.py install
+# For an existing worker (including one with a dashboard wrapper):
+python3 tools/compatibility-worker.py upgrade
 ```
+
+Only when automatic repair-to-main merging is explicitly authorized, add
+`--auto-merge` before `check` and before the chosen `install` or `upgrade` action.
+The ordinary upgrade command above preserves the installed merge mode.
 
 If discovery needs help, add `--codex /absolute/path/to/codex` and
 `--gh /absolute/path/to/gh` before the command. `check` verifies the GitHub account,
@@ -157,6 +192,9 @@ holds its small source-only Git cache, bounded last-agent log and state. It stay
 outside Desktop/iCloud and the user's active project checkout. Temporary repair
 snapshots are removed after each attempt. No game build or data transfer is needed.
 Updating the checkout does not silently replace the installed controller.
+A fresh `install` always requires `--auto-merge` to enable merging, even when an
+earlier uninstall retained configuration. `upgrade` preserves the existing mode
+unless `--auto-merge` explicitly enables it.
 
 ```sh
 python3 "$HOME/Library/Application Support/TSFP Compatibility Worker/worker.py" status
@@ -165,17 +203,25 @@ python3 "$HOME/Library/Application Support/TSFP Compatibility Worker/worker.py" 
 python3 "$HOME/Library/Application Support/TSFP Compatibility Worker/worker.py" uninstall
 ```
 
-`status` shows the last poll and repair outcome; `last_error` identifies failures.
+`status` shows the installed controller hash, merge mode, last poll and repair
+outcome; `last_error` identifies failures.
 `pause` preserves the service but stops repair attempts. `uninstall` unloads the
-service and retains source/state/logs for recovery. Review and uninstall before
-installing an updated controller. Moving to another Mac requires uninstalling on
+service and retains source/state/logs for recovery. From the reviewed checkout,
+`upgrade` checks authentication and protections, acquires the worker lock and
+replaces only the controller/configuration. It preserves the existing LaunchAgent,
+dashboard wrapper, pause state and attempt history. The next scheduled poll uses
+the new source; no service restart or automatic resume is required. One previous
+controller/config pair remains as `worker.py.previous`/`config.json.previous`
+for operator recovery. Moving to another Mac requires uninstalling on
 the old Mac and signing in/installing separately on the new one. Account sharing
 does not synchronize the worker or its local state.
 
 The portable regression suite exercises a complete local Git repair/publication
 simulation with mocked GitHub and Codex, plus concurrency, stale CI, source-head
 races, authentication, symlink/path restrictions and bounded process execution.
-It runs on Windows and macOS CI. It does not prove a model can resolve every
+It also covers repair-to-parent-to-main progression, restart recovery, additional
+checks/reviews, live protection checks and pause/dry-run/legacy behavior. It runs
+on Windows and macOS CI. It does not prove a model can resolve every
 failure, native UI parity, physical input or game compatibility.
 
 ## Development checks

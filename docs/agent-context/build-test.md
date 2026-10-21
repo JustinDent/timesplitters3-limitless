@@ -74,6 +74,15 @@ select transition/native/GPU/release checks. Launcher builds have separate
 owners. New tests must be registered in the correct workflow; adding a test
 file alone does not run it in CI. The lightweight plan also checks context
 freshness and changed-system guide updates. Preserve required check names.
+The Windows/macOS native step includes `tests/test_ghost_actor_overlay.py` for
+the living-actor Ghost Gun composite. Its C fixtures test seven resolutions,
+placement restoration, deferred draw flushing, unchanged primitive arguments
+and mutations that remove the fix or break flushing/restoration. Wrapper checks
+read the pinned runtime after the complete patch stack has been applied and
+compile both Windows/native-Mac configurations. The original-US-routine case
+requires the local checksum-verified `private/game/default.xbe` and skips in CI
+without it. These contracts do not establish Mac scene fidelity or replace the
+recorded Windows in-game confirmation; no personal saves are used.
 The optional router context-reader contracts use Node's built-in test runner
 (`node --test tests/repository-context.test.mjs`); game building still uses the
 existing Python/native dependencies. Patch-index loader fingerprints normalize
@@ -90,6 +99,28 @@ bundle pointers. For an explicitly texture-free development build use Windows
 `-SkipTextures` or native Mac `--without-textures`; do not download a duplicate
 pack just to run source/documentation checks. Release packaging includes the
 audited committed replacements by default; see `tools/build_textures.py`.
+
+`testing_profile.prepare_run` explicitly supplies `TSFP_TEXTURE_PACK_DIR` from
+the checkout's `assets/textures` and `TSFP_TEXTURE_MODE=classic` after filtering
+inherited diagnostics. Without that pack path F10 toggled modes but loaded no
+replacements. Both Windows Test Lab and the native Mac unlocked runner consume
+this shared environment; no runtime adapter change is needed. Asset-free
+coverage lives in `tests/test_testing_profile.py` and
+`tests/test_native_mac_tools.py` (both already selected by native CI). Windows
+runtime loading must be checked separately; native Mac visual validation remains
+pending. Missing packs retain the loader's Classic fallback for source-only tests.
+
+Official Windows publication through `Publish-Release.ps1` /
+`tools/publish-release.py` requires the complete repository pack, including
+prepare-only, draft and resumed runs. Preflight audits hydrated DDS/mips,
+sanitized JSON and the bundled manifest path/count/size using the shared texture
+helper. Finished ZIP validation compares every DDS/JSON name and hash against
+that pack, even after staging cleanup and immediately before upload. A missing
+texture identity cannot bypass the published stable launcher 1.2.22+ requirement
+for both Windows and Mac assets. Local texture-free/artist-override packages are
+development outputs; the official publisher rejects them. Regression coverage:
+`tests/test_publish_release.py` plus `tests/test_build_textures.py` in the existing
+Windows/macOS release-validation CI step; no game assets are used by those tests.
 
 `STATUS.md` holds measured results; `MAC_PORT_BACKLOG.md` records missing adapter
 or validation work. Neither is an architectural index or a guarantee that all
@@ -114,3 +145,56 @@ scope invalidation and actual prompt-hook ABI/fallbacks. `tests/test_frame_clock
 extracts the real Arm body for cheap/late/no-signal pacing contracts. Both run in
 runtime CI. Mac runtime checks remain
 unavailable on this Windows host.
+
+## Compatibility repair controller
+
+`tools/compatibility-worker.py` runs on the designated Mac outside CI. Install
+with `--auto-merge` only for authorized repair follow-through. It publishes a
+repair PR against its original branch, waits for both host workflows/checks and
+reviews, merges the exact repair SHA, then requires fresh parent CI before its
+SHA-conditional merge into protected main. It refuses missing effective gates,
+changed revisions and failed follow-up CI. Legacy state is not automatically
+enrolled. `status` includes the installed controller hash and merge mode.
+`upgrade` replaces installed source/config under the worker lock after preflight,
+preserving an existing dashboard LaunchAgent, pause and attempt history; it keeps
+one previous source/config pair. Tests cover preservation and failed-write rollback.
+A fresh install resets automatic merging to its explicit flag, including after
+uninstall; an in-place upgrade preserves the installed mode.
+
+A stale source is updated from main before a repair attempt so the agent sees
+the same source as CI; conflicts and post-repair base drift need inspection.
+`tests/test_compatibility_worker.py` simulates these boundaries with local Git
+and mocked GitHub/Codex, under the existing Windows/macOS gate jobs. No game
+rebuild is needed. See `docs/launcher-compatibility.md` for installation/recovery.
+
+## Text-entry regression route (#136)
+
+`tests/test_menu_text.py` runs in the Windows/macOS runtime workflow. Its asset-free
+fixture covers queue bounds, owner changes, character/command routing and embedded
+keyboard recognition. An optional local case translates original insertion,
+deletion and cursor routines from the checksum-verified US XBE and checks real
+editing/length/font-width behavior; CI without that asset skips this case.
+`tests/pc_controls.c` covers Windows message delivery and focus changes;
+`src/native/menu_input_selftest.inc` adds SDL event/text-session checks. Shared
+fixture success does not establish physical Mac typing. Live Windows Create
+Profile typing and Enter were confirmed by the user with isolated Test Lab saves.
+
+## Auto display regression checks
+
+`test_pc_display_modes.py` also compiles shared Auto policy through stub SDL
+snapshots on Windows and Mac; this tests policy, not Cocoa or actual atomics.
+The Windows-specific fixture compiles the model against deterministic
+monitor/window adapters: secondary fullscreen desktop size, windowed resize,
+minimize/query failure, allocation rollback/retry, persistence and preview
+rollback, manual override, and Auto ratio filtering. `tests/pc_display.c` retains
+existing manual scene/camera/HUD tests. `test_cutscene_letterbox.py` exercises
+the effective-output hook after the complete patch stack is applied. Launcher
+settings checks cover Auto UI/filter/save, fresh defaults, existing manual
+settings, and older package capability gating. Native Cocoa's graphics self-test
+recognizes the Auto choice; physical Retina/multi-display validation needs Mac.
+
+The historical controls-only fixture in `test_patch_updates.py` excludes
+`-auto-display.patch` until the complete-stack migration installs its display,
+cutscene and fullscreen-effect prerequisites. It then asserts effective-size
+hooks in the migrated title and renderer, preservation of local edits, and
+idempotent reapplication. Fresh/current-stack tests still apply the Auto patch.

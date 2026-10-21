@@ -11,13 +11,13 @@ int main(int argc,char **argv)
 {
     PcDisplayMode m={3840,2160}, list[64], bad={7680,4321}; unsigned w,h; int n,i,j;
     CHECK(argc==2); CHECK(_putenv_s("TSFP_DISPLAY_CONFIG",argv[1])==0);
+    { FILE *f=fopen(argv[1],"wb"); CHECK(f); fputs("TSFP_DISPLAY_V1 0 0\n",f); fclose(f); }
     CHECK(!pc_display_menu_filter());
     pc_display_menu_filter_begin(1);CHECK(pc_display_menu_filter());
     CHECK(pc_display_menu_font_filter(1)==0);CHECK(pc_display_menu_filter()==2);
     CHECK(pc_display_menu_font_filter(0)==1);CHECK(pc_display_menu_filter()==1);
     pc_display_frame_done();CHECK(!pc_display_menu_filter());
     pc_display_menu_filter_begin(0);CHECK(!pc_display_menu_filter());
-    { FILE *f=fopen(argv[1],"wb"); CHECK(f); fputs("TSFP_DISPLAY_V1 0 0\n",f); fclose(f); }
     CHECK(pc_display_valid(m)); CHECK(!pc_display_valid(bad));
     bad.width=0; bad.height=1080; CHECK(!pc_display_valid(bad));
     bad.width=5120; bad.height=1440; CHECK(pc_display_valid(bad));

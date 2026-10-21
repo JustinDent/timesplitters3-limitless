@@ -138,6 +138,7 @@ def prepare_run(root,run):
     environment={k:v for k,v in os.environ.items() if not k.startswith(('RECOMP_','TSFP_'))}
     environment.update(RECOMP_GAME_DIR=str(root/'private/game'),RECOMP_SAVE_DIR=str(run/'saves'),
         TSFP_CRASH_DIR=str(run/'crashes'),
+        TSFP_TEXTURE_PACK_DIR=str(root/'assets/textures'),TSFP_TEXTURE_MODE='classic',
         RECOMP_INPUT_CONFIG=str(run/'controls.json'),TSFP_DISPLAY_CONFIG=str(run/'display.ini'),
         RECOMP_DISPLAY_CONFIG=str(run/'runtime.ini'),RECOMP_XMV_PLAY='0',RECOMP_TRACE_BUDGET='0')
     return environment

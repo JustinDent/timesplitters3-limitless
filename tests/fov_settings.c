@@ -41,6 +41,8 @@ TUTORIAL_STUB(sub_0003FA10) TUTORIAL_STUB(sub_0003FCF0) TUTORIAL_STUB(sub_0003F8
 #undef TUTORIAL_STUB
 /* Mouse-menu behavior is exercised by menu_mouse.c. Keep its dependencies
  * linked here, but fail if this settings-only fixture enters those paths. */
+void pc_controls_text_mode(uint32_t owner) {(void)owner;CHECK(0);}
+unsigned pc_controls_text_event(uint32_t owner) {(void)owner;CHECK(0);return 0;}
 void pc_controls_menu_mode(int active) { (void)active; CHECK(0); }
 PcMenuPointer pc_controls_menu_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
 PcMenuPointer pc_controls_menu_hover_pointer(void) { CHECK(0); return (PcMenuPointer){0}; }
@@ -55,6 +57,9 @@ MOUSE_STUB(sub_002E49F0) MOUSE_STUB(sub_002E4A30)
 /* Audio-slider preview calls are covered by menu_mouse.c, not this fixture. */
 MOUSE_STUB(sub_00045C60) MOUSE_STUB(sub_00021780)
 MOUSE_STUB(sub_00045390) MOUSE_STUB(sub_00045820)
+MOUSE_STUB(sub_0007DB20) MOUSE_STUB(sub_0007C410) MOUSE_STUB(sub_0007C300)
+MOUSE_STUB(sub_0007C390) MOUSE_STUB(sub_0007C4F0) MOUSE_STUB(sub_0007CDE0)
+MOUSE_STUB(sub_000746D0) MOUSE_STUB(sub_0007CCA0) MOUSE_STUB(sub_00071940)
 #undef MOUSE_STUB
 /* Bot helpers share the menu translation unit, but must never execute in
  * this isolated FOV fixture. Bot behavior has its own network regressions. */

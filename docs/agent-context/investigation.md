@@ -102,3 +102,9 @@ authoritative if a guide is stale; fix the guide as part of the task.
 CI enforces index freshness, valid context paths, excerpt budgets and an update
 to each affected guide. It can check presence/freshness, not whether an explanation
 is intellectually correct. Reviewers must still compare it with source.
+
+The #105 pacing correction extends the effective patch tail: fixed-60 must be
+followed by late-frame-pacing. `tests/test_repo_context.py` checks that pair as
+well as excluding untracked experiments. Refreshing the index alone does not
+update explicit ordering contracts; keep those assertions aligned with the
+loader when deliberately extending its dependency order.

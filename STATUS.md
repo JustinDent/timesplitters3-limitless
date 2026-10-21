@@ -1,8 +1,8 @@
 ## Issue #105 weapon-set performance repair - 2026-10-21
 
 Validated locally on Windows x64, MSVC 14.42, SDL 3.4.16, default fixed-60
-configuration. Source base `bd7af90`, pinned runtime `d90c929`, with the current
-uncommitted shared-source edits and complete 114-patch stack. Executable SHA256:
+configuration. Source base `bd7af90`, pinned runtime `d90c929`, with the repair
+subsequently committed as `5c2f4ac` and complete 114-patch stack. Executable SHA256:
 `5b5001dbf1b945e72fbf6ef231a9d670a8e39db6ffccbcd52787756d1a60d804`.
 
 The reproduced weapon-set collapse had two costs: repeated OS memory queries in
@@ -34,6 +34,128 @@ validation is pending (MAC-002); no Mac execution is inferred from Windows.
 These measurements describe the pre-publication source state above, not a
 published release or validation on another host.
 
+PR preparation integrated main `7a9507a`, preserving the newer keyboard and
+Auto-display changes. The combined 115-patch stack applied successfully. The
+affected Windows suite completed in 312.53 seconds: 128 passed, one Mac-only
+skip, and one stale repository-index tail assertion. That assertion now requires
+fixed-60 followed by late-frame-pacing; all 11 context tests passed on rerun.
+All 20 full patch-transition cases passed in the combined suite. Context upkeep
+passes against main. The combined head has not been rebuilt or playtested;
+the executable hash and FPS measurements above remain pre-integration evidence.
+
+## 2026-10-21 — Test Lab texture-pack launch correction
+
+Implemented on `fix/test-profile-texture-pack`, based on main `b685e43`.
+The isolated runner discarded the inherited pack path without supplying the
+repository pack, so F10 changed modes but had no replacements to load.
+`prepare_run` now supplies `assets/textures` and explicit Classic mode while
+continuing to discard inherited dump/diagnostic overrides.
+
+Windows x64: 33 preparation/native-tool tests passed, one platform skip;
+context maintenance and diff checks passed. The unchanged MSVC/D3D11 main
+executable (SHA-256 `ff5d4ffeb21b6cc3b1a239269f5464eb7efe270db5b6f5e24cbc8ee4f6f4d144`)
+was reopened for a bounded 600-second isolated Test Lab session. Its log now
+reports the repository pack directory and successful 64x64-to-256x256 replacement
+uploads. This proves loading, not full scene coverage or visual F10 acceptance.
+The native Mac unlocked runner receives the same shared environment; Mac runtime
+validation remains pending under MAC-011. Personal saves/settings were untouched.
+
+## 2026-10-21 — Mac mini worker deployment verified
+
+PR #248 merged at `b685e43` after its documentation conflicts with newer main
+were resolved without discarding keyboard-input evidence. Follow-up
+`codex/worker-upgrade-preservation` / PR #249 adds the dashboard-preserving
+upgrade and fixes the review finding that a reinstall could inherit an earlier
+auto-merge opt-in. Worker source at `c125b36` has SHA-256
+`8ccf98ff548a1df3883e8f59e419ef26c563a12f74ec7cf389ba625f9d9d5e87`.
+
+Dan's Mac mini, macOS 27.0.1 ARM64 / Python 3.12: all 28 worker tests pass
+(0.787 s). The installed source hash matches the checkout. Explicit auto-merge
+mode is enabled; preflight verified existing GitHub/ChatGPT authentication and
+strict main rules. Upgrade preserved the LaunchAgent, dashboard runner and
+worker state byte-for-byte. A real LaunchAgent poll through that dashboard
+wrapper advanced its run count 113 to 114, exited 0 at 04:37:51 UTC, and reported
+no new actionable failures. The worker is unpaused, idle between scheduled
+polls, with unchanged historical attempts. Dry-run found no pending merges and
+made no model call. No credentials, game data or personal settings moved.
+
+Local macOS/Python 3.13 also passes all 28 tests and context/index checks.
+Windows/macOS CI gates and launcher compatibility passed on `c125b36`.
+Read-only live GitHub validation of that PR returned protected-main checks valid
+and `ready_to_merge=true`; no merge was executed by this verification. Service
+and policy validation do not prove a new live repair-through-main cycle, which
+remains unobserved. Existing repair records are not automatically enrolled,
+conflicts and failed follow-ups stop for inspection, and releases remain manual.
+No game build, GPU test or playthrough is relevant to this controller update.
+
+## 2026-10-21 — Mac mini repair publication and checked merge follow-through
+
+Focused branch `codex/worker-repair-merge`, based on main `22e6a56`. The installed
+mini controller matched the tracked SHA-256
+`7f4f18721ec70b38c00466bc9cbcf0871472281ee20bf19a1b0ad9127d83659f`.
+Screen Sharing terminal verification confirmed GitHub maintainer/ChatGPT login,
+loaded LaunchAgent (111 invocations, last exit 0, idle between polls), a prior
+published repair for #216 and a no-change #246 attempt blocked by source/CI
+revision mismatch. No credentials were copied. The Desktop checkout revision
+matched `22e6a56`; status initially failed because git-lfs was missing from PATH.
+
+The controller now supports explicitly enabled repair and parent merges through
+GitHub after exact-head checks/reviews and effective main rules pass. It retains
+pause, bounded repairs, protected paths, no paid/API fallback and no releases.
+Before repair it refreshes a source behind main and waits for new CI. Existing
+records and unrelated green PRs are not silently enrolled.
+
+Local macOS ARM64: 23 asset-free worker tests pass, including Git publication,
+restart recovery, stale/changed heads, missing/failed checks, review requirements
+and disabled/paused/legacy state. Subsequent CI and upgraded mini deployment
+are recorded above. No game build or playthrough is relevant to this controller.
+
+## Physical keyboard text entry — issue #136 (2026-10-20)
+
+Uncommitted work on `136-enhancement-write-better-with-a-real-keyboard`, based
+on main `c932bee`. Shared dialog code routes character input through US
+`sub_0007DB20` and the existing editing/Done/Back callbacks. Windows character
+messages and SDL UTF-8 text events feed a bounded, locked queue; dialog changes
+and focus loss clear pending events. Character pages preserve the original
+Latin-1 glyph set and original byte/visible-width limits. Editing keys do not
+become E/F/Y/WASD menu actions. Numeric-only dialogs and clipboard paste are not
+part of this change.
+
+Validation: Windows x64, Python 3.12.14, MSVC 19.44, pinned runtime and verified
+US XBE SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+`tsfp.ps1 Build -SkipTextures` passed, including its normal executable checks;
+the texture audit was skipped for this local input-only build, not packaging.
+77 selected pytest checks passed with one host-specific skip. New tests execute
+the original US insertion, deletion and cursor routines against disposable RAM,
+including full-buffer rejection and font-width rejection. The rebuilt Windows
+input test directly exercises WM_CHAR character/command routing, repeated Enter,
+focus loss and dialog changes; it passes without desktop input injection.
+
+The first live test failed: physical letters still triggered menu actions in
+Create Profile. Read-only capture on 2026-10-21 identified its embedded keyboard
+(descriptor 0x4e8d54) rather than the standalone descriptor. Recognition now uses
+the original character-row callbacks, so embedded profile/multiplayer keyboards
+are included and stale edit buffers on non-keyboard pages are excluded. Escape
+uses the owning menu's original Back action. The shared tests now reproduce the
+captured embedded layout and run original editing routines against it. The
+corrected build passes the Windows build checks and the same 77 selected pytest
+checks (one skip), plus the Mac backlog check. The user then confirmed physical
+typing and Enter work in Create Profile, testing single-press “Efy Test” entry
+and the Backspace/Enter prompt. No claim of full dialog-matrix validation.
+Executable SHA-256:
+`2c88e55e1e4c94f1974afa072e8261bf34f125e2bd1e39423e4ba90c6afae1f8`.
+The game uses isolated Test Lab saves. Desktop-control APIs expose no native
+windows in this session; physical validation is performed by the user.
+Native Mac compile, SDL host self-test, physical keyboards and the full text-dialog
+matrix remain unverified; see MAC-059. No personal settings/saves were changed.
+
+PR #247 contains implementation commit `d23d9dc`. Integrated main `ea74e15`
+without changing keyboard source, preserving both CI test registrations and
+validation records. After integration, 91 selected keyboard/menu, CI scope,
+backlog, repository-context and Ghost Gun checks passed. Context/index maintenance
+passes against main. The executable hash and user confirmation above describe
+the pre-integration input build; the combined head has not had another playtest.
+
 ## Texture preservation on version bumps — 2026-10-20
 
 PR #234 now follows the Git LFS/bundled delivery merged by #235. It preserves
@@ -63,6 +185,48 @@ Local launcher tests reach the new large-manifest test but stop at
 the running-game guard for another checkout; host CI supplies the full tests.
 
 # Measured progress
+
+## Ghost Gun living-character alignment (issue #181, 2026-10-20)
+
+Implemented in the commit carrying this entry on
+`181-bug-ghost-gun-past-cortez-issue`, based on main
+`a0deeea`. The issue video shows Past Cortez's pale Ghost Gun reveal displaced
+from his ordinary model. The US actor effect dispatcher selects
+`sub_00122F10` for living actors while weapon 15 is equipped; humanoid ghosts
+use the separate `sub_00121F50` path from issue #111.
+
+The living-actor effect projects the actor into screen coordinates, filters
+its image through five 256x256 blur draws, then composites the image at those
+projected bounds. That final partial-screen rectangle was classified as a
+centered HUD widget. At non-4:3 ratios the resulting viewport transform moves
+and resizes the reveal independently of the world model. The existing shared
+primitive hook now gives only that final draw (return PC `0x001232A9`)
+full-view placement and flushes before restoring the enclosing placement.
+Original coordinates, texture coordinates, colour, blur passes, world camera,
+4:3 and split-view policy are preserved. No new runtime patch is necessary:
+both platform configurations already install this primitive hook.
+
+Validation: Windows x64, Python 3.12.14, MSVC 19.44, D3D11. The complete patch
+stack verifies and the supported `tsfp.ps1 Build` completes with its native
+build tests. Executable SHA-256:
+`cde11b846b67d374ec8022d9be749b211498d00e3b3412ff16d4979285456172`.
+Seven new checks pass, including old-placement/no-flush/no-restore
+mutations, both platform wrapper configurations, and execution of the original
+checksum-verified US `sub_00122F10` with isolated guest memory and render stubs.
+The original-routine test verifies all five blur passes, unchanged final draw
+arguments and preserved callee-saved registers across moving actor bounds and
+five display shapes. Asset-free placement checks cover seven resolutions.
+Existing UI and projection tests also pass (20 focused checks total). Another
+37 patch-tracking, patch-transition, spirit and ghost-target fixture checks pass,
+as does the Mac backlog contract: 58 pytest checks in total. The new tests run
+in the shared Windows/macOS runtime workflow; the original-XBE test skips
+without local assets.
+
+The user tested this build in the unlocked, isolated Windows Test Lab session
+and confirmed: "The overlay stays on Cortez now." The session was launched at
+1920x1080. This is live user confirmation of the reported encounter; macOS
+execution and visual validation at other display ratios remain pending (MAC-036).
+Personal saves/settings were preserved.
 
 ## Bundled texture dependency for game releases (2026-10-20)
 
@@ -13094,3 +13258,51 @@ Three portable shared UI checks and nine compatibility-policy checks passed.
 The Mac backlog consistency check also passed.
 Native Mac compilation and UI execution are unavailable on this
 Windows host and remain pending. No release is published by this change.
+
+## Automatic display resolution (2026-10-21)
+
+Branch `fix/fullscreen-desktop-resolution`, based on main
+`734504f`. Auto is offered alongside manual aspect/resolution choices in the
+guest Display menu, Cocoa settings and shared launcher. New compatible settings
+default to Auto; saved manual choices remain unchanged. It follows the active
+fullscreen display or window client/drawable pixels, retaining the last valid
+output on query/allocation failure. Camera, HUD and cinematic matte paths use
+effective dimensions rather than the persistent Auto sentinel.
+
+Windows evidence:
+- Supported US executable hash verified; complete runtime patch stack applied.
+- `tsfp.ps1 Build` completed with its rendering/settings/build tests, including
+  ghost depth/feedback contracts. Binary SHA-256:
+  `0686c87643185e6e688534b8ec8c0ec2321f4f618843bd90242a7d8e2d385a47`.
+- Isolated 30-second unlocked Test Lab run with Auto and fullscreen logged
+  `fullscreen: 3440x1440` and `D3D8: Device created (3440x1440)`, with successful
+  guest presentation. Desktop refresh was not changed. This verifies startup
+  output detection, not full gameplay or physical monitor switching.
+- User tested the reopened Auto-resolution build and confirmed it works.
+- Display/cutscene/UI/FOV/launcher-policy regressions: 30 passed, one Mac-only
+  check skipped, 26 subtests passed. The added shared SDL Auto snapshot and
+  Windows monitor regressions both passed afterward. Packaging/backlog/context/
+  workflow/display contracts: 90 passed.
+- Windows launcher compiled; 36 isolated settings checks and 13 shared UI groups
+  passed, including Auto selection/save, old-release gating and manual override.
+  After the game closed, the complete Windows launcher build/test command also
+  passed, including updater, startup, downloads, crash/session and maintenance
+  suites. Test output reused a temporary non-OneDrive directory after a transient
+  file-replacement failure in the synchronized workspace.
+
+Native Mac adapters and packaging are implemented, but Mac build, Retina
+window/fullscreen and physical multi-monitor checks remain unverified.
+See MAC-024. Logs: `logs/auto-game-build.log`, `auto-regressions.log`,
+`auto-settings-test.log`, `auto-shared-ui-test.log`, `auto-contracts.log`, and
+`private/test-saves/auto-resolution/game.err`. Personal saves/settings untouched.
+
+### PR #251 CI fixture correction
+
+The historical controls-only fixture accidentally included the Auto patch before
+its display/cutscene/fullscreen-effect prerequisites, failing setup on both
+Windows and Mac. The fixture now defers it to the complete-stack migration,
+then checks effective-size hooks in the title and both renderer files, local
+edit preservation and idempotence. All 34 patch-tracking and historical-upgrade
+regressions passed on Windows (`logs/auto-ci-patch-upgrades.log`).
+Both native-runtime CI jobs and the Windows/Mac launcher checks passed on
+`c46cc8c`; this does not establish full Mac game or physical display validation.

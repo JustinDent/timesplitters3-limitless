@@ -207,6 +207,8 @@ def test_native_unlocked_copy_isolated_reset_and_locked(tmp_path, monkeypatch, u
                 assert Path(env[key]).is_relative_to(run)
             assert 'TSFP_PC_INPUT_REPLAY' not in env
             assert env['RECOMP_XMV_PLAY'] == '0'
+            assert env['TSFP_TEXTURE_PACK_DIR'] == str(tmp_path / 'assets/textures')
+            assert env['TSFP_TEXTURE_MODE'] == 'classic'
             saved = next(Path(env['RECOMP_SAVE_DIR']).rglob('tsftrpft'))
             assert saved.read_bytes() == next(fixture.rglob('tsftrpft')).read_bytes()
             saved.write_bytes(b'progress from disposable session')

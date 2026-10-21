@@ -199,6 +199,13 @@ cancels without replacing the previously confirmed character.
 The team chooser supports its left/right arrows and **Select/Back** footer;
 **WASD** also supplies directional-pad input while menus are open.
 
+Text-entry dialogs (such as **Enter Name**) accept the physical keyboard.
+Type letters, numbers, spaces and supported accented characters; use
+**Backspace/Delete**, **Left/Right**, **Home/End**, and **Ctrl+A** to edit,
+**Enter** for Done, and **Escape** to cancel. The original character and width
+limits still apply. Mouse/controller selection of the on-screen keyboard also
+remains available. Arbitrary Unicode and clipboard paste are not supported.
+
 The **Controls** sensitivity bar and **Display settings** FOV bar also support
 clicking and dragging. Sensitivity changes the selected player's controller
 setting; mouse sensitivity remains in PC Settings. FOV changes stay pending

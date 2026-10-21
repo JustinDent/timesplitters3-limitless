@@ -41,6 +41,7 @@ replay frontend; the new SDL adapter is only selected on Mac.
 | Guest execution and gameplay fixes | Pinned runtime, complete patch stack, generated guest code | Build/compiler and process entry |
 | Menu, camera and display policy | `pc_display*`, `pc_menu_*`, `pc_cutscene.h`, `pc_ui_layout.h` | OS pointer events, window/resolution application |
 | Screen-copy rectangle policy | `graphics/screen_copy_rect.h` clips paired source/destination rectangles once | RHI shader draw or legacy GL blit |
+| Text-entry dialogs | `pc_text_input.h` queue/commands and `pc_menu_text.inc` original guest editing callbacks | Win32 character messages; SDL text-input events and main-thread activation |
 | Controls and configuration | `pc_input*`, `pc_bindings.inc`, shared validation | Win32/SDL events and atomic file writes |
 | Debug settings | `pc_debug_options.def` generates fields, keys, labels and capability metadata | Win32/Cocoa controls, layout, log-folder opening |
 | Menu reconstruction shader | `graphics/menu_sampling_shader.h` and `pc_menu_sampling.h` eligibility | HLSL/GLSL intrinsic/resource syntax and uniform/constant binding |

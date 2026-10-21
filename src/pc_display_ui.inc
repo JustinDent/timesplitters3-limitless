@@ -430,7 +430,14 @@ void pc_display_weapon_effect(void (*original)(void),unsigned kind)
     unsigned points=2;int lock=0,gradient=0,composite=0;
     if(kind==0) {
         lock=caller==0x0013871Bu || caller==0x0013874Au;
-        composite=caller==0x00138471u && ui_tag==0x00137F00u;
+        /* Ghost Gun living-actor reveal (US sub_00122F10): this rectangle
+         * composites a filtered screen copy over the actor's projected bounds.
+         * Its coordinates already match the world camera, so centering it as
+         * a 4:3 HUD element detaches the image from Past Cortez in widescreen.
+         * Only the final composite changes placement; keep its UVs, tint and
+         * the preceding 256x256 blur passes exactly as the guest authored them. */
+        composite=(caller==0x00138471u && ui_tag==0x00137F00u) ||
+                  caller==0x001232A9u;
     } else if(kind==1) {
         points=4;
         lock=caller==0x00138A6Cu || caller==0x00138C5Cu ||
