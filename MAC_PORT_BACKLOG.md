@@ -2963,6 +2963,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-057 — Optional texture pack delivery through the launcher
 
+- **Release preservation follow-up (2026-10-20, PR #234):** Game/launcher
+  version bumps retain the loader, controls, installer, repository texture pack
+  and default bundled-game delivery. Repository texture pack now runs on both
+  version files and either host's game packager/publisher changes, for PRs and
+  main pushes. It hydrates Git LFS and audits the committed DDS/JSON; the obsolete
+  separate-release check is removed. This is shared CI policy with no host
+  adapter changes. Upgrade/repair/rollback preservation remains required.
+  Actual Mac installer interaction and scene fidelity remain awaiting validation;
+  see [validation](STATUS.md#texture-preservation-on-version-bumps--2026-10-20).
+
 - **Status:** Awaiting validation
 - **Behavior:** Players explicitly download the optional GitHub texture pack or
   select a local ZIP/folder in launcher Graphics & resolution settings. The
