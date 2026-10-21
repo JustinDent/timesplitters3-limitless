@@ -51,9 +51,20 @@ Top-level `patches/*.patch` is the active stack. The legacy subdirectory contain
 migration inputs only. The loader moves networking ahead of native boot, build
 identity after Discord, and the presentation integration series to the end;
 consult the generated ordered index instead of guessing from the number of z's.
-The `-fixed-60-fps.patch` is the tail of that series. Earlier 144-FPS,
-presentation-timing, recovery and shared-presentation patches remain structural
-dependencies even though higher-FPS runtime behavior is disabled/removed.
+The `-late-frame-pacing.patch` follows `-fixed-60-fps.patch` at the tail.
+Earlier 144-FPS, presentation-timing, recovery and shared-presentation patches
+remain structural dependencies even though higher-FPS behavior is disabled.
+The loader orders the late-frame correction explicitly; do not rely on filename
+length. Its actual Arm-body contract is in `tests/test_frame_clock.py` using
+`tests/flip_gate_deadline.c`: a cheap frame waits, a late frame consumes an
+already signalled vblank without another tick, and no signal means no bypass.
+The bypass no longer requires the retired interpolation idle callback.
+
+The unverified #105 per-thread flip-gate experiment was excluded from the active
+stack; its recovery copy remains in ignored logs. The verified repair combines scoped
+prompt-read validation with the late-frame pacing correction, not thread-owner
+changes. Windows measured 53.8-54.3 FPS in weapon set versus the original ~20;
+see STATUS.md for scope, provenance and pending Mac validation.
 
 Create a new patch against the **correct preceding effective stack**, validate
 hunk counts/context with the complete loader and transition tests. A dry-run of
@@ -115,5 +126,5 @@ game build; that selector does not prove the current runtime supports them.
 Historical interpolation names and tests do not restore the retired engine. API presentation
 counts are not GPU completion or display scanout. To investigate slowdowns,
 compare stable/slow/stable timing, distinguish CPU work, GPU work, synchronization
-and intentional waits, then run one discriminating intervention. Flip-gate
-involvement in #105 remains a hypothesis until a reproduced measurement proves it.
+and intentional waits, then run one discriminating intervention. Issue #105 measured repeated text VM queries plus late-frame gate quantization;
+see STATUS.md for its scoped Windows acceptance.

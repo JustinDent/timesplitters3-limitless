@@ -14,6 +14,8 @@ static int keyboard=1,players=1,font=7,measurements,expected_growth;
 static float widths[4]={84,24,24,64},expected_extra;
 static int guest_writable(uint32_t a,size_t n){return a && a+n<sizeof memory;}
 int pc_prompts_keyboard_active(void){return keyboard;}
+void pc_prompts_layout_begin(void){}
+void pc_prompts_layout_end(void){}
 static volatile int marker;
 void sub_001CDAE0(void){marker=1;}
 void sub_00147080(void){marker=2;}

@@ -2,6 +2,7 @@
    Settings sub_002CBFC0, and paused Options sub_002F5520. Original controls,
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
+#include "pc_prompts.h"
 #ifdef TSFP_PC_DISCORD
 #include "pc_discord_guest.h"
 #include "pc_guest_memory.h"

@@ -149,7 +149,7 @@ def test_upgrade_previous_controls_with_newer_input_features(checkout):
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-special-weapon-overlays.patch',
                           'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-transition-overlay.patch'):
             continue  # Requires the display wrapper, absent in this historical state.
-        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch')):
+        if patch.name.endswith(('-144-fps.patch', '-presentation-timing.patch', '-interpolation-recovery.patch', '-shared-presentation-integration.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch')):
             continue  # Depends on native/shared renderer context added by the full migration below.
         if patch.name not in ('pc-display.patch', 'texture-pack.patch', 'texture-toggle.patch', 'zz-mac-native-boot.patch', 'zzz-mac-renderer.patch', 'zzzz-mac-input.patch', 'zzzzz-mac-high-refresh.patch', 'zzzzzz-interpolation-layouts.patch', 'zzzzzzz-framebuffer-sampling-passes.patch', 'zzzzzzz-shared-input-model.patch', 'zzzzzzzz-mac-feature-adapters.patch', 'zzzzzzzzz-shared-screen-space.patch', 'zzzzzzzzzz-native-settings-init.patch', 'zzzzzzzzzzz-shared-linear-formats.patch', 'zzzzzzzzzzzz-native-prompts.patch', 'zzzzzzzzzzzzz-native-camera.patch', 'zzzzzzzzzzzzzz-native-debug.patch', 'zzzzzzzzzzzzzzz-cutscene-letterbox.patch', 'zzzzzzzzzzzzzzzzz-terminal-mouse-select.patch', 'zzzzzzzzzzzzzzzzz-story-objectives-health.patch'):
             apply(checkout, patch.name)
