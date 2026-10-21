@@ -23,6 +23,20 @@ published release or a full-game 144 FPS certification.
   closed normally before completion; their exit traces are not crashes.
   Controller/physical mouse checks and Mac execution remain unverified.
   Arcade acceptance is tracked separately below.
+- **HUD message timing (this revision):** The HUD queue previously discarded
+  fractional intervals, doubling a one-second notice at native 120. Its shared
+  pause gate now accepts every advancing interval. Complete original-routine
+  tests cover original 60/native 60/120/144, delayed expiry, queue limits,
+  sound-linked holds, quarter-speed time and pause; 133 broader checks pass.
+  Full Windows Release build and built-in checks pass. Rebuilt Scotland
+  comparisons at original 60/native 120/native 144 show message-clock/wall-time
+  ratios of 1.000024/0.999715/1.000389, versus 0.49315 in the capture-heavy
+  pre-fix run. Captures and queue observations verify objective display/fade/
+  removal and pause/resume; all isolated profiles and personal settings remain
+  unchanged. Binary SHA-256 is
+  `167e9bce3b96d4ff8ceaab378d52aaadb9d0b923fa3a7a42374a1364db413397`.
+  Mac execution, full campaign and audible subtitle synchronization remain
+  unverified. [HUD evidence](docs/native-high-refresh-regressions.md#hud-message-timing).
 - **Scotland opening comparison (this revision):** On the same corrected
   Windows binary, original 60 and native 144 reach the boat intro and dock,
   consume three pistol rounds, move to the nearby wall and pause/resume.

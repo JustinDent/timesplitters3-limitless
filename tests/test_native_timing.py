@@ -229,6 +229,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
                                (0x61570,0x6160f),(0x585e0,0x5861b),(0x59cf0,0x59d14)]),
     ('native_npc_dispatch.c', [(0x15eae0,0x15f0ca)]),
     ('native_player_dispatch.c', [(0xd5eb0,0xd683d)]),
+    ('native_hud_messages.c', [(0x14a5a0,0x14aad6),(0x12df00,0x12df5d),(0x12dec0,0x12def8),(0x12d1e0,0x12d29c)]),
     ('native_arcade_countdown.c', [(0x68830,0x69587),(0x42830,0x4286a)]),
     ('native_camera_motion.c', [(0xc73c0,0xc760e),(0xc7610,0xc77bc)]),
     ('native_camera_effects.c', [(0x151e80,0x151f1c),(0x1533e0,0x153431),
@@ -299,6 +300,10 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
     constants=''
     try:
         config.configure_from_xbe(str(xbe))
+        if harness_name=='native_hud_messages.c':
+            import struct
+            constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
+                                for address in list(range(0x4e72e0,0x4e7348,4)))
         if harness_name=='native_arcade_countdown.c':
             import struct
             constants='\n'.join(f'MEM32(0x{address:x})=0x{struct.unpack_from("<I",image,config.va_to_file_offset(address))[0]:08x};'
@@ -483,7 +488,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                                     f'#include "{(ROOT / "src/pc_native_visual_time_guest.inc").as_posix()}"')
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
-    if harness_name in ('native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
+    if harness_name in ('native_hud_messages.c','native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)
     if harness_name=='native_projectile_coupled.c':

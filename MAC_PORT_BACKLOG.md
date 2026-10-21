@@ -2960,6 +2960,20 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **HUD message timing (this revision):** Shared `src/pc_native_numeric.h`
+  opens the audited HUD message pause gate on fractional game intervals,
+  preserving authored delays, expiry, queue ordering and sound holds. The
+  original-routine fixture `tests/native_hud_messages.c` reproduces a doubled
+  notice duration at 120 before correction and passes at original 60 and
+  native 60/120/144 afterward, including quarter-speed and pause. Shared CI
+  already runs its parametrized timing suite. No Mac adapter is needed;
+  native Mac build and live message/voice synchronization remain unverified.
+  Windows Release build/built-in checks and 133 regressions pass. Rebuilt
+  Scotland observations at original 60/native 120/native 144 verify about 1.0
+  message second per wall second, objective fade/removal and pause/resume.
+  These Windows results do not establish Mac validation; see the HUD message
+  timing section in `docs/native-high-refresh-regressions.md`.
+
 - **Scotland opening follow-up (this revision):** Windows original-60/native-144
   comparison verifies intro-to-dock transition, three pistol rounds, short
   movement and pause/resume on the unchanged countdown-fix binary. This is

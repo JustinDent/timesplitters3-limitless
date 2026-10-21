@@ -79,6 +79,10 @@ extern float pc_native_visual_sample(uint32_t value);
  * NPC aim at 0x2B93DA gates both linear recovery and fixed-factor tracking.
  * Advance both on live intervals; the tracking coefficient and RNG decision
  * cadence are handled separately below. ECX is replaced before arithmetic.
+ * HUD message update 0x14A5A0 ages delayed notices and retires them using
+ * fractional game seconds. Its gate at 0x14A5CD otherwise discards time on
+ * zero-whole-tick frames, delaying objectives, pickups and subtitles. EAX is
+ * replaced by the queue index at 0x14A670; no counter consumes this gate value.
  * All other loads, including other reads of this same address, stay exact. */
 static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
                                            uint32_t value)
@@ -111,7 +115,7 @@ static inline uint32_t pc_native_global_load(uint32_t site, uint32_t address,
          site == 0xC7D73u || site == 0xC7E0Cu || site == 0xCD70Fu ||
          site == 0xA75E7u || site == 0x1B6FF0u || site == 0x217059u ||
          site == 0x216958u || site == 0xF4A66u || site == 0xBB6C0u ||
-         site == 0x2B93DAu) &&
+         site == 0x2B93DAu || site == 0x14A5CDu) &&
         address == 0x4E7944u &&
         g_tsfp_native_timing_active)
         return *(const float *)((uintptr_t)0x4E794Cu + g_xbox_mem_offset) > 0;

@@ -40,6 +40,73 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## HUD message timing
+
+The opening comparison led to an audit of delayed objectives and HUD notices.
+Original US `sub_0014A5A0` computes fractional elapsed game seconds but gates
+its entire queue update on the whole game delta at `0x14A5CD`. At native
+120/144, zero-whole-tick intervals are discarded. This slows both initial
+message delays and their expiry, despite correct overall game-clock speed.
+The gate register is replaced at `0x14A670`; its value is never used as a
+counter. The shared numeric policy now opens only this audited load for
+positive live game time and preserves pause and the disabled-native path.
+No message duration, queue priority or sound timing constant is changed.
+
+`tests/native_hud_messages.c` executes the complete original update,
+eligibility, conflict-table and queue-limit initializer routines translated
+from the checksum-pinned US XBE. Only sound services/player count are spies.
+Before correction, a one-second notice lasts 2.016667 seconds at native 120
+and a half-second-delayed notice has not expired after three seconds
+(`logs/native-hud-before-test.log`). After correction, original 60 and
+native 60/120/144 expire the first notice in 1.016667/1.016667/1.008333/
+1.006944 game seconds, within one update of its authored duration. The
+half-second delay, single-message queue limit, one-shot sound trigger,
+sound-bound hold, pause, quarter-speed intervals and adjacent-site isolation
+also pass (`logs/native-hud-after-test.log`). A separate type-6 case uses a
+representative 20-second delay and the five-second lifetime observed in
+Scotland; it appears/expires within one update of 20/25 game seconds at
+each rate. This does not assert that every live script authors a 20-second
+delay. This fixture is part of the
+existing native timing suite registered in shared Windows/Mac CI; execution
+requires the pinned local XBE, and local Mac execution remains unavailable.
+
+The pre-fix live `scotland-hud-before` run uses the previous binary SHA-256
+`41ca454f88d9d11279fe57cbf24fbd56dbca9b72a5d5550c154c20898a91fa43`.
+The read-only `--watch-hud` observer records the sixteen bounded player-one
+message slots. Between elapsed wall seconds 114.188 and 124.360, the delayed
+type-6 notice advances only 5.0163 game seconds (-15.9631 to -10.9468).
+The captured run includes renderer-dump overhead; it establishes lost message
+time, not a precise target-rate benchmark. The isolated profile is preserved
+and the session exits normally.
+
+Full Windows Release build and built-in checks pass
+(`logs/native-hud-build.log`); 133 timing/translation/CI/backlog regressions
+pass (`logs/native-hud-regressions.log`). The expanded objective fixture
+also passes separately. The new binary SHA-256 is
+`167e9bce3b96d4ff8ceaab378d52aaadb9d0b923fa3a7a42374a1364db413397`;
+its compiled label is `7783767`, built with this HUD source correction before
+commit. The original-60/native-120/native-144 bounded Scotland comparisons
+use that same binary and the identical command sequence in isolated profiles.
+Evidence is `private/test-saves/scotland-hud-after-{60,120,144}`, matching
+logs, and `private/pipeline/hud-message-validation.json`.
+
+| Mode | Observed message seconds / wall second | Observed unpaused span |
+| --- | ---: | ---: |
+| Original 60 | 1.000024 | 23.266 seconds |
+| Native 120 | 0.999715 | 23.265 seconds |
+| Native 144 | 1.000389 | 25.421 seconds |
+
+These endpoint measurements span the scripted delay and visible banner, with
+small asynchronous sampling error. Reviewed captures show the Scotland
+objective banner fading; queue observations and later captures confirm its
+removal. Pause takes effect after key delivery, holds the remaining lifetime,
+and resume lets the notice expire. Pickup notices also retire in each run.
+All three sessions exit normally with valid, unchanged test profiles; personal
+controls/display hashes remain unchanged. These checks establish this HUD
+clock behavior, not full cutscene/subtitle audio synchronization, all mission
+scripts, multiplayer UI, physical input, or Mac execution. The Scotland jeep
+encounter remains untested at native rates.
+
 ## Scotland opening comparison
 
 The same Windows x64/D3D11 countdown-fix binary (`a0a7214` source, SHA-256

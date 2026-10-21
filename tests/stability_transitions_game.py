@@ -27,6 +27,7 @@ def main():
     parser.add_argument('--native-fps',type=int,choices=(60,120,144))
     parser.add_argument('--manual-start',action='store_true')
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
+    parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
     parser.add_argument('--watch-input',action='store_true',help='Trace changes to player-one input suppression in the bounded log')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
@@ -103,6 +104,17 @@ def main():
             result['ammo'].append(dict(weapon=weapon,type=ammo,capacity=word(definition+0x18),
                 loaded=short(actor+record+0x38+ammo*2),reserve=short(actor+0x61e+ammo*2)))
         return result
+    def hud_snapshot():
+        messages=[]
+        for slot in range(16):
+            address=0x7a6160+0x38+slot*0x16c
+            kind=word(address)
+            if kind is None or not 1<=kind<=13:continue
+            text=c.create_string_buffer(320)
+            if not kernel.ReadProcessMemory(handle,address+4+0x10000,text,320,None):continue
+            messages.append(dict(slot=slot,kind=kind,text=text.value.decode('latin-1'),
+                timing=floats(address+0x144,5)))
+        return messages
     def snapshot():
         pointer=word(0x761C48)
         return dict(pid=process.pid,scene=word(0x79094C),flags=word(0x7DE458),
@@ -110,7 +122,7 @@ def main():
             held=word(0x6B93DC),pressed=word(0x6B93E0),suppression=word(0x6B9408),
             raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),
             match_state=word(0x7DE30C),countdown=word(0x4D2878),countdown_ticks=word(0x4D287C),
-            player=player_snapshot())
+            player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}))
     def drain(pipe,path):
         with path.open('wb') as out:
             left=4*1024*1024
@@ -160,7 +172,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures),indent=2))
+        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)
