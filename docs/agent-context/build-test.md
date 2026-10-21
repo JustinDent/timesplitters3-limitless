@@ -100,6 +100,16 @@ bundle pointers. For an explicitly texture-free development build use Windows
 pack just to run source/documentation checks. Release packaging includes the
 audited committed replacements by default; see `tools/build_textures.py`.
 
+`testing_profile.prepare_run` explicitly supplies `TSFP_TEXTURE_PACK_DIR` from
+the checkout's `assets/textures` and `TSFP_TEXTURE_MODE=classic` after filtering
+inherited diagnostics. Without that pack path F10 toggled modes but loaded no
+replacements. Both Windows Test Lab and the native Mac unlocked runner consume
+this shared environment; no runtime adapter change is needed. Asset-free
+coverage lives in `tests/test_testing_profile.py` and
+`tests/test_native_mac_tools.py` (both already selected by native CI). Windows
+runtime loading must be checked separately; native Mac visual validation remains
+pending. Missing packs retain the loader's Classic fallback for source-only tests.
+
 Official Windows publication through `Publish-Release.ps1` /
 `tools/publish-release.py` requires the complete repository pack, including
 prepare-only, draft and resumed runs. Preflight audits hydrated DDS/mips,

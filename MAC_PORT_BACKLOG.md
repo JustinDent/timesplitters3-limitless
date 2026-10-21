@@ -1133,6 +1133,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-21 unlocked test launch correction (branch
+  `fix/test-profile-texture-pack`): shared `testing_profile.prepare_run` now
+  connects `assets/textures` explicitly while starting in Classic mode. The
+  native Mac unlocked runner already imports that environment, so no adapter
+  change is needed. Windows D3D11 startup logs confirm replacement uploads;
+  shared/native preparation tests pass on Windows. Mac acceptance remains an
+  unlocked scene with F10 toggling and replacement uploads visible in its log;
+  native visual testing has not been performed for this correction.
+
 - 2026-10-20 bundled texture delivery: shared tools/build_textures.py prepares
   the Git LFS pack in assets/textures for Windows and native Mac (PR #235);
   both game packagers stream it
