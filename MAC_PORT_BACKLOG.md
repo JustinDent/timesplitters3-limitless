@@ -726,6 +726,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
+- **Issue #105 follow-up (`5c2f4ac`, 2026-10-21):** Shared prompt read scopes
+  (`src/pc_text_read_scope.h`, `pc_prompts.c`, `pc_prompt_guest.inc`,
+  `pc_tutorial_ui.inc`, `pc_display_ui.inc`) reduce VM queries. The separate
+  `late-frame-pacing` patch preserves the 60-Hz clock and lets already-late
+  frames consume a real signalled vblank without another tick. Windows bounded
+  weapon-set acceptance passed at 53.8-54.3 FPS (original ~20); see STATUS.md.
+  No new Mac adapter is required. Mac build/runtime validation remains pending:
+  run shared contracts and isolated Arcade weapon-set/before/back-out checks,
+  plus representative prompts/tutorial wrapping, before marking it verified.
 - **Status:** Awaiting validation
 - **PC behavior:** Formatted menu/HUD hints show current bindings, [Unbound] or [Mouse], and switch back to controller icons on deliberate controller activity.
 - **PC source:** Audited revision above; `src/pc_prompts.c`, `src/pc_prompt_guest.inc`, `patches/pc-prompts.patch`, `tests/pc_prompts.c`.

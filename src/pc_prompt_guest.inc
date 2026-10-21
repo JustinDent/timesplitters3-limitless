@@ -7,13 +7,13 @@
 
 #include "pc_guest_memory.h"
 
-static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned args)
+static void pc_prompt_guest_inner(void (*original)(void), unsigned text_arg, unsigned args)
 {
     uint32_t saved=g_esp, text_va, scratch, frame;
     uintptr_t stack=(uintptr_t)saved+g_xbox_mem_offset, text;
     char source[2048], translated[2048];
     size_t length=0;
-    if (!pc_guest_memory(stack,(args+1)*4,0)) {
+    if ((args+1)*4>pc_prompts_read_region(stack)) {
         original(); return;
     }
     text_va=((uint32_t *)stack)[text_arg];
@@ -21,7 +21,7 @@ static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned 
     if (!text_va) { original(); return; }
     /* Validate one region at a time, including strings straddling a page. */
     while (length<sizeof source) {
-        size_t available=pc_guest_region(text+length,0);
+        size_t available=pc_prompts_read_region(text+length);
         if(!available)break;
         if (available>sizeof source-length) available=sizeof source-length;
         const char *part=(const char *)(text+length);
@@ -43,4 +43,13 @@ static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned 
     g_esp=frame;
     original();
     g_esp=saved+4; /* cdecl ret; the caller still owns its original arguments. */
+}
+
+static void pc_prompt_guest(void (*original)(void), unsigned text_arg, unsigned args)
+{
+    /* Drawing calls the measurement hook again for individual glyphs. Keep
+       those nested reads in the same synchronous text operation as wrapping. */
+    pc_prompts_layout_begin();
+    pc_prompt_guest_inner(original,text_arg,args);
+    pc_prompts_layout_end();
 }

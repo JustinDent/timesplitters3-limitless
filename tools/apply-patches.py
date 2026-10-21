@@ -61,7 +61,8 @@ def patch_records(paths):
     # stack; recorded prior bytes/order still unwind older Windows/Mac builds.
     for suffix in ('-144-fps.patch', '-presentation-timing.patch',
                    '-interpolation-recovery.patch', '-controls-accept-save.patch',
-                   '-shared-presentation-integration.patch', '-fixed-60-fps.patch'):
+                   '-shared-presentation-integration.patch', '-fixed-60-fps.patch',
+                   '-late-frame-pacing.patch'):
         patch = next((p for p in paths if p.name.endswith(suffix)), None)
         if patch:
             paths.remove(patch)

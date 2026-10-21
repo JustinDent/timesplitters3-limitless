@@ -242,3 +242,10 @@ The Windows two-executable package and existing updater size limits are retained
 API-free Windows/Mac build and regression checks are described in
 [launcher compatibility](launcher-compatibility.md). Both host tests remain
 required evidence; CI does not generate missing OS adapters or replace visual review.
+
+Issue #105 uses shared prompt layout scopes (`pc_text_read_scope.h` and shared
+guest hooks) plus the shared runtime late-frame patch. Existing Windows/Darwin
+VM adapters supply validation; no second Mac feature implementation is intended.
+Windows weapon-set acceptance measured 53.8-54.3 FPS against the original ~20,
+with before/back-out around 59. Mac build/runtime acceptance remains pending
+under MAC-002; shared source and Windows checks do not verify the Mac host.

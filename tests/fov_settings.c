@@ -33,6 +33,8 @@ uint32_t xbox_HeapAlloc(uint32_t size,uint32_t alignment) { (void)size;(void)ali
  * input behavior is covered by tutorial_layout.c; these paths must not run
  * during the FOV/settings test. */
 int pc_prompts_keyboard_active(void) { CHECK(0); return 0; }
+void pc_prompts_layout_begin(void) {}
+void pc_prompts_layout_end(void) {}
 #define TUTORIAL_STUB(name) void name(void) { CHECK(0); }
 TUTORIAL_STUB(sub_00147080) TUTORIAL_STUB(sub_00042D10)
 TUTORIAL_STUB(sub_0003FA10) TUTORIAL_STUB(sub_0003FCF0) TUTORIAL_STUB(sub_0003F8D0)

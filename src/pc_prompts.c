@@ -3,6 +3,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "pc_text_read_scope.h"
+
+#ifdef _MSC_VER
+static __declspec(thread) PcTextReadScope text_read_scope;
+#else
+static _Thread_local PcTextReadScope text_read_scope;
+#endif
+void pc_prompts_layout_begin(void) { pc_text_read_begin(&text_read_scope); }
+void pc_prompts_layout_end(void) { pc_text_read_end(&text_read_scope); }
+size_t pc_prompts_read_region(uintptr_t address)
+{ return pc_text_read_region(&text_read_scope,address); }
 
 static SRWLOCK prompt_lock = SRWLOCK_INIT;
 static RecompPadState previous_pad;
@@ -166,7 +177,7 @@ static int network_labels(const char *source, char *out, size_t capacity)
     int changed=0;
     if(!source || !out || !capacity) return 0;
     for(size_t i=0;source[i];) {
-        if(!_strnicmp(source+i,"Xbox Live",9)) {
+        if((source[i]=='X' || source[i]=='x') && !_strnicmp(source+i,"Xbox Live",9)) {
             if(used+6>=capacity) return 0;
             memcpy(out+used,"ONLINE",6); used+=6; i+=9; changed=1;
         } else {
@@ -189,7 +200,7 @@ int pc_prompts_rewrite(const char *source, char *out, size_t capacity)
        text. Apply before both text measurement and rendering for alignment. */
     changed=network_labels(source,renamed,sizeof renamed);
     if(changed) source=renamed;
-    if(pc_prompts_keyboard_active() && strchr(source,'\v') && pc_settings_prompt_keys(keys)) {
+    if(strchr(source,'\v') && pc_prompts_keyboard_active() && pc_settings_prompt_keys(keys)) {
         pc_controls_get_mouse(&sensitivity,&enabled,&inverted);
         if(pc_prompts_format(source,out,capacity,keys,enabled)) return 1;
     }

@@ -131,6 +131,21 @@ Use [testing-profile](../testing-profile.md), [building](../building.md) and
 [macos](../macos.md) for full commands. Never auto-test through personal saves,
 interactive launchers or persistent user settings.
 
+## Bounded Arcade weapon-set route
+
+On Windows, `tests/stability_transitions_game.py --run-name issue105 --scenario
+weapon-set` reuses the isolated Test Lab runner, visits Arcade/Deathmatch/Vietnam,
+opens weapon set, changes selection and backs out, then exits in about 100 seconds.
+Review its named captures to confirm screen identity. `weapon_set_metrics` checks
+settled five-second guest-swap windows against 50 FPS, saving JSON results.
+The complete repair passes this unchanged threshold on Windows; partial cache
+variants failed it. Counters measure guest swaps, not GPU completion or scanout.
+`tests/test_text_read_scope.py` exercises query reduction, nesting, boundaries,
+scope invalidation and actual prompt-hook ABI/fallbacks. `tests/test_frame_clock.py`
+extracts the real Arm body for cheap/late/no-signal pacing contracts. Both run in
+runtime CI. Mac runtime checks remain
+unavailable on this Windows host.
+
 ## Compatibility repair controller
 
 `tools/compatibility-worker.py` runs on the designated Mac outside CI. Install

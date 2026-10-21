@@ -1,3 +1,48 @@
+## Issue #105 weapon-set performance repair - 2026-10-21
+
+Validated locally on Windows x64, MSVC 14.42, SDL 3.4.16, default fixed-60
+configuration. Source base `bd7af90`, pinned runtime `d90c929`, with the repair
+subsequently committed as `5c2f4ac` and complete 114-patch stack. Executable SHA256:
+`5b5001dbf1b945e72fbf6ef231a9d670a8e39db6ffccbcd52787756d1a60d804`.
+
+The reproduced weapon-set collapse had two costs: repeated OS memory queries in
+prompt measurement/word wrapping (~47 ms of frame work), and a full extra vblank
+wait after CPU frames exceeded 16.67 ms. Scoped read validation reduced the work
+to ~18 ms but alone plateaued at 30 FPS. The existing late-frame bypass depended
+on the retired interpolation callback. The separate late-frame patch now permits
+that bypass when elapsed time and an actual signalled vblank prove the frame has
+already consumed its pacing interval. Cheap frames still wait; the console
+interrupt clock remains 60 Hz and interpolation remains retired.
+
+The 96.6-second isolated Arcade/Deathmatch/Vietnam weapon-set route passed its
+unchanged 50 FPS threshold: before 59.2 FPS; weapons 54.1/53.8/54.3; selection
+54.2; after backing out 59.1/59.6. Weapon-screen gate wait fell from ~14.9 ms to
+0.00 ms. Captures of before/weapons/selection/back-out were reviewed. This verifies
+the reported menu slowdown on this host, not a locked 60 FPS weapon screen or
+broader gameplay. Vblank stayed approximately 60 Hz. All children closed cleanly,
+profile signatures/contents and canonical fixture were preserved, and disposable
+partitions were recycled. Personal saves/settings were untouched.
+
+Supported Build -SkipTextures passed all native checks. Scoped-read/guest-ABI/FOV/UI
+checks: 12 passed, one Mac-only skip. Frame-clock/scoped-read/patch-tracking checks:
+18 passed, including a late-frame contract that failed on the original Arm body.
+Patch transitions: the historical-fixture failure was corrected to defer the new
+tail patch; the subsequent complete suite passed all 20 cases in 290.59 seconds.
+Full provenance is retained in ignored `logs/agent-investigation.md` and
+`logs/issue105-recovery`. Mac build/runtime
+validation is pending (MAC-002); no Mac execution is inferred from Windows.
+These measurements describe the pre-publication source state above, not a
+published release or validation on another host.
+
+PR preparation integrated main `7a9507a`, preserving the newer keyboard and
+Auto-display changes. The combined 115-patch stack applied successfully. The
+affected Windows suite completed in 312.53 seconds: 128 passed, one Mac-only
+skip, and one stale repository-index tail assertion. That assertion now requires
+fixed-60 followed by late-frame-pacing; all 11 context tests passed on rerun.
+All 20 full patch-transition cases passed in the combined suite. Context upkeep
+passes against main. The combined head has not been rebuilt or playtested;
+the executable hash and FPS measurements above remain pre-integration evidence.
+
 ## 2026-10-21 — Test Lab texture-pack launch correction
 
 Implemented on `fix/test-profile-texture-pack`, based on main `b685e43`.
