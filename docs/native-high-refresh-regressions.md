@@ -1778,6 +1778,49 @@ Run labels are `60-natural-intro-handoff-none-camera-track` and
 observations establish exercised track progression and completion, not
 per-frame visual smoothness, full cinematics or full-game acceptance.
 
+## Native clock and network movement cadence (2026-10-21)
+
+`tests/native_network_cadence.c` composes the production
+`pc_native_timing_guest.inc` clock with `pc_network_guest.inc` movement and
+full-state refresh adapters. It reuses the existing clock fixture's fake host
+timers, with an observer that advances a modeled 60 Hz ISR when QPC is read.
+The model runs during timer waits too, so a native target change cannot leave
+its ISR at the time before the wait. The initial fixture omitted this and its
+prescribed timestamps ran ahead/behind the pacing deadline; this was a test
+model correction, not a reproduced game defect.
+
+Six two-second cases cover native 60/120/144 with ordinary counters and with
+both raw ISR and match counters crossing UINT32_MAX. Each produces 120
+movement-send gate openings and 40 full-state refresh requests for each of
+four local-player records. Duplicate pump calls do not add sends. The clock
+fields and callback stack/return values remain intact. Four successive
+one-second phases at 144/120/144/60 retain 240 match ticks and gate openings,
+and 80 refresh requests per local record.
+
+A one-second paused phase still opens 60 transport movement gates on the raw
+ISR, while the unchanged match clock generates no full-state refresh requests.
+Resume adds 60 match ticks and 20 refreshes. A simulated 100 ms host stall
+produces one send opportunity and one refresh per record, with the existing
+three-tick gameplay catch-up cap; repeated calls do not create a packet burst.
+Two disposable mutations replace the gate's ISR or refresh age's match clock
+with rendered-frame counts. Both fail the cadence assertions, demonstrating
+that the fixture rejects refresh-rate-dependent packet frequency.
+
+The production game and transport code are unchanged. Packet encoding and
+socket delivery are spies; this does not prove delivery latency, remote-player
+prediction, bot pose continuity, mixed-rate peer synchronization or actual LAN/
+Online behavior. Native 60 here uses the native clock, not the original timing
+routine. The existing adapter checks separately preserve the original guest
+fallback, offline behavior and bot callbacks. The fixture exercises the Windows
+adapter through portable C on either compiler; it does not add a Mac transport.
+It is included in `test_native_timing.py`, already selected by the shared
+Windows/macOS runtime workflow. Actual Mac execution remains pending.
+
+Focused clock/cadence checks, including the two rejected mutations, pass in
+`logs/native-network-cadence-green.log`. The timing, network dispatch/results and backlog selection has 64 passes
+in 66.49 s (`logs/native-network-cadence-regressions.log`). No game rebuild
+is needed for these test/documentation changes.
+
 ## Offline network callback overhead
 
 The previous CPU profile found repeated environment lookups in

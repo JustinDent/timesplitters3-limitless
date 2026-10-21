@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Native network cadence audit:** A new composed clock/adapter fixture
+  preserves 60 movement-send opportunities/s and 20 unchanged full-state
+  refreshes/s per local player at native 60/120/144. Counter wraparound,
+  live target changes, pause/resume and a 100 ms stall pass. Two mutations
+  using rendered-frame counters are rejected; 64 timing/network/backlog checks
+  pass in 66.49 s. No production code changed;
+  actual peer delivery, remote movement and Mac execution remain unverified.
+  [Network cadence scope](docs/native-high-refresh-regressions.md#native-clock-and-network-movement-cadence-2026-10-21).
+
 - **Native 120 Venice follow-up:** The same replay on the unchanged `dbb84e3`
   build averages 120.003 guest presentations/s, p99 9.429 ms and worst
   11.333 ms, with no intervals above 33.33 ms. Native updates average

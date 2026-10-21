@@ -13,16 +13,35 @@ class ObjectRockingQuantization(AssertionError):
     """Measured repeated live transforms; fixture/build errors remain failures."""
 
 
-@pytest.mark.parametrize('source', ['native_timing.c', 'native_timing_guest.c',
-                                    'native_projectile_scope.c', 'native_visual_time.c',
-                                    'native_movie_pacing.c', 'native_movie_update.c',
-                                    'native_mouse_cadence.c'])
-def test_native_timing(source, tmp_path):
+@pytest.mark.parametrize('source,mutation', [
+    (name, None) for name in (
+        'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
+        'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c',
+        'native_mouse_cadence.c', 'native_network_cadence.c')
+] + [('native_network_cadence.c', 'render-pump'),
+     ('native_network_cadence.c', 'render-refresh')])
+def test_native_timing(source, mutation, tmp_path):
     compiler, environment = native_compiler(tmp_path)
     runtime = ROOT / 'external/ts3FPrecomp/src'
-    includes = [runtime, runtime / 'config']
+    includes = [runtime, runtime / 'config', ROOT / 'src']
     output = tmp_path / ('native-timing.exe' if os.name == 'nt' else 'native-timing')
     source_path = ROOT / 'tests' / source
+    if mutation:
+        # Reject changing network clock units to rendered-frame counts. Keep
+        # production files intact; mutate only this disposable translation unit.
+        adapter = (ROOT / 'src/pc_network_guest.inc').read_text(encoding='utf-8')
+        address = '0x007497A8u' if mutation == 'render-pump' else '0x007DE318u'
+        assert adapter.count(address) == 1
+        adapter_path = tmp_path / 'network_mutation.inc'
+        adapter_path.write_text(adapter.replace(address, '0x007497B8u'), encoding='utf-8')
+        text = source_path.read_text(encoding='utf-8')
+        for name, path in (
+            ('native_timing_guest.c', ROOT / 'tests/native_timing_guest.c'),
+            ('../src/pc_network.h', ROOT / 'src/pc_network.h'),
+            ('../src/pc_network_guest.inc', adapter_path)):
+            text = text.replace('"' + name + '"', '"' + path.as_posix() + '"')
+        source_path = tmp_path / 'native_network_cadence.c'
+        source_path.write_text(text, encoding='utf-8')
     if source == 'native_movie_update.c':
         player=(runtime/'hle/hle_xmv_play.c').read_text(encoding='utf-8')
         start=player.index('typedef struct {')
@@ -48,8 +67,13 @@ def test_native_timing(source, tmp_path):
                    *['-I' + str(path) for path in includes], str(source_path),
                    '-lm', '-o', str(output)]
     subprocess.run(command, env=environment, cwd=tmp_path, check=True)
-    subprocess.run([str(output)], env={k:v for k,v in os.environ.items()
-                   if k != 'TSFP_NATIVE_TRACE'}, check=True, timeout=10)
+    result = subprocess.run([str(output)], env={k:v for k,v in os.environ.items()
+                            if k != 'TSFP_NATIVE_TRACE'}, check=not mutation,
+                            capture_output=bool(mutation), text=bool(mutation), timeout=10)
+    if mutation:
+        assert result.returncode != 0
+        expected = 'sends==120' if mutation == 'render-pump' else 'refreshes[port]==40'
+        assert expected in result.stderr, result.stdout + result.stderr
 
 
 @pytest.mark.parametrize('encoding,helper', [

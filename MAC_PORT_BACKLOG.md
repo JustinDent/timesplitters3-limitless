@@ -2968,6 +2968,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   not platform gameplay. The Mac recorder remains shared; actual Mac Venice,
   pacing and gameplay acceptance require the native Mac runner and hardware.
 
+- **Native network cadence audit:** Portable test composition of the shared
+  native clock and Windows guest network adapters preserves console-clock
+  packet gates at native 60/120/144, including wraparound, live rate switches,
+  pause and a stall. The existing native fallback remains separately checked.
+  No game or transport code changed. The fixture joins the existing shared
+  runtime CI selection; actual Mac execution and the missing Mac XNet adapter
+  are not validated or supplied by this simulated Windows boundary.
+
 - **Native 120 Venice follow-up:** The same Windows replay on `dbb84e3`
   reaches 120.003 guest presentations/s with p99 9.429 ms, real-time game
   speed, matching two-shot/30-degree aim checks and zero game delta during

@@ -16,7 +16,11 @@ void recomp_config_commit_native_rate(void) {}
 const char *recomp_config_lookup(const char *env, const char *key)
 { assert(!strcmp(env,"TSFP_NATIVE_FPS") && !strcmp(key,"native_fps")); return setting; }
 static BOOL test_qpf(LARGE_INTEGER *v) { v->QuadPart = 144000000; return TRUE; }
-static BOOL test_qpc(LARGE_INTEGER *v) { v->QuadPart = counter; return TRUE; }
+#ifndef TIMING_COUNTER_OBSERVER
+#define TIMING_COUNTER_OBSERVER() ((void)0)
+#endif
+static BOOL test_qpc(LARGE_INTEGER *v)
+{ TIMING_COUNTER_OBSERVER(); v->QuadPart = counter; return TRUE; }
 static BOOL test_timer(HANDLE a, const LARGE_INTEGER *b, LONG c, void *d, void *e, BOOL f)
 { (void)a;(void)c;(void)d;(void)e;(void)f; deadline = counter + (-b->QuadPart)*144000000/10000000; return TRUE; }
 static HANDLE test_create(void) { return (HANDLE)(uintptr_t)1; }
