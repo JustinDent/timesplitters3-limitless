@@ -6,6 +6,16 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Procedural GPU freshness (2026-10-21):** Added an opt-in shared GPU
+  readback diagnostic and validated complete texture images. Original 60
+  changes all 359 successive images; native 144 changes 154 and repeats 205,
+  exactly on frames where the whole-tick simulation skips. This confirms a
+  remaining native texture-fluidity gap. No simulation coefficients/gates were
+  changed. Windows Build, 75 focused checks and two isolated GPU sessions pass;
+  profiles/fixture are preserved. [Image evidence and next integration work](docs/native-high-refresh-regressions.md#procedural-gpu-image-freshness-2026-10-21).
+  Synchronous readback is not a pacing test; native Mac and fractional GPU
+  simulation remain open.
+
 - **Procedural texture scene audit (2026-10-21):** Added bounded read-only
   resource observation and reproducible Venice/Scotland replays. Original-60
   and native-144 Venice samples allocate no procedural resources; Scotland

@@ -33,6 +33,7 @@ def main():
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
+    parser.add_argument('--trace-surface-images',action='store_true',help='Read back up to 360 Scotland procedural images; synchronous GPU diagnostics, not a pacing test')
     parser.add_argument('--watch-surfaces',action='store_true',help='Observe the five procedural texture resources; asynchronous metadata, not image or update-cadence proof')
     parser.add_argument('--watch-input',action='store_true',help='Trace changes to player-one input suppression in the bounded log')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
@@ -211,6 +212,8 @@ def main():
     def launch(index):
         nonlocal process,handle,window,motion_thread
         state.write_text('0 0\n')
+        if args.trace_surface_images:
+            env['TSFP_SURFACE_TRACE']=str(run/f'run{index}-surface.csv')
         if args.profile_presents:
             env['TSFP_FRAME_PROFILE']=str(run/f'run{index}-presents.csv')
         if args.trace_network_poses:
@@ -266,7 +269,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
+        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)
@@ -335,6 +338,7 @@ def main():
             assert not frame.is_symlink() and frame.resolve().parent==run.resolve();frame.unlink()
     for log in run.glob('run*.err'):
         text=log.read_text(errors='replace')
+        assert '[SURFACE-TRACE] Failed:' not in text and '[SURFACE-TRACE] Cannot open' not in text,log
         assert '[CRASH]' not in text and '[ICALL] unresolved' not in text,log
     assert process.returncode==0,'Final game exit was not clean'
     assert not motion_errors,motion_errors

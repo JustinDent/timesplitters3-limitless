@@ -2960,6 +2960,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **GPU image freshness diagnostic (2026-10-21):** Shared
+  `pc_native_surface_trace.h` and original-function wrappers use the common
+  D3D surface readback interface, available in RHI and legacy GL, without
+  changing the simulation. Windows captures prove repeated images on 205 of
+  359 native-144 comparisons versus none at original 60. The bounded COM
+  fixture and portable image-statistics tests run through shared CI; Windows
+  Build and isolated captures pass. Native Mac compilation and actual GPU
+  capture still require host verification, including surface lifetime/readback
+  and raw channel semantics. The Windows runner CLI is host-specific test
+  tooling; no duplicated gameplay policy is introduced. Fractional simulation
+  remains unfinished on both hosts. See STATUS and the GPU image record.
+
 - **Procedural surface audit (2026-10-21):** Windows-only bounded process
   observation in `tests/stability_transitions_game.py --watch-surfaces` locates
   an active kind-1 resource in Scotland at original 60/native 144; sampled

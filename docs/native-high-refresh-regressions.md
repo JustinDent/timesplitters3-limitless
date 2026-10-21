@@ -4518,3 +4518,90 @@ passes Python compilation/CLI checks. No production timing or shader change
 was made, so no rebuild was needed. Fractional procedural GPU simulation,
 actual per-frame image evidence, other resource kinds/scenes and native Mac
 validation remain open.
+
+## Procedural GPU image freshness (2026-10-21)
+
+`pc_native_surface_trace.h` adds an opt-in, bounded diagnostic around original
+`sub_001956A0` and its final image pass `sub_00195280`. The final-pass wrapper
+retains the current render-target surface before the dispatcher restores its
+previous target. The dispatch wrapper reads that actual surface after every
+eligible dispatch, including fractional frames where no simulation pass ran.
+It uses shared `GetRenderTarget`, surface `GetDesc`, `LockRect(READONLY)` and
+`UnlockRect` interfaces. CPU cache stamps are not used as image evidence.
+
+`TSFP_SURFACE_TRACE=<csv>` writes a CSV and tightly packed 128x128 four-byte
+pixel samples to `<csv>.rgba`, capped at 360 images (22.5 MiB). It selects
+Scotland scene 4, match state 7, level tick >=300 and resource kind 1, excludes
+view aliases in the same frame, checks dimensions/format/pitch, and releases
+its COM reference on resource/scene changes, failure and completion. The
+trace is disabled by default; both wrappers then directly execute the original
+routine. GPU synchronization changes the workload, so this is deliberately
+not a performance or physical-display measurement. The original algorithm,
+whole-tick gate, randomness and coefficients are unchanged.
+
+Use `tests/stability_transitions_game.py --trace-surface-images --watch-surfaces`
+with the Scotland replay in `tests/fixtures/procedural-surface-commands.json`.
+Original 60 omits `--native-fps`; native 144 adds that option. The new patch is
+ordered after the existing native wrapper series by `apply-patches.py`, and
+regeneration creates both `_gen` bodies. No generated game C is edited.
+`tools/procedural_surface_stats.py <csv>` validates every pixel hash, exact byte
+length, finite deltas, consecutive frame IDs, unchanged resource/format/path,
+and scene identity before comparing complete images. Executed-but-unchanged
+images remain counted; there is no filtering of stationary tails.
+
+| Image comparison | Original 60 | Native 144 |
+| --- | ---: | ---: |
+| Captured images | 360 | 360 |
+| Successive comparisons | 359 | 359 |
+| Changed complete images | 359 | 154 |
+| Identical complete images | 0 | 205 |
+| Changed after executed pass | 359 | 154 |
+| Unchanged after skipped pass | 0 | 205 |
+| Longest consecutive unchanged updates | 0 | 2 |
+| Sum of observed game-tick deltas after first sample | 371 | 164.504526177 |
+
+This confirms that the active procedural image retains its previous contents
+on fractional native updates. Every executed pass in these windows changes
+pixels, and every skipped pass retains them exactly. This is a remaining
+native-fluidity gap, not an FPS-counter problem. Different capture durations,
+random states and synchronous-readback overhead mean these samples do not
+establish wave-speed/appearance parity or sustained rendering performance.
+The next production change needs a verified fractional integration of the
+coupled feedback passes and preserved disturbance cadence, followed by actual
+image comparison against original 60. Merely increasing discrete pass frequency
+would change evolution; the native result here is not accepted as complete.
+
+The controlled COM fixture `tests/native_surface_trace.c` verifies disabled
+pass-through, unchanged guest stack, read-only flags, pitched-row handling,
+first-image availability, retained-image reads on skipped updates, view-alias
+deduplication, reference release on scene changes, GPU-read failure and the
+360-image bound. Its surfaces are doubles, not GPU proof. Eight portable
+statistics checks reject truncated/hash-invalid/gapped/resource-changing/
+non-finite/wrong-scene evidence and count executed-but-frozen images. These
+checks join the existing shared timing and runtime CI selections. Focused
+surface/statistics/CI checks pass 75 tests; Windows Build and its built-in
+checks pass (`logs/native-surface-trace-build-fixed.log`). The first build
+caught reliance on out-of-scope timing macros; dedicated surface accessors
+correct it without changing the timing wrapper.
+
+Patch tracking/update/backlog checks initially passed 34 and failed two
+historical setup cases that accidentally included the new wrapper before its
+prerequisites. Their historical exclusion lists now omit the diagnostic;
+both corrected migrations pass, as does the separately rerun native-checkpoint
+migration. The complete active stack also applies/builds successfully. Logs:
+`native-surface-trace-patch-checks.log`, `native-surface-trace-migration-fixed.log`
+and `native-surface-trace-checkpoint.log`.
+
+Both real GPU sessions exit cleanly with signed profiles and the canonical
+fixture preserved; disposable virtual disks and redundant BMPs are recycled.
+Evidence: `private/test-saves/surface-image-{60,144}/run0-surface.csv` and
+`.rgba`, selected scene captures and first-image previews; corresponding
+`logs/surface-image-{60,144}.log`; aggregate
+`private/pipeline/procedural-surface-image-summary.json`. Windows x64 executable
+SHA-256 `03c279b03b26f257d8401cda2305b6e1982137a0ac2e91bbb3dab066a58e5dc9`,
+base `7e330dc` plus the diagnostic wrappers in this change. Python 3.12.14;
+per-run provenance records executable/runner hashes and QPC metadata. Raw
+four-byte readback channels are compared as bytes; the RGB-only diagnostic
+previews do not establish cross-backend channel semantics. Shared RHI and
+legacy native-GL surface implementations supply readback/readonly unlock;
+actual Mac capture and full-game texture/effect coverage remain unverified.

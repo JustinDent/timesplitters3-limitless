@@ -17,7 +17,7 @@ class ObjectRockingQuantization(AssertionError):
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
         'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c',
-        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c')
+        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c', 'native_surface_trace.c')
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh')])
 def test_native_timing(source, mutation, tmp_path):
@@ -68,9 +68,22 @@ def test_native_timing(source, mutation, tmp_path):
                    '-lm', '-o', str(output)]
     subprocess.run(command, env=environment, cwd=tmp_path, check=True)
     run_environment = {k:v for k,v in os.environ.items()
-                       if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE')}
+                       if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE', 'TSFP_SURFACE_TRACE')}
     if source == 'native_pose_trace.c':
         run_environment['TSFP_NATIVE_POSE_TRACE'] = str(tmp_path / 'poses.csv')
+    if source == 'native_surface_trace.c':
+        import csv
+        subprocess.run([str(output), 'disabled'], env=run_environment, check=True, timeout=10)
+        for mode in ('bounded', 'failure'):
+            path=tmp_path / (mode+'.csv')
+            trace_environment=dict(run_environment, TSFP_SURFACE_TRACE=str(path))
+            subprocess.run([str(output), mode], env=trace_environment, check=True, timeout=10)
+            rows=list(csv.DictReader(path.open()))
+            assert len(rows)==(360 if mode=='bounded' else 2)
+            assert rows[0]['executed']=='1' and rows[1]['executed']=='0'
+            assert rows[0]['hash']==rows[1]['hash']
+            assert Path(str(path)+'.rgba').stat().st_size==len(rows)*128*128*4
+        return
     result = subprocess.run([str(output)], env=run_environment, check=not mutation,
                             capture_output=bool(mutation), text=bool(mutation), timeout=10)
     if mutation:
