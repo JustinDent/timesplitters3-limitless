@@ -41,6 +41,19 @@ applicable adapter plus one relevant test. Tests may encode historical migration
 or compatibility behavior, so confirm current defaults in root instructions and
 effective source. Preserve unknown/unsupported saved settings across hosts.
 
+Ghost Gun living-actor reveal alignment (#181/#241) is handled by
+`pc_display_weapon_effect` in `src/pc_display_ui.inc`. The integer rectangle
+returning to US caller `0x001232A9` is the final filtered screen-copy composite
+over the actor's projected bounds. In a full widescreen view it uses full-view
+placement, with deferred draws flushed before restoring the surrounding UI
+placement. Guest coordinates, UVs/tint and the five preceding blur passes stay
+unchanged. The separate humanoid ghost composite retains its existing guarded
+call site. Original 4:3 and split-view paths keep their existing behavior.
+`tests/test_ghost_actor_overlay.py` covers placement, deferred batches, ABI,
+both platform wrappers and a local supported-US-routine check; see build/test
+for test prerequisites. Windows scene confirmation is recorded in `STATUS.md`;
+native Mac visual validation remains pending under MAC-036.
+
 ## State and data boundaries
 
 `config/*.default.*` is tracked default configuration; `config/pc-controls.json`

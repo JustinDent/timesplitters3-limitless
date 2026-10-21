@@ -501,6 +501,22 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-036 — Ghost Gun full-body visibility (issue #111)
 
+- **Living-character alignment follow-up (#181, 2026-10-20, this commit):**
+  `src/pc_display_ui.inc` now places the US `sub_00122F10` final actor reveal
+  composite in world-screen coordinates rather than the centered HUD viewport.
+  This covers Past Cortez and other living actors viewed with the Ghost Gun;
+  humanoid ghost rendering and the native blur/tint are unchanged. Both
+  `TSFP_PC_CONTROLS` and `TSFP_NATIVE_DISPLAY` use the existing primitive wrapper.
+  `tests/test_ghost_actor_overlay.py` is registered in Windows/macOS CI, with
+  asset-free regression/mutation checks and an optional original-XBE fixture.
+  Windows build/native tests and local fixtures pass; no Mac adapter change is
+  needed for the common renderer. The user confirmed the overlay now stays on
+  Cortez in the isolated Windows test build, launched at 1920x1080. Mac execution
+  and visual checks at other ratios remain pending. Check the reveal against
+  the body while panning at 4:3, 16:9 and ultrawide, preserving the blur and
+  normal HUD placement afterward.
+  [Validation limits](STATUS.md#ghost-gun-living-character-alignment-issue-181-2026-10-20).
+
 - **Status:** Queued
 - **Fixture follow-up (2026-10-19, this revision on `fix/ghost-replay-crash`):**
   `tests/ghost_targets.py` now uses a valid power-of-two 64x64 swizzled target;
@@ -2962,6 +2978,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **PC evidence:** See the issue #49 section in STATUS.md.
 
 ### MAC-057 — Optional texture pack delivery through the launcher
+
+- **Publisher requirement follow-up (2026-10-20):**
+  `fix/publish-required-textures` adds an unconditional repository-pack gate to
+  `tools/publish-release.py`, including resumed preparations and pre-upload ZIP
+  verification. It rejects missing/unhydrated assets, manifest mismatches,
+  private metadata and omitted or changed DDS/JSON entries. The compatible
+  Windows/Mac launcher gate can no longer be skipped by dropping texture metadata.
+  This is shared Python release validation with no new OS adapter; the publisher
+  still builds Windows packages. Native Mac packaging/runtime behavior is unchanged.
+  Regression cases are included in the existing Windows/macOS release CI step;
+  hosted validation is pending. Scene/installer validation gaps below remain.
 
 - **Release preservation follow-up (2026-10-20, PR #234):** Game/launcher
   version bumps retain the loader, controls, installer, repository texture pack
