@@ -6,6 +6,29 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Unified Video Options and Audio labels (this revision):** One page stages
+  aspect/resolution, FOV, texture style, FPS and Subtitles behind one Apply row.
+  Apply uses the native disabled/gray state until dirty and returns to it after
+  success; resolution retains its 15-second confirmation. Failed display/FPS
+  saves restore the prior live display and do not publish other drafts. The
+  submenu/Back rows, FPS disclaimer and default-FOV note are removed; the
+  native silver separator sits above Apply. Shared frontend/pause focus painters
+  use rounded corners across menus, retaining their original tint and fade.
+  Audio/Video is renamed Audio Options, with its Settings entry using the same
+  layout flags as Controls/Video before native row construction. Subtitles is
+  hidden from Audio and uses the original profile field/save flag when applied
+  in Video. Native audio update/save records remain intact. Windows x64 Build
+  passes; 82 relevant checks pass with one unavailable Mac-only check. Patch
+  migration checks pass after excluding this dependent hook from an old-stack
+  fixture. Windows captures verify rounded main/settings highlights, Audio entry
+  alignment, Video layout, dirty/
+  clean Apply, and live FPS switching. Subtitle application updates live state
+  and the signed profile payload at 0x1B0; the test fixture remains unchanged.
+  The reload attempt was interrupted by a user window close, so reload UI
+  verification remains pending. One transient debug-dialog save failure passed
+  standalone retry and the final full Build. Shared implementation needs native
+  Mac visual/runtime validation.
+
 - **Live FPS presets and smaller helper text (this revision):** Frame rate now
   offers Apply instead of requiring a restart. A successful atomic save queues
   the choice; the guest timing boundary publishes it to all rate consumers.

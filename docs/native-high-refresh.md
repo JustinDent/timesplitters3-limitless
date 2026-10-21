@@ -10,11 +10,10 @@ open `Play-Native.cmd` for the 144 FPS target. `Play-Native.cmd 120` selects 120
 `Play-Native.cmd 60` provides a native timing comparison at the original rate.
 These launch defaults do not rewrite saved graphics preferences.
 
-In **Settings → Display settings → Frame rate** (also in paused Options),
+In **Settings → Video Options** (also in paused Options),
 choose **60 FPS (Original)**, **120 FPS (Beta)** or **144 FPS (Beta)**, select
-**Apply frame rate**. The change takes effect on the next game update without
-restarting, and the FPS counter reflects the active target. The smaller helper
-text warns that high refresh is beta and can cause gameplay issues. Original
+**Apply**. The change takes effect on the next game update without
+restarting, and the FPS counter reflects the active target. The 120/144 choices retain their Beta labels. Original
 60 FPS is the compatibility fallback. Back discards an unapplied choice; a
 save failure leaves the active rate unchanged.
 The selection lives in `pc-frame-rate.ini` beside `pc-display.ini` (or beside
@@ -25,11 +24,19 @@ Invalid/missing preferences retain the existing launch behavior. Automated
 rate comparisons must use isolated settings directories without a saved FPS
 choice unless they are explicitly testing preference precedence.
 
-**Display settings** now has separate **Screen**, **Camera**, **Textures** and
-**Frame rate** pages. Resolution keeps its 15-second confirmation; FOV is
-staged until Apply; texture arrows still apply immediately. The same guest
-menu and preference policy serve Windows and Mac. This is a development
-checkout entry point, not a launcher update for an installed release.
+**Video Options** groups aspect ratio, resolution, FOV, texture style, subtitles and
+frame rate on one page. All controls stage changes until the single **Apply**
+button is selected. It stays gray when the draft matches the active settings,
+including after a successful apply. A resolution preview keeps its 15-second
+confirmation; accepting it commits the entire batch. Reverting it restores the
+resolution and keeps the other drafts pending. Failed saves restore the active
+display settings and do not publish pending FPS/texture changes. FOV occupies
+one control row; the native silver divider sits above Apply.
+Shared menu focus bars use rounded blue corners throughout the frontend and pause menus. Back remains available through
+the normal key/footer. **Audio Options** retains the audio controls; Subtitles
+now uses Video Options and the native profile save mechanism. Texture style stays session-only, like F10. The same
+guest menu serves Windows and Mac; native Mac visual validation is pending.
+This is a development checkout entry point, not an installed release update.
 
 The FPS overlay shows `target 120 (Beta)` or `target 144 (Beta)` alongside
 measured FPS for the high-refresh presets. Native 60 shows `target 60` and

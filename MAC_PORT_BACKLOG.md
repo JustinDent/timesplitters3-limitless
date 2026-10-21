@@ -2960,6 +2960,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Unified Video/Audio Options (this revision):** Shared `pc_display_menu.c`
+  stages resolution, FOV, texture style, FPS and Subtitles in one Video Options
+  page, with a disabled-until-dirty Apply and native silver divider. It removes
+  submenus, the Back row, FPS disclaimer and default-FOV note, rounds shared
+  frontend/pause highlights across menus,
+  renames Audio Options and aligns its Settings entry. Subtitles updates the
+  original profile field/save flag after successful application; native Audio
+  persistence remains in use. The common guest renderer/dispatch paths serve
+  both hosts without a new OS adapter. Windows Build and relevant shared/menu
+  checks pass; native Mac layout, mouse/controller access, persistence and
+  same-process application still require validation. See STATUS for scope.
+
 - **Live FPS application (this revision):** Shared `pc_frame_rate_live.inc`,
   `pc_native_timing_guest.inc` and `pc_display_menu.c` apply saved 60/120/144
   choices at an update boundary, preserve native timer remainders, reset stale
