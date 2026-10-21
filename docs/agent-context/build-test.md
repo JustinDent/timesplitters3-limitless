@@ -52,6 +52,10 @@ already registered issue-form and launcher workflows; native Mac builds consume
 the same `DiagnosticIssueDraft.cs` URL policy.
 The mocked version-refresh PR creation check also verifies that the generated
 description preserves Ideas routing instead of referring to a removed form.
+The v1.2.23 release bump changes only shared version metadata; existing launcher
+release-policy, compatibility and both-host package checks remain the acceptance
+route. The version-triggered Repository texture pack check must also pass before
+merge. A version bump alone is not evidence of a published update.
 
 Read each harness before assuming it is asset-free. Patch transition tests can
 need pristine pinned upstream files and Git access. Use existing dependencies;
