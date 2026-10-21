@@ -126,7 +126,13 @@ These are controlled original-code comparisons, not live scene-52 acceptance.
 The focused original-code fixture passes (`logs/native-force-fast-green.log`).
 The wider timing/frame/entity/effect/backlog suite passed 63 tests in 91.77 s
 before the last rounding correction; the focused fixture was rerun afterward.
-Windows build verification and native Mac execution are recorded separately.
+After the final rounding correction, all 56 timing/backlog checks pass in
+82.95 s (`logs/native-force-final-regressions.log`). The supported Windows x64
+Build passes, including its GPU/input/settings/save checks
+(`logs/native-force-final-build.log`), using MSVC 14.44.35207 and MSBuild
+17.14.40. Gameplay source is local commit `dbb84e3`; executable SHA-256 is
+`b9f21b2537d132f8d62c908e0c2f5d438f37f40caaf49d5477e99808fa0a28b1`.
+No new live force-region or Mac runtime acceptance is claimed.
 
 ## Airborne view offset and controlled landing
 

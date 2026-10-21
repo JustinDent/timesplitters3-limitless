@@ -71,7 +71,9 @@ published release or a full-game 144 FPS certification.
   Complete original selector/state/movement/falling fixtures cover 76 sequences
   across original 60/native 60/120/144 and normal/quarter/accelerated time, plus
   pause, bounds, isolation and unchanged catch-up. The prior 159-check suite and
-  new 63-check timing/observer suite pass; the final rounding fixture also passes.
+  new 63-check timing/observer suite pass; all 56 final timing/backlog checks
+  pass after the rounding fix. The supported Windows x64 Build and its runtime
+  checks pass (`logs/native-force-final-build.log`).
   Measured integration differences, live scene/network coverage and Mac
   validation remain open.
   [Force/drag evidence](docs/native-high-refresh-regressions.md#region-driven-player-force-and-drag).

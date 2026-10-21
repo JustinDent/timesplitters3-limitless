@@ -2994,7 +2994,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   normalizes mode-0x800 force/drag and view settling while preserving original
   post-drag speed limits. The complete original selector, state setter, movement
   and falling routines pass 76 controlled normal/quarter/accelerated sequences,
-  irregular frame intervals and unchanged catch-up checks on Windows. No host
+  irregular frame intervals and unchanged catch-up checks on Windows. The final
+  56 timing/backlog checks and supported Windows Build pass (`dbb84e3`). No host
   adapter is required. Mac execution, live region/geometry behavior and network
   peers remain pending. See STATUS and the native regression record for measured
   integration differences and the one-ULP speed-ratio correction.
