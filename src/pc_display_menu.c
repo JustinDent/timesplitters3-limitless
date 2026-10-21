@@ -307,7 +307,7 @@ void pc_display_menu_button(void (*original)(void))
 extern void sub_00079B70(void), sub_00075B70(void), sub_00071B10(void);
 extern void sub_00071C50(void), sub_00079D60_gen(void), sub_000771D0(void);
 extern void sub_00078980(void), sub_000770E0(void);
-extern void sub_00079710(void), sub_000814B0(void), sub_00154FE0(void), sub_00074910(void);
+extern void sub_000814B0(void), sub_00154FE0(void), sub_00074910(void);
 extern void sub_0007D480(void), sub_000717D0(void), sub_00075430(void);
 static uint32_t storage, parent_menu, previous_menu, current_menu;
 static PcDisplayMode modes[PC_DISPLAY_MODE_CAPACITY], all_modes[PC_DISPLAY_MODE_CAPACITY], staged, previous;
@@ -726,7 +726,6 @@ static void labels(void)
         guest_call(sub_000717D0,1,text_at(14,"On"));
         guest_call(sub_00075430,2,subtitle_row,staged_subtitles);
         if(*status)small_note(21,status);
-        guest_call(sub_00079710,1,1u); /* Original silver separator. */
         apply_row=guest_call(sub_00079D60_gen,6,text_at(4,"Apply"),3u,0u,0u,SELECT_CB,0u);
         update_apply();
     } else { row(0,"Keep changes");row(1,"Revert"); }

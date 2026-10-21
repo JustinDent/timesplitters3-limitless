@@ -3008,7 +3008,9 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 - **Unified Video/Audio Options (this revision):** Shared `pc_display_menu.c`
   stages resolution, FOV, texture style, FPS and Subtitles in one Video Options
-  page, with a disabled-until-dirty Apply and native silver divider. It removes
+  page, with a disabled-until-dirty Apply. The remaining silver divider above
+  Apply is removed in the menu follow-up (2026-10-21); its shared callback
+  fixture passes with seven rows and zero separators. It removes
   submenus, the Back row, FPS disclaimer and default-FOV note, rounds shared
   frontend/pause highlights across menus,
   renames Audio Options and aligns its Settings entry. Subtitles updates the

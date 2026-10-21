@@ -169,7 +169,7 @@ int main(int argc,char **argv)
     reload("TSFP_DISPLAY_V1 1280 720\n");
     tsfp_texture_set_4k(0);
     call(PC_DISPLAY_MENU_CALLBACK,0,0);call(BUILD_CB,0,0);
-    CHECK(page==DISPLAY_HOME && built_row_count==7 && separators==1);
+    CHECK(page==DISPLAY_HOME && built_row_count==7 && separators==0);
     { /* Shared focus bars stay rounded regardless of the menu descriptor. */
         float bounds[4]={20,20,220,47};
         WORD_AT(current_menu+4)=storage;WORD_AT(current_menu+0x20)=0x310000;

@@ -55,6 +55,15 @@ published release or a full-game 144 FPS certification.
   Bot outcomes differ; these are API timings, not scanout or full-game proof.
   [Venice scope and evidence](docs/native-high-refresh-regressions.md#venice-gameplay-and-presentation-pacing-2026-10-21).
 
+- **Menu separator follow-up (2026-10-21):** Removed the remaining silver
+  separator above Video Options Apply. Settings already places Controls directly
+  after Video Options and conditional Cheats last. The production callback
+  fixture passes with seven rows and zero separators; native Mac execution
+  remains unverified. Windows x64 Release Build and its required checks pass
+  under Windows PowerShell; the initial PowerShell 7 invocation stopped at the
+  icon helper because its System.Drawing reference was unavailable. No new
+  visual gameplay run was needed for this separator-only change.
+
 - **Settings ordering (this revision):** The shared Settings constructor now
   lists Audio, Video, Controls and Copy Profile, with Cheats last when the
   original unlock condition permits it. All entries use the same left-aligned
@@ -70,7 +79,7 @@ published release or a full-game 144 FPS certification.
   success; resolution retains its 15-second confirmation. Failed display/FPS
   saves restore the prior live display and do not publish other drafts. The
   submenu/Back rows, FPS disclaimer and default-FOV note are removed; the
-  native silver separator sits above Apply. Shared frontend/pause focus painters
+  separator above Apply is now removed. Shared frontend/pause focus painters
   use rounded corners across menus, retaining their original tint and fade.
   Audio/Video is renamed Audio Options, with its Settings entry using the same
   layout flags as Controls/Video before native row construction. Subtitles is
