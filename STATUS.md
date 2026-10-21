@@ -6,6 +6,17 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Airborne view-height damping (this revision):** Two shared numeric sites
+  now preserve the original 0.8-per-update settling response at 120/144 FPS,
+  including quarter-speed game time. Complete original-routine tests pass 32
+  controlled landing sequences, terminal speed, pause, uneven intervals and
+  unchanged catch-up. Damage and grounded-state results match. Fractional
+  gravity retains measured trajectory differences; actual world collision,
+  perceptual landing and Mac validation remain open. All 158 related Windows
+  checks and the full supported Build pass. Two bounded 120 smoke attempts
+  remained in the frontend due to misnavigated synthetic input; no new gameplay
+  acceptance is claimed. Test/profile and personal files are unchanged.
+  [Airborne evidence](docs/native-high-refresh-regressions.md#airborne-view-offset-and-controlled-landing).
 - **Complete local Arcade match (this revision):** On the `2adcf29` Windows
   build, original 60 and native 144 both complete a Hotel deathmatch and show
   results. Native read-only observation confirms deaths and respawns; continuing

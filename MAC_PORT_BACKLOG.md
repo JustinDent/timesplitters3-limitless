@@ -2960,6 +2960,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Airborne view-height damping (this revision):** Shared numeric policy at
+  `0xD41D0`/`0xD46B4` preserves original view-offset settling at fractional raw
+  rates, including slow game time. The shared original-routine fixture covers
+  both airborne paths, controlled landing/damage, terminal speed, pause and
+  catch-up on Windows; 158 related checks and the full Windows Build pass.
+  No host adapter is required. Native Mac execution and
+  real world-collision/perceptual validation remain pending. Existing fractional
+  gravity trajectory differences are explicit in the native regression record.
+
 - **Hotel match-flow evidence (this revision):** Windows build `2adcf29` completes
   local Hotel deathmatches at original 60/native 144 and displays results;
   native results navigation also starts a new countdown. Saves/settings remain

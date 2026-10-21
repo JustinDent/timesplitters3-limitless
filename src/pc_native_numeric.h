@@ -185,6 +185,17 @@ extern uint32_t pc_native_kind35_gate(uint32_t value);
  * Do not rewrite the shared 0.5 constant or unrelated multiplications. */
 static inline float pc_native_multiply(uint32_t site, float left, float right)
 {
+    /* Airborne player paths relax the view-height offset by 0.8 per original
+     * update, including at slow game speed. Split that factor in raw time;
+     * using game time would change the original slow-motion response. The
+     * caller normally skips paused updates; preserve the offset if reached
+     * with zero game time too. Whole/catch-up updates retain their one factor. */
+    if ((site == 0xD41D0u || site == 0xD46B4u) && g_tsfp_native_timing_active) {
+        float raw=*(const float *)((uintptr_t)0x4E7948u+g_xbox_mem_offset);
+        float game=*(const float *)((uintptr_t)0x4E794Cu+g_xbox_mem_offset);
+        if (game<=0.f) return left;
+        if (raw>0.f && raw<1.f) right=powf(right,raw);
+    }
     /* The player aim/weapon-offset easing already multiplies the error by
      * game delta before these six coefficient multiplies. Linear subdivision
      * changes its settling rate. Match the original 60-Hz response at the

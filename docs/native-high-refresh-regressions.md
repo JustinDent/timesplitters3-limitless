@@ -40,6 +40,77 @@ existing test suites and issue-resolution notes before assigning a result.
 An unchanged file, an old passing result, or another platform's successful run
 does not replace the relevant current check.
 
+## Airborne view offset and controlled landing
+
+The complete original US falling routine `0xD4100..0xD4609` and fixed-speed
+descent routine `0xD4610..0xD481D` multiply player view-height offset `+0x98`
+by 0.8 on every update. Native fractional dispatch therefore made this offset
+settle faster with refresh rate. The first native-120 step from 0.25 produced
+0.200000003 instead of the original-time response 0.223606799.
+
+Shared `pc_native_numeric.h` now splits only the two damping factors at
+`0xD41D0` and `0xD46B4` over fractional raw ticks. Raw time preserves the
+original per-update response with a quarter-speed game delta. Zero game time
+keeps the offset; whole and catch-up updates retain the original single factor.
+Gravity, collision, damage and movement state transitions are unchanged.
+
+`tests/native_player_fall.c`, registered in the existing native-timing CI suite,
+executes both complete original routines and pinned-XBE constants. A controlled
+flat floor replaces collision; statistics are recorded by a service spy. The
+separate four-unit fall-death rule is disabled via its original flag so larger
+falls reach the real landing damage branch. Death dispatch and level geometry
+are outside this fixture. All 32 combinations pass on Windows x64: original
+60/native 60/120/144, normal/quarter game delta, 3/18-unit heights, both paths.
+
+- Each landing requests grounded state 2 exactly once, with zero floor height.
+- The 3-unit gravity fall retains health 100; 18 units retains health 70.
+  Fixed-speed descent leaves health 100 in both cases.
+- Landing time differences remain within one original plus one native update.
+- Every airborne view-offset sample matches the original-time damping curve.
+- Longer gravity falls move on every update and reach the original terminal
+  velocity -0.6. Pause, uneven intervals, unchanged 1/2/3-tick catch-up and
+  neighboring-site/native-disabled behavior also pass.
+
+This is **not exact trajectory parity**: existing fractional Euler integration
+produces a maximum sampled vertical difference of 0.150002 units at 120 and
+0.174995 at 144 over 1.5 game seconds; quarter speed gives 0.038418/0.043938.
+The test records and bounds this difference to half an original step at terminal
+speed. It is not evidence that ledges, slopes, moving floors, world collisions,
+physical input or perceptual landing behavior are fully verified. Gravity
+integration and scene acceptance remain open in the broader movement audit.
+
+Local evidence: `logs/native-player-fall-red.log` records the pre-fix failure;
+`logs/native-player-fall-green.log` records all 32 landing sequences, six
+trajectory comparisons and timing-scope checks. The 158 related Windows checks
+pass (`logs/native-player-fall-regressions.log`, 161.64 seconds). The supported
+Windows Build and built-in checks pass (`logs/native-player-fall-build.log`
+and `.err`), with compiled parent label `d486df6` plus this source change and
+executable SHA-256
+`7775cc334b6895133a3d8fa4926f94853d02f7ba37886f9fb24327ac1996f897`.
+Mac execution remains pending. A separate movement-state-0x800 routine at `0xD4820`
+also damps this offset and has a velocity-damping loop bounded by float time;
+its coupled force/drag path is a remaining audit target, not covered here.
+A private original-routine diagnostic (`logs/native-state800-probe.log`) already
+shows a material mismatch: under constant normalized force 1, two seconds moves
+from Y=100 to 148.612564 at original 60, but only 137.141251/133.471725 at native
+120/144. Force 0 gives the symmetric downward discrepancy; force 0.5 balances
+gravity. These are controlled inputs, not a claim about an observed live scene.
+The original caller `0x225C70` supplies this force from height within cylindrical
+regions and enters/exits state 0x800. A follow-up must exercise that coupled
+caller as well as damping/clamps before claiming a repair.
+
+Two bounded native-120 Windows attempts (`player-fall-smoke-120` and
+`player-fall-gameplay-120`) remained in frontend scene 101. The first scripted
+startup selected profile creation; the second loaded Test Lab with slower,
+inspected input but the subsequent scripted route reached Online/System Link
+instead of Story. All labels such as `gameplay-start` and `fire` are command
+intent only, not evidence those actions occurred. Both owned processes exited
+normally within their 180-second bounds, with fixture/profile and personal
+settings unchanged. No gameplay, live falling, firing or network-connection
+acceptance is claimed. Future live checks need inspected menu transitions
+before sending gameplay inputs; the source fix is supported by the complete
+original-routine fixture and successful build, with scene acceptance open.
+
 ## Hotel deathmatch completion and results flow
 
 Windows x64/D3D11 source `2adcf29`, executable SHA-256
