@@ -29,6 +29,7 @@ def main():
     parser.add_argument('--manual-start',action='store_true')
     parser.add_argument('--lan-role',choices=('host','client'),help='Use isolated loopback peers 127.0.0.2/3 for a bounded LAN session')
     parser.add_argument('--sample-network-ms',type=int,choices=range(2,21),help='Read both actor positions in a background sampler; records observation timing, not rendered frames')
+    parser.add_argument('--trace-network-poses',action='store_true',help='Record completed gameplay-update positions at the shared clock boundary')
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
@@ -37,6 +38,7 @@ def main():
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
     args=parser.parse_args()
     assert not args.sample_network_ms or args.lan_role
+    assert not args.trace_network_poses or args.lan_role
     assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
     assert os.name=='nt'
     assert hashlib.sha256((ROOT/'private/game/default.xbe').read_bytes()).hexdigest()==XBE_SHA256
@@ -187,6 +189,8 @@ def main():
         state.write_text('0 0\n')
         if args.profile_presents:
             env['TSFP_FRAME_PROFILE']=str(run/f'run{index}-presents.csv')
+        if args.trace_network_poses:
+            env['TSFP_NATIVE_POSE_TRACE']=str(run/f'run{index}-network-poses.csv')
         process=subprocess.Popen([str(ROOT/'build/windows/Release/futureperfect_recomp.exe')],cwd=ROOT,env=env,
             stdout=subprocess.PIPE,stderr=subprocess.PIPE,creationflags=subprocess.CREATE_NO_WINDOW)
         handle=kernel.OpenProcess(0x410,False,process.pid);assert handle
@@ -238,7 +242,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
+        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)

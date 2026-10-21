@@ -17,7 +17,7 @@ class ObjectRockingQuantization(AssertionError):
     (name, None) for name in (
         'native_timing.c', 'native_timing_guest.c', 'native_projectile_scope.c',
         'native_visual_time.c', 'native_movie_pacing.c', 'native_movie_update.c',
-        'native_mouse_cadence.c', 'native_network_cadence.c')
+        'native_mouse_cadence.c', 'native_network_cadence.c', 'native_pose_trace.c')
 ] + [('native_network_cadence.c', 'render-pump'),
      ('native_network_cadence.c', 'render-refresh')])
 def test_native_timing(source, mutation, tmp_path):
@@ -67,8 +67,11 @@ def test_native_timing(source, mutation, tmp_path):
                    *['-I' + str(path) for path in includes], str(source_path),
                    '-lm', '-o', str(output)]
     subprocess.run(command, env=environment, cwd=tmp_path, check=True)
-    result = subprocess.run([str(output)], env={k:v for k,v in os.environ.items()
-                            if k != 'TSFP_NATIVE_TRACE'}, check=not mutation,
+    run_environment = {k:v for k,v in os.environ.items()
+                       if k not in ('TSFP_NATIVE_TRACE', 'TSFP_NATIVE_POSE_TRACE')}
+    if source == 'native_pose_trace.c':
+        run_environment['TSFP_NATIVE_POSE_TRACE'] = str(tmp_path / 'poses.csv')
+    result = subprocess.run([str(output)], env=run_environment, check=not mutation,
                             capture_output=bool(mutation), text=bool(mutation), timeout=10)
     if mutation:
         assert result.returncode != 0

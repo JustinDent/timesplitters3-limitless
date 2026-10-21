@@ -11,6 +11,18 @@ extern void sub_000455B0(void), sub_000455C0(void), sub_00150190(void);
 int g_tsfp_native_timing_active;
 #define NT_WORD(va) (*(volatile uint32_t *)((uintptr_t)(va) + g_xbox_mem_offset))
 #define NT_FLOAT(va) (*(float *)((uintptr_t)(va) + g_xbox_mem_offset))
+#include "pc_native_pose_trace.h"
+static uint32_t pc_native_pose_word(uint32_t address) { return NT_WORD(address); }
+static void pc_native_pose_trace(void)
+{
+    static PcNativePoseTrace trace;
+    PcNativePose pose;
+    if(!pc_native_pose_enabled(&trace) ||
+       !pc_native_pose_collect(pc_native_pose_word,NT_WORD(g_esp),&pose))return;
+    LARGE_INTEGER now,frequency;
+    QueryPerformanceCounter(&now);QueryPerformanceFrequency(&frequency);
+    if(frequency.QuadPart>0)pc_native_pose_record(&trace,&pose,(double)now.QuadPart/(double)frequency.QuadPart);
+}
 static void pc_native_input_guest(void (*original)(void))
 {
     if (!g_tsfp_native_timing_active || NT_WORD(0x4E7940u)) {
@@ -78,6 +90,7 @@ static void pc_native_timing_guest(void (*original)(void))
     static HANDLE timer;
     static int announced;
     LARGE_INTEGER now, frequency;
+    pc_native_pose_trace();
     recomp_config_commit_native_rate();
     int rate = pc_native_rate();
     if (!rate) {

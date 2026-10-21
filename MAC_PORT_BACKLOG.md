@@ -2960,6 +2960,19 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Completed-update pose observation (2026-10-21):** Shared
+  `pc_native_pose_trace.h` / `pc_native_timing_guest.inc` add a disabled-by-default,
+  bounded observer at the original gameplay clock boundary. Both timing paths
+  use the same collector; no host-specific movement behavior is introduced.
+  Windows original-60/native-144/120 comparisons show consecutive fresh local
+  and remote positions across five holds at the selected update rates and
+  consistent game time. Build and portable observer/statistics checks pass;
+  the new checks are selected by shared CI. Native Mac still requires an
+  equivalent bounded runner route and usable transport, followed by actual
+  runtime/pose/pacing verification. No Mac validation is inferred from Windows
+  results; GPU/scanout and the earlier locally stopped routes remain separate
+  acceptance gaps. See the completed-update comparison in STATUS.
+
 - **Remote correction/observation audit (2026-10-21):** The portable lifted
   `sub_00356E20` fixture verifies fractional correction and original guard paths;
   no production change is required for that routine. Windows read-only paired

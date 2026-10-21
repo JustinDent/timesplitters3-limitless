@@ -6,6 +6,20 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Completed-update multiplayer comparison (2026-10-21):** A shared opt-in
+  observer now samples after the gameplay update, avoiding temporary positions
+  counted by asynchronous polling. Five original-60 and native 144/120 movement
+  holds produce fresh local/remote positions on every sampled update (930
+  original and 2,058 native observations). Native rates are about 144/120 Hz;
+  worst update-boundary interval is 12.492 ms and game-time/wall-time ratios are
+  0.999122–1.000444. This run demonstrates continuous 120 motion but does not
+  establish the cause of earlier route stops. Four bounded sessions exit cleanly
+  with profiles/fixture preserved and disks recycled. Windows Build, five
+  timing/cadence/observer checks and 82 statistics/CI/backlog checks pass. No
+  movement policy changed. [Measured scope](docs/native-high-refresh-regressions.md#completed-update-multiplayer-poses-2026-10-21)
+  distinguishes completed updates from GPU/scanout, route speed parity and
+  unverified native Mac/transport/combat coverage.
+
 - **Remote correction and in-motion observation (2026-10-21):** The lifted
   original remote-position correction already advances on fractional deltas;
   eight original/native normal/quarter-speed sequences plus guard cases pass.

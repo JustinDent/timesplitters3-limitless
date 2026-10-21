@@ -6,6 +6,86 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Completed-update multiplayer poses (2026-10-21)
+
+The shared clock hook now has an opt-in `TSFP_NATIVE_POSE_TRACE` recorder in
+`src/pc_native_pose_trace.h`. Original US disassembly shows the gameplay loop
+calling `sub_0003C440` at 0x3D3CA, then `sub_00153B00`, then the clock at
+0x3D3E6. The observer requires return address 0x3D3EB and samples before the
+clock changes the next update's delta. It records one completed update for
+two human slots in an active network match, including frame ID, scene, game
+delta, level tick, entity identity, XYZ and absolute QPC time. Other clock
+callers, inactive matches and invalid entity pointers are skipped. The file is
+bounded at 20,000 rows; diagnostics are disabled unless explicitly requested.
+No movement, correction or transport policy changes are made. Completed
+update poses still do not establish GPU completion or monitor scanout.
+
+The bounded Windows runner exposes `--trace-network-poses`. The comparison
+uses the existing Vietnam/no-bot replay, plus backward/left/right two-second
+client holds after the original bidirectional walks. Captures and asynchronous
+memory sampling are off; Present profiling is on. `network_pose_stats.py`
+measures the same predeclared 0.2-second-trimmed input windows, requires
+consecutive frame IDs and stable scene/entity identity, and reports unchanged
+updates rather than silently discarding stationary tails. Its ten portable
+checks cover 60/120/144 cadence/game time, missing/repeated frames, changed
+identity/scene, non-finite data, insufficient coverage and stationary tails.
+
+Windows PowerShell `tsfp.ps1 Build` and its required checks pass
+(`logs/native-pose-boundary-build.log`). Five focused timing/cadence/pose checks
+pass, including the existing network-gate mutations; statistics/CI/backlog
+checks pass 82 tests (`logs/native-pose-boundary-tests.log`,
+`logs/native-pose-stats-tests.log`). Native Mac execution remains unverified;
+the recorder is shared, but the Mac runner/transport require separate work.
+
+### Original 60 and native 144/120 results
+
+All five predeclared holds pass the completed-update continuity check for the
+moving actor on both peers: **930 original-60 observations and 2,058 native
+observations change position on every consecutive update**. These counts cover
+only the approximately 1.55-second central windows, not entire matches.
+
+| Movement | Native local update rate | Native remote update rate | Unchanged updates, local / remote |
+| --- | --- | --- | --- |
+| Host forward | 144.006 Hz | 120.017 Hz | 0 / 0 |
+| Client forward | 120.027 Hz | 144.064 Hz | 0 / 0 |
+| Client backward | 120.017 Hz | 144.101 Hz | 0 / 0 |
+| Client left | 120.032 Hz | 143.958 Hz | 0 / 0 |
+| Client right | 119.964 Hz | 144.070 Hz | 0 / 0 |
+
+The original reference ranges from 59.915 to 60.033 updates/s across those
+same checks, also with zero unchanged positions. Native completed-update
+interval p99 is at most 11.413 ms and the worst interval is 12.492 ms; original
+worst interval is 21.189 ms. Native accumulated game-time/wall-time ratios are
+0.999122–1.000444 (original 0.998575–1.000550). These are update-boundary timing
+measurements, not presentation or scanout intervals. The separately retained
+Present profiles contain only guest entries; no interpolated entries appear.
+
+This improves on the asynchronous memory observations: temporary changes
+within an update are no longer counted as extra frames. It also demonstrates
+continuous 120 FPS movement in this run. Earlier local stopping is not
+reproduced here, and its precise cause remains unresolved. Different spawns,
+headings and terrain still prevent a movement-speed parity claim; the shorter
+sideways distances are retained rather than compared as equivalent routes.
+
+Source and evidence: Windows x64 Release based on `70ab800` plus this revision's
+shared pose observer, executable SHA-256
+`4246f90b5bc911c04acc838835c18d66d8e03d3a0ac302d238674585431d7699`;
+runner SHA-256
+`9289c332daf11eb7e73ceff458a7efd28376dc5eddfa26017b7e00278eff8bec`.
+Runs are `private/test-saves/lan-pose-{60,native}-{host,client}`; summaries are
+`private/pipeline/lan-pose-{60,native}-summary.json`. All four processes exit
+normally with unchanged signed profiles and fixture, and their disposable
+partitions are recycled. Windows build/patch checks passed. Mac, cross-machine
+latency, packet-loss recovery, combat and sustained rendered-pose coverage
+remain open.
+
+The replay is retained as `tests/fixtures/lan-pose-commands.json`; the host's
+non-movement progress label is clarified after the run without changing its
+inputs or timing. Unlike the earlier two-walk replay, its host observation now
+occurs during subsequent client motion, so use `network_pose_stats.py`, not the
+earlier settled-endpoint checker. No settled-endpoint claim is made for these
+new four-direction runs.
+
 ## In-motion loopback observations (2026-10-21)
 
 `stability_transitions_game.py --sample-network-ms 2` now samples both actor
