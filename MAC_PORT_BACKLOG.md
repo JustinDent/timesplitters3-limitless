@@ -2979,6 +2979,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-057 — Optional texture pack delivery through the launcher
 
+- **Publisher requirement follow-up (2026-10-20):**
+  `fix/publish-required-textures` adds an unconditional repository-pack gate to
+  `tools/publish-release.py`, including resumed preparations and pre-upload ZIP
+  verification. It rejects missing/unhydrated assets, manifest mismatches,
+  private metadata and omitted or changed DDS/JSON entries. The compatible
+  Windows/Mac launcher gate can no longer be skipped by dropping texture metadata.
+  This is shared Python release validation with no new OS adapter; the publisher
+  still builds Windows packages. Native Mac packaging/runtime behavior is unchanged.
+  Regression cases are included in the existing Windows/macOS release CI step;
+  hosted validation is pending. Scene/installer validation gaps below remain.
+
 - **Release preservation follow-up (2026-10-20, PR #234):** Game/launcher
   version bumps retain the loader, controls, installer, repository texture pack
   and default bundled-game delivery. Repository texture pack now runs on both
