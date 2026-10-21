@@ -86,8 +86,12 @@ mocked policy test can miss. A configured workflow is not evidence that its
 remote Windows job has run successfully.
 
 Use the supported native builder and bounded isolated runner for local game
-checks. Keep the 60 Hz guest clock and up-to-120 interpolated host presentation
-target; preserve both display configs, controls, personal saves and the canonical
+checks. Preserve original 60 FPS defaults and the 60 Hz console interrupt clock.
+The launcher offers opt-in native 120/144 beta settings for compatible game builds;
+this does not revive the retired interpolation/prediction engine or automatic
+monitor switching. Historical patches/contracts below describe implementation
+history, not current feature validation.
+Preserve both display configs, controls, personal saves and the canonical
 Test Lab fixture. See root `AGENTS.md` for commands and cleanup requirements.
 
 ## Common renderer and remaining exceptions
@@ -167,7 +171,7 @@ Then migrate remaining shader/resource behavior incrementally, using shared
 asset-free contracts plus bounded scene checks. Cube/volume textures, movie
 planes, framebuffer effects and advanced combiners need explicit acceptance;
 first-menu success cannot certify them. Khallos sky fidelity, complete campaign
-coverage, real texture-pack scenes and stable 120 host presents remain separate
+coverage and real texture-pack scenes remain separate
 validation gaps. Networking and launcher distribution also remain genuine host
 integration work, tracked in the backlog.
 
