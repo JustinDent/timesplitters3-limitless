@@ -189,6 +189,9 @@ holds its small source-only Git cache, bounded last-agent log and state. It stay
 outside Desktop/iCloud and the user's active project checkout. Temporary repair
 snapshots are removed after each attempt. No game build or data transfer is needed.
 Updating the checkout does not silently replace the installed controller.
+A fresh `install` always requires `--auto-merge` to enable merging, even when an
+earlier uninstall retained configuration. `upgrade` preserves the existing mode
+unless `--auto-merge` explicitly enables it.
 
 ```sh
 python3 "$HOME/Library/Application Support/TSFP Compatibility Worker/worker.py" status

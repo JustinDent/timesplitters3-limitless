@@ -1,5 +1,6 @@
 """Exercise the publication boundary without credentials or model calls."""
 import copy
+from contextlib import nullcontext
 import hashlib
 import importlib.util
 import json
@@ -146,6 +147,29 @@ class UpgradeTests(unittest.TestCase):
         W.save_json(self.root / 'config.json', {'gh': 'gh', 'codex': 'codex'})
         W.save_json(self.root / 'state.json', {'paused': 'operator', 'attempts': {'old': 'retained'}})
         self.config = {'gh': 'gh', 'codex': 'codex', 'auto_merge': True}
+
+    def test_fresh_install_requires_new_auto_merge_opt_in(self):
+        for opted_in in (False, True):
+            with self.subTest(opted_in=opted_in), tempfile.TemporaryDirectory() as tmp:
+                home = Path(tmp)
+                root = home / 'worker'; root.mkdir()
+                W.save_json(root / 'config.json', self.config)
+                argv = ['worker', '--state-dir', str(root)]
+                if opted_in:
+                    argv.append('--auto-merge')
+                argv.append('install')
+                with mock.patch.object(W.sys, 'argv', argv), \
+                     mock.patch.object(W.sys, 'platform', 'darwin'), \
+                     mock.patch.object(W.Path, 'home', return_value=home), \
+                     mock.patch.object(W.os, 'getuid', return_value=501, create=True), \
+                     mock.patch.object(W, 'exclusive_lock', return_value=nullcontext()), \
+                     mock.patch.object(W, 'find_program', side_effect=lambda name, supplied: supplied), \
+                     mock.patch.object(W, 'command'), \
+                     mock.patch.object(W.Worker, 'preflight'), \
+                     mock.patch.object(W.Worker, 'protected_main') as protection:
+                    W.main()
+                self.assertEqual(W.load_json(root / 'config.json', {})['auto_merge'], opted_in)
+                self.assertEqual(protection.call_count, int(opted_in))
 
     def test_upgrade_retains_wrapper_state_and_rollback_files(self):
         state = (self.root / 'state.json').read_bytes()

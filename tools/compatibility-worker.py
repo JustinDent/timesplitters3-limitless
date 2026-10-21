@@ -725,7 +725,10 @@ def main():
         if args.action in ('check', 'install', 'upgrade', 'dry-run'):
             config = {**config, 'gh': find_program('gh', args.gh or config.get('gh')),
                       'codex': find_program('codex', args.codex or config.get('codex'))}
-            if args.auto_merge:
+            if args.action == 'install':
+                # An uninstall retains config for recovery, not renewed consent.
+                config['auto_merge'] = args.auto_merge
+            elif args.auto_merge:
                 config['auto_merge'] = True
         worker = Worker(root, config)
         if args.action == 'status':
