@@ -2960,6 +2960,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Procedural surface audit (2026-10-21):** Windows-only bounded process
+  observation in `tests/stability_transitions_game.py --watch-surfaces` locates
+  an active kind-1 resource in Scotland at original 60/native 144; sampled
+  Venice gameplay has none. Replays are shared JSON fixtures. Production timing
+  and shaders are unchanged. The five-slot observer is diagnostic tooling, not
+  a second platform implementation. Native Mac needs equivalent bounded
+  resource/render-target observation and actual scene/image validation. CPU
+  stamps and Windows captures do not prove GPU image cadence or Mac behavior.
+  Fractional procedural simulation is still open on both hosts; see STATUS and
+  the linked live-resource audit for evidence and precise scope.
+
 - **Fresh analogue input (2026-10-21):** Shared `pc_native_input_guest` in
   `pc_native_timing_guest.inc` now runs original axis/connection decoding on
   fractional native updates while preserving the published digital held/edge

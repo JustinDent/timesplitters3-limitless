@@ -4445,3 +4445,76 @@ PID 25304 remained responsive and its executable SHA-256 stayed
 `912f416b5f6eaeabf545c960c255491907988eae9f031ead4231b24832cbc333`.
 Thus the NPC aiming and kind-35 corrections have production compilation
 evidence, while the user's running fc3a7ce game does not yet include them.
+
+## Procedural-texture live resource audit (2026-10-21)
+
+The bounded Windows runner now accepts `--watch-surfaces`. It reads the
+original five-slot pool (`0x742350`, stride `0xFC`), allocation count at
+`0x7421A0`, kind, six per-view stamps, parameter/image-table pointers, four
+image handles/indices, and pending disturbance count. Pointer/range checks and
+fixed five-slot iteration bound the reads. A second pool read exposes loading
+transitions. These are asynchronous process-memory observations: stamps can
+change without executing a GPU pass, and a read can cross an update. They do
+not measure image freshness, GPU completion or presentation cadence.
+
+`tests/fixtures/procedural-surface-commands.json` preserves the two replays.
+Use the named replay as JSONL commands with `stability_transitions_game.py
+--watch-surfaces --seconds 120 --minimized`; original 60 omits `--native-fps`,
+and the native comparison adds `--native-fps 144`. Both routes include aiming,
+movement and pause/resume. Commands begin with a 24-second startup wait.
+
+| Scene and path | In-game observations | Allocated resources | Kind |
+| --- | ---: | ---: | --- |
+| Venice, original 60 | 100 | 0 | none |
+| Venice, native 144 | 100 | 0 | none |
+| Scotland shoreline, original 60 | 52 | 1 | 1 |
+| Scotland shoreline, native 144 | 52 | 1 | 1 |
+
+These counts include periodic/label observations and held-input samples, not
+independent rendered frames. Each selected observation has the same pool
+pointer before/after reading. Venice scene 46 has an initialized but empty
+pool throughout the selected roughly 13-second gameplay windows. Scotland
+scene 4 has resource kind 1 throughout roughly 12-second windows, including
+pause/resume. Its parameter address is `0x4E8DB8`, image table `0x74FA20`,
+image handles `[1483,1482,1481,1480]`, and indices `[0,2,1,3]`. The native
+per-view cache stamp tracks native frame count (occasionally one behind due
+to asynchronous reading); the original path uses its console-vblank stamp.
+Neither observation establishes the actual nested-pass count. The pending
+local disturbance count is zero in these samples, which does not exclude
+random disturbances inserted by the separate noise pass.
+
+Reviewed `surface-scotland-60/start.png` shows the starting shoreline/pier;
+`surface-scotland-144/turn-right.png` shows the sea. The Venice spawn capture
+shows the actual deathmatch interior. The empty Venice pool therefore cannot
+validate this procedural effect. Scotland provides a concrete active resource
+for subsequent render-target capture and fractional-time integration work.
+
+The pinned US disassembly identifies the nested pipeline IDs and callbacks:
+`0x12` uses `0x2BA80`, `0x13` uses `0x2BE30`, `0x14` uses `0x2BF10`, and
+`0x16` uses `0x2C320` (table at `0x476270`, stride 16). `0x1952D0` makes two
+RNG calls and draws a randomly offset texture; `0x195110` executes two
+feedback passes using resource-parameter offsets `+0x10..+0x1C`. For kind 1,
+the authored values are approximately `0.17, 0.105, 0.65, 0.98`. Its two
+pixel-shader definitions at `0x4BBE20`/`0x4BBF10` contain seven/eight combiner
+stages; the output pass at `0x4BC318` contains six. These observations identify
+the coupled image algorithm, not a verified differential equation. Increasing
+the dispatch frequency alone would also increase random disturbance draws
+and change feedback evolution. A fractional implementation must preserve
+original-60 evolution and event cadence while producing fresh intermediate
+simulation images; scaling all coefficients blindly is not validated.
+
+All four sessions exited cleanly, signed profiles and the canonical fixture
+were preserved, and disposable disks/BMPs were recycled. Logs and selected
+captures remain under `logs/surface-{venice,scotland}-{60,144}.log` and matching
+`private/test-saves` folders. Machine-readable evidence is
+`private/pipeline/procedural-surface-live-summary.json`. Tested Windows x64
+executable SHA-256 is
+`cd0d7679a40d12f86fda79c74fa2e7287ca48a6fa75c9478ef02ebe56d8b83d8`, from
+`764ea2b`; only the read-only test runner changed. Python 3.12.14; per-run
+provenance records runner/executable hashes and QPC clock metadata. Captured,
+minimized sessions are not performance measurements. The existing lifted
+surface-cache test still passes (1 passed, 60 deselected), and the runner
+passes Python compilation/CLI checks. No production timing or shader change
+was made, so no rebuild was needed. Fractional procedural GPU simulation,
+actual per-frame image evidence, other resource kinds/scenes and native Mac
+validation remain open.

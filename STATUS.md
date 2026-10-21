@@ -6,6 +6,17 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Procedural texture scene audit (2026-10-21):** Added bounded read-only
+  resource observation and reproducible Venice/Scotland replays. Original-60
+  and native-144 Venice samples allocate no procedural resources; Scotland
+  shoreline samples both use kind 1 with advancing cache stamps. Four sessions
+  exit cleanly with profiles/fixture preserved and temporary disks recycled.
+  The nested passes include random disturbances and coupled feedback, so fresh
+  cache stamps alone do not prove fresh texture images. Existing surface-cache
+  checks pass. [Resource and shader audit](docs/native-high-refresh-regressions.md#procedural-texture-live-resource-audit-2026-10-21)
+  identifies Scotland for the next image-level comparison. No production change;
+  fractional GPU simulation and native Mac validation remain open.
+
 - **Native analogue input freshness (2026-10-21):** Fixed a real 60 Hz hold in
   the native pad wrapper: it now refreshes original stick/trigger decoding on
   every native update while retaining digital press/release delivery on whole

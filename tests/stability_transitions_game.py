@@ -33,6 +33,7 @@ def main():
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
+    parser.add_argument('--watch-surfaces',action='store_true',help='Observe the five procedural texture resources; asynchronous metadata, not image or update-cadence proof')
     parser.add_argument('--watch-input',action='store_true',help='Trace changes to player-one input suppression in the bounded log')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
@@ -136,6 +137,28 @@ def main():
             messages.append(dict(slot=slot,kind=kind,text=text.value.decode('latin-1'),
                 timing=floats(address+0x144,5)))
         return messages
+    def surface_snapshot():
+        # Original allocator 0x127400 has exactly five 0xfc-byte slots. Do not
+        # trust live pointers/counts during loading, or infer GPU execution from
+        # CPU cache stamps. These asynchronous reads can cross an update.
+        pool=word(0x742350);count=word(0x7421a0)
+        result=dict(pool=pool,allocated=count,frame=word(0x7497b8),
+                    float_delta=floats(0x4e794c,1),resources=[])
+        if pool is None or not 0x80000000<=pool<=0x84000000-5*0xfc:
+            return result
+        for slot in range(5):
+            address=pool+slot*0xfc;kind=word(address)
+            if kind is None or kind==0xffffffff:continue
+            table=word(address+0x20)
+            result['resources'].append(dict(slot=slot,kind=kind,
+                stamps=[word(address+4+i*4) for i in range(6)],
+                parameters=word(address+0x1c),image_table=table,
+                images=[word(table+i*4) for i in range(4)]
+                    if table is not None and 0x12000<=table<=0x84000000-16 else None,
+                indices=[word(address+0x24+i*4) for i in range(4)],
+                disturbances=word(address+0xf4)))
+        result['pool_after']=word(0x742350)
+        return result
     def network_snapshot():
         actors=[];pool=word(0x7356d8);roster=word(0x7de400) or 0
         humans,bots=roster&255,(roster>>16)&255
@@ -155,7 +178,8 @@ def main():
             raw_ticks=word(0x4E7940),game_ticks=word(0x4E7944),level_ticks=word(0x7DE318),
             match_state=word(0x7DE30C),countdown=word(0x4D2878),countdown_ticks=word(0x4D287C),
             player=player_snapshot(),**(dict(hud=hud_snapshot()) if args.watch_hud else {}),
-            **(dict(network=network_snapshot()) if args.lan_role else {}))
+            **(dict(network=network_snapshot()) if args.lan_role else {}),
+            **(dict(surfaces=surface_snapshot()) if args.watch_surfaces else {}))
     def drain(pipe,path):
         with path.open('wb') as out:
             left=4*1024*1024
@@ -242,7 +266,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
+        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)
