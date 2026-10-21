@@ -50,6 +50,8 @@ link and do not restore the removed enhancement issue form. The existing Windows
 empty diagnostics payload and unchanged bug-report round trip. These run in the
 already registered issue-form and launcher workflows; native Mac builds consume
 the same `DiagnosticIssueDraft.cs` URL policy.
+The mocked version-refresh PR creation check also verifies that the generated
+description preserves Ideas routing instead of referring to a removed form.
 
 Read each harness before assuming it is asset-free. Patch transition tests can
 need pristine pinned upstream files and Git access. Use existing dependencies;

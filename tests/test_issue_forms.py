@@ -89,6 +89,9 @@ class VersionPullRequestTests(unittest.TestCase):
         self.client.request.assert_any_call('POST', 'git/refs',
             {'ref': 'refs/heads/automation/issue-form-versions', 'sha': 'new-commit'})
         self.assertFalse(any(call.args[1].startswith('git/refs/heads/main') for call in calls))
+        proposal = next(call.args[2] for call in calls if call.args[:2] == ('POST', 'pulls'))
+        self.assertIn('enhancement requests continue to use Ideas discussions', proposal['body'])
+        self.assertNotIn('improvement form', proposal['body'])
 
     def test_existing_pr_preserves_both_ancestors_without_force_push(self):
         self.previous = 'b' * 40
