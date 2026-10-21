@@ -169,11 +169,14 @@ From a trusted checkout of this branch on the selected Mac:
 ```sh
 python3 tools/compatibility-worker.py check
 python3 tools/compatibility-worker.py dry-run
-python3 tools/compatibility-worker.py --auto-merge check
-python3 tools/compatibility-worker.py --auto-merge install
+python3 tools/compatibility-worker.py install
 # For an existing worker (including one with a dashboard wrapper):
-python3 tools/compatibility-worker.py --auto-merge upgrade
+python3 tools/compatibility-worker.py upgrade
 ```
+
+Only when automatic repair-to-main merging is explicitly authorized, add
+`--auto-merge` before `check` and before the chosen `install` or `upgrade` action.
+The ordinary upgrade command above preserves the installed merge mode.
 
 If discovery needs help, add `--codex /absolute/path/to/codex` and
 `--gh /absolute/path/to/gh` before the command. `check` verifies the GitHub account,
