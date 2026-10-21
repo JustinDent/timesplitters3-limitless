@@ -23,7 +23,7 @@ static int d3d8_vsh_bound_pos_input(void){return 0;}
 static int d3d8_vsh_bound_input_offset(int reg,UINT *offset){*offset=pos_offset;return 1;}
 static int d3d8_fvf_transformed(DWORD h){return h==2;}
 static BOOL draw_is_screen_pass(void){return screen_pass;}
-#define pc_display_current() mode
+#define pc_display_effective() mode
 #define d3d8_display_policy() (&policy)
 /* PRODUCTION */
 #define CHECK(x) do {if(!(x)){fprintf(stderr,"FAIL: %d %s\n",__LINE__,#x);return 1;}}while(0)

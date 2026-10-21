@@ -163,3 +163,17 @@ editing/length/font-width behavior; CI without that asset skips this case.
 `src/native/menu_input_selftest.inc` adds SDL event/text-session checks. Shared
 fixture success does not establish physical Mac typing. Live Windows Create
 Profile typing and Enter were confirmed by the user with isolated Test Lab saves.
+
+## Auto display regression checks
+
+`test_pc_display_modes.py` also compiles shared Auto policy through stub SDL
+snapshots on Windows and Mac; this tests policy, not Cocoa or actual atomics.
+The Windows-specific fixture compiles the model against deterministic
+monitor/window adapters: secondary fullscreen desktop size, windowed resize,
+minimize/query failure, allocation rollback/retry, persistence and preview
+rollback, manual override, and Auto ratio filtering. `tests/pc_display.c` retains
+existing manual scene/camera/HUD tests. `test_cutscene_letterbox.py` exercises
+the effective-output hook after the complete patch stack is applied. Launcher
+settings checks cover Auto UI/filter/save, fresh defaults, existing manual
+settings, and older package capability gating. Native Cocoa's graphics self-test
+recognizes the Auto choice; physical Retina/multi-display validation needs Mac.

@@ -642,6 +642,15 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-auto-display.patch",
+      "sha256": "e8115e5cec93fae4cb61db5630a58fdf84d0919e8ecab0910dad3e42a50f78a3",
+      "targets": [
+        "src/d3d/d3d8_device.c",
+        "src/d3d/d3d8_display.c",
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-cinematic-movie-fill.patch",
       "sha256": "bb7813e106178c0f994aee0267d56ceb57fc9c273ea07aed736fae8b0a72ead7",
       "targets": [

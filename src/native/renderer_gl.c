@@ -1336,8 +1336,9 @@ static HRESULT __stdcall d3d_CreateDevice(IDirect3D8 *s, UINT adapter, DWORD dev
     g.rs[D3DRS_COLORWRITEENABLE]   = 0x0F;
 
     g.viewport=(D3DVIEWPORT8){0,0,g.backbuf_w,g.backbuf_h,0,1};
-    PcDisplayMode mode=pc_display_current();
-    if(!native_scene_resize(mode.width,mode.height))return E_FAIL;
+    unsigned scene_w,scene_h;
+    pc_display_scene_size(g.backbuf_w,g.backbuf_h,&scene_w,&scene_h);
+    if(!native_scene_resize(scene_w,scene_h))return E_FAIL;
     native_viewport();
     tsfp_native_settings_attach(g.window);
 

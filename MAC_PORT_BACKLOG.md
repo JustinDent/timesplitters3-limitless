@@ -2216,6 +2216,20 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-024 — Resolution catalog and proportional UI (issues #27/#31)
 
+- **Auto-resolution follow-up (2026-10-21, this change on
+  `fix/fullscreen-desktop-resolution`):** Shared display policy
+  adds persistent Auto, effective dimensions, failure rollback and resize
+  tracking. Windows reads the current fullscreen monitor; native
+  `renderer_host_sdl.c` publishes physical drawable pixels on its window thread
+  for both common and legacy GL renderers. `settings_macos.m` and the shared
+  launcher expose Auto, with package capability gating for older games.
+  No duplicated feature policy or deferred adapter is required. Native host
+  validation remains pending: build both renderer paths, exercise fullscreen
+  Retina/multiple monitors, window resize/minimize, manual/Auto previews and
+  rollback, persistence, camera/HUD/cutscene proportions, and both launchers.
+  Windows evidence does not verify these Mac checks.
+
+
 - **Status:** Awaiting validation
 - **PC behavior:** Common render presets and six aspect groups, up to 7680×4320,
   shared by the guest menu and Windows launcher. Full-canvas menu backgrounds,
