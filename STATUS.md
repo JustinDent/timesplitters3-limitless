@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Native 120 Venice follow-up:** The same replay on the unchanged `dbb84e3`
+  build averages 120.003 guest presentations/s, p99 9.429 ms and worst
+  11.333 ms, with no intervals above 33.33 ms. Native updates average
+  119.930/s; game-time/wall-time ratio is 1.000000. Two revolver shots and a
+  30-degree mouse turn match the other presets; the clock stops during pause.
+  The run exits normally with unchanged profiles/fixture. Bot outcomes differ;
+  exact trajectories, scanout, physical latency and Mac remain unverified.
+  [120 preset evidence](docs/native-high-refresh-regressions.md#native-120-preset-follow-up).
+
 - **Venice pacing and gameplay (this revision):** A new native-144 capture run
   reaches Venice deathmatch, fires, moves/aims, pauses/resumes and later shows
   results. Separate original-60/native-144 runs use the same replay with captures

@@ -2968,6 +2968,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   not platform gameplay. The Mac recorder remains shared; actual Mac Venice,
   pacing and gameplay acceptance require the native Mac runner and hardware.
 
+- **Native 120 Venice follow-up:** The same Windows replay on `dbb84e3`
+  reaches 120.003 guest presentations/s with p99 9.429 ms, real-time game
+  speed, matching two-shot/30-degree aim checks and zero game delta during
+  pause. The test uses common production timing code without new host logic.
+  Native Mac gameplay, input delivery and presentation still require their
+  own run; this Windows result does not change the entry's validation status.
+
 - **Settings ordering (this revision):** The common guest Settings constructor
   orders Audio, Video, Controls, Copy Profile and conditional Cheats, using
   consistent alignment without the old divider. It retains the native actions

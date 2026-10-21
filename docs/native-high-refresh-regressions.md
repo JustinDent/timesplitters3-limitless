@@ -101,6 +101,35 @@ Full-match completion is supported only by the separate capture run here;
 the two pacing runs end during an active match. Other arenas/modes, network
 peers, physical aiming, live force regions and native Mac acceptance remain open.
 
+### Native 120 preset follow-up
+
+The same Venice replay also passes at native 120 on the unchanged executable
+above, using committed runner `555fb33` (runner SHA-256
+`36ddc441f0d1fcdf701542fe84c570ff93fd4706fd9ba5ff8df0a92752773d28`).
+The renderer remains windowed, visible and capture-free. Between 78.937 and
+104.359 s, 3,051 guest presentations average 120.003/s: median 8.300 ms,
+p95 9.145 ms, p99 9.429 ms, worst 11.333 ms. There are no intervals above
+33.33 ms, interpolated presents, or reported presentation failures.
+The level-clock/wall-time ratio is 1.00039. Independently, 6,013 consecutive
+active scene-46 update intervals over 50.138 s average 119.930/s, with p99
+8.878 ms and game-time/wall-time ratio 1.000000.
+
+The revolver again consumes two rounds (6 to 4, reserve 30), and 300 mouse
+counts turn yaw 132 to 102. The trace records 402 consecutive zero-game-delta
+updates during pause, from 66.441767 to 69.783961 s (3.342 s). The resume
+snapshot, taken after two seconds of resumed play, has changed position and
+health from combat; it is not evidence of movement while paused. Bot outcomes
+and player deaths differ between the three rates. This is a preset/pacing and
+selected-behavior check, not identical physics trajectories or complete Venice
+coverage. It shares the timing-origin and API-versus-scanout limitations above.
+
+The bounded run exits normally with unchanged signed test profiles and fixture;
+its disposable disks are recycled. Evidence is in
+`private/test-saves/venice-pacing-120` and `logs/venice-pacing-120.log`.
+The Present CSV SHA-256 is
+`1317c71a58d1766aa75367de7d13c29cc0eb48aa6b72d6948b3e0b4c8cac7113`.
+No game source changed for these comparisons, so no rebuild is needed.
+
 ## Region-driven player force and drag
 
 The original player mode `0x800` updater (`0xD4820..0xD4AFF`) adds vertical
