@@ -117,3 +117,13 @@ counts are not GPU completion or display scanout. To investigate slowdowns,
 compare stable/slow/stable timing, distinguish CPU work, GPU work, synchronization
 and intentional waits, then run one discriminating intervention. Flip-gate
 involvement in #105 remains a hypothesis until a reproduced measurement proves it.
+
+## Auto display and cinematic matte hook
+
+`zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-auto-display.patch` changes the
+`sub_0001EFB0` cinematic matte hook to `pc_display_effective()`. It must consume
+resolved physical output dimensions. The renderer uses effective-mode presence
+for camera/UI adaptation, retaining guest output if no usable window exists,
+while menu save/preview code retains the
+selected Auto sentinel. Apply after the original cutscene-letterbox patch;
+`test_cutscene_letterbox.py` checks the resulting production wrapper.

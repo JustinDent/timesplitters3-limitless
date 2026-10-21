@@ -17,7 +17,7 @@ static int g_2d_squeeze=1,g_cur_rt,g_2d_anchor=XBOX_D3D8_2D_CENTRE,g_scissor_ena
 static RhiRect g_scissor={20,20,620,460};
 static RhiViewport actual;
 typedef struct {unsigned width,height;} Mode;
-static Mode pc_display_current(void){Mode m={g_device_state.width,g_device_state.height};return m;}
+static Mode pc_display_effective(void){Mode m={g_device_state.width,g_device_state.height};return m;}
 static float pc_display_hud_scale(void){return 4.f*g_device_state.height/(3.f*g_device_state.width);}
 static float rt_scale_x(void){return g_device_state.width/640.f;}
 static float rt_scale_y(void){return g_device_state.height/480.f;}

@@ -77,3 +77,17 @@ No launcher executable, installer, update policy or game behavior changes.
 `tests/test_issue_forms.py` covers bounded/sorted release references, empty
 required inputs and preservation of the enhancement form. The repository-context
 check also requires this owning guide to acknowledge issue-form changes.
+
+## Auto display selection
+
+Shared `DisplayModes.cs` and `SettingsPage.cs` expose Auto in the aspect and
+resolution selectors; custom numeric inputs are hidden for Auto. The stored
+`1,1` mode is resolved by the game on the active display, not by the launcher
+from its own primary monitor. `GameSettings.CanAutoResolution` gates it on the
+installed `BUILD.json` boolean `auto_display_resolution` (local unpackaged
+development builds allow it). Both release packagers advertise the capability;
+older manifests keep their original default and manual choices. New compatible
+settings default to Auto, while saved dimensions remain unchanged. A saved
+Auto choice remains readable after installing an older game; its runtime falls
+back to console output, and the settings page explains that a manual choice or
+newer game is needed before saving. Opening settings never rewrites that file.

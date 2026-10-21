@@ -89,3 +89,22 @@ Back action, preserving embedded-menu callbacks. Numeric descriptor `0x004D94D4`
 is excluded. Supported input follows the original Latin-1 tables; paste and
 arbitrary Unicode are outside this change. See MAC-059 and the #136 STATUS entry
 for physical Windows confirmation and pending Mac/dialog-matrix validation.
+
+## Automatic display size
+
+`pc_display_current()` is the selected/persisted mode: `0,0` retains console
+resolution, `1,1` means Auto, and other valid dimensions are manual. New missing
+settings default to Auto; existing settings are preserved. Render/camera/UI code
+must use `pc_display_effective()` or the shape/scale helpers, never interpret
+the Auto sentinel as physical pixels. The shared catalog appends Auto without
+renumbering existing ratio groups. Guest Display settings and Cocoa expose it.
+
+On Windows Auto reads the fullscreen window's nearest monitor desktop mode,
+or its non-minimized client pixels in windowed mode. The SDL main thread
+publishes drawable pixels via `pc_display_host_size`; the render thread reads
+an atomic snapshot. Frame completion checks at most four times per second;
+GPU allocation failure retains the last effective size and retries later.
+Unsupported/empty sizes retain the last valid output (guest output before a window
+exists); current supported limits remain landscape 640x480 through 7680x4320,
+no wider than 4:1. Manual selection disables this tracking. Desktop resolution
+and refresh rate are never changed.

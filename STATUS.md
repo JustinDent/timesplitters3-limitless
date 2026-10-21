@@ -13213,3 +13213,51 @@ Three portable shared UI checks and nine compatibility-policy checks passed.
 The Mac backlog consistency check also passed.
 Native Mac compilation and UI execution are unavailable on this
 Windows host and remain pending. No release is published by this change.
+
+## Automatic display resolution (2026-10-21)
+
+Branch `fix/fullscreen-desktop-resolution`, based on main
+`734504f`. Auto is offered alongside manual aspect/resolution choices in the
+guest Display menu, Cocoa settings and shared launcher. New compatible settings
+default to Auto; saved manual choices remain unchanged. It follows the active
+fullscreen display or window client/drawable pixels, retaining the last valid
+output on query/allocation failure. Camera, HUD and cinematic matte paths use
+effective dimensions rather than the persistent Auto sentinel.
+
+Windows evidence:
+- Supported US executable hash verified; complete runtime patch stack applied.
+- `tsfp.ps1 Build` completed with its rendering/settings/build tests, including
+  ghost depth/feedback contracts. Binary SHA-256:
+  `0686c87643185e6e688534b8ec8c0ec2321f4f618843bd90242a7d8e2d385a47`.
+- Isolated 30-second unlocked Test Lab run with Auto and fullscreen logged
+  `fullscreen: 3440x1440` and `D3D8: Device created (3440x1440)`, with successful
+  guest presentation. Desktop refresh was not changed. This verifies startup
+  output detection, not full gameplay or physical monitor switching.
+- User tested the reopened Auto-resolution build and confirmed it works.
+- Display/cutscene/UI/FOV/launcher-policy regressions: 30 passed, one Mac-only
+  check skipped, 26 subtests passed. The added shared SDL Auto snapshot and
+  Windows monitor regressions both passed afterward. Packaging/backlog/context/
+  workflow/display contracts: 90 passed.
+- Windows launcher compiled; 36 isolated settings checks and 13 shared UI groups
+  passed, including Auto selection/save, old-release gating and manual override.
+  After the game closed, the complete Windows launcher build/test command also
+  passed, including updater, startup, downloads, crash/session and maintenance
+  suites. Test output reused a temporary non-OneDrive directory after a transient
+  file-replacement failure in the synchronized workspace.
+
+Native Mac adapters and packaging are implemented, but Mac build, Retina
+window/fullscreen and physical multi-monitor checks remain unverified.
+See MAC-024. Logs: `logs/auto-game-build.log`, `auto-regressions.log`,
+`auto-settings-test.log`, `auto-shared-ui-test.log`, `auto-contracts.log`, and
+`private/test-saves/auto-resolution/game.err`. Personal saves/settings untouched.
+
+### PR #251 CI fixture correction
+
+The historical controls-only fixture accidentally included the Auto patch before
+its display/cutscene/fullscreen-effect prerequisites, failing setup on both
+Windows and Mac. The fixture now defers it to the complete-stack migration,
+then checks effective-size hooks in the title and both renderer files, local
+edit preservation and idempotence. All 34 patch-tracking and historical-upgrade
+regressions passed on Windows (`logs/auto-ci-patch-upgrades.log`).
+Both native-runtime CI jobs and the Windows/Mac launcher checks passed on
+`c46cc8c`; this does not establish full Mac game or physical display validation.

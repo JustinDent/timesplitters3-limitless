@@ -149,6 +149,22 @@ public static class LauncherSettingsChecks
         Directory.CreateDirectory(temp);
         try
         {
+            Test("Auto display capability, default and persistent manual override",()=>{
+                string root=Root("auto-display");var model=GameSettings.Load(root,null);
+                Require(model.CanAutoResolution && model.Width==1 && model.Height==1);
+                model.Save();Require(Read(root,"Settings/pc-display.ini")=="TSFP_DISPLAY_V1 1 1\n");
+                model=GameSettings.Load(root,null);Require(model.Width==1 && model.Height==1);
+                model.Width=2560;model.Height=1440;model.Save();
+                model=GameSettings.Load(root,null);Require(model.Width==2560 && model.Height==1440);
+                Put(root,"BUILD.json","{\"version\":\"v0.3.0-alpha.1\"}");
+                Require(!GameSettings.Load(root,null).SupportsResolution(1,1));
+                Put(root,"BUILD.json","{\"version\":\"v0.3.0-alpha.1\",\"auto_display_resolution\":true}");
+                Require(GameSettings.Load(root,null).SupportsResolution(1,1));
+                model=GameSettings.Load(root,null);model.Width=model.Height=1;model.Save();
+                Put(root,"BUILD.json","{\"version\":\"v0.3.0-alpha.1\"}");
+                model=GameSettings.Load(root,null);Require(model.Width==1);Reject(()=>model.Save());
+                model.Width=1920;model.Height=1080;model.Save();Require(GameSettings.Load(root,null).Width==1920);
+            });
             Test("title bar follows initial theme and live setting changes",()=>STA(CheckTitleTheme));
             Test("published alpha.4 retains V1 resolution settings and rejects custom FOV atomically",()=>{
                 string root=Root("legacy-fov");Put(root,"BUILD.json","{\"version\":\"v0.2.0-alpha.4\"}");
@@ -225,7 +241,7 @@ public static class LauncherSettingsChecks
                 Console.WriteLine("Primary display modes: "+String.Join(", ",actual));
             });
             Test("aspect groups and launcher filtering preserve proportional resolutions",()=>STA(()=>{
-                Require(DisplayModes.Aspects.Length==7);
+                Require(DisplayModes.Aspects.Length==8);
                 foreach(var size in DisplayModes.Presets())Require(DisplayMode.Valid(size.Width,size.Height));
                 Require(DisplayModes.AspectIndex(1366,768)==3 && DisplayModes.AspectIndex(3440,1440)==5);
                 Require(DisplayModes.AspectIndex(5120,1440)==6 && DisplayModes.AspectIndex(1280,1024)==2);
@@ -239,6 +255,9 @@ public static class LauncherSettingsChecks
                     Require(picker.Items.Cast<DisplayMode>().All(m=>DisplayModes.AspectIndex(m.Width,m.Height)==i));
                     Require(label.Text=="Current ratio: "+DisplayModes.Aspects[i].Label);
                 }
+                Require(((DisplayMode)picker.SelectedItem).Automatic);
+                Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
+                Require(GameSettings.Load(root,null).Width==1);
                 aspect.SelectedIndex=3;
                 picker.SelectedItem=picker.Items.Cast<DisplayMode>().Single(m=>m.Width==1920 && m.Height==1080);
                 Click(nodes.OfType<System.Windows.Controls.Button>().Single(c=>c.Name=="SettingsSaveButton"));
@@ -262,7 +281,8 @@ public static class LauncherSettingsChecks
                     var buttons=nodes.OfType<System.Windows.Controls.Button>().ToList();
                     var previous=buttons.Single(b=>System.Windows.Automation.AutomationProperties.GetName(b)=="Previous resolution");
                     var next=buttons.Single(b=>System.Windows.Automation.AutomationProperties.GetName(b)=="Next resolution");
-                    Require(picker.SelectedIndex==0);
+                    Require(((DisplayMode)picker.SelectedItem).Automatic);
+                    picker.SelectedIndex=0;
                     previous.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Require(picker.SelectedIndex==picker.Items.Count-1);
                     next.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Require(picker.SelectedIndex==0);
                     next.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));Require(picker.SelectedIndex==1%picker.Items.Count);
@@ -436,7 +456,7 @@ public static class LauncherSettingsChecks
                     Require(!names.Contains(name),"Retired control remains: "+name);
             }));
             Test("performance guidance tracks actual resolution, VRR and fullscreen choices",()=>STA(()=>{
-                string root=Root("performance-guidance");var model=GameSettings.Load(root,null);model.Scale=4;model.Save();
+                string root=Root("performance-guidance");var model=GameSettings.Load(root,null);model.Width=model.Height=0;model.Scale=4;model.Save();
                 var owner=new System.Windows.Window();var page=new SettingsPage(owner.Resources,root,true);page.SelectTab(1);
                 var nodes=Descendants(page.View).ToList();
                 var advice=nodes.OfType<System.Windows.Controls.TextBlock>().Single(t=>t.Name=="PerformanceAdvice");

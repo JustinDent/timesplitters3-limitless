@@ -131,9 +131,9 @@ namespace TimeSplitters.Launcher
             textures.Children.Add(Text("Save to apply on your next launch. Changes in the game's Display menu or with F10 last for that game session. If your game version has no bundled pack, original textures remain available.",12));
             var display=PageTheme.Section(graphics,"Display","Choose the game’s output size. Your desktop resolution stays unchanged.");
             var displayColumns=Columns(display);var displayLeft=Column(displayColumns,0);var displayRight=Column(displayColumns,1);
-            var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height)).ToList();
+            var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height) || (m.Automatic && model.Width==1 && model.Height==1)).ToList();
             aspect=new ComboBox { Name="AspectRatio" };
-            foreach(var ratio in DisplayModes.Aspects)aspect.Items.Add(ratio);
+            foreach(var ratio in DisplayModes.Aspects.Where(r=>r.Label!="Auto" || model.CanAutoResolution))aspect.Items.Add(ratio);
             aspect.SelectedIndex=0;Field(displayLeft,"Aspect ratio",aspect);
             resolution=new ComboBox { Name="OutputResolution" };
             foreach(var mode in sizes) resolution.Items.Add(mode);
@@ -152,7 +152,10 @@ namespace TimeSplitters.Launcher
             width=Entry(model.Width.ToString());height=Entry(model.Height.ToString());Field(Column(dimensions,0),"Width",width);Field(Column(dimensions,1),"Height",height);
             var customHint=Text("Use a supported custom size, or 0 × 0 for the original console resolution.",12);customHint.Foreground=Muted;custom.Children.Add(customHint);
             var customSize=new Expander { Header="Custom resolution",Foreground=Ink,FontSize=12,Content=custom,Margin=new Thickness(0,2,0,12) };display.Children.Add(customSize);
-            resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); } };
+            Ui.Show(customSize,model.Width!=1 || model.Height!=1);
+            if(!model.CanAutoResolution && model.Width==1 && model.Height==1)display.Children.Add(Text("Auto is saved for a newer game build. This older game uses its original resolution; choose a manual size here to change it.",12));
+            display.Children.Add(Text("Auto follows the current display in fullscreen and the window size in windowed mode. Manual sizes remain available.",12));
+            resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); Ui.Show(customSize,!selected.Automatic); } };
             var ratioValue=Text("Current ratio: "+DisplayModes.RatioLabel(model.Width,model.Height),12);ratioValue.Name="CurrentAspectRatio";ratioValue.Foreground=Accent;display.Children.Add(ratioValue);
             Action updateRatio=()=> {
                 int w,h;ratioValue.Text=Int32.TryParse(width.Text,out w)&&Int32.TryParse(height.Text,out h)?"Current ratio: "+DisplayModes.RatioLabel(w,h):"Enter a valid size";

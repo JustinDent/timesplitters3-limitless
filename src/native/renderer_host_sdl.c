@@ -3,6 +3,7 @@
 #include "input_sdl.h"
 #include "text_bitmap_macos.h"
 #include "rhi.h"
+#include "pc_display.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +25,7 @@ static void refresh_size(void)
     host.width = (uint32_t)width;
     host.height = (uint32_t)height;
     pthread_mutex_unlock(&size_lock);
+    pc_display_host_size((unsigned)width,(unsigned)height);
 }
 
 static int drawable_size(void *context, void *window, uint32_t *width, uint32_t *height)

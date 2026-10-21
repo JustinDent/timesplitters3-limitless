@@ -141,7 +141,7 @@ static void (^graphics_test_ready)(TSFPSettings *,NSTabView *,NSPopUpButton *,NS
     mode_count=pc_display_filter_modes(all_modes,all_mode_count,(int)aspect.indexOfSelectedItem,
         staged,modes,PC_DISPLAY_MODE_CAPACITY,&selected);
     [resolution removeAllItems];
-    for(int i=0;i<mode_count;i++)[resolution addItemWithTitle:modes[i].width?
+    for(int i=0;i<mode_count;i++)[resolution addItemWithTitle:pc_display_is_auto(modes[i])?@"Auto (current display)":modes[i].width?
         [NSString stringWithFormat:@"%u × %u",modes[i].width,modes[i].height]:@"Original (640 × 480)"];
     if(mode_count)[resolution selectItemAtIndex:selected];
 }
