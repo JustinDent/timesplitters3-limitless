@@ -1585,6 +1585,24 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-021 — Published-release launcher and pre-game settings
 
+- **v1.2.22 publication preparation (2026-10-20):** Restores the common publisher's
+  one-versioned-ZIP-per-host policy and Latest release-page download links.
+  Platform update manifests retain their existing names and package formats.
+  All 25 portable publisher regressions pass. Both host checks on the preparation
+  PR remain pending; native Mac validation is not inferred from Windows results.
+
+- **Native frame-rate selector (2026-10-20, commit carrying this entry on
+  `feature/launcher-native-frame-rate`):** Shared `GameSettings.cs` and
+  `SettingsPage.cs` provide original 60 / beta 120 / beta 144 FPS, with restart,
+  compatible-game and Arcade-regression guidance. Both platform adapters locate
+  `pc-frame-rate.ini` beside the display preference. Shared tests cover default,
+  cancel/save, game-menu edits, launch overrides, malformed/concurrent edits and
+  rollback. No new OS adapter is required. Windows build, settings and shared UI
+  regressions pass; Mac native compilation, execution and prerequisites remain
+  unrun on this Windows host. Requires the separate native-high-refresh runtime;
+  this does not certify its gameplay or merge that branch. Wider status remains
+  Awaiting validation. [Evidence](STATUS.md#launcher-native-frame-rate-selector-2026-10-20).
+
 - **Native confirmation dialog layout (2026-10-20, commit carrying this entry
   on `codex/launcher-dialog-layout`):** Windows uses native message boxes with a
   horizontal action row. Mac's separate windows did not inherit the launcher
