@@ -6,6 +6,18 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Clock-aligned live FPS pacing (2026-10-21):** Present CSVs now include the
+  existing host clock, aligned with Windows test input-request timestamps.
+  Strict analysis rejects missing/truncated windows. Two capture-free Scotland
+  cycles complete 60/120/144/60 with matching player endpoints and near-real-time
+  level clocks, using the same build with the water experiment on/off. Both
+  expose a return-to-original-60 stall: 35.937/39.075 ms respectively, mostly
+  outside Present. This rules out water conversion as the sole explanation;
+  shared Apply/clock handoff remains an investigation target. Experimental 144
+  also has a 37.069 ms steady-play gap, so hitch-free pacing is not established.
+  Windows Build and 29 checks pass (one Mac CoreText check unavailable).
+  [Measured windows and limits](docs/native-high-refresh-regressions.md#clock-aligned-live-fps-pacing-2026-10-21).
+
 - **Live water precision transitions (2026-10-21):** The opt-in experiment
   selects byte feedback storage at original 60 and half-float at 120/144,
   preserving contents before both source reads and destination writes. A bounded

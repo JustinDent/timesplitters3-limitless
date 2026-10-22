@@ -2960,6 +2960,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Clock-aligned presentation evidence (2026-10-21, this revision):** The
+  shared recorder serializes its existing host nanosecond timestamp without
+  changing presentation policy. Windows RHI uses QPC and the isolated runner
+  records matching input-request/observation clocks. Shared analysis rejects
+  incomplete windows and discontinuous counters; portable tests are registered
+  in runtime CI. Windows Build/checks and paired live FPS cycles pass their
+  measurement gates, but reveal 36-39 ms return-to-original-60 gaps with and
+  without experimental water. Mac clock-domain alignment and live behavior
+  remain unverified; raw GL/SDL timestamps must not be assumed to share the
+  Windows runner origin. Existing gameplay/platform support is unchanged.
+  [Evidence and unresolved pacing](docs/native-high-refresh-regressions.md#clock-aligned-live-fps-pacing-2026-10-21).
+
 - **Live water precision policy (2026-10-21, this revision):** Shared guest
   and HLE code now selects byte targets at original 60 and half-float at
   120/144, finishing queued old-mode draws before publication and converting

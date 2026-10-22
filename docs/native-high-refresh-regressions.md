@@ -5263,3 +5263,99 @@ navigation is counted as a game physics or rendering failure.
 The experiment remains disabled pending original-byte appearance and longer
 wave dynamics validation. Capture-free switch latency, representative additional
 surfaces/levels, native Mac execution and full-game goal coverage remain open.
+
+
+## Clock-aligned live FPS pacing (2026-10-21)
+
+The optional shared Present CSV now appends `clock_ns`, the already-sampled
+host timestamp. Windows RHI derives it from QPC. The isolated runner records
+`perf_counter_ns()` for each key submission/release and labeled observation,
+so input-request windows can be aligned without guessing the first-Present
+startup offset. These timestamps mark test requests, not physical input latency
+or the exact guest callback. Other hosts must establish matching clock domains;
+GL/SDL timestamps cannot be assumed to share Windows QPC's origin.
+
+`native_frame_stats.summarize_clock_window` requires data on both sides of a
+requested window, consecutive successful-present counters, increasing clocks
+and agreement between raw timestamp differences and serialized frame intervals.
+Only full intervals inside the window enter the statistics. Legacy relative-time
+summaries still work. Tests retain a known 60 ms stall at a large clock origin
+and reject truncated bounds, missing timestamps, counter gaps, backward time,
+inconsistent durations, NaNs and windows with no complete interval. The new
+statistics tests are included in the Windows/macOS runtime workflow.
+
+Windows x64/MSVC 14.44.35207/SDK 10.0.26100.0 Release Build and built-in checks
+pass. The broader recorder/host/statistics/backlog selection passes 29 tests,
+with one CoreText host-adapter check skipped on Windows. Another 66 CI-scope
+and backlog-integrity cases pass. Tested executable
+SHA-256: `0c535bd0057283ef6337f90308bb34ec6c91fd041704bb25374afc549bb3b44b`,
+base `93a805a` plus the diagnostic timestamp change. This checkpoint changes
+observation, not game timing or the default experiment state.
+
+Two sequential bounded runs use `tests/fixtures/live-fps-pacing-commands.json`
+at 1280x720, windowed and unminimized. Both start with the original 60 clock,
+apply 120 then 144 then original 60 through Video Options, and sample stationary
+Scotland gameplay for 12 seconds after each return. Complete intervals in the
+one-second-trimmed windows are analyzed. The candidate enables all four water
+experiment flags; the control disables all four. Renderer dumps and diagnostic
+texture readbacks are off in both; the candidate's actual precision-conversion
+readbacks remain part of the measured implementation. This task ran no builds or test suites
+alongside these two complete cycles; background system activity was not controlled.
+
+| Path / preset | Guest FPS | p99 ms | Worst ms | Intervals over 33.33 ms |
+| --- | ---: | ---: | ---: | ---: |
+| Candidate original 60 | 60.000 | 17.796 | 18.369 | 0 |
+| Candidate 120 | 120.006 | 9.580 | 10.301 | 0 |
+| Candidate 144 | 142.705 | 9.213 | 37.069 | 1 |
+| Candidate return 60 | 60.001 | 17.890 | 18.389 | 0 |
+| Control original 60 | 59.999 | 18.229 | 18.849 | 0 |
+| Control 120 | 119.612 | 9.662 | 27.471 | 0 |
+| Control 144 | 143.588 | 8.247 | 27.378 | 0 |
+| Control return 60 | 59.996 | 18.284 | 18.670 | 0 |
+
+The Apply windows extend from 0.5 seconds before the final Select request
+through the command's post-Apply observation (including its two-second wait).
+They include normal old/new-rate frames and are not isolated conversion timings:
+
+| Change | Candidate worst ms | Control worst ms |
+| --- | ---: | ---: |
+| 60 to 120 | 17.770 | 17.775 |
+| 120 to 144 | 13.989 | 13.539 |
+| 144 to original 60 | 35.937 | 39.075 |
+
+Each downward switch has one interval above 33.33 ms. The candidate gap ends
+38.356 ms after Select submission with only 0.130 ms inside Present; the control
+gap ends 69.323 ms after submission with 0.084 ms inside Present. Thus water
+precision conversion is not necessary to reproduce the downward-switch gap.
+The shared Apply/clock handoff warrants phase-level timing before changing it;
+these measurements do not identify its exact cause or exclude system scheduling.
+The candidate's separate steady-144 gap is 37.069 ms, followed by 32.200 and
+19.551 ms intervals, away from a precision transition. The control also has
+shorter steady-play outliers. Neither run establishes uniformly hitch-free play
+or an isolated performance cost for the water experiment.
+
+All four endpoint positions/look angles match within each run and across runs;
+health stays 35 and the player retains eight loaded rounds and 52 reserve.
+Endpoint level-time/wall-time ratios are 0.999715-0.999821. These asynchronous
+endpoints support bounded game-speed consistency, not continuous movement or
+full animation/mechanics parity. All analyzed presents are guest frames;
+there are no interpolated frames, and periodic counters report zero skipped or
+failed presents. API acceptance intervals do not measure GPU completion/scanout.
+
+The candidate records 14,601 intervals and ends after 168.381 seconds of
+commands; the control records 14,618 and ends after 168.324. Both exit cleanly,
+preserve signed profiles and the canonical Test Lab fixture, and recycle their
+disposable partition images. The earlier manually paced attempt reaches the
+20,000-row cap before return-to-60, and strict analysis correctly rejects that
+missing window. The automated replay fits the same unchanged bound; the partial
+attempt is not used as complete-cycle acceptance.
+
+Evidence: `logs/live-switch-clock-{build,tests,regressions,integrity}.log`,
+`logs/live-switch-pacing-{complete,control}-{game,summary}.log`, and
+`private/test-saves/live-switch-pacing-{complete,control}` containing provenance,
+input timestamps, reports, raw Present CSVs and `pacing-summary.json`. The private
+summary script and read-only menu probe are retained under `private/pipeline`.
+No screenshots or game assets were added. Native Mac execution, other scenes,
+full-game behavior, original water appearance and the measured pacing gaps remain
+open. The next targeted pacing check should distinguish settings application,
+original guest-clock waiting and host flip waiting during the 144-to-60 handoff.

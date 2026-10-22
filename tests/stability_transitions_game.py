@@ -317,8 +317,9 @@ def main():
                 if motion is not None:
                     state.write_text(f'0 0 {seen} {motion[0]} {motion[1]}\n')
                     time.sleep(.1)
-                hold_samples=[]
+                hold_samples=[];key_events=[]
                 for key in command.get('keys',[]):
+                    down_ns=time.perf_counter_ns()
                     state.write_text(f'{key} 1\n')
                     held_at=time.perf_counter()
                     if command.get('sample_hold'):
@@ -328,7 +329,9 @@ def main():
                                 **snapshot()))
                             time.sleep(min(.05,max(0,hold-(time.perf_counter()-held_at))))
                     else:time.sleep(hold)
-                    state.write_text('0 0\n');time.sleep(command.get('gap',.7))
+                    state.write_text('0 0\n')
+                    key_events.append(dict(key=key,down_ns=down_ns,up_ns=time.perf_counter_ns()))
+                    time.sleep(command.get('gap',.7))
                 if command.get('window')=='toggle':user.PostMessageW(window,0x104,13,1<<29)
                 if command.get('window')=='focus':
                     user.ShowWindow(window,6);time.sleep(1)
@@ -336,7 +339,8 @@ def main():
                     user.ShowWindow(window,9);user.SetForegroundWindow(window);time.sleep(1)
                     report.append(dict(focus_lost=lost,focus_restored=user.GetForegroundWindow()==window))
                 time.sleep(command.get('wait',2.5))
-                item=dict(seconds=round(time.perf_counter()-start,3),command=command,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
+                item=dict(seconds=round(time.perf_counter()-start,3),observed_ns=time.perf_counter_ns(),
+                    command=command,key_events=key_events,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
                 if hold_samples:item['hold_samples']=hold_samples
                 if 'label' in command:capture(command['label'])
                 report.append(item);(run/'report.json').write_text(json.dumps(report,indent=2))
