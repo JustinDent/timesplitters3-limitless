@@ -294,6 +294,13 @@ pitch sign, FOV/inversion/speed, authored clamps/fixed axes/full-circle wrap,
 paused/stale/focus rejection and returning to ordinary look. Runtime CI includes
 both tests. Physical turret aiming/firing and native host delivery remain
 separate gameplay checks; see #182 in STATUS and MAC-001.
+`native_mounted_mouse.c` in that same registered suite checks 60/120/144
+updates with 125/1000/8000 Hz packet streams, regular/jittered intervals and
+quarter-speed game time. It asserts integrated raw displacement and fresh
+aim on every update carrying motion, plus paused/invalid clocks, no replay,
+mode handoff and untouched player angles. Separate old-clock and old-batch
+counterfactuals must fail. It executes shared host input logic with controlled
+guest fields; it does not establish live turret rendering or physical input.
 
 ## Launcher stalled-network regression
 

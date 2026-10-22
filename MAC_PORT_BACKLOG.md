@@ -688,6 +688,16 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **Mounted native cadence (2026-10-22, `fix/native-mounted-mouse`):** Shared
+  `pc_mounted.h` now rebases consumed mouse batches and accepts advancing
+  fractional game time at native presets. Windows and SDL adapters pass their
+  native-mode selection; no new OS adapter is required. The old helper lost
+  fresh packets at 60 and discarded zero-whole-frame motion at 120/144.
+  Existing gun behavior plus cadence/pause/handoff and two negative controls
+  pass five focused Windows checks; 159 broader timing/input/context cases
+  also pass. Mac execution and a live turret test of
+  this addition remain awaiting validation; existing #182 acceptance applies.
+
 - **Alpha.2 self-test isolation (2026-10-22):** `tsfp_native_input_test`
   clears its synthetic terminal context after the fractional-time fixture,
   before the independent capture/fire case. The previous test retained terminal

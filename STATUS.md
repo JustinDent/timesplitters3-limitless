@@ -1,3 +1,22 @@
+## 2026-10-22 — Mounted-gun mouse cadence
+
+`fix/native-mounted-mouse` corrects two input losses in shared AGUN/CCTV
+mouse routing. The old direct batch clear retained an old timestamp, allowing
+new packets to expire mid-interval. A 60-update/125 Hz packet test turned
+91.2 degrees for 100 degrees of raw input. Using the shared consume/rebase
+helper restores 100. The separate whole-tick gate then reproduces only
+52 degrees and 60 aim updates at native120 with 120 motion-bearing updates.
+Native mode now tests positive finite fractional game time; the same counts
+produce 100 degrees at all three presets without scaling mouse displacement
+by elapsed time. Original mode keeps its whole-time pause gate.
+
+Five focused Windows tests pass, covering existing gun ownership/limits,
+FOV/inversion, terminal routing, normal-camera return, and the new native
+packet/cadence cases. The broader input/native-timing/context/backlog suite
+passes 159 tests in 103.37 seconds. Full build, live turret acceptance and native Mac
+execution are pending. Personal saves/settings and the normal playable binary
+remain unchanged at this source-validation checkpoint. See MAC-001.
+
 ## 2026-10-22 — Pending PR integration
 
 The integration branch combines PRs #290, #294, #296–#301 on main after #295.
