@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "loaderSha256": "02a0a8f8dffbe193afcf75c890a2c9466f60d9f5bdb7ddf577bad07fcb1dcfb2",
+  "loaderSha256": "330cec2668ca1abce2c50cf36a33d89aea7571a27d8e90cf89e29b5e3c0a22ed",
   "patches": [
     {
       "name": "dsound-audio-timing.patch",
@@ -1172,6 +1172,13 @@
         "src/hle/hle_d3d8_state.c",
         "src/replay/d3d8_replay.c",
         "tests/d3d8_capture/test_main.c"
+      ]
+    },
+    {
+      "name": "zzzz-native-surface-coefficients.patch",
+      "sha256": "de69708dfa59fa6a5fadd955c2645ee2480459c11c3da9bc0b38368f2a87d643",
+      "targets": [
+        "src/hle/hle_d3d8_state.c\r"
       ]
     },
     {

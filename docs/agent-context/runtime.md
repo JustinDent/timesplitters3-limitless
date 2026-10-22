@@ -163,3 +163,10 @@ remaining native update/surface patches. Original 60 remains the default;
 and HLE skips the original flip gate while native timing is active. Keep both
 `test_frame_clock.py` (real Arm body) and `test_native_timing.py`; neither alone
 validates the combined stack. Water precision experiments remain off by default.
+
+`*-native-surface-coefficients.patch` follows `*-native-surface-constants.patch`
+in the explicit loader tail. It extends the existing HLE water float-constant
+scope with copied original parameters and precise coefficients at bank 0 stages
+3/5/7; bank 1 stage 6 still supplies centering. The generic deferred/capture/replay
+payload format is unchanged. Scope clears, parameter refresh at equal timestep,
+invalid input and duplicate suppression are tested from the production functions.
