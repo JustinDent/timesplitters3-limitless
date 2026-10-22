@@ -17934,3 +17934,50 @@ Advances the shared launcher and assembly versions for the original character
 icon migration from PR #289. Both platform packages are published only after
 the release workflow passes; the game update follows launcher publication.
 The game remains v0.3.1-alpha.2. No gameplay validation is claimed by this bump.
+
+## Issue #222 — Online guest bot movement (2026-10-22)
+
+Implemented locally, uncommitted against `31052eb1a740d89541f26358a5a809ebdc6975c1`.
+The host sends bot snapshots every three match ticks; the old guest applied
+positions only on fresh packets and froze replica animation between them.
+The shared `pc_network_bot_motion.h` now retargets guest presentation over
+50 ms each frame. Host AI, human replication, packet cadence, scores, vitals,
+shots and death/spawn authority retain their existing paths. Animation uses
+only verified frame-time scalars within matching clip/cycle identities;
+crossfade controls remain atomic. An initial draft mixed those controls and
+crashed; it was rejected and corrected before final acceptance.
+
+Windows 11 build 26300 / AMD64, MSVC 14.42.34433, SDK 10.0.22621.0,
+SDL 3.4.16, D3D11, Original 60 FPS, Classic textures, 640x480:
+
+- Supported baseline and final `tsfp.ps1 -Action Build -SkipTextures` passed,
+  including native checks, complete patch verification and executable sealing.
+- Actual production Online directory/browser/bridge over loopback, two isolated
+  Test Lab profiles, two humans and six bots. Baseline completed 173.5 seconds
+  (69 seconds of sampled gameplay); final completed 248.7 seconds (144 seconds
+  of sampled gameplay). Both peers remained in active state 15 at completion.
+- All six guest bots changed position at median intervals **51.125–51.143 ms
+  before**, **17.041–17.043 ms after**; host controls remained about 17 ms.
+  Final host and guest observed the same 6/6/4/4/5/8 distinct bot spawn IDs.
+  Every bot showed multiple health values; both human slots continued moving
+  on both peers. These asynchronous memory observations establish update
+  cadence, not scanout, speed parity or Internet latency.
+- Final run produced no crash dumps. Reviewed test-window captures show actual
+  gameplay; stills do not establish continuous bot-mesh animation. All
+  disposable partition images and run locks were cleaned.
+- 37 affected Online/network tests passed; final guest-hook/helper and both
+  rejecting mutations passed (6 cases), as did 88 context/CI/backlog checks.
+  Plain context/index and whitespace checks pass. Base-revision context
+  ownership reports the pre-existing launcher lockfile edit, preserved here.
+
+Baseline executable SHA-256:
+`f1dd31301ae8c873bf150ff8f22556b8eb68092cbd150e6e6f874713de825fa2`.
+Final executable SHA-256:
+`7e58ec7253057be74d1aa7e3d7f563154e40f6f6ffd2f1c13d0e8da5d922f2e4`.
+Final multiplayer identity:
+`0200ac69c9f0e288ed756f1aadc6a6458396b5eca83809178f6977e5c8fd9906`.
+Exact commands, evidence paths and limits are in `BENCHMARK_REPORT.md`.
+Mac execution, mixed peers, Internet/NAT, induced packet loss and all-map/mode
+acceptance remain untested. MAC-052 retains the missing native network adapter;
+the shared helper and native fallback are covered by portable C fixtures.
+No commit, publication, personal-save/settings write or competitor inspection.
