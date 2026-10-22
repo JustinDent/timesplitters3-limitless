@@ -1176,6 +1176,21 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- PR #289 upgrade follow-up: shared `Core.InstallPending` now consumes packaged
+  retired-icon hashes and transactionally removes only unchanged bundled pairs.
+  Custom pairs survive; recovery/rollback restore removals. Both package builders
+  receive the policy from `build_textures.ensure_pack`; no OS adapter was added.
+  Windows launcher and packaging checks pass; native Mac shared fixtures run
+  in PR CI. Mac scene acceptance remains **Awaiting validation**. Deployment
+  needs a launcher and game release carrying these changes.
+
+- 2026-10-22 character icon removal (commit carrying this entry): 159 replacements retired;
+  164 known selection/profile icon keys intentionally use original assets.
+  Shared pack now has 2,046 entries; character model materials are unchanged.
+  No runtime or host adapter change is required. Windows offline hashes, pack
+  audit and planner regression checks pass; actual Mac menu/GPU behavior remains
+  **Awaiting validation**. See STATUS.md; no gameplay run.
+
 - 2026-10-21 #74 repository texture update (commit carrying this entry):
   700 new keys, 2,205 total, using the same audited DDS/JSON for both hosts.
   The shared LFS exporter now reads DDS stdin without a stale pointer-file size

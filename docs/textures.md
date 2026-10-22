@@ -2,12 +2,12 @@
 
 [Back to the README](../README.md)
 
-This branch contains **2,205 replacements**, about **1.77 GiB installed**, covering
-approximately 32% of the 6,812 known supported keys. The menu progress and
+This branch contains **2,046 replacements**, about **1.72 GiB installed**, covering
+approximately 30% of the 6,812 known supported keys. The menu progress and
 remaining gaps are recorded in [Menu texture overhaul](main-menu-textures.md).
 These additions enter game downloads after integration and a normal game release. Major surfaces use up to 4K; smaller
 assets use appropriate sizes. Metadata records resampling. Original game files,
-source artwork and private prompts are excluded. This is a partial overhaul.
+source artwork and private prompts are excluded. This is a partial overhaul. Character selection/profile icons retain their original artwork; character model materials remain in scope.
 
 ## Install through the launcher
 
@@ -16,7 +16,9 @@ include the pack in `Textures/`; no separate texture release is required.
 Launcher 1.2.22 or newer supports these game packages. The launcher bootstrap
 stays small. In game, select **Display settings → Textures → Enhanced**.
 Classic remains available. Game updates seed missing texture pairs and preserve
-existing replacements, saves and settings. To replace existing custom pairs,
+existing custom replacements, saves and settings. A launcher with the retirement
+migration removes explicitly retired bundled icon pairs only when their hashes
+match; older published launchers require an update to perform this migration. To replace existing custom pairs,
 use **Install pack ZIP** or **Install pack folder**, with the game closed.
 The old download button explains that textures now come with game updates.
 

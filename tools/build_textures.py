@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +33,20 @@ def ensure_pack(root=ROOT, pack=None):
     records, size = RELEASE.audit(pack)
     identity = {'source': 'repository' if pack == Path(root)/'assets/textures' else 'local',
                 'texture_count': len(records), 'installed_bytes': size}
+    policy_path = Path(root)/'config/texture-originals.json'
+    if policy_path.exists():
+        policy = json.loads(policy_path.read_text(encoding='utf-8'))
+        retained = set(policy['keys'])
+        if retained.intersection(path.stem for path, _, _ in records):
+            raise ValueError('Retained-original texture has a replacement')
+        retired = policy.get('retired', {})
+        for key, pair in retired.items():
+            if (key not in retained or not re.fullmatch(r'[0-9a-f]{16}', key)
+                    or set(pair) != {'dds', 'json'}
+                    or any(not isinstance(sha, str) or not re.fullmatch(r'[0-9a-f]{64}', sha)
+                           for sha in pair.values())):
+                raise ValueError('Invalid retired texture identity')
+        identity['retired'] = retired
     return pack, records, identity
 
 
