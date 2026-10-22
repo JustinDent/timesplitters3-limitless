@@ -1,3 +1,25 @@
+## Mounted and CCTV gun mouse aim (#182) — 2026-10-21
+
+Fix on `182-bug-you-cant-control-external-big-guns-with-your-mouse`,
+based on main `141f440`. Windows x64 / MSVC Release / common Xbox graphics
+frontend, supported US executable SHA256 verified before generation. The live
+Breaking and Entering capture confirmed player mode `0x80` with an owned AGUN:
+mouse movement changed ordinary player angles while the gun retained its aim.
+The shared host helper now routes those deltas to the gun's separate pitch/yaw
+and authored limits. Terminal pointers, firing and controller code are unchanged.
+
+Windows mounted/terminal C fixtures and Auto Lookahead/backlog regressions
+passed (4 pytest tests), and the
+full patch loader, Release build and built-in build checks passed. Test executable
+SHA256: `696a8faeeb8b083973c0b9cbcfffa5b37af8d4e0b4a85bbae858e2870d7657279`.
+The user confirmed the corrected Breaking and Entering CCTV turret works in
+the isolated unlocked Test Lab build after being asked to check both aim axes,
+firing and normal look on exit. Read-only telemetry independently recorded
+changing gun pitch/yaw while the hidden player angles remained unchanged.
+Native Mac build/runtime validation and other mounted encounters remain
+unverified; see MAC-001. Separate vehicle-seat mode `0x8000`
+is outside this measured AGUN correction.
+
 ## Launcher v1.2.23 release preparation - 2026-10-21
 
 Source `d35e1df9ab920e176ba0ca87d4e922a4ad3fe55a`, based on main
