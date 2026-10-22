@@ -120,3 +120,7 @@ The 2026-10-22 root texture policy retains original character selection/profile
 icons via `config/texture-originals.json`. Consult the systems/build-test guides
 for the planner exclusion and checks; character model materials remain in scope.
 Historical artwork acceptance does not override the current user preference.
+
+The loader-order contract now checks that full-float surface preservation
+follows live-surface support. Check prerequisite relationships explicitly when
+adding a dependent patch; unrelated integration patches may follow it.
