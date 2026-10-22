@@ -25,6 +25,13 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+Native `--input-self-test` must reset the synthetic terminal context between
+its fractional-time test and mouse-capture/fire test. The stale context caused
+a false failure during alpha.2 validation; clearing it within the self-test
+passes the actual Mac input, renderer, settings/debug checks and CTests with
+isolated configurations. Use a real local build/test root for partition cleanup;
+a runtime-root whose build directory redirects elsewhere is rejected.
+
 Hosted-only contributors need no local model, Ollama service or installed router.
 The context/maintenance checker uses Python and Git. The optional broker's Node
 contract tests run in CI with disposable/mocked fixtures; they invoke no hosted

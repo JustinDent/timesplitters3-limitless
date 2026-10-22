@@ -688,6 +688,14 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **Alpha.2 self-test isolation (2026-10-22):** `tsfp_native_input_test`
+  clears its synthetic terminal context after the fractional-time fixture,
+  before the independent capture/fire case. The previous test retained terminal
+  suppression after freeing its mock guest. The candidate reset passed the
+  actual native renderer, input, Cocoa settings/debug checks and three CTests
+  on the Apple M4/macOS 27 host with isolated settings. Gameplay code is unchanged;
+  final clean release validation follows after integration.
+
 - **Issue #182 follow-up (2026-10-21, this change):** Shared
   `src/pc_mounted.h` routes mounted/CCTV AGUN aiming to the gun angles instead
   of hidden player angles. Both host adapters call it; no additional native

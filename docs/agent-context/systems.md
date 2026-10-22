@@ -56,6 +56,12 @@ native Mac visual validation remains pending under MAC-036.
 
 ## State and data boundaries
 
+The native SDL input self-test ends its synthetic terminal context before
+testing independent mouse capture/fire behavior. The fractional-terminal case
+otherwise leaves `camera_input.terminal_active` set after its mock guest is freed,
+suppressing the next case's Fire button. This is test isolation inside
+`tsfp_native_input_test`; ordinary frame/input behavior is unchanged.
+
 `config/*.default.*` is tracked default configuration; `config/pc-controls.json`
 and `config/pc-display.ini` are personal. `private/game` is the single extracted
 game-data copy; `private/saves` is personal; `private/test-fixtures/unlocked` is
