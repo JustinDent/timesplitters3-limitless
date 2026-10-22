@@ -254,3 +254,14 @@ with the expected exception, cancel its request, and leave that response pending
 A ten-second deadlock guard bounds failures; the test no longer races a 500 ms
 fake response against a 350 ms runner-speed assertion. Both launcher host builds
 run this shared fixture; production timeout and cancellation policy is unchanged.
+
+## Exporting updates from a pointer-only art checkout
+
+`tools/texture-repository.py --pointers-only` audits the private pack, stores DDS
+objects through Git LFS and writes sanitized metadata plus small pointers. Its
+clean command reads stdin without a destination filename: an existing pointer
+filename can supply the wrong size and truncate the streamed DDS. Exact pointer
+hash/size comparison remains mandatory. `tests/test_build_textures.py` covers
+first export and updating an existing pointer with a DDS larger than 1 KiB.
+Use `tests/test_texture_release.py` for format/hash/privacy and package limits.
+No game launch is required for this export-only change.

@@ -1,3 +1,30 @@
+## Issue #74 accepted texture upload (2026-10-21)
+
+The commit carrying this entry adds 700 accepted texture keys to the repository
+pack, for 2,205 total. All 1,505 previous DDS hashes match main. Public pack
+size is 1,899,313,431 bytes (1.77 GiB), below the 6 GiB cap; private production
+metadata accounts for the slightly larger historical art-workspace pack size.
+Compiled DDS uses Git LFS and sidecars contain only allowlisted metadata.
+The art checkout retains pointers, with objects in the shared LFS store, so
+there is no second hydrated pack, ZIP or game-data copy.
+
+Export exposed a repeat-update bug: passing an existing pointer filename to
+`git lfs clean` caused it to use the small pointer size while reading the DDS
+stream. The exporter now omits that filename and still requires an exact
+SHA-256/size match. The regression reproduced the failure before the fix.
+Windows x64 / Git LFS 3.7.1: 22 texture/build/planner/backlog tests and 21
+subtests pass. Repository context validation passes against the integrated main.
+The shared exporter has no OS-specific policy; a native Mac run is unverified.
+All 2,205 LFS object hashes/sizes, exact pointers and sanitized sidecars pass
+verification against the audited production pack. Checkout pointers/metadata
+total 796,941 bytes; all nine blocked menu keys remain absent.
+
+Menu coverage remains 733/750, with eight intentional functional originals
+and nine unresolved replacements. See `docs/main-menu-textures.md` for source
+fidelity and detailed limits. No game launch or scene acceptance was performed.
+This is a branch update, not a main merge or game-version release; bundled
+launcher delivery follows integration and the normal release workflow.
+
 ## Mounted and CCTV gun mouse aim (#182) — 2026-10-21
 
 Fix on `182-bug-you-cant-control-external-big-guns-with-your-mouse`,
@@ -233,6 +260,97 @@ Local launcher tests reach the new large-manifest test but stop at
 the running-game guard for another checkout; host CI supplies the full tests.
 
 # Measured progress
+
+## Expanded menu icons and portrait production (2026-10-21)
+
+Included with the issue #74 texture upload. The conservative six-archive frontend census
+contains 750 unique keys: 733 have offline replacements, eight functional
+primitives/masks remain intentionally original, and 9 need artwork or
+specific review. Archive membership includes shared 3D/effect assets and does
+not establish which menu draws each key. This is not a completed menu overhaul.
+
+The wireframe now uses its exact original 512-square pixels encoded as RGBA8
+with full mips, avoiding the rejected drafts' geometry changes. This preserves
+source detail and is not a high-resolution redraw. 9 menu assets remain
+blocked by image-generation safety rejections; originals remain in use and
+are not counted as completed replacements. See menu-generation-blockers.json.
+
+All 25 original focus keys now have replacements. This continuation added 13
+remaining schematic layers, 208 functional UI replacements and a further 140
+utility graphics plus 60 effect/glow layers through exact source RGB/alpha
+resampling. This preserves
+labels, branding, masks and layout but does not create new native detail.
+158 newly detailed character portraits passed visual/mask review and
+were compiled at 256 square from actual 1254-square built-in imagegen sources.
+63 generated map/scene images are accepted (29 at 512 square, 34 at 1024 square).
+Another 20 decorative/material images passed offline review, preserving
+original aspect ratios; final UV alignment on models remains to be checked.
+Another 26 menu thumbnails recover genuine 512-square original game
+artwork matching their 128-square cards, with exact source RGB and original UI
+alpha. These are native source-detail recoveries, not generated reinterpretations.
+Held drafts remain out of the pack. The separate chr.pak census covers 392
+keys, with 72 current replacements; portrait-to-model associations remain
+unproven and no model-completion claim is made.
+
+Windows native DDS checks, lossless pixel/alpha comparisons, mip/aspect/hash
+checks and full Python pack audit pass. Active pack: 2,205
+entries, 1,900,180,156 bytes (1.77 GiB of 6 GiB).
+Texture-workspace allocation including source art: 9,057,524,448
+bytes; temporary files: 266,089,008 bytes, leaving
+2,346,448 bytes below 256 MiB at this audit. One pack and
+one rotating contact sheet remain. Verified recoverable references created
+in this menu pass and five byte-reproducible old repetition sheets were removed;
+primary comparisons remain. Previously denied cleanup files were untouched.
+
+Private batch receipts, prompts and key-level gaps are recorded under
+private/texture-remaster/menu-*.json. See docs/main-menu-textures.md.
+Compiled DDS and sanitized metadata are included in this branch through Git LFS.
+Source art remains private. No game launch, runtime/adapter change or game release.
+Windows/Mac scene appearance and residency remain unverified; MAC-011 awaits validation.
+
+## Corrected menu background and higher-fidelity logo/font pack (2026-10-21)
+
+Continued on #74, incorporating the user's updated request to improve the logo
+and fonts. Four new RGBA8 DDS replacements are in the local production pack:
+1024-square blue reflection, 2048x1024 logo and two 1024-square font atlases.
+The corrected background is 2.48% darker than the original by mean luminance,
+instead of the first draft's 13.96% brighter. Generated logo shading uses the
+verified original alpha, preserving the branded silhouette and subtitle.
+
+Rejected generated font glyphs; accepted fonts are faithful compiler resamples
+of the original masks, not newly authored high-resolution typefaces. No native
+4K claim. No game launch or subjective scene-quality claim. See
+docs/main-menu-textures.md and private main-menu-validation.json / prompts.
+
+Windows native DDS parser accepts all four mipmapped files. Python checks cover
+all 1,509 replacements; new font pixels exactly match the expected lossless
+resampling and the logo alpha exactly matches its original-mask resampling.
+All previous 3,010 DDS/metadata files retain their SHA-256 hashes. Current queue:
+1,509 installed, 5,134 need art, 169 held. Seventeen menu schematic candidates
+remain original pending specialist review and exact draw association.
+
+Pack 1,193,205,058 bytes, below 6 GiB; increase 27,964,748 bytes including metadata.
+Measured texture-workspace allocation 7,545,313,726 bytes before final small report
+writes; temporary outputs 267,924,926 bytes, leaving 510,530 bytes below 256 MiB.
+No game extracts, ZIPs, build copies, release or GitHub upload. No runtime or
+platform adapter changes; MAC-011 remains Awaiting validation on both hosts.
+
+## Main-menu texture focus and first held draft (2026-10-21)
+
+Focused issue #74 on the logo, two font atlases, blue curved-room reflection
+and 17 candidate technical overlays. Reused existing menu-fidelity captures/logs
+and verified catalog sources; no game launch. Archive membership is not per-draw
+confirmation. See docs/main-menu-textures.md and private main-menu-focus.json.
+
+One generated opaque 1254-square background source is held for lighting/layout
+correction: mean luminance is approximately 13.96% above the original and seams
+are more pronounced. It is not native 4K, compiled, installed or published.
+Worklist and hybrid planner refreshed: 1,505 installed, 5,137 need art, 170 held;
+all 6,812 known keys retain their classification. The active pack is unchanged
+at 1,165,240,310 bytes. Temporary outputs total 267,656,205 bytes, below 256 MiB
+with 779,251 bytes headroom. Measured texture-workspace allocation including
+authoritative art is 7,513,997,324 bytes before this small documentation update.
+No runtime/host changes or gameplay checks; MAC-011 remains Awaiting validation.
 
 ## Ghost Gun living-character alignment (issue #181, 2026-10-20)
 
@@ -517,6 +635,2876 @@ instructions and buttons. Exact-revision Windows/macOS CI remains pending.
 Real Gatekeeper-translocated browser launch and the user's
 installed release remain unverified; synthetic routing/read-only tests do not
 certify those paths. No game rebuild, personal data changes or release publication.
+
+## Texture build dependency and bundled game ZIPs (2026-10-20)
+
+Local #74 source now prepares a shared audited texture pack during Windows and
+native Mac game builds. tools/build_textures.py reuses a valid existing pack,
+otherwise downloads the version pinned by config/texture-pack.json. Existing
+nonempty invalid packs are preserved and rejected. Downloads verify part sizes,
+SHA-256, flat keyed members, expansion budgets and the complete DDS/metadata audit.
+One compressed part is held in RAM; no retained ZIP or full staging copy. Failed
+attempts clean only exclusively created files; interrupted-process locks require
+inspection. Explicit lightweight builds may skip preparation.
+
+Reused the manifest, texture-release publisher/audit and tests from origin/main
+a0deeea without merging other work. Authenticated verification found no release
+tag textures-v0.1.0-alpha.1; the release listing also contained no texture assets.
+Fresh-clone download is therefore NOT validated/available. A reviewed texture
+release and matching committed manifest are still required before distribution.
+No push, release publication, game build or gameplay test was performed.
+
+tools/package-release.py includes compiled textures by default, streams them
+directly into Textures/ in the game ZIP, strips private provenance and records
+hashes plus pack identity in BUILD.json. Publication checks validate these ZIP
+members without requiring duplicate stage files. The shared C# installer accepts
+only flat keyed DDS/JSON, enforces payload limits, installs missing pairs and
+preserves existing texture pairs/settings. Game repair/pruning treats installed
+textures as separately managed. Staged texture cleanup permits only bounded
+flat keyed payloads. The standalone launcher bootstrap remains small.
+
+Windows local validation at parent 3e2043f plus these source changes:
+183 Python tests pass, one platform-dependent test skips, 20 subtests pass.
+Synthetic download/checksum/archive/path/rollback/offline/packaging checks,
+native-launch routing/preflight, publisher and shared launcher contracts pass.
+Windows .NET launcher build and all requested regression groups pass, including
+bundled texture installation, preserving a preexisting DDS without writing
+mismatched metadata, staging cleanup, shared UI, updates, settings, maintenance,
+downloads, startup, versions, news, crash and session tests. Initial validation
+output path was too long for an existing session fixture; moved the same small
+output folder to build/texture-launcher-check and the complete suite passed.
+PowerShell parser and git diff whitespace checks pass. Native Mac execution,
+packaged delivery and real renderer appearance remain unverified (MAC-011).
+
+Read-only local pack reuse audited all 1,505 DDS replacements: sanitized
+distribution size 1,164,919,237 bytes. Actual active pack remains 1,165,240,310
+bytes including private metadata, within 6 GiB. No artwork/DDS duplicates,
+new game extracts or texture downloads created; batch255 storage snapshot above
+remains the last measured texture-workspace allocation. Source/test output is
+separate and small; one launcher validation output folder and log retained.
+
+## Texture artwork batch 255: seven metal surfaces installed (2026-10-20)
+
+Accepted b49c9a4ff8354384, c531d44117342a0f, c6c2e5dc20bfd6eb,
+c8e51305db918620, cec3c2b7b4e521f2, d1f0bb9c0a7b25f2 and
+d69c4b462fd4a5e2 after six RAM comparisons including an enlarged vent-bar
+check. Held c20503e49bb7eec0: darker/patchier material (-14.07% luminance)
+and emphasized right rivet column. Nonuniform-alpha b2ba2e001048f470 remains
+queued for specialist work. Eight generated sources (six 1774x887, two 1254x1254)
+total 26,339,360 bytes; selected outputs downsampled with LANCZOS, without
+crop/color/alpha edits. These are not native 4K images.
+
+Seven new Windows DDS parser checks and fresh Python audit of all 1,505
+installed replacements pass; previous 1,498 DDS hashes and checker unchanged.
+Counts: 5,138 need art, 1,505 installed, 169 held, 6,812 classified known keys.
+Classification does not establish full category/use validation or scene coverage.
+
+Six review rasters replay exactly before and after retiring eight new original
+reference exports (341,426 bytes) with byte-exact archive PNG/RGBA reconstruction
+and guarded path/hash checks. RAM review avoided 1,726,642 raster bytes on disk.
+No previously denied cleanup retried; authoritative art/game and settings retained.
+
+Pack 1,165,240,310 bytes (+2,625,468), below 6144 MiB. Temporary snapshot
+267,500,128 bytes, below 256 MiB with 935,328 bytes headroom. Windows filesystem
+allocation: 10,622 files, logical/allocated 7,512,240,528 bytes, no errors;
+free disk 83,742,937,088 bytes. Includes source art; excludes Codex default
+outputs outside the project and subsequent small metadata writes. One pack,
+512 MiB residency unchanged. Private review/hybrid-255 evidence retains selection,
+generation, decisions, memory-review, native-audit, acceptance, retirement and
+physical-storage-final records. No gameplay/build/publication; near-completion
+gate remains unmet. MAC-011 stays Awaiting validation for Mac GPU and scenes.
+
+## Texture artwork batch 254: five metal surfaces installed, storage recovered (2026-10-20)
+
+Continued eight classified opaque metal-family candidates on the local #74 branch.
+Archive payload/RGBA and supported XBE hashes verified. New reference export budget
+initially refused 590,256 bytes before writing any images. Recovered headroom first:
+35 older JSON review files compacted by removing formatting whitespace only, with
+strict duplicate-key checks, semantic equality and exact raw-byte gzip recovery.
+Gross savings 321,564 bytes; recovery 132,533 bytes; net after recovery/receipt
+176,903 bytes. Recovery and all 35 current/old hashes independently reverified.
+Historical raw-byte hashes remain recoverable from the retained format backup.
+
+Two older original PNG caches (5f08f18ab6339528 and 209d979993479fa6) were absent
+from all 148 prior retirement manifests. Byte-exact archive PNG/RGBA reconstruction
+verified before guarded deletion and again afterward; recovered 713,549 bytes.
+Authoritative game, source art, pack and all prior denied cleanup targets preserved.
+Export preparation then passed: eight new original references, 590,256 bytes.
+Built-in image generation produced six 1254x1254 and two 1774x887 sources,
+27,632,521 bytes total, retained privately with prompts and source dimensions.
+
+Accepted a2205159d30e89ec mustard-olive material, a30a50e9dedb3d2b blue-gray
+corroded plate, a91a08dbd8f99a35 pale worn plates, ad69f34628c7cfdd olive-green
+riveted plate and b1c7d2ef1200aac5 twelve metal slats. Outputs: four 1024x1024
+and one 1024x512 DXT1 with mips, LANCZOS downsampled without crop/color/alpha edits;
+not native 4K art. Held a5c6cc8668ec5cda brown riveted plate (-17.06% luminance),
+ab74cc32d20a56f0 lattice (+33.13%, four fasteners per side changed to three and
+repeat/rail geometry changed), and ae87e0251c3ef6bf four-hole panel (-16.33%,
+reflection width changed). Held drafts keep original fallback and remain incomplete.
+
+Five full/repeat/original-grid comparisons inspected in RAM; 2,264,625 raster bytes
+not written. Fastener layout, seams, stain zones and slat rhythm checked offline.
+Eight new reference exports retired after byte-exact reconstruction and exact
+path/hash/size checks; recovered 590,256 bytes. All five review rasters/metadata
+replay exactly after retirement. No denied cleanup retried or game/source art removed.
+
+Five new Windows native DDS parser checks pass; previous 1,493 DDS hashes and checker
+identity unchanged against batch 253. Fresh full Python format/metadata/dimensions,
+aspect/mip/hash audit passes all 1,498 installed files. Counts: 5,146 need art,
+1,498 installed, 168 held; known 6,812 keys classified. Category/use validation,
+embedded/procedural coverage and scene appearance remain unfinished. No gameplay,
+builds, adapters or publication; MAC-011 remains Awaiting validation. Mac GPU,
+mapped materials, display modes and residency are not proven by offline audits.
+
+Pack 1,162,614,842 bytes (+3,148,598), below 6144 MiB. Temporary snapshot
+267,413,737 bytes, below 256 MiB with 1,021,719 bytes headroom. Windows filesystem
+allocation: 10,568 texture-workspace files, no errors; logical/allocated snapshot
+7,483,158,764 bytes, free disk 83,719,757,824 bytes. Includes source art; excludes
+Codex default outputs outside project, and small later metadata writes. One active
+pack and 512 MiB residency unchanged. Near-completion playtesting gate remains unmet.
+
+Private evidence uses review/hybrid-254 prefix: selection, prompts, generation,
+memory-review, decisions, native-audit, acceptance, physical-storage-final,
+json-compaction/recovery, cache-retirement, storage-recovery-verify and
+original-export-retirement records/scripts. Previous goal turn was progress:
+batch253 installed four materials, held four, audited 1,493 and committed 53ab7e8.
+
+## Texture artwork batch 253: four metal replacements, four correction holds (2026-10-20)
+
+Eight classified opaque metal candidates verified against archive payload/RGBA
+hashes and supported XBE. Eight new original PNG references budgeted before writing
+(194,487 bytes). Built-in image generation produced seven 1774x887 and one
+1254x1254 source, 26,512,411 bytes total. Source art and exact prompts retained
+privately. No native 4K claim: accepted outputs are three 1024x512 and one 512x256
+DXT1 with complete mips, LANCZOS downsampled without crop/color/alpha edits.
+
+Accepted f4218960905a3451 rounded riveted rail, f80e3803d392e30f olive/yellow plate,
+fad68b0c00b766f6 four-row bronze trim and 52b6cbac48204e25 beveled metal panel.
+Five full/repeat/original-grid sheets inspected in RAM, avoiding 1,378,639 bytes
+of raster output. Rivet rows, stripe height, seams and bevel arrangement reviewed;
+actual mapped adjacency, lighting and channel use remain pending. Held
+c76ad5d1c016f309 for dark/narrow reflection (-17.34% mean luminance),
+d960e620c5018345 for sharpened side reflections (+12.11%), 4c7e3f8ccc6c781a for
+changed divider/center-mark geometry, and 9ef4f11f8d40d17a for darkened broad
+reflection (-13.93%). Holds retain original fallback and do not count as complete.
+
+Retired only the eight new original exports after byte-exact PNG reconstruction,
+resolved-path/hash/size checks and exclusion of all previously denied cleanup keys.
+Recovered 194,487 bytes. All five review rasters and metadata replay exactly from
+the unchanged game archives after retirement. Source art, saves/settings and old
+cached exports preserved. No prior denied cleanup retried.
+
+Four new Windows native DDS parser checks pass. Prior 1,489 DDS hashes and checker
+identity unchanged against batch 252. Fresh full Python format/metadata/dimensions,
+aspect/mip/hash audit passes all 1,493 installed replacements. Counts: 5,154 need
+art, 1,493 installed, 165 held. Known 6,812 keys classified; classification is not
+artwork completion, category/use validation or proof of embedded/procedural coverage.
+No gameplay, builds, runtime adapters or publication. MAC-011 Awaiting validation;
+Mac GPU, scene appearance, display-mode matrix and residency remain unverified.
+
+Pack 1,159,466,244 bytes (+1,138,262), below 6144 MiB. Temporary snapshot
+268,188,079 bytes, below 256 MiB with 247,377 bytes headroom. Windows filesystem
+allocation query: 10,515 texture-workspace files, no errors, logical/allocated
+7,453,121,293 bytes, free disk 83,943,612,416 bytes. Snapshot includes source art,
+excludes Codex default outputs outside project; small metadata writes follow it.
+One active pack and 512 MiB residency unchanged; consolidated playtest gate unmet.
+
+Private evidence uses review/hybrid-253 prefix: selection.json, prompts.json,
+generation receipts, memory-review.json, decisions.json, original-export-retirement.json,
+native-audit.json, acceptance.json and physical-storage-final.json. Previous user-answer
+turn was no progress; batch252 evidence was revalidated and documented in local
+commit e1107c1 before production continued. This batch remains local on #74.
+
+## Texture artwork batch 252: eight metal materials installed (2026-10-20)
+
+Eight opaque metal-family originals verified against archive payload/RGBA hashes;
+supported XBE hash checked. Source exports were budgeted in RAM before writing:
+273,500 bytes for eight references. Built-in image generation produced six
+1774x887 and two 1254x1254 sources, totaling 26,247,556 bytes. Accepted all eight:
+vented panel c81fac9e2e89cc77, bright silver atlas c882d82599912c2c, reflected-band
+metal cccd83e8b32c4002, overlapping riveted plates d130645fd140648d, brushed wall
+def31bea48081ae0, small eight-fastener plate 260a09b5bb628196, curved dark rail
+33e2085599464bf9 and diamond tread 42b9128594e7e1be. No new correction holds.
+
+Outputs: four 1024x512, one 1024x1024, one 256x256 and two 512x256 DXT1 files
+with mip chains, LANCZOS downsampled from generated sources; not native 4K art.
+Six full/repeat/original-grid/vent-focus RAM sheets inspected and replayed exactly;
+1,753,685 raster bytes were not written. Enlarged grille comparison verifies nine
+vent sections and primary bar spacing. Layout, hardware and tread checks are
+offline evidence; mapped seams, light/channel use and scene sampling remain pending.
+
+Retired only the eight new batch252 original exports after byte-exact PNG
+reconstruction from unchanged archives and resolved-path/hash/size checks.
+Recovered 273,500 bytes; source art, game, pack and older cached exports preserved.
+Six review rasters and all metadata reproduce exactly after retirement. No prior
+denied cleanup retried. Private receipt retains source hashes and decoder version.
+
+Eight new Windows native DDS parser checks pass. Checker identity and prior 1,481
+DDS hashes match batch 251 evidence; fresh full Python format/metadata/dimensions,
+aspect/mip/hash audit passes all 1,489 installed replacements. Counts: 5,162 needing
+art, 1,489 installed, 161 held. All 6,812 known keys remain classified; category/use
+validation and embedded/procedural discovery are unfinished. No runtime/build
+changes or gameplay. MAC-011 remains Awaiting validation; Mac GPU, mapped scenes,
+display modes, material lighting and residency are not proven by offline checks.
+
+Pack: 1,158,327,982 bytes (+2,320,204), below 6144 MiB. Temporary snapshot:
+268,099,093 bytes, below 256 MiB with 336,363 bytes headroom. Windows filesystem
+allocation query: 10,468 texture-workspace files, no errors; logical/allocated
+snapshot 7,425,349,768 bytes including source art, free disk 84,121,800,704 bytes.
+Codex default generation outputs outside the project are excluded; metadata writes
+follow the snapshot. One active pack, 512 MiB residency and personal data retained.
+No duplicate extracts, staging or publication; near-completion playtest gate unmet.
+
+Private evidence: review/hybrid-252-selection.json, prompts.json, generation
+receipts, memory-review.json, vent-focus.py, decisions.json, retirement receipt,
+native-audit.json, acceptance.json and physical-storage-final.json (all filenames
+share hybrid-252 prefix). Previous goal turn was progress (batch 251). Local #74
+branch work only.
+
+## Texture artwork batch 251: seven grouped metal materials (2026-10-20)
+
+Selected eight metal-family batch candidates after visual and opaque-alpha review.
+Archive payload/RGBA hashes and supported XBE verified. Eight new PNG references
+were budgeted in memory before export: 325,816 bytes total. Built-in image
+generation produced five 1774x887 and three 1254x1254 sources, totaling
+25,502,147 bytes. Accepted red rails 78610aee6ab5906b, pale cyan worn metal
+865b0120c15e9b42, olive 2x2 panels bc69b7e32544130b, paired blue-gray doors
+c43f2b5e3888637d, brown-gray corrosion strip c543efa03dcd6e7c, blue inset
+c6bdc81e3930de50 and paired riveted plates c7f8589a74542caa. Held brown seam
+85f49e3b52a55b3b for -15.58% brightness and excessive orange/black contrast.
+
+Installed DXT1 outputs have mip chains: three 512x256 strips, one 1024x512 grid
+and three 1024x1024 panels. All LANCZOS downsampled from recorded generated sizes;
+no native-4K claim. Five full/repeat/original-grid RAM comparisons inspected and
+replayed exactly; 1,550,307 raster bytes were not written. Actual mapped seams,
+light/channel use, material lighting and scene adjacency remain pending.
+
+Retired only the eight new batch251 reference exports after byte-exact PNG
+reconstruction from unchanged archive payloads. Explicit resolved paths, hashes,
+sizes and source provenance were checked; game data, source art and older cached
+exports stayed intact. Recovered 325,816 bytes. All review metadata and raster
+hashes replay exactly after retirement. No previous denied cleanup retried.
+
+Seven new Windows native DDS parser checks pass. Prior 1,474 DDS hashes and
+checker identity match batch 250 evidence; fresh whole-pack Python format,
+metadata, dimensions/aspect, mip and hash audit passes 1,481 installed files.
+Counts: 5,170 needing artwork, 1,481 installed, 161 held. Known-key classification
+remains 6,812; category/use validation and embedded/procedural discovery remain
+unfinished. No runtime/build changes or gameplay. MAC-011 Awaiting validation;
+Mac GPU, mapped scenes, display modes and residency are not verified by this audit.
+
+Pack: 1,156,007,778 bytes (+2,712,842), below 6144 MiB. Temporary snapshot:
+268,023,162 bytes, below 256 MiB with 412,294 bytes headroom. Windows filesystem
+allocation query covers 10,412 texture-workspace files without errors: logical
+and allocated snapshot 7,396,675,019 bytes including source art; free disk
+84,344,836,096 bytes. Codex default generated-image outputs outside the project
+are excluded; metadata writes follow the snapshot. One active pack and 512 MiB
+residency limit retained. Personal settings/saves preserved; no duplicate extracts,
+staging or publication. The near-completion playtesting gate remains unmet.
+
+Private evidence: review/hybrid-251-selection.json, prompts.json, generation
+receipts, memory-review.json, decisions.json, original-export-retirement.json,
+native-audit.json, acceptance.json and physical-storage-final.json (all filenames
+share hybrid-251 prefix). Previous goal turn was progress (batch 250). Local #74
+branch work only.
+
+## Texture artwork batch 250: five wood and metal replacements (2026-10-20)
+
+Eight cached opaque originals matched archive RGBA/dimensions and the supported
+XBE hash was verified. Built-in image generation produced four 1254x1254 and
+four 1774x887 sources, totaling 24,283,494 bytes. Accepted horizontal wood planks
+0cfaa1bdc48acf62, blue-gray wall 9b0e8252d4c4df11, nested blue panel
+0c4873b2d44c0c92, olive panel 0ea27372e26b6ead and bronze/red atlas
+0815e2083ee1f81e. Output: three 1024x512, one 512x512, one 1024x1024 DXT1
+with mip chains, LANCZOS downsampled from actual sources; not native 4K art.
+
+Held wooden door atlases 8a63cec41a2bd078 and 0e4d3e00c77bb262 for +27.79%
+and +24.86% brightness respectively. Held 072ecbe2447d85b5 for an erased oval
+detail in its far-right strip and -10.34% brightness. No correction hold counts
+as completion. Five RAM full/repeat/original-grid comparisons inspected and
+exactly replayed; 1,843,857 raster bytes were not written. Scene adjacency and
+mapping, material lighting, Mac GPU, display modes and residency remain pending.
+
+Five new Windows native DDS parser checks pass; checker identity and all prior
+1,469 DDS hashes match batch 249 evidence. Fresh Python whole-pack format,
+metadata, aspect, dimensions, mip and hash audit passes 1,474 installed files.
+Counts: 5,178 needing art, 1,474 installed, 160 held. Known-key classification
+remains 6,812, with category/use and whole-game discovery validation unfinished.
+No runtime/build changes or gameplay. The 90% installed-and-audited gate is unmet.
+
+Compacted JSON formatting in inventory-28/32/29/35.json and alpha-audit-30.json;
+all parsed values preserved. Before changing them, retained a 93,006-byte gzip
+recovery record and verified byte-exact decompression. Per-file before/after
+hashes and semantic equality are recorded. Gross saving 376,175 bytes; net
+281,158 bytes after recovery and receipt, excluding the new compaction script.
+No deletions, artwork changes or previously denied cleanup retries. Review files
+remain at their existing paths; exact historical bytes remain recoverable.
+
+Pack: 1,153,294,936 bytes, +1,925,264 bytes, below 6144 MiB. Temporary snapshot:
+267,950,496 bytes, below 256 MiB with 484,960 bytes headroom. Windows allocation
+query covered 10,359 texture-workspace files without errors: logical/allocated
+snapshot 7,368,356,650 bytes including source artwork; free disk 84,454,756,352
+bytes. This excludes Codex default generation outputs outside the project;
+metadata writes follow the snapshot. No new original exports, duplicate extracts,
+staging or publication. One active pack, 512 MiB residency and personal data kept.
+
+Private evidence: review/hybrid-250-selection.json, prompts.json, generation
+receipts, memory-review.json, decisions.json, native-audit.json, acceptance.json,
+json-compaction.json, json-format-recovery.json.gz and physical-storage-final.json
+(all share the hybrid-250 prefix). Previous goal turn was progress (batch 249).
+Local issue #74 work only. MAC-011 remains Awaiting validation.
+
+## Texture artwork batch 249: four replacements installed (2026-10-20)
+
+Returned to artwork production after the completed known-key appearance pass and
+queue reconciliation. Eight cached original PNGs matched archive RGBA, dimensions
+and opaque alpha exactly; supported XBE hash verified. Built-in image generation
+produced eight sources: two 1254x1254, five 1774x887 and one 887x1774, totaling
+23,246,081 bytes. No original exports or raster review files were created.
+
+Accepted dark industrial panel 65eeec8b528160e3, red/brass component 76767c3526d0cb07,
+hammered brass dish 79391994e8392e9e and carved trim 865403494ba0c46a. Their output
+sizes are 1024x1024 for the panel and 1024x512 for the other three, LANCZOS
+resampled from generated sources, DXT1 with mip chains; these are not native 4K.
+Held hatch 79b5443d96164ab9 for altered red markings, brown trim 839469ebbe1e4fb1
+for +26.60% brightness, oval fitting 3b193ff21e5daba1 for -24.13% brightness and
+changed rim lighting, and blue strip 5b0b7691d2f2edf0 for a widened/upward-shifted
+gold band and weakened joints. Held drafts do not count as complete.
+
+Six RAM comparisons (full, repeated, original-grid and marking focus) inspected
+and replayed exactly; 1,626,027 raster bytes were not written. Four new Windows
+native DDS parser checks pass. All prior 1,465 hashes and checker identity are
+unchanged against batch 242 evidence; fresh Python whole-pack audit passes all
+1,469 installed DDS. Counts: 5,186 needing art, 1,469 installed, 157 held. All
+6,812 known keys remain classified; category/use and embedded/procedural coverage
+remain unfinished. No runtime/build changes or gameplay; mapped scenes, material
+lighting, edge sampling, Mac GPU, render modes and residency remain unverified.
+
+Pack is 1,151,369,672 bytes, an increase of 1,749,930 bytes, below 6144 MiB.
+Temporary snapshot: 268,172,153 bytes, below 256 MiB with 263,303 bytes headroom.
+Windows GetCompressedFileSizeW independently queried all 10,310 texture-workspace
+files after installation with no errors: logical and allocated snapshots both
+7,342,343,772 bytes, including source art; free disk 84,669,186,048 bytes. This
+excludes Codex default generation outputs outside the project. Metadata writes
+follow the snapshot. No cleanup, staging, duplicate extracts or publication.
+One active pack, 512 MiB residency limit, saves and personal settings preserved.
+
+Private evidence: review/hybrid-249-selection.json, prompts.json, per-key generation
+receipts, memory-review.json, decisions.json, native-audit.json, acceptance.json
+and physical-storage-final.json (all filenames use the hybrid-249 prefix).
+Previous response was a status explanation, not production progress; state was
+revalidated before this batch. MAC-011 remains Awaiting validation. Changes local
+on issue #74 branch; installed-and-audited playtest gate remains unmet.
+
+## Texture hybrid queue: reconcile completed inventory labels (2026-10-20)
+
+The planner recognized only environment for material batches, leaving the newer
+environment_material entries in individual review. Its short exact-name specialist
+list also missed mixed labels such as prop_or_interface and effect_or_reflection.
+tools/texture-hybrid-plan.py now accepts both explicit material labels for bounded
+family batches and recognizes sensitive semantic parts in mixed category names.
+Text, UI, effects, reflections, artwork/identity, uncertain materials, foliage,
+alpha/cutouts and sky labels receive specialist review. Unknown/atlas categories
+remain individual review. Installed, correction and format-research status take
+precedence. Routing still requires original/alpha inspection and never approves art.
+
+Eight tests in tests/test_texture_hybrid_plan.py pass on Windows Python, covering
+mixed-label routing, material-family grouping, status precedence, deterministic
+bounded batches, unknown labels, duplicates and budget limits. This test file is
+already registered in runtime-patches CI; no duplicate job added. No runtime/build
+change is needed. Mac execution is unrun; shared Python logic needs no OS adapter.
+
+Fresh full Python pack audit and unchanged hashes verify all 1,465 installed DDS.
+Catalog-wide comparison is deterministic and covers exactly 6,812 unique keys.
+145 newly labeled materials move to batch candidates and 1,191 sensitive entries
+to specialist review. Counts now: 477 batch candidates in 61 groups of up to eight,
+1,546 individual-review entries, 3,171 specialist entries, 153 corrections and
+1,465 installed. No artwork generated/installed. Full-category/use and discovery
+validation remain unfinished; known-key first appearance pass remains complete.
+
+Private evidence: review/hybrid-248-routing-refresh.py and hybrid-248-routing.json.gz
+(212,537 bytes stored as 17,357-byte round-trip-verified gzip), with changed-key
+routes and source/test hashes. Previous goal turn was progress (batch 247).
+Pack unchanged at 1,149,619,742 bytes, below 6144 MiB. Temporary snapshot:
+268,115,397 bytes, below 256 MiB with 320,059 bytes headroom. Texture workspace:
+7,317,266,434 bytes including source art; free disk 84,867,469,312 bytes. Allocation
+helper equals logical size, not independent physical-allocation proof. One pack,
+512 MiB residency limit and personal data preserved. No cleanup, staging, gameplay
+or publication. Native parser evidence remains batch 242; no new native executions.
+MAC-011 stays Awaiting validation; installed-and-audited playtest gate remains unmet.
+
+## Texture inventory batch 247: first appearance pass covers all known keys (2026-10-20)
+
+Reviewed the final 243 unclassified supported keys, e7613b36c1133c1c through
+ffc48e593c782fbe: 195 opaque and 48 nonopaque originals. Archive payload hashes,
+decoded RGBA hashes, dimensions and alpha were verified. Thirty-two separate
+RGB/alpha sheets were inspected in RAM and replayed exactly from pinned keys;
+the last page contains three assets. Private provenance retains per-key notes,
+constraints, source/decoder hashes and tool versions. Lossless round-trip checked:
+321,013 uncompressed bytes stored as 42,410-byte gzip. No original PNG exports
+or review raster files; 10,082,570 bytes of raster output avoided.
+
+Classification now covers exactly the same 6,812 unique keys as the supported
+worklist, with zero unclassified keys. This completes the known-catalog first
+appearance/alpha pass only. The inventory records known_catalog_first_pass_complete,
+while complete and all_asset_categories_reviewed remain false: uncertain use,
+category validation, embedded/procedural discovery and mapped scene coverage
+still require work. No unsupported or undiscovered assets are counted complete.
+The original objective and full-game scope remain unchanged.
+
+New constraints cover exact hazard/control text, geographic maps, photographs,
+tattoos, decorative symbols, functional checkerboards, alpha-only diagrams and
+glyphs, inverse masks, partial-alpha reflective surfaces and character identity.
+Embedded scene artwork is not current runtime evidence. Classification does not
+approve artwork, establish runtime channel use or count as an installed replacement.
+The refreshed planner has 332 batch candidates (43 groups), 2,882 individual-review
+entries, 1,980 specialist entries, 153 corrections and 1,465 installed. Planner
+routing remains provisional; inspect originals/alpha before authoring. The newer
+environment_material label currently routes to individual review and should be
+reconciled with environment before choosing subsequent material-family batches.
+
+No new art generated/installed. All 1,465 DDS hashes unchanged; fresh full Python
+format/metadata/dimensions/aspect/mip/hash audit passed. Existing native parser
+evidence remains batch 242; no new native execution. Work counts stay 5,194 needing
+art, 1,465 installed and 153 held. Pack stays 1,149,619,742 bytes (1096.36 MiB), below
+6144 MiB. Temporary snapshot: 268,092,924 bytes, below 256 MiB with 342,532 bytes
+headroom. Texture workspace including source art: 7,317,235,232 bytes; free disk:
+84,784,685,056 bytes. Allocation helper equals logical size, not independent
+physical-allocation proof. No cleanup, duplicate extracts, staging or publication.
+
+Private evidence: review/hybrid-247-review.json.gz, pinned inventory-memory.py,
+guarded inventory-apply.py and inventory-acceptance.json. Previous goal turn was
+progress (batch 246). One active pack, 512 MiB residency limit and personal data
+preserved. No gameplay; 90% installed-and-audited gate remains unmet. MAC-011 stays
+Awaiting validation for actual Mac GPU, mapped scenes, display modes and residency.
+
+## Texture inventory batch 246: 128 additional RGB/alpha classifications (2026-10-20)
+
+Reviewed keys d966fd068ff3f72f through e7306a0f5d90ad58: 87 opaque and 41
+nonopaque originals. Payload/decoded hashes, dimensions and alpha were checked.
+Sixteen RAM-only RGB/alpha sheets exactly replay from pinned keys. Complete
+private provenance is 169,864 bytes stored as 23,704-byte lossless gzip, with
+round-trip verification. No original exports or raster files; 5,289,943 raster
+bytes avoided. Previous goal turn classified as progress (batch 245).
+
+Classification rises from 6,441 to 6,569; 243 remain, all needing art. This batch
+also classifies the previously unclassified installed Spanish disc-error screen;
+its installed status and file are unchanged. Source-language text, instrument
+labels, warning signs, alpha-only diagrams/glyphs, inverse masks, character
+identity and partial-opacity effects retain explicit specialist constraints.
+Embedded scene previews are catalog artwork, not new runtime evidence.
+Appearance-based inventory is provisional, not artwork completion or mapped-use
+validation; discovery, category/use review and most production remain unfinished.
+
+No new artwork generated or installed. All 1,465 installed DDS hashes unchanged;
+fresh full Python format/metadata/dimensions/aspect/mip/hash audit passed. Native
+parser evidence stays batch 242, with no new native executions. Queue refreshed:
+1,465 installed, 5,194 needing art and 153 held. Pack unchanged at 1,149,619,742
+bytes (1096.36 MiB), under 6144 MiB; residency limit remains 512 MiB.
+Temporary snapshot 268,034,212 bytes is below 256 MiB with 401,244 bytes headroom.
+Texture workspace including source art: 7,316,978,744 bytes; free disk:
+84,884,549,632 bytes. Allocation helper equals logical size, not independent
+physical-allocation proof. No cleanup, duplicate extracts/staging or publication.
+
+Private evidence: review/hybrid-246-review.json.gz, pinned inventory-memory.py,
+guarded inventory-apply.py and inventory-acceptance.json. Personal saves/settings
+preserved. No gameplay; 90% installed-and-audited gate remains unmet. MAC-011 stays
+Awaiting validation for Mac GPU, mapped scenes, display modes and residency.
+
+## Texture inventory batch 245: 128 additional RGB/alpha classifications (2026-10-20)
+
+Reviewed 128 previously unclassified keys from cd76521e080d89d8 through
+d94ecb06ad281582. Archive payload and decoded RGBA hashes, dimensions and alpha
+were verified; 90 originals are opaque and 38 have nonopaque alpha. Sixteen
+RGB/alpha sheets were inspected in RAM and replayed exactly from pinned keys.
+Private provenance retains descriptions, constraints, renderer/decoder hashes
+and tool versions: 169,746 bytes stored as 23,350-byte round-trip-verified gzip.
+No original exports or raster files were written; 4,899,423 raster bytes avoided.
+
+New records include materials, doors, vents, character atlases, instrument panels,
+challenge tiles, a clock, flag, signs, foliage and effects. ROOF ACCESS lettering,
+a numeral stencil and technical diagrams are carried by alpha; preserve exact
+wording, orientation, channel semantics, low opacity and inverse-mask polarity.
+Scene screenshots are embedded source artwork, not current runtime evidence.
+Classification remains provisional and does not count as enhancement completion.
+
+Classification rises from 6,313 to 6,441 keys; 371 remain unclassified (370 needing
+art and one installed). Category counts, progress and hybrid queue are refreshed.
+No artwork generated or installed. All 1,465 installed DDS hashes are unchanged
+and pass a fresh full Python format/metadata/dimensions/aspect/mip/hash audit.
+Windows native parser evidence remains batch 242; no new native executions.
+Counts remain 1,465 installed, 5,194 needing art and 153 held for review.
+
+Pack remains 1,149,619,742 bytes (1096.36 MiB), below 6144 MiB. Temporary snapshot
+267,996,909 bytes remains below 256 MiB, with 438,547 bytes headroom. Texture
+workspace including source art: 7,316,836,157 bytes; free disk: 84,889,927,680 bytes.
+Allocation helper equals logical size, not independent physical-allocation proof.
+No cleanup, duplicate extracts, staging, save/settings edits or publication.
+
+Private evidence: review/hybrid-245-review.json.gz, pinned inventory-memory.py,
+guarded inventory-apply.py and inventory-acceptance.json. One active pack and
+512 MiB residency limit remain. Discovery/category/use review and most artwork
+remain unfinished; the 90% installed-and-audited gate is unmet. No gameplay run.
+MAC-011 stays Awaiting validation for actual Mac GPU and scene coverage.
+
+## Texture inventory batch 244: 128 additional RGB/alpha classifications (2026-10-20)
+
+Reviewed 128 previously unclassified catalog keys from c0b8452464a309aa through
+cd39c37e493a6be9. Archive payload hashes, decoded RGBA hashes, dimensions and alpha
+were verified. Ninety-three originals are opaque; thirty-five have nonopaque alpha.
+Sixteen separate RGB/alpha sheets were inspected in RAM and replayed exactly from
+pinned keys. The private gzip JSON retains per-key provenance, full descriptions,
+constraints, renderer/decoder hashes and tool versions. Lossless round-trip verified:
+176,679 uncompressed bytes stored in 25,738 bytes. No preview raster or original
+PNG files were written; RAM review avoided 4,828,572 bytes of image output.
+
+New records distinguish ordinary materials from technical/gauge lettering,
+challenge tiles, promotional artwork, a flag, scene previews, character/creature
+atlases, foliage and channel-dependent effects. White/black RGB assets can carry
+diagrams, masks, numeric glyphs and labels entirely in alpha. The set includes
+a fully transparent black primitive, inverse-like masks, partial-alpha panels,
+low-opacity glows, hazard lettering and a numeral with alpha maximum 212.
+Preserve exact source geometry, wording, orientation, identity and channel behavior;
+these classifications do not authorize flattening or decorative replacements.
+An in-game screenshot is catalog artwork, not new gameplay evidence.
+
+Classification increases from 6,185 to 6,313 unique keys, with recomputed category
+counts and matching progress summaries. 499 remain unclassified: 498 needing art
+and one already installed. The planner therefore has 498 visual-triage entries.
+Appearance-based classification remains provisional; full category, mapped-use
+and noncatalog discovery review remain unfinished. The 90% installed-and-audited
+gate is still unmet; no gameplay was launched.
+
+No artwork generated or installed. All 1,465 installed DDS hashes are unchanged
+and pass a fresh full Python format/metadata/dimensions/aspect/mip/hash audit.
+Existing Windows parser evidence remains batch 242, with no new native executions.
+Queue/progress stay 1,465 installed, 5,194 needing art and 153 held. Pack stays
+1,149,619,742 bytes (1096.36 MiB), below 6144 MiB. Temporary snapshot: 267,960,106 bytes,
+below 256 MiB with 475,350 bytes headroom. Texture workspace including source art:
+7,316,694,663 bytes; free disk: 84,918,824,960 bytes. Allocation helper equals logical
+size, not independent physical-allocation proof. No cleanup attempted.
+
+Private evidence: review/hybrid-244-review.json.gz, pinned inventory-memory renderer,
+guarded inventory-apply script and inventory-acceptance.json. No runtime changes,
+duplicate game/build/staging, publication or personal save/settings edits.
+One active pack; unchanged 512 MiB residency limit. MAC-011 remains Awaiting validation.
+
+## Texture inventory batch 243: 64 additional RGB/alpha classifications (2026-10-20)
+
+Reviewed 64 previously unclassified catalog keys from bad294a72d94b172 through
+c08af71cc571abcf. Archive payload hashes, decoded RGBA hashes, dimensions and
+alpha were verified. Forty-three originals are opaque; twenty-one have nonopaque
+alpha. Eight RGB/alpha sheets were rendered and inspected only in RAM, then
+replayed exactly from a pinned selection. Renderer and decoder hashes, tool
+versions, per-key provenance and constraints remain in private evidence.
+No source artwork, compiled replacements, original PNG exports or raster files
+were generated. The in-memory sheets avoided 2,241,453 bytes of raster output.
+
+The review identifies machinery, architectural trim, materials, character fragments,
+artwork, keypad/menu graphics, signage, icons and effects while retaining uncertain
+uses as provisional. Two white-RGB assets carry detailed weapon/technical diagrams
+entirely in alpha; yellow RGB carries a numeral mask; a beige RGB swatch carries
+a small gear-like icon in alpha. Partial-opacity laboratory/access lettering,
+a flare with alpha maximum 173, a field with alpha 98–227 and an explosion with
+radial alpha 2–255 retain explicit channel constraints. Do not flatten these
+masks or reinterpret them as ordinary opaque materials. Original glyph wording,
+orientation, identity, UV divisions and gameplay cues remain specialist concerns.
+
+Classification increases from 6,121 to 6,185 unique keys with recomputed category
+counts and matching progress summaries. There are 627 unclassified keys: 626 still
+need art and one already has an installed replacement. This explains why the
+planner has 626 visual-triage entries while the inventory has 627 unclassified
+keys; installed status takes precedence in routing. Classification is appearance
+evidence, not artwork completion, full category approval or mapped-scene validation.
+The 90% installed-and-audited gameplay gate remains unmet.
+
+All 1,465 installed DDS hashes are unchanged and pass a fresh full Python
+format/metadata/dimensions/aspect/mip/hash audit. Existing Windows parser evidence
+remains batch 242; there were no new native parser executions. Queue/progress
+remain 1,465 installed, 5,194 needing art and 153 held. Pack stays 1,149,619,742
+bytes (1096.36 MiB), below 6144 MiB. Temporary snapshot: 267,920,780 bytes, below
+256 MiB with 514,676 bytes headroom. Texture workspace including source art:
+7,316,536,616 bytes; free disk: 84,862,738,432 bytes. Allocation helper equals
+logical size, not independent physical-allocation proof. No cleanup attempted.
+
+Private evidence: review/hybrid-243-inventory-evidence.json,
+hybrid-243-triage-decisions.json, pinned inventory-memory renderer, guarded
+inventory-apply script and inventory-acceptance.json. No gameplay, runtime changes,
+duplicate game/build/staging, publication or personal save/settings edits.
+One active pack and unchanged 512 MiB residency limit. MAC-011 remains Awaiting
+validation; noncatalog discovery, full category review and scene checks stay open.
+
+## Texture batch 242: three mechanical replacements (2026-10-20)
+
+Eight classified cached references matched archive RGBA and were individually edited
+with built-in image generation. Three accepted offline and installed:
+68639f2cf6c9e628 (dense brass-gray components), 8344c0c69cf3d7b9 (tall mechanical
+atlas) and a1d15b2c25bc2512 (riveted panel/emblem/oval cutout). Mean luminance
+changes are +0.78%, +4.59% and -6.59%. Full, repeat and original-grid comparisons
+retain principal island divisions, pipes, dark openings, trim, rivets and emblem
+silhouette. Top rib-strip focus retains primary spacing; an intensity-profile
+diagnostic records extra micrograin maxima, which are not component counts.
+Fine metal grain and wear accepted offline. Dense mapped components, seam sampling,
+reflections and scene brightness remain pending.
+
+Five drafts held: 727f752029556212 (yellow equipment, +12.92%) adds excessive pale
+wear/reflections and changes small radial/grille detail; 7a0ddc697cc680ff (gray
+mechanical atlas, +18.06%) changes broad flat shadows into polished gradients;
+7c7f10e2918b4d10 (amber-feature atlas, +21.50%) over-brightens brass and changes
+small dial/component details. 804885b1a9c4c4df (olive drum, +9.78%) does not reliably
+preserve stamped glyph shapes; a6e4e8ede36feec0 (instrument panel, +7.62%) rewrites
+bottom nameplate marks and changes small gauge strokes. Enlarged original-grid
+marking comparisons inspected; original wording was not guessed or normalized.
+None of these five installed or counted complete.
+
+Actual sources: five 1254x1254, two 1774x887 and one 887x1774, totaling
+22,855,762 bytes. Installed: one 1024x512, one 512x1024 and one 1024x1024;
+all LANCZOS downsampled without crop/color/alpha edits, not native 4K. Six RAM-only
+comparison sheets (including component/marking focus) avoid 2,091,481 raster bytes
+and replay exactly. No new original exports or deletion attempts. Three new
+Windows DDS parser checks pass; prior 1,462 hashes and checker identity unchanged.
+All 1,465 installed files pass a fresh Python format/metadata/dimensions/aspect/
+mip/hash audit. Queue/progress refreshed: 1,465 installed, 5,194 needing art,
+153 held; 6,121 classified, 691 unclassified. Private evidence:
+review/hybrid-242-acceptance.json, decisions, memory-review, component-focus and
+rib-profile scripts/results, selection, prompts, generation receipts and native-audit.
+Artwork and game data remain private.
+
+Pack including metadata: 1,149,619,742 bytes (1096.36 MiB), up 1,399,828 bytes,
+below 6144 MiB. Temporary snapshot: 267,817,886 bytes, below 256 MiB with
+617,570 bytes headroom. Texture workspace including source art: 7,316,364,470
+bytes; free disk snapshot: 84,937,400,320 bytes. Allocation helper equals logical
+size, not independent physical-allocation proof. One active pack; unchanged
+512 MiB residency limit. No gameplay, runtime changes, duplicate game/build/staging,
+publication or personal save/settings edits. MAC-011 stays Awaiting validation;
+inventory/category coverage and consolidated scene checks remain unfinished.
+
+## Texture batch 241: five clothing, equipment and character replacements (2026-10-20)
+
+Eight classified cached references matched archive RGBA. Built-in image generation
+produced seven drafts; one output was blocked. Five accepted offline and installed:
+6e48a4f5236dea14 (pale helmet/armor), 733759ec6a7642ce (dark panel/pale bevel),
+a47f5ce82a1d5a2e (curved pale panel/dark trim), 0747001d83495ad1 (tan strap/panel)
+and 9036d8d5b0002629 (character, hands, clothing and hardware atlas).
+Their mean luminance changes are +2.24%, -4.08%, +4.16%, +7.28% and -2.06%.
+Full, repeat and original-grid comparisons retain principal islands, holes,
+seams, strap marks, facial contour, hairline and equipment placement. Fine material
+detail accepted offline. The character skin is warmer locally and hand highlights
+stronger; mapped identity, skin/seam matching and scene lighting remain pending.
+
+Two character drafts held: 0f6b4ff8639e0364 has stronger dark nose/eyelid strokes
+and changed facial shading/expression; 9bea57693d56c2b5 changes brow, cheek, jaw,
+mouth/ear details and regularizes small equipment patterns. Rotated face-focus
+comparisons inspected. Mean luminance -7.42% and -0.62% does not establish fidelity.
+Neither installed. Tool output moderation blocked 72dff45853767494 (sexual category,
+request 0d7b5e16-e202-48d7-8d66-949a4fb3de08). No retry; recorded in generation_gaps
+and private generation-block evidence. It remains unfinished with original fallback.
+
+Actual sources: four 1254x1254 and three 887x1774, totaling 21,705,311 bytes.
+Installed: one 512x512, three 512x1024 and one 1024x1024; all LANCZOS downsampled
+without crop/color/alpha edits, not native 4K. Six RAM-only comparison sheets
+(including rotated face focus) avoid 1,813,559 raster bytes and replay exactly.
+No new original exports or deletion attempts. Five new Windows DDS parser checks
+pass; prior 1,457 hashes and checker identity unchanged. All 1,462 installed files
+pass a fresh Python format/metadata/dimensions/aspect/mip/hash audit.
+Queue/progress refreshed: 1,462 installed, 5,202 needing art, 148 held;
+6,121 classified, 691 unclassified. Blocked generation remains within needing art.
+Private evidence: review/hybrid-241-acceptance.json, decisions, memory-review,
+character-focus script, selection, prompts, generation receipts/block and native-audit.
+Artwork and game data remain private.
+
+Pack including metadata: 1,148,219,914 bytes (1095.03 MiB), up 1,925,264 bytes,
+below 6144 MiB. Temporary snapshot: 267,758,522 bytes, below 256 MiB with
+676,934 bytes headroom. Texture workspace including source art: 7,292,023,974
+bytes; free disk snapshot: 85,206,454,272 bytes. Allocation helper equals logical
+size, not independent physical-allocation proof. One active pack; unchanged
+512 MiB residency limit. No gameplay, runtime changes, duplicate game/build/staging,
+publication or personal save/settings edits. MAC-011 stays Awaiting validation;
+inventory/category coverage and consolidated scene checks remain unfinished.
+
+## Texture batch 240: six equipment and clothing replacements (2026-10-20)
+
+Eight cached references matched archive RGBA and were individually edited with
+built-in image generation. Six accepted offline and installed: 7dbf8e3b0e513be3
+(receiver atlas), 946873fb89102ed9 (mechanical door and orange indicator),
+9732a6d520d3018a (reflective channel and fittings), 98a28f54c158fff2 (blue/yellow
+clothing and equipment), a7d871e51fbc6ebb (pipe grille and yellow indicator),
+and afcd56cd4e9455c3 (teal clothing atlas). Their mean luminance changes are
++0.91%, +9.67%, -5.16%, -5.34%, +4.80% and -4.94% respectively. Full, repeat
+and original-grid comparisons preserve principal atlas divisions, mechanical
+parts, light positions, clothing outlines, black opening, trim and skin regions.
+Finer material grain, stitching and wear are accepted offline; mapped character
+identity, weapon appearance, seams, reflected light and indicators remain untested.
+
+Two equipment atlases held: 83eb8e9fba38e904 changes its small yellow warning
+symbol into an exclamation-like form and needs component-level UV review;
+8992e44448b0aced does not reliably preserve stamped glyphs and adds stronger
+pale edge highlights/small grip-detail changes. Mean luminance -0.69% and +8.81%
+respectively does not establish fidelity. Neither installed. Enlarged original-grid
+marking comparisons were inspected without guessing or normalizing original text.
+
+Actual sources: six 1254x1254 and two 1774x887, totaling
+24,379,718 bytes. Installed: three 1024x1024, two 512x512 and one 1024x512;
+all LANCZOS downsampled without crop/color/alpha edits, not native 4K. Six RAM-only
+comparison sheets (including marking focus) avoid 2,052,256 raster bytes and replay
+exactly. No new original exports or deletion attempts. Six new Windows DDS parser
+checks pass; prior 1,451 hashes and checker identity unchanged. All 1,457 installed
+files pass a fresh Python format/metadata/dimensions/aspect/mip/hash audit.
+Queue/progress refreshed: 1,457 installed, 5,209 needing art, 146 held;
+6,121 classified, 691 unclassified. Private evidence: review/hybrid-240-acceptance.json,
+decisions, memory-review, marking-focus script, selection, prompts, generation
+receipts and native-audit. Artwork and game data remain private.
+
+Pack including metadata: 1,146,294,650 bytes (1093.19 MiB), up 2,799,642 bytes,
+below 6144 MiB. Temporary snapshot: 267,702,477 bytes, below 256 MiB with
+732,979 bytes headroom. Texture workspace including source art: 7,268,313,183
+bytes; free disk snapshot: 85,410,844,672 bytes. Allocation helper equals logical
+size, not independent physical-allocation proof. One active pack; unchanged
+512 MiB residency limit. No gameplay, runtime changes, duplicate game/build/staging,
+publication or personal save/settings edits. MAC-011 stays Awaiting validation;
+inventory/category coverage and consolidated scene checks remain unfinished.
+
+## Texture batch 239: seven prop and folded-metal replacements (2026-10-20)
+
+Eight cached references matched archive RGBA and were individually edited using
+built-in image generation. Seven accepted offline and installed: 65ba7f86b3509361
+(tall pale inset), 8a7b680d08a46bca (ribbed reflective panel), 8df5e6566030589e
+(curved metallic prop/strap atlas), 90ca534540913f83 (olive trim and blank quadrant),
+a680eb7db7fadac2 (folded pale sheet), af48975ecc1d0513 (corroded riveted braces),
+and 0fdb02ab5b9cbad7 (reinforcement plates and channel). Their mean luminance
+changes are -2.24%, -2.29%, +1.38%, -4.76%, -1.22%, +5.72% and -2.77%.
+Full, 2x2-repeat and original-grid review retains principal atlas divisions,
+folds, brace outlines, circular recesses and blank regions. Exact object use
+remains unresolved for some atlases; visual approval does not close category
+coverage or mapped-scene validation.
+
+The ribbed panel's seven main rows retain original-grid rows 14, 30, 46, 62, 78, 94 and 110;
+additional profile peaks are new fine detail, not extra primary rows. The trim's
+unused interior was RGB 255/251/255; decoded DDS is 255/251..252/255. These scoped
+checks support offline layout review, not scene sampling or reflections.
+One draft held: 1ee8ec8180a0fe09 is too dark (-12.32%) with exaggerated arch/frame
+highlights and reduced broad fill. It was not installed and needs tonal correction.
+
+Actual sources: four 1254x1254, two 1774x887 and two 887x1774, totaling
+25,310,900 bytes. Installed: three 1024-square, two 512x1024, one 1024x512 and
+one 512-square; all LANCZOS downsampled without crop/color/alpha edits, not native 4K.
+Five RAM sheets avoid 1,902,783 raster bytes and replay exactly. Seven new Windows
+DDS parser checks pass; prior 1,444 DDS hashes and checker identity unchanged.
+All 1,451 installed files pass a fresh Python format/metadata/dimensions/aspect/mip/
+hash audit. Queue/progress refreshed: 1,451 installed, 5,217 needing art, 144 held;
+6,121 classified, 691 unclassified. Private evidence: review/hybrid-239-acceptance.json,
+decisions, memory-review, selection, prompts, generation receipts, native-audit and cache
+cleanup preflight/result. Source artwork, game data and provenance remain private.
+
+Sixteen disposable original PNG exports from batches 235/237 were regenerated
+byte-for-byte in memory from game archives, then removed using guarded exact paths
+and matching hashes. Reclaimed 712,272 bytes. Current batch reused eight originals;
+no new exports or previously denied cleanup paths. Game archives/artwork retained.
+Pack including metadata: 1,143,495,008 bytes (1090.52 MiB), up 3,324,512 bytes,
+below 6144 MiB. After cleanup, temporary snapshot 267,651,438 bytes, below 256 MiB
+with 784,018 bytes headroom. Texture workspace including source art: 7,241,058,306
+bytes; free disk snapshot 85,624,037,376 bytes. Allocation helper equals logical
+size, not independent physical-allocation proof. One pack, unchanged 512 MiB
+residency limit. No gameplay/runtime changes, duplicate game/build/staging,
+publication or personal save/settings edits. MAC-011 stays Awaiting validation;
+inventory/category coverage and consolidated scenes remain unfinished.
+
+## Texture batch 238: three individually reviewed machinery atlases (2026-10-20)
+
+Eight machinery/prop references were individually inspected and edited through
+built-in image generation. Existing cached originals matched archive RGBA exactly;
+all are opaque. No new original exports or disk contact sheets were written.
+Three accepted offline and installed: 6fcd5b731325bc4c (paired yellow-lamp panel),
+787969fba3da53ee (riveted plate with paired hinge assemblies), and
+a43827c3360eee7b (socket/latch atlas). Atlas divisions, lamp centers, hinge
+boundaries, seven gold sockets, two lower latches and principal fastener layouts
+remain aligned. Mean luminance changes: +3.02%, -2.89% and -2.90% respectively.
+Full, 2x2-repeat and original-grid checks pass. An initial thumbnail concern
+about the hinge panel's bottom rivet row was disproved by the full comparison:
+that row is present in the original. Scene mapping and lamp behavior remain pending.
+
+Five held: 6c3507f5d4b07ee6 has overly bright frame/wires (+24.87%) and changed
+lattice rhythm; 700da32297609824 loses broad green glow/center fill (-12.21%);
+7ba9da7d189172e6 brightens bronze patina and reflected bands (+53.94%);
+7c1cfb73a5b2def5 brightens its frame/fittings (+22.24%); ab5d953d8c7a1c3e
+darkens subtle atlas panels and changes the lower-left highlight (-14.85%).
+None installed. These need focused lighting/layout corrections, not auto-approval.
+
+Actual sources: eight 1254x1254 files totaling 23,496,557 bytes. Three installed
+outputs are 1024x1024, LANCZOS downsampled without crop/color/alpha edits;
+not native 4K. Five RAM comparisons avoid 2,149,450 raster bytes and replay
+exactly. Three new Windows DDS parser checks pass; prior 1,441 DDS hashes and
+checker identity match existing evidence. All 1,444 installed files pass a fresh
+Python format/metadata/dimensions/aspect/mip/hash audit. Queue/progress refreshed:
+1,444 installed, 5,225 needing art, 143 held; 6,121 classified, 691 unclassified.
+Private evidence: review/hybrid-238-acceptance.json, decisions, memory-review,
+selection, prompts, generation receipts and native-audit. Originals/art stay private.
+
+Pack including metadata: 1,140,170,496 bytes (1087.35 MiB), up 2,098,872 bytes,
+below 6144 MiB. Temporary snapshot: 268,300,554 bytes, below 256 MiB with
+134,902 bytes headroom. Texture workspace including source art: 7,213,043,522
+bytes; free disk snapshot: 85,809,721,344 bytes. Allocation helper equals logical
+size; it is not independent physical-allocation proof. No cleanup attempted;
+no denied path retried. One active pack, unchanged 512 MiB residency limit.
+No gameplay, runtime changes, duplicate game/build/staging, publication or personal
+save/settings edits. MAC-011 stays Awaiting validation. Inventory/category coverage
+and consolidated scene checks remain unfinished; the playtesting gate is not met.
+
+## Texture batch 237: six masonry, timber and striated materials (2026-10-20)
+
+Eight original references were inspected and edited with built-in image generation.
+Six accepted offline and installed: b15e91c31051642c (six-course brown masonry),
+94282d65c5c1a45c (ochre stone wall), 96b8f96f06a540eb (damaged plaster/stone),
+91cc9d0c961c9acc (nested timber recess), e07dc6f6996c141a (striated material),
+and 930664ce953d4a5e (weathered planks). Major courses, exposed-stone contours,
+concentric squares and plank seams remain recognizable in full, repeat and
+original-grid comparisons. Mean luminance changes respectively: -9.64%, -5.24%,
+-7.15%, -6.39%, -7.07% and +1.51%. Exact use of the striated material remains
+unresolved; its visual acceptance does not close scene/category coverage.
+
+Two drafts held: 794a184e7c94393e is too dark (-15.06%) and changes small
+fastener details along its right seam; cc093aaa6af7cd8c is too dark (-25.37%)
+with excessively deep black stripes and saturated red. Neither installed.
+Actual generated sources: five 1254x1254 and three 1774x887, totaling
+28,712,984 bytes. Installed outputs: three 512x512, two 512x256 and one
+256x256, LANCZOS downsampled without crop/color/alpha edits; not native 4K.
+Five RAM-only sheets avoid 2,155,068 raster bytes and replay exactly. Eight
+original exports (144,028 bytes) retained. Seven historical JSON records had
+formatting compacted in place, preserving every value/key and exact original-byte
+reconstruction; gross whitespace saving 17,506 bytes, before receipt overhead.
+No denied cleanup was retried. Artwork, originals and provenance stay private.
+
+Six new Windows native DDS parser checks pass; prior 1,435 hashes and checker
+identity match existing evidence. All 1,441 installed files pass a fresh Python
+format/metadata/dimensions/aspect/mip/hash audit. Refreshed queue: 1,441 installed,
+5,233 needing art, 138 held; 6,121 classified and 691 unclassified.
+Private evidence: review/hybrid-237-acceptance.json, decisions, memory-review,
+selection, prompts, generation receipts, json-compaction and native-audit.
+
+Pack including metadata: 1,138,071,624 bytes (1085.35 MiB), up 746,174 bytes,
+below 6144 MiB. Temporary snapshot: 268,246,333 bytes, below 256 MiB with
+189,123 bytes headroom. Texture workspace including source art: 7,187,367,539
+bytes; free disk snapshot: 85,994,237,952 bytes. Allocation helper equals logical
+size; it is not independent physical-allocation proof. One active pack, unchanged
+512 MiB residency limit. No gameplay, duplicate game/build/staging, publication,
+runtime changes or personal save/settings edits. MAC-011 stays Awaiting validation.
+Discovery, category review and consolidated scenes remain unfinished; the
+near-completion playtesting gate is not met.
+
+## Texture batch 236: one corrected rock replacement, seven drafts held (2026-10-20)
+
+Eight held drafts received focused built-in image-generation corrections using
+both the original and prior draft. One accepted offline and installed:
+5a36920fc7ba5ff6, ochre/russet layered rock. The correction reduces excessive
+orange saturation and dark crack contrast while retaining major stone shapes
+and lower layers. Mean luminance is now +4.43% against original. Full,
+2x2-repeat and original-grid comparisons pass; scene lighting remains pending.
+
+Seven remain held. 23fd69d9622c963f improves ridge count but is too dark
+(-16.67%) with overly regular crests. 648fc36fa0f6b674 improves brightness
+(+4.39%) but retains regularized pinholes and loses coarse patch structure.
+72a2e193429c2555 restores the lower fastener but still shifts atlas strips and
+slot placement. 7709fa9251037bfa partly restores the bottom margin but keeps
+the lower border too low. Tonal corrections overshot on 9cfe890aa1f2e6b3
+(+10.97%), c1ecaaa3b7498a15 (+21.22%) and d1d8fd564e8fc2de (-13.64%).
+None of these seven installed. Do not repeat the same two-reference/relative
+brightness prompts: their failure evidence requires a different correction
+approach. Prior drafts/provenance are preserved and no failed work is counted
+complete; the rest of the production queue remains available.
+
+Actual sources: four 1254x1254 and four 1774x887. Installed rock: 512x256,
+LANCZOS downsampled from 1774x887 without crop/color/alpha edits; not native
+4K art. Eight source files total 24,615,946 bytes. All eight verified
+original references reused, with no new exports or deletion attempts. Five
+RAM-only comparison sheets avoid 1,478,224 raster bytes and replay exactly.
+One new Windows native parser check passes; prior 1,434 DDS hashes and checker
+identity match existing evidence. All 1,435 installed files pass a fresh Python
+format/metadata/dimensions/aspect/mip/hash audit. Queue/progress refreshed:
+1,435 installed, 5,241 needing art, 136 held; 6,121 classified, 691 unclassified.
+Private evidence: review/hybrid-236-acceptance.json, decisions, memory-review,
+selection, prompts, generation receipts and native-audit.
+
+Pack including metadata: 1,137,325,450 bytes (1084.64 MiB),
+up 87,956 bytes, below 6144 MiB. Temporary snapshot:
+268,061,834 bytes, below 256 MiB with 373,622 bytes headroom.
+Texture workspace including source art: 7,157,700,426 bytes;
+free disk snapshot: 86,295,736,320 bytes. Allocation helper equals
+logical size; it is not independent physical-allocation proof. One active pack;
+no duplicate game/build/staging, gameplay, runtime changes, publication or
+personal save/settings edits. Residency remains 512 MiB. MAC-011 stays
+Awaiting validation; discovery, category review and consolidated scene checks
+remain unfinished. The near-completion playtesting gate is not met.
+
+## Texture batch 235: six cliff, stone and concrete replacements (2026-10-20)
+
+Eight classified opaque materials were edited with built-in image generation.
+Six accepted offline and installed: cf22bb54fcd40f88 (pale eroded cliff),
+e298a692afc0e28a (very dark cave rock), e723d9d879562a20 (warm stratified rock),
+f046c84e1625d9f3 (concrete panel), 3f973a1299adb148 (gray mottled stone),
+463f81035726a644 (pale pink-gray eroded rock). Full, 2x2-repeat and original-grid
+reviews retain principal formations, cavities, bedding directions, mineral
+clouds and the concrete panel's sixteen main holes. Mean luminance changes:
++3.48%, -5.85%, +1.19%, +8.10%, +3.09%, +6.25%, respectively. Local contrast,
+slightly cooler concrete and brighter rock grain need later scene validation.
+Dark cave gaps remain opaque RGB. Adjoining surfaces and lighting are untested.
+
+Two drafts held: d1d8fd564e8fc2de becomes too bright (+17.19%) and shifts toward
+ochre-brown; e7801f23cc578d2d adds conspicuous pale speckling/highlights (+9.74%).
+Neither installed. Classification, generation and offline acceptance remain
+distinct from mapped-scene validation and completed overhaul coverage.
+
+Actual sources: four 1254x1254 and four 1774x887. Accepted outputs: three
+1024x1024 and three 1024x512, all LANCZOS downsampled without crop, color or
+alpha edits; not native 4K artwork. Eight private sources total 30,834,947
+bytes. Five RAM-only comparisons avoid 2,385,359 raster bytes and replay exactly.
+Twelve historical JSON manifests compacted in place, preserving schemas,
+records, key order and values. Original bytes reconstruct exactly using recorded
+format recipes and SHA-256 hashes: 598,673 bytes saved before receipt overhead.
+See private review/hybrid-235-json-compaction.json. No image/cache deletion or
+retry of previously denied paths. This batch's reference exports remain
+(568,244 bytes); existing evidence references keep their original JSON paths.
+
+Six new Windows native parser checks pass. Prior 1,428 DDS hashes and checker
+identity match existing evidence; all 1,434 files pass a fresh Python format,
+metadata, dimensions, aspect, mip and hash audit. Queue/progress refreshed:
+1,434 installed, 5,241 needing art, 137 held; 6,121 classified, 691 unclassified.
+Private evidence: review/hybrid-235-acceptance.json, memory-review, decisions,
+prompts, generation receipts, native-audit and selection.
+
+Pack with metadata: 1,137,237,494 bytes (1084.55 MiB), up
+3,149,178 bytes, below 6144 MiB. Temporary snapshot: 268,002,202
+bytes, below 256 MiB with 433,254 bytes headroom. Workspace including
+source art: 7,132,911,795 bytes; free disk snapshot: 81,226,342,400
+bytes. Allocation helper equals logical size, not independent physical proof.
+One active pack; no game/build/staging duplicates, gameplay, runtime changes,
+publication or personal save/settings edits. Residency stays 512 MiB. MAC-011
+remains Awaiting validation. Discovery, category review and consolidated scene
+validation remain incomplete; the near-completion playtesting gate is unmet.
+
+## Texture batch 234: six stone, masonry and plaster replacements (2026-10-20)
+
+Eight classified opaque materials were edited with built-in image generation.
+Six accepted offline and installed: 1ef79c3cc3b77803 (dark masonry with pale
+central course), 2c486aba071531c3 (four reddish horizontal courses),
+610cd30a98572d05 (ivory molding), f5ee31edfaffd63f (two pale worn panels),
+2fddef7bf87f4d14 (eroded gray/ochre plaster), 73af13ed3b7aa619 (pale rubble).
+Full, 2x2-repeat and original-grid reviews retain principal stone shapes,
+course/ridge counts, panel divisions and erosion contours with finer material
+detail. Mean luminance changes in that order: +3.80%, -6.90%, -1.63%, +0.47%,
+-0.47%, -1.14%. Richer course color, sharper molding grooves and denser rubble
+grain require later mapped-scene/distance review; offline acceptance is limited.
+
+Two held, not installed: c1ecaaa3b7498a15 is too dark (-12.81%) with stronger
+black fracture contrast; 5a36920fc7ba5ff6 is too orange/saturated with darker
+cracks (-9.40%). Neither classified nor generated means complete.
+
+Actual sources: three 1254x1254 and five 1774x887. Accepted DDS outputs:
+four 512x256, one 256x256 and one 512x512, all LANCZOS downsampled with no
+crop/color/alpha edits; not native 4K. All eight sources retained privately
+(31,602,149 bytes). Five RAM-only comparisons avoid 2,111,001
+raster bytes and replay exactly. Eight new PNG references are archive/pixel
+verified but remain: automatic approval review rejected their deletion with
+blocked by policy. No retry or bypass; zero bytes reclaimed, 117,901 retained.
+Previously denied paths, original game data and personal files remain untouched.
+
+Six new Windows native parser checks pass. Prior 1,422 DDS hashes and checker
+identity match existing evidence; all 1,428 installed files pass a fresh Python
+format/metadata/dimensions/aspect/mip/hash audit. Queue/progress refreshed:
+1,428 installed, 5,249 needing artwork, 135 held; 6,121 classified, 691
+unclassified. Evidence: private review/hybrid-234-acceptance.json, decisions,
+memory-review, generation receipts, prompts and original-export-retirement.
+
+Pack with metadata: 1,134,088,316 bytes (1081.55 MiB),
+increase 571,418 bytes, below 6144 MiB. Temporary snapshot:
+267,970,440 bytes, below 256 MiB with 465,016 bytes headroom.
+Texture workspace including source art: 7,098,871,333 bytes;
+free disk snapshot: 81,868,718,080 bytes. Allocation helper reports the
+same logical/allocated count, not independent physical-allocation proof.
+One active pack, no new game/build/staging copies, runtime changes, publication,
+gameplay or personal save/settings edits. Residency remains 512 MiB. MAC-011
+stays Awaiting validation. Discovery, full category review and consolidated
+scene/GPU testing remain unfinished; the playtesting gate is not met.
+
+## Texture batch 233: three small surface and trim replacements (2026-10-20)
+
+Eight classified opaque surfaces were edited with built-in image generation.
+Three accepted offline and installed: e592ad98f2e0256a (pale mottled surface),
+6157ce0180105129 (dark ridged trim), 0560388e30ee5e6f (beige rounded molding).
+Full, 2x2-repeat and original-grid comparisons retain their main cloudy patches,
+ridge profiles and molding bands with finer material grain. Mean luminance
+changes: +1.66%, -8.78%, +4.16%. The dark trim is slightly browner/darker;
+scene lighting and neighboring surfaces remain untested.
+
+Five drafts held: 23fd69d9622c963f changes ridge count/spacing;
+648fc36fa0f6b674 regularizes the irregular dotted pattern and is brighter
+(+15.63%); 72a2e193429c2555 loses the lower fastener and changes strip widths;
+7709fa9251037bfa shifts the lower border and loses the original bottom margin;
+9cfe890aa1f2e6b3 is too dark (-14.47%) with stronger seams. None installed.
+Classification is routing; failed drafts and scene validation remain unfinished.
+
+Actual sources: four 1254x1254 and four 1774x887. Accepted outputs: one 256x256
+and two 512x256, LANCZOS downsampled with no crop/color/alpha edits. These are
+appropriately scaled small assets, not native 4K art. All eight sources retained
+privately (24,352,751 bytes). Five RAM-only comparisons avoid
+1,069,985 raster bytes, with exact metrics/image-hash replay.
+Seven new reference exports were verified recoverable from archive pixels,
+but deletion was rejected by automatic approval review: blocked by policy.
+All seven remain (28,188 bytes); no retry, bypass or reclaimed-space claim.
+One reused reference and previously denied cleanup paths remain untouched.
+
+Three new Windows native parser checks pass; prior 1,419 DDS hashes and checker
+identity match existing evidence. All 1,422 installed files pass a fresh Python
+format/metadata/dimensions/aspect/mip/hash audit. Worklist, hybrid queue and
+progress refreshed: 1,422 installed, 5,257 needing artwork, 133 held; 6,121
+classified and 691 unclassified. Private evidence: review/hybrid-233-acceptance.json,
+review/hybrid-233-memory-review.json and review/hybrid-233-decisions.json.
+
+Pack including metadata: 1,133,516,898 bytes (1081.01 MiB),
+up 220,172 bytes and below 6144 MiB. Temporary snapshot:
+267,793,785 bytes, below 256 MiB with 641,671 bytes headroom.
+Workspace including source art: 7,066,496,748 bytes;
+free disk snapshot: 81,419,149,312 bytes. Allocation helper equals
+logical size; this is not independent physical-allocation proof.
+One active pack; no game/build/staging copies, runtime changes, gameplay,
+publication or save/settings edits. Residency stays 512 MiB. MAC-011 remains
+Awaiting validation. Discovery, category review and consolidated scenes remain
+open; Windows parser checks do not validate Mac GPU or mapped game scenes.
+
+## Texture batch 232: six timber and panel replacements (2026-10-20)
+
+Eight classified opaque timber/wood-like materials were inspected and edited
+with built-in image generation. Six accepted offline and installed:
+e802db20899d8b55 (weathered vertical timber), 5f3e06247c6bdf30 (irregular
+bark-like slats), b3ad7ae08735bb02 (pink-peach grain), e604db46a3b63df0
+(orange-brown knotted timber), f4ff50de31be4f49 (ivory-banded panel),
+3f26b4b21d1db023 (curved-border panel). Full, 2x2-repeat and original-grid
+comparisons retain principal seams, strip rhythm, knots, band positions and
+frame geometry while adding fine material detail. Black slat gaps remain
+opaque RGB. Mean luminance changes in that order: -4.19%, -5.11%, +1.02%,
+-7.77%, -3.26%, -2.84%. The banded panel is slightly warmer and the curved
+border has stronger contrast; adjoining surfaces and scene lighting are untested.
+
+Two remain held: 92a04e699932708a loses its cool gray-blue lower-left color
+patch, and 86efa81522d3f6e8 becomes visibly too dark (-13.67%) with deeper
+black crevices. Neither installed. Classified/routed assets are not counted as
+finished artwork, and offline acceptance does not establish scene fidelity.
+
+Actual sources: seven 1774x887 and one 1254x1254. Accepted outputs: four
+512x256, one 1024x512 and one 1024x1024, all LANCZOS downsampled without
+crop, color edits, aspect change or alpha override. Not native 4K artwork.
+All eight sources retained privately (26,747,531 bytes). Five comparisons
+stayed in memory, avoiding 1,558,557 raster bytes. Their metrics and image
+hashes replay exactly after retiring eight newly created PNG reference exports
+(170,106 bytes), verified against catalog hashes and decoded archive pixels.
+Previously denied cleanup paths, game files, source artwork and personal data
+remain untouched. Prompts, selection, decisions and recovery receipts are private.
+
+Six new Windows native parser executions pass. Prior 1,413 DDS hashes and
+checker identity match existing evidence; all 1,419 installed files pass a fresh
+Python format, metadata, dimensions, aspect, mip and hash audit. The full audit
+runs once after installation; a separate storage-only refresh avoids repeating
+identical content checks after writing reports. Worklist/hybrid queue/progress
+refreshed: 1,419 installed, 5,265 needing artwork, 128 held; 6,121 classified
+and 691 unclassified. See private review/hybrid-232-acceptance.json.
+
+Pack including metadata: 1,133,296,726 bytes (1080.80 MiB),
+below 6144 MiB; increase 1,401,550 bytes. Temporary snapshot:
+267,709,877 bytes (255.31 MiB), below
+256 MiB. Texture workspace including source art: 7,041,817,326
+bytes; measured disk free 84,098,629,632 bytes. Existing helper reports
+logical/allocated equally, not independent physical-allocation proof.
+One active pack; no new game/build/staging copies, gameplay, publication,
+runtime changes or personal save/settings edits. The 512 MiB residency cap
+stays unchanged. MAC-011 remains Awaiting validation for Mac GPU, mapped
+scenes, transparency, display modes and runtime residency. Asset discovery,
+category review and consolidated scene validation remain unfinished.
+
+## Texture batch 231: four stone and molding replacements (2026-10-20)
+
+The six unreturned requests from batch 230 were regenerated after confirming
+its orchestration handle was terminated and no additional outputs existed.
+All six new built-in image-generation outputs and per-key receipts are saved
+privately. Four accepted offline and installed: bde46e7953c4a5d0 (horizontal
+stone molding), bec3bb33b2c9600f (layered pale gray/pink stone), c5e0dcbde662e68f
+(diagonal fractured bedrock), c873e4f6fdf1157e (pale fractured bedrock).
+Full, 2x2-repeat and original-grid comparisons retain major profile heights,
+rock faces and fracture maps with finer mineral detail. Luminance changes in
+that order: -1.32%, -0.84%, -2.16%, +2.86%. Existing edge transitions and
+neighboring scene/lighting behavior still require runtime validation.
+
+Two remain held: bb326199fe68eb09 loses the cool violet-gray upper tone and
+adds coarse pale aggregate; ced0d2d9eeae7406 is visibly too dark (-14.93%)
+with overly shadowed pits. Neither was installed. All six interrupted requests
+now have artwork and decisions; this does not make the two failed drafts complete.
+
+Actual sources: three 1774x887 and three 1254x1254; installed one 1024x512
+and three 1024x1024, all LANCZOS downsampled. No crop, color edits, aspect
+change or alpha override. Not native 4K artwork. All six sources retained
+(24,573,946 bytes). Five comparison sheets remained in memory, avoiding
+1,979,086 raster bytes. Metrics and raster hashes replay exactly after retiring
+six newly recreated original PNG caches (478,278 bytes), verified against
+catalog hashes and decoded archive pixels. Previously denied paths untouched.
+
+Four new Windows native parser executions pass. Prior 1,409 DDS hashes and
+checker identity match existing evidence; all 1,413 installed files pass fresh
+Python format, metadata, dimensions, aspect, mip and hash audit. Worklist,
+hybrid queue and progress refreshed: 1,413 installed, 5,273 needing artwork,
+126 held drafts; 6,121 classified and 691 unclassified. Classification remains
+routing, not completion. Private review/hybrid-231-acceptance.json links evidence.
+
+Pack including metadata: 1,131,895,176 bytes (1079.46 MiB),
+below 6144 MiB; increase 2,448,974 bytes. Temporary output:
+267,658,844 bytes (255.26 MiB), below
+256 MiB. Texture workspace including source art: 7,013,592,431
+bytes; measured disk free 87,260,270,592 bytes. Existing allocation helper
+reports logical/allocated equally, not independent physical-allocation proof.
+One active pack remains; no duplicate game/build/staging, gameplay, publication,
+personal save/settings or runtime changes. The 512 MiB residency limit stays.
+MAC-011 remains Awaiting validation: Mac GPU, mapped scenes, display modes,
+transparency and runtime residency unverified. Discovery/category coverage and
+consolidated scene validation remain incomplete.
+
+## Texture batch 230: two new rock materials (2026-10-20)
+
+Eight classified opaque rock/architectural materials were selected and their
+originals inspected. Two built-in edits completed: b5511215b686495d (dark
+layered rock ledge) and b7280b1edb403b08 (warm tan layered rock). Both passed
+full, 2x2-repeat and original-grid comparison and are installed. Main cavities,
+strata and fissure placement remain recognizable with finer mineral detail;
+mean luminance changes are +1.24% and +0.58%. Existing edge transitions and
+neighboring scene/lighting behavior remain unverified.
+
+The orchestration was explicitly stopped after two results to correct accidental
+binary-image logging. Six requests returned no result, remain unfinished, and
+are not counted as generated or installed. The terminated handle and exact six
+keys are in private review/hybrid-230-interruption.json. A later output-directory
+check still found only these two new images. Verify outputs before retrying;
+future generation logging must emit images or compact hints, never binary text.
+
+Actual sources: 1774x887 and 1254x1254, LANCZOS downsampled to 1024x512 and
+1024x1024 respectively. No crop, color edits, aspect change or alpha override;
+not native 4K artwork. Retained source art: 7,966,401 bytes. Three comparison
+sheets stayed in memory, avoiding 629,466 raster bytes. Reproduction from the
+verified game archives and generated art matches all metrics and sheet hashes
+exactly after retiring all eight new original PNG caches (646,524 bytes).
+Previously denied paths, game archives, source art, saves and settings untouched.
+
+Two new Windows native parser executions pass; prior 1,407 installed hashes and
+checker identity match existing evidence. All 1,409 installed files pass fresh
+Python format, metadata, dimensions, aspect, mip and hash audit. Worklist and
+hybrid queue refreshed: 1,409 installed, 5,279 needing artwork, 124 held drafts;
+6,121 classified and 691 unclassified. Routing does not count as artwork.
+
+Pack including metadata: 1,129,446,202 bytes (1077.12 MiB),
+below 6144 MiB. Temporary output: 267,617,055 bytes
+(255.22 MiB), below 256 MiB. Texture workspace
+including art: 6,986,508,134 bytes; measured disk free:
+90,292,289,536 bytes. Existing helper reports logical/allocated equally,
+not independent physical-allocation proof. One active pack; no staging copies.
+
+No gameplay or publication. Shared runtime and 512 MiB residency settings
+unchanged. MAC-011 stays Awaiting validation; native Mac GPU, mapped scenes,
+display modes, transparency and runtime residency remain unverified. Discovery,
+category review and consolidated scene validation are incomplete. Private
+review/hybrid-230-acceptance.json links provenance, decisions, checks and cleanup.
+
+## Texture batch 229: three held material corrections resolved (2026-10-20)
+
+Eight held opaque materials received built-in image-generation corrections.
+Three passed offline visual review and were installed: 209d979993479fa6
+(rusted sheet), 695e4b6e9b718e6d (dark olive-gray wood), b9d94dbe9b75f1c6
+(muted reddish/purple-gray stone). Luminance changes against originals are
+-6.27%, +3.05%, +3.20%. Full comparisons, 2x2 repeats and original-grid
+checks support material identity and broad feature placement; scene use and
+lighting remain unverified. Metrics alone do not establish UV fidelity.
+
+Five remain unfinished: b8c79e1667022feb grille row/edge alignment,
+501c00f0f9745c7c enlarged border fasteners, 03285199871fbb78 tread topology
+and tone, 6366309151b2557c masonry joint placement, and b4ed22186a629045
+charcoal stone brightness (+23.36%). None of these five drafts was installed.
+Repeated pattern failures need a revised correction approach, not automatic
+acceptance or another identical prompt cycle.
+
+Actual generated sources: three 1774x887 and five 1254x1254. Accepted rust
+and wood were LANCZOS upsampled from 1254x1254 to 2048x2048; accepted stone
+was downsampled to 1024x1024. No cropping or color edits. These are not native
+2K/4K source images. Seven completed outputs survived a tool-host interruption;
+after confirming the original handle was missing, only the missing eighth
+output was retried. Private recovery evidence records the visual subject mapping
+and lost tool metadata rather than inventing successful original tool returns.
+
+All five reviewed comparison sheets remained in memory (1,992,597 bytes
+avoided). Their metrics and raster hashes replay exactly from the game archives
+and retained generated source art, including after removing two newly recreated
+original PNG caches. Hash and decoded-pixel verification preceded retirement;
+247,584 bytes reclaimed. Six reused originals and previously denied cleanup
+paths were untouched. Private review/hybrid-229-original-export-retirement.json
+records the exact cleanup targets and result.
+
+Three new Windows native parser runs pass; 1,404 prior DDS hashes and checker
+identity match their existing evidence. All 1,407 installed files pass a fresh
+Python format, metadata, dimensions, aspect, mip and hash audit. Current counts:
+1,407 installed, 5,281 needing artwork, 124 held; 6,121 classified and 691
+unclassified. Classification is routing, not completed enhancement.
+
+Pack including metadata: 1,128,396,476 bytes (1076.12 MiB), below 6144 MiB.
+Temporary output after cleanup: 267,584,247 bytes (255.19 MiB), below 256 MiB.
+Texture workspace including source art: 6,977,451,678 bytes; measured disk free:
+90,970,755,072 bytes. The allocation helper reports logical/allocated equally;
+this is not independent physical-allocation proof. One active pack remains.
+
+No gameplay, publication, runtime/adapter changes or personal save/settings
+changes. MAC-011 remains Awaiting validation; Mac GPU, scene coverage, display
+modes, transparency and 512 MiB residency are unverified. Discovery and category
+coverage remain incomplete. Private review/hybrid-229-acceptance.json links
+prompts, source provenance, decisions, parser evidence, cleanup and storage.
+
+## Texture batch 228: six new material replacements (2026-10-20)
+
+Generated eight independently prompted opaque material edits with built-in
+image_gen from catalog/game hash-verified originals. Six accepted offline and
+installed: b77332647951a993 (vertical wood/bark), b91500009d86c674 (pale plaster),
+b9f511254b72f1fd (gray-tan granular plaster), ba6bf06901ad3351 (pink stucco),
+ae9f631c15b0e4a1 (warm tan granular material), 9cdf98c69a47ee62 (gray concrete).
+Full comparisons, 2x2 repeats and selected original-grid views retain broad
+features, UV positions and material identity while adding fine surface detail.
+Existing edge transitions are recorded; scene adjacency/lighting is unverified.
+
+Two drafts remain unfinished: b4ed22186a629045 is 14.01% darker and needs its
+cool-gray brightness restored; b9d94dbe9b75f1c6 shifts purple-gray minerals
+toward copper/red and needs palette/contrast correction. Neither installed.
+Accepted luminance changes are -7.83%, +1.99%, -4.38%, -1.41%, +4.65%, +9.05%
+in the installed-key order above. These metrics support review, not UV proof.
+
+Actual generated sources: seven 1254x1254, one 1774x887. Installed outputs:
+five 1024x1024 and one 1024x512, all LANCZOS downsampled without cropping,
+color edits or aspect change. This batch is not native 4K artwork. All eight
+generated sources retained privately (30,336,670 bytes), with exact prompts,
+source sizes and per-key decisions in authored/*-prompt.json and review/
+hybrid-228-{selection,prompts,generation,decisions,memory-review}.json.
+
+All five comparison sheets remained in memory, avoiding 2,112,842 raster bytes.
+The saved technical review script reproduces all metrics and sheet hashes
+exactly, including after removing eight newly created original PNG caches.
+Those exports matched catalog spans and decoded pixels before retirement;
+840,524 bytes reclaimed. Game archives, generated artwork, historical evidence
+and previously denied cleanup paths remain intact. Retirement proof is private
+review/hybrid-228-original-export-retirement.json.
+
+Six new Windows native parser runs pass. The other 1,398 installed DDS hashes
+and checker identity match prior evidence; all 1,404 pass fresh Python format,
+metadata, dimensions, aspect, mip and hash audit. Counts: 1,404 installed,
+5,281 needing art, 127 held drafts. Inventory stays 6,121 classified and 691
+unclassified. Current progress counts, worklist and hybrid queue refreshed.
+
+One pack is 1,122,103,298 bytes including metadata (1070.12 MiB), up 3,848,222
+bytes and below 6144 MiB. Temporary output about 255.11 MiB remains below
+256 MiB. Workspace including source art about 6622.34 MiB logical/allocated
+by the existing helper; measured free disk about 76.12 GiB. Helper allocation
+is not independent physical-allocation proof. No duplicate game/build/staging.
+
+No gameplay, personal settings/save changes, publication or runtime/adapter
+changes. MAC-011 remains Awaiting validation for Mac GPU, mapped scenes,
+transparency and 512 MiB residency. Windows parser success does not establish
+Mac GPU or scene support. Full discovery/category and consolidated scene/
+display-mode validation remain unfinished. Private review/hybrid-228-acceptance.json
+links decisions, parser checks, source provenance, cleanup and storage.
+
+## Texture batch 227: atlas and channel-semantics inventory (2026-10-20)
+
+Reviewed 128 more catalog/game hash-verified originals: 89 opaque and 39
+nonopaque. All sixteen RGB/alpha sheets inspected in memory. Per-key notes
+distinguish materials, identity artwork, mechanical/character atlases, signs,
+reflections and effects. The game logo and several functional shapes have
+unusual alpha behavior; controls, labels, UV geometry and partial opacity
+remain explicit constraints. Classification covers 6,121 of 6,812 supported
+keys; 691 remain unclassified. This inventory is not replacement completion.
+
+Unchanged shared renderer ce45eb4 reproduced all records and sheet hashes with
+explicit ordered keys. Artwork-root file count, byte total and path/size/mtime
+fingerprint were unchanged during rendering/replay. No original PNG exports
+or diagnostic raster files; avoided 2,421,835 bytes of JPEG sheets. Thumbnails
+use aspect-preserving nearest-neighbor display only.
+
+Full decisions and provenance are retained in private
+review/hybrid-227-review.json.gz: 128,311 JSON bytes compressed losslessly to
+24,462 bytes, verified by byte-identical decompression. Python gzip.open in
+text mode plus json.load reads it; stored ordered keys and hashes reproduce
+the sheets. No existing evidence moved, relabelled or removed.
+
+Fresh Python format, metadata, dimensions, aspect, hash and mip audit passes
+all 1,398 installed DDS files. Their hashes and native checker identity remain
+unchanged, so Windows parser evidence carries from batch 226 without new
+parser execution. Counts remain 5,289 needing art and 125 held drafts.
+Classification, worklist, hybrid queue and current storage records refreshed.
+
+One private pack remains 1,118,255,076 bytes including metadata (1066.45 MiB),
+under 6144 MiB. Temporary output about 255.07 MiB leaves about 0.93 MiB below
+256 MiB. Workspace including source art about 6589.66 MiB logical/allocated
+by the existing helper, with about 82.96 GiB free disk; these helper values
+are not independent physical-allocation evidence. No cleanup attempts, duplicate
+game/build/staging, personal-data changes or publication.
+
+No generation/installation, gameplay, runtime/adapter changes or Mac execution.
+Shared renderer needs no OS adapter; Mac host execution remains unverified.
+MAC-011 stays Awaiting validation for Mac GPU, mapped scenes, transparency and
+512 MiB residency. Full category review, other-encoding/procedural discovery
+and consolidated scene/display-mode validation remain open. Private
+review/hybrid-227-acceptance.json links review, storage and parser evidence.
+
+## Texture batch 226: atlas and channel-semantics inventory (2026-10-20)
+
+Reviewed 128 more catalog/game hash-verified originals: 89 opaque and 39
+nonopaque. All sixteen RGB/alpha sheets inspected in memory. Per-key notes
+distinguish materials, mechanical/character atlases, signs, scene thumbnails,
+reflections and effects. Broken glass needs graded masks; several reflections
+invert RGB detail in alpha, while one uses constant alpha 64. Exact lettering,
+control states, stencil bridges, UV islands, structural counts and opacity
+remain constraints for later artwork. Classification covers 5,993 of 6,812
+supported keys; 819 remain unclassified. This is inventory, not new artwork.
+
+Unchanged shared renderer ce45eb4 reproduced all records and sheet hashes with
+explicit ordered keys. Artwork-root file count, byte total and path/size/mtime
+fingerprint were unchanged during rendering/replay. No original PNG exports
+or diagnostic raster files; avoided 2,480,823 bytes of JPEG sheets. Thumbnails
+use aspect-preserving nearest-neighbor display only.
+
+Full decisions and provenance are retained in private
+review/hybrid-226-review.json.gz: 128,928 JSON bytes compressed losslessly to
+24,726 bytes, verified by byte-identical decompression. Python gzip.open in
+text mode plus json.load reads it; stored ordered keys and hashes reproduce
+the sheets. No existing evidence moved, relabelled or removed.
+
+Fresh Python format, metadata, dimensions, aspect, hash and mip audit passes
+all 1,398 installed DDS files. Their hashes and native checker identity remain
+unchanged, so Windows parser evidence carries from batch 225 without new
+parser execution. Counts remain 5,289 needing art and 125 held drafts.
+Classification, worklist, hybrid queue and current storage records refreshed.
+
+One private pack remains 1,118,255,076 bytes including metadata (1066.45 MiB),
+under 6144 MiB. Temporary output about 255.04 MiB leaves about 0.96 MiB below
+256 MiB. Workspace including source art about 6589.51 MiB logical/allocated
+by the existing helper, with about 82.69 GiB free disk; these helper values
+are not independent physical-allocation evidence. No cleanup attempts, duplicate
+game/build/staging, personal-data changes or publication.
+
+No generation/installation, gameplay, runtime/adapter changes or Mac execution.
+Shared renderer needs no OS adapter; Mac host execution remains unverified.
+MAC-011 stays Awaiting validation for Mac GPU, mapped scenes, transparency and
+512 MiB residency. Full category review, other-encoding/procedural discovery
+and consolidated scene/display-mode validation remain open. Private
+review/hybrid-226-acceptance.json links review, storage and parser evidence.
+
+## Texture batch 225: alpha-aware inventory review (2026-10-20)
+
+Reviewed 128 additional catalog/game hash-verified originals: 85 opaque and 43
+nonopaque. All sixteen RGB/alpha sheets inspected in memory. Notes distinguish
+materials from UV atlases, scene thumbnails, identity artwork, signs and effects.
+Several white or textured RGB carriers conceal functional icons, stencil digits,
+technical diagrams, web strands or crack geometry in alpha. Their channel
+shapes, opacity extrema, exact wording/orientation and UV layout are explicit
+preservation constraints. Classification covers 5,865 of 6,812 supported keys;
+947 remain unclassified. Classification is not replacement completion.
+
+Unchanged memory renderer ce45eb4 reproduced every record and sheet hash using
+explicit ordered keys. Artwork-root file count, bytes and path/size/mtime
+fingerprint were unchanged across rendering and replay. No original exports
+or diagnostic raster files; avoided writing 2,601,456 bytes of JPEG sheets.
+Only aspect-preserving nearest-neighbor display thumbnails were used.
+
+Private review/hybrid-225-review.json.gz preserves full decisions and provenance:
+128,570 JSON bytes compressed losslessly to 24,779 bytes, with byte-identical
+decompression verified. Read with Python gzip.open in text mode and json.load;
+stored ordered keys and hashes reproduce the memory sheets. No existing
+evidence moved, relabelled or removed.
+
+Fresh Python format, metadata, dimensions, aspect, hash and mip audit passes all
+1,398 installed DDS files. Installed hashes and native checker identity remain
+unchanged; Windows parser evidence carried from batch 224 without new parser
+execution. Counts remain 5,289 needing art and 125 held drafts. Classification,
+worklist, hybrid queue and current progress/storage records refreshed.
+
+One private pack remains 1,118,255,076 bytes including metadata (1066.45 MiB)
+under 6144 MiB. Temporary output about 255.01 MiB, leaving about 0.99 MiB below
+256 MiB. Workspace including source art about 6589.36 MiB logical/allocated
+by the existing helper; free disk about 82.69 GiB. These helper values are not
+independent physical-allocation evidence. No cleanup attempts, duplicate game,
+build or staging trees, personal-data changes or publication.
+
+No artwork generation/installation, gameplay, runtime/adapter changes or Mac
+execution. Shared renderer requires no OS adapter; host and scene validation
+remain distinct. MAC-011 stays Awaiting validation for Mac GPU, mapped scenes,
+alpha and 512 MiB residency. Full category inventory, other encodings/procedural
+discovery and consolidated scene/display-mode checks remain open. Private
+review/hybrid-225-acceptance.json links review, storage and parser evidence.
+
+## Texture batch 224: original material and atlas review (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals: 93 opaque and 35
+nonopaque. All sixteen RGB/alpha sheets inspected. Per-key notes cover ordinary
+materials, detailed UV atlases, mesh/cutout geometry, signs, controls, reflections
+and effects. Several reflection maps need projection-aware work, while alpha
+sometimes encodes a glow or inverted coverage rather than the RGB silhouette.
+Preservation constraints distinguish those cases. Classification now covers
+5,737 of 6,812 supported keys; 1,075 remain unclassified.
+
+Unchanged memory renderer ce45eb4 reproduced every record and sheet hash exactly
+with explicit ordered keys. File count, bytes and path/size/mtime fingerprint
+of the artwork root were unchanged across rendering and replay. No original
+PNG exports or diagnostic raster files. Avoided 2,602,223 bytes of saved JPEGs.
+Original display uses aspect-preserving nearest-neighbor thumbnails only.
+
+Complete decisions and provenance are retained in private
+review/hybrid-224-review.json.gz: 128,247 JSON bytes compressed losslessly to
+25,213 bytes, with byte-identical decompression readback. Read with Python
+gzip.open in text mode and json.load; ordered keys and hashes reproduce the
+memory sheets. No existing evidence moved, relabelled or removed.
+
+Fresh Python format, metadata, dimensions, aspect, hash and mip audit passes
+all 1,398 installed DDS files. Their hashes and native checker identity are
+unchanged; Windows parser evidence carried from batch 223 without new parser
+execution. Counts remain 5,289 needing art and 125 held drafts. Worklist/hybrid
+queue, classifications and current progress storage refreshed.
+
+One private pack remains 1,118,255,076 bytes including metadata (1066.45 MiB)
+under 6144 MiB. Temporary output about 254.98 MiB, leaving about 1.02 MiB below
+256 MiB. Workspace including source art about 6589.21 MiB logical/allocated
+by the existing helper; free disk about 82.69 GiB. This is not independent
+physical-allocation evidence. No cleanup attempts, duplicate game/build/staging,
+personal-data changes or publication.
+
+No generation, installation, gameplay, runtime/adapter changes or Mac execution.
+Shared renderer requires no OS adapter; host execution and scene validation
+remain distinct. MAC-011 stays Awaiting validation for Mac GPU, mapped scenes,
+alpha and 512 MiB residency. Full asset/category inventory, other encodings,
+procedural discovery and consolidated scene/display-mode checks remain open.
+Private review/hybrid-224-acceptance.json links compressed review, storage and
+carried-forward parser evidence. Classification is not replacement completion.
+
+## Texture batch 223: inventory with compressed review provenance (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals: 83 opaque and 45
+nonopaque. All sixteen RGB/alpha sheets inspected in memory. Notes identify
+environment materials, UV atlases, effects, cutouts, signage, a localized logo,
+font glyphs and interface controls. Several apparently flat RGB images contain
+functional letters, diagrams or silhouettes in alpha. Exact source wording,
+orientation, channel geometry, opacity and UV layout remain explicit constraints
+for specialist handling. Classification covers 5,609 of 6,812 supported keys;
+1,203 remain unclassified. Routing does not count as replacement completion.
+
+Unchanged shared memory renderer ce45eb4 reproduced all records and sixteen
+JPEG hashes byte-for-byte using explicit ordered keys. Artwork-root file count,
+bytes and path/size/mtime fingerprint were identical across rendering and replay.
+No raster output or original PNG export. Avoided 2,547,392 bytes of diagnostic
+JPEGs on disk. Original thumbnails use aspect-preserving nearest-neighbor
+scaling only; no artwork generation or installed resampling.
+
+New review evidence is a lossless gzip JSON record, retaining every per-key
+decision, decoded/catalog hash, ordered key and sheet hash. JSON bytes 130,400
+compress to 25,155 bytes; decompression readback is byte-identical. Read the
+private review/hybrid-223-review.json.gz using Python gzip.open with mode "rt"
+and encoding "utf-8", then json.load. Its explicit keys reproduce the memory
+sheets with tools/texture-triage-memory.py. Existing evidence was not moved,
+relabelled, compressed or removed. All new files still count toward the cap.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passes all 1,398 installed DDS files. Their hashes and native checker identity
+are unchanged; batch 222 Windows parser evidence carried forward without a new
+parser run. 5,289 keys need art and 125 drafts remain held. Worklist/hybrid queue,
+classification and current progress storage refreshed. Pack/runtime unchanged.
+
+Single private active pack: 1,118,255,076 bytes including metadata (1066.45 MiB),
+under 6144 MiB. Temporary output about 254.96 MiB, leaving about 1.04 MiB below 256 MiB.
+Workspace including source art about 6589.06 MiB logical/allocated by the existing
+helper; free disk about 82.70 GiB. Allocation is not independent physical-disk
+proof. No cleanup attempts, duplicate game/build/staging/ZIP or personal-data
+changes. Denied cleanup paths untouched. No publication.
+
+No gameplay or Mac execution. Shared renderer needs no OS adapter; Mac execution
+and scene/GPU appearance remain unverified. MAC-011 stays Awaiting validation
+for mapped scenes, alpha and 512 MiB residency. Other-encoding/procedural coverage,
+remaining categories and consolidated display-mode/scene checks remain open.
+Private review/hybrid-223-acceptance.json links compressed evidence, storage
+and carried-forward parser results. The overhaul remains incomplete.
+
+## Texture batch 222: six environment materials installed (2026-10-20)
+
+Generated eight individual opaque material edits with built-in image generation
+from catalog/game hash-verified originals. Six passed original-versus-compiled
+DDS, repeated-edge and selected original-grid review: warm orange-pink plaster,
+gray-beige granular surface, chipped pink-gray plaster, dark bronze bands,
+rough pale swirled plaster and reddish rock. Refined material detail preserves
+the reviewed broad features, palette and opaque coverage. Mean luminance changes
+for accepted results range from -8.32% to +4.48%. Metrics support visual review;
+they do not prove mapped-scene fidelity or seamless adjacency.
+
+Two drafts remain held and uninstalled. Masonry changes mortar course/joint
+positions; wood changes board divisions and is 14.96% brighter. Keep original
+structure and tone in their correction work. A separate initial candidate,
+5f08f18ab6339528, was excluded before generation: full-size inspection reveals
+a dense outlined UV atlas, rather than the simple panel suggested by its
+thumbnail. Classification was refined with the prior record retained.
+Masonry target was corrected to match its square source before generation.
+
+Actual generated sizes: four 1774x887 landscapes and four 1254x1254 squares.
+Six installed outputs: four 1024x512 and two 512x512, all LANCZOS downsampled
+without cropping, color edits or aspect changes. The held wood's proposed
+2048-square DDS was reviewed in memory only; it is not installed. These are
+appropriately scaled material replacements, not native 4K generated sources.
+
+Five full/repeated/original-grid comparison sheets were displayed entirely in
+memory. Exact replay after installation matches every metric and JPEG byte hash.
+Retained compact evidence and the technical reproduction script, avoiding
+1,466,867 bytes of saved diagnostic JPEGs. Nine original PNGs totaling 630,875
+bytes were retained for image-edit references and specialist atlas review;
+no other raster diagnostics, duplicate pack or staging tree were written.
+
+All 1,398 installed DDS files pass fresh Python format, metadata, dimensions,
+aspect, hash and mip checks. Six new files passed actual Windows parser execution;
+1,392 prior hashes and checker identity are unchanged, carrying their previous
+parser evidence forward. 5,289 keys need art and 125 drafts remain held.
+Classification remains 5,481 of 6,812 supported keys, with 1,331 unclassified.
+Worklist/hybrid queue and current progress storage refreshed.
+
+One pack: 1,118,255,076 bytes including metadata (1066.45 MiB), up 1,751,076 bytes
+and below 6144 MiB. Temporary output about 254.93 MiB, leaving about 1.07 MiB
+below 256 MiB. Workspace including authored sources about 6588.93 MiB
+logical/allocated by the existing helper; disk free about 82.70 GiB. Allocation
+is the helper's measurement, not an independent physical-filesystem audit.
+No cleanup attempts or changes to previously denied paths. Source art/prompts
+remain private and local; no saves/settings changes or publication.
+
+Supported XBE hash verified before generation. No gameplay, Mac execution,
+runtime or adapter change. Shared formats and 512 MiB residency policy unchanged.
+MAC-011 remains Awaiting validation for mapped scenes, GPU appearance, alpha
+and residency. Asset/category coverage, other-encoding/procedural discovery and
+consolidated scene/display-mode validation remain unfinished. Private
+review/hybrid-222-acceptance.json links prompts, generation, decisions, memory
+evidence, original verification, native parser results and storage.
+
+## Texture batch 221: continued material and channel inventory (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals: 74 opaque and 54
+nonopaque. All sixteen RGB/alpha sheets were inspected in memory. Per-key notes
+cover environments, mechanical/character atlases, signage, controls, effects
+and cutouts. Several controls expose different shapes or lettering in alpha
+than in RGB; these require channel-aware specialist handling. Identity, UV
+boundaries, structural counts, readable glyphs and partial opacity remain
+explicit preservation constraints. Classification now covers 5,481 of 6,812
+supported keys, with 1,331 still unclassified; this is not replacement completion.
+
+Shared memory renderer is unchanged from ce45eb4. Explicit ordered-key replay
+reproduced every record and all sixteen JPEG hashes exactly. Artwork-root file
+count, total bytes and path/size/mtime fingerprint were unchanged during rendering
+and replay. Retained compact hashes and review notes, avoiding 2,173,038 bytes of
+saved diagnostic JPEGs. Original display uses aspect-preserving nearest-neighbor
+thumbnails only. No generation, installation resampling or cleanup attempt.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passes all 1,392 installed files. Installed DDS hashes and native checker identity
+remain unchanged; batch 220 Windows parser evidence is carried forward without
+a new parser run. 5,297 keys need art and 123 drafts remain held. Worklist and
+hybrid queue refreshed; one private active pack, no runtime or adapter change.
+
+Pack remains 1,116,504,000 bytes (1064.78 MiB) including metadata under 6144 MiB.
+Temporary output about 254.28 MiB, with 1.72 MiB headroom below 256 MiB.
+Workspace including source art about 6557.67 MiB logical/allocated by the existing
+helper; free disk about 82.84 GiB. Helper allocation is not independent physical
+disk evidence. Previously denied cleanup sets untouched. No duplicate game,
+build, staging or ZIP; no personal saves/settings changes or publication.
+
+No gameplay or Mac execution. The 512 MiB residency policy and near-completion
+playtesting gate are unchanged. MAC-011 remains Awaiting validation for mapped
+scenes, GPU appearance, alpha and residency. Other-encoding/procedural coverage,
+remaining categories and consolidated scene testing remain incomplete. Private
+review/hybrid-221-acceptance.json links review decisions, exact reproducible
+memory-sheet hashes, storage and carried-forward parser evidence.
+
+## Texture batch 220: memory-only inventory review (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals in paired RGB and
+alpha sheets: 86 opaque and 42 nonopaque. All sixteen sheets inspected, with
+per-key provisional categories, visible structures and preservation constraints.
+Coverage now includes 5,353 of 6,812 supported keys; 1,459 remain unclassified.
+Classification is not replacement completion or verified scene usage.
+
+Added shared tools/texture-triage-memory.py to render bounded original review
+sheets to JSON on stdout. The caller displays the base64 JPEGs in memory and
+retains only hashes, key order, decode provenance and review notes. No diagnostic
+raster files are written. Use --root and --game with the local data directories,
+and --limit 128 for a new selection. To replay a prior review, supply its explicit
+ordered --keys; do not redirect the full raster-bearing stdout to a file.
+The private evidence record documents the exact selection and reproduction.
+Display thumbnails preserve aspect with nearest-neighbor resampling; this does
+not generate artwork or alter source/pack files.
+
+Windows validation on the actual 128-key selection: explicit-key replay
+reproduced all records and all sixteen JPEGs byte-for-byte. Invalid limit,
+duplicate keys and an unknown key each exit 2. Before/after file count, bytes,
+paths, sizes and modification-time fingerprint of the artwork root are identical
+during rendering and replay. Avoided 2,205,945 bytes of saved JPEG output; only
+compact provenance/decisions were retained. No cleanup attempted, and previously
+denied cleanup paths remain untouched.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passes all 1,392 installed DDS files. Their hashes and native checker identity
+match prior evidence; Windows parser results carried forward without a new
+parser run. 5,297 keys still need art and 123 drafts remain held. Worklist and
+hybrid plan refreshed. No artwork generation or pack/runtime/adapter change.
+
+Single pack remains 1,116,504,000 bytes (1064.78 MiB) including metadata, below
+6144 MiB. Temporary output about 254.12 MiB, with about 1.88 MiB headroom below
+256 MiB. Texture workspace including source art about 6557.38 MiB logical and
+allocated by the existing helper; disk free about 82.85 GiB. This helper result
+is not an independent filesystem-allocation audit. No duplicate game, build,
+staging or ZIP; no personal saves/settings changes or publication.
+
+The renderer uses shared Python/Pillow and needs no OS adapter. Mac execution
+is unverified. No gameplay: MAC-011 remains Awaiting validation on mapped scenes,
+GPU behavior, alpha and residency. The 512 MiB residency policy is unchanged.
+Inventory, other-encoding/procedural coverage and consolidated scene tests remain
+unfinished. Private review/hybrid-220-acceptance.json links memory-render hashes,
+per-key decisions, storage and carried-forward parser evidence.
+
+## Texture batch 219: inventory and bounded storage audit (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals in paired RGB and
+alpha sheets: 81 opaque and 47 nonopaque. Per-key provisional categories,
+visible structure and preservation constraints cover materials, mechanical and
+organic atlases, text/signs, interface controls, scene images, reflections and
+effects. Several plain-looking RGB textures encode text or functional geometry
+in alpha; their channel semantics are explicitly retained for specialist review.
+All sixteen sheets inspected. Classification now covers 5,225 of 6,812 supported
+keys, with 1,587 still unclassified. Appearance-based routing is not replacement
+completion or verified scene usage.
+
+Checked temporary storage before output. Diagnostic JPEGs were encoded and
+measured in memory before writing, leaving space for provenance. No individual
+original PNG exports, artwork generation or pack changes. Display thumbnails
+use aspect-preserving nearest-neighbor scaling only.
+
+Storage audit identified five redundant repeated-view JPEGs from batches
+197/198/200, totaling 2,204,819 bytes. Each was reconstructed byte-for-byte in
+memory from verified original payload/RGBA and unchanged installed DDS; primary
+comparisons, focus evidence, metrics, decisions and artwork would be retained.
+The exact-path PowerShell removal was rejected by automatic approval review as
+"blocked by policy", without further reason. All five remain hash-intact;
+zero files deleted and zero bytes reclaimed. No alternate removal attempted.
+These paths and the earlier denied cleanup sets remain excluded from retries.
+Private review/hybrid-219-repeat-retirement.json records recovery and denial.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passes for all 1,392 installed DDS files. Their hashes and native checker identity
+match batch 218 evidence; Windows parser results carried forward without a new
+parser run. 5,297 keys still need art and 123 drafts remain held. Worklist/hybrid
+plan refreshed; shared formats and 512 MiB residency policy unchanged.
+
+Single active pack remains 1,116,504,000 bytes (1064.78 MiB), including metadata,
+under the 6144 MiB cap. Temporary output about 254.0 MiB, leaving about 2.0 MiB
+below 256 MiB. Texture workspace including source art about 6557.1 MiB
+logical/allocated by the existing helper; disk free about 82.85 GiB. No duplicate
+game/build/staging/ZIP, personal-data changes or publication.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior, alpha and residency. Inventory, other-encoding/procedural
+coverage and final scene tests remain unfinished. Private
+review/hybrid-219-acceptance.json links original hashes, RGB/alpha evidence,
+per-key decisions, storage and carried-forward parser audit.
+
+## Texture batch 218: environment material production (2026-10-20)
+
+Generated twelve individual material edits from catalog/game hash-verified
+opaque originals using built-in image generation. Eleven passed original versus
+compiled-DDS, repeated-edge and selected original-grid feature review: brushed
+bronze band, rusty hatch, lit plaster wall, perimeter-fastener plate, four-panel
+grid, wooden planks, cream plaster, gray stipple, dark granular ground, irregular
+metal panel assembly and reddish stone. Fastener rows, grid catches, plank
+seams/nails, baked light cue and atlas divisions were checked alongside detail.
+Actual scene adjacency and appearance remain unverified.
+
+One rusty sheet remains held: luminance rises 52.89% with strongly saturated
+orange and excessive chip contrast. No rejected draft is installed. Accepted
+luminance changes range from -9.87% to +7.75%; these metrics support, but do
+not replace, the visual layout/identity review.
+
+Actual generated sources: ten 1254x1254 squares and two 1774x887 landscapes.
+Eleven installed outputs: six 1024x1024, two 512x512, one 256x256, one 512x256
+and one 2048x1024 DXT1, all with complete mip chains. Ten downsampled; the
+2048x1024 panel is upsampled from 1774x887. LANCZOS only, no crop, aspect
+change or programmatic color repair. Not native 2K/4K generated artwork.
+Installed hashes match reviewed DDS bytes. No new triage: 5,097 classified,
+1,715 unclassified.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passes for all 1,392 installed files. Eleven new files passed the existing
+Windows DDS parser; 1,381 prior hashes and checker identity match earlier
+evidence. 5,297 keys need art and 123 drafts remain held. Installed coverage
+is 20.43% of the 6,812 supported catalog keys, not full-game validation.
+Worklist/hybrid plan refreshed; shared formats and 512 MiB residency unchanged.
+
+Single active pack 1,116,504,000 bytes (1064.78 MiB), including metadata;
+batch adds 5.80 MiB under the 6144 MiB cap. Temporary output about 251.7 MiB,
+leaving about 4.3 MiB below 256 MiB. Texture workspace including source art
+about 6554.7 MiB logical/allocated by the existing helper; disk free 82.85 GiB.
+No cleanup attempt or denied-deletion retry, duplicate game/build/staging/ZIP,
+personal-data changes or publication. Source artwork remains private.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior, alpha and residency. Inventory, broader embedded/other
+encoding/procedural coverage and final scene tests remain unfinished. Private
+review/hybrid-218-acceptance.json links exact prompts, actual source sizes,
+resampling, original verification, compiled comparisons and parser evidence.
+
+## Texture batch 217: original inventory and specialist routing (2026-10-20)
+
+Reviewed 128 further catalog/game hash-verified originals in paired RGB and
+alpha contact sheets: 85 opaque and 43 with non-opaque alpha. Recorded a
+per-key provisional category, visible structure, evidence and preservation
+constraints. Coverage includes architectural panels and trims, mechanical
+atlases, character portraits/skin islands, multilingual error screens, rotated
+or mirrored labels, tiny functional icons and alpha-carried effects/masks.
+Plain white/black RGB was not treated as evidence of a blank texture.
+
+All sixteen diagnostic sheets reviewed. Originals decoded directly in memory;
+no individual PNG exports, generated artwork or installed pack changes.
+Contact-sheet display uses aspect-preserving nearest-neighbor scaling only.
+Classification now covers 5,097 of 6,812 supported keys; 1,715 remain
+unclassified. Categories are appearance-based and scene usage remains
+unverified. Specialist text, UI, character and channel-sensitive assets need
+enlarged semantic/mapping review before production. Routing is not completion.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passes for all 1,381 installed DDS files. Their hashes and the native checker
+identity match batch 216 evidence; Windows parser results carried forward,
+with no new native parser execution. Worklist and hybrid plan refreshed.
+5,309 keys still need art and 122 drafts remain held. Shared formats,
+runtime adapters and the 512 MiB residency policy are unchanged.
+
+Single active pack remains 1,110,424,692 bytes (1058.98 MiB), including metadata,
+under the 6144 MiB cap. Temporary output about 247.8 MiB, with about 8.2 MiB
+headroom below 256 MiB. Texture workspace including source art about 6502.6 MiB
+logical/allocated by the existing helper; disk free about 83.08 GiB. No cleanup
+attempt or denied-deletion retry, duplicate extracts/builds/staging/ZIPs,
+personal-data changes or publication.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior, alpha and residency. Inventory, other-encoding/procedural
+coverage and final scene tests remain unfinished. Private
+review/hybrid-217-acceptance.json links original payload/RGBA hashes, all
+RGB/alpha evidence, per-key decisions, storage and carried-forward parser audit.
+
+## Texture batch 216: held material corrections (2026-10-20)
+
+Generated eight individual corrections from catalog/game hash-verified opaque
+originals using built-in image generation. Seven passed original/compiled-DDS,
+repeated-edge and selected original-grid feature review: plaster/post bottom
+strip, marble right-edge join, charcoal material, three-row riveted corrosion,
+blue-green technical atlas, gray concrete and stone/rail trim. Brightness shifts
+are now -10.56% to +3.47%; structural review also checks boundaries, sparse bar
+divisions, plain inset, fasteners and crack layout. No numerical threshold alone
+was treated as visual approval. One patterned metal draft remains held: row
+pitch/phase and slit silhouettes still differ despite improved tone and four
+rows. No held draft is installed; earlier sources and reasons remain retained.
+
+Actual generated sources: five 1254x1254 squares and three 1774x887 landscapes.
+Seven accepted outputs: three 1024x1024, two 512x512, one 512x256 and one
+1024x512 DXT1, all with complete mip chains. All downsampled with LANCZOS;
+no crop, aspect change or programmatic color repair. Not native 4K artwork.
+Installed hashes match the compiled bytes used for review. No new triage:
+4,969 keys classified and 1,843 unclassified.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passed for all 1,381 installed files. Seven new files passed the existing Windows
+DDS parser; 1,374 prior hashes and checker identity match earlier evidence.
+5,309 keys still need art and 122 drafts remain held, totaling 6,812 supported
+keys. Installed coverage is 20.27% of that audited catalog, not full-game visual
+validation. Worklist and hybrid plan refreshed. Shared formats, runtime adapters
+and the 512 MiB residency policy are unchanged.
+
+Single active pack 1,110,424,692 bytes (1058.98 MiB), including metadata;
+batch adds 2.75 MiB under the 6144 MiB cap. Temporary output about 245.4 MiB,
+leaving about 10.6 MiB below 256 MiB. Texture workspace including source art
+about 6500 MiB logical/allocated by the existing helper; disk free 83.08 GiB.
+Cached originals reused; no cleanup attempt or denied deletion retry, duplicate
+game/build/staging/ZIP, personal-data change or publication.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior, alpha and residency. Discovery, full category review and
+final scene tests remain unfinished; this partial pack is not a full remaster.
+Private review/hybrid-216-acceptance.json links exact prompts, source sizes,
+resampling, original hashes, compiled comparisons, decisions and parser evidence.
+
+## Texture batch 215: metal panels and architectural surfaces (2026-10-20)
+
+Generated twelve individual edits from hash-verified opaque originals using
+built-in image generation. Eight passed original/compiled-DDS, repeated-edge
+and selected original-grid feature review: tan panel, mauve stone, copper
+bands, gray-green door, red lattice atlas, blue-gray fastener panel, slotted
+access plate and brown vented door. Reviewed UV boundaries, coarse lighting,
+vent slats, fastener centers and lattice topology alongside material detail.
+Scene appearance and actual neighboring surfaces still require validation.
+
+Four drafts remain held: corroded plate is 16.47% darker with coarser contrast;
+blue-green technical panel invents extra vent slats; gray wall is 22.13%
+brighter; stone/rail trim is 28.09% brighter with heavier pitting/cracks.
+No rejected draft is installed. Focused review also corrects an earlier
+inventory/prompt mistake: the corroded plate has three staggered rivet rows,
+not two. Canonical classification corrected; prior description and actual
+sent prompt retained with the discrepancy explicitly recorded.
+
+Actual generated sources: eight 1254x1254 squares and four 1774x887 landscapes.
+Installed outputs: five 1024x1024, two 1024x512 and one 2048x1024 DXT1 file,
+all with complete mip chains. Seven are downsampled; the 2048x1024 slotted
+plate is upsampled from 1774x887. LANCZOS only, no crop, aspect change or
+programmatic color repair; not native 2K/4K generated artwork. Installed hashes
+match reviewed DDS bytes. No new triage: 4,969 classified, 1,843 unclassified.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passed for all 1,374 installed files. Eight new files passed the existing
+Windows DDS parser; 1,366 prior hashes and checker identity match earlier
+evidence. 5,309 keys need art and 129 drafts remain held. Worklist/hybrid plan
+refreshed. Shared formats and 512 MiB residency policy unchanged; no runtime
+or adapter edits.
+
+Single active pack 1,107,537,094 bytes (1056.23 MiB), including metadata;
+batch adds 5.34 MiB under the 6144 MiB cap. Temporary output 243.82 MiB,
+leaving 12.18 MiB below 256 MiB. Texture workspace including source art
+6470.96 MiB logical/allocated by the existing helper; disk free 83.20 GiB.
+No cleanup retries, duplicate game/build/staging/ZIPs or personal-data changes.
+Source artwork and game assets remain local and private.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior, alpha and residency. Discovery, full category review and
+final scene tests remain unfinished; this partial pack is not a full remaster.
+Private review/hybrid-215-acceptance.json links prompts, actual source sizes,
+comparison/feature sheets, metrics, decisions and parser results.
+
+## Texture batch 214: weapon, interface and channel inventory (2026-10-20)
+
+Inspected 128 additional catalog-hash-verified originals through eight RGB and
+eight separate alpha contact sheets. Preserved source spans, payload/RGBA
+hashes, dimensions, alpha ranges and per-key constraints. This batch includes
+88 opaque and 40 alpha-bearing originals. Classification now covers 4,969 of
+6,812 keys, with 1,843 unclassified. Routing remains provisional; no artwork
+was generated, installed or counted complete by this inventory pass.
+
+Specialist cases include scope reticle calibration/numerals, outlined weapon
+icons, stacked skull symbols with different RGB/alpha details, translucent
+window panes, fine foliage, character equipment atlases and flat RGB masking
+complex gradients. Recorded glyph orientation, motif identity, slot counts,
+UV partitions and channel polarity where visible; unknown scene use remains
+explicit. Contact-sheet thumbnails preserve aspect with nearest sampling.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passed for all 1,366 installed DDS files. All file hashes and the native checker
+identity match batch 213; prior Windows parser results carried forward without
+rerunning unchanged files. Pack remains unchanged: 5,321 keys need art and
+125 drafts require correction. Worklist and hybrid routing refreshed. No
+runtime, format or adapter changes; 512 MiB residency policy unchanged.
+
+Verified 320 source RGBA payloads supporting 40 older original-only inventory
+sheets from batches 207, 209 and 210. Their proposed retirement would reclaim
+6,835,279 bytes while preserving decisions, source-span hashes and recovery
+instructions. Automatic approval review rejected the guarded deletion as
+blocked by policy, without a further reason. All 40 remain hash-intact; zero
+files deleted and zero bytes reclaimed. No alternate deletion attempted.
+Manifest: review/hybrid-214-contact-retirement.json. Earlier original-cache
+cleanup denial remains in force; those files were not targeted or changed.
+
+Single active pack remains 1,101,940,090 bytes (1050.89 MiB), including metadata,
+under 6144 MiB. Temporary output about 240.60 MiB, leaving 15.40 MiB below
+256 MiB. Texture workspace including source art about 6421.44 MiB logical/
+allocated by existing helper; disk free 83.42 GiB. No duplicate extracts,
+builds, staging or ZIPs. Game data, source art, saves and settings preserved.
+
+No game launch or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior, alpha and residency. Embedded/other-encoding/procedural
+discovery, full category coverage and final scene testing remain incomplete.
+Private review/hybrid-214-acceptance.json links evidence and cleanup outcome.
+This inventory progress does not make the partial pack a full remaster.
+
+## Texture batch 213: worn environment materials (2026-10-20)
+
+Generated twelve individual material edits using built-in image generation and
+hash-verified originals. Nine passed original/compiled-DDS and 2x2 repetition
+review: rust, painted wood, granular olive-brown surface, warm metal, rounded
+stained surface with white band, damaged plaster, chipped green wall, pale
+speckled panel and recessed-seam stone. Main partitions, wear footprints,
+structural boundaries and coarse lighting were reviewed with finer detail.
+Mapped appearance and actual neighboring surfaces still need scene validation.
+
+Three drafts remain held. The pale plaster with wooden post loses its thin
+bottom strip and becomes 14.37% brighter. Marble trim loses the right-edge
+vertical join despite preserving the horizontal seam. Charcoal material becomes
+15.52% darker with stronger mottling. A focused original-grid comparison records
+these defects. None is installed; retain source art, original references and
+correction notes. No programmatic color or artistic repair was applied.
+
+Actual generated sources: nine 1254x1254 squares and three 1774x887 landscapes.
+Accepted outputs are four 1024x1024, three 512x512 and two 1024x512 DXT1 files
+with complete mip chains. LANCZOS downsampling only, no crop or aspect change;
+not native 4K generated artwork. All installed hashes match reviewed DDS bytes.
+No new triage: 4,841 of 6,812 keys classified and 1,971 unclassified.
+
+Full current Python format, metadata, dimensions, aspect, hash and mip audit
+passed for 1,366 installed files. Nine new files passed the existing Windows
+DDS parser; all 1,357 earlier hashes and checker identity match prior evidence.
+5,321 keys need art and 125 drafts are held. Worklist and hybrid routing updated.
+Shared formats and 512 MiB residency policy unchanged; no runtime/adapter edits.
+
+Single active pack 1,101,940,090 bytes (1050.89 MiB), including metadata;
+batch growth 3.84 MiB, below 6144 MiB. Temporary output 238.48 MiB, leaving
+17.52 MiB below the 256 MiB limit. Texture workspace including source art
+6419.21 MiB logical/allocated by the existing helper; disk free 83.42 GiB.
+No duplicate game/build/staging/ZIPs or cleanup retry. Game assets, personal
+saves and settings remain untouched; artwork remains local and private.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation for GPU,
+mapped scenes, transparency and residency. Discovery, full category review and
+final validation remain incomplete; this is not a full remaster. Private
+review/hybrid-213-acceptance.json links prompts, source sizes, original hashes,
+appearance decisions, metrics and parser results.
+
+## Texture batch 212: original-channel inventory review (2026-10-20)
+
+Inspected 128 additional catalog-hash-verified originals through eight RGB and
+eight separate alpha contact sheets. Each decision records the source span,
+payload/RGBA hashes, actual dimensions, alpha range and visual constraints.
+No individual original exports, generated artwork or replacement installation.
+The batch contains 84 opaque and 44 alpha-bearing originals. Classification
+now covers 4,841 of 6,812 keys; 1,971 remain unclassified. This is provisional
+routing, not completion of artwork or full category/scene review.
+
+Recorded channel-sensitive cases including lattice and reticle shapes hidden
+in flat RGB, low-opacity gradients, ring and grid masks, thin foliage, window
+panes cut out in alpha despite visible RGB, and reflection-like images with
+different RGB/alpha structure. Identity-sensitive weapon/character atlases,
+inverted warning labels, posters, portraits, scene previews and carved motifs
+remain individual or specialist work. No unreadable text was reconstructed.
+Contact sheets preserve aspect with nearest-neighbor presentation only.
+
+Full current Python audit passed for all 1,357 installed DDS files: formats,
+metadata, dimensions, aspect, hashes and mip chains. All installed hashes and
+the native checker identity match batch 211, so its Windows parser evidence
+is carried forward without rerunning unchanged files. 5,333 keys need art and
+122 drafts remain held. Worklist and hybrid routing refreshed. No source,
+runtime, format or adapter changes; shared 512 MiB residency policy unchanged.
+
+Single active pack remains 1,097,915,388 bytes (1047.05 MiB), including metadata,
+under 6144 MiB. Temporary output is about 235.05 MiB, below 256 MiB, with about
+20.95 MiB headroom. Texture workspace including source art is about 6367.57 MiB
+logical/allocated by the existing helper; disk free about 83.65 GiB. No cleanup
+retried after the prior denial, and no duplicate game/build/staging/ZIP created.
+Original game data, artwork, personal saves and settings remain untouched.
+
+No game launch or Mac execution. MAC-011 remains Awaiting validation on mapped
+scenes, GPU behavior and residency. Embedded/other-encoding/procedural discovery
+and complete category coverage remain unresolved. Private evidence is linked
+from review/hybrid-212-acceptance.json. This partial pack is not a full remaster.
+
+## Texture batch 211: resolve material-tone failures (2026-10-20)
+
+Generated eight focused corrections from hash-verified originals. Five passed
+offline original/compiled-DDS and repeated-edge review: dark riveted plates,
+quiet olive-gray sheet, woven cloth, dark wood atlas and diffuse-lit gray metal.
+Luminance differences versus originals are now -7.55%, +2.65%, -0.58%, +2.19%
+and -6.98%, respectively; prior failures were brighter/oranger or too dark and
+contrasty. Reviewed original layout, folds, atlas partitions, hardware and broad
+illumination as well as these diagnostic numbers. All five are newly installed.
+
+Three drafts remain held after fixed-grid comparisons: bronze grille recesses
+still change shape/spacing, dark blue panel fasteners still shift/enlarge, and
+tread marks still simplify the original interlocked topology. Material detail
+alone is insufficient. Earlier source images, prompts and failure records are
+retained; five resolved records move out of the active held list.
+
+Actual sources: seven 1774x887 landscapes and one 1254x1254 square. LANCZOS
+sampling for DDS review; installed files are four 1024x512 and one 1024x1024
+DXT1 with 11 mips each. No crop, aspect stretch or programmatic color repair;
+not native 4K art. No new classification: 4,713 of 6,812 keys reviewed, 2,099
+unclassified; full category/scene review remains incomplete.
+
+Full current Python audit passed: format, metadata, dimensions, aspect, hashes
+and mips. Five new files passed the existing Windows DDS parser; 1,352 prior
+hashes and checker identity match carried-forward evidence. Total 1,357
+installed, 5,333 needing art and 122 held drafts. Worklist/queue refreshed.
+Shared DXT1 and 512 MiB residency policy unchanged; no runtime/adapter changes.
+
+Verified 265 regenerable cached original PNGs against decoded game payloads,
+excluding held/uninstalled keys, alpha-bearing files and active pack metadata
+references. Automatic approval review rejected their deletion as blocked by
+policy, without further reason. All 265 remain hash-intact; zero bytes reclaimed.
+No alternate deletion attempted. Recovery/verification evidence is retained in
+review/hybrid-211-original-cache-retirement.json. Game archives and art preserved.
+
+Pack 1,097,915,388 bytes (1047.05 MiB), including metadata;
+this batch adds 2.00 MiB. Temporary output
+232.80 MiB, below 256 MiB; headroom 23.20 MiB.
+Texture workspace including source art 6365.22 MiB logical/allocated
+by existing helper; disk free 83.65 GiB. One active pack under 6144 MiB.
+No duplicate game/build/staging/ZIPs; personal saves and settings untouched.
+
+No gameplay or Mac execution; MAC-011 remains Awaiting validation. Discovery,
+full category review and final scene/GPU validation remain open. Private
+review/hybrid-211-acceptance.json links source provenance, focused comparisons,
+metrics, decisions and native audit. This partial pack is not a full remaster.
+
+## Texture batch 210: machinery panels and expanded inventory (2026-10-20)
+
+Generated twelve individual metal-panel and machinery edits. Eleven passed
+offline original/compiled-DDS and 2x2 repetition review, including silver and
+gray panels, circular inset, pipe routing, corroded atlases, damaged machinery,
+X-braced plate and pale wall with yellow stripe. Reviewed main UV partitions,
+hardware, boundaries and baked shading. One olive-gray sheet remains held:
+it became 20.10% darker with excessive coarse mottling. It is not installed.
+Mapped scene appearance and exact adjacency still require later validation.
+
+Actual generated sources: ten 1254x1254 squares and two 1774x887 landscapes.
+Eleven installed DXT1 outputs: two 512x512, eight 1024x1024 and one 1024x512,
+with complete mip chains. LANCZOS downsampling only; no crop, aspect stretching,
+synthetic padding or color repair. These are not native 4K generated sources.
+
+Inspected 128 further hash-verified original RGB/alpha pairs in eight RGB and
+eight alpha sheets. Classification now covers 4,713 of 6,812 keys (69.19%),
+with 2,099 unclassified. Important constraints include skull/icon variants,
+weapon silhouettes, inverted typography, portraits and posters, ornate grille
+alpha, partial-opacity grids, constant-alpha160 artwork, impact masks and
+functional swatches. Classification is provisional routing, not completion.
+
+Full current Python audit passed for format, metadata, dimensions, aspect,
+hashes and mip chains. Eleven new DDS files passed the existing Windows native
+parser; hashes for 1,341 prior files and checker identity match carried-forward
+evidence. Total 1,352 installed, 5,333 needing art and 127 held drafts. Worklist
+and hybrid queue refreshed. No runtime, format or adapter changes; 512 MiB
+residency policy unchanged, with no new GPU-memory measurement.
+
+Pack 1,095,815,356 bytes (1045.05 MiB), including metadata;
+this batch adds 6.01 MiB. Temporary output
+231.05 MiB, below 256 MiB; headroom 24.95 MiB.
+Texture workspace including source art 6335.49 MiB logical/allocated
+by existing helper; disk free 83.77 GiB. One active pack under 6144 MiB.
+No duplicate extracts, builds, staging or ZIPs; game, saves and settings preserved.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation. Inventory,
+full category review, other-encoding/procedural discovery and final scene/GPU
+validation are incomplete. Private review/hybrid-210-acceptance.json links source
+provenance, compiled comparisons, decisions, metrics, native audit and triage
+records. This partial pack is not a completed remaster.
+
+## Texture batch 209: environment materials and damaged-wall detail (2026-10-20)
+
+Eight individual edits passed offline original/compiled-DDS and 2x2 repetition
+review: brushed metal strip, technical plate, tangled fibrous surface, damaged
+wall with exposed mechanism, framed wood, pale plaster, green-gray masonry and
+dark red trim. Reviewed major boundaries, opening silhouette, hardware, molding,
+block courses and edge continuity. Material detail is modernized while retaining
+these cues; exact mapped adjacency and scene appearance remain unverified.
+All eight installed, with no new held drafts. Prior 126 drafts remain incomplete.
+
+Actual generated sources: four 1254x1254 squares and four 1774x887 landscapes.
+LANCZOS downsampling produces four 1024x1024 and four 1024x512 DXT1 files,
+each with 11 mips. No cropping, aspect stretching, synthetic padding or color
+repair. These are appropriately sized replacements, not native 4K generated art.
+
+Reviewed 64 further hash-verified original RGB/alpha pairs, in four RGB and
+four separate alpha sheets. Classification now covers 4,585 of 6,812 keys
+(67.31%), with 2,227 unclassified. Portraits, reticles, weapon silhouettes,
+warning text, creature/equipment atlases, partial-alpha panels and functional
+black/white swatches retain specialist handling. Flat RGB can hide meaningful
+alpha content. Classification is provisional routing, not category completion.
+
+Full Python pack audit passed: format, metadata, dimensions, aspect, hashes and
+mips. Eight new DDS files passed the existing Windows native parser; all 1,333
+prior hashes and checker identity match carried-forward evidence. Total 1,341
+installed, 5,345 needing art and 126 held drafts. Queue/worklist refreshed.
+No runtime, format or adapter changes; the 512 MiB residency policy remains.
+
+Pack 1,089,517,594 bytes (1039.04 MiB), including metadata;
+this batch adds 4.00 MiB. Temporary output
+225.11 MiB, below 256 MiB. Texture workspace including retained source art
+6284.81 MiB logical/allocated by existing helper;
+disk free 83.98 GiB. One active pack under the 6144 MiB cap. No duplicate
+extracts, builds, staging or ZIPs; original game, saves and settings untouched.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation. Full category
+review, other-encoding/procedural discovery and final scene/GPU validation are
+unfinished. Private evidence: review/hybrid-209-acceptance.json, source and
+prompt provenance, selection, compiled comparisons, metrics, decisions, native
+audit and triage RGB/alpha records. Partial coverage is not a full remaster.
+
+## Texture batch 208: metal panels and atlas detail (2026-10-20)
+
+Generated eight individual material edits from hash-verified opaque originals.
+Six passed offline original/compiled-DDS and 2x2 repetition review: segmented
+teal panel, brown cable-and-lock mechanism, dark weapon/service atlas, blue-gray
+structural panel, four-panel assembly and corroded turquoise sheet. Preserved
+panel boundaries, hardware positions, cable colors, caution bands and atlas
+regions. Offline acceptance does not prove mapped scene appearance or adjacency.
+Two drafts remain incomplete: rusty riveted plates became 27.55% brighter,
+and the bronze grille widened its narrow slit/crescent recesses and shifted
+local pattern details. Neither held draft is installed.
+
+Actual generated sources: five 1254x1254 squares and three 1774x887 landscapes.
+Reviewed DDS previews use LANCZOS downsampling; six installed outputs are two
+512x512, three 1024x1024 and one 1024x512 DXT1 with complete mip chains.
+No crop, aspect stretching, synthetic padding or color correction. These are
+appropriately sized detail replacements, not native 4K generated artwork.
+
+Reviewed 32 further original RGB/alpha pairs from verified catalog spans.
+Classification now covers 4,521 of 6,812 keys (66.37%), with 2,291
+unclassified. Inverted access lettering, document glyphs, alpha-only silhouettes,
+partial-opacity panel wear, transparent frames and sky/effect profiles remain
+specialist work. Provisional classification is not replacement completion.
+
+Full current Python audit passed for format, metadata, aspect, dimensions,
+hashes and mip chains. Six new DDS files passed the existing Windows native
+parser; unchanged hashes and unchanged checker preserve prior evidence for
+1,327 files. Total: 1,333 installed, 5,353 needing art and 126 held drafts.
+Worklist and hybrid queue refreshed. No runtime, adapter or residency changes.
+
+Pack 1,085,318,690 bytes (1035.04 MiB), including metadata;
+this batch adds 2.67 MiB. Temporary output
+221.63 MiB, below 256 MiB. Texture workspace including retained source art
+6249.00 MiB logical/allocated by existing helper;
+disk free 84.13 GiB. One active pack; 6144 MiB pack cap and
+512 MiB residency policy unchanged. No duplicate extracts, builds, ZIPs or
+staging trees; game assets, saves and personal settings untouched.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation; full category
+review, discovery gaps and final scene/GPU validation are unfinished. Evidence
+is private: review/hybrid-208-acceptance.json, generation provenance, selection,
+compiled comparisons, decisions, metrics, native audit and triage RGB/alpha
+sheets. This is partial coverage, not a completed remaster.
+
+## Texture batch 207: inventory of masks, labels and material channels (2026-10-20)
+
+Inspected 128 previously unclassified supported keys, each with two catalog
+occurrences, directly from hash-verified payload spans. Eight RGB and eight
+separate alpha contact sheets preserve aspect ratios. Recorded per-key
+provisional categories and preservation constraints; classification now covers
+4,489 of 6,812 keys (65.90%), with 2,323 still unclassified. This is routing,
+not replacement approval or full category/scene validation. No art generated,
+resampled or installed.
+
+Notable specialist work includes alpha-only decorative script and glyphs,
+skull/zoom symbols, character portraits and face/equipment atlases, ammunition
+stencils, X-ray labels, book spines and inverted magazine imagery. Preserve
+supplied text/atlas orientation rather than inventing unreadable lettering.
+Several apparently solid rock/wall materials contain inverse or partial alpha.
+Low-opacity glows/noise, constant-alpha153 and184 surfaces, and functional
+lookup-like textures retain their channel ranges and unresolved semantics.
+Chain links, window/grate holes, foliage and ornate ironwork require exact
+silhouettes and connectivity. Unknown usage remains open and in scope.
+
+Full current Python pack audit passed at batch start: format, metadata,
+dimensions, aspect, hashes and mip chains. All 1,327 installed DDS hashes
+still match audited progress assets, and the native checker is unchanged.
+Batch 206 Windows parser evidence is carried forward with no redundant native
+execution. Counts remain 5,361 needing art, 124 held drafts and 1,327 installed.
+Worklist and hybrid production queue refreshed; no pack or runtime changes.
+
+Pack unchanged at 1,082,519,048 bytes (1032.37 MiB).
+Temporary output 219.05 MiB at audit, below 256 MiB;
+consolidated scratch notes removed after verifying the canonical decisions.
+Texture workspace including retained source art 6217.10 MiB
+logical/allocated by existing helper; disk free 84.28 GiB.
+The 6144 MiB pack cap and 512 MiB residency policy are unchanged. No new GPU
+measurement, duplicate extracts/builds/staging/ZIPs, or game/save/settings edits.
+
+No gameplay or Mac execution; MAC-011 remains Awaiting validation. Inventory,
+other-encoding/procedural discovery, full category review and final scenes are
+unfinished. Private evidence: review/hybrid-207-acceptance.json, original
+verification, triage decisions, RGB/alpha sheets and carried-forward native
+audit. Current partial coverage is not a completed remaster.
+
+## Texture batch 206: correct carrier-edge contamination and finish narrow trims (2026-10-20)
+
+A stronger edge-color inspection invalidated batch 205's zero-magenta claim:
+its high-saturation threshold missed blended pink pixels on the first and
+last extracted rows. The affected DDS and metadata were withdrawn to private
+review evidence. Seven new magenta-carrier attempts showed the same problem
+and were rejected. No color filtering, arbitrary inset cropping or relaxed
+compiler aspect rule was used to hide it. Earlier batch 205 evidence is
+annotated as superseded by review/hybrid-206-magenta-edge-audit.json.
+
+The corrected references repeat the original 4:1 texture four times vertically
+inside a square, with no artificial padding color. Fifteen sources generated
+with built-in image generation this batch: seven rejected colored carriers,
+then eight accepted original-only repeated carriers. Each actual generated
+canvas is 1254x1254. The prescribed second tile, normalized [0,0.25,1,0.5],
+is a 1254x313.5 region, technically resampled with LANCZOS to 1024x256 and
+encoded DXT1 with 11 mip levels. Metadata records the precompiler resampling;
+these are not native 4K sources. Neighboring samples contain actual material.
+
+All eight selected corrections have zero detected blended-magenta chroma
+pixels in compiled output and pass original/compiled and repeated-edge review.
+Fine vertical seams, curved highlight bands, a stepped notch, bracket fittings,
+stacked panels, riveted rails and mechanical recesses retain their layouts.
+The brown trim's rail peaks remain at original rows 6 and 57. Average luminance
+changes range from -2.67% to +10.60%; actual mapped brightness and surface
+adjacency remain scene-validation work. This method still requires per-asset
+UV and repetition checks; a square canvas alone does not prove correctness.
+
+The batch replaces the withdrawn trim and adds seven more keys: 1,327 installed,
+124 held drafts, 5,361 needing art. All eight native Windows DDS checks pass.
+The other 1,319 DDS hashes and checker match prior audited evidence. Full
+current Python format, dimensions, aspect, hashes, metadata and mip-chain audit
+passes. Worklist, hybrid production queue and inventory refreshed.
+
+Also decoded and reviewed 64 additional original RGB/alpha pairs, with original
+catalog payload and decoded hashes verified. Classification now covers 4,361
+of 6,812 supported keys; 2,451 remain unclassified. Alpha-only weapon icons,
+an embossed medallion, intricate ironwork, partial-opacity glows, inverse
+reflection masks, text labels and functional constants remain specialist or
+semantic work. Classification is routing, not replacement approval.
+
+Pack 1,082,519,048 bytes (1032.37 MiB), including metadata,
+below 6144 MiB. Temporary output 216.06 MiB, below 256 MiB.
+Texture workspace including retained art 6214.00 MiB
+logical/allocated by existing helper; disk free 84.28 GiB at audit.
+Retired 14 superseded rejected local source copies (35,291,665 bytes)
+after verifying exact default-tool recovery hashes, selected replacements and
+absence of active pack references. Prompts, selected art/carriers, comparisons,
+withdrawn-DDS diagnosis and recovery manifests remain. No duplicate extracts,
+builds, staging or ZIPs. Game assets, saves and settings were not modified.
+
+No gameplay or Mac execution; the 512 MiB residency policy is unchanged and
+has no new GPU measurement. MAC-011 remains Awaiting validation. Full category
+review, other-encoding/procedural discovery and final scenes remain incomplete.
+Private review/hybrid-206-acceptance.json links decisions, both generation
+methods, UV extraction, edge-color audit, triage, native checks and retirement.
+
+## Texture batch 205: fixed-region carrier resolves one narrow trim (2026-10-20)
+
+One focused built-in image-generation correction resolves the brown metal
+trim held in batch 204. A square reference canvas places the untouched
+original in normalized region [0,0.375,1,0.625], with magenta padding outside.
+The generated 1254x1254 carrier preserves both horizontal boundaries within
+0.25 generated pixels; zero magenta pixels occur inside the measured material
+region. Technical LANCZOS extraction uses that prescribed fractional UV
+rectangle, clamps interpolation to material edges and produces 1024x256.
+No artistic pixel edits or aspect-policy changes. This is a resampled
+1254x313.5 effective source region, not native 4K generated artwork.
+
+Original/compiled and repeated comparisons retain the thin upper/lower rails,
+dark edge bands and broad rust-brown mottling with finer corrosion/scratches.
+Mean luminance changes -0.94%; left/right edge MAE is 8.96 versus 5.89 original.
+Mapped surface continuity and scene appearance remain untested. One successful
+carrier does not establish correctness for the other seven held narrow trims.
+Future narrow sources still need per-output boundary/UV/edge/alpha checks.
+
+Installed one DXT1 replacement, 1024x256 with 11 mip levels. Its native Windows
+DDS parser check passes; the remaining 1,319 DDS hashes and checker match prior
+audited evidence. Full current Python metadata, format, aspect, dimensions,
+mips and hash audit passes. Compiler metadata records its already-extracted
+1024x256 input; added provenance explicitly records earlier carrier resampling.
+Worklist, hybrid queue and inventory refreshed: 1,320 installed, 131 held drafts,
+5,361 needing art. Classification remains 4,297 of 6,812 supported keys.
+
+Pack 1,081,284,999 bytes (1031.19 MiB), including metadata,
+below 6144 MiB. Temporary output 212.17 MiB below 256 MiB.
+Texture workspace including source art 6201.21 MiB
+logical/allocated by existing helper; disk free 84.42 GiB.
+Retired only the superseded rejected local draft (2,651,188 bytes), after
+hash-verifying its original tool recovery, checking no active pack references,
+and retaining selected source/carrier, prior prompt/hash and comparison evidence.
+No duplicate extracts/builds/staging/ZIPs. Residency policy remains 512 MiB;
+no new GPU measurement. Game assets, settings and saves preserved.
+
+No gameplay or Mac execution; MAC-011 Awaiting validation. Full inventory,
+other-encoding/procedural discovery, category review and final scenes remain
+unfinished. Private review/hybrid-205-acceptance.json links generation,
+carrier preparation/extraction, visual decisions, metrics and native evidence.
+
+## Texture batch 204: narrow-trim aspect failures held for correction (2026-10-20)
+
+Eight original-referenced metal trims generated with built-in image generation.
+All eight require correction and are NOT installed or counted complete.
+Originals are 256x64 (4:1); actual generated canvases are 2169x725,
+2170x725 or 2172x724 (approximately 3:1). Four have full-canvas material;
+four include near-black padding. Content bounds and visual comparison show
+that padding removal alone does not establish correct aspect/layout. The
+last trim is close to 4:1 inside its padding but recess/seam placement changed.
+No stretching, material-edge cropping or compiler-tolerance relaxation used.
+
+One actual compiler invocation rejected the aspect mismatch before writing;
+pack directory stayed unchanged. Both raw comparison sheets preserve aspect
+and are labeled as uncompiled drafts. Original hash verification, complete
+prompts, actual dimensions, source hashes and per-key correction reasons are
+retained privately. Source drafts were copied to authored; no DDS resampling.
+
+Full current Python pack audit passed: hashes, dimensions, aspect, format,
+metadata and mip chains. All 1,319 installed DDS hashes match prior audited
+records and the native checker is unchanged; batch203 native evidence is
+carried forward, with no redundant native execution. Counts: 5,361 needing art,
+132 held drafts, 1,319 installed; 4,297 keys classified. Worklist and hybrid
+queue refreshed. Corrected stale progress summary text to match 1,319 assets.
+
+Pack unchanged at 1,081,108,849 bytes (1031.03 MiB). Temporary outputs
+212.06MiB; texture workspace including retained
+art 6201.32MiB logical/allocated by the
+existing helper; disk free 84.39GiB at audit.
+6144 MiB pack cap, 256 MiB temporary cap and 512 MiB residency policy unchanged.
+No duplicate game copies/builds/staging/ZIPs; no game, save or setting edits.
+
+Next: a single fixed-region square-carrier feasibility check before another
+narrow-trim batch. This is not proof of a general generation-tool limit.
+No gameplay or Mac execution; MAC-011 remains Awaiting validation. Full
+inventory, other-encoding discovery, category review and scenes unfinished.
+Evidence: review/hybrid-204-acceptance.json, decisions, source preflight,
+compiler rejection, original verification, generation prompts and raw sheets.
+
+## Texture batch 203: reused texture inventory and hidden alpha detail (2026-10-20)
+
+Issue #74 inventory pass: 128 previously unclassified keys, each with two
+catalog occurrences, decoded from hash-verified original payload spans.
+Eight RGB and eight separate alpha sheets preserve source aspect ratios.
+Visual classification now covers 4,297 of 6,812 supported catalog keys
+(63.08%); 2,515 remain unclassified. This is provisional routing, not
+replacement approval or full category/scene validation. No artwork generated,
+resampled or installed in this pass.
+
+Recorded preservation constraints for weapon silhouettes, exclamation/numeral
+and skull/container icons, scene thumbnails, graffiti, dragon-banner script,
+and an illustrated landscape. Shipping stencils and transit-sign lettering
+appear only in alpha on some assets; white RGB must not be treated as blank.
+Several shadow/light projections likewise encode structure only in alpha.
+A granular gray surface has constant alpha127; inverse-alpha reflections,
+flames and partial-opacity masks retain unresolved shader/usage semantics.
+Thin foliage, lattice openings, frame rails and damaged silhouettes require
+original alpha fidelity. Unknown functions remain open, never excluded.
+
+Full current Python pack audit passed: metadata, hashes, dimensions, aspect
+and mip chains. All 1,319 installed DDS hashes match prior audited asset
+records and the native checker binary is unchanged. Batch202 native parser
+evidence is carried forward; no redundant native execution or game rebuild.
+Counts remain 5,369 needing art, 124 held drafts and 1,319 installed.
+Worklist, hybrid production queue and inventory refreshed. Uncataloged,
+other-encoding and procedural discovery remains incomplete.
+
+Pack remains 1,081,108,849 bytes (1031.03 MiB).
+Temporary output: 211.52 MiB; texture workspace including
+retained source art: 6176.24 MiB logical/allocated by existing
+helper. Disk free: 84.55 GiB at audit. The 6144 MiB pack,
+256 MiB temporary and unchanged 512 MiB residency policies hold; no new
+GPU residency measurement. No duplicate extracts/builds/staging/ZIPs.
+Game files, personal settings and saves were not modified.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation; no format
+or adapter change, and Windows offline evidence does not prove Mac scenes,
+alpha rendering or GPU memory behavior. Private evidence resides in
+`review/hybrid-203-acceptance.json`, triage decisions/verification/sheets and
+native audit. Classification and the partial pack are not a full remaster.
+
+## Texture batch 202: metal and architectural surfaces (2026-10-20)
+
+Issue #74: twelve independent sources generated with built-in image generation;
+eight accepted offline and installed, four held for correction. Accepted work
+covers a highlighted metal strip, two stained walls, a stepped wall panel,
+corroded metal, a four-diamond ornamental panel, a four-indicator panel and a
+framed blue-gray panel. Original UV proportions, major seams, motif locations
+and opaque alpha were reviewed with source/compiled and repeated comparisons.
+
+Held drafts change grille repetition, border/lower-panel fastener layout, or
+concentrate a broad baked light patch. They are not installed or counted as
+complete. Diagnostic profile maxima are not exact rib counts. Accepted outputs
+have mean luminance differences of -5.16% to -14.63%; their darker grain, relief,
+indicator visibility and actual scene lighting remain explicitly unvalidated.
+
+Actual sources: eight 1774x887, two 887x1774 and two 1254x1254. Accepted outputs
+are resampled: one 512x256, two 512x1024, four 1024x512 and one 1024x1024 DXT1,
+with full 10/11-level mip chains. These are not native 4K source images.
+Current full Python hash/metadata/aspect/dimension/mip checks passed. Eight new
+DDS files passed the Windows native parser; 1,311 prior files and checker hash
+are unchanged, carrying forward their native evidence. Total 1,319 installed
+of 6,812 supported keys (19.36%), with 5,369 needing art and 124 held drafts.
+
+Another 64 original RGB/alpha classifications bring provisional inventory to
+4,169 keys; 2,643 remain unclassified. Unknown transparent utility function,
+specialist masks, lettering, portraits and reflections remain open. Embedded,
+other-encoding and procedural discovery gaps are not counted as complete.
+
+Pack including metadata: 1,081,108,849 bytes (1031.03 MiB),
+adding 2,888,192 bytes. Temporary output: 209.33 MiB.
+Texture workspace including retained source art: 6173.96 MiB
+logical/allocated by existing helper; disk free 84.55 GiB at audit.
+The 6144 MiB pack and 256 MiB temporary limits hold; 512 MiB residency policy
+is unchanged and has no new GPU measurement. No duplicate extracts, builds,
+staging trees or ZIPs. Personal game, settings and saves remain untouched.
+
+No gameplay or Mac execution. MAC-011 remains Awaiting validation: standard
+shared DXT1 support needs no new adapter, but Windows parser results do not
+prove Mac GPU rendering, residency or scene fidelity. Private provenance:
+`review/hybrid-202-acceptance.json`, generation, metrics, decisions, native
+audit and triage records. All artwork remains private; this is a partial pack.
+
+## Texture batch 201: reused asset inventory and alpha semantics (2026-10-20)
+
+Issue #74 inventory pass: 128 previously unclassified keys, each with 2-73
+catalog occurrences, inspected from verified original payload spans. Eight
+RGB sheets and eight separate alpha sheets preserve source aspect ratio.
+Visual classification now covers 4,105 of 6,812 cataloged supported keys
+(60.26%); 2,707 remain unclassified. Classification is not artwork acceptance
+or completed category/scene validation. No new artwork generated, resampled
+or installed during this inventory-focused pass.
+
+Recorded exact-preservation requirements for the official TimeSplitters
+Future Perfect logo, checkpoint lettering, challenge-card text, controller/
+weapon badges, character portraits, technical blueprints and illustrated
+safety signs. Sky panoramas, planet imagery and scene thumbnails remain
+projection/composition-sensitive. Foliage requires original thin silhouettes
+and edge colors. Numerous apparently white/black RGB fields contain letters,
+frame geometry or effect falloff only in alpha; window/control-panel/material
+alpha values also need channel-semantic preservation. Unknown function or
+mapping remains explicit, not an invitation to add arbitrary detail.
+
+Full current worklist audit passed: all 1,311 installed DDS hashes match the
+prior audited worklist, and native parser binary is unchanged. Native evidence
+is carried forward from batch 200; no redundant native subprocess, game build
+or gameplay run. Pack remains 1,078,220,657 bytes (1028.27 MiB).
+Counts remain 5,381 needing art and 120 correction drafts. Inventory and
+hybrid production queue refreshed from the new classifications. Discovery
+of uncataloged, other-encoded and procedural assets remains incomplete.
+
+Temporary output: 205.63 MiB; texture workspace including retained source
+art: 6128.06 MiB logical/allocated by existing helper; disk free
+84.77 GiB. The 6144 MiB pack, 256 MiB temporary and unchanged 512 MiB
+residency policies remain in place; no new GPU residency measurement. No
+duplicate extracts, builds, pack copies or ZIPs. Personal data untouched.
+
+Private evidence: review/hybrid-201-acceptance.json, original payload/RGBA
+verification, per-key classification decisions, RGB/alpha sheets and hash
+continuity record. MAC-011 remains Awaiting validation: no Mac scene/GPU,
+1080p/4K/ultrawide or campaign validation occurred. Local #74 checkpoint only.
+
+## Texture batch 200: metal patterns and baked shading (2026-10-20)
+
+Issue #74: eight independently generated metal/panel textures reviewed;
+seven accepted offline and one diamond tread plate held. Accepted: two-row
+riveted strip, bent-rib tread, gray wall bands, narrow grille panel, mirrored
+rust/coating panel, gray curved band and gold-brown curved panel. The held
+tread replaces overlapping/curved raised marks with short isolated diamonds;
+its material detail does not compensate for changed pattern silhouettes.
+
+Original/compiled and 2x2 diagnostic repeats plus enlarged feature crops
+reviewed. Riveted strip retains two rows of six rivets; grille interior has
+26 matched brightness peaks with at most one original-pixel displacement.
+Top/bottom bevel peaks are excluded: this is not an automated total bar count.
+Accepted changes retain broad highlights, seams and UV positions. Dark bent
+ribs (-11.57% mean luminance) and grille panel (-12.43%) need final scene
+brightness checks. Repeated sheets do not prove actual adjacency or curved
+mapping. All originals and outputs are opaque.
+
+Actual generated sources: eight 1774x887 images. Accepted outputs: two
+512x256 and five 1024x512 DXT1, Lanczos resampled, full 10/11-level mips.
+No native 4K claim. Seven native DDS-reader passes plus 1,304 unchanged
+prior-audited DDS hashes and unchanged checker cover 1,311 installed files.
+Full current Python metadata/hash/dimension/aspect/mip-byte audit passed;
+worklist, hybrid queue and inventory refreshed.
+
+Additional 64 original RGB/alpha pairs classified, reaching 3,977 keys.
+Moon, effects, masks, controller lettering, character imagery, gauges and
+foliage need specialist preservation. Installed coverage: 19.25% of 6,812
+cataloged supported keys; 5,381 need art, 120 correction drafts remain.
+Catalog has 7,147 payloads and no unsupported cataloged formats; uncataloged,
+other-encoded and procedural discovery gaps remain open. Classification is
+not artwork completion, and full-category/scene review remains unfinished.
+
+Pack including metadata: 1,078,220,657 bytes (1028.27 MiB),
+up 1,926,422 bytes. Temporary output: 201.96 MiB; texture workspace
+including retained art: 6124.29 MiB logical/allocated by the existing
+helper; disk free 84.78 GiB. The 6144 MiB pack and 256 MiB temporary
+caps hold. The 512 MiB residency policy is unchanged and unmeasured here.
+No duplicate game, build, extract, ZIP or pack staging trees were created.
+
+Private evidence: review/hybrid-200-acceptance.json and linked prompts,
+source verification, comparisons, profiles, triage and native audit. No game
+launch, Mac scene/GPU validation or rebuild; MAC-011 remains Awaiting
+validation. Local issue #74 checkpoint; artwork/game files remain private.
+
+## Texture batch 199: character identity and clothing atlas review (2026-10-20)
+
+Issue #74: eight independent built-in atlas edits reviewed. Three accepted
+for offline installation: purple-red checked clothing/face atlas, uniformed
+character atlas, and teal clothing atlas. Five remain held: furry creature
+and green striped character eye shapes, narrowed mouth/full lips, bright
+leathery material (+37.96% mean luminance), and glossy shark eyes. These
+failures are not installed or counted as complete.
+
+Original/compiled atlas, enlarged identity crops and 2x2 diagnostic repeats
+were reviewed. Accepted drafts retain garment boundaries, major folds and
+facial feature positions. Increased contrast in the green eye and actual
+model seams remain final scene checks. Repeat sheets are diagnostics, not
+proof of seamless tiling or scene adjacency. All original/output alpha is
+opaque. Eight sources are actually 1254x1254; three installed outputs are
+1024x1024 DXT1, Lanczos-resampled with full 11-level mip chains. No native
+4K claim. Source prompts, generation provenance and reasons remain private.
+
+Three new native DDS-reader passes, 1,301 unchanged prior-audited DDS hashes
+and unchanged checker cover 1,304 installed files. Full current worklist
+metadata, hashes, dimensions, aspect and mip-byte checks passed. Inventory
+and hybrid queue refreshed. An additional 64 original RGB/alpha pairs were
+classified: 3,913 keys now visually classified. Installed coverage is
+19.14% of 6,812 cataloged supported keys; 5,389 need art and 119 drafts need
+correction. There are 7,147 catalog payloads and no cataloged unsupported
+formats; uncataloged, other-encoded and procedural discovery gaps remain.
+Classification and parser acceptance do not establish completed artwork.
+
+Pack including metadata: 1,076,294,235 bytes
+(1026.43 MiB), up 2,098,872 bytes.
+Temporary output: 198.26 MiB; texture workspace
+including necessary source art: 6091.69 MiB logical/allocated
+by the existing helper; free disk: 84.97 GiB. The 6144 MiB pack
+and 256 MiB temporary limits hold. The 512 MiB residency policy is unchanged
+and not measured here. No duplicate game, build, extract or pack staging.
+
+Evidence: private review/hybrid-199-acceptance.json and linked comparison,
+identity, metrics, original verification, generation, triage and native audit
+records. No gameplay, Mac scene/GPU validation or game rebuild. MAC-011
+remains Awaiting validation. Local issue #74 checkpoint; no art publication.
+
+## Texture batch 198: architectural materials and prop layout checks (2026-10-20)
+
+Issue #74: sixteen independent built-in texture edits reviewed; fourteen
+accepted offline and two held. Accepted materials include blue-gray metal,
+science-fiction wall atlas, carved wood arch, dark planks, fractured rock,
+rough panel variants, riveted structure, seven-slot vent strip, four slab
+quadrants, four-opening mechanical panel, ornate wall, fibrous panel and
+mottled mineral surface. Cloth is held for darker/heavier folds (-15.53%
+mean luminance); wooden furniture atlas is held for brighter orange/polished
+color (+23.01%). Neither failed draft counts as installed or complete.
+
+Original/compiled RGB and 2x2 diagnostic repeat sheets reviewed for layout,
+major features, color and edge continuation. Fixed original-scale brightness
+profiles corroborate seven vent slots (centers within 0.5 original pixel)
+and four circular openings (within 1 original pixel). Such profiles support
+the visual review but do not prove actual scene adjacency or lighting.
+The dark wood arch is -13.39% in mean luminance and remains dark carved wood;
+scene brightness, baked reflections and atlas usage remain pending checks.
+
+Actual generated sources: nine 1254x1254 squares and seven 1774x887 landscapes.
+Accepted outputs: eight 1024x1024 and six 1024x512, all opaque DXT1 with full
+11-level mip chains, Lanczos-resampled. No native 4K claim. Fourteen new native
+DDS-reader passes plus 1,287 unchanged prior-audited hashes and unchanged
+checker cover 1,301 installed files. Full Python metadata/hash/dimension/aspect/
+mip-byte audit passed. No game rebuild or gameplay was needed for private art.
+
+Reviewed 96 additional verified original RGB/alpha pairs: 32 small/reused and
+64 single-use. Visual classification reaches 3,849 keys. Lettering, portraits,
+chain cutouts, reflections, low-opacity effects and creature/character atlases
+remain specialist work. Installed coverage is 19.10% of 6,812 cataloged keys;
+5,397 need art and 114 correction drafts remain incomplete. Classification is
+not completed artwork or full-category validation. Existing uncataloged,
+other-encoded and procedural discovery gaps remain open.
+
+Pack including metadata: 1,074,195,363 bytes (1024.43 MiB),
+up 7,697,604 bytes. Temporary outputs measured
+193.72 MiB; texture workspace including retained source art
+6060.69 MiB logical/allocated by the existing helper;
+disk free 85.08 GiB. The 6144 MiB pack and 256 MiB temporary caps
+hold. The 512 MiB residency policy is unchanged, not measured this batch.
+No duplicate game extracts, build trees or pack staging copies were created.
+
+Private evidence: `review/hybrid-198-acceptance.json` and linked generation,
+source verification, comparisons, profiles, triage and native audit records.
+No new gameplay or Mac scene/GPU validation; MAC-011 stays Awaiting validation.
+Local issue #74 checkpoint only; artwork and game files remain private.
+
+## Texture batch 197: cutout corrections with complete color coverage (2026-10-20)
+
+Issue #74: eight focused built-in corrections, seven accepted offline and one
+wire-mesh draft still held. Re-authored from decoded original RGB references;
+verified original alpha remains separate and is restored at compilation.
+This fixes missing color beneath restored masks and the previous red/yellow
+matte edges, pale/chalky wood, interior stone halos and rounded panel vignette.
+Accepted: iron grille, hanging wood, cracked stone atlas, damaged grid panel,
+mottled green-gray strip, brick/plaster damage and knotty wood. The mesh still
+changes fine diamond pitch/phase and reflected blue tones; it is incomplete.
+
+Original/compiled RGB, checkerboard and 2x2 repeat diagnostics reviewed, with
+a focused mesh comparison. Corrected hanging wood alpha-weighted luminance is
++1.54% versus +19.05% in its rejected draft; knotty wood is -1.15% versus the
+original, correcting the prior orange palette. The damaged panel is +19.54%
+brighter under original-alpha weighting, recorded for later scene validation.
+No actual adjacency, blend-mode or shader-use claim follows from these views.
+
+Actual generated sources: five 1254x1254 squares and three 1774x887 landscapes.
+Accepted outputs: four 1024x1024 DXT5, one 1024x512 DXT5, one 512x512 RGBA8
+grille and one 1024x512 DXT1 wood. Full mip chains, Lanczos-resampled; no native
+4K claim. Grille base alpha equals the bilinear-resampled original byte for
+byte. Accepted DXT5 mean alpha errors are 0.261-1.207/255, maxima 12-31;
+original alpha restoration does not make compressed alpha lossless.
+
+Seven new native DDS-reader passes plus 1,280 unchanged prior-audited hashes
+and unchanged checker cover all 1,287 installed files. Full Python metadata,
+hash, dimensions, aspect and mip-byte checks passed. Reviewed 64 further
+original RGB/alpha pairs; 3,753 keys now visually classified. Text, weapon
+icons, channel-dependent masks and equipment atlases retain specialist review.
+Installed coverage 18.89% of 6,812 cataloged keys; 5,413 need art and 112
+held correction drafts remain incomplete. Other-encoded, uncataloged and
+procedural discovery gaps remain explicit. Classification is not completion.
+
+Pack including metadata: 1,066,497,759 bytes (1017.09 MiB),
+up 8,045,894 bytes. Retired eight superseded rejected source files,
+reclaiming 25,203,758 bytes from the project after checking
+containment, installed references, replacement sources and recovery hashes.
+Current sources, prior prompts/hashes, comparisons and default-tool recovery
+copies remain. No game data, current pack source, saves or settings removed.
+Temporary files measured 187.38 MiB; full texture workspace
+5994.80 MiB logical/allocated by the existing helper;
+disk free 85.34 GiB. The 6144 MiB pack and 256 MiB temporary limits hold.
+512 MiB residency policy unchanged; runtime residency not measured this batch.
+
+Private evidence: `review/hybrid-197-acceptance.json`, linked generation,
+metrics, source verification, review, native audit and retirement records.
+No gameplay or Mac scene/GPU validation; MAC-011 remains Awaiting validation.
+Local issue #74 checkpoint only. Artwork and game files remain private.
+
+## Texture batch 196: alpha-bearing materials and mask fidelity (2026-10-20)
+
+Issue #74: reviewed eight independently generated cutout/foliage materials.
+One hedge strip accepted offline; seven drafts held for correction. Failures
+include shifted grille bars, missing RGB coverage, changed damage/mesh geometry,
+new rectangular halos inside translucent faces, matte-edge color contamination
+and altered material palettes. Restoring original alpha alone is not acceptance:
+RGB, checkerboard, neutral-gray composites and diagnostic repeats were inspected.
+
+The accepted hedge preserves its ragged silhouette, thin upper branches and
+dense lower body with finer leaf detail. Original alpha was restored before
+DXT5 encoding; decoded base alpha mean error is 1.521/255, maximum 32, and
+threshold-mask disagreement 0.474%. This is lossy alpha, not byte-exact retention.
+Alpha-weighted luminance rises 17.28%; actual scene brightness and edge blending
+remain explicit validation tasks. No scene adjacency or gameplay claim.
+
+Actual generated sources: five 1254x1254 squares and three 1774x887 landscapes.
+The accepted source is Lanczos-resampled to 1024x512 DXT5 with 11 mip levels.
+No native 4K claim. Its native DDS-reader check passed; 1,279 prior installed
+DDS hashes and checker hash are unchanged. Full Python metadata/hash/dimension/
+aspect/mip-byte validation covers all 1,280 installed replacements.
+
+Reviewed 64 additional original RGB/alpha pairs, reaching 3,689 classified keys.
+Foliage, logos/text, alpha-only masks, baked captures and character/weapon atlases
+retain specialist review. Classification is not completed artwork. Installed
+coverage is 18.79% of 6,812 cataloged keys; 5,413 still need art and 119
+held drafts remain incomplete. Uncataloged/other-encoded/procedural discovery
+gaps remain open; catalog support does not establish full embedded coverage.
+
+Pack including metadata: 1,058,451,865 bytes (1009.42 MiB),
+up 700,101 bytes. Temporary outputs measured
+182.60 MiB. Texture workspace including necessary source art:
+5978.56 MiB logical and allocated by the existing
+measurement helper; disk free 85.48 GiB. The 6144 MiB pack and
+256 MiB temporary caps hold. The 512 MiB residency policy is unchanged and
+not runtime-measured this batch.
+
+Private evidence: `review/hybrid-196-acceptance.json` and linked source, alpha,
+comparison, triage and audit records. No game launch or Mac scene/GPU validation.
+MAC-011 remains Awaiting validation. Local issue #74 checkpoint; private artwork
+and game files remain local.
+
+## Texture batch 195: sixteen-asset production and repeated-feature checks (2026-10-20)
+
+Issue #74: expanded bounded production to 16 independent built-in edits;
+15 accepted offline, one knotty wood draft held because its pale weathered
+palette became orange and too clean. Accepted materials include blue painted
+wood, concrete, vented panels, ornate door, plaster, masonry/grille strip,
+mechanical sockets, brass/reflection strips, riveted plate and stone quadrant.
+Original/compiled comparisons and 2x2 diagnostic repeats checked UV boundaries,
+features, broad tone and edge continuation. Numerical profiles corroborate
+31 grille bars and 10 vent slats at near-matching positions. These checks do
+not establish actual scene adjacency, baked-reflection behavior or playability.
+
+Actual generated sources: 1254x1254 squares and 1774x887 landscapes. Accepted
+outputs are six 1024x1024, eight 1024x512 and one 512x512, Lanczos-resampled
+DXT1 with full mip chains. No native 4K claim. Fifteen new native DDS-reader
+passes plus 1,264 unchanged prior-audited hashes and the same checker cover
+1,279 installed files. Full Python hash/dimension/aspect/mip-byte audit passed.
+
+Reviewed 64 more original RGB/alpha pairs, reaching 3,625 visually classified
+keys. Text, warning graphics, labels, character atlases and alpha-dependent
+masks/effects retain specialist review. Classification is not artwork
+completion; existing uncataloged/other-encoded/procedural discovery gaps remain.
+Installed coverage is 18.78% of 6,812 cataloged keys; 5,421 need art and 112
+correction drafts remain incomplete.
+
+Pack including metadata: 1,057,751,764 bytes (1008.75 MiB), up 7,173,894 bytes.
+Temporary outputs measured 176.96 MiB. Retained source/review/pack workspace
+growth is about 63.35 MiB this batch. The 6144 MiB pack and 256 MiB temporary
+caps hold; 512 MiB residency policy is unchanged, not runtime-measured.
+
+Private evidence: `review/hybrid-195-acceptance.json` and linked generation,
+comparison, slat-profile, triage and native-audit records. No gameplay or Mac
+scene/GPU validation. MAC-011 stays Awaiting validation. Local #74 checkpoint;
+private artwork and game files remain local.
+
+## Texture batch 194: environment materials and architectural atlases (2026-10-20)
+
+Issue #74: eight independent built-in edits accepted offline: rusty corrugated
+metal, dark brick facade, bordered granular panel, rose-gray fractured rock,
+cobblestone/rusted-plate wall, pale concrete, wood/wallpaper tile and studded
+door atlas. Original layout, window/door openings, major cracks, material bands,
+fastener arrangements and 2x2 repetition inspected against actual DDS previews.
+The facade mean luminance increases from 23.13 to 29.84 on a 0-255 scale; it
+remains a dark facade. Concrete lateral edge MAE increases from 0.07 to 8.74
+with added grain; no obvious hard stripe in the repeat grid. These differences
+are recorded for later scene brightness/adjacency validation, not hidden by
+structural passes. Original atlas parts are not assumed to tile in both axes.
+
+All eight sources are actually 1254x1254 despite the prompt requesting 2048
+where possible: seven Lanczos-resampled to 1024x1024, the small corrugated
+source to 256x256. Opaque DXT1 with complete 11/9-level mip chains. No native
+4K source claim. Eight new native DDS-reader passes plus 1,256 unchanged
+prior-audited hashes and the same checker cover 1,264 installed files; full
+Python hash/dimension/aspect/mip-byte checks passed. No game launch.
+
+Inspected 64 more catalog-verified original RGB/alpha pairs: 32 small/reused
+and 32 single-use assets. Visual classification reaches 3,561 keys; text, logo,
+weapon glyph, creature atlas and channel-dependent effects remain specialist
+work. Classification is not artwork completion or full category review.
+
+Installed coverage is 18.56% of 6,812 cataloged keys; 5,437 need art and 111
+prior drafts remain held. Pack including metadata: 1,050,577,870 bytes
+(1001.91 MiB), up 4,941,628 bytes. Temporary files measured 171.67 MiB;
+artwork workspace growth about 37.93 MiB including sources/review evidence.
+Caps remain 6144 MiB for the pack and 256 MiB for temporary output; the
+512 MiB residency policy is unchanged, with runtime measurement pending.
+
+Private evidence: `review/hybrid-194-acceptance.json` and linked generation,
+comparison, triage and audit records. No gameplay, Mac scene or GPU residency
+validation; MAC-011 remains Awaiting validation. Local issue-74 checkpoint,
+with private source artwork and game assets retained locally.
+
+## Texture batch 193: portrait identity review and inventory (2026-10-20)
+
+Issue #74: eight built-in portrait edits produced from verified 64x64 originals.
+One mechanical lens portrait accepted offline; seven held for changed facial
+expressions/proportions, gas-mask or helmet geometry, or missing cap insignia.
+Higher detail alone does not establish character fidelity. All generated sources
+are 1254x1254; the accepted portrait is Lanczos-resampled to 256x256 lossless
+RGBA8 with nine mip levels. SHA256-verified original corner alpha is bilinear-
+scaled and restored exactly in its base mip. Not native 4K source artwork.
+
+Reviewed original/compiled pairs and checkerboard alpha. These UI portraits are
+non-tiling; acceptance checks identity, crop, backdrop and boundary opacity.
+Inspected 64 additional original RGB/alpha pairs, reaching 3,497 visually
+classified keys. Classification does not complete artwork or category review;
+other encodings, procedural assets and uncataloged discovery remain open.
+
+Windows offline checks cover 1,256 installed files: one new native DDS-reader
+pass, 1,255 unchanged prior-audited hashes with the same checker, and full
+Python hash/dimension/aspect/mip-byte verification. Installed coverage is 18.44%
+of 6,812 cataloged keys; 5,445 need art and 111 drafts are held. Pack including
+metadata is 1,045,636,242 bytes (997.20 MiB), up 350,535 bytes. Temporary
+outputs measured 167.23 MiB; the artwork workspace grew about 21.38 MiB this
+batch including retained sources and review evidence. Both storage caps hold.
+The 512 MiB residency policy is unchanged and not runtime-measured this turn.
+
+Private evidence: `review/hybrid-193-acceptance.json`, with prompts/source paths
+in `review/hybrid-193-generation.json` and the linked comparison/audit records.
+No gameplay, Mac scene or GPU residency checks. MAC-011 stays Awaiting
+validation. Local issue-74 checkpoint; private art and game data stay local.
+
+## Texture batch 192: small props and exact-alpha lamp (2026-10-20)
+
+Issue #74: eight built-in prop drafts, two accepted lamps and six held for
+invented hardware, altered mounting/grille/slot layout, brightness or alpha-to-RGB
+misalignment. Accepted sources are 1254x1254, Lanczos-resampled to 256x256 with
+full mip chains. Headlamp is DXT1; guarded warm lamp uses lossless RGBA8 with
+SHA256-verified original alpha restored after bilinear scaling. Its installed
+base alpha matches that reference byte-for-byte. Not native 4K source artwork.
+
+Checkerboard review caught displaced chain rings and green-lamp frames: restoring
+original alpha alone leaves missing RGB and is not sufficient for acceptance.
+Their drafts remain uninstalled. Inspected 32 additional original RGB/alpha
+pairs, bringing visual classification to 3,433 keys; this does not complete
+category review or uncataloged/embedded discovery.
+
+Windows offline structural checks cover 1,255 installed files: two new native
+DDS-reader passes, 1,253 unchanged prior-audited hashes, unchanged checker, and
+full Python hash/dimension/aspect/mip-byte checks. Coverage is 18.42% of
+6,812 cataloged keys; 5,453 need art and 104 drafts are held. Pack including
+metadata is 1,045,285,707 bytes (996.86 MiB), a 394,795-byte increase;
+temporary output is 164.79 MiB. Storage caps hold; 512 MiB residency policy
+is unchanged and was not runtime-measured.
+
+Private evidence: `review/hybrid-192-acceptance.json` and its linked records.
+No game launch, Mac scene check or GPU residency validation. MAC-011 remains
+Awaiting validation. This local #74 checkpoint publishes no artwork.
+
+## Texture batch 191: correction acceptance and original triage (2026-10-20)
+
+Issue #74: eight built-in image corrections, four accepted after original and
+compiled-DDS comparison plus repeated-grid review. Plaster, rock, limestone and
+two-panel timber are installed; four drafts remain held for extra cracks or
+brightness mismatch. Accepted 1254x1254 generated sources are Lanczos-resampled
+to 1024x1024 DXT1 with complete mip chains; no native 4K source claim.
+
+Inspected 32 more SHA256-verified original RGB/alpha pairs, reaching 3,401 visually
+classified keys. Glass, foliage, portraits, weapon icons, soft masks and decal
+atlases require their recorded alpha/identity handling. Classification is not
+completion, and uncataloged/embedded discovery remains incomplete.
+
+Windows offline structural coverage is 1,253 installed files: four new native
+DDS-reader passes plus 1,249 unchanged files matching prior audited hashes and
+unchanged checker binary. Full Python worklist hashing/dimension/aspect/mip checks
+pass. Coverage is 18.39% of 6,812 keys, with 5,461 needing art and 98 held.
+Pack plus metadata: 1,044,890,912 bytes (996.49 MiB); temporary files:
+162.67 MiB. Retired eight superseded rejected PNGs (29,587,595 bytes)
+after exact path/hash and active-reference checks, retaining selected source,
+prior prompts/hashes and comparisons. No original game data or settings changed.
+
+Private evidence: `review/hybrid-191-acceptance.json` and its linked records in
+the single texture workspace. No game launch or residency measurement; the
+512 MiB policy is unchanged. MAC-011 remains Awaiting validation. This local
+issue #74 checkpoint does not publish artwork or claim scene validation.
+
+## Texture batch 190: metal, timber and visual triage (2026-10-20)
+
+Issue #74 local artwork: eight built-in image edits, three accepted replacements
+and five held for altered ridge patterns, brighter metal, deep wood bevels or
+lifted shadows. All sources are 1254x1254; accepted DDS outputs are 1024x1024 or
+512x512 with Lanczos resampling and complete DXT1 mip chains. The L8 metal panel
+retains opaque luminance channel semantics. This is not native 4K source art.
+
+Inspected 16 more SHA256-verified original RGB/alpha pairs, reaching 3,369
+visually classified keys. Portraits, damage decals, cables and compositing masks
+remain separate from ordinary material production. Classification is not completion.
+
+Windows offline coverage: all 1,249 installed files pass structural checks.
+Three new files passed the native DDS reader; the other 1,246 match their prior
+native-audited SHA256 hashes with unchanged checker binary. The full Python
+worklist also validates dimensions, aspect, mip byte lengths and hashes.
+The pack including metadata is 1,042,092,416 bytes (993.82 MiB);
+temporary texture outputs are 159.86 MiB. Both storage caps hold. Residency
+policy remains 512 MiB; runtime residency was not measured in this batch.
+
+Private evidence is `review/hybrid-190-acceptance.json` in the single local
+texture workspace. No game launch, scene/UV-on-model or Mac runtime validation.
+Coverage is 1,249/6,812 cataloged keys (18.34%); 5,461 still need art and 102
+drafts are held. Uncataloged/embedded discovery remains incomplete. MAC-011
+remains Awaiting validation. This local #74 checkpoint does not publish artwork.
+
+## Texture batch 189: stone and concrete (2026-10-20)
+
+Issue #74 local artwork batch: eight built-in image-generation edits, four
+accepted and installed after original/compiled comparisons and 2x2 repetition
+review, four held for excessive cracks, brighter stone or prominent borders.
+Sources are 1254x1254; accepted outputs use Lanczos resampling to 1024x1024 DXT1
+with complete 11-level mip chains. This is not native 4K source artwork.
+
+Windows offline audit: all 1,246 installed DDS files pass the existing native
+format reader plus Python dimensions, mip-size, aspect and SHA256 checks.
+The pack including metadata is 1,041,042,120 bytes (992.82 MiB); temporary texture
+outputs are about 156.49 MiB. The 6 GiB pack and 256 MiB temporary caps hold;
+the existing 512 MiB resident policy is unchanged, not runtime-measured here.
+Private evidence: `review/hybrid-189-acceptance.json` and native audit under the
+single `private/texture-remaster` tree. No artwork or game data is tracked.
+
+Coverage is 1,246/6,812 cataloged keys (18.29%), with 5,469 needing artwork and
+97 held drafts. Uncataloged/embedded discovery remains incomplete. No game was
+launched; scene/UV-on-model, memory and cross-platform validation remain open.
+MAC-011 retains Awaiting validation. This entry is local to the issue #74 branch
+in the commit carrying it; artwork/pack are local and not published.
 
 ## Launcher v1.2.20 replacement release (2026-10-19)
 

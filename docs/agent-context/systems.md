@@ -148,3 +148,12 @@ and its left-click mapping retain `pc_terminal_mouse` behavior. Controller
 input remains in the guest routines. The separate vehicle-seat mode `0x8000`
 is not routed by this helper. `tests/test_mounted_mouse.py` runs the guarded C
 fixture on Windows/macOS; physical Mac validation is tracked under MAC-001.
+
+## Issue #74 menu texture additions
+
+The branch pack now contains 2,205 accepted replacements. The same keyed DDS
+files serve Windows and the common native Mac renderer; loader contracts are
+unchanged. Menu coverage is 733/750 keys, with eight intentional functional
+originals and nine unresolved replacements. Source resampling and original-detail
+recovery are distinguished from newly generated art in `docs/main-menu-textures.md`.
+Offline acceptance does not certify mapped scene appearance or Mac GPU behavior.
