@@ -1,3 +1,23 @@
+## 2026-10-22 — Pending PR integration
+
+The integration branch combines PRs #290, #294, #296–#301 on main after #295.
+The launcher version from #290 was already present on main; its remaining release
+evidence is retained inside the existing structured MAC-011 entry. Documentation
+conflicts retain each investigation's evidence and native Mac acceptance limits.
+The patch loader includes coefficient precision before preservation/live support,
+full-float preservation after live support, and clock handoff last. Historical
+upgrade fixtures omit all dependent additions from their old-stack snapshots;
+current-stack install checks retain them. The generated index is refreshed.
+
+The optional-texture review fixes keep Mac navigation disabled while a download
+is busy so Cancel remains accessible, select publication tests for isolated texture
+publisher changes, and instruct Windows manual upgraders to carry Textures too.
+A focused 175-case Python suite passed before integration. Combined context and
+whitespace checks pass; combined transition/runtime and both-host launcher CI are
+required before merge. Earlier per-PR gameplay evidence is not a new combined
+playthrough. Optional water experiments remain disabled by default. This source
+integration does not publish a launcher, game binary or optional texture pack.
+
 ## 2026-10-22 — Crowded multiplayer text overhead
 
 On `perf/crowded-multiplayer`, based on main `564fda6`, profiling identified
