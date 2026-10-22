@@ -301,6 +301,10 @@ aim on every update carrying motion, plus paused/invalid clocks, no replay,
 mode handoff and untouched player angles. Separate old-clock and old-batch
 counterfactuals must fail. It executes shared host input logic with controlled
 guest fields; it does not establish live turret rendering or physical input.
+Windows source `a5e0dc2` passes the supported build and built-in checks, plus
+159 broader regressions. Its candidate binary is retained separately; the
+normal playable executable is restored. Consult STATUS for hashes before
+testing and force a fresh link after preserving the playable pair on rebuild.
 
 ## Launcher stalled-network regression
 

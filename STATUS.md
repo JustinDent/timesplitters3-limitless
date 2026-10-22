@@ -13,9 +13,15 @@ by elapsed time. Original mode keeps its whole-time pause gate.
 Five focused Windows tests pass, covering existing gun ownership/limits,
 FOV/inversion, terminal routing, normal-camera return, and the new native
 packet/cadence cases. The broader input/native-timing/context/backlog suite
-passes 159 tests in 103.37 seconds. Full build, live turret acceptance and native Mac
-execution are pending. Personal saves/settings and the normal playable binary
-remain unchanged at this source-validation checkpoint. See MAC-001.
+passes 159 tests in 103.37 seconds. Supported Windows build `a5e0dc2` and its
+built-in checks pass (`logs/native-mounted-build.log`, MSVC 14.44.35207,
+Windows SDK 10.0.26100, common Xbox frontend). Live turret acceptance and
+native Mac execution remain pending; draft PR #304 records current CI status.
+The candidate EXE/PDB is retained at `private/build-recovery/mounted-a5e0dc2`;
+EXE SHA-256 is `b74bd5a49bd32fac5628a1a558cf34e9b61edb8122ebf456237f35c41a87ede4`.
+Playable `4adb6b0` is restored with its hash verified; personal data is intact.
+This main-based candidate is independent of the WIP vehicle-physics build.
+See MAC-001 for host and live acceptance limits.
 
 ## 2026-10-22 — Pending PR integration
 

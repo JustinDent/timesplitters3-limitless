@@ -695,7 +695,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   fresh packets at 60 and discarded zero-whole-frame motion at 120/144.
   Existing gun behavior plus cadence/pause/handoff and two negative controls
   pass five focused Windows checks; 159 broader timing/input/context cases
-  also pass. Mac execution and a live turret test of
+  also pass. Supported Windows build `a5e0dc2` and built-in checks pass; draft
+  PR #304 carries this independent main-based fix. Mac execution and a live turret test of
   this addition remain awaiting validation; existing #182 acceptance applies.
 
 - **Alpha.2 self-test isolation (2026-10-22):** `tsfp_native_input_test`
