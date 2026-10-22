@@ -1,3 +1,95 @@
+## 2026-10-22 — Crowded multiplayer text overhead
+
+On `perf/crowded-multiplayer`, based on main `564fda6`, profiling identified
+repeated OS memory queries in outlined text. US `sub_00041E30` draws four
+outline offsets and one foreground pass. A shared wrapper now keeps the
+existing read cache alive for those five synchronous passes, expiring at return.
+The cache also retains the complete validated mapping instead of its suffix.
+Scratch writes still query current protection. All original draws, gameplay
+updates, animations, quality settings and native FPS timing remain in place.
+
+Windows x64 / MSVC 19.44 / D3D11, i7-13700K, RTX 4070 SUPER, driver
+32.0.16.1742: isolated Test Lab Hotel deathmatch, ten bots, Classic textures,
+3440x1440, vertical FOV 73, native 144 target. Same menu/input route, normal
+combat/death/respawn; bots are not deterministic. Each result covers 50 seconds
+starting five seconds after the spawn observation, with captures and CPU
+sampling disabled. All counted presentations were guest frames.
+
+| Build/run | Mean FPS | p95 interval | p99 interval | Frames over 9 ms | Slowest 1 s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Main baseline | 131.94 | 10.030 ms | 11.607 ms | 13.01% | 99 frames |
+| Complete mapping only | 131.58 | 10.130 ms | 11.619 ms | 14.08% | 98 frames |
+| Mapping + outlined scope | 139.70 | 8.643 ms | 9.660 ms | 3.49% | 115 frames |
+| Outlined scope repeat | 142.40 | 8.216 ms | 9.066 ms | 1.22% | 126 frames |
+
+Mapping reuse alone did not improve this workload. Both combined runs improved,
+but residual dips remain; this is not a locked-144 or all-map claim. These are
+host presentation intervals, not GPU completion/scanout measurements. Six-bot
+Vietnam was already close to the target and was used for CPU investigation.
+The separate 200 Hz Vietnam profiles at the same 140-second report show
+`NtQueryVirtualMemory` falling from 39.59% to 36.09% of non-wait samples,
+and main-thread CPU time from 112.8 to 109.5 seconds. Those whole-run profiles
+include menus and are supporting evidence, not the Hotel timing benchmark.
+Online human-player matches, other maps and native Mac performance are
+unverified. No gameplay scheduling or NPC update rate was reduced.
+
+Supported Windows build and its native checks passed. The selected fresh-stack,
+repeat-build, native-upgrade, Windows-line-ending, text-scope, patch tracking,
+context and backlog tests passed (35 cases). Both Windows/Mac feature defines
+pass the five-draw fixture, including an expected failing mutation with the
+outer scope removed. Earlier focused text/FOV/menu/UI checks passed (15, one
+Mac-only skip). Test fixtures/profile signatures were preserved; owned temporary
+disks were recycled. Mac runtime validation remains pending under MAC-002.
+A separate 81-second captured Hotel session at 1280x720/FOV 73 confirmed the
+main menu, ten enabled bots, translated keyboard prompts, ready screen, rank,
+ammo and outlined first-kill text render. These captures were excluded from
+performance measurements (`private/test-saves/crowd-outline-visual`).
+
+Follow-up on the same executable: the same ten-bot Hotel replay at Original
+60 averages 59.999 FPS (p99 17.885 ms, worst 18.763 ms); native 120 averages
+119.840 FPS (p99 9.860 ms, worst 19.904 ms). Both exit cleanly without changing
+signed profiles. The existing `native_frame_stats.summarize_clock_window`
+validates consecutive frame IDs, timestamp/interval agreement and complete
+coverage for the predeclared spawn+5 through spawn+55 second window. Reanalysis
+of both native-144 runs with this strict helper gives 139.701/142.401 FPS;
+only complete intervals enter the statistics. None of these four windows has
+an interpolated present or an interval exceeding 33.33 ms. Across approximately
+61.44 seconds of active combat/respawn endpoints, level-time/wall-time ratios
+range from 0.999912 to 1.000504. This supports bounded game-clock consistency,
+not equal movement trajectories, weapon cadence or full animation parity.
+Evidence: `logs/crowd-preset-matrix.json` and isolated
+`crowd-hotel-original60` / `crowd-hotel-native120` metadata.
+PR #295 implementation head `4a40569` passes all selected GitHub checks,
+including Windows/macOS native runtime, upgrades and patch transitions. The
+out-of-scope build job is skipped. These asset-free CI checks do not establish
+native Mac gameplay/performance acceptance.
+
+Enhanced-mode follow-up (`crowd-hotel-enhanced144`) starts with
+`TSFP_TEXTURE_MODE=4k`, confirmed by the runtime log, using the existing 2,046
+hydrated DDS files in `assets/textures` (1,843,210,972 DDS bytes). The same
+3440x1440/FOV-73 route measures 142.333 guest FPS, p95 8.178 ms, p99 9.210 ms,
+worst 12.645 ms, and endpoint game-clock ratio 0.999979. No measured interval
+exceeds 33.33 ms; no interpolated presents occur. This run enters Hotel during
+the preceding Ready command, about six seconds earlier than Classic. It is a
+separate workload observation, not a controlled texture-mode performance delta.
+The 50-second window retains its predeclared command-clock bounds. Resident
+replacement bytes reach 147,762,748; no texture-budget diagnosis follows from
+that alone. See `logs/crowd-enhanced-matrix.json` for strict analysis.
+A separate 82-second Enhanced visual run at 3440x1440/FOV 73 confirms ten
+enabled bots, the Ready screen, Hotel geometry, weapons and readable HUD text.
+Sparse renderer captures are retained in `crowd-enhanced-visual`; this run is
+excluded from timing comparisons. It exits cleanly with unchanged signed
+profiles and recycled temporary disks. No full-pack or animated-texture
+appearance claim follows from these static captures.
+
+Local evidence: `logs/crowd-outline-comparison.json`,
+`logs/crowd-outline-build.log`, `logs/crowd-outline-integration.log`, and the
+isolated `crowd-hotel-before`, `crowd-hotel-after`, `crowd-hotel-outline` and
+`crowd-hotel-outline-repeat` test metadata. Baseline EXE SHA-256:
+`33014b3d8d621fa5e4d60b2ac587962e84cca9b55efecce1e221dbe58a54f4af`;
+combined candidate:
+`ba7df7f5e3406264f2d082fe3d18558a4aa9fec49bed964ebd957ffc1fbc0809`.
+
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
 Review identified that preserving installed textures would leave the old icons

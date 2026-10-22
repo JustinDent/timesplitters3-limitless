@@ -25,6 +25,16 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+`tests/test_text_read_scope.py` checks query reuse for ascending and descending
+addresses within the same OS region, both mapping boundaries, nested layouts
+and expiry between operations. `tests/pc_prompts.c` retains real Windows
+protection/guard-page and scratch-write tests in the supported build. A passing
+query-count fixture is not an FPS measurement; compare bounded gameplay runs
+with captures disabled and identical resolution, FOV and bot settings.
+The same Python suite extracts the production outlined-text wrapper and tests
+both host feature defines, all five draws, guest ABI, invalidation and fresh
+scratch writes. Removing the outer scope is a required failing mutation.
+
 Native `--input-self-test` must reset the synthetic terminal context between
 its fractional-time test and mouse-capture/fire test. The stale context caused
 a false failure during alpha.2 validation; clearing it within the self-test
