@@ -7,6 +7,7 @@
 #include "pc_input.h"
 #include "pc_text_input.h"
 #include "pc_camera.h"
+#include "pc_mounted.h"
 #include "pc_terminal.h"
 #include "pc_settings.h"
 #include "pc_prompts.h"
@@ -522,7 +523,8 @@ void pc_controls_apply_mouse(uint32_t player, uint32_t fov_object, ptrdiff_t mem
     }
     terminal = pc_terminal_mouse(&input, GetTickCount64(), sensitivity, player, memory_offset);
     pc_input_terminal_context(&input, terminal >= 0, input.keys[VK_LBUTTON]);
-    if (terminal >= 0 || !pc_camera_fields(player,fov_object,memory_offset,&yaw,&pitch,&fov)) {
+    if (terminal >= 0 || pc_mounted_mouse(&input, GetTickCount64(), sensitivity, invert_y,
+            player, fov_object, memory_offset) >= 0 || !pc_camera_fields(player,fov_object,memory_offset,&yaw,&pitch,&fov)) {
         ReleaseSRWLockExclusive(&lock);
         return;
     }

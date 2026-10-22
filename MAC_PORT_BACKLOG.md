@@ -687,6 +687,19 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **Issue #182 follow-up (2026-10-21, this change):** Shared
+  `src/pc_mounted.h` routes mounted/CCTV AGUN aiming to the gun angles instead
+  of hidden player angles. Both host adapters call it; no additional native
+  adapter is needed. Authored limits, ownership, focus/capture, pause, stale
+  input and normal-camera return are covered by `tests/test_mounted_mouse.py`,
+  registered in the Windows/macOS runtime workflow. Windows fixture and Release
+  build checks pass; the user confirmed the CCTV turret retest works, and
+  read-only telemetry confirmed gun-angle movement. Native compilation,
+  fixture execution and physical mouse/controller comparison remain pending.
+  Acceptance: aim/fire a Breaking and Entering CCTV gun, return to its pointer
+  and on-foot controls, check pitch/yaw limits and pause/focus transitions.
+  See [#182 validation](STATUS.md#mounted-and-cctv-gun-mouse-aim-182--2026-10-21).
+
 - **Issue #7 follow-up (2026-10-16):** `src/pc_terminal.h`
   on `7-breaking-and-entering-camera-turret-not-working` routes relative mouse
   counts to the active terminal's logical pointer in
