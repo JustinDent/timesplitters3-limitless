@@ -1750,8 +1750,9 @@ gameplay progression separate in the evidence. Completion requires the full
 
 Checkpoint `5830f12` has been integrated with fetched main `7b0838a`. Both sets
 of validation notes and Mac backlog entries are retained; the native entry
-is now **MAC-058**, since main already assigned MAC-057 to optional texture
-delivery. Main's fixed-60 default, retired interpolation engine, launcher
+was assigned MAC-058 because MAC-057 already tracked optional texture delivery.
+It is now **MAC-060** after PR #285 incorporated main's crane/text entries
+MAC-058/059. Main's fixed-60 default, retired interpolation engine, launcher
 repairs and packaging changes remain in place.
 
 The native schedule now uses `pc_native_clock.h`, independent of the retired
@@ -2459,7 +2460,7 @@ nested sound/event timing. Acceptance must include zero and positive fire
 intervals, variable/catch-up steps, slow motion, pause, the alternate mode,
 multiple projectiles, actual caller states and representative weapons.
 A complete damage/ammo comparison remains necessary before claiming weapon
-mechanics parity. Actual Mac execution remains unverified under MAC-058.
+mechanics parity. Actual Mac execution remains unverified under MAC-060.
 
 ## Generic firing event-tick scope
 
@@ -2540,7 +2541,7 @@ The interactive game was reopened with `Play-Native.cmd 144`; its
 interpolation disabled and 3440x1440 fullscreen at 144 Hz. The earlier overlay
 fix remains included: native target replaces the misleading cap label, and
 offline sessions hide RTT. The shared firing wrapper has no host adapter;
-actual Mac compilation/execution remains unverified under MAC-058.
+actual Mac compilation/execution remains unverified under MAC-060.
 
 ## NPC firing event-tick scope
 

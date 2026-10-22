@@ -1,5 +1,6 @@
 """Exercise the publication boundary without credentials or model calls."""
 import copy
+from contextlib import nullcontext
 import hashlib
 import importlib.util
 import json
@@ -135,6 +136,77 @@ class PolicyTests(unittest.TestCase):
         self.assertNotIn('OPENAI_API_KEY', json.dumps(plist))
 
 
+class UpgradeTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.plist = self.root / 'worker.plist'
+        self.plist.write_bytes(b'existing dashboard wrapper')
+        (self.root / 'worker.py').write_bytes(b'old controller')
+        W.save_json(self.root / 'config.json', {'gh': 'gh', 'codex': 'codex'})
+        W.save_json(self.root / 'state.json', {'paused': 'operator', 'attempts': {'old': 'retained'}})
+        self.config = {'gh': 'gh', 'codex': 'codex', 'auto_merge': True}
+
+    def test_fresh_install_requires_new_auto_merge_opt_in(self):
+        for opted_in in (False, True):
+            with self.subTest(opted_in=opted_in), tempfile.TemporaryDirectory() as tmp:
+                home = Path(tmp)
+                root = home / 'worker'; root.mkdir()
+                W.save_json(root / 'config.json', self.config)
+                argv = ['worker', '--state-dir', str(root)]
+                if opted_in:
+                    argv.append('--auto-merge')
+                argv.append('install')
+                with mock.patch.object(W.sys, 'argv', argv), \
+                     mock.patch.object(W.sys, 'platform', 'darwin'), \
+                     mock.patch.object(W.Path, 'home', return_value=home), \
+                     mock.patch.object(W.os, 'getuid', return_value=501, create=True), \
+                     mock.patch.object(W, 'exclusive_lock', return_value=nullcontext()), \
+                     mock.patch.object(W, 'find_program', side_effect=lambda name, supplied: supplied), \
+                     mock.patch.object(W, 'command'), \
+                     mock.patch.object(W.Worker, 'preflight'), \
+                     mock.patch.object(W.Worker, 'protected_main') as protection:
+                    W.main()
+                self.assertEqual(W.load_json(root / 'config.json', {})['auto_merge'], opted_in)
+                self.assertEqual(protection.call_count, int(opted_in))
+
+    def test_upgrade_retains_wrapper_state_and_rollback_files(self):
+        state = (self.root / 'state.json').read_bytes()
+        settings = (self.root / 'config.json').read_bytes()
+        W.upgrade_installation(self.root, self.plist, self.config)
+        self.assertEqual((self.root / 'worker.py').read_bytes(), Path(W.__file__).read_bytes())
+        self.assertEqual(W.load_json(self.root / 'config.json', {}), self.config)
+        self.assertEqual((self.root / 'worker.py.previous').read_bytes(), b'old controller')
+        self.assertEqual((self.root / 'config.json.previous').read_bytes(), settings)
+        self.assertEqual((self.root / 'state.json').read_bytes(), state)
+        self.assertEqual(self.plist.read_bytes(), b'existing dashboard wrapper')
+        self.assertEqual(list(self.root.glob('worker-upgrade-*')), [])
+
+    def test_failed_config_write_restores_installed_controller(self):
+        settings = (self.root / 'config.json').read_bytes()
+        with mock.patch.object(W, 'save_json', side_effect=OSError('disk write failed')):
+            with self.assertRaisesRegex(OSError, 'disk write failed'):
+                W.upgrade_installation(self.root, self.plist, self.config)
+        self.assertEqual((self.root / 'worker.py').read_bytes(), b'old controller')
+        self.assertEqual((self.root / 'config.json').read_bytes(), settings)
+        self.assertEqual(list(self.root.glob('worker-upgrade-*')), [])
+
+    def test_missing_installation_is_not_created(self):
+        self.plist.unlink()
+        with self.assertRaisesRegex(W.WorkerError, 'not installed'):
+            W.upgrade_installation(self.root, self.plist, self.config)
+        self.assertEqual((self.root / 'worker.py').read_bytes(), b'old controller')
+
+    @unittest.skipIf(os.name == 'nt', 'Windows symlink privileges are optional')
+    def test_symlink_backup_is_rejected_before_writes(self):
+        (self.root / 'worker.py.previous').symlink_to(self.plist)
+        with self.assertRaisesRegex(W.WorkerError, 'symlink'):
+            W.upgrade_installation(self.root, self.plist, self.config)
+        self.assertEqual((self.root / 'worker.py').read_bytes(), b'old controller')
+        self.assertEqual(self.plist.read_bytes(), b'existing dashboard wrapper')
+
+
 class RepairTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -162,7 +234,7 @@ class RepairTests(unittest.TestCase):
         def api(route, payload=None):
             if payload:
                 self.published.append(payload)
-                return {'html_url': 'https://github.com/test/pull/43'}
+                return {'number': 43, 'html_url': 'https://github.com/test/pull/43'}
             if '/pulls?state=all' in route:
                 return []
             return copy.deepcopy(self.pr) if self.live else pull('b' * 40)
@@ -238,6 +310,170 @@ class RepairTests(unittest.TestCase):
         with mock.patch.object(W, 'command', return_value=b'Logged in using an API key'):
             with self.assertRaisesRegex(W.WorkerError, 'ChatGPT'):
                 worker.preflight()
+
+
+class MergeTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.worker = W.Worker(Path(self.temp.name), {'gh': 'fake-gh', 'auto_merge': True})
+        self.parent = pull()
+        self.repair = pull('b' * 40)
+        self.repair.update(number=43, merged=False)
+        self.repair['base']['ref'] = 'feature'
+        self.repair['head']['ref'] = 'codex/compat-repair-42-' + HEAD[:12]
+        self.record = dict(status='published_awaiting_ci', auto_merge=True, parent_number=42,
+                           parent_branch='feature', repair_number=43, head=HEAD,
+                           commit=self.repair['head']['sha'], branch=self.repair['head']['ref'])
+        self.worker.state['attempts']['42:' + HEAD] = self.record
+        self.merges = []
+        self.rules = [{'type': 'pull_request'}, {'type': 'required_status_checks', 'parameters': {
+            'strict_required_status_checks_policy': True,
+            'required_status_checks': [{'context': n, 'integration_id': 15368} for n in W.REQUIRED_CHECKS]}}]
+        self.worker.preflight = mock.Mock()
+        self.worker.pages = mock.Mock(side_effect=self.pages)
+        self.worker.merge_view = mock.Mock(side_effect=self.view)
+        self.worker.api = mock.Mock(side_effect=self.api)
+
+    def api(self, route, payload=None, method=None):
+        if route.endswith('/rules/branches/main'):
+            return copy.deepcopy(self.rules)
+        if route.endswith('/merge'):
+            self.assertEqual(method, 'PUT')
+            pr = self.repair if '/43/' in route else self.parent
+            self.assertEqual(payload['sha'], pr['head']['sha'])
+            self.merges.append(pr['number'])
+            pr.update(merged=True, state='closed', merge_commit_sha='c' * 40 if pr['number'] == 43 else 'd' * 40)
+            if pr['number'] == 43:
+                self.parent['head']['sha'] = pr['merge_commit_sha']
+            return {'merged': True, 'sha': pr['merge_commit_sha']}
+        if route.endswith('/43'):
+            return copy.deepcopy(self.repair)
+        if route.endswith('/42'):
+            return copy.deepcopy(self.parent)
+        raise AssertionError(route)
+
+    def pages(self, route, key=None):
+        if key == 'workflow_runs':
+            pr = self.repair if self.repair['head']['sha'] in route else self.parent
+            return [{**r, 'conclusion': 'success', 'pull_requests': [{'number': pr['number']}]}
+                    for r in runs(pr['head']['sha'])]
+        return [copy.deepcopy(self.parent)]
+
+    def view(self, number):
+        pr = self.repair if number == 43 else self.parent
+        return dict(headRefOid=pr['head']['sha'], baseRefName=pr['base']['ref'],
+                    mergeStateStatus='CLEAN', mergeable='MERGEABLE', reviewDecision='',
+                    statusCheckRollup=[dict(__typename='CheckRun', name=n, status='COMPLETED',
+                                           conclusion='SUCCESS') for n in W.REQUIRED_CHECKS])
+
+    def test_repair_then_fresh_parent_ci_then_main_across_restart(self):
+        self.worker.poll()
+        self.assertEqual(self.merges, [43])
+        self.assertEqual(self.record['status'], 'parent_awaiting_ci')
+        loaded = W.Worker(self.worker.root, self.worker.config)
+        self.assertEqual(loaded.state['attempts']['42:' + HEAD]['parent_head'], 'c' * 40)
+        self.worker.state = loaded.state
+        self.worker.poll()
+        self.assertEqual(self.merges, [43, 42])
+        self.assertEqual(self.worker.state['attempts']['42:' + HEAD]['status'], 'merged_main')
+        self.worker.poll()
+        self.assertEqual(self.merges, [43, 42])
+
+    def test_wait_for_missing_pending_wrong_pr_and_stale_workflows(self):
+        original = self.pages('', 'workflow_runs')
+        original = [{**r, 'head_sha': self.repair['head']['sha'], 'pull_requests': [{'number': 43}]}
+                    for r in original]
+        variants = [[], original[:1], [{**r, 'status': 'in_progress'} for r in original],
+                    [{**r, 'head_sha': 'f' * 40} for r in original],
+                    [{**r, 'pull_requests': [{'number': 99}]} for r in original],
+                    [{**r, 'conclusion': 'cancelled'} for r in original]]
+        for value in variants:
+            with self.subTest(value=value):
+                self.worker.pages = mock.Mock(return_value=value)
+                self.worker.followup(self.record)
+                self.assertEqual(self.merges, [])
+
+    def test_all_checks_reviews_and_mergeability_are_required(self):
+        good = self.view(43)
+        variants = [{**good, 'mergeStateStatus': state} for state in ['BEHIND', 'BLOCKED', 'UNKNOWN', 'DIRTY']]
+        variants += [{**good, 'reviewDecision': state} for state in ['REVIEW_REQUIRED', 'CHANGES_REQUESTED']]
+        variants += [{**good, 'statusCheckRollup': []}, {**good, 'headRefOid': 'e' * 40}]
+        for result in ['FAILURE', 'CANCELLED', 'SKIPPED', 'NEUTRAL']:
+            value = copy.deepcopy(good)
+            value['statusCheckRollup'][0]['conclusion'] = result
+            variants.append(value)
+        value = copy.deepcopy(good)
+        value['statusCheckRollup'].append(dict(__typename='StatusContext', context='extra', state='PENDING'))
+        variants.append(value)
+        for value in variants:
+            with self.subTest(value=value):
+                self.worker.merge_view = mock.Mock(return_value=value)
+                self.worker.followup(self.record)
+                self.assertEqual(self.merges, [])
+
+    def test_failed_followup_pauses_without_new_model_attempt(self):
+        failed = [{**r, 'pull_requests': [{'number': 43}]} for r in runs(self.repair['head']['sha'])]
+        self.worker.pages = mock.Mock(return_value=failed)
+        with self.assertRaisesRegex(W.WorkerError, 'CI failed'):
+            self.worker.poll()
+        self.assertEqual(self.record['status'], 'needs_attention')
+        self.assertTrue(self.worker.state['paused'])
+        self.assertEqual(self.merges, [])
+
+    def test_changed_source_or_repair_is_never_merged(self):
+        for target in [self.parent, self.repair]:
+            old = copy.deepcopy(target)
+            target['head']['sha'] = 'e' * 40
+            self.worker.followup(self.record)
+            self.assertEqual(self.record['status'], 'superseded')
+            self.assertEqual(self.merges, [])
+            target.update(old)
+
+    def test_main_requires_live_protection(self):
+        self.rules = []
+        with self.assertRaisesRegex(W.WorkerError, 'Main must require'):
+            self.worker.followup(self.record)
+        self.assertEqual(self.merges, [])
+
+    def test_recover_merge_response_lost_after_server_success(self):
+        self.worker.followup(self.record)
+        self.record['status'] = 'repair_merging'
+        self.record.pop('parent_head')
+        self.worker.followup(self.record)
+        self.assertEqual(self.merges, [43, 42])
+        self.record['status'] = 'parent_merging'
+        self.worker.followup(self.record)
+        self.assertEqual(self.record['status'], 'merged_main')
+        self.assertEqual(self.merges, [43, 42])
+
+    def test_dry_run_pause_disabled_and_legacy_records_never_merge(self):
+        self.worker.poll(dry_run=True)
+        self.assertEqual(self.merges, [])
+        self.worker.state['paused'] = 'operator'
+        self.worker.poll()
+        self.assertEqual(self.merges, [])
+        self.worker.state.pop('paused')
+        self.worker.config['auto_merge'] = False
+        self.worker.poll()
+        self.assertEqual(self.merges, [])
+        self.worker.config['auto_merge'] = True
+        self.record.pop('auto_merge')
+        self.worker.poll()
+        self.assertEqual(self.merges, [])
+
+    def test_stale_source_refresh_uses_expected_head_and_skips_model(self):
+        def api(route, payload=None, method=None):
+            if '/compare/' in route:
+                return {'behind_by': 2}
+            if route.endswith('/update-branch'):
+                self.assertEqual(method, 'PUT')
+                self.assertEqual(payload, {'expected_head_sha': HEAD})
+                return {'message': 'Updating'}
+            return self.parent
+        self.worker.api.side_effect = api
+        self.assertTrue(self.worker.sync_base_before_repair(self.parent, self.record))
+        self.assertEqual(self.record['status'], 'base_updated_awaiting_ci')
 
 
 if __name__ == '__main__':

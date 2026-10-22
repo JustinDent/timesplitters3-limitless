@@ -62,7 +62,7 @@ def patch_records(paths):
     for suffix in ('-144-fps.patch', '-presentation-timing.patch',
                    '-interpolation-recovery.patch', '-controls-accept-save.patch',
                    '-shared-presentation-integration.patch', '-native-frame-timing.patch',
-                   '-native-interp-retirement.patch', '-fixed-60-fps.patch',
+                   '-native-interp-retirement.patch', '-fixed-60-fps.patch', '-late-frame-pacing.patch',
                    '-native-numeric-policy.patch', '-native-animation-scope.patch',
                    '-native-input-ticks.patch', '-native-script-events.patch', '-native-frame-decay.patch',
                    '-native-camera-timing.patch', '-native-weapon-event-scope.patch',

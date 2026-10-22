@@ -31,17 +31,13 @@ namespace TimeSplitters.Launcher
         readonly Border footerBorder;
         readonly TabControl tabs;
         public event Action Saved, Cancelled;
-        public event Action<int> InstallTextures;
-        public event Action CancelTextureInstall;
-        readonly TextBlock textureStatus;
-        readonly Button textureDownload, textureZip, textureFolder, textureCancel;
         readonly string root;
         readonly GameSettings model;
         readonly TextBlock status;
         readonly Slider fov;
         readonly TextBox sensitivity, width, height, discordId;
-        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled;
-        readonly ComboBox device, resolution, aspect, scale, filtering;
+        readonly CheckBox enabled, invert, fullscreen, vrr, fps, skipSplashes, discordEnabled, enhancedTextures;
+        readonly ComboBox device, resolution, aspect, scale, filtering, frameRate;
         readonly TextBlock performanceAdvice;
         readonly Button[,] bindingButtons = new Button[24,4];
         static readonly string[] Devices = { "keyboard", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "none" };
@@ -127,24 +123,17 @@ namespace TimeSplitters.Launcher
             reset.Click+=(s,e)=>Confirm("Restore default controls?","Replace Player 1 bindings and mouse settings with the defaults? Changes apply only when you save.","Restore defaults",()=> { model.ResetControls(); sensitivity.Text="0.10"; enabled.IsChecked=true; invert.IsChecked=false; device.SelectedIndex=0; RefreshBindings(); });
             bindings.Children.Add(reset);tabs.Items.Add(new TabItem { Header="Keyboard & mouse",Content=Scroll(controls) });
             var graphics=new StackPanel();
-            var textures=PageTheme.Section(graphics,"4K texture pack · optional","Download enhanced textures from GitHub, or install a pack you already have. Original textures remain available. Uses up to 6 GiB.");
-            textureStatus=Text(TexturePack.Summary(root),12);textureStatus.Name="TexturePackStatus";textures.Children.Add(textureStatus);
-            var textureActions=new WrapPanel();textures.Children.Add(textureActions);
-            textureDownload=Button("Download 4K texture pack");textureDownload.Name="DownloadTexturePack";PageTheme.Primary(textureDownload);
-            textureZip=Button("Install pack ZIP");textureZip.Name="InstallTextureZip";
-            textureFolder=Button("Install pack folder");textureFolder.Name="InstallTextureFolder";
-            textureCancel=Button("Cancel installation");textureCancel.Name="CancelTextureInstall";Ui.Show(textureCancel,false);
-            textureDownload.Click+=(s,e)=> { if(InstallTextures!=null)InstallTextures(0); };
-            textureZip.Click+=(s,e)=> { if(InstallTextures!=null)InstallTextures(1); };
-            textureFolder.Click+=(s,e)=> { if(InstallTextures!=null)InstallTextures(2); };
-            textureCancel.Click+=(s,e)=> { if(CancelTextureInstall!=null)CancelTextureInstall(); };
-            foreach(var button in new[]{textureDownload,textureZip,textureFolder,textureCancel}){button.Margin=new Thickness(0,8,8,0);textureActions.Children.Add(button);}
-            textures.Children.Add(Text("The launcher installs to the correct game folder. After installation, choose Enhanced in the game's Display settings. The pack is an incomplete alpha; untouched textures keep their original appearance.",12));
+            var textures=PageTheme.Section(graphics,"Enhanced textures · Beta","Replacement textures are included with supported game updates.");
+            enhancedTextures=Check("Use enhanced textures (Beta)",model.EnhancedTextures);enhancedTextures.Name="EnhancedTextures";
+            textures.Children.Add(enhancedTextures);
+            var textureHint=Text("On uses the bundled enhanced textures; off uses the original textures. This Beta is incomplete and may contain visual issues. Textures without replacements keep their original appearance.",12);
+            textureHint.Name="EnhancedTexturesHint";textures.Children.Add(textureHint);
+            textures.Children.Add(Text("Save to apply on your next launch. Changes in the game's Display menu or with F10 last for that game session. If your game version has no bundled pack, original textures remain available.",12));
             var display=PageTheme.Section(graphics,"Display","Choose the game’s output size. Your desktop resolution stays unchanged.");
             var displayColumns=Columns(display);var displayLeft=Column(displayColumns,0);var displayRight=Column(displayColumns,1);
-            var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height)).ToList();
+            var sizes=DisplayModes.Primary(model.Width,model.Height).Where(m=>model.SupportsResolution(m.Width,m.Height) || (m.Automatic && model.Width==1 && model.Height==1)).ToList();
             aspect=new ComboBox { Name="AspectRatio" };
-            foreach(var ratio in DisplayModes.Aspects)aspect.Items.Add(ratio);
+            foreach(var ratio in DisplayModes.Aspects.Where(r=>r.Label!="Auto" || model.CanAutoResolution))aspect.Items.Add(ratio);
             aspect.SelectedIndex=0;Field(displayLeft,"Aspect ratio",aspect);
             resolution=new ComboBox { Name="OutputResolution" };
             foreach(var mode in sizes) resolution.Items.Add(mode);
@@ -163,7 +152,10 @@ namespace TimeSplitters.Launcher
             width=Entry(model.Width.ToString());height=Entry(model.Height.ToString());Field(Column(dimensions,0),"Width",width);Field(Column(dimensions,1),"Height",height);
             var customHint=Text("Use a supported custom size, or 0 × 0 for the original console resolution.",12);customHint.Foreground=Muted;custom.Children.Add(customHint);
             var customSize=new Expander { Header="Custom resolution",Foreground=Ink,FontSize=12,Content=custom,Margin=new Thickness(0,2,0,12) };display.Children.Add(customSize);
-            resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); } };
+            Ui.Show(customSize,model.Width!=1 || model.Height!=1);
+            if(!model.CanAutoResolution && model.Width==1 && model.Height==1)display.Children.Add(Text("Auto is saved for a newer game build. This older game uses its original resolution; choose a manual size here to change it.",12));
+            display.Children.Add(Text("Auto follows the current display in fullscreen and the window size in windowed mode. Manual sizes remain available.",12));
+            resolution.SelectionChanged+=(s,e)=> { var selected=resolution.SelectedItem as DisplayMode; if(selected!=null) { width.Text=selected.Width.ToString(); height.Text=selected.Height.ToString(); Ui.Show(customSize,!selected.Automatic); } };
             var ratioValue=Text("Current ratio: "+DisplayModes.RatioLabel(model.Width,model.Height),12);ratioValue.Name="CurrentAspectRatio";ratioValue.Foreground=Accent;display.Children.Add(ratioValue);
             Action updateRatio=()=> {
                 int w,h;ratioValue.Text=Int32.TryParse(width.Text,out w)&&Int32.TryParse(height.Text,out h)?"Current ratio: "+DisplayModes.RatioLabel(w,h):"Enter a valid size";
@@ -198,6 +190,12 @@ namespace TimeSplitters.Launcher
             cameraLeft.Children.Add(resetFov);
             if(!model.CanAdjustFov) camera.Children.Add(Text("Custom FOV requires a game release newer than v0.2.0-alpha.4. Resolution settings remain available.",12));
             var fovHint=Text("55° is the original view. Wider settings show more of the world; weapon zoom remains relative.",12);fovHint.Foreground=Muted;fovHint.Margin=new Thickness(0,10,0,4);camera.Children.Add(fovHint);
+            var timing=PageTheme.Section(graphics,"Frame rate","Choose a target for your next game launch. Your desktop refresh rate stays unchanged.");
+            frameRate=Choices(GameSettings.NativeFrameRateLabels,GameSettings.NativeFrameRateLabels[Array.IndexOf(GameSettings.NativeFrameRates,model.NativeFps)]);
+            frameRate.Name="NativeFrameRate";Field(timing,"Frame-rate target",frameRate);
+            var betaNote=Text("120 / 144 FPS use native high-refresh mode (beta), without interpolation. Gameplay issues may occur, including movement or firing problems in Arcade. Choose 60 FPS (Original) if you encounter problems.",12);
+            betaNote.Name="NativeFrameRateBetaNote";timing.Children.Add(betaNote);
+            timing.Children.Add(Text("Requires a game build with native high-refresh support; older releases will not gain high FPS from this setting. Save and restart the game to apply changes.",12));
             var quality=PageTheme.Section(graphics,"Quality & performance","Lower output resolution reduces GPU work. Console render scale applies only at Original console resolution.");
             var qualityColumns=Columns(quality);var qualityLeft=Column(qualityColumns,0);var qualityRight=Column(qualityColumns,1);
             scale=Choices(Enumerable.Range(1,8).Select(i=>i.ToString()).ToArray(),model.Scale.ToString());scale.Name="ConsoleRenderScale";Field(qualityLeft,"Console render scale / supersampling",scale);
@@ -206,6 +204,7 @@ namespace TimeSplitters.Launcher
             var qualityToggles=new WrapPanel();qualityToggles.Children.Add(vrr);qualityToggles.Children.Add(fps);quality.Children.Add(qualityToggles);
             performanceAdvice=Text("",12);performanceAdvice.Name="PerformanceAdvice";
             performanceAdvice.Foreground=Muted;quality.Children.Add(performanceAdvice);
+            frameRate.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             scale.SelectionChanged+=(s,e)=>UpdatePerformanceAdvice();
             width.TextChanged+=(s,e)=>UpdatePerformanceAdvice();height.TextChanged+=(s,e)=>UpdatePerformanceAdvice();
             UpdatePerformanceAdvice();
@@ -225,14 +224,6 @@ namespace TimeSplitters.Launcher
             presence.Children.Add(Text("Keep the Discord desktop app open and allow activity sharing in Discord. Changes apply on your next game launch. Requires a game build with Rich Presence support.",12));
             tabs.Items.Add(new TabItem { Header="Discord",Content=Scroll(discord) });
         }
-        public void TextureProgress(string message) { textureStatus.Text=message; }
-        public void TextureBusy(bool busy)
-        {
-            footerBorder.IsEnabled=!busy;
-            textureDownload.IsEnabled=textureZip.IsEnabled=textureFolder.IsEnabled=!busy;
-            Ui.Show(textureCancel,busy);
-        }
-        public void RefreshTextures() { textureStatus.Text=TexturePack.Summary(root); }
         static string KeyName(string token) { return GameSettings.BindingLabel(token); }
         void RefreshBindings() { for(int i=0;i<24;i++) { var keys=model.Binding(i); for(int j=0;j<4;j++) { bindingButtons[i,j].Content=KeyName(keys[j]);bindingButtons[i,j].Foreground=KeyName(keys[j])=="Unbound"?Muted:Ink; } } }
         public void SelectTab(int index) { tabs.SelectedIndex=index; }
@@ -283,7 +274,7 @@ namespace TimeSplitters.Launcher
             scale.IsEnabled=original;
             Int32.TryParse(Convert.ToString(scale.SelectedItem),out n);
             var notes=new System.Collections.Generic.List<string>();
-            notes.Add("Game rendering and simulation run at 60 FPS. Your desktop refresh rate stays unchanged.");
+            notes.Add(frameRate.SelectedIndex>0 ? "Native high-refresh target: "+GameSettings.NativeFrameRates[frameRate.SelectedIndex]+" FPS (Beta). Actual FPS depends on your game build, hardware and display." : "Original 60 FPS timing. Your desktop refresh rate stays unchanged.");
             if(original && n>1) notes.Add(n+"× console scale draws "+(n*n)+"× the scene pixels. Reduce it to 1 first if FPS drops.");
             else if(!original) notes.Add("Your output resolution sets the scene size; console scale is inactive. Lower output resolution first if GPU load causes drops.");
             else notes.Add("Console scale is already 1×.");
@@ -301,6 +292,8 @@ namespace TimeSplitters.Launcher
                 string chosenDevice=Devices[device.SelectedIndex]; if(chosenDevice!=model.Device.Replace("xinput:","gamepad:")) model.Device=chosenDevice;
                 model.VerticalFov=(int)Math.Round(fov.Value);
                 model.Width=w; model.Height=h; model.Fullscreen=fullscreen.IsChecked==true; model.Vrr=vrr.IsChecked==true; model.FpsOverlay=fps.IsChecked==true;
+                model.NativeFps=GameSettings.NativeFrameRates[frameRate.SelectedIndex];
+                model.EnhancedTextures=enhancedTextures.IsChecked==true;
                 model.SkipStartupSplashes=skipSplashes.IsChecked==true;
                 model.DiscordEnabled=discordEnabled.IsChecked==true;model.DiscordApplicationId=discordId.Text.Trim();
                 model.Scale=Int32.Parse((string)scale.SelectedItem); model.Anisotropy=Int32.Parse((string)filtering.SelectedItem);

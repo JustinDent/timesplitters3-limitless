@@ -5,6 +5,15 @@
 #include <stdint.h>
 #include <math.h>
 #include <string.h>
+/* The crane vignette's full-canvas Xbox clip uses inclusive last pixels.
+ * Convert only this tagged effect to host-exclusive bounds, before scaling.
+ * Keep partial clips, other widgets and the stored guest scissor unchanged. */
+static void pc_ui_vignette_clip(uint32_t tag,int placement,int32_t rect[4])
+{
+    if(tag!=0x00137010u || placement!=1 || rect[0]!=0 || rect[1]!=0 ||
+       (rect[2]!=639 && rect[2]!=640) || (rect[3]!=479 && rect[3]!=480))return;
+    rect[2]=640;rect[3]=480;
+}
 /* US menu health draw: state 8 is the completed-match/results phase.
  * Keep Story objectives and the ordinary pause HUD unchanged. */
 static int pc_ui_hide_results_health(unsigned caller,unsigned phase,unsigned mode)

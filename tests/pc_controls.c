@@ -1,6 +1,7 @@
 #include "pc_input.h"
 #include "pc_camera.h"
 #include "pc_controls.h"
+#include "pc_text_input.h"
 #include "input_bindings.h"
 #include <math.h>
 #include <stdio.h>
@@ -40,6 +41,31 @@ int main(int argc, char **argv)
     pc_controls_menu_mode(1);pc_controls_menu_mode(0);
     pc_controls_message(NULL,WM_APP+0x186,1,0,&message_result);
     CHECK(!pc_controls_message(NULL,WM_SETCURSOR,0,HTCLIENT,&message_result));
+    /* Direct host-adapter events, without desktop input or personal settings. */
+    pc_controls_message(NULL,WM_SETFOCUS,0,0,&message_result);
+    pc_controls_text_mode(0x1000);
+    CHECK(pc_controls_message(NULL,WM_KEYDOWN,'E',0,&message_result));
+    CHECK(!pc_controls_key_down('E'));
+    CHECK(pc_controls_message(NULL,WM_CHAR,'E',0,&message_result));
+    CHECK(pc_controls_text_event(0x1000)=='E');
+    CHECK(pc_controls_message(NULL,WM_CHAR,0xe9,0,&message_result));
+    CHECK(pc_controls_text_event(0x1000)==0xe9);
+    pc_controls_message(NULL,WM_KEYDOWN,VK_BACK,0,&message_result);
+    pc_controls_message(NULL,WM_CHAR,8,0,&message_result);
+    CHECK(pc_controls_text_event(0x1000)==PC_TEXT_BACKSPACE && !pc_controls_text_event(0x1000));
+    pc_controls_message(NULL,WM_KEYDOWN,VK_RETURN,0,&message_result);
+    pc_controls_message(NULL,WM_KEYDOWN,VK_RETURN,(LPARAM)1<<30,&message_result);
+    CHECK(pc_controls_text_event(0x1000)==PC_TEXT_ACCEPT && !pc_controls_text_event(0x1000));
+    pc_controls_message(NULL,WM_CHAR,'x',0,&message_result);
+    pc_controls_message(NULL,WM_KILLFOCUS,0,0,&message_result);
+    CHECK(!pc_controls_text_event(0x1000));
+    pc_controls_message(NULL,WM_CHAR,'x',0,&message_result);
+    CHECK(!pc_controls_text_event(0x1000));
+    pc_controls_message(NULL,WM_SETFOCUS,0,0,&message_result);
+    pc_controls_message(NULL,WM_CHAR,'x',0,&message_result);
+    pc_controls_text_mode(0x2000);CHECK(!pc_controls_text_event(0x2000));
+    pc_controls_text_mode(0);CHECK(!pc_controls_message(NULL,WM_CHAR,'x',0,&message_result));
+    pc_controls_message(NULL,WM_KILLFOCUS,0,0,&message_result);
     pc_input_normalize_movement(&mx, &my);
     CHECK(mx == my && hypot(mx, my) <= 32767 && mx > 23000);
     mx = 0; my = -32767; pc_input_normalize_movement(&mx, &my);

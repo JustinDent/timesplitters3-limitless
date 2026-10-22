@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace TimeSplitters.Launcher
 {
-    // Generates an editable browser draft. This class never posts an issue or contacts GitHub.
+    // Generates an editable issue or Ideas discussion draft; never posts or contacts GitHub.
     public sealed class DiagnosticIssueDraft
     {
         public const string DiagnosticsField = "diagnostics";
@@ -19,7 +19,7 @@ namespace TimeSplitters.Launcher
         public static DiagnosticIssueDraft Create(bool enhancement,string report)
         {
             if(enhancement)return new DiagnosticIssueDraft {
-                Url="https://github.com/"+ReleaseClient.Repository+"/issues/new?template=02-enhancement.yml",
+                Url="https://github.com/"+ReleaseClient.Repository+"/discussions/new?category=ideas",
                 ClipboardText="",RequiresPaste=false};
             Core.Require(!String.IsNullOrWhiteSpace(report),"Refresh diagnostics before preparing a GitHub report.");
             string prefix="https://github.com/"+ReleaseClient.Repository+"/issues/new?template="+

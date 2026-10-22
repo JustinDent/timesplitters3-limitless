@@ -50,7 +50,7 @@ static class LauncherTests
         return new Dictionary<string, string> { { "Bin/futureperfect_recomp.exe", "new game" }, { "Launch.ps1", "launch" },
             { "Settings/pc-controls.json", "defaults" }, { Core.LauncherName, "new launcher" }, { "Licenses/Runtime.txt", "license" } };
     }
-    static string Zip(string caseName, Action<Dictionary<string, string>> alter, string extra, bool wrongHash)
+    static string Zip(string caseName, Action<Dictionary<string, string>> alter, string extra, bool wrongHash, string padding = null)
     {
         var files = Files(); if (alter != null) alter(files);
         var hashes = files.ToDictionary(p => p.Key, p => Hash(p.Value));
@@ -61,7 +61,7 @@ static class LauncherTests
             foreach (var file in files)
                 using (var writer = new StreamWriter(zip.CreateEntry("package/" + file.Key).Open(), new UTF8Encoding(false))) writer.Write(file.Value);
             using (var writer = new StreamWriter(zip.CreateEntry("package/BUILD.json").Open(), new UTF8Encoding(false)))
-                writer.Write(Json.Encode(new { version = "v1.1.0", files = hashes }));
+                writer.Write(Json.Encode(new { version = "v1.1.0", files = hashes, padding = padding }));
             if (extra != null) using (var writer = new StreamWriter(zip.CreateEntry(extra).Open())) writer.Write("unlisted");
         }
         return path;
@@ -103,14 +103,27 @@ static class LauncherTests
         { var response = Reply(request); response.RequestMessage = request; return Task.FromResult(response); }
     }
     sealed class Progress : IProgress<double> { public void Report(double value) { } }
-    sealed class SlowHandler : HttpMessageHandler
+    sealed class StalledHandler : HttpMessageHandler
     {
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        public readonly TaskCompletionSource<HttpResponseMessage> Response = new TaskCompletionSource<HttpResponseMessage>();
+        public CancellationToken RequestToken;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
-            // Deliberately ignore cancellation to model a stalled OS network call.
-            await Task.Delay(500);
-            return new HttpResponseMessage(HttpStatusCode.OK) { RequestMessage = request, Content = new StringContent("[]") };
+            // Stay pending even after cancellation, until the fixture is disposed.
+            RequestToken = token;
+            return Response.Task;
         }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) Response.TrySetCanceled();
+            base.Dispose(disposing);
+        }
+    }
+    static void AwaitStalledCheck(Task pending)
+    {
+        // A generous deadlock guard, not an assertion about runner scheduling speed.
+        Assert(Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(10))).GetAwaiter().GetResult() == pending);
+        pending.GetAwaiter().GetResult();
     }
     static string SelfManifest(string version, string boot, string app)
     {
@@ -211,6 +224,31 @@ static class LauncherTests
         Directory.CreateDirectory(temp);
         try
         {
+            Test("bundled texture manifests can exceed one MiB", () => {
+                string archive = Zip("large-manifest", null, null, false, new string('x', 1100*1024));
+                string stage = Path.Combine(temp, "large-manifest-stage");
+                Core.Unpack(archive, stage, "v1.1.0");
+                Assert(new FileInfo(Path.Combine(stage, "BUILD.json")).Length > 1024*1024);
+            });
+            Test("bundled textures install while existing replacements and settings survive", () => {
+                string key = "Textures/0123456789abcdef.dds";
+                string root = Path.Combine(temp, "bundled-textures");
+                string zip = Zip("bundled-textures", f => { f[key] = "new texture"; f["Textures/0123456789abcdef.json"] = "new metadata"; f["Textures/abcdef0123456789.dds"] = "second texture"; }, null, false);
+                var changes = Core.Unpack(zip, Path.Combine(temp, "texture-payload"), "v1.1.0");
+                Put(root, key, "artist texture");
+                Put(root, "Settings/pc-controls.json", "personal settings");
+                Core.Apply(root, changes, null);
+                Assert(File.ReadAllText(Core.PathIn(root, key)) == "artist texture");
+                Assert(!File.Exists(Core.PathIn(root, "Textures/0123456789abcdef.json")));
+                Assert(File.ReadAllText(Core.PathIn(root, "Textures/abcdef0123456789.dds")) == "second texture");
+                Assert(File.ReadAllText(Core.PathIn(root, "Settings/pc-controls.json")) == "personal settings");
+                Assert(Core.PreserveGameFile(key));
+                Assert(!Core.Allowed("Textures/game.exe") && !Core.Allowed("Textures/sub/0123456789abcdef.dds"));
+                Put(root, ".launcher/pending/payload/Textures/abcdef0123456789.dds", "verified staged texture");
+                Core.DiscardGameStaging(root);
+                Assert(!Directory.Exists(Core.PathIn(root, ".launcher/pending")));
+                Assert(File.ReadAllText(Core.PathIn(root, key)) == "artist texture");
+            });
             if (args.Length == 1 && args[0] == "--cleanup") {
                 CleanupTests(); Console.WriteLine("PASS: " + passed + " isolated launcher cleanup checks."); return 0;
             }
@@ -764,19 +802,27 @@ static class LauncherTests
             var candidate = ReleaseClient.SelectLauncher(Json.Encode(new[] { SelfRelease("1.1.0", false, false, 100, "sha256:" + Hash("other")) }), false);
             Reject(() => ReleaseClient.VerifyLauncherMetadata(candidate, SelfMetadata("1.1.0", 100, Hash("zip"))));
         });
-        Test("launcher check has bounded timeout even if network ignores cancellation", () => {
-            var watch = Stopwatch.StartNew();
-            using (var client = new ReleaseClient(new SlowHandler()))
+        Test("launcher check times out while the network ignores cancellation", () => {
+            var handler = new StalledHandler();
+            using (var client = new ReleaseClient(handler))
             {
-                try { SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromMilliseconds(20), CancellationToken.None).GetAwaiter().GetResult(); throw new Exception("Expected timeout"); }
-                catch (TimeoutException) { Assert(watch.ElapsedMilliseconds < 350); }
+                var pending = SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromMilliseconds(20), CancellationToken.None);
+                try { AwaitStalledCheck(pending); throw new Exception("Expected timeout"); }
+                catch (TimeoutException) { }
+                Assert(handler.RequestToken.IsCancellationRequested);
+                Assert(!handler.Response.Task.IsCompleted);
             }
         });
-        Test("continue offline cancels launcher check", () => {
-            using (var client = new ReleaseClient(new SlowHandler())) using (var cancel = new CancellationTokenSource(20))
+        Test("continue offline cancels launcher check while network stays pending", () => {
+            var handler = new StalledHandler();
+            using (var client = new ReleaseClient(handler)) using (var cancel = new CancellationTokenSource())
             {
-                try { SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromSeconds(5), cancel.Token).GetAwaiter().GetResult(); throw new Exception("Expected cancellation"); }
+                var pending = SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromMinutes(5), cancel.Token);
+                cancel.Cancel();
+                try { AwaitStalledCheck(pending); throw new Exception("Expected cancellation"); }
                 catch (OperationCanceledException) { }
+                Assert(handler.RequestToken.IsCancellationRequested);
+                Assert(!handler.Response.Task.IsCompleted);
             }
         });
         Test("launcher no-update result needs no install", () => {

@@ -6,6 +6,7 @@ param(
     [string]$Python,
     [string]$InputSequence,
     [switch]$SystemLink,
+    [switch]$SkipTextures,
     [string[]]$Peers,
     [ValidateSet('Debug', 'Release', 'RelWithDebInfo')]
     [string]$Configuration = 'Release',
@@ -146,6 +147,9 @@ try {
                 }
                 'Build' {
                     Assert-Game
+                    if (!$SkipTextures) {
+                        Invoke-Checked $envPython @((Join-Path $projectRoot 'tools\build_textures.py'))
+                    }
                     Apply-LocalPatches
                     if (!(Test-Path -LiteralPath 'titles/futureperfect/src/recomp/gen/recomp_funcs.h')) {
                         throw 'Run Generate first.'
@@ -247,7 +251,7 @@ try {
                         }
                         $env:RECOMP_GAME_DIR = $gameRoot
                         if (!$env:TSFP_TEXTURE_PACK_DIR) {
-                            $env:TSFP_TEXTURE_PACK_DIR = Join-Path $privateRoot 'texture-remaster\pack'
+                            $env:TSFP_TEXTURE_PACK_DIR = Join-Path $projectRoot 'assets\textures'
                             if (!$env:TSFP_TEXTURE_MODE) { $env:TSFP_TEXTURE_MODE = 'classic' }
                         }
                         $controlsPath = Join-Path $projectRoot 'config\pc-controls.json'

@@ -25,6 +25,7 @@ RELEASE_INPUTS = {
     'tools/recycle-release-work.ps1', 'tools/package-release.py',
     'tools/package-native-mac.py', 'tests/test_native_mac_package.py',
     'config/native-mac-runtime-licenses.json',
+    'tools/build_textures.py', 'tests/test_build_textures.py',
 }
 # Unknown runtime inputs still select GPU validation. New files must not
 # silently lose coverage; only known offline scripts are exempted.
@@ -61,7 +62,10 @@ def affected(paths, *, full=False):
                               'tests/test_issue_', 'tests/test_known_issues')):
             continue  # Always-reporting issue workflows own these tests.
         elif path in ('tools/compatibility-worker.py', 'tests/test_compatibility_worker.py',
-                      'tests/test_mac_backlog.py'):
+                      'tests/test_mac_backlog.py', 'tools/repo-context.py',
+                      'tests/test_repo_context.py', 'tools/router/repository-context.mjs',
+                      'tests/repository-context.test.mjs', 'tests/repository-evidence.test.mjs',
+                      'tools/router/repository-evidence.mjs', 'tools/router/advisory-evidence.mjs'):
             continue  # The lightweight plan/gate jobs always run these contracts.
         elif path.startswith(('tools/', 'tests/', 'config/')):
             selected.update(('native', 'gpu'))

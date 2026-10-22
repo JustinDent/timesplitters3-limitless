@@ -6,6 +6,7 @@ GitHub CLI authentication is used; tokens never enter command arguments or files
 import argparse
 from contextlib import contextmanager
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -18,6 +19,9 @@ from urllib.parse import urlsplit
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+TEXTURE_SPEC = importlib.util.spec_from_file_location('publish_textures', ROOT/'tools/build_textures.py')
+TEXTURES = importlib.util.module_from_spec(TEXTURE_SPEC)
+TEXTURE_SPEC.loader.exec_module(TEXTURES)
 SEMVER = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?\Z')
 
 
@@ -71,7 +75,7 @@ def digest(path):
 
 def game_release_path(path):
     """Game source/runtime inputs, excluding launcher and release housekeeping."""
-    return (path.startswith(('src/', 'patches/', 'config/'))
+    return (path.startswith(('src/', 'patches/', 'config/', 'assets/textures/'))
             or path in ('tsfp.ps1', 'setup.ps1', 'requirements.txt', 'CMakeLists.txt',
                         'tools/build-game-icon.ps1', 'tools/launcher/IconBuilder.cs',
                         'tools/launcher/GameMonogram.cs')
@@ -218,7 +222,28 @@ class Publisher:
                 raise ValueError('There are no new source commits since the last published release')
         else:
             self.baseline = None
+        self.require_repository_textures()
         self.validate_remote()
+
+    def require_repository_textures(self):
+        """Official releases always carry the complete committed, hydrated pack."""
+        manifest = json.loads((self.root/'config/texture-pack.json').read_text())
+        if (manifest.get('schema') != 2 or manifest.get('delivery') != 'bundled'
+                or manifest.get('path') != 'assets/textures'):
+            raise ValueError('Releases require the bundled repository texture pack in assets/textures.')
+        _, records, identity = TEXTURES.ensure_pack(self.root)
+        if any(manifest.get(key) != identity[key] for key in ('texture_count', 'installed_bytes')):
+            raise ValueError('Repository textures do not match the declared count/size in config/texture-pack.json.')
+        for path, public, _ in records:
+            if path.with_suffix('.json').read_bytes() != public:
+                raise ValueError(f'Repository texture metadata must be sanitized: {path.name}')
+        self.texture_identity = identity
+        self.texture_files = {name: sha for name, _, sha in TEXTURES.zip_entries(records)}
+
+    def require_package_textures(self, build):
+        files = {name: sha for name, sha in build.get('files', {}).items() if name.startswith('Textures/')}
+        if build.get('textures') != self.texture_identity or files != self.texture_files:
+            raise ValueError('Release package must include every repository texture and its metadata with matching hashes/count/size.')
 
     def validate_remote(self):
         if self.git('rev-parse', 'HEAD') != self.commit or self.git('branch', '--show-current') != 'main':
@@ -245,7 +270,16 @@ class Publisher:
                 continue
             pages = json.loads(self.gh('api', '--paginate', '--slurp', endpoint+'/files?per_page=100'))
             files = [item for page in pages for item in page]
-            if len(files) != pr['changed_files']:
+            if pr['changed_files'] > 3000 and len(files) == 3000:
+                # GitHub caps this endpoint at 3,000 files. The merge commit was
+                # already checked against the release range above; use its full
+                # first-parent diff, including both sides of renamed paths.
+                merge = pr['merge_commit_sha']
+                names = self.git('diff', '--no-renames', '--name-only', '-z', merge+'^1', merge)
+                files = [{'filename': name} for name in names.rstrip('\0').split('\0') if name]
+                if not files:
+                    raise ValueError(f'Empty local changed-file list for PR #{number}')
+            elif len(files) != pr['changed_files']:
                 raise ValueError(f'Incomplete changed-file list for PR #{number}; cannot classify release notes safely.')
             if not any(game_release_path(item[key]) for item in files
                        for key in ('filename', 'previous_filename') if key in item):
@@ -346,9 +380,11 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         shutil.copyfile(self.stage/'BUILD.json', self.metadata)
 
     def verify_package(self):
-        build = json.loads((self.stage/'BUILD.json').read_text())
+        staged = self.stage.exists()
+        build = json.loads(((self.stage/'BUILD.json') if staged else self.metadata).read_text())
         if build['source_commit'] != self.commit or build['version'] != self.tag or build['source_changes']:
             raise ValueError('Package source/version does not match the clean release commit')
+        self.require_package_textures(build)
         expected = self.checksum.read_text(encoding='ascii').split()
         if expected != [digest(self.archive), self.archive.name]:
             raise ValueError('Package checksum mismatch')
@@ -368,7 +404,11 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
                     raise ValueError(f'Unsafe package path: {name}')
                 if name.startswith(('Data/', 'Saves/', 'Logs/')) or name.lower().endswith(('.iso', '.xbe', '.pak', '.img', '.pdb')):
                     raise ValueError(f'Unexpected private game/test file in package: {name}')
-                if digest(self.stage/name) != expected_hash:
+                # Texture files stream into the ZIP without a staging copy.
+                texture = re.fullmatch(r'Textures/[0-9a-f]{16}\.(dds|json)', name)
+                if name.startswith('Textures/') and (not texture or not build.get('textures')):
+                    raise ValueError(f'Unexpected texture package member: {name}')
+                if staged and not texture and digest(self.stage/name) != expected_hash:
                     raise ValueError(f'Staged file changed: {name}')
                 with archive.open(prefix+name) as stream:
                     if hashlib.file_digest(stream, 'sha256').hexdigest() != expected_hash:
@@ -388,8 +428,11 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
                 if Path(name).name != name or digest(self.output/name) != expected:
                     raise ValueError('Prepared release assets changed; they will not be published')
             print('Reusing the validated package for this exact main commit.', flush=True)
+            # The staging folder may already have been recycled.
+            self.verify_package()
         else:
             self.build_package()
+        self.require_package_textures(json.loads(self.metadata.read_text()))
         assets = {path.name: digest(path) for path in (self.archive, self.checksum, self.metadata)}
         temporary = self.plan.with_suffix('.json.tmp')
         temporary.write_text(json.dumps(dict(commit=self.commit, tag=self.tag, repo=self.repo,
@@ -402,12 +445,31 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
             self.recycle(self.stage)
         print(f'Notes: {self.notes}\nPackage: {self.archive}', flush=True)
 
+    def require_texture_launcher(self):
+        self.require_package_textures(json.loads(self.metadata.read_text()))
+        latest = json.loads(self.gh('api', f'repos/{self.repo}/releases/latest'))
+        tag = latest.get('tag_name', '')
+        version = tag.removeprefix('launcher-v')
+        if (not tag.startswith('launcher-v') or not SEMVER.fullmatch(version)
+                or latest.get('draft') or latest.get('prerelease')
+                or not latest.get('published_at')
+                or version_key(version) < version_key('1.2.22')):
+            raise ValueError('Publish a stable launcher 1.2.22 or newer before a bundled-texture game release.')
+        assets = {a['name'] for a in latest.get('assets', [])
+                  if a.get('state') == 'uploaded' and a.get('size', 0) > 0}
+        required = {f'TimeSplitters-Launcher-v{version}-{platform}.zip'
+                    for platform in ('windows-x64', 'macos-arm64')}
+        if not required <= assets:
+            raise ValueError('The compatible launcher release must contain both Windows and Mac packages.')
+
     def publish(self, draft=False):
         self.validate_remote()
         plan = json.loads(self.plan.read_text())
         for path in (self.archive, self.checksum, self.metadata):
             if digest(path) != plan['assets'][path.name]:
                 raise ValueError('Prepared assets changed before upload')
+        self.verify_package()
+        self.require_texture_launcher()
         # Pin the tag before creating the draft. GitHub rejects a concurrent
         # attempt to create the same ref, so an existing tag is never moved.
         existing = self.git('ls-remote', 'origin', 'refs/tags/'+self.tag)

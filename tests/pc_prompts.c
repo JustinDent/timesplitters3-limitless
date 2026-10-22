@@ -9,12 +9,7 @@
 #define CHECK(x) do { if (!(x)) { fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x); return 1; } } while(0)
 static uint32_t g_esp;
 static ptrdiff_t g_xbox_mem_offset;
-static unsigned vm_queries;
-static SIZE_T counted_query(LPCVOID address,PMEMORY_BASIC_INFORMATION info,SIZE_T size)
-{ ++vm_queries; return VirtualQuery(address,info,size); }
-#define VirtualQuery counted_query
 #include "../src/pc_prompt_guest.inc"
-#undef VirtualQuery
 static unsigned fallback_calls;
 static void guest_fallback(void) { ++fallback_calls; g_esp+=4; }
 static unsigned seen_arg;
@@ -221,100 +216,102 @@ int main(int argc,char **argv)
         }
         pc_prompts_reset();
         {
-            /* Match the line-wrapper's stack-local fragment, then force real
-             * boundaries and changed protections. No mapping survives a call. */
+            /* Match stack-local fragments, boundaries and changed protections.
+             * Read queries now live in pc_prompts.c; their reduction and nested
+             * scope expiry are measured by text_read_scope.c. This fixture
+             * checks actual OS protection changes and the scratch/call ABI. */
             uint32_t *frame=(uint32_t *)(memory+0x10000);
             DWORD old;
             seen_arg=3; frame[3]=0x10080;
             strcpy((char *)memory+0x10080,"ordinary text");
-            g_esp=0x10000; vm_queries=0;
+            g_esp=0x10000;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==1 && !strcmp(seen_text,"ordinary text"));
+            CHECK(!strcmp(seen_text,"ordinary text"));
             strcpy((char *)memory+0x10080,"\v2 Select");
-            g_esp=0x10000; vm_queries=0;
+            g_esp=0x10000;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==2 && !strcmp(seen_text,"[E] Select"));
+            CHECK(!strcmp(seen_text,"[E] Select"));
             CHECK(frame[3]==0x10080 && g_esp==0x10004);
             strcpy((char *)memory+0x1000,"below stack");
-            frame[3]=0x1000; g_esp=0x10000; vm_queries=0;
+            frame[3]=0x1000; g_esp=0x10000;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==2 && !strcmp(seen_text,"below stack"));
+            CHECK(!strcmp(seen_text,"below stack"));
             strcpy((char *)memory+0x11ffc,"abcdef");
             CHECK(VirtualProtect(memory+0x12000,0x1000,PAGE_READONLY,&old));
-            frame[3]=0x11ffc; g_esp=0x10000; vm_queries=0;
+            frame[3]=0x11ffc; g_esp=0x10000;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==2 && !strcmp(seen_text,"abcdef"));
+            CHECK(!strcmp(seen_text,"abcdef"));
             CHECK(VirtualProtect(memory+0x12000,0x1000,PAGE_NOACCESS,&old));
-            g_esp=0x10000; vm_queries=0; fallback_calls=0;
+            g_esp=0x10000; fallback_calls=0;
             pc_prompt_guest(guest_fallback,3,4);
-            CHECK(vm_queries==2 && fallback_calls==1 && g_esp==0x10004);
-            g_esp=0x11ff8; vm_queries=0;
+            CHECK(fallback_calls==1 && g_esp==0x10004);
+            g_esp=0x11ff8;
             pc_prompt_guest(guest_fallback,3,4);
-            CHECK(vm_queries==1 && fallback_calls==2 && g_esp==0x11ffc);
+            CHECK(fallback_calls==2 && g_esp==0x11ffc);
             CHECK(VirtualProtect(memory+0x12000,0x1000,PAGE_READWRITE,&old));
-            g_esp=0x10000; vm_queries=0;
+            g_esp=0x10000;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==1 && !strcmp(seen_text,"abcdef"));
+            CHECK(!strcmp(seen_text,"abcdef"));
             /* Scratch below ESP can occupy a different protection region.
              * A readable stack must never authorize that write. */
             frame[3]=0x10080;
             strcpy((char *)memory+0x10080,"\v2 Select");
             CHECK(VirtualProtect(memory+0xf000,0x1000,PAGE_READONLY,&old));
-            g_esp=0x10000; vm_queries=0; fallback_calls=0;
+            g_esp=0x10000; fallback_calls=0;
             pc_prompt_guest(guest_fallback,3,4);
-            CHECK(vm_queries==2 && fallback_calls==1 && g_esp==0x10004);
+            CHECK(fallback_calls==1 && g_esp==0x10004);
             CHECK(VirtualProtect(memory+0xf000,0x1000,PAGE_READWRITE,&old));
-            g_esp=0x10000; vm_queries=0;
+            g_esp=0x10000;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==2 && !strcmp(seen_text,"[E] Select"));
+            CHECK(!strcmp(seen_text,"[E] Select"));
             /* A new call sees changed permissions even at the same address. */
             CHECK(VirtualProtect(memory,0x500000,PAGE_READONLY,&old));
-            g_esp=0x10000; vm_queries=0; fallback_calls=0;
+            g_esp=0x10000; fallback_calls=0;
             pc_prompt_guest(guest_fallback,3,4);
-            CHECK(vm_queries==2 && fallback_calls==1 && g_esp==0x10004);
+            CHECK(fallback_calls==1 && g_esp==0x10004);
             CHECK(VirtualProtect(memory,0x500000,PAGE_READWRITE,&old));
-            g_esp=0x10000; vm_queries=0;
+            g_esp=0x10000;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==2 && !strcmp(seen_text,"[E] Select"));
+            CHECK(!strcmp(seen_text,"[E] Select"));
             /* Text in a separately protected mapping still gets checked. */
             frame[3]=0x1000;
             strcpy((char *)memory+0x1000,"\v2 Select");
             CHECK(VirtualProtect(memory+0x1000,0x1000,PAGE_READONLY,&old));
-            g_esp=0x10000; vm_queries=0;
+            g_esp=0x10000;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==3 && !strcmp(seen_text,"[E] Select"));
+            CHECK(!strcmp(seen_text,"[E] Select"));
             CHECK(VirtualProtect(memory+0x1000,0x1000,PAGE_NOACCESS,&old));
-            g_esp=0x10000; vm_queries=0; fallback_calls=0;
+            g_esp=0x10000; fallback_calls=0;
             pc_prompt_guest(guest_fallback,3,4);
-            CHECK(vm_queries==2 && fallback_calls==1);
+            CHECK(fallback_calls==1);
             CHECK(VirtualProtect(memory+0x1000,0x1000,PAGE_READWRITE,&old));
-            /* An ordinary, non-page-aligned ESP shares its queried page with
-             * scratch and nearby text on either side. One query suffices. */
+            /* Nearby text on either side of non-page-aligned ESP is readable;
+             * scratch writes still require current write permission. */
             frame=(uint32_t *)(memory+0x10800);
             frame[3]=0x10780;
             strcpy((char *)memory+0x10780,"\v2 Select");
-            g_esp=0x10800;vm_queries=0;
+            g_esp=0x10800;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==1 && !strcmp(seen_text,"[E] Select"));
+            CHECK(!strcmp(seen_text,"[E] Select"));
             CHECK(VirtualProtect(memory+0x10000,0x1000,PAGE_READONLY,&old));
-            g_esp=0x10800;vm_queries=0;fallback_calls=0;
+            g_esp=0x10800;fallback_calls=0;
             pc_prompt_guest(guest_fallback,3,4);
-            CHECK(vm_queries==2 && fallback_calls==1);
+            CHECK(fallback_calls==1);
             CHECK(VirtualProtect(memory+0x10000,0x1000,PAGE_READWRITE|PAGE_GUARD,&old));
-            g_esp=0x10800;vm_queries=0;fallback_calls=0;
+            g_esp=0x10800;fallback_calls=0;
             pc_prompt_guest(guest_fallback,3,4);
-            CHECK(vm_queries==1 && fallback_calls==1);
+            CHECK(fallback_calls==1);
             CHECK(VirtualProtect(memory+0x10000,0x1000,PAGE_READWRITE,&old));
-            g_esp=0x10800;vm_queries=0;
+            g_esp=0x10800;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==1 && !strcmp(seen_text,"[E] Select"));
+            CHECK(!strcmp(seen_text,"[E] Select"));
             CHECK(!pc_guest_memory(UINTPTR_MAX-4,16,0));
             CHECK(g_esp==0x10804 && frame[3]==0x10780);
             frame[3]=0x10900;
             strcpy((char *)memory+0x10900,"\v2 Select");
-            g_esp=0x10800;vm_queries=0;
+            g_esp=0x10800;
             pc_prompt_guest(guest_original,3,4);
-            CHECK(vm_queries==1 && !strcmp(seen_text,"[E] Select"));
+            CHECK(!strcmp(seen_text,"[E] Select"));
         }
         VirtualFree(memory,0,MEM_RELEASE);
     }

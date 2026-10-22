@@ -13,7 +13,7 @@
 static PcDisplayMode mode;
 static float fov_scale=1.f;
 float pc_display_fov_scale(void) { return fov_scale; }
-PcDisplayMode pc_display_current(void) { return mode; }
+PcDisplayMode pc_display_effective(void) { return mode; }
 float pc_display_camera_factor(void)
 { return mode.height ? (float)mode.width*3.f/(mode.height*4.f) : 1.f; }
 static int guest_writable(uint32_t address,size_t size)

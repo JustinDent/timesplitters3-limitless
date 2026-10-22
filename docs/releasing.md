@@ -18,6 +18,26 @@ To produce the same public package after building:
 
 This uses an explicit file list and default settings. It excludes all game data,
 personal settings, and saves, and writes the ZIP plus SHA-256 under `build/releases`.
+The game ZIP includes the audited compiled textures in `Textures/` by default.
+They stream directly from the single active pack into the ZIP, with sanitized
+metadata and per-file hashes in `BUILD.json`; no texture staging copy is made.
+Use `--texture-pack <folder>` to select another audited pack, or
+`--without-textures` for a lightweight local test package. Official releases
+through `Publish-Release.ps1` require the complete repository pack; artist
+overrides and texture-free packages cannot be published with that script.
+The staging folder alone
+does not contain the streamed textures; use the finished ZIP to test delivery.
+The launcher seeds missing replacement keys while preserving existing texture
+pairs and personal settings. Updating an already installed artist pack remains
+a separate texture-pack operation. Old launcher versions that reject `Textures/`
+need the launcher update containing this shared installer change first.
+The separate launcher bootstrap ZIP stays small; this applies to the game ZIP.
+Launcher 1.2.22 adds bundled-texture installation; publish that shared launcher
+update before distributing a game ZIP that contains textures. The game publisher
+refuses to create a release until GitHub Latest is a stable launcher 1.2.22+
+with uploaded Windows and Mac packages. The standard
+launcher release workflow validates both Windows and Mac before publication.
+Both Windows and native Mac packaging use the same streaming texture helper.
 The package includes an isolated Windows Python/Tk runtime and the Online
 companion, including automatic hosting certificate support; players do not need
 Python or Git installed. Packaging downloads the pinned Windows wheels in
@@ -30,15 +50,37 @@ without system Python/Git on PATH. Real router forwarding still needs validation
 
 ## Publish a release from main
 
-The optional texture pack is delivered independently from game and launcher
-packages. For new artwork, run `python tools/texture-release.py publish --version
-<new-pack-version>` from the checkout holding the authoritative pack, then commit
-the resulting `config/texture-pack.json` before merging the delivery update.
-This uploads the DDS files to an immutable GitHub release without putting them
-in Git history. Every main push and release publication verifies that the
-manifest still references uploaded assets with matching sizes and SHA-256 hashes.
-An ordinary code release reuses the existing pack; it does not force users to
-download it. See [texture publication](textures.md#publish-pack-updates).
+### Preserve texture enhancements across version bumps
+
+Keep the shared replacement loader, Classic/Enhanced controls, pack installer,
+`assets/textures`, `config/texture-pack.json` and default bundled-game delivery
+in the next game/launcher version and later releases. Version bumps must not
+reset installed textures or unrelated settings during upgrades, repairs or
+rollbacks. Keep the existing preservation checks in release validation.
+
+Require **Repository texture pack** to pass before merging a version bump or
+changing either host's game packager or the publisher. The workflow runs on
+those PRs and matching main pushes, checks out actual Git LFS content, and audits
+DDS/mips, sanitized metadata hashes, the declared count/size and the 6 GiB limit.
+It does not require a separately published texture release. Commit reviewed
+texture changes through Git LFS; ordinary version bumps reuse the committed pack.
+These delivery checks do not establish full-game scene fidelity.
+
+### Repository texture pack
+
+Compiled replacements are committed under `assets/textures` through Git LFS.
+Run `git lfs pull` before building; the normal game ZIP includes these files
+without a separate texture release. Commit reviewed texture updates alongside
+source changes. See [updating repository textures](textures.md#publish-pack-updates).
+
+`Publish-Release.ps1` requires this pack, including `-PrepareOnly` and `-Draft`.
+Before building, it audits hydrated DDS files, mip chains, sanitized metadata,
+the manifest's bundled delivery/path, count/size and the 6 GiB limit. Before
+uploading, every required DDS/JSON entry and hash in the finished ZIP must match
+the audited repository pack. Missing textures, Git LFS pointers, artist overrides
+and incomplete packs stop the release. Resuming a prepared release repeats the
+ZIP checks even after its staging folder has been recycled. The compatible
+Windows/Mac launcher requirement also applies to every official game release.
 
 Commit the intended `VERSION` and merge the changes, including these release
 scripts, into `main`. Install [GitHub CLI](https://cli.github.com/) and authenticate

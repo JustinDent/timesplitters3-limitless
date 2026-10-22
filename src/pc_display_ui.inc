@@ -252,14 +252,17 @@ void pc_display_menu_backdrop(void (*original)(void))
 extern void sub_0003F8D0(void);
 void pc_display_main_menu_font(void (*original)(void),int building)
 {
+    /* One menu label can invoke several wrapping and drawing passes. Keep
+       their read spans together, then discard them before menu input/ticks. */
+    pc_prompts_layout_begin();
     uint32_t menu=WORD_AT(g_esp+4u),item=WORD_AT(g_esp+8u);
-    if((int32_t)WORD_AT(0x0079094Cu)<=100) {original();return;}
+    if((int32_t)WORD_AT(0x0079094Cu)<=100) {original();pc_prompts_layout_end();return;}
     if(!building) {
         if(!guest_writable(menu,0x23c) || !guest_writable(item,0x8c) ||
-           WORD_AT(item)!=7 || WORD_AT(item+0x88u)!=menu) {original();return;}
+           WORD_AT(item)!=7 || WORD_AT(item+0x88u)!=menu) {original();pc_prompts_layout_end();return;}
         uint32_t descriptor=WORD_AT(menu+4u);
         if(!guest_writable(descriptor,4) || WORD_AT(descriptor)!=0x002D0BE0u) {
-            original();return;
+            original();pc_prompts_layout_end();return;
         }
     }
     uint32_t saved_x=WORD_AT(0x007E7270u),saved_y=WORD_AT(0x007E7280u);
@@ -270,6 +273,7 @@ void pc_display_main_menu_font(void (*original)(void),int building)
     guest_call(sub_0003F8D0,0);
     int previous_font_filter=pc_display_menu_font_filter(!building);
     original();
+    pc_prompts_layout_end();
     guest_call(sub_00022FF0,0);
     pc_display_menu_font_filter(previous_font_filter);
     WORD_AT(0x007E7270u)=saved_x;WORD_AT(0x007E7280u)=saved_y;
@@ -426,7 +430,14 @@ void pc_display_weapon_effect(void (*original)(void),unsigned kind)
     unsigned points=2;int lock=0,gradient=0,composite=0;
     if(kind==0) {
         lock=caller==0x0013871Bu || caller==0x0013874Au;
-        composite=caller==0x00138471u && ui_tag==0x00137F00u;
+        /* Ghost Gun living-actor reveal (US sub_00122F10): this rectangle
+         * composites a filtered screen copy over the actor's projected bounds.
+         * Its coordinates already match the world camera, so centering it as
+         * a 4:3 HUD element detaches the image from Past Cortez in widescreen.
+         * Only the final composite changes placement; keep its UVs, tint and
+         * the preceding 256x256 blur passes exactly as the guest authored them. */
+        composite=(caller==0x00138471u && ui_tag==0x00137F00u) ||
+                  caller==0x001232A9u;
     } else if(kind==1) {
         points=4;
         lock=caller==0x00138A6Cu || caller==0x00138C5Cu ||

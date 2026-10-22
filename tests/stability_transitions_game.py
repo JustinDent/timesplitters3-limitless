@@ -11,6 +11,7 @@ import csv
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -21,6 +22,27 @@ import pc_settings_game as ui
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 from testing_profile import prepare_run,recycle_disks,check_fixture,XBE_SHA256,signature,BODY_SIZE
+
+def weapon_set_metrics(run):
+    """Check settled five-second guest-swap windows, excluding transitions.
+
+    Captures still need review: counters alone cannot identify a menu screen.
+    """
+    report=json.loads((run/'report.json').read_text())
+    samples=[(float(t),float(fps)) for t,fps in re.findall(
+        r'\[FPS\] t=\s*([\d.]+)s\s+([\d.]+) fps',(run/'run0.err').read_text(errors='replace'))]
+    result={}
+    for item in report:
+        label=item.get('command',{}).get('label')
+        if label not in ('before-weapons','weapons','weapons-selection','after-weapons'):continue
+        end=item['seconds']; wait=item['command'].get('wait',2.5)
+        # A window ends at t and spans the previous five seconds. Leave two
+        # seconds after input for assets/transitions before starting a window.
+        values=[fps for t,fps in samples if end-wait+7<=t<=end]
+        result[label]=values
+    (run/'weapon-set-metrics.json').write_text(json.dumps(result,indent=2)+'\n')
+    assert len(result)==4 and all(len(v)>=1 and min(v)>=50 for v in result.values()),result
+    return result
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
@@ -43,6 +65,7 @@ def main():
     parser.add_argument('--watch-input',action='store_true',help='Trace changes to player-one input suppression in the bounded log')
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
+    parser.add_argument('--scenario',choices=['weapon-set'])
     args=parser.parse_args()
     if args.trace_surface_switches and not args.trace_surface_images:
         parser.error("--trace-surface-switches requires --trace-surface-images")
@@ -70,6 +93,13 @@ def main():
     (run/'display.ini').write_text('TSFP_DISPLAY_V1 1280 720\n')
     (run/'discord.ini').write_text('TSFP_DISCORD_V1 0 0\n')
     commands=run/'commands.jsonl';commands.write_text('')
+    if args.scenario=='weapon-set':
+        route=[dict(label='main-menu',wait=24),
+            dict(keys=[40,69,69,69,69,38,38],gap=1.3,label='before-weapons',wait=12),
+            dict(keys=[69],label='weapons',wait=20),
+            dict(keys=[40,40,40],label='weapons-selection',wait=10),
+            dict(keys=[70],label='after-weapons',wait=15),dict(stop=True)]
+        commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     state=run/'input-state.txt';state.write_text('0 0\n')
     initial=[(5000,69),(10000,69),(14000,40),(18000,69)]
     replay=run/'input.txt';replay.write_text('\n'.join(f'{at+d} key {k} {v}' for at,k in initial for d,v in [(0,1),(180,0)])+'\n')
@@ -363,6 +393,7 @@ def main():
         assert '[CRASH]' not in text and '[ICALL] unresolved' not in text,log
     assert process.returncode==0,'Final game exit was not clean'
     assert not motion_errors,motion_errors
+    if args.scenario=='weapon-set':print('Weapon-set settled FPS:',weapon_set_metrics(run),flush=True)
     print('PASS: bounded session completed; inspect report and captures for scenario coverage',flush=True)
 
 if __name__=='__main__':main()

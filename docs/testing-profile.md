@@ -21,6 +21,13 @@ discarded on the next preparation. Never prepare the same directory while a
 game is using it. An interrupted runner can leave `run.lock`; check that its game
 has stopped before removing that marker.
 
+The shared unlocked-profile environment connects the checkout's `assets/textures`
+pack and starts in Classic mode, matching the normal Windows launch defaults.
+Press F10 to toggle enhanced replacements. Inherited texture-pack, mode and dump
+overrides are discarded along with other diagnostic settings. Normal builds
+hydrate and audit the pack; missing replacements still fall back to Classic.
+The native Mac unlocked runner receives the same texture settings.
+
 On Apple Silicon, use the bounded native runner:
 
 ```sh

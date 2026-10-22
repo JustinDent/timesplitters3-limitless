@@ -10,7 +10,7 @@ Please follow the [code of conduct](CODE_OF_CONDUCT.md).
   then use [Report a problem](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml).
   Enter your installed game version, launcher version and platform, then explain
   what happened and how to reproduce it. Screenshots and relevant logs help.
-- **An improvement?** Use [Suggest an improvement](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml).
+- **An improvement?** Check [existing Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/categories/ideas), then [start an Ideas discussion](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/new?category=ideas). Share one suggestion per discussion.
 - **Questions or an idea to talk through?** Use [Discussions](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions).
 - **A security vulnerability?** Follow [SECURITY.md](SECURITY.md) and report it privately.
 
@@ -21,7 +21,9 @@ and logs. Never upload game files, ISOs, generated game code or personal saves.
 
 1. For a large change, discuss the approach in an issue or Discussion first.
 2. Fork the repository and make a focused branch from the latest `main`.
-3. For code changes, read [AGENTS.md](AGENTS.md), the shared project rules.
+3. For code changes, read [AGENTS.md](AGENTS.md), the shared project rules, and
+   the [repository map](docs/agent-context/README.md). Update each affected
+   subsystem guide in the same change; CI checks this maintenance requirement.
    Use the [build guide](docs/building.md) or [Mac guide](docs/macos.md) as needed.
 4. Keep the change focused and run the checks relevant to it. Explain what you
    tested, on which platform, and what remains untested. Use disposable test

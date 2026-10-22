@@ -13,11 +13,15 @@ int pc_display_set_fov(int degrees);
 float pc_display_fov_scale(void);
 
 typedef struct PcDisplayMode { unsigned width, height; } PcDisplayMode;
-/* Called on the guest/render thread. Zero dimensions retain the legacy mode. */
+/* Selected mode: 0x0 retains console output; 1x1 selects Auto. */
 PcDisplayMode pc_display_current(void);
+PcDisplayMode pc_display_effective(void);
+static inline int pc_display_is_auto(PcDisplayMode m) { return m.width==1 && m.height==1; }
+/* Native window thread publishes physical drawable pixels; no GPU work here. */
+void pc_display_host_size(unsigned width,unsigned height);
 int pc_display_valid(PcDisplayMode mode);
 #define PC_DISPLAY_MODE_CAPACITY 128
-#define PC_DISPLAY_ASPECT_COUNT 7 /* All, then the six shared catalog groups. */
+#define PC_DISPLAY_ASPECT_COUNT 8 /* All, six ratios, Auto. */
 const char *pc_display_aspect_name(int aspect);
 int pc_display_aspect(PcDisplayMode mode);
 /* Same nearest-mode rule for the guest menu and native settings adapters.

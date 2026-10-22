@@ -1,3 +1,274 @@
+## PR #285 integration with main (2026-10-21)
+
+Merged `origin/main` at `00e0e16` into `feature/native-144-fps` after `99260c9`.
+Preserved native 120/144 opt-in timing and unified Video Options while retaining
+main's Auto resolution, physical text entry, mounted-gun mouse input, scoped
+text reads, late-frame pacing and crane/Ghost Gun fixes. Auto is labeled by its
+saved sentinel in the unified menu and remains staged until Apply. Both test
+sets and bounded runner routes are retained. Native high-refresh tracking is
+renumbered MAC-060; main's crane MAC-058 and keyboard MAC-059 remain distinct.
+
+The text-hook merge uses main's nested read scope and fresh scratch-write checks.
+Existing Windows protection/boundary/ABI cases remain; obsolete per-translation-
+unit query counts moved out of that fixture because reads now execute in
+`pc_prompts.c`. The dedicated scope fixture still measures query reduction,
+nesting, invalidation and boundaries, and the prompt fixture checks fresh writes.
+
+Windows x64 / MSVC 19.44 / D3D11: complete patch stack applies; supported build
+with `-SkipTextures` regenerates guest code, builds and passes bundled native
+checks (`logs/pr285-merge-build.log`). This is a development build without texture
+pack auditing, not a release/package validation. Supported US XBE verified by
+the builder. EXE SHA256:
+`e26b81fa906ab0f54ab835cc8032062029219b02849b9420ccb604201a06fc0e`.
+Native/renderer/tracking/context suite: 181 passed, one platform skip and one
+outdated patch-order assertion; after correcting that assertion all 11 context
+checks pass. Updated Auto menu check: one pass, one Mac-only skip. Logs:
+`pr285-merge-native-tests.log` and `pr285-merge-context-retest.log`.
+Integration/upgrade suite: 40 passed, one Mac-only skip, including full historical
+stack migrations (`logs/pr285-merge-tests.log`). Final unique suite results are
+222 passed and two host-specific skips after the targeted context correction;
+the updated Auto assertion was separately rerun successfully.
+
+Repository context/index checks pass against current main. No fresh whole-game
+or Mac runtime validation is claimed. The earlier transition-hitch measurements
+predate main's late-frame correction and require remeasurement before calling
+that issue resolved. Experimental water changes remain disabled by default.
+Personal saves/settings are preserved; no interactive session was closed.
+
+## Mounted and CCTV gun mouse aim (#182) — 2026-10-21
+
+Fix on `182-bug-you-cant-control-external-big-guns-with-your-mouse`,
+based on main `141f440`. Windows x64 / MSVC Release / common Xbox graphics
+frontend, supported US executable SHA256 verified before generation. The live
+Breaking and Entering capture confirmed player mode `0x80` with an owned AGUN:
+mouse movement changed ordinary player angles while the gun retained its aim.
+The shared host helper now routes those deltas to the gun's separate pitch/yaw
+and authored limits. Terminal pointers, firing and controller code are unchanged.
+
+Windows mounted/terminal C fixtures and Auto Lookahead/backlog regressions
+passed (4 pytest tests), and the
+full patch loader, Release build and built-in build checks passed. Test executable
+SHA256: `696a8faeeb8b083973c0b9cbcfffa5b37af8d4e0b4a85bbae858e2870d7657279`.
+The user confirmed the corrected Breaking and Entering CCTV turret works in
+the isolated unlocked Test Lab build after being asked to check both aim axes,
+firing and normal look on exit. Read-only telemetry independently recorded
+changing gun pitch/yaw while the hidden player angles remained unchanged.
+Native Mac build/runtime validation and other mounted encounters remain
+unverified; see MAC-001. Separate vehicle-seat mode `0x8000`
+is outside this measured AGUN correction.
+
+## Launcher v1.2.23 release preparation - 2026-10-21
+
+Source `d35e1df9ab920e176ba0ca87d4e922a4ad3fe55a`, based on main
+`79956542e5690832e987e889628efe56c8f8d470`, advances the shared launcher and
+assembly versions to 1.2.23. The merged enhancement-button policy opens a new
+Ideas discussion on Windows x64 and native Mac ARM64 without attaching
+diagnostics. The bug-report route remains unchanged.
+
+Local macOS 27.0.1 ARM64 / Python 3.13: 25 release-policy, 9 compatibility-policy
+and 23 issue-form tests passed (57 total). Context refresh/check against the base
+and `git diff --check` passed. These are asset-free policy checks; no game or
+personal settings/save paths were used, and no graphics backend was exercised.
+
+At this snapshot, [PR #282 launcher CI](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39692328025)
+has passed the Windows build/regressions/package checks. The Repository texture
+pack audit, issue-form/resolution checks and both runtime gate jobs also passed.
+Native Mac build/regressions and packaged update/repair/restart checks are still
+pending, followed by complete dual-platform verification. The final PR revision
+must pass fresh CI before merge; publication then rebuilds and verifies both
+packages from the merged revision through `launcher-release.yml`.
+
+This entry records preparation, not a published release or game validation.
+Publication, all eight public assets and both update manifests remain unverified
+until that workflow completes. Existing Mac ad-hoc-signing/Gatekeeper limits and
+the v1.2.19 manual migration remain documented in `docs/launcher-releases.md`.
+
+## Issue #105 weapon-set performance repair - 2026-10-21
+
+Validated locally on Windows x64, MSVC 14.42, SDL 3.4.16, default fixed-60
+configuration. Source base `bd7af90`, pinned runtime `d90c929`, with the repair
+subsequently committed as `5c2f4ac` and complete 114-patch stack. Executable SHA256:
+`5b5001dbf1b945e72fbf6ef231a9d670a8e39db6ffccbcd52787756d1a60d804`.
+
+The reproduced weapon-set collapse had two costs: repeated OS memory queries in
+prompt measurement/word wrapping (~47 ms of frame work), and a full extra vblank
+wait after CPU frames exceeded 16.67 ms. Scoped read validation reduced the work
+to ~18 ms but alone plateaued at 30 FPS. The existing late-frame bypass depended
+on the retired interpolation callback. The separate late-frame patch now permits
+that bypass when elapsed time and an actual signalled vblank prove the frame has
+already consumed its pacing interval. Cheap frames still wait; the console
+interrupt clock remains 60 Hz and interpolation remains retired.
+
+The 96.6-second isolated Arcade/Deathmatch/Vietnam weapon-set route passed its
+unchanged 50 FPS threshold: before 59.2 FPS; weapons 54.1/53.8/54.3; selection
+54.2; after backing out 59.1/59.6. Weapon-screen gate wait fell from ~14.9 ms to
+0.00 ms. Captures of before/weapons/selection/back-out were reviewed. This verifies
+the reported menu slowdown on this host, not a locked 60 FPS weapon screen or
+broader gameplay. Vblank stayed approximately 60 Hz. All children closed cleanly,
+profile signatures/contents and canonical fixture were preserved, and disposable
+partitions were recycled. Personal saves/settings were untouched.
+
+Supported Build -SkipTextures passed all native checks. Scoped-read/guest-ABI/FOV/UI
+checks: 12 passed, one Mac-only skip. Frame-clock/scoped-read/patch-tracking checks:
+18 passed, including a late-frame contract that failed on the original Arm body.
+Patch transitions: the historical-fixture failure was corrected to defer the new
+tail patch; the subsequent complete suite passed all 20 cases in 290.59 seconds.
+Full provenance is retained in ignored `logs/agent-investigation.md` and
+`logs/issue105-recovery`. Mac build/runtime
+validation is pending (MAC-002); no Mac execution is inferred from Windows.
+These measurements describe the pre-publication source state above, not a
+published release or validation on another host.
+
+PR preparation integrated main `7a9507a`, preserving the newer keyboard and
+Auto-display changes. The combined 115-patch stack applied successfully. The
+affected Windows suite completed in 312.53 seconds: 128 passed, one Mac-only
+skip, and one stale repository-index tail assertion. That assertion now requires
+fixed-60 followed by late-frame-pacing; all 11 context tests passed on rerun.
+All 20 full patch-transition cases passed in the combined suite. Context upkeep
+passes against main. The combined head has not been rebuilt or playtested;
+the executable hash and FPS measurements above remain pre-integration evidence.
+
+## 2026-10-21 — Test Lab texture-pack launch correction
+
+Implemented on `fix/test-profile-texture-pack`, based on main `b685e43`.
+The isolated runner discarded the inherited pack path without supplying the
+repository pack, so F10 changed modes but had no replacements to load.
+`prepare_run` now supplies `assets/textures` and explicit Classic mode while
+continuing to discard inherited dump/diagnostic overrides.
+
+Windows x64: 33 preparation/native-tool tests passed, one platform skip;
+context maintenance and diff checks passed. The unchanged MSVC/D3D11 main
+executable (SHA-256 `ff5d4ffeb21b6cc3b1a239269f5464eb7efe270db5b6f5e24cbc8ee4f6f4d144`)
+was reopened for a bounded 600-second isolated Test Lab session. Its log now
+reports the repository pack directory and successful 64x64-to-256x256 replacement
+uploads. This proves loading, not full scene coverage or visual F10 acceptance.
+The native Mac unlocked runner receives the same shared environment; Mac runtime
+validation remains pending under MAC-011. Personal saves/settings were untouched.
+
+## 2026-10-21 — Mac mini worker deployment verified
+
+PR #248 merged at `b685e43` after its documentation conflicts with newer main
+were resolved without discarding keyboard-input evidence. Follow-up
+`codex/worker-upgrade-preservation` / PR #249 adds the dashboard-preserving
+upgrade and fixes the review finding that a reinstall could inherit an earlier
+auto-merge opt-in. Worker source at `c125b36` has SHA-256
+`8ccf98ff548a1df3883e8f59e419ef26c563a12f74ec7cf389ba625f9d9d5e87`.
+
+Dan's Mac mini, macOS 27.0.1 ARM64 / Python 3.12: all 28 worker tests pass
+(0.787 s). The installed source hash matches the checkout. Explicit auto-merge
+mode is enabled; preflight verified existing GitHub/ChatGPT authentication and
+strict main rules. Upgrade preserved the LaunchAgent, dashboard runner and
+worker state byte-for-byte. A real LaunchAgent poll through that dashboard
+wrapper advanced its run count 113 to 114, exited 0 at 04:37:51 UTC, and reported
+no new actionable failures. The worker is unpaused, idle between scheduled
+polls, with unchanged historical attempts. Dry-run found no pending merges and
+made no model call. No credentials, game data or personal settings moved.
+
+Local macOS/Python 3.13 also passes all 28 tests and context/index checks.
+Windows/macOS CI gates and launcher compatibility passed on `c125b36`.
+Read-only live GitHub validation of that PR returned protected-main checks valid
+and `ready_to_merge=true`; no merge was executed by this verification. Service
+and policy validation do not prove a new live repair-through-main cycle, which
+remains unobserved. Existing repair records are not automatically enrolled,
+conflicts and failed follow-ups stop for inspection, and releases remain manual.
+No game build, GPU test or playthrough is relevant to this controller update.
+
+## 2026-10-21 — Mac mini repair publication and checked merge follow-through
+
+Focused branch `codex/worker-repair-merge`, based on main `22e6a56`. The installed
+mini controller matched the tracked SHA-256
+`7f4f18721ec70b38c00466bc9cbcf0871472281ee20bf19a1b0ad9127d83659f`.
+Screen Sharing terminal verification confirmed GitHub maintainer/ChatGPT login,
+loaded LaunchAgent (111 invocations, last exit 0, idle between polls), a prior
+published repair for #216 and a no-change #246 attempt blocked by source/CI
+revision mismatch. No credentials were copied. The Desktop checkout revision
+matched `22e6a56`; status initially failed because git-lfs was missing from PATH.
+
+The controller now supports explicitly enabled repair and parent merges through
+GitHub after exact-head checks/reviews and effective main rules pass. It retains
+pause, bounded repairs, protected paths, no paid/API fallback and no releases.
+Before repair it refreshes a source behind main and waits for new CI. Existing
+records and unrelated green PRs are not silently enrolled.
+
+Local macOS ARM64: 23 asset-free worker tests pass, including Git publication,
+restart recovery, stale/changed heads, missing/failed checks, review requirements
+and disabled/paused/legacy state. Subsequent CI and upgraded mini deployment
+are recorded above. No game build or playthrough is relevant to this controller.
+
+## Physical keyboard text entry — issue #136 (2026-10-20)
+
+Uncommitted work on `136-enhancement-write-better-with-a-real-keyboard`, based
+on main `c932bee`. Shared dialog code routes character input through US
+`sub_0007DB20` and the existing editing/Done/Back callbacks. Windows character
+messages and SDL UTF-8 text events feed a bounded, locked queue; dialog changes
+and focus loss clear pending events. Character pages preserve the original
+Latin-1 glyph set and original byte/visible-width limits. Editing keys do not
+become E/F/Y/WASD menu actions. Numeric-only dialogs and clipboard paste are not
+part of this change.
+
+Validation: Windows x64, Python 3.12.14, MSVC 19.44, pinned runtime and verified
+US XBE SHA-256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+`tsfp.ps1 Build -SkipTextures` passed, including its normal executable checks;
+the texture audit was skipped for this local input-only build, not packaging.
+77 selected pytest checks passed with one host-specific skip. New tests execute
+the original US insertion, deletion and cursor routines against disposable RAM,
+including full-buffer rejection and font-width rejection. The rebuilt Windows
+input test directly exercises WM_CHAR character/command routing, repeated Enter,
+focus loss and dialog changes; it passes without desktop input injection.
+
+The first live test failed: physical letters still triggered menu actions in
+Create Profile. Read-only capture on 2026-10-21 identified its embedded keyboard
+(descriptor 0x4e8d54) rather than the standalone descriptor. Recognition now uses
+the original character-row callbacks, so embedded profile/multiplayer keyboards
+are included and stale edit buffers on non-keyboard pages are excluded. Escape
+uses the owning menu's original Back action. The shared tests now reproduce the
+captured embedded layout and run original editing routines against it. The
+corrected build passes the Windows build checks and the same 77 selected pytest
+checks (one skip), plus the Mac backlog check. The user then confirmed physical
+typing and Enter work in Create Profile, testing single-press “Efy Test” entry
+and the Backspace/Enter prompt. No claim of full dialog-matrix validation.
+Executable SHA-256:
+`2c88e55e1e4c94f1974afa072e8261bf34f125e2bd1e39423e4ba90c6afae1f8`.
+The game uses isolated Test Lab saves. Desktop-control APIs expose no native
+windows in this session; physical validation is performed by the user.
+Native Mac compile, SDL host self-test, physical keyboards and the full text-dialog
+matrix remain unverified; see MAC-059. No personal settings/saves were changed.
+
+PR #247 contains implementation commit `d23d9dc`. Integrated main `ea74e15`
+without changing keyboard source, preserving both CI test registrations and
+validation records. After integration, 91 selected keyboard/menu, CI scope,
+backlog, repository-context and Ghost Gun checks passed. Context/index maintenance
+passes against main. The executable hash and user confirmation above describe
+the pre-integration input build; the combined head has not had another playtest.
+
+## Texture preservation on version bumps — 2026-10-20
+
+PR #234 now follows the Git LFS/bundled delivery merged by #235. It preserves
+current main and adds VERSION, LauncherVersion.cs, both game packagers and the
+publisher to the Repository texture pack PR/main-push triggers. The workflow
+hydrates and audits the committed pack, including hashes, metadata, count/size
+and the 6 GiB budget; no separate texture release is required.
+
+The previous failure came from the obsolete published-release lookup. Shared
+rules, release documentation and MAC-057 now describe repository delivery.
+No runtime code, textures, personal settings or saves changed; no playtest or
+new pack copy is needed. Thirteen focused local contract checks and three
+subtests pass on Windows; final CI is recorded in PR #234. MAC-057/MAC-011
+scene and host-interaction gaps remain explicit.
+
+## 2026-10-20 — Repository texture delivery correction
+
+The user requires compiled textures in main, bundled with normal game releases.
+This supersedes the separate-release delivery described below. The accidental
+textures-v0.1.0-alpha.2 release has been unpublished. DDS files are tracked
+through Git LFS with sanitized metadata; builds audit repository content and
+fail on unresolved pointers. No game release or gameplay test was performed.
+After the correction, 227 Python tests pass (one platform skip), with 39
+subtests. The Windows packaging/startup/icon CI fixture was corrected to include
+a tiny synthetic repository texture; all 11 tests and two subtests pass locally.
+Local launcher tests reach the new large-manifest test but stop at
+the running-game guard for another checkout; host CI supplies the full tests.
+
 # Measured progress
 
 ## Menu ordering and divider removal (2026-10-21)
@@ -931,7 +1202,7 @@ published release or a full-game 144 FPS certification.
   remains available. Full patch-stack validation, Windows Release and built-in
   checks pass (`logs/native-overlay-build.log`); the focused debug check also
   passes with isolated runtime settings (`logs/native-overlay-debug-check.log`).
-  Actual Mac validation remains pending under MAC-058.
+  Actual Mac validation remains pending under MAC-060.
 - Camera mode 27 now evaluates its authored track on live fractional frames
   and selects an adjacent keyframe when the whole-tick delta is zero. A
   gate-only change still produced repeated poses; the original branch test
@@ -1014,7 +1285,7 @@ published release or a full-game 144 FPS certification.
 - Integration of main `7b0838a` preserves its fixed-60 default, retired
   interpolation engine, launcher/packaging repairs and both sets of validation
   notes. The opt-in native update path uses its own shared pacing helper.
-  Native Mac handoff is **MAC-058**; main's texture-delivery MAC-057 is retained.
+  Native Mac handoff is **MAC-060**; main's texture-delivery MAC-057 is retained.
   Windows Release and its built-in checks pass. **14 timing/default/inert-engine
   checks**, **119 patch/launcher/Mac-tool tests with 13 subtests** (two skips),
   and the backlog integrity test pass. A 120-second native 144 replay passes
@@ -1147,7 +1418,7 @@ published release or a full-game 144 FPS certification.
   passed, including native timing/edges and fresh/historical/idempotent patch
   transitions. The final timing/statistics unit run passed all six cases.
   Native Mac compilation, GPU/runtime checks and remote CI were not run here;
-  shared implementation is recorded as MAC-058 awaiting validation.
+  shared implementation is recorded as MAC-060 awaiting validation.
 - The final 120-second isolated 144-target run passed its startup, Story-state,
   pause/resume, native-hook/no-interpolation and no-crash assertions. It replayed
   camera turns, movement keys and firing. The final presentation report showed
@@ -1176,6 +1447,81 @@ published release or a full-game 144 FPS certification.
   multiplayer synchronization and a full campaign. Source timing checks and
   scene flags alone do not establish complete gameplay or perceptual smoothness.
   See [usage and limits](docs/native-high-refresh.md).
+
+## Ghost Gun living-character alignment (issue #181, 2026-10-20)
+
+Implemented in the commit carrying this entry on
+`181-bug-ghost-gun-past-cortez-issue`, based on main
+`a0deeea`. The issue video shows Past Cortez's pale Ghost Gun reveal displaced
+from his ordinary model. The US actor effect dispatcher selects
+`sub_00122F10` for living actors while weapon 15 is equipped; humanoid ghosts
+use the separate `sub_00121F50` path from issue #111.
+
+The living-actor effect projects the actor into screen coordinates, filters
+its image through five 256x256 blur draws, then composites the image at those
+projected bounds. That final partial-screen rectangle was classified as a
+centered HUD widget. At non-4:3 ratios the resulting viewport transform moves
+and resizes the reveal independently of the world model. The existing shared
+primitive hook now gives only that final draw (return PC `0x001232A9`)
+full-view placement and flushes before restoring the enclosing placement.
+Original coordinates, texture coordinates, colour, blur passes, world camera,
+4:3 and split-view policy are preserved. No new runtime patch is necessary:
+both platform configurations already install this primitive hook.
+
+Validation: Windows x64, Python 3.12.14, MSVC 19.44, D3D11. The complete patch
+stack verifies and the supported `tsfp.ps1 Build` completes with its native
+build tests. Executable SHA-256:
+`cde11b846b67d374ec8022d9be749b211498d00e3b3412ff16d4979285456172`.
+Seven new checks pass, including old-placement/no-flush/no-restore
+mutations, both platform wrapper configurations, and execution of the original
+checksum-verified US `sub_00122F10` with isolated guest memory and render stubs.
+The original-routine test verifies all five blur passes, unchanged final draw
+arguments and preserved callee-saved registers across moving actor bounds and
+five display shapes. Asset-free placement checks cover seven resolutions.
+Existing UI and projection tests also pass (20 focused checks total). Another
+37 patch-tracking, patch-transition, spirit and ghost-target fixture checks pass,
+as does the Mac backlog contract: 58 pytest checks in total. The new tests run
+in the shared Windows/macOS runtime workflow; the original-XBE test skips
+without local assets.
+
+The user tested this build in the unlocked, isolated Windows Test Lab session
+and confirmed: "The overlay stays on Cortez now." The session was launched at
+1920x1080. This is live user confirmation of the reported encounter; macOS
+execution and visual validation at other display ratios remain pending (MAC-036).
+Personal saves/settings were preserved.
+
+## Bundled texture dependency for game releases (2026-10-20)
+
+Integrated the texture build/packaging change from issue #74 commit 6e11b52 onto
+main a0deeea, retaining fixed-60 timing, OneDrive compatibility and current CI
+scope selection. Windows and native Mac builders prepare one audited pack;
+packagers stream DDS and sanitized metadata into Textures/ without a duplicate
+texture staging tree. The shared launcher accepts bounded keyed texture members,
+seeds missing pairs and preserves existing replacements and settings. Installed
+textures remain separately managed through the pack installer. Launcher 1.2.22
+carries the shared installation change; older launchers must update first.
+
+The 1,505-texture alpha is 1,164,919,237 bytes with sanitized distribution metadata
+(active private pack: 1,165,240,310 bytes), under the 6 GiB cap. Publication uses
+24 immutable release parts, each at most 64 MiB, with one part assembled in RAM.
+Source artwork, prompts, original game data and personal files remain private.
+Texture temporary storage measured 267,500,678 bytes (256 MiB limit 268,435,456),
+with no part ZIPs retained and no duplicate pack. Published textures-v0.1.0-alpha.2 and verified all asset sizes/hashes. Read back
+all 24 public downloads (879,072,920 bytes) against every local audited DDS and
+sanitized metadata hash without extraction; all 1,505 replacements match.
+config/texture-pack.json pins that published release.
+
+Local Windows validation: 233 Python tests pass, one platform-dependent test
+skips, 39 subtests pass. This covers shared download, checksum/size failures,
+unsafe archives, offline reuse, cleanup boundaries, streamed Windows/Mac package
+manifests, publisher policy, native launch/preflight and CI routing. Windows
+launcher build and its full isolated regression suite pass, including bundled
+texture install, existing-pair preservation, OneDrive paths and staging cleanup.
+A native Mac bundled-install/preservation/cleanup fixture is registered for CI.
+No game build or gameplay was run. Native Mac host/package execution is assessed
+by the PR workflow; real pack scene/GPU coverage remains pending under MAC-011.
+This remains a partial overhaul (1,505 of 6,812 known keys), not a full remaster.
+
 ## Fixed-60 settings fixture repair (2026-10-20)
 
 Committed repair in PR #219 (`0f01b2ce`), for PR #216 source head
@@ -14103,3 +14449,197 @@ The optional compiled pack is now published as textures-v0.1.0-alpha.1: all
 config/texture-pack.json records the exact published files. Publication used one
 bounded part at a time and left no ZIP files in build/texture-publication.
 The launcher installer remains source-only until its PR and a launcher release.
+
+## Launcher native frame-rate selector (2026-10-20)
+
+Source: `feature/launcher-native-frame-rate`, based on main `a0deeea`; the commit
+carrying this entry adds launcher integration only. Runtime contract inspected
+in `feature/native-144-fps` at `338dd62` plus that chat's in-progress
+`src/pc_frame_rate_settings.h`: `TSFP_NATIVE_FPS` and `TSFP_FRAME_RATE_V1` sidecar
+values 0/120/144. The runtime branch remains separate and under development.
+
+The shared Windows/Mac graphics page offers 60 FPS (Original), 120 FPS (Beta),
+and 144 FPS (Beta). Original timing is the default; explicit zero prevents a
+stale runtime native_fps value from enabling high refresh. The preference is
+shared with the new game menu, backed up, protected against concurrent writes,
+and included in multi-file rollback. The UI states compatible-build/restart
+requirements and the known Arcade movement/firing limitation. No game build,
+personal settings, saves, or active game session was changed.
+
+Validation on Windows x64 with the installed .NET Framework 4.8 compiler:
+- Launcher/bootstrap/test executable compilation passed. All 12 shared UI groups
+  passed, including three new native frame-rate behavioral groups. Existing
+  updater, download, version, startup, release-news and texture tests passed.
+- 35 settings checks, crash reporting, 14 unfinished-session checks, and 20
+  maintenance checks passed. The first settings run hit the Windows path-length
+  limit in an existing synthetic crash-log fixture under the deeply nested build
+  folder. The identical compiled test executable passed from the shorter
+  `build/lfr-tests` location; no production logic or assertion was weakened.
+- Three portable shared-theme and nine compatibility-policy tests passed.
+- Inspected a 900×720 WPF graphics-page render scrolled to Frame rate: selector,
+  beta/restart guidance, performance advice and Save/Cancel remain readable.
+  Preview and logs are under the ignored launcher worktree build directory.
+- Mac native build, UI execution and prerequisite checks were not run: this host
+  is Windows and lacks the pinned Mac SDK/runtime. Shared C# logic/tests are wired
+  into the existing dual-host workflow, but that is not Mac execution evidence.
+- Gameplay at 120/144 FPS remains the separate runtime task's responsibility.
+  No release was published and no other device's checkout was modified.
+
+## Launcher v1.2.22 release preparation (2026-10-20)
+
+Integrated current main `1680301` into `feature/launcher-native-frame-rate`.
+Restored the previously requested single-ZIP policy: the publisher had regained
+versionless aliases, which would duplicate both platform downloads. It now
+uploads eight verified assets, with one versioned ZIP per host and unchanged
+update-manifest names. README buttons open Latest and the release notes retain
+direct platform links. No existing public asset is removed or renamed.
+All 25 release-publication tests pass, including interrupted uploads, immutable
+published assets, stale-alias exclusion and exact eight-asset completeness.
+Windows/Mac hosted checks are pending on the release preparation PR; publication
+still requires its merge to main. The native-FPS game runtime is not included in
+this launcher release, and its beta choices explicitly require a compatible game.
+
+## Launcher bundled texture toggle (2026-10-20)
+
+Based on main `c932bee`, the commit carrying this entry on
+`feature/launcher-texture-toggle` replaces separate texture installation actions
+with **Use enhanced textures (Beta)** in the shared graphics settings page.
+The optional `launcher.enhanced_textures` boolean defaults off, uses existing
+transactional settings persistence, and selects `TSFP_TEXTURE_MODE=4k/classic`
+at launch. Game releases supply the textures. Missing replacements fall back to
+originals; Display-menu/F10 changes remain session-only. Both Windows and Mac
+adapters remove the old actions but retain recovery for interrupted legacy
+texture installations. No game source or personal game files were changed.
+
+Windows .NET Framework launcher/bootstrap/test compilation passed with required
+artwork. All 13 shared UI groups and 35 settings checks passed, including toggle
+save/cancel, reopening, launch mode, missing packs, malformed values and preservation
+of texture files and unrelated settings. Inspected the 900×720 WPF graphics page:
+the checkbox, Beta/fallback guidance and Save/Cancel controls remain readable.
+Three portable shared UI checks and nine compatibility-policy checks passed.
+The Mac backlog consistency check also passed.
+Native Mac compilation and UI execution are unavailable on this
+Windows host and remain pending. No release is published by this change.
+
+## Automatic display resolution (2026-10-21)
+
+Branch `fix/fullscreen-desktop-resolution`, based on main
+`734504f`. Auto is offered alongside manual aspect/resolution choices in the
+guest Display menu, Cocoa settings and shared launcher. New compatible settings
+default to Auto; saved manual choices remain unchanged. It follows the active
+fullscreen display or window client/drawable pixels, retaining the last valid
+output on query/allocation failure. Camera, HUD and cinematic matte paths use
+effective dimensions rather than the persistent Auto sentinel.
+
+Windows evidence:
+- Supported US executable hash verified; complete runtime patch stack applied.
+- `tsfp.ps1 Build` completed with its rendering/settings/build tests, including
+  ghost depth/feedback contracts. Binary SHA-256:
+  `0686c87643185e6e688534b8ec8c0ec2321f4f618843bd90242a7d8e2d385a47`.
+- Isolated 30-second unlocked Test Lab run with Auto and fullscreen logged
+  `fullscreen: 3440x1440` and `D3D8: Device created (3440x1440)`, with successful
+  guest presentation. Desktop refresh was not changed. This verifies startup
+  output detection, not full gameplay or physical monitor switching.
+- User tested the reopened Auto-resolution build and confirmed it works.
+- Display/cutscene/UI/FOV/launcher-policy regressions: 30 passed, one Mac-only
+  check skipped, 26 subtests passed. The added shared SDL Auto snapshot and
+  Windows monitor regressions both passed afterward. Packaging/backlog/context/
+  workflow/display contracts: 90 passed.
+- Windows launcher compiled; 36 isolated settings checks and 13 shared UI groups
+  passed, including Auto selection/save, old-release gating and manual override.
+  After the game closed, the complete Windows launcher build/test command also
+  passed, including updater, startup, downloads, crash/session and maintenance
+  suites. Test output reused a temporary non-OneDrive directory after a transient
+  file-replacement failure in the synchronized workspace.
+
+Native Mac adapters and packaging are implemented, but Mac build, Retina
+window/fullscreen and physical multi-monitor checks remain unverified.
+See MAC-024. Logs: `logs/auto-game-build.log`, `auto-regressions.log`,
+`auto-settings-test.log`, `auto-shared-ui-test.log`, `auto-contracts.log`, and
+`private/test-saves/auto-resolution/game.err`. Personal saves/settings untouched.
+
+### PR #251 CI fixture correction
+
+The historical controls-only fixture accidentally included the Auto patch before
+its display/cutscene/fullscreen-effect prerequisites, failing setup on both
+Windows and Mac. The fixture now defers it to the complete-stack migration,
+then checks effective-size hooks in the title and both renderer files, local
+edit preservation and idempotence. All 34 patch-tracking and historical-upgrade
+regressions passed on Windows (`logs/auto-ci-patch-upgrades.log`).
+Both native-runtime CI jobs and the Windows/Mac launcher checks passed on
+`c46cc8c`; this does not establish full Mac game or physical display validation.
+
+
+## Crane vignette widescreen (#221) — 2026-10-21
+
+Implemented on `221-bug-scotland-the-brave-crane-widescreen-issue`,
+based on main `7a9507a`. Recovered the earlier focused experiment from its
+preserved stash and revalidated it against this baseline. MAC-058 tracks native
+scene validation.
+
+The verified US XBE's crane HUD (`sub_001371A0`, strings Exit/Lower/Move crane)
+calls `sub_00137010`, which draws four mirrored `holoedge` quadrants plus
+optional side fills. Separate pieces inherited proportional HUD placement,
+leaving a central 4:3 tinted rectangle. The new shared manual wrapper uses
+`pc_display_aim_panel` to give the complete art group full-view placement,
+flushing deferred sprites on entry/exit and restoring the caller's placement.
+Its following text remains proportional. Original 4:3, partial viewports,
+multiplayer and invalid view data retain the existing path. The same helper
+serves microscope and remote-camera/gun views.
+
+Windows x64: full patch-stack application passed. All 18 focused UI, crane and
+camera-feed tests passed; these include original supported-US vignette execution
+with both PC and native-display wrapper defines, unchanged geometry/UVs/alpha
+and guest ABI, nine display shapes, deferred batch boundaries and view guards.
+Another 16 patch-tracking, Mac-backlog and generation tests passed. The tests
+are registered in the Windows/macOS runtime workflow. Local original-code
+tests require the supported XBE and skip in asset-free CI; this is not native
+Mac execution. The supported Windows Release build and built-in checks passed
+(`logs/issue221-build.log`), executable SHA-256
+`ebe070c0192c55795367eeb805756be6889b700a8aa852b3f12fdacf3b8fa546`.
+The isolated Test Lab build opened successfully with Auto resolution/fullscreen;
+Initial live crane testing identified the edge correction described below.
+Native Mac scene validation remains pending.
+
+The desert shattered-glass comment remains unverified. The named bugshatter
+textures traced so far are instantiated as world entities, so they have not
+been changed based only on their names. No desert scene fix is claimed.
+Personal saves/settings are preserved; testing uses a disposable unlocked profile.
+
+
+### Crane right/bottom edge follow-up — 2026-10-21
+
+User confirmed the wider crane overlay but reported a right-edge misalignment.
+The saved frame identifies the tagged vignette draw with a full viewport and
+scissor `(0,0,639,479)`. Its vertices extend beyond every screen edge, so the
+remaining gap is clipping, not texture dimensions. Shared `pc_ui_vignette_clip`
+normalizes only that full-canvas tagged clip to exclusive 640x480 bounds in the
+RHI and legacy GL adapters; stored guest clips and partial/unrelated UI clips
+are untouched. No game assets or captured frames are tracked.
+
+Windows Release rebuild and built-in tests passed. Original crane routine,
+UI placement and RHI scissor checks passed (13 tests), followed by four crane
+checks including production legacy GL clipping. The frame replay has incomplete
+prior-frame render-target contents, so it is not used as full-scene visual proof.
+Isolating its original vignette over a white diagnostic background does reproduce
+the reported gap: before, columns 3434–3439 and rows 1437–1439 remain white at
+3440x1440; after, the original vignette shades those pixels continuously. Both
+replays report zero host-call failures or malformed chunks. Local evidence is
+under `private/issue221/replay`; native Mac live validation remains pending.
+
+Follow-up Windows executable SHA-256: `60472f48e75eefb24a855e817342a5a570d88f4ef54eb0bd771ee5984d751267`. Built-in build tests passed; the added extracted native-GL scissor fixture also passed (four crane tests total).
+
+Final Windows acceptance: the user confirmed the corrected crane overlay looks good.
+The combined UI/crane suite passed all 14 tests before publication. Native Mac
+live validation remains pending under MAC-058.
+
+### PR #252 CI follow-up — 2026-10-21
+
+Both patch-upgrade jobs failed while constructing the historical controls-only
+fixture: it applied the new crane patch before its display/viewport dependencies
+existed. The fixture now defers that patch to complete-stack migration and
+asserts the crane wrapper and scissor hook afterward. This changes tests only.
+The failure reproduced locally before the correction; all 34 patch-tracking
+and upgrade tests pass afterward (352.49 seconds). Context and whitespace
+checks pass. Both original native-runtime jobs and both launcher jobs passed;
+new-head hosted validation will run after the correction is pushed.

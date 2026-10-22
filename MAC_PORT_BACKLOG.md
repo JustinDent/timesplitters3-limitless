@@ -192,7 +192,9 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 | MAC-055 | Persist accepted frontend Controls before quitting Settings | Awaiting validation |
 | MAC-056 | Texture-camera composition alignment (issue #49) | Awaiting validation |
 | MAC-057 | Optional texture pack delivery through the launcher | Awaiting validation |
-| MAC-058 | Native fractional updates at 60/120/144 FPS | Awaiting validation |
+| MAC-058 | Crane and remote-view vignette sizing (issue #221) | Awaiting validation |
+| MAC-059 | Physical keyboard entry in original text dialogs (issue #136) | Awaiting validation |
+| MAC-060 | Native fractional updates at 60/120/144 FPS | Awaiting validation |
 
 ### MAC-048 - Companion vehicle zero-flag joins (#100)
 
@@ -502,6 +504,22 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-036 — Ghost Gun full-body visibility (issue #111)
 
+- **Living-character alignment follow-up (#181, 2026-10-20, this commit):**
+  `src/pc_display_ui.inc` now places the US `sub_00122F10` final actor reveal
+  composite in world-screen coordinates rather than the centered HUD viewport.
+  This covers Past Cortez and other living actors viewed with the Ghost Gun;
+  humanoid ghost rendering and the native blur/tint are unchanged. Both
+  `TSFP_PC_CONTROLS` and `TSFP_NATIVE_DISPLAY` use the existing primitive wrapper.
+  `tests/test_ghost_actor_overlay.py` is registered in Windows/macOS CI, with
+  asset-free regression/mutation checks and an optional original-XBE fixture.
+  Windows build/native tests and local fixtures pass; no Mac adapter change is
+  needed for the common renderer. The user confirmed the overlay now stays on
+  Cortez in the isolated Windows test build, launched at 1920x1080. Mac execution
+  and visual checks at other ratios remain pending. Check the reveal against
+  the body while panning at 4:3, 16:9 and ultrawide, preserving the blur and
+  normal HUD placement afterward.
+  [Validation limits](STATUS.md#ghost-gun-living-character-alignment-issue-181-2026-10-20).
+
 - **Status:** Queued
 - **Fixture follow-up (2026-10-19, this revision on `fix/ghost-replay-crash`):**
   `tests/ghost_targets.py` now uses a valid power-of-two 64x64 swizzled target;
@@ -670,6 +688,19 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-001 — Direct-camera mouse look
 
+- **Issue #182 follow-up (2026-10-21, this change):** Shared
+  `src/pc_mounted.h` routes mounted/CCTV AGUN aiming to the gun angles instead
+  of hidden player angles. Both host adapters call it; no additional native
+  adapter is needed. Authored limits, ownership, focus/capture, pause, stale
+  input and normal-camera return are covered by `tests/test_mounted_mouse.py`,
+  registered in the Windows/macOS runtime workflow. Windows fixture and Release
+  build checks pass; the user confirmed the CCTV turret retest works, and
+  read-only telemetry confirmed gun-angle movement. Native compilation,
+  fixture execution and physical mouse/controller comparison remain pending.
+  Acceptance: aim/fire a Breaking and Entering CCTV gun, return to its pointer
+  and on-foot controls, check pitch/yaw limits and pause/focus transitions.
+  See [#182 validation](STATUS.md#mounted-and-cctv-gun-mouse-aim-182--2026-10-21).
+
 - **Issue #7 follow-up (2026-10-16):** `src/pc_terminal.h`
   on `7-breaking-and-entering-camera-turret-not-working` routes relative mouse
   counts to the active terminal's logical pointer in
@@ -710,6 +741,15 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
+- **Issue #105 follow-up (`5c2f4ac`, 2026-10-21):** Shared prompt read scopes
+  (`src/pc_text_read_scope.h`, `pc_prompts.c`, `pc_prompt_guest.inc`,
+  `pc_tutorial_ui.inc`, `pc_display_ui.inc`) reduce VM queries. The separate
+  `late-frame-pacing` patch preserves the 60-Hz clock and lets already-late
+  frames consume a real signalled vblank without another tick. Windows bounded
+  weapon-set acceptance passed at 53.8-54.3 FPS (original ~20); see STATUS.md.
+  No new Mac adapter is required. Mac build/runtime validation remains pending:
+  run shared contracts and isolated Arcade weapon-set/before/back-out checks,
+  plus representative prompts/tutorial wrapping, before marking it verified.
 - **Status:** Awaiting validation
 - **PC behavior:** Formatted menu/HUD hints show current bindings, [Unbound] or [Mouse], and switch back to controller icons on deliberate controller activity.
 - **PC source:** Audited revision above; `src/pc_prompts.c`, `src/pc_prompt_guest.inc`, `patches/pc-prompts.patch`, `tests/pc_prompts.c`.
@@ -1135,6 +1175,28 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 - **Mac implementation and evidence:** Existing implementation unchanged. In the final bounded run, paused Options opened Display Settings, previewed 2560x1440, displayed the countdown and automatically restored 1920x1080 after 15 seconds. The isolated saved mode remained 1920x1080, and the run returned to visible first-mission gameplay. Apply/Keep/reopen and explicit Revert remain pending. [Validation and evidence](STATUS.md#mac-backlog-renderer-camera-and-prompts-2026-10-15).
 
 ### MAC-011 — Real texture-pack gameplay coverage
+
+- 2026-10-21 unlocked test launch correction (branch
+  `fix/test-profile-texture-pack`): shared `testing_profile.prepare_run` now
+  connects `assets/textures` explicitly while starting in Classic mode. The
+  native Mac unlocked runner already imports that environment, so no adapter
+  change is needed. Windows D3D11 startup logs confirm replacement uploads;
+  shared/native preparation tests pass on Windows. Mac acceptance remains an
+  unlocked scene with F10 toggling and replacement uploads visible in its log;
+  native visual testing has not been performed for this correction.
+
+- 2026-10-20 bundled texture delivery: shared tools/build_textures.py prepares
+  the Git LFS pack in assets/textures for Windows and native Mac (PR #235);
+  both game packagers stream it
+  directly into their ZIP. Shared Core.cs accepts bounded texture members,
+  preserves existing pairs and settings, and cleans only staged payloads with
+  existing OneDrive/link checks. Launcher 1.2.22 includes this behavior. Local
+  Windows build/regressions passed before the delivery correction; 221 Python
+  tests pass after it (one platform skip). Updated host CI is required.
+  Native Mac install/cleanup fixture is registered in NativeTests.cs; host
+  execution is evaluated in PR CI. **Awaiting validation** remains for real
+  texture scene/GPU/display/residency coverage. See STATUS.md bundled texture
+  dependency entry. No graphics adapter or guest-clock behavior changed.
 
 - **Status:** Awaiting validation
 - **Windows replay link fix (2026-10-20, `fix/replay-texture-mode-link`):**
@@ -1591,6 +1653,36 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   60/120 FPS. Mac compilation, GPU execution and other-device sync are unverified.
 
 ### MAC-021 — Published-release launcher and pre-game settings
+
+- **Bundled texture toggle (2026-10-20, commit carrying this entry on
+  `feature/launcher-texture-toggle`):** Shared `GameSettings.cs` and
+  `SettingsPage.cs` replace texture download/ZIP/folder controls with an
+  off-by-default **Use enhanced textures (Beta)** checkbox. Both host adapters
+  remove the obsolete install actions while retaining interrupted-install
+  recovery. The saved launcher preference sets `TSFP_TEXTURE_MODE` to `4k` or
+  `classic`; in-game/F10 changes remain session-only. No new native adapter is
+  needed. Windows compilation, 13 shared UI groups and 35 settings checks pass.
+  Mac compilation and UI execution remain pending on a Mac host; acceptance
+  covers save/cancel, reopening, launch environment and unchanged texture files.
+  [Evidence](STATUS.md#launcher-bundled-texture-toggle-2026-10-20).
+
+- **v1.2.22 publication preparation (2026-10-20):** Restores the common publisher's
+  one-versioned-ZIP-per-host policy and Latest release-page download links.
+  Platform update manifests retain their existing names and package formats.
+  All 25 portable publisher regressions pass. Both host checks on the preparation
+  PR remain pending; native Mac validation is not inferred from Windows results.
+
+- **Native frame-rate selector (2026-10-20, commit carrying this entry on
+  `feature/launcher-native-frame-rate`):** Shared `GameSettings.cs` and
+  `SettingsPage.cs` provide original 60 / beta 120 / beta 144 FPS, with restart,
+  compatible-game and Arcade-regression guidance. Both platform adapters locate
+  `pc-frame-rate.ini` beside the display preference. Shared tests cover default,
+  cancel/save, game-menu edits, launch overrides, malformed/concurrent edits and
+  rollback. No new OS adapter is required. Windows build, settings and shared UI
+  regressions pass; Mac native compilation, execution and prerequisites remain
+  unrun on this Windows host. Requires the separate native-high-refresh runtime;
+  this does not certify its gameplay or merge that branch. Wider status remains
+  Awaiting validation. [Evidence](STATUS.md#launcher-native-frame-rate-selector-2026-10-20).
 
 - **Native confirmation dialog layout (2026-10-20, commit carrying this entry
   on `codex/launcher-dialog-layout`):** Windows uses native message boxes with a
@@ -2166,6 +2258,20 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 - **Evidence:** [Windows scope](STATUS.md#story-objectives-health-and-shield-issue-11--2026-10-16).
 
 ### MAC-024 — Resolution catalog and proportional UI (issues #27/#31)
+
+- **Auto-resolution follow-up (2026-10-21, this change on
+  `fix/fullscreen-desktop-resolution`):** Shared display policy
+  adds persistent Auto, effective dimensions, failure rollback and resize
+  tracking. Windows reads the current fullscreen monitor; native
+  `renderer_host_sdl.c` publishes physical drawable pixels on its window thread
+  for both common and legacy GL renderers. `settings_macos.m` and the shared
+  launcher expose Auto, with package capability gating for older games.
+  No duplicated feature policy or deferred adapter is required. Native host
+  validation remains pending: build both renderer paths, exercise fullscreen
+  Retina/multiple monitors, window resize/minimize, manual/Auto previews and
+  rollback, persistence, camera/HUD/cutscene proportions, and both launchers.
+  Windows evidence does not verify these Mac checks.
+
 
 - **Status:** Awaiting validation
 - **PC behavior:** Common render presets and six aspect groups, up to 7680×4320,
@@ -2940,6 +3046,27 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-057 — Optional texture pack delivery through the launcher
 
+- **Publisher requirement follow-up (2026-10-20):**
+  `fix/publish-required-textures` adds an unconditional repository-pack gate to
+  `tools/publish-release.py`, including resumed preparations and pre-upload ZIP
+  verification. It rejects missing/unhydrated assets, manifest mismatches,
+  private metadata and omitted or changed DDS/JSON entries. The compatible
+  Windows/Mac launcher gate can no longer be skipped by dropping texture metadata.
+  This is shared Python release validation with no new OS adapter; the publisher
+  still builds Windows packages. Native Mac packaging/runtime behavior is unchanged.
+  Regression cases are included in the existing Windows/macOS release CI step;
+  hosted validation is pending. Scene/installer validation gaps below remain.
+
+- **Release preservation follow-up (2026-10-20, PR #234):** Game/launcher
+  version bumps retain the loader, controls, installer, repository texture pack
+  and default bundled-game delivery. Repository texture pack now runs on both
+  version files and either host's game packager/publisher changes, for PRs and
+  main pushes. It hydrates Git LFS and audits the committed DDS/JSON; the obsolete
+  separate-release check is removed. This is shared CI policy with no host
+  adapter changes. Upgrade/repair/rollback preservation remains required.
+  Actual Mac installer interaction and scene fidelity remain awaiting validation;
+  see [validation](STATUS.md#texture-preservation-on-version-bumps--2026-10-20).
+
 - **Status:** Awaiting validation
 - **Behavior:** Players explicitly download the optional GitHub texture pack or
   select a local ZIP/folder in launcher Graphics & resolution settings. The
@@ -2958,7 +3085,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   verify opt-in confirmation, cancellation, installation under a portable root
   and a source checkout, then reuse existing loader evidence. Actual Mac texture
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
-### MAC-058 — Native fractional updates at 60/120/144 FPS
+### MAC-060 — Native fractional updates at 60/120/144 FPS
+
+- **Main integration for PR #285 (2026-10-21):** Renumbered from MAC-058 to
+  avoid main's crane entry; keyboard entry remains MAC-059. Shared native timing
+  and unified Video Options retain Auto mode, main's scoped prompt reads/fresh
+  scratch checks, mounted input and late-frame gate correction. No separate
+  platform policy was introduced. Windows development build and focused native
+  checks pass; native Mac execution and physical/visual acceptance remain
+  awaiting validation. See STATUS.md for exact source parents, build and results.
 
 - **Clock-aligned presentation evidence (2026-10-21, this revision):** The
   shared recorder serializes its existing host nanosecond timestamp without
@@ -3669,6 +3804,72 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   separately from monitor scanout and perceived smoothness. Do not claim
   full-game or native Mac validation from the Windows first-mission run.
 - **PC evidence:** [Native high refresh development](STATUS.md#native-high-refresh-development-2026-10-20).
+
+### MAC-059 — Physical keyboard entry in original text dialogs (issue #136)
+
+- **Status:** Awaiting validation
+- **PC behavior:** Physical letters, numbers, supported Latin-1 accents and spaces
+  feed the original on-screen keyboard insertion routine. Backspace/Delete,
+  Left/Right, Home/End, Ctrl+A, Enter and Escape edit/accept/cancel. Original
+  selection replacement, length/width limits and save callbacks remain in charge.
+  Typed E/F/Y do not trigger the normal menu shortcuts. Mouse/controller input
+  remains available. Numeric-only dialogs, arbitrary Unicode and paste are outside
+  this change.
+- **PC source:** `136-enhancement-write-better-with-a-real-keyboard`,
+  based on main `c932bee`; `src/pc_text_input.h`, `src/pc_menu_text.inc`,
+  `src/pc_menu_mouse_guest.inc`, `src/pc_controls.c`; shared behavior tests in
+  `tests/test_menu_text.py` and Windows adapter coverage in `tests/pc_controls.c`.
+- **PC validation:** Windows x64 Release build and build tests pass. 77 selected
+  pytest checks pass, one host-specific skip. Original checksum-verified US text
+  insertion/edit routines pass replacement, cursor, maximum length and font-width
+  rejection tests. Direct Windows message-handler tests pass. The initial live
+  test exposed an embedded profile keyboard missed by descriptor-only detection;
+  the shared code now recognizes the original character rows across descriptors.
+  On 2026-10-21 the user confirmed physical typing and Enter work in Create
+  Profile. Other dialogs and Mac physical input still need validation.
+- **Existing Mac support:** Same queue and guest callbacks; `src/native/input_sdl.c`
+  consumes SDL text events under the existing input mutex. Main-thread frame work
+  enables/disables SDL text input; focus loss clears queued text. Added native
+  input self-test coverage in `src/native/menu_input_selftest.inc`.
+- **Mac adaptation needed:** None identified; compile and host validation pending.
+  Cocoa composition/physical keyboard delivery is not established by Windows tests.
+- **Mac acceptance checks:** Run native input self-tests and shared menu tests;
+  create/edit a disposable profile and MapMaker name, including E/F/Y, Shift/Caps,
+  supported accents, selection replacement, Backspace/Delete, Enter/Escape,
+  blank/overlong input and focus loss. Verify mouse/controller on-screen keys and
+  normal gameplay/menu bindings after closing. Check that unsupported Unicode
+  is ignored rather than corrupting saved text.
+- **Mac implementation and evidence:** Adapter is included on the source branch;
+  no Apple Silicon host available. See the issue #136 entry in `STATUS.md` for local evidence.
+
+### MAC-058 — Crane and remote-view vignette sizing (issue #221)
+
+- **Status:** Awaiting validation
+- **PC behavior:** The Scotland the Brave crane's four mirrored `holoedge`
+  texture pieces scale together to the output viewport, removing the central
+  4:3 boundary. Control text remains outside the stretching scope. The same
+  original vignette helper is used by remote-camera/gun and microscope views.
+  Its inclusive full-canvas clip is normalized through shared `pc_ui_vignette_clip`
+  in both RHI and legacy GL; the guest clip and unrelated widgets stay unchanged.
+- **PC source:** `221-bug-scotland-the-brave-crane-widescreen-issue` (uncommitted);
+  additive `*-crane-vignette.patch`, existing shared
+  `src/pc_display_ui.inc` placement helper and `tests/test_crane_overlay.py` /
+  `tests/crane_overlay.c`. No renderer-specific shader or OS policy is added.
+- **PC validation:** See `STATUS.md`, “Crane vignette widescreen (#221)”.
+  Asset-free scope checks and original US guest-routine execution pass on
+  Windows x64. The user confirmed the corrected crane overlay looks good.
+  Desert encounter and Mac scene checks remain pending.
+- **Existing Mac support:** The wrapper uses `TSFP_NATIVE_DISPLAY` and the
+  existing shared placement API. Its native-display preprocessor path was
+  exercised by the Windows C fixture; this is not native Mac validation.
+- **Mac adaptation needed:** None identified. Validate the existing common
+  renderer and legacy GL placement implementations on their respective hosts.
+- **Mac acceptance checks:** At 4:3, 16:9 and ultrawide, enter the Scotland crane;
+  verify the dark edge overlay has no vertical 4:3 seams, retains transparency,
+  and leaves control labels proportional. Leave the crane and verify HUD
+  placement restores. Check remote views and split-screen viewport boundaries.
+  The separate desert shattered-glass report is not yet reproduced or claimed
+  fixed by this vignette change.
 
 ## Shared uncertainties, not confirmed Mac-only omissions
 

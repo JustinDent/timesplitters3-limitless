@@ -7,10 +7,12 @@
 #include "input_bindings.h"
 #include "pc_prompts.h"
 #include "pc_camera.h"
+#include "pc_mounted.h"
 #include "pc_terminal.h"
 #include "pc_native_rate.h"
 #include "pc_debug.h"
 #include "pc_input.h"
+#include "pc_text_input.h"
 #include "pc_menu_mouse.h"
 #include <pthread.h>
 #include <stdatomic.h>
@@ -37,6 +39,21 @@ static PcMenuPointer menu_pointer_state;
 static unsigned menu_button_block;
 static float menu_wheel_remainder;
 static Uint64 menu_wheel_at;
+static PcTextInput text_input;
+void pc_controls_text_mode(uint32_t owner) {
+    pthread_mutex_lock(&camera_lock);
+    if(text_input.owner!=owner) {
+        pc_text_session(&text_input,owner);
+        for(unsigned i=8;i<256;i++)if(pc_text_key(i))atomic_store(&keys[i],0);
+    }
+    pthread_mutex_unlock(&camera_lock);
+}
+unsigned pc_controls_text_event(uint32_t owner) {
+    pthread_mutex_lock(&camera_lock);
+    unsigned event=text_input.owner==owner?pc_text_get(&text_input):0;
+    pthread_mutex_unlock(&camera_lock);
+    return event;
+}
 
 void pc_controls_menu_mode(int active) {
     pthread_mutex_lock(&camera_lock);
@@ -137,12 +154,17 @@ static void release_all(void) {
     pthread_mutex_lock(&camera_lock);
     menu_pointer_state.valid=menu_pointer_state.left=menu_pointer_state.right=menu_pointer_state.wheel=0;
     menu_button_block=0;menu_wheel_remainder=0;
+    text_input.head=text_input.count=0;
     pthread_mutex_unlock(&camera_lock);
 }
 void tsfp_native_settings_release_input(SDL_Window *window) {release_all();set_capture(window,0);}
 int tsfp_native_input_focused(void) {return atomic_load(&focused);}
 int tsfp_native_key_down(int vk) {
     if(!atomic_load(&focused)||vk<=0||vk>255)return 0;
+    pthread_mutex_lock(&camera_lock);
+    int typing=text_input.owner && pc_text_key((unsigned)vk);
+    pthread_mutex_unlock(&camera_lock);
+    if(typing)return 0;
     if(vk==1 || vk==2) {
         pthread_mutex_lock(&camera_lock);
         int blocked=atomic_load(&menu_active) || (menu_button_block&(vk==1?1u:2u));
@@ -180,8 +202,20 @@ void tsfp_native_input_event(const SDL_Event *e,SDL_Window *window) {
         atomic_store(&focused,0);release_all();set_capture(window,0);
         fprintf(stderr,"[native-input] focus lost; controls released\n");
     }
+    if(e->type==SDL_EVENT_TEXT_INPUT) {
+        pthread_mutex_lock(&camera_lock);
+        if(atomic_load(&focused))pc_text_utf8(&text_input,e->text.text);
+        pthread_mutex_unlock(&camera_lock);
+        return;
+    }
     if(e->type==SDL_EVENT_KEY_DOWN||e->type==SDL_EVENT_KEY_UP){
         int vk=tsfp_native_virtual_key(e->key.scancode),down=e->type==SDL_EVENT_KEY_DOWN;
+        pthread_mutex_lock(&camera_lock);
+        int typing=text_input.owner && pc_text_key((unsigned)vk);
+        if(typing && down && atomic_load(&focused))
+            pc_text_command(&text_input,(unsigned)vk,e->key.repeat,!!(e->key.mod&(SDL_KMOD_CTRL|SDL_KMOD_GUI)));
+        pthread_mutex_unlock(&camera_lock);
+        if(typing) { atomic_store(&keys[vk],0);if(down)pc_prompts_keyboard();return; }
         if(vk)atomic_store(&keys[vk],down);
         if(down && !e->key.repeat)pc_prompts_keyboard();
         if(down && !e->key.repeat && e->key.scancode==SDL_SCANCODE_F9){pc_debug_toggle_fps();return;}
@@ -274,7 +308,8 @@ void pc_controls_apply_mouse(uint32_t player,uint32_t fov_object,ptrdiff_t offse
     camera_input.focused=atomic_load(&focused)&&atomic_load(&mouse_enabled)&&!atomic_load(&menu_active);
     int terminal=pc_terminal_mouse(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),player,offset,pc_native_rate()!=0);
     pc_input_terminal_context(&camera_input,terminal>=0,atomic_load(&keys[1]));
-    if(terminal>=0 || !pc_camera_fields(player,fov_object,offset,&yaw,&pitch,&fov)) {
+    if(terminal>=0 || pc_mounted_mouse(&camera_input,SDL_GetTicks(),atomic_load(&mouse_sensitivity),
+            atomic_load(&mouse_invert),player,fov_object,offset)>=0 || !pc_camera_fields(player,fov_object,offset,&yaw,&pitch,&fov)) {
         pthread_mutex_unlock(&camera_lock);
         return;
     }
@@ -289,6 +324,12 @@ void tsfp_native_input_frame(SDL_Window *window) {
     tsfp_native_crash_frame();
     if(window)tsfp_native_crash_focus((SDL_GetWindowFlags(window)&(SDL_WINDOW_INPUT_FOCUS|SDL_WINDOW_MINIMIZED))==SDL_WINDOW_INPUT_FOCUS);
     atomic_store(&keys[0x86],0);atomic_store(&keys[0x87],0);
+    pthread_mutex_lock(&camera_lock);
+    int typing=text_input.owner && atomic_load(&focused);
+    pthread_mutex_unlock(&camera_lock);
+    if(window && typing!=SDL_TextInputActive(window)) {
+        if(typing)SDL_StartTextInput(window);else SDL_StopTextInput(window);
+    }
     int request=atomic_exchange(&menu_capture_request,0);
     if(request)set_capture(window,request==2);
     if(window) {

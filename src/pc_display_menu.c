@@ -2,6 +2,7 @@
    Settings sub_002CBFC0, and paused Options sub_002F5520. Original controls,
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
+#include "pc_prompts.h"
 #ifdef TSFP_PC_DISCORD
 #include "pc_discord_guest.h"
 #include "pc_guest_memory.h"
@@ -79,7 +80,7 @@ static int guest_writable(uint32_t address,size_t bytes)
 
 static float cutscene_camera_zoom(void)
 {
-    PcDisplayMode mode = pc_display_current();
+    PcDisplayMode mode = pc_display_effective();
     uint32_t viewport = WORD_AT(0x007E71C8u);
     int height, full, animated;
     if (WORD_AT(0x007DE458u) & 0x20000000u) {
@@ -706,7 +707,7 @@ static void labels(void)
         resolution_row=guest_call(sub_00079D60_gen,6,text_at(1,"Resolution"),1u,0u,0u,0u,0u);
         guest_call(sub_0007D480,2,0x8400u,0u);
         for(int i=0;i<mode_count;i++)
-            guest_call(sub_000717D0,1,modes[i].width?
+            guest_call(sub_000717D0,1,pc_display_is_auto(modes[i])?text_at(MODE_TEXT_BASE+i,"Auto"):modes[i].width?
                 text_at(MODE_TEXT_BASE+i,"%u x %u",modes[i].width,modes[i].height):text_at(MODE_TEXT_BASE+i,"Original"));
         guest_call(sub_00075430,2,resolution_row,(uint32_t)selected_mode);
         fov_label();
