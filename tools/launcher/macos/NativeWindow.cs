@@ -71,6 +71,7 @@ namespace TimeSplitters.Launcher
         }
         void Refresh()
         {
+            foreach(var name in new[]{"HomeNav","NewsNav","RepairNav","SettingsNav"})Find<Button>(name).IsEnabled=!busy;
             bool installed=File.Exists(Core.PathIn(root,LauncherPlatform.GamePath(root)));
             bool data=File.Exists(Core.PathIn(root,LauncherPlatform.Data(root)+"/default.xbe"));
             Label("InstalledLabel",render?"LOCAL BUILD":NativeHost.Version(root));

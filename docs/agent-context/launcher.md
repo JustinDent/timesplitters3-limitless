@@ -146,3 +146,6 @@ Windows/Mac game packages omit the assets. The download manifest is an unpublish
 placeholder until a maintainer publishes through `texture-release.py` and merges
 the resulting index. No runtime changes or OS-specific texture protocol are needed.
 Portable and host validation routes are recorded in build-test.md and MAC-057.
+
+Texture operations disable Mac page navigation through the shared busy state,
+keeping the Settings download progress and Cancel control accessible until completion.

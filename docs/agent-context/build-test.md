@@ -330,3 +330,7 @@ in Windows and native Mac launcher checks. `tests/test_build_textures.py` verifi
 that the exact retirement identities enter both package manifests and rejects
 reintroduced original-only keys. Use `tools/build-launcher.ps1 -Test` for Windows;
 CI provides native Mac launcher compilation and shared fixture execution.
+
+Optional texture publication changes (`tools/texture-release.py` and its test)
+select the release suite even when changed alone. Manual Windows upgrades carry
+Textures alongside Data, Settings and Saves to retain downloaded/custom packs.

@@ -140,8 +140,8 @@ Real internet connections and full-match stability remain experimental.
 Online preferences and hosting certificates are stored under Settings.
 
 Settings: Settings/pc-controls.json. Saves: Saves. Diagnostics: Logs.
-Keep Data, Settings, and Saves when upgrading. Extract upgrades to a new folder
-and copy those three folders over. Do not overwrite your settings with defaults.
+Keep Data, Settings, Saves, and Textures when upgrading. Extract upgrades to a new folder
+and copy those four folders over. Do not overwrite your settings with defaults.
 
 This is an experimental native recompilation, not the original source code.
 Startup and short first-mission gameplay have been checked; a full campaign
