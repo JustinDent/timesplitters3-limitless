@@ -305,6 +305,12 @@ Windows source `a5e0dc2` passes the supported build and built-in checks, plus
 159 broader regressions. Its candidate binary is retained separately; the
 normal playable executable is restored. Consult STATUS for hashes before
 testing and force a fresh link after preserving the playable pair on rebuild.
+`tests/pc_controls.c` and the SDL `--input-self-test` now exercise mounted
+mode through the actual adapters, changing the native rate without recreating
+input capture. The focused Windows `tsfp_pc_controls_test` target passes with
+the isolated fixture config and scratch directory. SDL physical-host execution
+is still pending. The portable packet fixture explicitly includes `<stddef.h>`
+for `ptrdiff_t`; Mac Clang does not supply it through `<stdlib.h>` as MSVC did.
 
 ## Launcher stalled-network regression
 

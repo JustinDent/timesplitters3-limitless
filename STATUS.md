@@ -22,6 +22,18 @@ EXE SHA-256 is `b74bd5a49bd32fac5628a1a558cf34e9b61edb8122ebf456237f35c41a87ede4
 Playable `4adb6b0` is restored with its hash verified; personal data is intact.
 This main-based candidate is independent of the WIP vehicle-physics build.
 See MAC-001 for host and live acceptance limits.
+The Windows host-adapter follow-up passes through the real input library and
+`pc_controls_apply_mouse`: native zero-whole motion, paused stale-whole motion,
+live return to Original60, and no deferred motion on returning to on-foot
+controls. Evidence: `logs/mounted-host-adapter-{build,test}.log`, using the
+fixture configuration and isolated `build/path-tests` scratch files. The SDL
+self-test contains matching cases but has not run on a physical Mac here.
+Mac CI's initial new-fixture compile failure was a missing `<stddef.h>` include;
+the explicit include repairs that portability issue. Current-head CI must pass
+before recording Mac fixture success. Gameplay source is unchanged by this
+test-only follow-up, so the retained Windows candidate still has the fix.
+The focused input, Mac-tooling and repository companion suite passes 116
+tests with one unavailable-host skip on Windows (10.43 seconds).
 
 ## 2026-10-22 — Pending PR integration
 

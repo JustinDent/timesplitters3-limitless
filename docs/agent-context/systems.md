@@ -178,6 +178,10 @@ retains its whole-time gate at `4E7944`. Both consume/rebase mouse batches with
 `pc_input_consume_motion`, preventing fresh packets from expiring against a
 previous batch timestamp. Paused/invalid native time consumes without aiming.
 The helper still handles only AGUN mode `0x80`, not vehicle-seat mode `0x8000`.
+Host input self-tests route synthetic motion through `pc_controls_apply_mouse`
+in Windows and SDL, with zero-whole positive time, paused stale whole time,
+live return to Original60 and return to on-foot controls. Windows execution
+passes; native SDL self-test execution remains a host validation requirement.
 
 ## Unified Video Options and native presets (PR #285)
 
