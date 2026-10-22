@@ -6,6 +6,27 @@ main `5db4efc` and the existing issue-resolution evidence in `STATUS.md`.
 It is an initial coverage inventory, not an exhaustive certification of every
 historical issue. Expand it as timing-sensitive fixes are audited.
 
+## Crowded multiplayer preset coverage (2026-10-22)
+
+PR #295 (`252e72e`, implementation head `4a40569`) reduces repeated memory
+queries across an outlined label's four offset passes and foreground draw.
+The same supported Windows executable now has original-60, native-120 and
+two native-144 ten-bot Hotel observations at 3440x1440/FOV 73. Strict complete
+host-clock intervals give 59.999, 119.840, 139.701 and 142.401 guest FPS;
+none of these predeclared 50-second windows exceeds 33.33 ms. Asynchronous
+level-clock endpoints over approximately 61.44 seconds give game/wall ratios
+0.999912-1.000504 during combat and respawns. Native-144 baseline before the
+optimization was approximately 132 FPS in this workload.
+
+These checks support pacing and game-clock consistency in the sampled match,
+not identical bot trajectories, weapon cadence, individual rendered poses or
+full-game correctness. A separate Enhanced run and visual checks are recorded
+with their distinct scope in [STATUS](../STATUS.md#2026-10-22--crowded-multiplayer-text-overhead).
+All selected Windows/macOS CI checks pass for that implementation head;
+native Mac gameplay, online human matches, remaining animation/physics audits,
+texture-fluidity acceptance and representative full-game coverage remain open.
+The earlier live 144-to-60 handoff gap also remains a separate pacing target.
+
 ## Fresh analogue input at native cadence (2026-10-21)
 
 The native pad wrapper previously skipped the complete original decoder on

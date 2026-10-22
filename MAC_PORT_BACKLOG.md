@@ -760,6 +760,8 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   after it. Both host feature defines pass the five-pass wrapper/ABI fixture,
   including a mutation that detects repeated queries. Native Mac gameplay and
   performance remain awaiting validation; see STATUS.md for Windows evidence.
+  Windows/macOS runtime, upgrade and patch-transition CI passes at PR #295
+  implementation head `4a40569`; that does not replace a native gameplay run.
 
 - **Issue #105 follow-up (`5c2f4ac`, 2026-10-21):** Shared prompt read scopes
   (`src/pc_text_read_scope.h`, `pc_prompts.c`, `pc_prompt_guest.inc`,
