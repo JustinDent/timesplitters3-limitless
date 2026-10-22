@@ -446,15 +446,17 @@ Python, Git, Visual Studio and an emulator are not required. After importing the
         print(f'Notes: {self.notes}\nPackage: {self.archive}', flush=True)
 
     def require_texture_launcher(self):
-        self.require_package_textures(json.loads(self.metadata.read_text()))
+        build = json.loads(self.metadata.read_text())
+        self.require_package_textures(build)
+        minimum = '1.2.24' if build['textures'].get('retired') else '1.2.22'
         latest = json.loads(self.gh('api', f'repos/{self.repo}/releases/latest'))
         tag = latest.get('tag_name', '')
         version = tag.removeprefix('launcher-v')
         if (not tag.startswith('launcher-v') or not SEMVER.fullmatch(version)
                 or latest.get('draft') or latest.get('prerelease')
                 or not latest.get('published_at')
-                or version_key(version) < version_key('1.2.22')):
-            raise ValueError('Publish a stable launcher 1.2.22 or newer before a bundled-texture game release.')
+                or version_key(version) < version_key(minimum)):
+            raise ValueError(f'Publish a stable launcher {minimum} or newer before this bundled-texture game release.')
         assets = {a['name'] for a in latest.get('assets', [])
                   if a.get('state') == 'uploaded' and a.get('size', 0) > 0}
         required = {f'TimeSplitters-Launcher-v{version}-{platform}.zip'

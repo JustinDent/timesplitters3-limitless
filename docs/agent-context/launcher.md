@@ -123,3 +123,7 @@ unknown texture backups stay protected. This policy is shared by both hosts.
 `tests/launcher_textures.cs` runs upgrade, custom-pair, partial-pair, rollback,
 failure and late-change checks in both launcher builds. Already published
 launchers require an update carrying this migration before upgrading the game.
+Launcher 1.2.24 packages this migration for both hosts. Its shared version and
+numeric assembly/file attributes advance together. The game publisher requires
+a published stable 1.2.24+ with both platform ZIPs whenever the pack manifest
+declares retired replacements; older bundled packs retain their 1.2.22 minimum.
