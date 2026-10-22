@@ -3617,6 +3617,23 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   at 120/144 followed by Original 60 and subsequent steady pacing on each native
   renderer. [Measured scope](docs/native-high-refresh-regressions.md#native-start-return-to-original-60-2026-10-22).
 
+- **Escort recovery follow-up (2026-10-22, PR #297, `535d4ce`):** Shared numeric addition
+  at 0x6552D now uses raw fractional time, retaining the original match-dispatch
+  pause gate and game-clock delay. Full supported-XBE match/mode/recovery chain
+  checks and an asset-free clock contract cover original/native rates. No new
+  host adapter; native Mac gameplay remains awaiting validation. The prior
+  drain-only head 264bc50 passed both-host CI; follow-up results are in STATUS.
+
+- **Walking boost resource (2026-10-22, `fix/native-boost-timing`, `bcb1f78`):** Shared
+  `pc_native_numeric.h` scopes fractional charge scaling to US site 0x259060.
+  Windows actual-routine evidence shows the old boost drain doubled at 120 and
+  multiplied by 2.4 at 144; the fix preserves original active-update consumption
+  at normal, slow/fast and catch-up intervals. No new OS adapter. Asset-free
+  clock/resource tests run in both-host CI; the complete walking fixture needs
+  the supported private XBE. Native Mac execution and live activation remain
+  awaiting validation. See the walking/boost audit in
+  `docs/native-high-refresh-regressions.md` for exact scope; the game rule-name table identifies mode 0x11 as Escort.
+
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
   extract camera code without the adjacent menu allocator that Clang rejected.

@@ -5451,3 +5451,71 @@ worst 9.385/18.310 ms). Its Apply window worst is 18.105 ms, with no interval
 over 33.33 ms. Endpoint clock ratios are 0.999821/0.999836. Both final runs exit
 cleanly with valid isolated save signatures; no tracing/captures/CPU sampling
 ran during measurement. Saved preference ends at Original 60 in each run.
+
+## Walking update and boost resource audit (2026-10-22)
+
+The existing remote-correction fixture controls `sub_001CE850` rather than
+executing its player movement. Following its dispatch chain reaches the normal
+walking routine `sub_00258F50` through `sub_000D5EB0` and `sub_000D5C70`.
+The new fixture executes all of US `0x258F50..0x2597FF`, lifting code and scalar
+constants from the hash-verified supported XBE. Controlled input displacement,
+world eligibility and a flat collision floor replace real input/level geometry.
+No gameplay code was copied into the fixture or edited in generated output.
+
+Ordinary forward travel is 12 units over one second at original 60 and native
+60/120/144 (maximum observed numerical error below 0.00002). Boosted travel
+is 19.2 units at each rate. However, the mode-byte-0x11 path subtracts the same
+0.006 resource charge at `0x259060` on every active update. With initial test
+resource 100, one second leaves 99.640198 at original/native 60, 99.280396 at
+120 and 99.136475 at 144. The full-routine resource assertion fails at 120
+before the fix; normal walking and boost speed still pass.
+
+The shared site-specific policy now splits the charge across fractional active
+updates. It uses the lesser of raw and game time, capped at one original charge,
+so quarter-speed consumption matches the original parent dispatcher's skipped
+zero-whole-tick updates, while triple-speed and catch-up calls retain one-charge
+semantics. The disabled-native path, unrelated subtraction sites, shared charge
+constant, boost multiplier and depletion threshold remain original.
+
+After the fix, 120 leaves 99.640198 and 144 leaves 99.639648. Quarter-speed
+results are within 0.0003 of 99.91; triple speed remains approximately 99.64.
+A separate initial-resource-1 test checks depletion time/travel within one
+original update, retaining threshold overshoot. Eligibility, released input,
+empty resource, pause/catch-up, diagonal movement, stopping/reversal, stack and
+callee-saved registers are checked. A no-fix mutation fails the same resource
+assertion. Asset-free clock-to-resource cases cover all presets in shared CI.
+
+Scope: this is actual-routine evidence with controlled services, not live boost
+activation, real collision/terrain, upstream input acceleration, full network
+prediction or native Mac execution. A read-only frontend lookup through the
+existing Discord rule-name decoder identifies mode index 17 as Escort (string
+ID 5861); control index 3 resolves to Deathmatch. The bounded 60-second startup
+run exits cleanly and preserves the signed test profile. This identifies the
+mode, but live activation/appearance still needs validation. Evidence: `logs/native-locomotion-{red,expanded}.log` and
+`logs/native-boost-focused.log`; source branch `fix/native-boost-timing`.
+
+### Escort resource recovery and match dispatch
+
+Following the resource write reaches `sub_000654E0`, called through the complete
+mode dispatcher `sub_000681C0` and active-match state in `sub_00068830`.
+Recovery waits until more than five game seconds since the last boost use,
+then adds a fixed 0.003 at US site `0x6552D` on every match update. Unlike the
+walking gate, this caller executes on fractional updates with zero integer
+game ticks. The original-code regression leaves 0.1800001 after one second
+at original/native 60 but 0.3599999 at 120 before the fix.
+
+The shared addition policy scales only this charge by raw fractional time,
+capped at one original charge. Game-speed scaling still affects the original
+five-second delay; it does not alter recovery's rate once eligible. The original
+match dispatcher owns pause suppression. The selected actor, mirrored resource,
+threshold overshoot and existing health-dependent clamp are unchanged.
+
+`native_escort_recovery.c` lifts all three complete routines, preserving their
+switch tables and scalar constants. It verifies 0.18 units per second across
+60/120/144, quarter/normal/triple game speed, the tick-300/301 eligibility
+boundary, paused match dispatch, catch-up, selected actor and clamp/overshoot.
+Restoring the original addition only at the recovery site must fail with
+the original doubled 120-FPS recovery. External world, network, rendering and
+pause-query services are controlled; this is not live Escort or network parity.
+The asset-free clock/resource fixture also checks recovery in both-host CI.
+Evidence: `logs/native-escort-recovery-{red,fixed,regressions}.log`.

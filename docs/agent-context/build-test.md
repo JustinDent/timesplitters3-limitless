@@ -370,3 +370,23 @@ inserting the new HLE call into a runtime that predates native timing.
 The handoff follow-up also updates `test_repo_context.py` to check surface-live
 before native-flip-handoff and the new tail. Its old final-patch assertion
 blocked CI scope selection even though the generated index was current.
+
+## Walking and boost timing audit
+
+`tests/native_locomotion.c` is lifted through the existing hash-verified US XBE
+route in `test_native_timing.py`. It executes the complete walking routine,
+with controlled input displacement and flat-floor world services. Tests cover
+60/120/144 displacement, diagonal cap, stops/reversals, boost resource, selected
+player/mode/button eligibility, depletion, slow/fast time and catch-up. A
+runtime mutation restores the old subtraction and must fail resource parity.
+`native_timing_guest.c` also checks the actual clock-to-resource calculation
+without game assets in existing Windows/macOS CI. The XBE-dependent fixture
+is skipped when assets are absent; do not count that skip as gameplay coverage.
+
+`test_original_fractional_dispatch[native_escort_recovery.c]` executes the
+complete original match/mode/recovery dispatch chain from the supported XBE,
+including original switch tables. It tests recovery delay/rate, pause,
+slow/fast-time, catch-up, selected actor and existing clamps. Its no-fix mutation
+must double recovery at 120 FPS. The asset-free `native_timing_guest.c` recovery
+contract remains in the existing Windows/macOS CI route; neither fixture proves
+live Escort input activation or network transport behavior.

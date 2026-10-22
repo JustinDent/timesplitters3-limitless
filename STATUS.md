@@ -114,6 +114,55 @@ of PR #295's crowded-multiplayer text-read optimization.
 
 [Evidence, provenance and limitations](docs/native-high-refresh-regressions.md#native-start-return-to-original-60-2026-10-22).
 
+## 2026-10-22 — Escort recovery timing audit
+
+PR #297 also covers the recovery side of the Escort movement resource. The
+complete match-state, mode and recovery routines confirm that the old fixed
+0.003-per-update addition doubles recovery at 120 FPS. Scaling only US addition
+site 0x6552D by raw fractional time retains 0.18 units per second at native
+60/120/144. Original game-time recovery delay, pause suppression, selected actor,
+resource mirror, catch-up and clamp/overshoot semantics remain intact.
+
+The prior drain-only revision 264bc50 passed all selected Windows/macOS CI.
+Windows: 69 companion timing/network/backlog cases pass; the new recovery
+case and three directly related timing cases pass after correcting the negative
+control runner. Both no-fix mutations fail for their intended rate mismatch.
+Live Escort activation and native Mac gameplay remain open under MAC-060.
+The supported Windows Build and native build checks pass on combined revision
+`d702561` (PRs #295/#296 plus drain/recovery source `535d4ce`). The resulting
+executable SHA-256 is
+`375178baaa3bac44c1a6d2e663e0c2882648dabaa3bdbd50bf6b51de711aa7b3`.
+This replaces the earlier local drain-only development binary; no new live
+Escort acceptance or crowded-match benchmark is claimed for this build.
+
+## 2026-10-22 — Walking boost resource timing
+
+`fix/native-boost-timing`, based on main 564fda6, fixes a resource-drain
+calculation in the Escort (mode-byte-0x11) movement boost. The complete original walking
+routine retains normal/boosted speeds at 60/120/144, but its per-update fixed
+charge previously doubled at 120 and multiplied by 2.4 at 144. A shared numeric
+policy at US site 0x259060 now splits the charge across native fractional
+updates while retaining original pause, slow/fast-time and catch-up semantics.
+No global constant, input binding, collision policy or boost speed is changed.
+
+The supported Windows Build and its native tests pass on integration revision
+`bc0daf5`, combining this fix (`bcb1f78`) with PRs #295 and #296. Executable
+SHA-256: `aa2868fd0e2009ea96f26d90725c969a3067c3f78dd00a0bb0390db5d7973146`.
+This is a local combined development build, not a standalone release or proof
+of live boost activation.
+A bounded 60-second isolated startup run reaches frontend scene 101 and exits
+cleanly with unchanged signed test profiles. A read-only lookup through the
+existing Discord rule-name decoder confirms index 17 as Escort (index 3 is
+Deathmatch); this identifies the mode but does not activate or validate its boost.
+
+Windows: 69 timing/network/backlog cases pass, including the hash-verified US
+walking routine, depletion, eligibility, movement directions and a no-fix
+mutation. Existing Windows/macOS CI runs an asset-free clock/resource case;
+the full routine requires private game data. Real-map geometry, actual boost
+activation, upstream input acceleration and native
+Mac execution remain unverified. See MAC-060 and the
+[walking/boost audit](docs/native-high-refresh-regressions.md#walking-update-and-boost-resource-audit-2026-10-22).
+
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
 Review identified that preserving installed textures would leave the old icons
