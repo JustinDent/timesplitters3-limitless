@@ -145,3 +145,12 @@ Private evidence is under private/texture-remaster:
 Original game data and source artwork remain private. Normal game releases
 bundle the committed pack after integration; Enhanced remains a player choice.
 No separate texture release is created.
+
+## Existing installations
+
+A launcher update carrying the retirement migration is needed to restore icons
+in existing installations. Future game packages include the retired bundled
+DDS/JSON hashes. During game installation, that launcher removes matching old
+pairs through its normal recovery transaction; custom replacements are preserved.
+Fresh installations contain no retired icon files. Merging this source change
+does not itself publish a launcher or game release.

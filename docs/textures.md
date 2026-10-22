@@ -16,7 +16,9 @@ include the pack in `Textures/`; no separate texture release is required.
 Launcher 1.2.22 or newer supports these game packages. The launcher bootstrap
 stays small. In game, select **Display settings → Textures → Enhanced**.
 Classic remains available. Game updates seed missing texture pairs and preserve
-existing replacements, saves and settings. To replace existing custom pairs,
+existing custom replacements, saves and settings. A launcher with the retirement
+migration removes explicitly retired bundled icon pairs only when their hashes
+match; older published launchers require an update to perform this migration. To replace existing custom pairs,
 use **Install pack ZIP** or **Install pack folder**, with the game closed.
 The old download button explains that textures now come with game updates.
 

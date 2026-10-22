@@ -1,3 +1,18 @@
+## 2026-10-22 — Retired icon upgrade migration (PR #289)
+
+Review identified that preserving installed textures would leave the old icons
+active after a game upgrade. The shared launcher now consumes exact historical
+DDS/JSON hashes from the packaged texture identity and removes matching pairs
+using its existing recovery transaction. Custom pairs remain unchanged. Backup
+cleanup accepts only retirement-journal files with matching hashes. Both game
+packagers emit the same policy; older launchers need the updated migration.
+
+Windows: synthetic upgrade, custom/partial pairs, rollback, interrupted update
+and late-change checks pass in the shared texture installer fixture. Python
+packaging/production/release checks: 134 tests and 18 subtests passed. No game
+launched and no personal installation was modified. Native Mac checks run in
+PR CI; gameplay appearance remains pending under MAC-011. No release published.
+
 ## 2026-10-22 — Original character icons restored (#74)
 
 Removed 159 installed character selection/profile icon replacements and their

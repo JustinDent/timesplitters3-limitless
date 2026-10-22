@@ -179,3 +179,9 @@ installed replacements for those keys and hybrid planning retains the original
 lane. Character model materials remain in scope. Source resampling and original-detail
 recovery are distinguished from newly generated art in `docs/main-menu-textures.md`.
 Offline acceptance does not certify mapped scene appearance or Mac GPU behavior.
+
+The original-icon policy also includes historical public DDS/JSON hashes.
+`build_textures.ensure_pack` rejects reintroduced icon keys and emits these
+identities in `BUILD.json` under `textures.retired` for both game packagers.
+The shared launcher retires only matching installed pairs transactionally;
+custom artwork stays protected. See the launcher guide for recovery behavior.

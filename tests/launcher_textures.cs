@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -45,11 +46,64 @@ public static class LauncherTextureChecks
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){RequestMessage=request,Content=new ByteArrayContent(Bytes)});
         }
     }
+    static Dictionary<string, object> Retirement(string key, string dds, string json)
+    {
+        return Json.Object(Json.Encode(new { textures = new { retired = new Dictionary<string, object> {
+            { key, new { dds = dds, json = json } } } } }));
+    }
     public static int Run()
     {
         string area=Path.Combine(Path.GetFullPath("."),"texture-tests-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(area);
         int next=0;Func<string> root=()=>{string path=Path.Combine(area,"install-"+(++next));Directory.CreateDirectory(path);return path;};
         try {
+            Test("game upgrade retires exact bundled icons and rollback restores them",()=>{
+                string r=root(), pending=Path.Combine(r,".launcher/pending"), payload=Path.Combine(pending,"payload");
+                string dds=Core.PathIn(r,"Textures/"+A+".dds"), meta=Core.PathIn(r,"Textures/"+A+".json");
+                Put(dds,Dds());Put(meta,new byte[]{1,2,3});
+                Put(Core.PathIn(r,"Textures/"+B+".dds"),Dds(2));
+                Put(Core.PathIn(r,"BUILD.json"),System.Text.Encoding.UTF8.GetBytes("{\"version\":\"v1.0.0\"}"));
+                var manifest=Retirement(A,Core.Hash(dds),Core.Hash(meta));
+                manifest["version"]="v1.1.0";
+                var files=new Dictionary<string,string>();
+                foreach(string name in new[]{LauncherPlatform.GameBinary,LauncherPlatform.LaunchScript}) {
+                    string path=Core.PathIn(payload,name);Put(path,new byte[]{8});files[name]=Core.Hash(path);
+                }
+                manifest["files"]=files;
+                Core.Write(Core.PathIn(payload,"BUILD.json"),Json.Encode(manifest));
+                Core.Write(Core.PathIn(pending,"release.json"),"{\"version\":\"v1.1.0\"}");
+                Core.InstallPending(r);
+                Need(!File.Exists(dds)&&!File.Exists(meta),"Bundled icons survived upgrade");
+                Need(File.Exists(Core.PathIn(r,"Textures/"+B+".dds")),"Unrelated texture removed");
+                Core.Rollback(r);
+                Need(File.Exists(dds)&&File.Exists(meta),"Retired pair not restored");
+                var again=new List<Change>();Core.AddRetiredTextures(r,manifest,again);Core.Apply(r,again,null);
+                Core.FinishGameSession(r,Core.GameBuildHash(r),true,0);
+                // An additional transaction must be able to recycle its verified backups.
+                Core.Apply(r,new List<Change>(),null);
+            });
+            Test("custom icon member preserves both files and partial originals can retire",()=>{
+                foreach(string custom in new[]{"dds","json","missing"}) {
+                    string r=root(), dds=Core.PathIn(r,"Textures/"+A+".dds"), meta=Core.PathIn(r,"Textures/"+A+".json");
+                    Put(dds,Dds());Put(meta,new byte[]{1});
+                    var manifest=Retirement(A,Core.Hash(dds),Core.Hash(meta));
+                    if(custom=="missing")File.Delete(meta);else Put(custom=="dds"?dds:meta,new byte[]{99});
+                    var changes=new List<Change>();Core.AddRetiredTextures(r,manifest,changes);
+                    Need(changes.Count==(custom=="missing"?1:0),"Custom pair or partial retirement mishandled");
+                    Core.Apply(r,changes,null);
+                    Need(File.Exists(dds)==(custom!="missing"),"Custom texture removed");
+                }
+            });
+            Test("retirement failure restores files and late changes are rejected",()=>{
+                string r=root(),dds=Core.PathIn(r,"Textures/"+A+".dds"),meta=Core.PathIn(r,"Textures/"+A+".json");
+                Put(dds,Dds());Put(meta,new byte[]{1});var manifest=Retirement(A,Core.Hash(dds),Core.Hash(meta));
+                var changes=new List<Change>();Core.AddRetiredTextures(r,manifest,changes);
+                Reject(()=>Core.Apply(r,changes,i=>{if(i==1)throw new InvalidDataException("Injected failure");}));
+                Need(File.Exists(dds)&&File.Exists(meta),"Failed update lost icon files");
+                Put(dds,Dds(9));Reject(()=>Core.Apply(r,changes,null));
+                Need(File.ReadAllBytes(dds).Last()==9&&File.Exists(meta),"Changed icon was removed");
+                Reject(()=>Core.AddRetiredTextures(r,Retirement("../Saves/user",new string('a',64),new string('a',64)),new List<Change>()));
+                Reject(()=>Core.AddRetiredTextures(r,Retirement(A,"bad",new string('a',64)),new List<Change>()));
+            });
             Test("folder import chooses runtime location and preserves unrelated files",()=>{
                 string r=root(),source=root();Put(Path.Combine(source,A+".dds"),Dds());
                 Put(Path.Combine(r,"Saves","user.txt"),new byte[]{42});

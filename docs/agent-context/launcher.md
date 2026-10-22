@@ -109,3 +109,17 @@ settings default to Auto, while saved dimensions remain unchanged. A saved
 Auto choice remains readable after installing an older game; its runtime falls
 back to console output, and the settings page explains that a manual choice or
 newer game is needed before saving. Opening settings never rewrites that file.
+
+## Retired bundled character icons (#74)
+
+`Core.InstallPending` reads `BUILD.json` → `textures.retired`, emitted by the
+shared pack auditor from `config/texture-originals.json`. Each key records the
+previous bundled DDS and public JSON hashes. `AddRetiredTextures` preserves
+the entire pair if either existing member differs; absent members need no action.
+Matching removals carry a hash precondition through `ApplyScope` and its normal
+backup/recovery journal. Rollback restores removed originals. Backup cleanup
+accepts only flat keyed files whose recorded retirement hashes still match;
+unknown texture backups stay protected. This policy is shared by both hosts.
+`tests/launcher_textures.cs` runs upgrade, custom-pair, partial-pair, rollback,
+failure and late-change checks in both launcher builds. Already published
+launchers require an update carrying this migration before upgrading the game.

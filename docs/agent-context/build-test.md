@@ -310,3 +310,9 @@ is in `tests/texture_pack_tools.py` (including rejection of accidental reinstall
 and `tests/test_texture_hybrid_plan.py`. These tests are already registered in CI.
 Asset removal also requires pack count/size audit and unchanged-file hashes;
 no game rebuild is needed.
+
+Retired-icon upgrade coverage also runs through `tests/launcher_textures.cs`
+in Windows and native Mac launcher checks. `tests/test_build_textures.py` verifies
+that the exact retirement identities enter both package manifests and rejects
+reintroduced original-only keys. Use `tools/build-launcher.ps1 -Test` for Windows;
+CI provides native Mac launcher compilation and shared fixture execution.

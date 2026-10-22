@@ -156,3 +156,22 @@ def test_repository_export_tracks_only_audited_public_content(tmp_path, existing
     assert json.loads((repo/'config/texture-pack.json').read_text())['texture_count'] == 1
     with pytest.raises(ValueError, match='git lfs pull'):
         textures.ensure_pack(repo)
+
+
+def test_retirement_policy_travels_with_pack_and_rejects_reintroduction(tmp_path):
+    source, _, _, _, _ = fixture(tmp_path)
+    (tmp_path/'config').mkdir()
+    policy = {'keys': ['fedcba9876543210'], 'retired': {
+        'fedcba9876543210': {'dds': 'a'*64, 'json': 'b'*64}}}
+    path = tmp_path/'config/texture-originals.json'
+    path.write_text(json.dumps(policy))
+    _, _, identity = textures.ensure_pack(tmp_path, source)
+    assert identity['retired'] == policy['retired']
+    policy['retired']['fedcba9876543210']['dds'] = 'invalid'
+    path.write_text(json.dumps(policy))
+    with pytest.raises(ValueError, match='Invalid retired'):
+        textures.ensure_pack(tmp_path, source)
+    policy = {'keys': ['0123456789abcdef'], 'retired': {}}
+    path.write_text(json.dumps(policy))
+    with pytest.raises(ValueError, match='Retained-original'):
+        textures.ensure_pack(tmp_path, source)
