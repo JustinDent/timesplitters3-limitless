@@ -5121,3 +5121,71 @@ Longer-run evolution, intermediate-state behavior, quantized coefficients,
 original appearance/motion, content-preserving live FPS/precision transitions,
 capture-free pacing and actual Mac execution remain unverified. Full-game
 coverage and the broader goal remain open.
+
+
+## Feedback texture preservation (2026-10-21)
+
+The host cache previously released a rendered texture whenever its requested
+host precision changed, then created an empty replacement. It now allocates a
+provisional replacement, copies the live GPU content through the existing
+common format-converting shader, and publishes it only when preservation
+succeeds. The cache slot is marked used before earlier deferred draws flush, preventing
+queued binds from evicting the source during the transition. Existing texture-stage
+bindings move to the replacement before the old texture is retired. Allocation
+or copy failure keeps the original cache entry, live content and bindings.
+Ordinary cache hits do not repeat the copy or readback.
+
+`d3d8_PreserveFeedbackTexture` is deliberately restricted to matching one-level
+render targets in the supported byte/half formats. It also reads the converted
+GPU result back once into the new texture's CPU storage, reversing the host
+half-float channel ordering and applying the Xbox swizzle where needed. Capture
+writes that storage when the new texture is first published, so it retains the
+copied state rather than recording the original empty allocation. No new capture
+chunk is needed. This does not fix the existing general limitation for targets
+rendered in earlier frames before a capture begins. The one-time synchronization
+cost during a precision transition is not yet measured in live gameplay.
+
+The shared real-RHI fixture now constructs linear and swizzled byte targets with
+all 256 values represented in every channel. CPU source storage is deliberately
+stale/zero; only the GPU contains the test pattern. Copying to half-float and
+back preserves every byte exactly. Reconstructing textures from both converted
+CPU images reproduces their GPU pixels bit-for-bit, including channel order and
+swizzle. The source GPU image, output target and viewport also remain unchanged.
+These cases run in the common Windows WARP fixture and are wired into the native
+Mac Vulkan fixture; actual Mac execution remains unverified.
+
+The first GPU check exposed two assumptions: WARP's render conversion can
+truncate to the adjacent lower half-float value (`254/255` became `0x3bf7`),
+and directly storing host RGBA16 bytes did not match the runtime's ABGR16 upload
+layout. The test now permits one half ULP while retaining exact byte round-trip
+checks; production reverses the channel transform before swizzling. The CPU-copy
+reconstruction check caught and verified that correction rather than relying
+on a successful draw alone.
+
+A separate fixture executes the actual production cache function with injected
+allocation/copy failures, checking promotion, demotion, queued-draw flush order,
+binding replacement, unchanged guest identity, rollback and matching-cache reuse.
+Windows Release Build and built-in tests pass. Executable SHA-256:
+`9e824f4df45b86b6359b900ba4499f559ae0a2baf95c9bff4d6b02223b962254`,
+base `bf43dc7` plus this change, Windows x64/MSVC 14.44.35207/SDK 10.0.26100.0.
+The selected suite passes 85 cases in 283.08 seconds, and three historical
+patch-stack migrations pass separately in 87.81 seconds. A final cache-slot
+protection refinement is followed by another successful Windows Build and
+three passing GPU/transaction/backlog checks; the transaction fixture requires
+the used-swap stamp before the queue flush. The full migration suite was not
+repeated after that single-field refinement.
+Evidence: `logs/surface-preservation-{build,gpu,transaction,checks,migrations,patches,final}.log`.
+
+Legacy GL returns unsupported for this conversion and retains the old texture;
+it already refuses the half-float feedback registration. Common RHI provides the
+implementation for both Windows and native Mac without a second simulation.
+No interactive game was closed or new game session launched for these asset-free
+checks. Personal saves and settings were not used.
+
+This checkpoint fixes destructive reformatting, but does not yet connect texture
+precision selection to live FPS presets. The existing float diagnostic still
+requests float targets independently of FPS. The next integration must choose
+byte storage for original 60 and float storage for higher refresh, convert
+before a changed-precision source is sampled as well as before target writes,
+then validate 60/120/144 transitions in-game. Appearance/motion parity, longer
+wave evolution, capture-free pacing and full-game/Mac coverage remain open.

@@ -187,3 +187,7 @@ void d3d8_combiners_set_float_constant(unsigned bank,unsigned stage,const float 
 {pc_combiner_constant_set(&native_float_constants,bank,stage,value);}
 int d3d8_combiners_get_float_constant(unsigned bank,unsigned stage,float *value)
 {return pc_combiner_constant_get(&native_float_constants,bank,stage,value);}
+
+/* Legacy GL cannot allocate the half-float feedback targets yet. */
+HRESULT d3d8_PreserveFeedbackTexture(IDirect3DTexture8 *dst, IDirect3DTexture8 *src)
+{ (void)dst;(void)src;return E_NOTIMPL; }

@@ -6,6 +6,17 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Feedback precision preservation (2026-10-21):** Rendered textures now
+  retain their live GPU contents when host precision changes. The replacement
+  is published only after allocation/copy succeed; failure leaves the old
+  texture and bindings intact. Shared WARP checks preserve all byte values
+  through byte/half/byte conversion and reconstruct exact GPU content from
+  capture storage. Production cache tests cover rollback and deferred ordering;
+  Windows Build, 85 selected cases, three patch migrations and final targeted
+  GPU/transaction/backlog checks pass. This is the transition foundation: live FPS-dependent
+  precision selection, gameplay switches and their timing cost remain untested.
+  All experiments remain off in ordinary play. [Evidence and remaining work](docs/native-high-refresh-regressions.md#feedback-texture-preservation-2026-10-21).
+
 - **Ordered water centering correction (2026-10-21):** The opt-in experiment
   now copies lossless float shader overrides through deferred draws and capture
   replay, clearing them outside the target pass. Windows Build and production

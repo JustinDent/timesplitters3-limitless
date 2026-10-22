@@ -2960,6 +2960,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Feedback precision preservation (2026-10-21, this revision):** Common RHI
+  copies live state into a provisional replacement before the host cache
+  publishes a precision change. Failure keeps old content/bindings; converted
+  CPU storage preserves capture/replay initialization. Windows WARP byte/half
+  round trips and production cache rollback checks pass; the same GPU cases
+  run through `tools/test-rhi-mac.py` on an available Mac. Native execution
+  remains unverified. Legacy GL explicitly returns unsupported and preserves
+  the old texture; its float-target gap remains. FPS-driven policy and live
+  gameplay transitions still need integration/validation on both hosts.
+  [Measured evidence](docs/native-high-refresh-regressions.md#feedback-texture-preservation-2026-10-21).
+
 - **Ordered water centering (2026-10-21, this revision):** Shared formula and
   float-constant state, common HLE queued transport/capture/replay, and RHI/GL
   adapters implement an opt-in second-pass correction. Windows original-code,
