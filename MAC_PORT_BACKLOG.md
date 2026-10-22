@@ -3585,6 +3585,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Water damping coefficient diagnosis (2026-10-22):** The local Windows WARP
+  original-shader case now isolates packed fractional coefficient drift and a
+  precise anchored alternative. This is a diagnostic, not a runtime change.
+  Shared CI knows the fixture, but skips without the private XBE/Windows WARP.
+  Native Mac GPU/scene validation and full water acceptance remain awaiting
+  validation. See STATUS and the fractional damping audit for measured scope.
+
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
   extract camera code without the adjacent menu allocator that Clang rejected.

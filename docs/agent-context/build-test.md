@@ -334,3 +334,11 @@ in Windows and native Mac launcher checks. `tests/test_build_textures.py` verifi
 that the exact retirement identities enter both package manifests and rejects
 reintroduced original-only keys. Use `tools/build-launcher.ps1 -Test` for Windows;
 CI provides native Mac launcher compilation and shared fixture execution.
+
+The third `test_surface_shader_feedback.py` case, `surface_damping_gpu.inc`,
+executes one second of original-program WARP displacement damping at 60/120/144.
+Float32 uniform inputs and zero coupling isolate coefficient packing. The
+packed fractional coefficients are a required negative control; a precise
+power of the original packed one-tick damping must retain the 60-step result.
+This needs the local supported XBE; hosted skips are not GPU acceptance. It
+proves a scalar arithmetic contract, not full spatial water/byte-storage parity.
