@@ -237,10 +237,11 @@ void pc_display_menu_button(void (*original)(void))
     if(callback==0x002CBE10u || callback==0x002EC1F0u) {
         uint32_t frame=g_esp,old_caption=WORD_AT(frame+4),label=audio_options_caption();
         uint32_t builder=WORD_AT(0x007BB1E0u),flags=0;
-        int valid=guest_writable(builder,0x2c);
+        int valid=callback==0x002CBE10u && guest_writable(builder,0x2c);
         if(label)WORD_AT(frame+4)=label;
-        /* Match Controls/Video before construction so the engine computes
-         * font height and alignment consistently, not just its paint flags. */
+        /* The frontend uses left-aligned rows. Pause Options instead inherits
+         * its own centered/split-screen style, just like Controls and Video.
+         * Renaming Audio must not replace that context-dependent layout. */
         if(valid) { flags=WORD_AT(builder+0x28);WORD_AT(builder+0x28)=0x26200u; }
         original();WORD_AT(frame+4)=old_caption;
         if(valid)WORD_AT(builder+0x28)=flags;
@@ -272,8 +273,7 @@ void pc_display_menu_button(void (*original)(void))
         return;
     }
 #endif
-    original();
-    if(!frontend && !paused) return;
+    if(!frontend && !paused) { original();return; }
     save_registers(&r);
     if(!caption) {
         const char text[]="Video Options";
@@ -281,9 +281,9 @@ void pc_display_menu_button(void (*original)(void))
         if(caption) memcpy((void *)((uintptr_t)caption+g_xbox_mem_offset),text,sizeof text);
     }
     if(caption) {
-        /* Same six-argument cdecl ABI as the adjacent original Controls item.
-           At these two sites its return value is unused and no subsequent
-           setter acts on it, so appending cannot redirect an existing setter. */
+        /* Insert Video before Controls, using the same six-argument cdecl
+           ABI. Restore the caller before building Controls so its arguments
+           and return value still belong to the original row. */
         push(0); push(PC_DISPLAY_MENU_CALLBACK); push(0); push(0); push(UINT32_MAX); push(caption);
         push(callsite);
         original();
@@ -293,6 +293,7 @@ void pc_display_menu_button(void (*original)(void))
         }
     }
     restore_registers(&r);
+    original();
 }
 
 

@@ -3163,6 +3163,25 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   and multiplayer profile selector. Windows Build passes; Mac menu navigation,
   alignment and multiplayer profile selection require validation.
 
+- **Menu order / divider removal follow-up (2026-10-21):** This revision updates shared
+  `src/pc_display_menu.c` and `tests/fov_settings.c` at `894cb45` insert Video
+  before Controls in pause Options, matching the frontend. Frontend Cheats
+  remains conditional and last. The silver Apply divider is removed again at
+  the user's explicit request, superseding the previous note. Windows Build
+  and six menu/display checks pass; no host-specific adaptation is needed.
+  Native Mac menu navigation/visual checks remain pending. See STATUS.md.
+
+- **Pause Audio alignment / Video divider follow-up (2026-10-21):**
+  Uncommitted shared `src/pc_display_menu.c` / `tests/fov_settings.c` on
+  `feature/native-144-fps` at `93a805a` retain the pause builder's centered or
+  multiplayer layout when renaming Audio; only frontend Audio receives the
+  left-aligned style. The native silver divider above Apply is restored after
+  user feedback, superseding the removal noted below. No host adapter is
+  needed. Windows Build, six menu/display regressions and bounded Story-menu
+  captures pass; native Mac execution remains pending. Verify Audio alignment
+  in main/pause and split-screen menus, submenu return, and the separator with
+  both clean and dirty Apply. See the matching STATUS.md validation entry.
+
 - **Unified Video/Audio Options (this revision):** Shared `pc_display_menu.c`
   stages resolution, FOV, texture style, FPS and Subtitles in one Video Options
   page, with a disabled-until-dirty Apply. The remaining silver divider above

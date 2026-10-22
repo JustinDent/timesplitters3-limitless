@@ -1,5 +1,66 @@
 # Measured progress
 
+## Menu ordering and divider removal (2026-10-21)
+
+This revision follows `894cb45` on `feature/native-144-fps`, depending
+on its unified Video Options menu. The shared button hook now inserts Video
+Options before Controls in pause Options, matching the frontend Settings order.
+The frontend already places Cheats last when unlocked; that conditional placement
+is retained. Removed the silver divider above Apply at the user's request,
+superseding the restored-divider note below. Preserved the pause Audio alignment
+fix and the staged Apply behavior.
+
+Windows x64 / MSVC / D3D11: six display/menu-pointer checks passed, with the
+native Mac compile check skipped on this host. The insertion fixture checks
+Video-before-Controls, guest stack/arguments and the original Controls return
+value. Standard Windows Build applied the complete patch stack and passed its
+bundled checks (`logs/menu-order-build.log`). EXE SHA256:
+`77e675648fb06644ca03b7ab8c5a8484acf6da6cfa98db32c1be1955df93a03b`.
+Shared implementation needs no new Mac adapter; native Mac validation is pending.
+Bounded isolated Story check `menu-order-check` visually confirms Video Options
+above Controls and no divider above the disabled Apply button. Evidence:
+`private/test-saves/menu-order-check/pause-order.png` and `video-no-divider.png`.
+The optional Controls navigation command reopened Video Options, so it does not
+establish Controls-submenu validation. The run exited cleanly, signatures and
+profiles were unchanged, the fixture was preserved and temporary partitions and
+BMPs were recycled (`logs/menu-order-game.log`).
+
+## Pause-menu Audio alignment and Video divider (2026-10-21)
+
+Local follow-up to the unmerged unified menu on `feature/native-144-fps`,
+base `93a805a`; source changes are uncommitted in `src/pc_display_menu.c` and
+`tests/fov_settings.c`. This depends on that branch's newer Video/Audio menus,
+which are not present on current main. Existing pacing/statistics changes in
+this working tree were preserved; this fix does not change timing behavior.
+
+The Audio rename hook was forcing frontend left alignment (`0x26200`) onto
+pause Options, whose other entries inherit `0x32200` (or `0x32000` in its
+alternate multiplayer layout). Restricting that override to frontend Audio
+preserves the pause builder's alignment and original per-row disabled bits.
+Video Options again invokes the title's native silver divider immediately
+above Apply, retaining the seven action/settings rows and disabled-until-dirty
+behavior. The implementation is shared by Windows and native Mac.
+
+Windows 11 x64 / MSVC / D3D11 RTX 4070 SUPER driver 32.0.16.1742; supported US
+XBE SHA256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+Standard Windows Build applied the complete pinned patch stack and passed its
+bundled checks (`logs/menu-alignment-build.log`). Six display/menu-pointer
+regressions passed; one Mac compile check was skipped on this Windows host.
+EXE SHA256 `97646f78784edccbca288a2c6394f1dd07f673c3a168fa2e0722180ff3aab9d0`.
+The build also contains the pre-existing uncommitted presentation metrics work.
+
+Bounded isolated Story runs reproduced the left-offset pause Audio entry and
+missing divider, then verified centered Audio, the restored silver rule and
+Apply becoming enabled after a staged FOV edit. Reviewed captures:
+`private/test-saves/menu-pause-before/pause.png`,
+`private/test-saves/menu-pause-after/pause-aligned.png`, `video-divider.png`
+and `apply-enabled.png`; reports/logs use the matching run names. A separate
+`menu-audio-check` run verifies the aligned selected Audio row, opening Audio
+Options and returning to the same selected row. Profiles and
+the canonical fixture stayed unchanged; temporary disk images/BMPs were
+recycled. The frontend baseline was already correctly left-aligned. Native
+Mac visual validation and actual split-screen layout remain unverified.
+
 ## Native high refresh development (2026-10-20)
 
 Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested

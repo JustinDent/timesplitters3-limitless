@@ -128,8 +128,10 @@ static void call(uint32_t address,int selected,unsigned buttons)
     CHECK(g_esp==0x700004 && g_esi==0xABC && g_ebx==0xDEF && g_fp_top==3);
 }
 static uint32_t observed_builder_flags,observed_row_flags;
+static uint32_t observed_callbacks[2],observed_callback_count;
 static void button_probe(void)
 {
+    if(observed_callback_count<2)observed_callbacks[observed_callback_count++]=WORD_AT(g_esp+20);
     observed_builder_flags=WORD_AT(0x500028);
     observed_row_flags=WORD_AT(g_esp+12);
     g_eax=0x510000;g_esp+=4;
@@ -284,6 +286,30 @@ int main(int argc,char **argv)
     g_esp=0x700000;WORD_AT(g_esp+20)=0x2cbe10;WORD_AT(g_esp+4)=0x510000;
     pc_display_menu_button(button_probe);
     CHECK(observed_builder_flags==0x26200 && WORD_AT(0x500028)==0x32200 && g_esp==0x700004);
+    /* Both native insertion sites put Video immediately before Controls,
+     * preserving the Controls call frame and its result. */
+    for(unsigned i=0;i<2;i++) {
+        uint32_t callback=i?0x2ec1a0u:0x2cbe50u;
+        g_esp=0x700000;WORD_AT(g_esp)=i?0x2f561cu:0x2cc116u;
+        WORD_AT(g_esp+4)=0x510000;WORD_AT(g_esp+20)=callback;
+        observed_callback_count=0;
+        pc_display_menu_button(button_probe);
+        CHECK(observed_callback_count==2 && observed_callbacks[0]==PC_DISPLAY_MENU_CALLBACK);
+        CHECK(observed_callbacks[1]==callback && WORD_AT(0x700014)==callback);
+        CHECK(WORD_AT(0x700004)==0x510000 && g_esp==0x700004 && g_eax==0x510000);
+    }
+    /* Pause Options supplies its own centered (or split-screen) style.
+     * The Audio rename must retain it, including caller-provided disable bits. */
+    for(unsigned i=0;i<2;i++) {
+        uint32_t style=i?0x32000u:0x32200u;
+        WORD_AT(0x500028)=style;
+        g_esp=0x700000;WORD_AT(g_esp)=0x2f5666;
+        WORD_AT(g_esp+20)=0x2ec1f0;WORD_AT(g_esp+4)=0x510000;
+        WORD_AT(g_esp+12)=1u;
+        pc_display_menu_button(button_probe);
+        CHECK(observed_builder_flags==style && WORD_AT(0x500028)==style);
+        CHECK(observed_row_flags==1u && WORD_AT(0x700004)==0x510000 && g_esp==0x700004);
+    }
     g_esp=0x700000;WORD_AT(g_esp)=0x2c4042;WORD_AT(g_esp+20)=0;WORD_AT(g_esp+12)=0x20000;
     pc_display_menu_button(button_probe);
     CHECK((observed_row_flags&0x21)==0x21 && WORD_AT(0x70000c)==0x20000 && g_esp==0x700004);
