@@ -10,6 +10,7 @@ import ctypes as c
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -21,9 +22,31 @@ ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
 from testing_profile import prepare_run,recycle_disks,check_fixture,XBE_SHA256,signature,BODY_SIZE
 
+def weapon_set_metrics(run):
+    """Check settled five-second guest-swap windows, excluding transitions.
+
+    Captures still need review: counters alone cannot identify a menu screen.
+    """
+    report=json.loads((run/'report.json').read_text())
+    samples=[(float(t),float(fps)) for t,fps in re.findall(
+        r'\[FPS\] t=\s*([\d.]+)s\s+([\d.]+) fps',(run/'run0.err').read_text(errors='replace'))]
+    result={}
+    for item in report:
+        label=item.get('command',{}).get('label')
+        if label not in ('before-weapons','weapons','weapons-selection','after-weapons'):continue
+        end=item['seconds']; wait=item['command'].get('wait',2.5)
+        # A window ends at t and spans the previous five seconds. Leave two
+        # seconds after input for assets/transitions before starting a window.
+        values=[fps for t,fps in samples if end-wait+7<=t<=end]
+        result[label]=values
+    (run/'weapon-set-metrics.json').write_text(json.dumps(result,indent=2)+'\n')
+    assert len(result)==4 and all(len(v)>=1 and min(v)>=50 for v in result.values()),result
+    return result
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--run-name',default='stability-transitions')
+    parser.add_argument('--scenario',choices=['weapon-set'])
     args=parser.parse_args()
     assert args.run_name.replace('-','').isalnum() and len(args.run_name)<48
     assert os.name=='nt'
@@ -33,6 +56,13 @@ def main():
     (run/'display.ini').write_text('TSFP_DISPLAY_V1 1280 720\n')
     (run/'discord.ini').write_text('TSFP_DISCORD_V1 0 0\n')
     commands=run/'commands.jsonl';commands.write_text('')
+    if args.scenario=='weapon-set':
+        route=[dict(label='main-menu',wait=24),
+            dict(keys=[40,69,69,69,69,38,38],gap=1.3,label='before-weapons',wait=12),
+            dict(keys=[69],label='weapons',wait=20),
+            dict(keys=[40,40,40],label='weapons-selection',wait=10),
+            dict(keys=[70],label='after-weapons',wait=15),dict(stop=True)]
+        commands.write_text(''.join(json.dumps(step)+'\n' for step in route))
     state=run/'input-state.txt';state.write_text('0 0\n')
     initial=[(5000,69),(10000,69),(14000,40),(18000,69)]
     replay=run/'input.txt';replay.write_text('\n'.join(f'{at+d} key {k} {v}' for at,k in initial for d,v in [(0,1),(180,0)])+'\n')
@@ -131,7 +161,7 @@ def main():
                     user.ShowWindow(window,9);user.SetForegroundWindow(window);time.sleep(1)
                     report.append(dict(focus_lost=lost,focus_restored=user.GetForegroundWindow()==window))
                 time.sleep(command.get('wait',2.5))
-                item=dict(command=command,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
+                item=dict(seconds=round(time.monotonic()-start,2),command=command,**snapshot(),fullscreen=not bool(user.GetWindowLongW(window,-16)&0x00C00000))
                 if 'label' in command:capture(command['label'])
                 report.append(item);(run/'report.json').write_text(json.dumps(report,indent=2))
                 print(json.dumps(item),flush=True)
@@ -150,6 +180,7 @@ def main():
         text=log.read_text(errors='replace')
         assert '[CRASH]' not in text and '[ICALL] unresolved' not in text,log
     assert process.returncode==0,'Final game exit was not clean'
+    if args.scenario=='weapon-set':print('Weapon-set settled FPS:',weapon_set_metrics(run),flush=True)
     print('PASS: bounded session completed; inspect report and captures for scenario coverage',flush=True)
 
 if __name__=='__main__':main()

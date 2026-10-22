@@ -4,228 +4,21 @@ on:
   push:
     branches: [main]
     paths:
-      - src/texture_mode.*
-      - src/pc_display_menu.c
-      - tools/texture-*.py
-      - tools/build_textures.py
-      - config/texture-pack.json
-      - tests/test_build_textures.py
-      - tests/texture*
-      - tests/test_texture*
-      - .github/workflows/runtime-patches.yml
-      - tools/recomp-generation.py
-      - tools/build-native-mac.py
-      - tools/vulkan_sdk.py
-      - tools/test-rhi-mac.py
-      - tools/frame_replay_contract.py
-      - tools/replay-native-mac.py
-      - tests/test_frame_replay.py
-      - config/vulkan-sdk.json
-      - tools/play-native-mac.py
-      - tools/test-native-mac.py
-      - tools/testing_profile.py
-      - tests/test_testing_profile.py
-      - tools/native_mac_common.py
-      - tests/test_native_mac_tools.py
-      - tests/test_native_mac_launcher.py
-      - tests/test_recomp_generation.py
-      - tests/test_recomp_float_joins.py
-      - tests/test_recomp_vehicle_joins.py
-      - tests/vehicle_companion.c
-      - tests/pickup_collision.c
-      - tests/controller_sensitivity.c
-      - tools/apply-patches.py
-      - tests/test_patch_updates.py
-      - tests/fixtures/launcher-patch-stacks.json
-      - tests/fixtures/renderer-patch-stacks.json
-      - tests/test_patch_tracking.py
-      - tests/test_audio_timing.py
-      - tests/native_compiler.py
-      - tests/test_pc_display_modes.py
-      - src/pc_crash.c
-      - src/pc_crash.h
-      - src/pc_hang_policy.h
-      - tools/crash_helper.c
-      - tests/test_crash_capture.py
-      - tools/crash-symbols.py
-      - tests/test_crash_symbols.py
-      - tests/launcher_crashes.cs
-      - tests/launcher_sessions.cs
-      - tools/publish-release.py
-      - tools/launcher/**
-      - tools/build-launcher.ps1
-      - tools/build-mac-launcher.py
-      - .github/workflows/launcher-release.yml
-      - tools/launcher-release.py
-      - tools/fetch-launcher-art.ps1
-      - config/launcher-artwork.json
-      - tests/test_launcher_release.py
-      - tests/test_launcher_shared_ui.py
-      - tests/test_launcher_compatibility.py
-      - tools/launcher-compatibility.py
-      - tools/compatibility-worker.py
-      - tests/test_compatibility_worker.py
-      - .github/workflows/launcher-build.yml
-      - .github/workflows/launcher-compatibility.yml
-      - tests/launcher_shared_ui.cs
-      - config/mac-launcher-sdk.json
-      - tools/build-game-icon.ps1
-      - tests/test_game_icon.py
-      - tools/release/ImportGame.cs
-      - config/pc-controls.default.json
-      - tools/playable-launch.ps1
-      - tests/launcher_updates.cs
-      - tests/launcher_settings.cs
-      - tests/launcher_maintenance.cs
-      - tests/launcher_downloads.cs
-      - tests/launcher_startup.cs
-      - tests/launcher_news.cs
-      - tests/test_launcher_startup.py
-      - tests/package_launcher.py
-      - tests/test_publish_release.py
-      - tests/pc_display_modes.c
-      - tests/test_fov_settings.py
-      - tests/test_profile_accept.py
-      - tests/profile_accept.c
-      - src/pc_profile_accept.inc
-      - tests/test_motion_settings.py
-      - tests/motion_settings.c
-      - src/pc_motion_settings.inc
-      - src/pc_gpu_timing.inc
-      - tests/fov_settings.c
-      - src/pc_tutorial_ui.inc
-      - tests/tutorial_layout.c
-      - src/pc_display_ui.inc
-      - src/pc_ui_layout.h
-      - tests/test_camera_feed.py
-      - tests/camera_feed.c
-      - tests/test_ui_layout.py
-      - tests/test_menu_sampling.py
-      - tests/menu_sampling_gpu.c
-      - tests/menu_sampling_gl.c
-      - tests/menu_sampling_cases.h
-      - src/pc_menu_sampling.h
-      - src/graphics/**
-      - src/pc_debug*
-      - src/pc_bindings.inc
-      - src/pc_settings.c
-      - tests/test_renderer_host.py
-      - tests/test_vulkan_sdk.py
-      - tests/test_rhi_menu_sampling.py
-      - tests/rhi/**
-      - tests/rhi_menu_sampling.c
-      - tests/rhi_host.c
-      - tests/present_metrics.c
-      - tests/interpolation_capture.c
-      - tests/interpolation_present.c
-      - tests/interpolation_scene.c
-      - tests/interpolation_draw_key.c
-      - tests/vulkan_present_outcomes.h
-      - tests/text_bitmap_macos.c
-      - tests/rhi_depth_replay.h
-      - tests/rhi_texture_resources.h
-      - tests/rhi_xbox_textures.h
-      - tests/rhi_screen_copy.h
-      - tests/interpolation_depth_device.h
-      - tests/interpolation_depth_cache.c
-      - tests/test_debug_settings_model.py
-      - tests/debug_settings_model.c
-      - src/native/**
-      - tests/ui_layout.c
-      - tests/ui_viewport.c
-      - tests/ui_screen_effects.c
-      - src/pc_display_modes.inc
-      - src/pc_display.h
-      - src/pc_display.c
-      - tests/test_native_compiler.py
-      - tests/test_framebuffer_sampling.py
-      - tests/test_frame_clock.py
-      - tests/test_frame_interpolation.py
-      - tests/test_prediction_targets.py
-      - tests/prediction_targets.c
-      - tests/test_config_initialization.py
-      - tests/test_pc_refresh.py
-      - tests/frame_clock.c
-      - tests/frame_target_settings.c
-      - tests/frame_interpolation.c
-      - tests/config_initialization.c
-      - tests/pc_refresh.c
-      - tests/pc_refresh_guard.c
-      - src/pc_frame_clock.h
-      - src/pc_refresh.c
-      - src/pc_refresh.h
-      - src/pc_refresh_guard.h
-      - tests/test_terminal_depth.py
-      - tests/terminal_depth.c
-      - tests/test_xmv_stop.py
-      - tests/xmv_stop.c
-      - tests/test_ghost_rendering.py
-      - tests/ghost_targets.py
-      - tests/test_ghost_targets.py
-      - tests/ghost_rendering.c
-      - src/pc_ghost_render_guest.inc
-      - tests/test_cutscene_letterbox.py
-      - tests/test_decal_projection.py
-      - tests/test_channel_clears.py
-      - tests/pc_clear.c
-      - src/pc_clear_rhi.inc
-      - src/native/renderer_gl.c
-      - tests/cutscene_letterbox.c
-      - tests/test_objectives_health.py
-      - tests/objectives_health.c
-      - tests/objectives_layout.c
-      - src/pc_objectives.h
-      - src/pc_cutscene.h
-      - src/pc_terminal.h
-      - src/pc_input.c
-      - src/pc_controls.c
-      - src/pc_discord*
-      - tests/test_discord_presence.py
-      - tests/test_discord_macos.py
-      - tests/test_native_crash.py
-      - tests/native_crash.c
-      - tools/test-mac-launcher.py
-      - tests/pc_discord.c
-      - tests/discord_ipc_client.c
-      - config/pc-discord.default.ini
-      - src/pc_window_theme.h
-      - src/pc_menu_theme.h
-      - src/pc_dialog_theme.h
-      - tests/game_ui_theme.c
-      - tools/online.py
-      - tools/online_theme.py
-      - tools/bundle_online.py
-      - tools/network-identity.py
-      - tests/test_online_theme.py
-      - tests/test_window_theme.py
-      - tests/window_theme.c
-      - src/native/input_sdl.c
-      - src/pc_menu_mouse.h
-      - src/pc_menu_mouse_guest.inc
-      - src/pc_menu_sliders.inc
-      - src/pc_menu_choices.inc
-      - src/pc_menu_team.inc
-      - src/pc_menu_characters.inc
-      - src/pc_controls.h
-      - tests/test_menu_mouse.py
-      - tests/menu_mouse.c
-      - tests/test_terminal_mouse.py
-      - tests/terminal_mouse.c
-      - src/pc_display_menu.c
-      - tests/framebuffer_sampling.c
-      - tests/audio_stream_timing.c
-      - tests/audio_buffer_timing.c
+      - src/**
       - patches/**
-      - tsfp.ps1
+      - tests/**
+      - tools/**
+      - config/**
       - requirements.txt
-      - tools/ci-runtime-scope.py
-      - tests/test_ci_runtime_scope.py
-      - tools/recycle-release-work.ps1
-      - tools/package-release.py
+      - tsfp.ps1
+      - AGENTS.md
+      - docs/agent-context/**
+      - MAC_PORT_BACKLOG.md
+      - .github/workflows/runtime-patches.yml
+      - .github/workflows/launcher*.yml
   pull_request:
   workflow_dispatch:
 
-# Superseded commits on the same PR/ref do not need to finish testing.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -234,17 +27,16 @@ permissions:
   contents: read
 
 jobs:
-  patch-transitions:
-    name: Patch transitions (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [windows-latest, macos-latest]
-    defaults:
-      run:
-        shell: bash
+  plan:
+    name: Select runtime checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      transitions: ${{ steps.scope.outputs.transitions }}
+      native: ${{ steps.scope.outputs.native }}
+      gpu: ${{ steps.scope.outputs.gpu }}
+      release: ${{ steps.scope.outputs.release }}
+      revision: ${{ steps.pins.outputs.revision }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -272,37 +64,117 @@ jobs:
           subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
           PY
       - name: Test CI suite selection and feature handoff index
-        run: python -m pytest tests/test_ci_runtime_scope.py tests/test_mac_backlog.py -q --tb=short
-      - name: Test texture build dependencies and streamed packaging
-        run: python -m pytest tests/test_build_textures.py tests/test_texture_release.py -q --tb=short
-      - name: Test subscription worker selection and publication boundaries
-        run: python -m unittest discover -s tests -p test_compatibility_worker.py -v
+        run: python -m pytest tests/test_ci_runtime_scope.py tests/test_mac_backlog.py tests/test_repo_context.py -q --tb=short
+      - name: Validate repository context and affected-system guide updates
+        run: python tools/repo-context.py check --ci
+      - name: Test optional local-router context reader
+        run: node --test tests/repository-context.test.mjs tests/repository-evidence.test.mjs
+
+  patches:
+    name: Patch upgrades (${{ matrix.os }})
+    needs: plan
+    if: needs.plan.outputs.transitions == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Read shared runtime and test dependency pins
+        id: pins
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          import sys
+          revision = re.search(r"\$revision = '([0-9a-f]{40})'", Path('tsfp.ps1').read_text()).group(1)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'revision={revision}\n')
+          dependency = next(line for line in Path('requirements.txt').read_text().splitlines()
+                            if line.startswith('pytest=='))
+          subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
+          PY
       - name: Check out pinned upstream source only
-        if: steps.scope.outputs.transitions == 'true' || steps.scope.outputs.native == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: nemonicicon/ts3FPrecomp
-          ref: ${{ steps.pins.outputs.revision }}
+          ref: ${{ needs.plan.outputs.revision }}
           path: external/ts3FPrecomp
           persist-credentials: false
       - name: Test patch tracking, branch switches and historical upgrades
-        if: steps.scope.outputs.transitions == 'true'
         run: python -m pytest tests/test_patch_tracking.py tests/test_patch_updates.py -q --tb=short
+
+  native:
+    name: Native runtime (${{ matrix.os }})
+    needs: plan
+    if: needs.plan.outputs.native == 'true' || needs.plan.outputs.release == 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Read shared runtime and test dependency pins
+        id: pins
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+          import sys
+          revision = re.search(r"\$revision = '([0-9a-f]{40})'", Path('tsfp.ps1').read_text()).group(1)
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'revision={revision}\n')
+          dependency = next(line for line in Path('requirements.txt').read_text().splitlines()
+                            if line.startswith('pytest=='))
+          subprocess.run([sys.executable, '-m', 'pip', 'install', dependency], check=True)
+          PY
+      - name: Check out pinned upstream source only
+        if: needs.plan.outputs.native == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: nemonicicon/ts3FPrecomp
+          ref: ${{ needs.plan.outputs.revision }}
+          path: external/ts3FPrecomp
+          persist-credentials: false
       - name: Apply shared runtime patches
-        if: steps.scope.outputs.native == 'true'
+        if: needs.plan.outputs.native == 'true'
         run: python tools/apply-patches.py external/ts3FPrecomp patches
       - name: Install pinned runtime and texture test dependencies
-        if: steps.scope.outputs.native == 'true'
+        if: needs.plan.outputs.native == 'true'
         run: |
           python - <<'PY'
           from pathlib import Path
           import subprocess, sys
           pins = [line for line in Path('requirements.txt').read_text().splitlines()
-                  if line.startswith(('capstone==', 'Pillow==', 'numpy=='))]
+                  if line.startswith(('capstone==', 'Pillow==', 'numpy==', 'cmake==', 'ninja=='))]
           subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
           PY
       - name: Test native runtime, rendering and input regressions
-        if: steps.scope.outputs.native == 'true'
+        if: needs.plan.outputs.native == 'true'
         run: |
           tests=(
             tests/test_texture_runtime.py tests/texture_pack_tools.py tests/test_texture_hybrid_plan.py
@@ -315,21 +187,21 @@ jobs:
             tests/test_recomp_generation.py tests/test_framebuffer_sampling.py tests/test_terminal_depth.py tests/test_ghost_rendering.py tests/test_ghost_targets.py
             tests/test_xmv_stop.py tests/test_discord_presence.py tests/test_discord_macos.py tests/test_native_crash.py
             tests/test_crash_capture.py
-            tests/test_cutscene_letterbox.py tests/test_decal_projection.py
+            tests/test_cutscene_letterbox.py tests/test_pc_display_modes.py tests/test_decal_projection.py
             tests/test_channel_clears.py tests/test_objectives_health.py
-            tests/test_fov_settings.py
+            tests/test_fov_settings.py tests/test_text_read_scope.py
             tests/test_menu_sampling.py
             tests/test_renderer_host.py tests/test_vulkan_sdk.py tests/test_rhi_menu_sampling.py
             tests/test_frame_replay.py
             tests/test_debug_settings_model.py
-            tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_menu_mouse.py tests/test_quit_menu.py tests/test_ui_layout.py tests/test_camera_feed.py
+            tests/test_auto_look.py tests/test_terminal_mouse.py tests/test_mounted_mouse.py tests/test_menu_mouse.py tests/test_menu_text.py tests/test_quit_menu.py tests/test_ui_layout.py tests/test_camera_feed.py tests/test_crane_overlay.py tests/test_ghost_actor_overlay.py
           )
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            tests+=(tests/test_frame_interpolation.py tests/test_prediction_targets.py tests/test_config_initialization.py tests/test_pc_refresh.py tests/test_pc_display_modes.py tests/test_fov_settings.py tests/test_motion_settings.py tests/test_menu_sampling.py tests/test_window_theme.py tests/test_online_theme.py tests/test_online.py tests/test_online_host.py tests/test_network_identity.py)
+            tests+=(tests/test_frame_interpolation.py tests/test_prediction_targets.py tests/test_config_initialization.py tests/test_pc_refresh.py tests/test_window_theme.py tests/test_online_theme.py tests/test_online.py tests/test_online_host.py tests/test_network_identity.py)
           fi
           python -m pytest "${tests[@]}" -q --tb=short
       - name: Validate common RHI on the native Mac GPU without game assets
-        if: steps.scope.outputs.native == 'true' && runner.os == 'macOS'
+        if: needs.plan.outputs.gpu == 'true' && runner.os == 'macOS'
         run: |
           python - <<'PYCODE'
           from pathlib import Path
@@ -340,36 +212,36 @@ jobs:
           PYCODE
           python tools/test-rhi-mac.py --setup-sdk --driver moltenvk
       - name: Test release validation and disposable fixture cleanup
-        if: steps.scope.outputs.release == 'true'
-        run: python -m pytest tests/test_publish_release.py tests/test_crash_symbols.py -q --tb=short
-      - name: Build and test Windows release launcher
-        if: runner.os == 'Windows' && steps.scope.outputs.launcher == 'true'
-        shell: powershell
-        run: ./tools/build-launcher.ps1 -Test
-      - name: Test dual-platform launcher publication and recovery
-        if: steps.scope.outputs.launcher == 'true'
-        run: python -m unittest discover -s tests -p test_launcher_release.py -v
-      - name: Test launcher compatibility automation policy
-        if: steps.scope.outputs.launcher == 'true'
-        run: python -m unittest discover -s tests -p test_launcher_compatibility.py -v
-      - name: Test shared launcher layout and theme propagation
-        if: steps.scope.outputs.launcher == 'true'
-        run: python -m unittest discover -s tests -p test_launcher_shared_ui.py -v
-      - name: Test portable startup preference and launcher packaging
-        if: runner.os == 'Windows' && steps.scope.outputs.launcher == 'true'
-        run: python -m pytest tests/test_launcher_startup.py tests/package_launcher.py -q --tb=short
-      - name: Test Windows game icon resources
-        if: runner.os == 'Windows' && steps.scope.outputs.launcher == 'true'
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          import subprocess, sys
-          pins = [line for line in Path('requirements.txt').read_text().splitlines()
-                  if line.startswith(('Pillow==', 'pefile==', 'ninja==', 'cmake=='))]
-          subprocess.run([sys.executable, '-m', 'pip', 'install', *pins], check=True)
-          PY
-          python -m pytest tests/test_game_icon.py -q --tb=short
+        if: needs.plan.outputs.release == 'true'
+        run: python -m pytest tests/test_publish_release.py tests/test_crash_symbols.py tests/test_native_mac_package.py tests/test_build_textures.py -q --tb=short
 
-      - name: Build and test native Apple Silicon launcher
-        if: runner.os == 'macOS' && runner.arch == 'ARM64' && steps.scope.outputs.launcher == 'true'
-        run: python tools/build-mac-launcher.py --install-sdk --test
+  # Preserve the two existing branch-protection check names. An intentional
+  # scope skip passes; failed/cancelled/missing or unexpectedly skipped work fails.
+  patch-transitions:
+    name: Patch transitions (${{ matrix.os }})
+    needs: [plan, patches, native]
+    if: always()
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Test subscription worker selection and publication boundaries
+        run: python -m unittest discover -s tests -p test_compatibility_worker.py -v
+      - name: Require all selected host checks
+        env:
+          PLAN_RESULT: ${{ needs.plan.result }}
+          RUN_TRANSITIONS: ${{ needs.plan.outputs.transitions }}
+          RUN_NATIVE: ${{ needs.plan.outputs.native }}
+          RUN_RELEASE: ${{ needs.plan.outputs.release }}
+          PATCHES_RESULT: ${{ needs.patches.result }}
+          NATIVE_RESULT: ${{ needs.native.result }}
+        run: python tools/ci-runtime-scope.py --gate

@@ -1,0 +1,48 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -1001,6 +1001,18 @@
+ #endif
+ }
+ 
++/* Crane/remote-gun vignette: four mirrored texture quadrants form one
++ * screen effect. Scope only the art, not the caller's control labels. */
++extern void sub_00137010_gen(void);
++void sub_00137010(void)
++{
++#if defined(TSFP_PC_CONTROLS) || defined(TSFP_NATIVE_DISPLAY)
++    pc_display_aim_panel(sub_00137010_gen,0x00137010u);
++#else
++    sub_00137010_gen();
++#endif
++}
++
+ extern void sub_00138F70_gen(void);
+ void sub_00138F70(void)
+ {
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -475,7 +475,11 @@
+ {
+     if (out) {
+         float sx = rt_scale_x(), sy = rt_scale_y();
+-        float left = g_scissor.left * sx, right = g_scissor.right * sx;
++        int32_t clip[4]={g_scissor.left,g_scissor.top,g_scissor.right,g_scissor.bottom};
++#ifdef TSFP_PC_DISPLAY
++        pc_ui_vignette_clip(g_2d_tag,g_2d_placement,clip);
++#endif
++        float left = clip[0] * sx, right = clip[2] * sx;
+         float k, cx, ky=two_d_vertical_scale(), cy=g_device_state.height*.5f;
+ 
+         /* Stored as the title gave them, converted here, so the stored
+@@ -486,9 +490,9 @@
+             right = cx + (right - cx) * k;
+         }
+         out->left   = (int32_t)left;
+-        out->top    = (int32_t)(cy+(g_scissor.top*sy-cy)*ky);
++        out->top    = (int32_t)(cy+(clip[1]*sy-cy)*ky);
+         out->right  = (int32_t)right;
+-        out->bottom = (int32_t)(cy+(g_scissor.bottom*sy-cy)*ky);
++        out->bottom = (int32_t)(cy+(clip[3]*sy-cy)*ky);
+     }
+     return g_scissor_enabled;
+ }

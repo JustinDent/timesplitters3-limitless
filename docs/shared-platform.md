@@ -41,6 +41,7 @@ replay frontend; the new SDL adapter is only selected on Mac.
 | Guest execution and gameplay fixes | Pinned runtime, complete patch stack, generated guest code | Build/compiler and process entry |
 | Menu, camera and display policy | `pc_display*`, `pc_menu_*`, `pc_cutscene.h`, `pc_ui_layout.h` | OS pointer events, window/resolution application |
 | Screen-copy rectangle policy | `graphics/screen_copy_rect.h` clips paired source/destination rectangles once | RHI shader draw or legacy GL blit |
+| Text-entry dialogs | `pc_text_input.h` queue/commands and `pc_menu_text.inc` original guest editing callbacks | Win32 character messages; SDL text-input events and main-thread activation |
 | Controls and configuration | `pc_input*`, `pc_bindings.inc`, shared validation | Win32/SDL events and atomic file writes |
 | Debug settings | `pc_debug_options.def` generates fields, keys, labels and capability metadata | Win32/Cocoa controls, layout, log-folder opening |
 | Menu reconstruction shader | `graphics/menu_sampling_shader.h` and `pc_menu_sampling.h` eligibility | HLSL/GLSL intrinsic/resource syntax and uniform/constant binding |
@@ -86,8 +87,12 @@ mocked policy test can miss. A configured workflow is not evidence that its
 remote Windows job has run successfully.
 
 Use the supported native builder and bounded isolated runner for local game
-checks. Keep the 60 Hz guest clock and up-to-120 interpolated host presentation
-target; preserve both display configs, controls, personal saves and the canonical
+checks. Preserve original 60 FPS defaults and the 60 Hz console interrupt clock.
+The launcher offers opt-in native 120/144 beta settings for compatible game builds;
+this does not revive the retired interpolation/prediction engine or automatic
+monitor switching. Historical patches/contracts below describe implementation
+history, not current feature validation.
+Preserve both display configs, controls, personal saves and the canonical
 Test Lab fixture. See root `AGENTS.md` for commands and cleanup requirements.
 
 ## Common renderer and remaining exceptions
@@ -167,7 +172,7 @@ Then migrate remaining shader/resource behavior incrementally, using shared
 asset-free contracts plus bounded scene checks. Cube/volume textures, movie
 planes, framebuffer effects and advanced combiners need explicit acceptance;
 first-menu success cannot certify them. Khallos sky fidelity, complete campaign
-coverage, real texture-pack scenes and stable 120 host presents remain separate
+coverage and real texture-pack scenes remain separate
 validation gaps. Networking and launcher distribution also remain genuine host
 integration work, tracked in the backlog.
 
@@ -237,3 +242,10 @@ The Windows two-executable package and existing updater size limits are retained
 API-free Windows/Mac build and regression checks are described in
 [launcher compatibility](launcher-compatibility.md). Both host tests remain
 required evidence; CI does not generate missing OS adapters or replace visual review.
+
+Issue #105 uses shared prompt layout scopes (`pc_text_read_scope.h` and shared
+guest hooks) plus the shared runtime late-frame patch. Existing Windows/Darwin
+VM adapters supply validation; no second Mac feature implementation is intended.
+Windows weapon-set acceptance measured 53.8-54.3 FPS against the original ~20,
+with before/back-out around 59. Mac build/runtime acceptance remains pending
+under MAC-002; shared source and Windows checks do not verify the Mac host.

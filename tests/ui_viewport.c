@@ -14,10 +14,12 @@ typedef struct {int32_t left,top,right,bottom;} RhiRect;
 enum {XBOX_D3D8_2D_AUTO,XBOX_D3D8_2D_STRETCH,XBOX_D3D8_2D_CENTRE,XBOX_D3D8_2D_LEFT,XBOX_D3D8_2D_RIGHT};
 static struct {unsigned width,height;D3DVIEWPORT8 viewport;} g_device_state;
 static int g_2d_squeeze=1,g_cur_rt,g_2d_anchor=XBOX_D3D8_2D_CENTRE,g_scissor_enabled=1;
+static uint32_t g_2d_tag;
+static int g_2d_placement;
 static RhiRect g_scissor={20,20,620,460};
 static RhiViewport actual;
 typedef struct {unsigned width,height;} Mode;
-static Mode pc_display_current(void){Mode m={g_device_state.width,g_device_state.height};return m;}
+static Mode pc_display_effective(void){Mode m={g_device_state.width,g_device_state.height};return m;}
 static float pc_display_hud_scale(void){return 4.f*g_device_state.height/(3.f*g_device_state.width);}
 static float rt_scale_x(void){return g_device_state.width/640.f;}
 static float rt_scale_y(void){return g_device_state.height/480.f;}
@@ -41,6 +43,21 @@ int main(void){
   if(anchor==3)CHECK(actual.x==0);
   if(anchor==4)CHECK(fabsf(actual.x+actual.width-w)<.001f);
   g_2d_squeeze=0;apply_host_viewport();CHECK(actual.x==0 && actual.y==0 && actual.width==w && actual.height==h);
+ }
+ /* Captured crane clip: 639/479 must cover the full physical right/bottom.
+    Unrelated tags and partial clips must keep their original bounds. */
+ g_2d_squeeze=0;g_2d_placement=1;g_2d_tag=0x137010;
+ for(unsigned i=0;i<7;i++)for(unsigned inclusive=0;inclusive<2;inclusive++){
+  g_device_state.width=sizes[i][0];g_device_state.height=sizes[i][1];
+  g_scissor=(RhiRect){0,0,inclusive?639:640,inclusive?479:480};
+  RhiRect stored=g_scissor,clip;CHECK(d3d8_GetScissor(&clip));
+  CHECK(clip.left==0 && clip.top==0 && clip.right==sizes[i][0] && clip.bottom==sizes[i][1]);
+  CHECK(!memcmp(&stored,&g_scissor,sizeof stored));
+  g_2d_tag=0;d3d8_GetScissor(&clip);
+  CHECK(clip.right==(int)(stored.right*rt_scale_x()));
+  CHECK(clip.bottom==(int)(stored.bottom*rt_scale_y()));g_2d_tag=0x137010;
+  g_scissor.left=1;d3d8_GetScissor(&clip);
+  CHECK(clip.right==(int)(stored.right*rt_scale_x()));
  }
  puts("PASS: production viewport/scissor agreement at seven ratios and every anchor");return 0;
 }

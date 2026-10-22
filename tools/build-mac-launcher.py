@@ -18,6 +18,9 @@ ROOT=Path(__file__).resolve().parents[1]
 def digest(path):return hashlib.sha256(path.read_bytes()).hexdigest()
 
 def sign_bundle(app):
+ # A generated bundle reused from Finder/cloud storage can retain metadata
+ # that codesign refuses. Normalize this owned generated output only.
+ subprocess.run(['/usr/bin/xattr','-cr',str(app)],check=True)
  # Sign nested native code first, then seal the final plist/resources. A signed
  # command-line host alone is not a signed application bundle.
  for library in sorted((app/'Contents/MacOS').glob('*.dylib')):
@@ -94,7 +97,7 @@ def main():
  sign_bundle(app)
  files={str(f.relative_to(output)):digest(f) for f in app.rglob('*') if f.is_file()}
  manifest=output/'Support/Launcher/manifest.json';manifest.parent.mkdir(parents=True,exist_ok=True);manifest.write_text(json.dumps({'schema':1,'version':version,'files':files},indent=2)+'\n')
- receipt={'source_revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_changes':subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True),'source_sha256':{str(f.relative_to(ROOT)):digest(f) for f in [ROOT/'tools/build-mac-launcher.py',ROOT/'config/mac-launcher-sdk.json',*sorted((ROOT/'tools/launcher').glob('*.xaml')),ROOT/'tests/launcher_shared_ui.cs',ROOT/'tools/launcher/macos/NativeLauncher.csproj',ROOT/'tools/launcher/macos/packages.lock.json',ROOT/'tools/launcher/macos/generate_layout.py',*sorted((ROOT/'tools/launcher').glob('*.cs')),*sorted((ROOT/'tools/launcher/macos').glob('*.cs'))]},'sdk':pin,'avalonia':'11.3.22','artwork':{n:digest(artwork/n) for n in ('launcher-banner.png','launcher-logo.png','launcher-backdrop.png') if (artwork/n).exists()},'files':files}
+ receipt={'source_revision':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'working_tree_changes':subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True),'source_sha256':{str(f.relative_to(ROOT)):digest(f) for f in [ROOT/'tools/build-mac-launcher.py',ROOT/'config/mac-launcher-sdk.json',*sorted((ROOT/'tools/launcher').glob('*.xaml')),ROOT/'tests/launcher_shared_ui.cs',ROOT/'tests/launcher_restart.cs',ROOT/'tools/launcher/macos/NativeLauncher.csproj',ROOT/'tools/launcher/macos/packages.lock.json',ROOT/'tools/launcher/macos/generate_layout.py',*sorted((ROOT/'tools/launcher').glob('*.cs')),*sorted((ROOT/'tools/launcher/macos').glob('*.cs'))]},'sdk':pin,'avalonia':'11.3.22','artwork':{n:digest(artwork/n) for n in ('launcher-banner.png','launcher-logo.png','launcher-backdrop.png') if (artwork/n).exists()},'files':files}
  (output/'BUILD-launcher.json').write_text(json.dumps(receipt,indent=2)+'\n')
  binary=binary_dir/'TimeSplitters.Launcher'
  if a.test:

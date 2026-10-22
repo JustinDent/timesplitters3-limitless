@@ -21,10 +21,15 @@ namespace TimeSplitters.Launcher
         string runtime;
         public double Sensitivity = .10;
         public bool DiscordEnabled;
+        public bool EnhancedTextures;
         public string DiscordApplicationId = "1561627743353962566";
         public bool MouseEnabled = true, InvertY, Fullscreen, Vrr = true, FpsOverlay, SkipStartupSplashes;
         public const int FovDefault = 55, FovMin = 40, FovMax = 100;
         public int VerticalFov = FovDefault;
+        // Zero selects the original clock; 60 is not the experimental native-60 path.
+        public int NativeFps;
+        public static readonly int[] NativeFrameRates = { 0, 120, 144 };
+        public static readonly string[] NativeFrameRateLabels = { "60 FPS (Original)", "120 FPS (Beta)", "144 FPS (Beta)" };
         bool SupportsExtendedDisplay
         {
             get {
@@ -37,22 +42,25 @@ namespace TimeSplitters.Launcher
             }
         }
         public bool CanAdjustFov { get { return SupportsExtendedDisplay; } }
-        public bool SupportsPresentationTarget {
+        public bool CanAutoResolution
+        {
             get {
-                if(!LauncherPlatform.CanSelectPresentationTarget) return false;
                 try {
-                    string version=Core.InstalledVersion(root);
-                    return version.Length==0 || GameVersion.Parse(version).CompareTo(GameVersion.Parse("v0.3.0-alpha.2"))>0;
+                    string path=Core.PathIn(root,"BUILD.json");
+                    if(!File.Exists(path))return true; // Local development build.
+                    object value;
+                    return Json.Object(Text(Read(path))).TryGetValue("auto_display_resolution",out value) && value is bool && (bool)value;
                 } catch { return false; }
             }
         }
         public bool SupportsResolution(int width, int height)
-        { return DisplayMode.Valid(width,height) && (SupportsExtendedDisplay || height <= 2160); }
-        public int Width, Height, Scale = 1, Anisotropy = 1, Interpolation = 1;
-        public int PresentationFps;
-        int loadedPresentationFps, loadedRefreshRate;
-        public int RefreshRate;
-        public string FrameCap = "adaptive";
+        { return (!(width==1 && height==1) || CanAutoResolution) && DisplayMode.Valid(width,height) && (SupportsExtendedDisplay || height <= 2160); }
+        public int Width, Height, Scale = 1, Anisotropy = 1;
+        // Retained keys migrate old installations; they are no longer user options.
+        public int Interpolation { get { return 1; } }
+        public int PresentationFps { get { return 0; } }
+        public int RefreshRate { get { return 0; } }
+        public string FrameCap { get { return "60"; } }
         public string Device { get { return Convert.ToString(controller["device"], CultureInfo.InvariantCulture); } set { controller["device"] = value; } }
         readonly string[] Files;
         static Dictionary<string, object> Map(object value)
@@ -80,6 +88,11 @@ namespace TimeSplitters.Launcher
             if (model.document.TryGetValue("launcher", out value))
             {
                 var launcher = Map(value);
+                if (launcher.TryGetValue("enhanced_textures", out value))
+                {
+                    Core.Require(value is bool, "Enhanced textures must be true or false. No settings were changed.");
+                    model.EnhancedTextures = (bool)value;
+                }
                 if (launcher.TryGetValue("skip_startup_splashes", out value))
                 {
                     Core.Require(value is bool, "Skip startup splash screens must be true or false. No settings were changed.");
@@ -93,6 +106,7 @@ namespace TimeSplitters.Launcher
                 if (mouse.TryGetValue("enabled", out value)) model.MouseEnabled = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
                 if (mouse.TryGetValue("invert_y", out value)) model.InvertY = Convert.ToBoolean(value, CultureInfo.InvariantCulture);
             }
+            if(model.CanAutoResolution)model.Width=model.Height=1;
             string display = Text(model.originals[Files[1]]);
             if (display.Length > 0)
             {
@@ -102,21 +116,21 @@ namespace TimeSplitters.Launcher
                 model.Width = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
                 model.Height = Int32.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
             }
+            string frameRate = Text(model.originals[Files[4]]);
+            if (frameRate.Length > 0) {
+                var match = Regex.Match(frameRate, @"\ATSFP_FRAME_RATE_V1\s+(0|120|144)\s*\z");
+                Core.Require(match.Success, "Frame-rate settings are invalid. No settings were changed.");
+                model.NativeFps = Int32.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+            }
             model.runtime = Text(model.originals[Files[2]]);
             if (model.originals[Files[2]] == null && !String.IsNullOrEmpty(inheritedRuntime)) model.runtime = Text(Read(inheritedRuntime));
             var settings = ParseRuntime(model.runtime);
             model.Scale = Number(settings, "resolution_scale", 1);
             model.Anisotropy = Number(settings, "anisotropy", 1);
-            model.Interpolation = Number(settings, "frame_interp", LauncherPlatform.DefaultInterpolation);
-            model.PresentationFps = Number(settings, "frame_target", 0);
-            model.RefreshRate = Number(settings, "refresh_rate", 0);
-            model.loadedPresentationFps = model.PresentationFps;
-            model.loadedRefreshRate = model.RefreshRate;
             model.Fullscreen = Number(settings, "fullscreen", 0) != 0;
             model.Vrr = Number(settings, "vrr", 1) != 0;
             model.FpsOverlay = Number(settings, "fps_overlay", 0) != 0;
-            if (settings.ContainsKey("frame_cap")) model.FrameCap = settings["frame_cap"];
-            model.Validate();
+            model.Validate(true);
             return model;
         }
         GameSettings(string path) { root = Path.GetFullPath(path); Files = LauncherPlatform.Settings(root); }
@@ -211,8 +225,9 @@ namespace TimeSplitters.Launcher
         }
         static int Number(Dictionary<string, string> values, string key, int fallback)
         { string v; int n; if (!values.TryGetValue(key, out v)) return fallback; if (Int32.TryParse(v, out n)) return n; if (v == "true" || v == "on" || v == "yes") return 1; if (v == "false" || v == "off" || v == "no") return 0; throw new InvalidDataException("Invalid runtime setting: " + key); }
-        public void Validate()
+        public void Validate(bool loading=false)
         {
+            Core.Require(NativeFrameRates.Contains(NativeFps), "Choose 60 FPS (Original), 120 FPS (Beta), or 144 FPS (Beta).");
             ulong discordId;
             Core.Require((!DiscordEnabled && DiscordApplicationId.Length == 0) ||
                 (Regex.IsMatch(DiscordApplicationId, @"\A[1-9][0-9]{16,19}\z") && UInt64.TryParse(DiscordApplicationId, out discordId)),
@@ -220,14 +235,9 @@ namespace TimeSplitters.Launcher
             Core.Require(!Double.IsNaN(Sensitivity) && !Double.IsInfinity(Sensitivity) && Sensitivity >= .001 && Sensitivity <= 10, "Mouse sensitivity must be between 0.001 and 10.");
             Core.Require(CanAdjustFov || VerticalFov == FovDefault, "Custom FOV requires a game release newer than v0.2.0-alpha.4. Reset FOV to 55 degrees before saving.");
             Core.Require(VerticalFov >= FovMin && VerticalFov <= FovMax, "Vertical FOV must be between 40 and 100 degrees.");
-            Core.Require(SupportsResolution(Width,Height), "Choose a supported landscape resolution from 640×480, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default. Maximum: " + (SupportsExtendedDisplay ? "7680×4320." : "7680×2160 for this game release."));
-            Core.Require(Scale >= 1 && Scale <= 8 && Anisotropy >= 1 && Anisotropy <= 16 && Interpolation >= 1 && Interpolation <= 4, "A graphics setting is outside the supported range.");
-            Core.Require(new[] { "adaptive", "30", "60", "0" }.Contains(FrameCap), "Unsupported frame pacing option.");
-            Core.Require(new[] { 0, 120, 144 }.Contains(PresentationFps), "Choose the legacy multiplier, 120 FPS or 144 FPS.");
-            Core.Require(PresentationFps==0 || SupportsPresentationTarget || (!LauncherPlatform.CanSelectPresentationTarget && PresentationFps==loadedPresentationFps), "120/144 FPS targets require a game release newer than v0.3.0-alpha.2.");
-            Core.Require(new[]{0,120,144}.Contains(RefreshRate), "Choose the current desktop refresh rate, 120 Hz or 144 Hz.");
-            Core.Require(RefreshRate==0 || SupportsPresentationTarget || (!LauncherPlatform.CanSelectPresentationTarget && RefreshRate==loadedRefreshRate), "Monitor refresh selection requires a game release newer than v0.3.0-alpha.2.");
-            Core.Require(!LauncherPlatform.CanSelectPresentationTarget || PresentationFps == 0 || FrameCap == "adaptive" || FrameCap == "60", "120/144 FPS requires adaptive or 60 Hz game pacing.");
+            Core.Require(loading || Width!=1 || Height!=1 || CanAutoResolution, "Auto resolution requires a newer game build. Choose a manual resolution or update the game.");
+            Core.Require((loading && Width==1 && Height==1) || SupportsResolution(Width,Height), "Choose a supported landscape resolution from 640×480, with an aspect ratio no wider than 4:1, or 0 × 0 for the console default. Maximum: " + (SupportsExtendedDisplay ? "7680×4320." : "7680×2160 for this game release."));
+            Core.Require(Scale >= 1 && Scale <= 8 && Anisotropy >= 1 && Anisotropy <= 16, "A graphics setting is outside the supported range.");
             Core.Require(new[] { "keyboard", "none", "gamepad:0", "gamepad:1", "gamepad:2", "gamepad:3", "xinput:0", "xinput:1", "xinput:2", "xinput:3" }.Contains(Device), "Unsupported Player 1 input device.");
             for (int i = 0; i < 24; i++) Binding(i);
         }
@@ -276,11 +286,13 @@ namespace TimeSplitters.Launcher
             var mouse = Map(value); mouse["sensitivity"] = Sensitivity; mouse["enabled"] = MouseEnabled; mouse["invert_y"] = InvertY;
             if (!document.TryGetValue("launcher", out value)) document["launcher"] = value = new Dictionary<string, object>();
             Map(value)["skip_startup_splashes"] = SkipStartupSplashes;
+            Map(value)["enhanced_textures"] = EnhancedTextures;
             var graphics = new Dictionary<string, string> { {"resolution_scale",Scale.ToString()}, {"anisotropy",Anisotropy.ToString()}, {"frame_interp",Interpolation.ToString()}, {"fullscreen",Fullscreen?"1":"0"}, {"vrr",Vrr?"1":"0"}, {"fps_overlay",FpsOverlay?"1":"0"}, {"frame_cap",FrameCap} };
             graphics["frame_target"] = PresentationFps.ToString();
             graphics["refresh_rate"] = RefreshRate.ToString();
             var payload = new[] { Json.Encode(document) + "\n", (VerticalFov == FovDefault ? "TSFP_DISPLAY_V1 " + Width + " " + Height : "TSFP_DISPLAY_V2 " + Width + " " + Height + " " + VerticalFov) + "\n", UpdateRuntime(runtime, graphics),
-                "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n" };
+                "TSFP_DISCORD_V1 " + (DiscordEnabled ? "1" : "0") + " " + (DiscordApplicationId.Length == 0 ? "0" : DiscordApplicationId) + "\n",
+                "TSFP_FRAME_RATE_V1 " + NativeFps.ToString(CultureInfo.InvariantCulture) + "\n" };
             int committed = 0;
             try { for (int i = 0; i < Files.Length; i++) { Replace(Core.PathIn(root, Files[i]), Encoding.UTF8.GetBytes(payload[i]), true); committed++; } }
             catch
@@ -300,6 +312,12 @@ namespace TimeSplitters.Launcher
                 if (key.StartsWith("RECOMP_", StringComparison.OrdinalIgnoreCase) || key.StartsWith("TSFP_", StringComparison.OrdinalIgnoreCase)) info.EnvironmentVariables.Remove(key);
             foreach (var pair in new Dictionary<string, string> {
                 {"TSFP_CRASH_DIR","Logs/Crashes"}, {"RECOMP_GAME_DIR",LauncherPlatform.Data(root)}, {"RECOMP_SAVE_DIR",LauncherPlatform.Saves(root)}, {"RECOMP_INPUT_CONFIG",Files[0]}, {"RECOMP_FFMPEG_DIR","Bin"}, {"RECOMP_DISPLAY_CONFIG",Files[2]}, {"TSFP_DISPLAY_CONFIG",Files[1]}, {"TSFP_TEXTURE_PACK_DIR",LauncherPlatform.Textures(root)}, {"TSFP_ONLINE_SETTINGS","Settings/pc-online.json"} }) info.EnvironmentVariables[pair.Key] = Core.PathIn(root, pair.Value);
+            // Explicit zero also overrides an old native_fps runtime preference.
+            info.EnvironmentVariables["TSFP_NATIVE_FPS"] = model.NativeFps.ToString(CultureInfo.InvariantCulture);
+            info.EnvironmentVariables["RECOMP_FRAME_INTERP"] = "1";
+            info.EnvironmentVariables["RECOMP_FRAME_TARGET"] = "0";
+            info.EnvironmentVariables["RECOMP_FPS_CAP"] = "60";
+            info.EnvironmentVariables["RECOMP_REFRESH_RATE"] = "0";
             info.EnvironmentVariables["RECOMP_TRACE_BUDGET"] = "0";
             info.EnvironmentVariables["TSFP_DISCORD_CONFIG"] = Core.PathIn(root, Files[3]);
             // The existing XMV HLE completes skipped movies normally. Story
@@ -308,7 +326,7 @@ namespace TimeSplitters.Launcher
             info.EnvironmentVariables["RECOMP_PC_MOUSE"] = model.MouseEnabled ? "1" : "0";
             info.EnvironmentVariables["RECOMP_MOUSE_INVERT_Y"] = model.InvertY ? "1" : "0";
             info.EnvironmentVariables["RECOMP_MOUSE_SENSITIVITY"] = model.Sensitivity.ToString("R", CultureInfo.InvariantCulture);
-            info.EnvironmentVariables["TSFP_TEXTURE_MODE"] = "classic";
+            info.EnvironmentVariables["TSFP_TEXTURE_MODE"] = model.EnhancedTextures ? "4k" : "classic";
             #if MACOS
             NativeHost.Configure(info,root);
 #endif

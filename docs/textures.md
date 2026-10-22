@@ -2,13 +2,42 @@
 
 [Back to the README](../README.md)
 
-The texture overhaul is in development: a modern reinterpretation of materials
-and surfaces, using up to 4096×4096 for major surfaces and smaller sizes where
-appropriate. It is not a completed full-game remaster, and the public download
-does not include the private development artwork or original game assets.
+The alpha contains **1,505 replacements**, about **1.08 GiB installed**, covering
+approximately 22% of known supported keys. Major surfaces use up to 4K; smaller
+assets use appropriate sizes. Metadata records resampling. Original game files,
+source artwork and private prompts are excluded. This is a partial overhaul.
 
-See the [texture alpha overview](texture-alpha.md) for the current source scope,
-local pack snapshot and remaining validation gates.
+## Install through the launcher
+
+Install or update the game through the launcher. New game-version packages
+include the pack in `Textures/`; no separate texture release is required.
+Launcher 1.2.22 or newer supports these game packages. The launcher bootstrap
+stays small. In game, select **Display settings → Textures → Enhanced**.
+Classic remains available. Game updates seed missing texture pairs and preserve
+existing replacements, saves and settings. To replace existing custom pairs,
+use **Install pack ZIP** or **Install pack folder**, with the game closed.
+The old download button explains that textures now come with game updates.
+
+## Texture build dependency
+
+Compiled DDS files live in `assets/textures` through **Git LFS**, alongside
+sanitized JSON metadata. An LFS-enabled clone supplies them. Existing checkouts:
+
+```sh
+git lfs install
+git lfs pull
+```
+
+Windows and Mac builds audit repository textures, rejecting unresolved pointers,
+invalid DDS/mips, mismatched hashes and packs over 6 GiB. No separate release
+is downloaded. Both packagers stream textures into the game ZIP and record
+hashes in `BUILD.json`, without making a staging copy. Use `--texture-pack`
+for an explicit artist-pack override. Source launches select repository textures.
+Mac `--texture-pack` overrides the source launch selection.
+
+Lightweight builds accept `-SkipTextures` (Windows) or `--without-textures`
+(Mac); both packagers accept `--without-textures`. Players still supply original
+game data. Building does not enable Enhanced or change personal settings.
 
 ## Texture build dependency
 
@@ -53,6 +82,18 @@ resolution/FOV. The texture choice lasts for this game session and remains in sy
 with Windows **F10** and **PC Settings > 4K Textures**.
 This is separate from render resolution. Restart after changing pack files. Ordinary **Play.cmd** starts
 in Classic mode with the local pack available for switching.
+
+For an installed Windows launcher, the pack belongs in a normal **Textures**
+folder beside **TimeSplitters Launcher.exe**, with the keyed `.dds` files directly
+inside it. The install action creates this folder automatically. A missing
+folder or missing replacement falls back to Classic even when Enhanced is selected.
+Directory junctions and symbolic links are rejected by installation validation.
+Windows Cloud Files folders such as OneDrive are supported by the launcher's
+cloud-tag-aware path validation; this does not permit redirected installation paths.
+On one NTFS volume, developers can install file hard links inside the normal folder
+to share the existing pack's disk space. This is a snapshot of installed keys:
+new or replaced source files require an explicit refresh, followed by a game restart.
+The game log records successful replacements as `[TEXTURE-PACK] loaded ...`.
 
 For a native Mac launch:
 
@@ -187,3 +228,28 @@ DXT5 alpha is lossy. Compare decoded alpha with the resampled original; use
 RGBA8 at a suitable size when compression damages an important mask. Preserving
 original alpha does not prove new color details align with it or establish how
 the channel is used in a scene. Runtime validation remains part of the final gate.
+
+## Publish pack updates
+
+Keep private source artwork and production metadata under ignored
+`private/texture-remaster`. Export only reviewed compiled replacements:
+
+```sh
+python tools/texture-repository.py --source private/texture-remaster/pack
+git add assets/textures config/texture-pack.json
+git commit -m "Update compiled texture pack"
+git push
+```
+
+The exporter audits the pack, strips private paths/prompts and creates Git LFS
+objects. Git push uploads them with the source revision. On the art workstation,
+`--pointers-only` avoids a second working copy; run `git lfs pull` before
+building that checkout, or package with an explicit artist-pack override.
+LFS retains an object cache as well as hydrated files. Avoid hydrating unrelated
+worktrees and never prune unpushed objects.
+
+The **Repository texture pack** workflow downloads LFS content and checks every
+DDS, metadata file and declared size/count. Unrelated CI jobs keep pointer-only
+checkouts. Merge approved updates into main; the next normal game-version
+release packages the committed textures. Do not publish separate texture
+releases. Issue #74 stays open until the overhaul is complete.

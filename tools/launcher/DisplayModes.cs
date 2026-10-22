@@ -13,9 +13,10 @@ namespace TimeSplitters.Launcher
         public readonly int Width, Height;
         public bool SavedCustom;
         public DisplayMode(int width, int height) { Width=width; Height=height; }
-        public override string ToString() { return Width==0 ? "Original console resolution" : Width+" × "+Height+(SavedCustom?" (saved custom)":""); }
+        public bool Automatic { get { return Width==1 && Height==1; } }
+        public override string ToString() { return Automatic ? "Auto (current display)" : Width==0 ? "Original console resolution" : Width+" × "+Height+(SavedCustom?" (saved custom)":""); }
         public static bool Valid(int w,int h)
-        { return (w==0 && h==0) || (w>=640 && h>=480 && w<=7680 && h<=4320 && (long)w*h<=33177600 && w>=h && w<=4*h); }
+        { return (w==1 && h==1) || (w==0 && h==0) || (w>=640 && h>=480 && w<=7680 && h<=4320 && (long)w*h<=33177600 && w>=h && w<=4*h); }
     }
     public static class DisplayModes
     {
@@ -35,9 +36,10 @@ namespace TimeSplitters.Launcher
             .Select(m=>new Aspect{Label=m.Groups[1].Value,Width=Int32.Parse(m.Groups[2].Value),Height=Int32.Parse(m.Groups[3].Value)})).ToArray();
         public static int AspectIndex(int width,int height)
         {
+            if(width==1 && height==1)return Aspects.Length-1;
             if(width==0 && height==0)return 1;
             if(!DisplayMode.Valid(width,height))return -1;
-            for(int i=1;i<Aspects.Length;i++)
+            for(int i=1;i<Aspects.Length-1;i++)
                 if(Math.Abs((double)width*Aspects[i].Height/(height*Aspects[i].Width)-1)<(Aspects[i].Label=="21:9"?.02:.002))return i;
             return -1;
         }
@@ -71,9 +73,10 @@ namespace TimeSplitters.Launcher
         public static List<DisplayMode> Choices(IEnumerable<DisplayMode> reported,int savedWidth,int savedHeight)
         {
             var list=new List<DisplayMode>{new DisplayMode(0,0)};
-            list.AddRange(Presets().Concat(reported).Where(m=>m.Width!=0 && DisplayMode.Valid(m.Width,m.Height))
+            list.AddRange(Presets().Concat(reported).Where(m=>m.Width>1 && DisplayMode.Valid(m.Width,m.Height))
                 .GroupBy(m=>new {m.Width,m.Height}).Select(g=>new DisplayMode(g.Key.Width,g.Key.Height))
                 .OrderBy(m=>m.Width).ThenBy(m=>m.Height));
+            list.Add(new DisplayMode(1,1));
             if(DisplayMode.Valid(savedWidth,savedHeight) && !list.Any(m=>m.Width==savedWidth && m.Height==savedHeight))
                 list.Add(new DisplayMode(savedWidth,savedHeight){SavedCustom=true});
             return list;

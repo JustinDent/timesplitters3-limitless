@@ -61,6 +61,15 @@ namespace TimeSplitters.Launcher
             if (p[0].Equals("Licenses", StringComparison.OrdinalIgnoreCase)) return p[1].EndsWith(".txt", StringComparison.OrdinalIgnoreCase);
             return name.Equals("Settings/pc-controls.json", StringComparison.OrdinalIgnoreCase);
         }
+        public static void RequireUnlinked(string path, string message)
+        {
+            FileAttributes attributes;
+            try { attributes = File.GetAttributes(path); }
+            catch (FileNotFoundException) { return; }
+            catch (DirectoryNotFoundException) { return; }
+            Require((attributes & FileAttributes.ReparsePoint) == 0 ||
+                LauncherPlatform.IsCloudPlaceholder(path), message);
+        }
         internal static bool TextureFile(string name)
         { return Regex.IsMatch(name, @"\ATextures/[0-9a-f]{16}\.(dds|json)\z"); }
         public static string PathIn(string root, string relative)
@@ -71,8 +80,7 @@ namespace TimeSplitters.Launcher
             Require(path.StartsWith(root, StringComparison.OrdinalIgnoreCase), "Update path escaped its folder.");
             for (string cursor = path; cursor != null; cursor = Path.GetDirectoryName(cursor))
             {
-                if (File.Exists(cursor) || Directory.Exists(cursor))
-                    Require((File.GetAttributes(cursor) & FileAttributes.ReparsePoint) == 0, "Linked installation paths are not supported.");
+                RequireUnlinked(cursor, "Linked installation paths are not supported.");
             }
             return path;
         }
@@ -95,11 +103,11 @@ namespace TimeSplitters.Launcher
         }
         static void CheckTree(string dir)
         {
-            Require((File.GetAttributes(dir) & FileAttributes.ReparsePoint) == 0, "Refusing linked cleanup folder.");
+            RequireUnlinked(dir, "Refusing linked cleanup folder.");
             foreach (string file in Directory.GetFileSystemEntries(dir))
             {
                 var attr = File.GetAttributes(file);
-                Require((attr & FileAttributes.ReparsePoint) == 0, "Refusing linked cleanup path.");
+                RequireUnlinked(file, "Refusing linked cleanup path.");
                 if ((attr & FileAttributes.Directory) != 0) CheckTree(file);
             }
         }
@@ -132,11 +140,11 @@ namespace TimeSplitters.Launcher
             Require(!Directory.Exists(destination), "An extraction folder already exists.");
             using (var zip = ZipFile.OpenRead(archive))
             {
-                Require(zip.Entries.Count > 0 && zip.Entries.Count <= 20000, "Invalid release archive file count.");
+                Require(zip.Entries.Count > 0 && zip.Entries.Count <= 60000, "Invalid release archive file count.");
                 var manifests = zip.Entries.Where(e => e.FullName == "BUILD.json" || e.FullName.EndsWith("/BUILD.json", StringComparison.Ordinal)).ToArray();
                 Require(manifests.Length == 1, "The release needs exactly one BUILD.json manifest.");
                 var manifest = manifests[0];
-                Require(manifest.Length <= 1024 * 1024, "Oversized build manifest.");
+                Require(manifest.Length <= 8 * 1024 * 1024, "Oversized build manifest.");
                 string prefix = manifest.FullName.Substring(0, manifest.FullName.Length - "BUILD.json".Length);
                 if (prefix.Length > 0) { Name(prefix.TrimEnd('/')); Require(prefix.Count(c => c == '/') == 1, "Invalid package root."); }
                 string manifestText;
@@ -325,7 +333,7 @@ namespace TimeSplitters.Launcher
         }
         internal static Dictionary<string, string> GameFiles(string manifest)
         {
-            Require(new FileInfo(manifest).Length <= 1024 * 1024, "Oversized installed game manifest.");
+            Require(new FileInfo(manifest).Length <= 8 * 1024 * 1024, "Oversized installed game manifest.");
             var metadata = Json.Object(File.ReadAllText(manifest));
             GameVersion.Parse(Json.String(metadata, "version"));
             object value;
@@ -354,7 +362,7 @@ namespace TimeSplitters.Launcher
         {
             try {
                 string manifest = PathIn(root, "BUILD.json");
-                Require(new FileInfo(manifest).Length <= 1024 * 1024, "Oversized game manifest.");
+                Require(new FileInfo(manifest).Length <= 8 * 1024 * 1024, "Oversized game manifest.");
                 return Hash(manifest);
             }
             catch (Exception ex) { LauncherLog.Write(root, "Game cleanup unavailable: " + ex.Message); return ""; }
@@ -409,7 +417,7 @@ namespace TimeSplitters.Launcher
             foreach (string entry in Directory.GetFileSystemEntries(folder))
             {
                 var attributes = File.GetAttributes(entry);
-                Require((attributes & FileAttributes.ReparsePoint) == 0, "Linked game cleanup path.");
+                RequireUnlinked(entry, "Linked game cleanup path.");
                 string name = Path.GetFileName(entry);
                 if ((attributes & FileAttributes.Directory) != 0)
                 {
@@ -419,7 +427,8 @@ namespace TimeSplitters.Launcher
                         long bytes = 0;
                         foreach (string texture in Directory.GetFileSystemEntries(entry)) {
                             var flags = File.GetAttributes(texture);
-                            Require((flags & (FileAttributes.Directory | FileAttributes.ReparsePoint)) == 0 &&
+                            RequireUnlinked(texture, "Linked staged texture.");
+                            Require((flags & FileAttributes.Directory) == 0 &&
                                 TextureFile("Textures/" + Path.GetFileName(texture)), "Unexpected file in staged textures.");
                             long length = new FileInfo(texture).Length;
                             bytes += length;

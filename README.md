@@ -4,8 +4,8 @@
 
 Direct mouse aiming · 4K & ultrawide · Custom controls · Windows Online & LAN
 
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
-<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-windows-launcher.svg" alt="Download the latest Windows launcher (x64)" width="280" height="52"></a>
+<a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest"><img src="docs/assets/download-mac-launcher.svg" alt="Download the latest Mac launcher (Apple Silicon)" width="280" height="52"></a>
 
 <sub>Direct ZIP downloads · Automatically follow the latest stable launcher release · <a href="https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest">Release notes & checksums</a></sub>
 
@@ -36,7 +36,7 @@ for release notes and checksums.
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **[Download the Windows launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-windows-x64.zip).** This downloads the latest stable Windows x64 launcher ZIP directly. |
+| **01** | **[Download the Windows launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).** On the release page, choose **Download Windows x64**. |
 | **02** | **Extract and open.** Extract the whole ZIP to a writable folder, keeping `Bin` and `Support` together. Open **TimeSplitters Launcher.exe**. |
 | **03** | **Install the game runtime.** Set **Update channel → Preview**, then choose **Install release**. The launcher downloads and verifies the published PC runtime. |
 | **04** | **Import your game once.** Choose **Locate ISO**, or **Use extracted files** for a folder containing `default.xbe`, `pak` and `xmv`. |
@@ -84,7 +84,7 @@ to open. Intel Macs are not supported by this native build.
 
 | Step | Installation |
 | :---: | --- |
-| **01** | **[Download the Mac launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest/download/TimeSplitters-Launcher-macos-arm64.zip).** This downloads the latest stable Apple Silicon launcher ZIP directly. Extract the whole ZIP and keep **TimeSplitters Launcher.app** beside its **Support** folder. |
+| **01** | **[Download the Mac launcher](https://github.com/TheDoffman/timesplitters-future-perfect-pc/releases/latest).** On the release page, choose **Download Mac (Apple Silicon)**. Extract the whole ZIP and keep **TimeSplitters Launcher.app** beside its **Support** folder. |
 | **02** | **Set up the native game.** Follow the [Mac source-build guide](docs/macos.md) for developer tools, your supported US Xbox game data and the native build. Keep `default.xbe`, `pak` and `xmv` together in the checkout's `private/game` folder. |
 | **03** | **Open the launcher for your checkout.** Use the command below, replacing both example paths with your extracted app and checkout folders. Then choose **Play Game**. |
 
@@ -94,6 +94,10 @@ open '/path/to/TimeSplitters Launcher.app' --args --root '/path/to/timesplitters
 
 For an existing native checkout, `./Play-Native-Mac.command` is also available;
 `./Play-Native-Mac.command --check` checks prerequisites without starting the game.
+
+If the release launcher reports a read-only `AppTranslocation` path, follow the
+[Mac launcher folder recovery instructions](docs/mac-launcher.md#shared-behavior-and-distribution).
+Keep the `.app` and `Support` folder together.
 Development checkouts disable release installation and self-updates to preserve
 your source and local builds. Keep `private/game`, `private/saves`, `config` and
 `private/native-settings` when updating the checkout.
@@ -115,26 +119,28 @@ reserves them. See the [full Mac controls](docs/macos.md) and
 **Current Mac status:** native menus, movement, mouse aiming, firing and
 pause/resume have been checked, with additional bounded first-mission, Khallos
 and Mansion scene checks recorded in [measured progress](STATUS.md).
-Experimental interpolation targets up to **120 presentations per second** while
-the game simulation stays at **60 Hz**; saved 60 FPS preferences are retained.
+Rendering and simulation use the original **60 FPS / 60 Hz** path on both hosts.
 Full campaign completion, save/load and complete rendering/audio fidelity remain
 unverified. Movie playback, native multiplayer and standalone game delivery
-remain unfinished. Windows 144 FPS and monitor-refresh controls are not active
-on Mac. [Track remaining Mac work →](MAC_PORT_BACKLOG.md)
+remain unfinished. [Track remaining Mac work →](MAC_PORT_BACKLOG.md)
 
 ## PC features
 
 Feature availability depends on the platform and installed game build. The
 Windows details below do not establish Mac parity; see [current Mac status](#mac-apple-silicon).
 
-Current Windows source adds experimental [120/144 FPS smooth motion and
-fullscreen monitor refresh controls](docs/windows-launcher.md#pre-game-settings).
-The development launcher provides 60/120/144 FPS setups, current monitor-rate
-information and guidance for conflicting settings under **Game settings →
-Graphics & resolution → Smoothness setup**. Save and restart to apply.
-For a local development build, `Play-Smooth.cmd` temporarily selects 144 FPS;
-`Play-Smooth.cmd 120` selects 120 FPS. Published builds require a runtime update
+Current source uses fixed 60 FPS on Windows and Mac. Experimental interpolation,
+prediction, uncapped pacing and automatic monitor refresh controls have been
+removed. Older timing preferences are ignored by the runtime and normalized
+when launcher settings are saved; unrelated preferences remain intact.
+Your desktop refresh rate stays unchanged. Published builds require an update
 containing these changes.
+
+Upcoming launcher source adds [native frame-rate selection](docs/launcher.md#native-frame-rate-selection-upcoming-launcher-update):
+60 FPS (Original), 120 FPS (Beta), and 144 FPS (Beta). The higher targets require
+an accompanying game build with the new native high-refresh runtime; older
+published games do not gain high-FPS support from the launcher alone.
+
 
 Optional Windows [Discord Rich Presence](docs/discord-presence.md) shows the
 current game mode and session timer. Enable it in **Game settings → Discord**
@@ -192,6 +198,13 @@ it, use the wheel to browse, then **Select** to confirm. **Back** or right-click
 cancels without replacing the previously confirmed character.
 The team chooser supports its left/right arrows and **Select/Back** footer;
 **WASD** also supplies directional-pad input while menus are open.
+
+Text-entry dialogs (such as **Enter Name**) accept the physical keyboard.
+Type letters, numbers, spaces and supported accented characters; use
+**Backspace/Delete**, **Left/Right**, **Home/End**, and **Ctrl+A** to edit,
+**Enter** for Done, and **Escape** to cancel. The original character and width
+limits still apply. Mouse/controller selection of the on-screen keyboard also
+remains available. Arbitrary Unicode and clipboard paste are not supported.
 
 The **Controls** sensitivity bar and **Display settings** FOV bar also support
 clicking and dragging. Sensitivity changes the selected player's controller
@@ -289,11 +302,16 @@ the saved bot set. The host sees how many are waiting.
 
 **Texture overhaul:** modern materials and surfaces, with **up to 4K** on major
 surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit
-keep storage and memory bounded. This is a **partial local preview**: much of the
-game still uses original art. Source builds prepare an audited pack, and game ZIP
-packaging includes compiled replacements by default, while Git stays small.
-Fresh-clone downloads still need the [pinned texture release published](docs/textures.md#texture-build-dependency).
-Source artwork stays private; 4K output does not imply native 4K source detail.
+keep storage and memory bounded. Game builds and release ZIPs now include the
+**1,505-texture alpha pack** (about 1.08 GiB installed) by default. Choose
+**Display settings → Textures → Enhanced** in the game to use it; Classic remains
+available. Install or update the game through the launcher to receive the pack.
+The upcoming launcher update adds **Game settings → Graphics & resolution →
+Use enhanced textures (Beta)** to save the starting choice for each launch.
+Off uses the originals; in-game changes remain session-only.
+Compiled textures are committed through Git LFS and bundled with normal game
+releases; there is no separate texture release.
+This is a partial overhaul; 4K output does not imply native 4K source detail.
 [Texture guide →](docs/textures.md)
 
 > [!NOTE]
@@ -305,6 +323,9 @@ Source artwork stays private; 4K output does not imply native 4K source detail.
 
 ## Guides & support
 
+For repository work, start with the [agent repository map](docs/agent-context/README.md)
+for source ownership, patch/symbol lookup, subsystem guides and context maintenance.
+
 | Player guides | Developer guides |
 | --- | --- |
 | [Windows launcher](docs/launcher.md) — installation, updates and recovery | [Build guide](docs/building.md) — prerequisites, setup and patch workflow |
@@ -315,11 +336,12 @@ Source artwork stays private; 4K output does not imply native 4K source detail.
 | [Mac renderer development](docs/macos.md#common-renderer-development-probe) — shared game renderer and asset-free checks | [Shared PC/Mac architecture](docs/shared-platform.md) — common code and adapters |
 
 **[Report a bug](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)**
-or **[request an enhancement](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)**.
+or **[suggest an enhancement in Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/new?category=ideas)**.
 For bugs, enter your installed versions and platform, then describe the problem. For an
-improvement, just share your idea. Screenshots and logs
-are optional. Published version references stay up to date automatically; both forms
-receive labels automatically.
+improvement, check [existing Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/categories/ideas)
+and start a separate discussion for each suggestion. Screenshots and logs
+are optional. The bug form's published version references stay up to date
+automatically, and bug reports receive labels automatically.
 [Find your build version and logs](docs/launcher.md#report-a-problem-or-request-an-improvement);
 keep personal saves and game data private.
 

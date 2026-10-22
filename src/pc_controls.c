@@ -5,7 +5,9 @@
 #include "pc_crash.h"
 #include "pc_discord.h"
 #include "pc_input.h"
+#include "pc_text_input.h"
 #include "pc_camera.h"
+#include "pc_mounted.h"
 #include "pc_terminal.h"
 #include "pc_settings.h"
 #include "pc_prompts.h"
@@ -28,6 +30,22 @@ static int wheel_remainder;
 static unsigned long applied;
 static volatile LONG editing;
 static int menu_mode, menu_button_block;
+static PcTextInput text_input;
+
+void pc_controls_text_mode(uint32_t owner) {
+    AcquireSRWLockExclusive(&lock);
+    if(text_input.owner!=owner) {
+        pc_text_session(&text_input,owner);
+        for(unsigned i=8;i<256;i++) if(pc_text_key(i)) input.keys[i]=0;
+    }
+    ReleaseSRWLockExclusive(&lock);
+}
+unsigned pc_controls_text_event(uint32_t owner) {
+    AcquireSRWLockExclusive(&lock);
+    unsigned event=text_input.owner==owner?pc_text_get(&text_input):0;
+    ReleaseSRWLockExclusive(&lock);
+    return event;
+}
 static int menu_wheel;
 static ULONGLONG menu_wheel_at;
 static int test_cursor_x=-1,test_cursor_y=-1;
@@ -239,6 +257,25 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         return 1;
     }
     if(replaying) return 0;
+    if(message==WM_CHAR || message==WM_UNICHAR) {
+        if(message==WM_UNICHAR && wp==0xffff) { *result=TRUE;return 1; }
+        AcquireSRWLockExclusive(&lock);
+        int typing=text_input.owner!=0;
+        if(typing && input.focused) pc_text_character(&text_input,(unsigned)wp);
+        ReleaseSRWLockExclusive(&lock);
+        if(typing)return 1;
+    }
+    if((message==WM_KEYDOWN || message==WM_KEYUP) && pc_text_key((unsigned)wp)) {
+        AcquireSRWLockExclusive(&lock);
+        int typing=text_input.owner!=0;
+        if(typing) {
+            input.keys[wp]=0;
+            if(message==WM_KEYDOWN && input.focused)
+                pc_text_command(&text_input,(unsigned)wp,!!(lp&((LPARAM)1<<30)),!!(GetKeyState(VK_CONTROL)&0x8000));
+        }
+        ReleaseSRWLockExclusive(&lock);
+        if(typing) { if(message==WM_KEYDOWN)pc_prompts_keyboard();return 1; }
+    }
     switch (message) {
     case WM_COMMAND:
         if (LOWORD(wp) == PC_TEXTURE_MODE_COMMAND) {
@@ -284,6 +321,7 @@ int pc_controls_message(HWND window, UINT message, WPARAM wp, LPARAM lp, LRESULT
         capture(window, 0);
         AcquireSRWLockExclusive(&lock);
         pc_input_focus(&input, 0);
+        text_input.head=text_input.count=0;
         ReleaseSRWLockExclusive(&lock);
         break;
     case WM_CLOSE: case WM_DESTROY:
@@ -408,6 +446,7 @@ int pc_controls_key_down(int key)
                        key==VK_UP?'W':key==VK_DOWN?'S':0;
         if(alias) down|=pc_input_down(&input,alias,GetTickCount64());
     }
+    if(text_input.owner && pc_text_key((unsigned)key))down=0;
     down=down && (replaying || GetForegroundWindow()==window_handle);
     if(!input.keys[VK_LBUTTON]) menu_button_block &= ~1;
     if(!input.keys[VK_RBUTTON]) menu_button_block &= ~2;
@@ -484,7 +523,8 @@ void pc_controls_apply_mouse(uint32_t player, uint32_t fov_object, ptrdiff_t mem
     }
     terminal = pc_terminal_mouse(&input, GetTickCount64(), sensitivity, player, memory_offset);
     pc_input_terminal_context(&input, terminal >= 0, input.keys[VK_LBUTTON]);
-    if (terminal >= 0 || !pc_camera_fields(player,fov_object,memory_offset,&yaw,&pitch,&fov)) {
+    if (terminal >= 0 || pc_mounted_mouse(&input, GetTickCount64(), sensitivity, invert_y,
+            player, fov_object, memory_offset) >= 0 || !pc_camera_fields(player,fov_object,memory_offset,&yaw,&pitch,&fov)) {
         ReleaseSRWLockExclusive(&lock);
         return;
     }

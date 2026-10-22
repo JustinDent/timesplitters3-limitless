@@ -64,12 +64,30 @@ release is published. Launcher and game versions are separate.
 Use **Check updates**, review **Release notes**, then select **Update release**
 when offered. Close the game before installing updates or restoring a previous
 release. The launcher downloads and verifies an update before applying it and
-preserves imported data, saves and existing settings. It may restart during
-installation. Leave room for staging and one rollback snapshot in addition to
-the installed game; optional textures also need their own space.
+preserves imported data, saves and existing settings. On Windows and Mac, the
+launcher closes after preparation and automatically reopens after installation,
+so Play always uses the newly installed launcher. Repairs and restoring a previous
+game use the same restart flow. Cancelling a download does not restart it.
+Leave room for staging and one rollback snapshot in addition to
+the installed game, including its bundled replacement textures.
 
 Launcher updates are checked separately at startup. **Open installed launcher**
 lets you continue with the installed launcher while a startup check is underway.
+
+## Enhanced textures (upcoming launcher update)
+
+Under **Game settings → Graphics & resolution**, enable **Use enhanced textures
+(Beta)** and select **Save settings**. The next launch uses the replacement
+textures bundled with supported game releases. Turn it off to start with the
+original textures; original textures are the default.
+
+The Beta is incomplete and may have visual issues. Textures without replacements,
+or game versions without a bundled pack, retain their original appearance. The
+toggle does not download, install or delete textures. Normal game updates deliver
+the pack; the separate download, ZIP and folder installation buttons are removed.
+
+Changing textures in the game's **Display settings** or with **F10** affects only
+that session. The launcher's saved choice applies again on the next launch.
 
 ## Compare specific game versions (upcoming launcher update)
 
@@ -134,9 +152,10 @@ PowerShell; use **Play Game** in the launcher.
 
 ## Report a problem or request an improvement
 
-Use the [bug report](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)
-or [enhancement request](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=02-enhancement.yml)
-form. Search existing issues first and report one problem or suggestion at a time.
+Use the [bug report form](https://github.com/TheDoffman/timesplitters-future-perfect-pc/issues/new?template=01-bug-report.yml)
+for problems or [start an Ideas discussion](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/new?category=ideas)
+for enhancements. Search existing issues or [Ideas](https://github.com/TheDoffman/timesplitters-future-perfect-pc/discussions/categories/ideas)
+first and report one problem or suggestion at a time.
 
 For a bug report, the version and platform text fields start empty and require
 an answer. Copy your **game version** from the installed version shown in the launcher,
@@ -152,9 +171,13 @@ Screenshots and logs are optional; **View logs** in the
 launcher opens its log folder. Remove personal information before attaching
 anything, and keep game files and saves private.
 
-Improvement suggestions only ask for your idea. Versions, platform and launcher
-diagnostics are not requested. Reports are labeled
-automatically by type; bug reports also use the selected platform.
+Improvement suggestions belong in Ideas, with one post per suggestion. Versions,
+platform and launcher diagnostics are not requested. Bug reports receive type
+and platform labels automatically.
+
+The next launcher update routes **Request enhancement** directly to a new Ideas
+discussion on Windows and Mac. Until that update is installed, use the Ideas link
+above if your launcher still opens the old enhancement issue URL.
 
 ## Older portable packages and source builds
 
@@ -168,3 +191,30 @@ the package. This is separate from the recommended launcher-managed setup above.
 The repository's developer **Play.cmd** starts an existing local build. Follow
 the [build guide](building.md) if you are working from source; downloading the
 source repository alone does not install a playable game.
+
+## Native frame-rate selection (upcoming launcher update)
+
+Open **Game settings → Graphics & resolution → Frame rate** to select
+**60 FPS (Original)**, **120 FPS (Beta)**, or **144 FPS (Beta)**, then save.
+The original 60 FPS path is the default and the recovery option. High-refresh
+mode requires a game build containing the `feature/native-144-fps` runtime;
+installing this launcher alone does not add that capability to older games.
+It targets fresh game frames without reviving the retired interpolation engine.
+Actual FPS depends on the game build, hardware and display. The desktop refresh
+rate is unchanged.
+
+Native high refresh remains beta. The development branch has a reported Arcade
+movement/firing regression, and complete gameplay validation is still pending.
+Save and restart the game to apply changes; return to **60 FPS (Original)** if
+problems occur.
+
+The launcher shares `pc-frame-rate.ini` with the new in-game frame-rate menu,
+beside `pc-display.ini` in the installation's settings folder. Its versioned
+format is `TSFP_FRAME_RATE_V1 0`, `120`, or `144` (zero selects original timing).
+Reopen launcher settings after changing the choice in the game. Concurrent
+changes are rejected instead of overwritten, and the preference participates
+in the existing backup and multi-file rollback transaction. Cancel leaves it
+unchanged. Launch uses the saved choice as `TSFP_NATIVE_FPS`; zero explicitly
+overrides older native-FPS runtime overrides. Legacy presentation keys retain
+their safe fixed-60 migration values for compatibility with older game packages.
+The common settings model and page serve both Windows and Mac.

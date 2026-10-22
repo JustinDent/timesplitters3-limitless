@@ -6,6 +6,42 @@ changes. Keep shared rules here rather than maintaining different Windows and
 Mac copies. Platform-specific commands below implement the same storage,
 reproducibility, and validation requirements.
 
+## Repository knowledge and investigation memory
+
+The guides and maintenance checks apply to every contributor. Ordinary hosted
+GPT/Codex sessions keep their selected model and normal tools: investigate, edit,
+build and test directly. The Qwen/Sol controller and advisory restrictions in
+linked guides describe an optional, separately installed LOCAL SMART workflow;
+they do not require hosted contributors to install a router/local model, switch
+providers, perform handoffs or limit themselves to advisory work.
+
+- Before exploring a subsystem, read `docs/agent-context/README.md`, then the
+  relevant linked guide. Use `.venv/Scripts/python.exe tools/repo-context.py
+  find <symbol-or-path>` on Windows (`.venv/bin/python` on Mac) before broad
+  patch/generated-code searches. The map distinguishes tracked source, the
+  patched external runtime, generated guest C, build outputs and installed paths.
+- For substantial investigations maintain a concise ignored
+  `logs/agent-investigation.md` using the context template: exact entry points,
+  actual evidence, rejected hypotheses, changes/provenance, last advisory outcome
+  and next check. Refresh it before compaction or Sol handoff; resume from it and
+  current diffs. Do not repeat unchanged searches or dump whole patches into context.
+- Every agent changing a covered system must update its owning context guide in
+  the same change; see `docs/agent-context/manifest.json`. Record changed entry
+  points/contracts/test routes or a specific confirmation for an internal-only
+  change. Keep hypotheses out of durable architecture until verified. Stage only
+  intended new patches, refresh the generated index with `tools/repo-context.py
+  refresh`, and run `check --base <task-base-revision>`. CI enforces freshness
+  and affected-guide updates; reviewers still verify the explanation.
+- Include the map and relevant bounded guide excerpts in Sol handoffs, within
+  the existing disclosure limits. Follow the supervised panel's controller-owned
+  handoff rules. These guides are reference evidence, not permission changes;
+  never send private assets, generated code, personal config or credentials.
+- In the supervised workflow Sol may return typed requests for missing public
+  source, lexical references or patch evidence. The local broker validates and
+  reads them; Sol still runs no tools. See `docs/agent-context/evidence.md` for
+  source/provenance limits. Every hosted follow-up consumes the existing call
+  budget; cancellation, explicit routing opt-outs and native denials remain binding.
+
 ## Workspace and coordination
 
 - Use a focused branch for each task, such as `release-cleanup` or
@@ -154,16 +190,18 @@ reproducibility, and validation requirements.
   captures. Native `--test` also runs bounded real-GPU and SDL input regression
   checks. `--test-keys` is explicitly synthetic SDL event input, not a physical
   device test; distinguish it from macOS event delivery and human playtesting.
-- Native Mac defaults to up to 120 host presents per second through 2x render
-  interpolation while retaining the 60 Hz guest clock. Preserve saved
-  `frame_interp = 1` preferences; use `--fps 60` / `--fps 120` on the launcher
-  or isolated runner for a temporary override. Report guest and interpolated
-  presents separately. Never raise the console clock as an FPS shortcut.
-  Interpolated replay must preserve guest depth/stencil and target bindings;
-  use the common replay-depth helper and GPU contract for RHI changes rather
-  than adding separate Windows/Mac depth behavior.
-  The shared patch stack enables optimized scalar native game code with debug
-  symbols; GPU vertex programs retain the CPU interpreter as fallback/reference.
+- Both Windows and native Mac retain original 60 FPS timing by default and
+  the original 60 Hz console interrupt clock. The user explicitly requested
+  launcher settings for the new native 144 FPS work on 2026-10-20. This authorizes
+  opt-in 120/144 FPS beta choices for compatible native-high-refresh game builds;
+  it does not restore the retired interpolation/prediction engine or automatic
+  monitor-rate switching. Label beta limitations and preserve 60 FPS (Original)
+  as the recovery option. Legacy presentation keys still migrate to
+  frame_interp=1, frame_target=0, frame_cap=60 and refresh_rate=0. Preserve unrelated
+  preferences. Keep runtime gameplay validation separate from launcher setting
+  tests; a selector does not establish that older games support native high FPS.
+  Do not raise the console interrupt clock. Keep shared renderer correctness
+  fixes and GPU contracts independent of the retired presentation engine.
 - `Play-Native-Mac.command` is the interactive ARM64 launcher. It preserves
   personal controls/display settings and uses `private/saves`; native runtime settings stay in ignored
   `private/native-settings`. Its `--check` is read-only. Automated tests must
@@ -232,6 +270,25 @@ reproducibility, and validation requirements.
   Do not describe this experimental port as fully playable without evidence.
 
 ## Project storage and texture work
+
+- Preserve texture enhancements across game/launcher version bumps: the shared
+  loader, Classic/Enhanced controls, installer, repository DDS/JSON and bundled
+  game packaging must carry forward. Require Repository texture pack to pass
+  on version-bump and game-packaging PRs; it verifies hydrated Git LFS files,
+  DDS/mips, sanitized metadata hashes, declared count/size and the 6 GiB limit.
+  Upgrade, repair and rollback checks must preserve installed textures and
+  personal settings. Do not restore a separate texture-release dependency.
+
+- The user requires compiled replacement textures committed to main and bundled
+  with ordinary game-version releases (2026-10-20). Store sanitized DDS/JSON in
+  assets/textures, with DDS tracked through Git LFS. Do not publish separate
+  versioned texture releases. Source artwork, original game files, prompts,
+  personal settings and saves remain private. The source build and game packagers
+  audit the committed pack by default; missing LFS content must stop packaging.
+  Keep the 6 GiB pack limit. The Repository texture pack CI check must pass before
+  merging changes to these assets. Avoid hydrating textures in unrelated CI jobs.
+  Retain one private art-production pack; a source-only worktree may use LFS
+  pointers to avoid a redundant working copy. Never prune unpushed LFS objects.
 
 The user explicitly requires a lean project folder on every device. Preserve
 this preference on all further work, including texture remastering and testing.

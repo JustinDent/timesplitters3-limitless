@@ -76,8 +76,12 @@ development checkouts so they cannot overwrite source or native build work.
 Portable game packages use `Bin/futureperfect_recomp`, `Launch.command`,
 `Settings/pc-controls.json`, `Licenses`, and a hashed `BUILD.json`; personal data
 uses `Data`, `Saves`, `Settings`, and `Textures`. A new native runtime package,
-including redistributable dependencies and provenance, still needs the MAC-012
-release pipeline. The launcher alone cannot supply a game runtime.
+including redistributable dependencies and provenance, is assembled on Apple
+Silicon with `tools/package-native-mac.py`. It bundles the verified Vulkan loader,
+MoltenVK, DXC and native dependencies, checks their hashes before launch, and
+requires no Python, Homebrew or SDK on the player's Mac. Launcher 1.2.21 adds
+this portable Vulkan loading path. The launcher alone cannot supply a game runtime.
+See [native packaging](macos.md#native-release-packaging) and MAC-012 for validation.
 
 `--package` additionally creates a launcher ZIP, SHA-256 sidecar and
 `launcher-update-macos-arm64.json`. Keep the `.app` beside `Support/Launcher` in
@@ -86,6 +90,33 @@ and manifest, an eight-second startup check and bounded resumable downloads.
 The previous launcher remains until a successful verified startup; helpers apply
 updates after the old process exits. Original game data, saves and config are
 never launcher-update targets. Building does not publish a release.
+
+Game installation, repair and restoring a previous game also close and reopen
+the launcher automatically. The copied `.launcher/mac-update-helper` waits for
+the old process to exit, takes the installation lock, verifies/applies the staged
+files, and starts the installed app with the same installation folder. This also
+loads a newer launcher bundled with a game update instead of keeping old code in
+memory. The shared `UpdateRestart` policy is used by Windows and Mac. A failed
+game update reopens the retained installation and shows its failure result;
+cancelling before installation leaves the current launcher open. Relaunch skips
+one startup update check to avoid retry loops.
+
+When macOS opens a downloaded app under `AppTranslocation`, its apparent parent
+folder is temporary and read-only. Startup now offers **Choose installation
+folder** before checking updates or writing launcher state. Select the real
+extracted folder containing both the `.app` and `Support`, not the `.app` itself.
+The launcher verifies the manifest, matching running executable and write access
+before continuing against that folder. Invalid selections leave existing files
+untouched; cancelling keeps the picker available. The selection applies to this
+launch and does not move or copy an installation.
+
+The existing v1.2.20 release predates this recovery screen. If it reports a
+read-only `AppTranslocation/.../.launcher` error, quit it and use Finder to move
+the `.app` itself out of the extracted folder and back, keeping `Support` beside
+it, then reopen it. Moving only the outer folder may leave translocation active.
+Source-checkout users can also continue using the documented explicit `--root`
+path. This is separate from a Gatekeeper refusal to open the app; no quarantine
+attributes or system security settings are changed.
 
 The corrected builder signs the complete app bundle with a local ad-hoc signature.
 Mac v1.2.19 shipped only a signed executable and requires a one-time manual
@@ -115,9 +146,17 @@ these checks on an ARM64 Mac runner alongside existing Windows launcher checks.
 
 The executable also supports `--render-preview output.png`,
 `--render-game-data-preview output.png` (expanded Home game-data section),
+`--render-download-preview output.png` (sample transfer status),
+`--render-download-compact output.png` (the same transfer at the minimum
+1000 × 720 layout size), and `--render-download-compact-scrolled output.png`
+(the compact view scrolled to the download controls),
 `--render-settings-preview output.png`, `--render-settings-graphics output.png`,
 `--render-settings-discord output.png`, `--render-news-preview output.png`,
 `--render-diagnostics-preview output.png`, and `--render-repair-preview output.png`.
+The modal previews `--render-confirm-preview output.png`,
+`--render-confirm-long-preview output.png`, and `--render-alert-preview output.png`
+render the actual confirmation/error dialog content and then close without
+performing an operation. Long messages scroll above a fixed action row.
 Pass an explicitly disposable `--root` when rendering settings. Preview mode
 performs no network requests, startup cleanup or saves. The news preview renders
 the actual page controls, including its toolbars and release selector. Run actual game tests

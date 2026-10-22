@@ -50,7 +50,7 @@ static class LauncherTests
         return new Dictionary<string, string> { { "Bin/futureperfect_recomp.exe", "new game" }, { "Launch.ps1", "launch" },
             { "Settings/pc-controls.json", "defaults" }, { Core.LauncherName, "new launcher" }, { "Licenses/Runtime.txt", "license" } };
     }
-    static string Zip(string caseName, Action<Dictionary<string, string>> alter, string extra, bool wrongHash)
+    static string Zip(string caseName, Action<Dictionary<string, string>> alter, string extra, bool wrongHash, string padding = null)
     {
         var files = Files(); if (alter != null) alter(files);
         var hashes = files.ToDictionary(p => p.Key, p => Hash(p.Value));
@@ -61,7 +61,7 @@ static class LauncherTests
             foreach (var file in files)
                 using (var writer = new StreamWriter(zip.CreateEntry("package/" + file.Key).Open(), new UTF8Encoding(false))) writer.Write(file.Value);
             using (var writer = new StreamWriter(zip.CreateEntry("package/BUILD.json").Open(), new UTF8Encoding(false)))
-                writer.Write(Json.Encode(new { version = "v1.1.0", files = hashes }));
+                writer.Write(Json.Encode(new { version = "v1.1.0", files = hashes, padding = padding }));
             if (extra != null) using (var writer = new StreamWriter(zip.CreateEntry(extra).Open())) writer.Write("unlisted");
         }
         return path;
@@ -103,14 +103,27 @@ static class LauncherTests
         { var response = Reply(request); response.RequestMessage = request; return Task.FromResult(response); }
     }
     sealed class Progress : IProgress<double> { public void Report(double value) { } }
-    sealed class SlowHandler : HttpMessageHandler
+    sealed class StalledHandler : HttpMessageHandler
     {
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
+        public readonly TaskCompletionSource<HttpResponseMessage> Response = new TaskCompletionSource<HttpResponseMessage>();
+        public CancellationToken RequestToken;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
         {
-            // Deliberately ignore cancellation to model a stalled OS network call.
-            await Task.Delay(500);
-            return new HttpResponseMessage(HttpStatusCode.OK) { RequestMessage = request, Content = new StringContent("[]") };
+            // Stay pending even after cancellation, until the fixture is disposed.
+            RequestToken = token;
+            return Response.Task;
         }
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing) Response.TrySetCanceled();
+            base.Dispose(disposing);
+        }
+    }
+    static void AwaitStalledCheck(Task pending)
+    {
+        // A generous deadlock guard, not an assertion about runner scheduling speed.
+        Assert(Task.WhenAny(pending, Task.Delay(TimeSpan.FromSeconds(10))).GetAwaiter().GetResult() == pending);
+        pending.GetAwaiter().GetResult();
     }
     static string SelfManifest(string version, string boot, string app)
     {
@@ -168,9 +181,17 @@ static class LauncherTests
         if (args.Length == 1 && args[0] == "--startup") return LauncherStartupChecks.Run();
         if (args.Length == 1 && args[0] == "--news") return LauncherNewsChecks.Run();
         if (args.Length == 1 && args[0] == "--shared-ui") return LauncherSharedUiChecks.Run();
+        if (args.Length == 1 && args[0] == "--textures") return LauncherTextureChecks.Run();
         if (args.Length == 1 && args[0] == "--settings") return LauncherSettingsChecks.Run();
         if (args.Length == 2 && args[0] == "--helper")
             return Program.RunHelper("--apply", args[1], Int32.MaxValue, false);
+        if (args.Length == 1 && args[0] == "--restart-parent") { Thread.Sleep(2000); return 0; }
+        if (args.Length == 3 && args[0] == "--restart-helper")
+            return Program.RunHelper("--apply", args[1], Int32.Parse(args[2]), true);
+        if (args.Length == 1 && args[0] == "--after-self-update") {
+            string root = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            Core.Write(Core.PathIn(root,"restart-receipt.txt"),Core.InstalledVersion(root)); return 0;
+        }
         if (args.Length == 2 && args[0] == "--self-helper")
             return Bootstrap.RunHelper(args[1], Int32.MaxValue, false);
         if (args.Length == 1 && args[0] == "--live-launcher")
@@ -185,6 +206,8 @@ static class LauncherTests
         }
         if (args.Length == 1 && args[0] == "--verify-release")
             return VerifyPublishedRelease();
+        if (args.Length == 3 && args[0] == "--verify-package")
+            return VerifyLocalPackage(args[1], args[2]);
         if (args.Length == 1 && args[0] == "--live")
         {
             using (var client = new ReleaseClient())
@@ -201,6 +224,12 @@ static class LauncherTests
         Directory.CreateDirectory(temp);
         try
         {
+            Test("bundled texture manifests can exceed one MiB", () => {
+                string archive = Zip("large-manifest", null, null, false, new string('x', 1100*1024));
+                string stage = Path.Combine(temp, "large-manifest-stage");
+                Core.Unpack(archive, stage, "v1.1.0");
+                Assert(new FileInfo(Path.Combine(stage, "BUILD.json")).Length > 1024*1024);
+            });
             Test("bundled textures install while existing replacements and settings survive", () => {
                 string key = "Textures/0123456789abcdef.dds";
                 string root = Path.Combine(temp, "bundled-textures");
@@ -258,6 +287,14 @@ static class LauncherTests
             }
             CleanupTests();
             GameCleanupTests();
+            Test("shared update restart and failure recovery", LauncherRestartChecks.Run);
+            Test("cloud storage tags do not admit redirected or unknown paths", () => {
+                for (uint variant=0; variant<16; variant++) Assert(LauncherPlatform.IsCloudTag(0x9000001Au | (variant<<12)));
+                foreach (uint tag in new uint[]{0,0xA0000003u,0xA000000Cu,0x9000001Bu,0x9001001Au,0xB000001Au})
+                    Assert(!LauncherPlatform.IsCloudTag(tag));
+                Assert(!LauncherPlatform.IsCloudPlaceholder(temp));
+                Assert(Core.PathIn(temp,"not-created/texture.dds")==Path.Combine(temp,"not-created","texture.dds"));
+            });
             Test("semantic version ordering", () => {
                 var ordered = new[] { "v1.0.0-alpha", "v1.0.0-alpha.2", "v1.0.0-alpha.10", "v1.0.0-beta", "v1.0.0", "v1.0.1", "v1.10.0", "v2.0.0" };
                 for (int i = 1; i < ordered.Length; i++) Assert(GameVersion.Parse(ordered[i]).CompareTo(GameVersion.Parse(ordered[i-1])) > 0);
@@ -287,6 +324,18 @@ static class LauncherTests
                 var changes = Core.Unpack(Zip("valid", null, null, false), Path.Combine(temp, "valid-payload"), "v1.1.0");
                 Assert(changes.Count == 6);
             });
+            Test("Discord support files install and preserve personal settings", () => {
+                VerifyLocalPackage(Zip("discord support", f => {
+                    f.Add("Support/Discord/README.txt", "setup instructions");
+                    f.Add("Support/Discord/pc-discord.default.ini", "TSFP_DISCORD_V1 0 1561627743353962566\n");
+                }, null, false), "v1.1.0");
+            });
+            Test("unsupported root Discord documentation stays rejected", () => Reject(() =>
+                Core.Unpack(Zip("discord root", f => f.Add("Discord-setup.txt", "setup"), null, false),
+                    Path.Combine(temp, "discord-root-rejected"), "v1.1.0")));
+            Test("personal Discord settings stay protected from packages", () => Reject(() =>
+                Core.Unpack(Zip("discord settings", f => f.Add("Settings/pc-discord.ini", "defaults"), null, false),
+                    Path.Combine(temp, "discord-settings-rejected"), "v1.1.0")));
             Test("wrong archive version rejected", () => Reject(() => Core.Unpack(Path.Combine(temp, "valid.zip"), Path.Combine(temp, "wrong-version"), "v2.0.0")));
             Test("wrong file checksum rejected", () => Reject(() => Core.Unpack(Zip("bad-hash", null, null, true), Path.Combine(temp, "bad-hash-payload"), "v1.1.0")));
             Test("zip traversal rejected", () => Reject(() => Core.Unpack(Zip("traversal", null, "package/../outside.exe", false), Path.Combine(temp, "traversal-payload"), "v1.1.0")));
@@ -412,6 +461,25 @@ static class LauncherTests
                 Assert(Core.InstalledVersion(root) == "v1.1.0");
                 Assert(File.ReadAllText(Path.Combine(root, ".launcher/last-result.txt")).Contains("successfully"));
                 Assert(!Directory.Exists(pending)); Personal(root);
+            });
+            Test("game helper waits for the old process and restarts the newly installed launcher", () => {
+                string root = NewRoot("automatic restart with spaces");
+                string exe = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                LauncherRestartChecks.Stage(root,"v1.1.0",new Dictionary<string,byte[]> {
+                    {Core.LauncherName,File.ReadAllBytes(exe)}
+                });
+                using(var parent=Process.Start(new ProcessStartInfo(exe,"--restart-parent"){UseShellExecute=false,CreateNoWindow=true}))
+                using(var helper=Process.Start(new ProcessStartInfo(exe,"--restart-helper "+LauncherWindow.Quote(root)+" "+parent.Id){UseShellExecute=false,CreateNoWindow=true})) {
+                    Thread.Sleep(250);
+                    Assert(!parent.HasExited && Core.InstalledVersion(root)=="v1.0.0");
+                    if(!helper.WaitForExit(15000)){helper.Kill();helper.WaitForExit(3000);throw new Exception("Restart helper timed out");}
+                    Assert(helper.ExitCode==0);
+                }
+                string receipt=Core.PathIn(root,"restart-receipt.txt");
+                var deadline=Stopwatch.StartNew();
+                while(!File.Exists(receipt)&&deadline.ElapsedMilliseconds<10000)Thread.Sleep(20);
+                Assert(File.Exists(receipt)&&File.ReadAllText(receipt)=="v1.1.0");
+                Assert(!Directory.Exists(Core.PathIn(root,".launcher/pending")));Personal(root);
             });
             Test("ISO importer rejects truncated images without writing Data", () => {
                 string iso = Path.Combine(temp, "truncated.iso"); File.WriteAllText(iso, "not an ISO");
@@ -734,19 +802,27 @@ static class LauncherTests
             var candidate = ReleaseClient.SelectLauncher(Json.Encode(new[] { SelfRelease("1.1.0", false, false, 100, "sha256:" + Hash("other")) }), false);
             Reject(() => ReleaseClient.VerifyLauncherMetadata(candidate, SelfMetadata("1.1.0", 100, Hash("zip"))));
         });
-        Test("launcher check has bounded timeout even if network ignores cancellation", () => {
-            var watch = Stopwatch.StartNew();
-            using (var client = new ReleaseClient(new SlowHandler()))
+        Test("launcher check times out while the network ignores cancellation", () => {
+            var handler = new StalledHandler();
+            using (var client = new ReleaseClient(handler))
             {
-                try { SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromMilliseconds(20), CancellationToken.None).GetAwaiter().GetResult(); throw new Exception("Expected timeout"); }
-                catch (TimeoutException) { Assert(watch.ElapsedMilliseconds < 350); }
+                var pending = SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromMilliseconds(20), CancellationToken.None);
+                try { AwaitStalledCheck(pending); throw new Exception("Expected timeout"); }
+                catch (TimeoutException) { }
+                Assert(handler.RequestToken.IsCancellationRequested);
+                Assert(!handler.Response.Task.IsCompleted);
             }
         });
-        Test("continue offline cancels launcher check", () => {
-            using (var client = new ReleaseClient(new SlowHandler())) using (var cancel = new CancellationTokenSource(20))
+        Test("continue offline cancels launcher check while network stays pending", () => {
+            var handler = new StalledHandler();
+            using (var client = new ReleaseClient(handler)) using (var cancel = new CancellationTokenSource())
             {
-                try { SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromSeconds(5), cancel.Token).GetAwaiter().GetResult(); throw new Exception("Expected cancellation"); }
+                var pending = SelfUpdate.CheckWithTimeout(client, false, TimeSpan.FromMinutes(5), cancel.Token);
+                cancel.Cancel();
+                try { AwaitStalledCheck(pending); throw new Exception("Expected cancellation"); }
                 catch (OperationCanceledException) { }
+                Assert(handler.RequestToken.IsCancellationRequested);
+                Assert(!handler.Response.Task.IsCompleted);
             }
         });
         Test("launcher no-update result needs no install", () => {
@@ -898,6 +974,51 @@ static class LauncherTests
             Assert(SelfUpdate.Complete(root) && SelfUpdate.InstalledVersion(root) == LauncherVersion.Value);
             Assert(Core.InstalledVersion(root) == "v1.0.0"); Personal(root);
         });
+    }
+    static int VerifyLocalPackage(string archive, string version)
+    {
+        archive = Path.GetFullPath(archive);
+        string root = Path.Combine(Path.GetDirectoryName(typeof(LauncherTests).Assembly.Location), "local-package-check");
+        Core.Require(!Directory.Exists(root), "A local-package-check folder already exists; inspect it first.");
+        Directory.CreateDirectory(root);
+        try
+        {
+            foreach (bool upgrade in new[] { false, true })
+            {
+                string install = Path.Combine(root, upgrade ? "upgrade" : "fresh");
+                Directory.CreateDirectory(install);
+                if (upgrade)
+                {
+                    Put(install, "Settings/pc-controls.json", "personal bindings");
+                    Put(install, "Settings/pc-display.ini", "personal display");
+                    Put(install, "Settings/runtime.conf", "personal runtime");
+                    Put(install, "Settings/pc-discord.ini", "TSFP_DISCORD_V1 1 999999999999999999\n");
+                    Put(install, "Data/default.xbe", "personal data");
+                    Put(install, "Saves/profile", "personal save");
+                    Put(install, "Textures/pack.dds", "personal textures");
+                }
+                string pending = Core.PathIn(install, ".launcher/pending");
+                var changes = Core.Unpack(archive, Path.Combine(pending, "payload"), version);
+                Core.Write(Path.Combine(pending, "release.json"), Json.Encode(new { version = version }));
+                Core.InstallPending(install);
+                Assert(Core.InstalledVersion(install) == version);
+                if (upgrade)
+                {
+                    Personal(install);
+                    Assert(File.ReadAllText(Path.Combine(install, "Settings/pc-discord.ini")) == "TSFP_DISCORD_V1 1 999999999999999999\n");
+                }
+                else
+                {
+                    Assert(!Directory.Exists(Path.Combine(install, "Data")) && !Directory.Exists(Path.Combine(install, "Saves")));
+                    Assert(!File.Exists(Path.Combine(install, "Settings/pc-discord.ini")));
+                }
+                Console.WriteLine("PASS: local package " + (upgrade ? "upgrade/personal-file preservation" : "fresh install") +
+                    ": " + version + " (" + changes.Count + " files; no downloaded code executed)");
+                Directory.Delete(install, true);
+            }
+            return 0;
+        }
+        finally { Directory.Delete(root, true); }
     }
     static int VerifyPublishedRelease()
     {

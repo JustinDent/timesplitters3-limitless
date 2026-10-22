@@ -37,6 +37,8 @@ Backlog entries:
 - [ ] Relevant shared tests and available affected-host checks passed; unrun
       checks are listed.
 - [ ] Usage documentation and validation records reflect the actual scope.
+- [ ] Owning `docs/agent-context/` guides reflect changed systems; patch index
+      refreshed if needed; `tools/repo-context.py check --base <base>` passes.
 - [ ] Personal settings/saves are preserved and game tests use isolated paths.
 
 Do not include private game assets, generated game sources, binaries, or saves.

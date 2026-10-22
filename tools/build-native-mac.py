@@ -96,7 +96,7 @@ def main():
         raise SystemExit('Runtime checkout differs from the shared pin; no changes made.')
     textures = None
     if not args.without_textures:
-        _, _, textures = ensure_pack(runtime_root)
+        _, _, textures = ensure_pack(ROOT)
     run(PYTHON, ROOT / 'tools/apply-patches.py', UPSTREAM, ROOT / 'patches')
     if args.setup:
         run('git', '-C', UPSTREAM, 'submodule', 'update', '--init', '--depth', '1',
@@ -139,7 +139,7 @@ def main():
     run('dsymutil', BUILD / 'futureperfect_recomp', '-o', BUILD / 'futureperfect_recomp.dSYM')
     # Include shared PC source hashes as well as the native adapters.
     sources = sorted((ROOT / 'patches').glob('*.patch')) + sorted((ROOT / 'src').rglob('*'))
-    manifest = dict(source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+    manifest = dict(auto_display_resolution=True, source_revision=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
                     textures=textures,
                     working_tree_changes=subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True),
                     runtime_revision=revision, host=platform.platform(), xbe_sha256=expected,

@@ -89,7 +89,12 @@ void pc_display_tutorial_wrap(void (*original)(void))
         if(tutorial_normal_row)
             tutorial_set_float(frame+8,tutorial_float(frame+8)-tutorial_extra);
     }
-    original();WORD_AT(frame+8)=saved;
+    /* The title's word wrapper repeatedly measures prefixes of the same text.
+       Reuse validated read spans only until this layout operation returns. */
+    pc_prompts_layout_begin();
+    original();
+    pc_prompts_layout_end();
+    WORD_AT(frame+8)=saved;
 }
 void pc_display_tutorial_text(void (*original)(void))
 {

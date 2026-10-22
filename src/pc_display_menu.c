@@ -2,6 +2,7 @@
    Settings sub_002CBFC0, and paused Options sub_002F5520. Original controls,
    audio/video, layout, highlighting and navigation stay in the guest engine. */
 #include "pc_display_menu.h"
+#include "pc_prompts.h"
 #ifdef TSFP_PC_DISCORD
 #include "pc_discord_guest.h"
 #include "pc_guest_memory.h"
@@ -77,7 +78,7 @@ static int guest_writable(uint32_t address,size_t bytes)
 
 static float cutscene_camera_zoom(void)
 {
-    PcDisplayMode mode = pc_display_current();
+    PcDisplayMode mode = pc_display_effective();
     uint32_t viewport = WORD_AT(0x007E71C8u);
     int height, full, animated;
     if (WORD_AT(0x007DE458u) & 0x20000000u) {
@@ -288,13 +289,6 @@ static uint32_t texture_row;
 static unsigned texture_choice;
 static ULONGLONG deadline;
 static char status[192];
-#ifdef _WIN32
-#include "pc_motion_settings.inc"
-static PcMotionSettings staged_motion;
-static uint32_t motion_fps_row,motion_refresh_row;
-static const int motion_fps_values[]={0,60,120,144};
-static const int motion_refresh_values[]={0,120,144};
-#endif
 /* Fixed backing storage survives transitions and renderer references. */
 #define TEXT_BYTES 192
 #define TEXT_ADDRESS(i) (storage+64u+(uint32_t)(i)*TEXT_BYTES)
@@ -581,7 +575,7 @@ static void labels(void)
            parameter is extra row height, not a horizontal offset. */
         guest_call(sub_0007D480,2,0x8400u,0u);
         for(i=0;i<mode_count;i++) {
-            uint32_t caption=modes[i].width?text_at(12+i,"%u x %u",modes[i].width,modes[i].height):
+            uint32_t caption=pc_display_is_auto(modes[i])?text_at(12+i,"Auto"):modes[i].width?text_at(12+i,"%u x %u",modes[i].width,modes[i].height):
                 text_at(12+i,"Original");
             guest_call(sub_000717D0,1,caption);
         }
@@ -596,26 +590,8 @@ static void labels(void)
         guest_call(sub_000717D0,1,text_at(10,"Enhanced"));
         guest_call(sub_00075430,2,texture_row,texture_choice);
         row(3,"Apply settings"); row(4,"Reset FOV to 55");
-#ifdef _WIN32
-        guest_call(sub_00079D60_gen,6,text_at(9,"Smoothness / refresh"),6u,0u,0u,SELECT_CB,0u);
-#endif
         row(5,"Back");
     } else if(page==1) { row(0,"Keep resolution"); row(1,"Revert"); }
-#ifdef _WIN32
-    else if(page==3) {
-        const char *fps_labels[]={"Keep current", "60 FPS (original)","120 FPS (experimental)","144 FPS (experimental)"};
-        const char *hz_labels[]={"Desktop rate","120 Hz if supported","144 Hz if supported"};
-        motion_fps_row=guest_call(sub_00079D60_gen,6,text_at(7,"Motion"),0u,0u,0u,0u,0u);
-        guest_call(sub_0007D480,2,0x8400u,0u);
-        for(int i=0;i<4;i++)guest_call(sub_000717D0,1,text_at(12+i,"%s",fps_labels[i]));
-        for(int i=0;i<4;i++)if(motion_fps_values[i]==staged_motion.fps)guest_call(sub_00075430,2,motion_fps_row,(uint32_t)i);
-        motion_refresh_row=guest_call(sub_00079D60_gen,6,text_at(8,"Monitor refresh"),1u,0u,0u,0u,0u);
-        guest_call(sub_0007D480,2,0x8400u,0u);
-        for(int i=0;i<3;i++)guest_call(sub_000717D0,1,text_at(16+i,"%s",hz_labels[i]));
-        for(int i=0;i<3;i++)if(motion_refresh_values[i]==staged_motion.refresh)guest_call(sub_00075430,2,motion_refresh_row,(uint32_t)i);
-        row(2,"Save for next launch");row(3,"Back (discard changes)");
-    }
-#endif
     else {
 #ifdef _WIN32
         /* Long feedback does not fit the original narrow page-header region. */
@@ -640,9 +616,8 @@ static void build_menu(void)
        75% for label + longest resolution + arrows without clipping rows.
        Resolution confirmation keeps its original 55% width. */
     const char *title=page?status:"Display settings";
-    float width=page==0 || page==3?75.f:55.f;
+    float width=page==0?75.f:55.f;
 #ifdef _WIN32
-    if(page==3)title="Smoothness";
     if(page==2){title="Display settings";width=75.f;}
 #endif
     guest_call(sub_00075B70,5,0xa000u,text_at(0,"%s",title),bits(width),0u,BACK_CB);
@@ -668,16 +643,6 @@ static void refresh(int next,int selected)
         texture_choice=(unsigned)tsfp_texture_is_4k();
         guest_call(sub_00075430,2,texture_row,texture_choice);
     }
-#ifdef _WIN32
-    if(page==3 && motion_fps_row && motion_refresh_row) {
-        /* These IDs also belonged to aspect/resolution on the previous page.
-           Restore the saved motion choices after the guest restores old IDs. */
-        for(int i=0;i<4;i++)if(motion_fps_values[i]==staged_motion.fps)
-            guest_call(sub_00075430,2,motion_fps_row,(uint32_t)i);
-        for(int i=0;i<3;i++)if(motion_refresh_values[i]==staged_motion.refresh)
-            guest_call(sub_00075430,2,motion_refresh_row,(uint32_t)i);
-    }
-#endif
     guest_call(sub_000770E0,2,current_menu,(uint32_t)selected);
 }
 static void leave(void)
@@ -729,12 +694,6 @@ static void select_callback(void)
                 snprintf(status,sizeof status,"Cannot apply"); refresh(2,0);
             }
         } else if(selected==4) { staged_fov=PC_FOV_DEFAULT; fov_label(); }
-#ifdef _WIN32
-        else if(selected==6) {
-            if(pc_motion_load(&staged_motion)) { snprintf(status,sizeof status,"Smoothness - restart required");refresh(3,0); }
-            else { snprintf(status,sizeof status,"Cannot read performance settings");refresh(2,0); }
-        }
-#endif
         else if(selected==5) leave();
     } else if(page==1) {
         if(selected==0) {
@@ -742,22 +701,6 @@ static void select_callback(void)
             else { revert(); if(!deadline) { snprintf(status,sizeof status,"Save failed"); refresh(2,0); } }
         } else revert();
     }
-#ifdef _WIN32
-    else if(page==3) {
-        if(selected==2) {
-            unsigned f=WORD_AT(motion_fps_row+0xc8),h=WORD_AT(motion_refresh_row+0xc8);
-            if(f<4 && h<3) {
-                staged_motion.fps=motion_fps_values[f];staged_motion.refresh=motion_refresh_values[h];
-                int saved=pc_motion_save(staged_motion);
-                const char *override=getenv("RECOMP_FRAME_TARGET");
-                snprintf(status,sizeof status,saved?
-                    (override && *override?"Saved - restart without FPS override":"Saved - restart game to apply"):
-                    "Save failed - settings unchanged");
-                refresh(2,0);
-            }
-        } else if(selected==3)refresh(0,0);
-    }
-#endif
     else refresh(0,0);
     restore_registers(&r); g_esp+=4;
 }

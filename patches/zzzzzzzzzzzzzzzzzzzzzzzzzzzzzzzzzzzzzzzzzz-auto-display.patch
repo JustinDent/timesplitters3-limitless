@@ -1,0 +1,69 @@
+--- a/titles/futureperfect/src/recomp_manual.c
++++ b/titles/futureperfect/src/recomp_manual.c
+@@ -413,7 +413,7 @@
+     int top = caller == 0x0006F322u || caller == 0x0013972Eu;
+     int story = caller == 0x0006F322u || caller == 0x0006F34Bu;
+     if (story || caller == 0x0013970Eu || caller == 0x0013972Eu) {
+-        PcDisplayMode mode = pc_display_current();
++        PcDisplayMode mode = pc_display_effective();
+         int y1 = (int32_t)FP_MEM32(frame + 8u);
+         int y2 = (int32_t)FP_MEM32(frame + 16u);
+         int height, full, adjusted, side, view_top;
+--- a/src/d3d/d3d8_display.c
++++ b/src/d3d/d3d8_display.c
+@@ -111,7 +111,7 @@
+ int d3d8_display_wide_now(void)
+ {
+     #ifdef TSFP_PC_DISPLAY
+-    if(pc_display_current().width) return pc_display_wide_now();
++    if(pc_display_effective().width) return pc_display_wide_now();
+ #endif
+     return d3d8_display_policy()->widescreen && !g_title_narrow;
+ }
+@@ -147,7 +147,7 @@
+                                UINT *shape_w, UINT *shape_h)
+ {
+ #ifdef TSFP_PC_DISPLAY
+-    if(pc_display_current().width) { pc_display_shape(shape_w,shape_h); return; }
++    if(pc_display_effective().width) { pc_display_shape(shape_w,shape_h); return; }
+ #endif
+     if (d3d8_display_wide_now()) {
+         /* The frame is anamorphic: the title squeezed a 16:9 view into
+--- a/src/d3d/d3d8_device.c
++++ b/src/d3d/d3d8_device.c
+@@ -361,7 +361,7 @@
+     if (!g_2d_squeeze || !g_device_state.height || g_cur_rt)
+         return FALSE;
+ #ifdef TSFP_PC_DISPLAY
+-    if(pc_display_current().width) k=pc_display_hud_scale();
++    if(pc_display_effective().width) k=pc_display_hud_scale();
+     else
+ #endif
+     k = ((float)g_device_state.width * 9.0f) /
+@@ -381,7 +381,7 @@
+ static float two_d_vertical_scale(void)
+ {
+ #ifdef TSFP_PC_DISPLAY
+-    if(g_2d_squeeze && !g_cur_rt && pc_display_current().width)
++    if(g_2d_squeeze && !g_cur_rt && pc_display_effective().width)
+         return pc_ui_scale_y(pc_display_hud_scale());
+ #endif
+     return 1.f;
+@@ -1860,7 +1860,7 @@
+     /* Noise/tint textures are not framebuffer copies, but their complete
+      * canvas quad must cover the output just like a fade. A clipped menu
+      * panel must still follow the proportional widget canvas. */
+-    if(pc_display_current().width &&
++    if(pc_display_effective().width &&
+        (!g_scissor_enabled || (g_scissor.left<=0 && g_scissor.top<=0 &&
+         g_scissor.right>=(LONG)d3d8_GetGuestWidth()-1 &&
+         g_scissor.bottom>=(LONG)d3d8_GetGuestHeight()-1)))
+@@ -1979,7 +1979,7 @@
+      * of the picture in the middle of it. */
+     if (d3d8_display_policy()->centre_2d
+ #ifdef TSFP_PC_DISPLAY
+-        || pc_display_current().width
++        || pc_display_effective().width
+ #endif
+        )
+         return ((hi - lo) >= (float)guest_w * 0.98f &&

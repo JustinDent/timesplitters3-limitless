@@ -23,7 +23,8 @@ int tsfp_native_graphics_settings_test(SDL_Window *window) {
                 ok &= resolution.numberOfItems>0;
                 for(NSMenuItem *item in resolution.itemArray) {
                     PcDisplayMode mode={0};
-                    if(![item.title hasPrefix:@"Original"])
+                    if([item.title hasPrefix:@"Auto"])mode=(PcDisplayMode){1,1};
+                    else if(![item.title hasPrefix:@"Original"])
                         ok &= sscanf(item.title.UTF8String,"%u × %u",&mode.width,&mode.height)==2;
                     ok &= pc_display_aspect(mode)==group;
                 }

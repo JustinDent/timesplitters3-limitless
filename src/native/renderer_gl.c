@@ -24,6 +24,7 @@
 #include "graphics/present_metrics.h"
 #include "settings_macos.h"
 #include "pc_display.h"
+#include "pc_ui_layout.h"
 #include "pc_menu_sampling.h"
 #include "pc_debug.h"
 #ifdef __APPLE__
@@ -1336,8 +1337,9 @@ static HRESULT __stdcall d3d_CreateDevice(IDirect3D8 *s, UINT adapter, DWORD dev
     g.rs[D3DRS_COLORWRITEENABLE]   = 0x0F;
 
     g.viewport=(D3DVIEWPORT8){0,0,g.backbuf_w,g.backbuf_h,0,1};
-    PcDisplayMode mode=pc_display_current();
-    if(!native_scene_resize(mode.width,mode.height))return E_FAIL;
+    unsigned scene_w,scene_h;
+    pc_display_scene_size(g.backbuf_w,g.backbuf_h,&scene_w,&scene_h);
+    if(!native_scene_resize(scene_w,scene_h))return E_FAIL;
     native_viewport();
     tsfp_native_settings_attach(g.window);
 
@@ -1389,10 +1391,12 @@ static void native_apply_scissor(void) {
     if(!g_scissor_count || g_scissor_exclusive){glDisable(GL_SCISSOR_TEST);return;}
     double sx=native_scene_active?(double)native_scene_w/g.backbuf_w:1;
     double sy=native_scene_active?(double)native_scene_h/g.backbuf_h:1;
-    double left=g_scissor_rect.x1*sx,right=g_scissor_rect.x2*sx;
+    int32_t clip[4]={g_scissor_rect.x1,g_scissor_rect.y1,g_scissor_rect.x2,g_scissor_rect.y2};
+    pc_ui_vignette_clip(native_placement_tag,native_placement,clip);
+    double left=clip[0]*sx,right=clip[2]*sx;
     if(native_scene_active){double anchor=native_scene_w*native_hud_anchor;
         left=anchor+(left-anchor)*native_hud_k;right=anchor+(right-anchor)*native_hud_k;}
-    double top_y=g_scissor_rect.y1*sy,bottom_y=g_scissor_rect.y2*sy;
+    double top_y=clip[1]*sy,bottom_y=clip[3]*sy;
     if(native_scene_active){double cy=native_scene_h*.5;
         top_y=cy+(top_y-cy)*native_hud_ky;bottom_y=cy+(bottom_y-cy)*native_hud_ky;}
     int top=(int)top_y,bottom=(int)bottom_y;

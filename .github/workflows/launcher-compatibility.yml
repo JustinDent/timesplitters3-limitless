@@ -3,6 +3,8 @@ name: Launcher compatibility checks
 # Report on every PR so the final check can be required, including unrelated PRs.
 on:
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -30,11 +32,11 @@ jobs:
       - name: Select both host checks for launcher changes
         id: plan
         env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
-          if [ "$EVENT_NAME" = workflow_dispatch ]; then
+          if [ "$EVENT_NAME" = workflow_dispatch ] || [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = 0000000000000000000000000000000000000000 ]; then
             python tools/launcher-compatibility.py scope --head "$HEAD_SHA" --all
           else
             python tools/launcher-compatibility.py scope --base "$BASE_SHA" --head "$HEAD_SHA"

@@ -98,34 +98,15 @@ screens and menus must be excluded before describing gameplay FPS. These are
 host-present timings, not measurements of monitor scanout. Compare the same
 scene and build settings, and state whether `--capture` was enabled.
 
-Native Mac defaults to an **up-to-120 FPS** display target: the game still
-simulates at 60 Hz, while the renderer draws intermediate frames using blended
-camera/object transforms. GPU vertex shaders and optimized native game code
-provide the extra rendering time. Menus, cinematics, scene cuts and expensive
-frames can fall back to fewer display frames. This is experimental interpolation,
-not 120 simulation updates, and is not a guarantee for every level or Mac.
-
-Use `./Play-Native-Mac.command --fps 60` for the original presentation rate, or
-`--fps 120` to explicitly select the new target for that launch. These options
-do not rewrite saved settings. To retain 60 as a preference, put `frame_interp = 1`
-in `private/native-settings/runtime.conf`; `frame_interp = 2` selects 120.
-The Mac path clamps interpolation to 2x. A custom `frame_cap` is preserved;
-use `frame_cap = 60` with interpolation, or the `--fps 120` override. Do not raise
-`RECOMP_VBLANK_HZ`: that changes the console clock and can change game speed.
-
-The isolated test runner also accepts `--fps 60` / `--fps 120`. Profile rows label
-each present as `guest` or `interpolated`, and the statistics report both rates.
-For a separate performance measurement, `--profile-frames --profile-without-validation`
-disables Vulkan validation layers for that isolated run only. The default
-keeps validation enabled. Report which mode was used, exclude loading/readback
-from steady-scene timings, and do not treat a profiling-only run as a clean
-Vulkan validation pass.
-For motion evidence, `--capture-interpolation` enables a request file at
-`private/test-saves/native-mac/capture-interpolation.txt`; write `1` while moving
-to replace exactly two BMPs (`interpolation-guest.bmp` and
-`interpolation-midpoint.bmp`) plus an `interpolation-pair.json` receipt in the
-normal native capture directory. This GPU
-readback is for visual validation; keep it outside measured performance windows.
+Native Mac uses fixed **60 FPS** rendering and the original **60 Hz** console
+clock. Interpolation and prediction have been removed. Old timing preferences
+cannot enable them; the launcher migrates those keys on Save while preserving
+unrelated settings. The monitor retains its desktop refresh rate.
+The interactive and isolated runners accept `--fps 60` only. The retired
+`--capture-interpolation` mode is removed; ordinary `--capture` remains.
+For separate profiling, `--profile-frames --profile-without-validation` disables
+Vulkan validation only for that isolated run. Report this distinction and exclude
+loading/readback from steady-scene timings.
 
 The native implementation includes a reserved 4 GiB **virtual address range**
 (not a 4 GiB game copy), aliased RAM/device mappings, host timers, an ARM64
@@ -213,8 +194,7 @@ location (or `native-boot.err` for isolated tests).
 
 Higher resolutions render the scene at the selected size, preserve the original
 menu proportions and widen the gameplay camera. Screen-space HUD draws retain
-their proportions. Larger targets cost GPU time, so 120 presentations per second
-remains a target, not a guarantee. Four 2D texture inputs, projected/linear
+their proportions. Larger targets cost GPU time and can cause drops below 60 FPS. Four 2D texture inputs, projected/linear
 texture coordinates, scissor clipping and 32-bit screen copies are implemented. Advanced texture modes, cube/volume
 textures and movies remain incomplete; this is not complete Windows graphics parity.
 
@@ -320,30 +300,51 @@ and runner accept `--vulkan-driver moltenvk|kosmickrisp` as a temporary override
 without changing the manifest or saved settings. The runner enables validation.
 This path compiles the PC Xbox frontend directly. The Mac adapters supply the
 window, SDL events and CoreText overlay bitmap. It has bounded first-mission
-coverage, not full rendering, physical-input or 120-present certification.
+coverage, not full rendering, physical-input certification.
 `--profile-frames` uses the common presentation recorder on both renderers and
 separates accepted guest/interpolated API presents. These timings do not measure
 GPU completion or display scanout. GL-specific `--trace-render` remains
-unavailable on the common renderer. `--capture-interpolation` enables a shared
-one-shot request: write `1` to the isolated `capture-interpolation.txt` after
-entering gameplay. The next eligible replay consumes it and writes
-`interpolation-guest.bmp`, `interpolation-midpoint.bmp` and
-`interpolation-pair.json` under `private/captures/native-mac`. The runner clears
-old pair evidence at startup and verifies both BMPs before reporting a complete
-pair. The receipt records the guest frame, actual blend and presentation result;
-"midpoint" names the intermediate image even when its blend differs from 0.5.
-Both images are taken before host-only FPS/watermark overlays. For a bounded
-transform trace, `RECOMP_INTERP_DEBUG=1` also prints the first three draws'
-previous, current and blended registers when a pair is requested.
-At 60 FPS or while interpolation is held, there may be no eligible replay.
-Readback disturbs timing: paired captures are diagnostic, not FPS benchmarks.
+unavailable on the common renderer. Use `--capture` for bounded frame evidence.
 Use the isolated runner for automated checks. For interactive use, both the
 native app and `Play-Native-Mac.command` read the renderer from `BUILD.json`,
 verify the pinned SDK receipt, and configure the manifest-selected loader without
 changing saved graphics preferences. `--check` remains read-only and now catches
 missing or modified Vulkan dependencies before launch. Rebuild with
 `--renderer gl --test` to select the fallback explicitly. Khallos sky distortion,
-movie playback, full campaign fidelity and sustained 120-present performance
+movie playback, full campaign fidelity and sustained 60 FPS performance
 remain separate acceptance gaps; selecting a shared implementation does not
 certify them.
 See [results and remaining work](../STATUS.md#common-xbox-renderer-on-native-mac-2026-10-19).
+
+## Native release packaging
+
+Build the game from the exact existing game release tag, retaining its native
+`BUILD.json`. On Apple Silicon, build the packaging branch's launcher with
+`tools/build-mac-launcher.py --require-artwork --test`, then run:
+
+```sh
+.venv/bin/python tools/package-native-mac.py --version v0.3.1-alpha.1
+```
+
+The packager verifies the native executable and pinned SDK, bundles and rewrites
+all non-system Mach-O dependencies, ad-hoc signs the modified binaries, includes
+checksum-pinned third-party notices and corresponding source, and verifies the
+actual ZIP with production launcher installation code on fresh/existing profiles.
+It emits a `macos-arm64.zip`, SHA-256 sidecar and `BUILD.json` beside the ZIP.
+Existing output paths are never overwritten. No original game data, personal
+settings or saves belong in the public package. A bounded relocated runtime
+probe is required before uploading those three files to an existing release.
+For alpha.1 this passed on an Apple M4 Mac mini with macOS 27.0.1; its three
+Mac assets are published alongside the existing Windows assets.
+
+The portable Vulkan package requires Apple Silicon. Its minimum macOS version
+is derived from the actual Mach-O deployment targets and recorded in `BUILD.json`;
+the alpha.1 build requires macOS 27.0 or newer. It includes its runtime dependencies; the player needs no compiler, Python,
+Homebrew or Vulkan SDK. The app and binaries are ad-hoc signed, without Developer
+ID/notarization. The source tag identifies the game; `packaging_commit`, launcher
+receipt and source archive identify any later packaging-only changes. Packaging
+does not change the release tag or publish assets automatically.
+
+Build/sign generated `.app` output outside cloud-synced storage when its provider
+recreates Finder metadata. `--output "$HOME/Library/Caches/tsfp-mac-release/launcher"`
+and a corresponding packager `--output` keep signing and ZIP staging local.

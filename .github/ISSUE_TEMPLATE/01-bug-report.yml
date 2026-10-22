@@ -17,6 +17,7 @@ body:
         **Game releases**
 
         <!-- BEGIN AUTO GAME VERSIONS -->
+        - `v0.3.1-alpha.1`
         - `v0.3.0-alpha.2`
         - `v0.3.0-alpha.1`
         - `v0.2.0-alpha.6`
@@ -30,6 +31,7 @@ body:
         **Launcher releases**
 
         <!-- BEGIN AUTO LAUNCHER VERSIONS -->
+        - `v1.2.22`
         - `v1.2.20`
         - `v1.2.18`
         - `v1.2.17`
@@ -108,6 +110,6 @@ body:
     id: diagnostics
     attributes:
       label: Launcher diagnostics (optional)
-      description: Open Diagnostics in the launcher and choose Report a bug or Request enhancement. If the launcher copied a longer report, paste the complete report here. Review before submitting; do not include private paths, raw logs, game files or saves.
+      description: Open Diagnostics in the launcher and choose Report a bug. If the launcher copied a longer report, paste the complete report here. Review before submitting; do not include private paths, raw logs, game files or saves.
       placeholder: Paste the filtered diagnostic report from the launcher here.
       render: text
