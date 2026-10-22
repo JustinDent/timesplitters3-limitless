@@ -749,7 +749,7 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
-- **Crowded multiplayer CPU follow-up (2026-10-22, uncommitted):** The shared
+- **Crowded multiplayer CPU follow-up (`252e72e`, 2026-10-22):** The shared
   text read cache now keeps the complete OS-validated interval, avoiding repeat
   queries when guest stack reads descend or labels visit earlier addresses in
   the same mapping. The US outlined-label wrapper also shares one read scope
