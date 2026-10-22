@@ -3593,7 +3593,7 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   clock/resource tests run in both-host CI; the complete walking fixture needs
   the supported private XBE. Native Mac execution and live activation remain
   awaiting validation. See the walking/boost audit in
-  `docs/native-high-refresh-regressions.md` for exact scope and unknown mode name.
+  `docs/native-high-refresh-regressions.md` for exact scope; the game rule-name table identifies mode 0x11 as Escort.
 
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
