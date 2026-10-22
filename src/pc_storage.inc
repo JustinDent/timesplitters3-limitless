@@ -4,6 +4,7 @@
 #ifdef __APPLE__
 #include <sys/mount.h>
 #include <sys/attr.h>
+#include <unistd.h>
 #include <limits.h>
 #endif
 

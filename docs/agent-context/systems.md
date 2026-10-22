@@ -340,3 +340,6 @@ An unavailable configured location fails explicitly instead of silently
 creating a new profile elsewhere. TSFP_SAVE_LOCATION_LOCK protects isolated test
 sessions from changing real drive preferences. Windows resolves junctions and
 volume identities; drive metadata retains executable-volume identity internally.
+The Mac metadata adapter includes unistd.h before calling getattrlist; sys/attr.h
+provides attribute structures but not that function declaration. The production
+pc_prompts.c compile contract checks this include order in Mac CI.

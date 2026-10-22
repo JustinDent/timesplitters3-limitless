@@ -1,3 +1,13 @@
+## 2026-10-22 — Keyboard/storage PR #306 validation
+
+The integrated Windows build at aba3346 and built-in tests passed with alphabetical
+drive-letter ordering. Focused storage/menu/input/profile checks passed: 22 passed,
+2 Mac-only skips. The Windows launcher CI passed; its local rerun stopped at the
+intentional running-game update guard, leaving the other game session untouched.
+Initial Mac runtime CI found getattrlist was used before its unistd.h declaration;
+the storage adapter now includes that header before querying volume names. Native
+Mac gameplay and drive switching remain awaiting validation in MAC-061.
+
 ## 2026-10-22 — Host storage screen (uncommitted)
 
 The original Create Profile storage screen now lists mounted host drives directly,
