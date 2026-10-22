@@ -509,6 +509,11 @@ int tsfp_native_input_test(void) {
         }
         free(saved_rate);free(terminal_guest);
     }
+    /* The synthetic terminal guest was freed above. End its input context
+     * before the independent capture/fire test, as a real gameplay frame does. */
+    pthread_mutex_lock(&camera_lock);
+    pc_input_terminal_context(&camera_input,0,0);
+    pthread_mutex_unlock(&camera_lock);
     captured=0;tsfp_native_mouse_config(1,0.1,0);release_all();
     /* Exercise capture activation through a real SDL window, including the
      * swallowed first click and immediate release of a published look sample. */
