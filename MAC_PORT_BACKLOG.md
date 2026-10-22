@@ -3514,6 +3514,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-057 — Optional texture pack delivery through the launcher
 
+- **Alpha.2 removal compatibility (2026-10-22):** Launcher 1.2.24 carries the
+  shared retired-icon migration for both hosts. The game publisher requires
+  stable 1.2.24+ with both platform downloads when the audited pack declares
+  retirements. Existing custom-pair preservation/rollback tests and both host
+  launcher builds are required before publication; the new version-gate cases
+  run in the existing release-validation suite.
+
 - **Alpha.2 packaging follow-up (2026-10-22):** Both game packagers use the
   shared `build_textures.write_source_files` helper to exclude compiled pack
   files from the nested source ZIP. The complete DDS/JSON pack remains in
