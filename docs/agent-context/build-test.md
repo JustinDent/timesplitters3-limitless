@@ -390,3 +390,37 @@ slow/fast-time, catch-up, selected actor and existing clamps. Its no-fix mutatio
 must double recovery at 120 FPS. The asset-free `native_timing_guest.c` recovery
 contract remains in the existing Windows/macOS CI route; neither fixture proves
 live Escort input activation or network transport behavior.
+
+The third `test_surface_shader_feedback.py` case, `surface_damping_gpu.inc`,
+executes one second of original-program WARP displacement damping at 60/120/144.
+Float32 uniform inputs and zero coupling isolate coefficient packing. The
+packed fractional coefficients are a required negative control; a precise
+power of the original packed one-tick damping must retain the 60-step result.
+This needs the local supported XBE; hosted skips are not GPU acceptance. It
+proves a scalar arithmetic contract, not full spatial water/byte-storage parity.
+
+The damping case first executes all of `sub_003D9520` through the current lifter
+and passes its packed bytes to the GPU fixture. Do not substitute hand-rounded
+constants: the current recompiled conversion truncates. `surface_coefficient_upload.c`
+checks the stack/callee-saved-register boundary and supplies sufficient command
+space; no generated game code is checked in. `test_ordered_combiner_constants`
+also covers the production coefficient setter/clear/cache path. The GPU scalar
+case now uses the shared coefficient helper for its corrected values.
+
+The coefficient integration was exercised with the existing bounded Scotland
+route at 60/120/144 and `--trace-surface-images`. Use the image validator for
+consecutive-frame/hash/freshness checks; compare common elapsed game-time
+windows rather than treating 360 samples as equal time at different rates.
+Unpaired RNG and synchronous GPU readback prevent mechanics/pacing claims.
+Current fresh images and reviewed stills are not complete wave acceptance;
+the measured amplitude difference remains recorded in STATUS.
+
+`surface_coupling_gpu.inc` exercises the unchanged second feedback shader with
+persistent G/B and a fixed neutral neighbor at 60/120/144, separately storing
+outputs in float32, half-float and UNORM8 targets. Identical controlled inputs
+and per-pixel equations separate timestep coupling from actual GPU storage
+rounding; it deliberately excludes smoothing, random forcing and spatial waves.
+The earlier scalar damping case alone cannot prove coupled equivalence.
+Historical upgrade fixtures exclude the later coefficient patch together with
+its surface-constant dependency before installing the complete current stack;
+including only the newer patch creates an impossible historical checkpoint.

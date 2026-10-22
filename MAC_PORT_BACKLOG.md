@@ -3634,6 +3634,30 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   awaiting validation. See the walking/boost audit in
   `docs/native-high-refresh-regressions.md` for exact scope; the game rule-name table identifies mode 0x11 as Escort.
 
+- **Coupled-water follow-up (2026-10-22, PR #298):** Controlled Windows WARP
+  execution distinguishes fractional coupling from float32/half-float/UNORM8
+  storage effects. It uses the original second shader with a fixed neighbor;
+  full spatial dynamics and native Mac GPU/scene behavior remain awaiting
+  validation. The shared historical-upgrade fixture now excludes the new
+  coefficient patch when constructing old stacks lacking its prerequisite.
+
+- **Precise fractional water coefficients (2026-10-22, `1d02157`):** Shared
+  policy and HLE patch extend the existing disabled experiment; no new host
+  adapter or capture format. The actual current guest uploader supplies the
+  truncated reference values, replacing an earlier rounded diagnostic assumption.
+  Queue/scope/replay and local Windows original-program GPU checks pass. The
+  combined Windows build and three bounded Scotland routes pass; every captured
+  image updates, but measured amplitude differs and motion parity is unproven. Native
+  Mac GPU/scene execution and complete wave/appearance acceptance remain awaiting
+  validation; this is not enabled for normal play. See STATUS for current scope.
+
+- **Water damping coefficient diagnosis (2026-10-22):** The local Windows WARP
+  original-shader case now isolates packed fractional coefficient drift and a
+  precise anchored alternative. This is a diagnostic, not a runtime change.
+  Shared CI knows the fixture, but skips without the private XBE/Windows WARP.
+  Native Mac GPU/scene validation and full water acceptance remain awaiting
+  validation. See STATUS and the fractional damping audit for measured scope.
+
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
   extract camera code without the adjacent menu allocator that Clang rejected.

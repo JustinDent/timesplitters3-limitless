@@ -5519,3 +5519,148 @@ the original doubled 120-FPS recovery. External world, network, rendering and
 pause-query services are controlled; this is not live Escort or network parity.
 The asset-free clock/resource fixture also checks recovery in both-host CI.
 Evidence: `logs/native-escort-recovery-{red,fixed,regressions}.log`.
+
+## Fractional damping coefficient packing (2026-10-22)
+
+The first diagnostic used rounded test coefficients and found scalar damping
+drift. Follow-up execution of the complete current-recompiler US uploader
+`sub_003D9520` exposed an incorrect assumption: its lifted `cvtss2si` uses a C
+integer cast, truncating rather than rounding. The earlier 250/255 anchor and
+-20.70%/+5.58% figures describe that rounded diagnostic, not the current game's
+60-FPS upload. This audit now derives every packed test coefficient from the
+actual re-lifted upload routine and passes those values to the GPU case.
+
+For authored `(acceleration, displacement, damping)=(0.105,0.65,0.98)`, actual
+packed bytes are `(26,165,249)` at one tick, `(13,82,252)` at half a tick and
+`(11,69,252)` at 60/144 ticks. These are controlled inputs, not a captured
+Scotland trajectory. The uploader's command-buffer space, definition mappings
+and ABI are supplied/checked; refill is an unexpected failure.
+
+The GPU test uses the hash-verified US second feedback shader, production HLSL
+translator and common RHI, uniform float32 inputs/targets, zero acceleration
+and displacement coupling, and feedback only in blue. One second from 0.6 gives:
+
+| Coefficient path | FPS | Final blue | Relative to current original-60 path |
+| --- | ---: | ---: | ---: |
+| Current packed upload | 60 | 0.143780917 | -0.00001% |
+| Current packed upload | 120 | 0.145008832 | +0.85400% |
+| Current packed upload | 144 | 0.109154858 | -24.08252% |
+| Precise anchored fractional damping | 120 | 0.143780857 | -0.00005% |
+| Precise anchored fractional damping | 144 | 0.143780395 | -0.00038% |
+
+The shared `pc_surface_coefficients` policy clamps/truncates the original one-tick
+values once, scales the acceleration/displacement anchors by fractional time,
+and raises the damping anchor to that time. The correction is part of the
+existing opt-in bias/float/fractional experiment; normal play and the original
+whole-tick/catch-up path remain unchanged. It preserves the current recompiled
+60-FPS contract; the lifter's broader CVTSS2SI/MXCSR fidelity remains a separate
+unverified hardware-fidelity issue and is not silently changed here.
+
+Original parameters are copied before the guest's fractional parameter scope.
+The HLE shader-state path sends acceleration/displacement/damping through the
+existing ordered float-constant payloads at bank 0 stages 3/5/7, alongside the
+centering value at bank 1 stage 6, only for the validated second feedback shader.
+Changing shader, leaving fractional scope, or invalid parameters clears the
+appropriate slots. Identical updates are cached; new parameters at the same
+delta refresh the values. Queued and replayed commands own copied values.
+No delayed draw reads mutable guest timing or parameter memory.
+
+Five focused cases pass: queue/scope/copy/replay checks, three original-program
+WARP cases (including actual uploader capture), and the original procedural
+update/upload integration with disabled and precision/bias/live variants.
+Every damping pixel/update is compared with the scalar equation. Broader
+coupled/spatial dynamics, original byte-storage appearance, additional levels
+and native Mac GPU/scene validation remain unverified; water remains opt-in.
+The full GPU cases require the private supported XBE and Windows WARP. Hosted
+skips are not GPU acceptance. Evidence: `logs/surface-damping-upload.log` and
+`logs/surface-coefficients-focused.log`. No private game code is distributed.
+
+### Coefficient build and bounded scene comparison
+
+Source `1d02157` was integrated as `20ee848` with the independent crowd,
+FPS-handoff and Escort repairs, then built with the supported Windows script.
+Host: Windows 10.0.26300 AMD64, MSVC 14.44.35207 and SDK 10.0.26100.0;
+the shader diagnostic uses the production common-RHI D3D11 WARP route.
+All required build/native checks pass (`logs/surface-coefficients-combined-build.log`).
+The selected local timing/shader/queue/preservation/statistics/patch/backlog/
+context suite passes 118 tests (`logs/surface-coefficients-regressions.log`).
+
+The built executable hash is
+`9eb9a3c2ac5d80c0157f1b3bd15fbeedc31cfd34884882a021b606e2f9c0c88e`.
+Three isolated runs use the existing Scotland fixture and bounded 120-second
+runner, stopping after approximately 73 seconds. Original 60 has experiments
+off; the 120/144 runs enable float, fractional, bias and live surfaces. All
+reach scene 4, turn toward the shoreline, move, pause, resume and exit cleanly.
+Profiles remain unchanged with valid signatures, fixtures are preserved, and
+disposable disks are recycled. No personal session is left running.
+
+| Path | Images | Changed adjacent pairs | Captured game ticks | First 120 ticks channel 1/2 standard deviation |
+| --- | ---: | ---: | ---: | --- |
+| Original 60 | 360 | 359/359 | 372.000 | 24.639 / 23.854 |
+| Candidate 120 | 360 | 359/359 | 197.518 | 19.351 / 18.589 |
+| Candidate 144 | 360 | 359/359 | 167.515 | 19.315 / 18.343 |
+
+The validator checks actual GPU bytes, image hashes, consecutive guest frames
+and stable resource/format/path. All shoreline stills show water without a
+missing/black target. Pause/resume state and health remain correct at the
+observed checkpoints. These limited observations do not establish complete
+wave dynamics, continuous motion fidelity or long-term stability. In particular,
+the amplitude statistics still differ. Random trajectories are unpaired and
+capture durations differ; equal elapsed-window statistics do not remove that
+limitation. Synchronous GPU readback invalidates ordinary pacing comparisons.
+Do not enable the experiment based on this run.
+
+Evidence: private `surface-coefficients-{60-control,120-candidate,144-candidate}`
+reports/captures and `procedural-surface-coefficients-summary.json`. Each raw
+23,592,960-byte trace was gzip-compressed and byte-exact roundtrip-verified
+before recycling the raw file; selected PNGs and provenance are retained.
+No private assets, generated code or screenshots are distributed in Git.
+
+### Deterministic coupled feedback and storage comparison
+
+`surface_coupling_gpu.inc` runs the unchanged production-translated second
+feedback shader on D3D11 WARP. Texture 0 supplies persistent state initialized
+to R/G/B = 0.5/0.5/0.65; texture 1 supplies a fixed neutral neighbor. The initial
+shader inputs are identical for every run. Actual GPU render targets use float32,
+half-float or UNORM8; readback feeds their stored G/B into the next update without
+an extra conversion. Constants use the actual uploader anchors and the current
+precise fractional helper. This tests the coupled kernel rather than only its
+isolated damping coefficient.
+
+Every pixel/update is compared with the unsaturated coupled equation. Float32
+error is below 3e-6, half-float below 0.0005, UNORM8 below 0.501/255. The states
+stay within the tested unsaturated range. All runs execute one second; results:
+
+| Storage | FPS | Final green | Final blue | Changed updates |
+| --- | ---: | ---: | ---: | ---: |
+| Float32 | 60 | 0.521120727 | 0.446032643 | 60/60 |
+| Float32 | 120 | 0.520336211 | 0.448130667 | 120/120 |
+| Float32 | 144 | 0.520253778 | 0.448478669 | 144/144 |
+| Half-float | 60 | 0.520507812 | 0.448242188 | 60/60 |
+| Half-float | 120 | 0.519531250 | 0.452636719 | 120/120 |
+| Half-float | 144 | 0.519531250 | 0.454833984 | 144/144 |
+| UNORM8 | 60 | 0.521568656 | 0.443137258 | 60/60 |
+| UNORM8 | 120 | 0.513725519 | 0.443137258 | 120/120 |
+| UNORM8 | 144 | 0.521568656 | 0.447058827 | 144/144 |
+
+Even with precise coefficients, float32 fractional coupling does not reproduce
+the complete one-tick coupled update. Half-float adds a separately measurable
+rounding effect; byte storage also changes the trajectory. The assertions
+characterize these discrepancies, not accept them as full-game equivalence.
+There is no random input, smoothing pass, first feedback pass or spatial field
+in this fixture, so these results do not by themselves explain the full scene's
+variance deficit. They identify two independent next targets for integration
+work. Local evidence: `logs/surface-coupling-gpu.log`. The four original-program
+GPU cases remain asset-dependent and Windows-only; hosted skips do not prove
+native Mac GPU execution.
+
+PR #298's first historical upgrade checks failed because three old-stack
+fixtures selected the new coefficient patch while omitting its surface-constant
+prerequisite. Corrected old-stack selection excludes both. Full current-stack
+installation, fresh/repeated builds and local-edit preservation remain tested;
+no runtime patch or game behavior is weakened to bypass this failure.
+
+After the fixture repair, all four affected upgrade/fresh-install cases pass
+locally in 65.37 seconds. The four original shader cases, ordered constants and
+context/backlog checks pass 17 cases in 14.88 seconds. Source-only validation
+needs no rebuild or additional gameplay run because runtime code is unchanged.

@@ -163,6 +163,67 @@ activation, upstream input acceleration and native
 Mac execution remain unverified. See MAC-060 and the
 [walking/boost audit](docs/native-high-refresh-regressions.md#walking-update-and-boost-resource-audit-2026-10-22).
 
+## 2026-10-22 — Controlled coupled-water and upgrade follow-up
+
+The original second feedback shader now has a deterministic fixed-neighbor
+comparison at 60/120/144, with actual float32, half-float and UNORM8 render
+targets. All pixels match the controlled coupled equations within each format's
+rounding bound. After one second, float32 blue is 0.446033 at 60, 0.448131 at
+120 and 0.448479 at 144. Half-float gives 0.448242/0.452637/0.454834; UNORM8
+gives 0.443137/0.443137/0.447059. This separates timestep coupling and storage
+rounding without RNG. It does not reproduce the complete first pass, smoothing,
+forcing or spatial waves, and does not attribute all gameplay amplitude change
+to either factor. The experimental water path remains disabled.
+
+PR #298's historical-upgrade check exposed a fixture error: three synthetic old
+patch sets excluded surface-constant support but accidentally included the new
+coefficient patch that requires it. Those checkpoints now exclude both; their
+upgrade still installs the full current stack and checks idempotence. Current
+runtime code and the previously built combined executable are unchanged.
+All four affected local upgrade/fresh-install cases pass (65.37 seconds), and
+17 shader/queue/context/backlog cases pass (14.88 seconds).
+
+## 2026-10-22 — Water coefficient precision candidate
+
+`fix/native-water-coefficients` extends the existing disabled water experiment
+with precise fractional coefficients, anchored to the actual recompiled
+one-tick upload. A complete US constant-uploader fixture corrected the earlier
+rounding assumption: the current lifter truncates, producing damping 249/255
+for authored 0.98. The earlier rounded-reference GPU figures did not represent
+this current game-upload path.
+
+In an isolated one-second float32 damping test, current packed uploads differ
+from the 60-step reference by +0.854% at 120 and -24.083% at 144. The shared
+anchored correction reduces that scalar error below 0.0005%. The original
+shader and production translator/common RHI execute every step; uniform input,
+zero coupling and float32 storage deliberately isolate coefficient effects.
+
+The candidate now supplies all three coefficients through the existing ordered
+float-constant path, with shader scope, copied payloads and clearing. Five
+focused tests pass. Full water dynamics/appearance and native Mac execution
+remain open under MAC-060; the experiment is still disabled for normal play.
+The selected timing, shader, queue/replay, texture-preservation, statistics,
+patch/backlog and repository-context suite passes 118 cases. The supported
+Windows build and its required native checks pass on integration source
+`20ee848`, which also includes the separate crowd, FPS-handoff and Escort fixes.
+The executable SHA-256 is
+`9eb9a3c2ac5d80c0157f1b3bd15fbeedc31cfd34884882a021b606e2f9c0c88e`.
+
+Three isolated Scotland runs (Original 60, opt-in 120 and 144) complete the
+same shoreline/movement/pause/resume route and exit cleanly. Each validates
+360 consecutive GPU images with all 359 adjacent pairs changed. Reviewed
+shoreline stills show visible water at all three rates. Profiles are unchanged,
+fixture signatures remain valid, and disposable disks are recycled.
+
+This is freshness/startup evidence, not complete wave parity: over the first
+120 captured game ticks, active-channel standard deviations are 24.639/23.854
+at 60, 19.351/18.589 at 120, and 19.315/18.343 at 144. Runs do not share an
+identical random trajectory, and synchronous readback changes workload. The
+remaining amplitude/dynamics difference requires investigation; no pacing,
+long-term stability or motion-equivalence claim follows. Compressed captures,
+reports and selected screenshots are retained privately with verified hashes.
+See the fractional damping regression record for build and measurement scope.
+
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
 Review identified that preserving installed textures would leave the old icons
