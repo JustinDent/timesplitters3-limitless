@@ -82,8 +82,7 @@ The mocked version-refresh PR creation check also verifies that the generated
 description preserves Ideas routing instead of referring to a removed form.
 The v1.2.23 release bump changes only shared version metadata; existing launcher
 release-policy, compatibility and both-host package checks remain the acceptance
-route. The version-triggered Repository texture pack check must also pass before
-merge. A version bump alone is not evidence of a published update.
+route. The optional-pack policy no longer hydrates LFS for version-only changes. A version bump alone is not evidence of a published update.
 
 Read each harness before assuming it is asset-free. Patch transition tests can
 need pristine pinned upstream files and Git access. Use existing dependencies;
@@ -142,19 +141,12 @@ the same lightweight plan runs both Node test files. No game build or GPU is
 needed for these helpers. Native controller regressions and signed-in model
 acceptance are machine-local checks, separate from repository CI.
 
-From `c932bee`, builders audit repository `assets/textures` by default. A source-only
-checkout can retain LFS pointers, but normal build/package must stop rather than
-bundle pointers. For an explicitly texture-free development build use Windows
-`-SkipTextures` or native Mac `--without-textures`; do not download a duplicate
-pack just to run source/documentation checks. Release packaging includes the
-audited committed replacements by default; see `tools/build_textures.py`.
-Both game packagers use `write_source_files` in that helper to omit
-`assets/textures/` from the nested source-code ZIP while preserving code,
-configuration, other assets and the runtime patch. Compiled DDS/JSON are shipped
-once through the playable `Textures/` entries. The source README explains how
-to reuse them at `assets/textures` for a rebuild. `test_build_textures.py` checks
-the nested source ZIP and complete outer texture delivery together; these
-asset-free tests run in both host release-validation jobs.
+The 2026-10-22 optional texture policy supersedes default bundling from `c932bee`.
+Windows and native Mac builders no longer require asset hydration when repository
+`config/texture-pack.json` declares optional delivery. Both game packagers omit
+textures by default; explicit `--with-textures` / `--texture-pack` still audit and
+stream an offline bundle. `write_source_files` omits compiled DDS/JSON from the
+nested source ZIP. Test these defaults without downloading real artwork.
 
 `testing_profile.prepare_run` explicitly supplies `TSFP_TEXTURE_PACK_DIR` from
 the checkout's `assets/textures` and `TSFP_TEXTURE_MODE=classic` after filtering
@@ -166,20 +158,24 @@ coverage lives in `tests/test_testing_profile.py` and
 runtime loading must be checked separately; native Mac visual validation remains
 pending. Missing packs retain the loader's Classic fallback for source-only tests.
 
-Official Windows publication through `Publish-Release.ps1` /
-`tools/publish-release.py` requires the complete repository pack, including
-prepare-only, draft and resumed runs. Preflight audits hydrated DDS/mips,
-sanitized JSON and the bundled manifest path/count/size using the shared texture
-helper. Finished ZIP validation compares every DDS/JSON name and hash against
-that pack, even after staging cleanup and immediately before upload. A missing
-texture identity cannot bypass the published stable launcher 1.2.22+ requirement
-for both Windows and Mac assets. Packs declaring retired replacements instead
-require stable launcher 1.2.24+ on both hosts, covering transactional icon
-retirement; its version regression runs in `test_publish_release.py`.
-Local texture-free/artist-override packages are
-development outputs; the official publisher rejects them. Regression coverage:
-`tests/test_publish_release.py` plus `tests/test_build_textures.py` in the existing
-Windows/macOS release-validation CI step; no game assets are used by those tests.
+Official game publishing reads the repository delivery policy. Optional delivery
+requires no `Textures/` members and does not hydrate LFS. `textures` is null
+or carries only `delivery: optional` and the exact-hash retired-icon policy.
+`optional_identity` reads that small policy without touching DDS files. Packages
+with retirements retain the published launcher 1.2.24+ requirement. Legacy bundled-policy fixtures still enforce complete asset identity
+and launcher compatibility. `tools/texture-release.py` separately audits and
+publishes immutable schema-3 parts plus per-file hashes; the public index is
+`config/texture-download.json`, distinct from the repository catalog. The initial
+unpublished placeholder is replaced only after successful publication. Asset CI
+hydrates LFS for pack/auditor changes, not game or launcher version bumps.
+
+Regression routes: `test_texture_release.py`, `test_build_textures.py`,
+`test_publish_release.py`, `package_launcher.py`, `test_native_mac_package.py` and
+both launcher hosts' `--textures` / shared UI checks. Indexed-update tests cover
+adopting bundled files without receipts, changed/missing parts, cancellation,
+checksum/index rejection and custom data preservation. Existing installer tests
+cover rollback, invalid paths and corruption. Real Mac execution remains a host
+check; a Windows compile or portable packaging test is not Mac acceptance.
 
 `tools/bundle_online.py:bundle_standard_library` keeps `ssl.py` and top-level
 stdlib PEM trust resources together as real files in the Windows portable
@@ -445,3 +441,7 @@ program, smoothing and disturbances; it is not full gameplay equivalence.
 channel/swizzle order, exact capture reconstruction, output state and rollback
 prerequisites on the existing Windows and native Mac GPU test route. Old-stack
 fixtures exclude the new full-float patch until its prerequisites are installed.
+
+Optional texture publication changes (`tools/texture-release.py` and its test)
+select the release suite even when changed alone. Manual Windows upgrades carry
+Textures alongside Data, Settings and Saves to retain downloaded/custom packs.

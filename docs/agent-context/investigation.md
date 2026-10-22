@@ -129,3 +129,10 @@ This CI correction changes navigation tests only, not runtime pacing.
 The loader-order contract now checks that full-float surface preservation
 follows live-surface support. Check prerequisite relationships explicitly when
 adding a dependent patch; unrelated integration patches may follow it.
+
+## Texture policy change (2026-10-22)
+
+The user's optional-download request supersedes the earlier mandatory bundled-pack
+rule. AGENTS.md now records lightweight default game packaging, separate audited
+optional publication and preservation of installed packs. Use the launcher and
+build-test guides for the implementation; do not infer publication from local code.

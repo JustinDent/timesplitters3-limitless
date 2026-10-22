@@ -11,7 +11,7 @@ authoritative place to implement portable behavior.
 
 Textures: root `src/texture_pack*`, `texture_mode*`, runtime `src/d3d/` and HLE
 texture hooks; offline tooling `tools/texture-*`. Sanitized replacements now live
-in `assets/textures` (DDS via Git LFS), audited/bundled by `tools/build_textures.py`;
+in `assets/textures` (DDS via Git LFS), audited by `tools/build_textures.py` for optional delivery;
 private source art and original assets stay local. Networking: `src/pc_network*`,
 `pc_online*`, runtime HLE/kernel patches and `tools/online.py`. Crash capture:
 `src/pc_crash*`, `pc_hang_policy.h`, runtime crash hooks and launcher diagnostics.
@@ -81,9 +81,10 @@ the canonical local fixture and must remain unchanged. Test runners copy it into
 bounded disposable test roots. `private/texture-remaster/pack` is the one active
 6-GiB-capped art-production pack; source art and original game assets stay ignored.
 Sanitized compiled DDS/JSON replacements are tracked in `assets/textures` and
-bundled with game releases; `tools/texture-repository.py` stages them with LFS,
+published as optional packs; `tools/texture-repository.py` stages them with LFS,
 `tools/build_textures.py` audits them. Leave pointers unhydrated for unrelated
-source work. Packaging must reject missing LFS content, not silently omit it.
+source work. Optional pack publication must reject missing LFS content. Ordinary
+game packages omit textures; existing installed packs and runtime fallback remain.
 
 For installed layouts, use the launcher platform adapter instead of assuming
 checkout names. Never include private data, generated guest code, credentials,
@@ -254,3 +255,8 @@ normal-play defaults are unchanged. Common-RHI promotion/demotion preserves
 live GPU contents and capture bytes; the transaction still flushes before copy,
 rebinds only on success and retains the old resource on failure. This removes
 measured half-float accumulation error but does not prove original wave parity.
+
+Optional game packages use `build_textures.optional_identity` to retain only the
+small `textures.retired` migration, without any DDS/JSON payload or LFS access.
+This preserves the original-icon fix using the existing shared launcher consumer;
+ordinary missing texture files never cause removal of an installed pack.
