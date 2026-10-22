@@ -2960,6 +2960,22 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Rejected procedural feedback experiment (2026-10-21, local source):**
+  Shared `pc_native_surface_guest.h` and reproducible wrappers add an explicit
+  `TSFP_SURFACE_FRACTIONAL_TEST=1` experiment; the default is unchanged. It
+  preserves discrete disturbances while stepping feedback at native cadence,
+  but Windows GPU images reject it: reduced variation at 120 and a flat result
+  at 144. A same-build disabled Windows control retains normal variation.
+  Portable fixtures cover original dispatcher/upload ABI and disabled
+  pass-through, not GPU equivalence. Raw-channel histogram statistics now expose
+  loss of variation without float32 accumulation error. The existing shared CI
+  selections include these checks. Native Mac compilation/readback/appearance
+  remain unverified; do not enable this candidate on either host. A replacement
+  must retain fractional feedback precision and original effect behavior. RHI
+  supports float target formats, while the legacy GL texture constructor assumes
+  four-byte storage; changing formats will require explicit adapter validation,
+  not a Windows-only simulation. See the rejected-candidate record in STATUS.
+
 - **GPU image freshness diagnostic (2026-10-21):** Shared
   `pc_native_surface_trace.h` and original-function wrappers use the common
   D3D surface readback interface, available in RHI and legacy GL, without

@@ -3,6 +3,7 @@
 The synchronous readback changes workload. No wall-clock FPS/scanout claims.
 """
 import argparse
+from collections import Counter
 import csv
 import json
 import math
@@ -46,7 +47,16 @@ def measure(rows, pixels):
             else:executed_unchanged+=1
         elif fresh:skipped_changed+=1
         else:skipped_unchanged+=1
-    return dict(samples=len(rows),comparisons=len(rows)-1,changed_images=changed,unchanged_images=unchanged,
+    # Integer histograms avoid float32 accumulation drift over millions of
+    # bytes. Describe raw byte channels without assuming renderer channel order.
+    channel_statistics=[]
+    for channel in range(4):
+        counts=Counter(pixels[channel::4]);count=sum(counts.values())
+        mean=sum(value*frequency for value,frequency in counts.items())/count
+        variance=sum((value-mean)**2*frequency for value,frequency in counts.items())/count
+        channel_statistics.append(dict(mean=mean,std=math.sqrt(variance),
+                                       minimum=min(counts),maximum=max(counts),distinct=len(counts)))
+    return dict(channel_statistics=channel_statistics,samples=len(rows),comparisons=len(rows)-1,changed_images=changed,unchanged_images=unchanged,
                 executed_changed=executed_changed,executed_unchanged=executed_unchanged,
                 skipped_changed=skipped_changed,skipped_unchanged=skipped_unchanged,
                 longest_unchanged_updates=longest,game_ticks=sum(r['delta'] for r in typed[1:]),

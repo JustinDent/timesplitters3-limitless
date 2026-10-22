@@ -4605,3 +4605,116 @@ four-byte readback channels are compared as bytes; the RGB-only diagnostic
 previews do not establish cross-backend channel semantics. Shared RHI and
 legacy native-GL surface implementations supply readback/readonly unlock;
 actual Mac capture and full-game texture/effect coverage remain unverified.
+
+## Rejected fractional surface candidate (2026-10-21)
+
+The `d404ead` image diagnostic established a genuine remaining texture hold.
+This experiment adds `pc_native_surface_guest.h` and a subsequent manual-wrapper
+patch. It is explicitly gated by `TSFP_SURFACE_FRACTIONAL_TEST=1`, absent from
+player settings and disabled by default. The bounded runner selects it only
+with `--fractional-surfaces` and explicitly clears it otherwise. **The candidate
+fails image acceptance and must not become the normal high-refresh path.**
+
+For positive native intervals below one authored tick at rates above 60, the
+candidate executes the original dispatcher each frame. It temporarily scales
+acceleration and velocity coefficients by delta, exponentiates damping, and
+restores the original parameter table and whole-tick gate afterward. Local
+queued disturbances and random-noise draws keep their original whole-tick
+cadence. The original smoothing pass retains radius one on whole events and
+uses radius zero between them. Original 60/native 60, pause and full-tick
+catch-up retain the original policy. This is a trial integrator, not a proven
+fractional equivalent of the original quantized shader pipeline.
+
+`tests/native_surface_fractional.c` executes the pinned original dispatcher
+and two-pass coefficient-upload routine. Graphics spies verify call counts,
+coefficient scope, stack/register/FPU state, parameter/index restoration,
+pause and catch-up. Eight-second schedules yield 480/480/960/1152 steps for
+original 60/native 60/120/144 and 960 combined disturbance calls in every case.
+A second process with the experiment disabled keeps 480 steps and zero extra
+copy passes at all rates. These fixtures deliberately do not claim pixel
+correctness. The original US XBE hash is verified before lifting/execution.
+
+Three isolated Scotland replays use Windows x64, Python 3.12.14, the shared
+HLE/RHI frontend and D3D11 backend. Each produces 360 complete final-texture
+readbacks. The build is based on `d404ead` plus the experimental wrappers;
+executable SHA-256:
+`1155d591ca12382eb8c1847effdbbdf2844b315a292fd2ce801644988b2d2ff4`.
+
+| Measurement | Original 60, flag enabled | Candidate 120 | Candidate 144 |
+| --- | ---: | ---: | ---: |
+| Changed image pairs / 359 | 359 | 359 | 0 |
+| Unchanged image pairs / 359 | 0 | 0 | 359 |
+| Executed simulation but unchanged | 0 | 0 | 359 |
+| Raw byte channel 1 standard deviation | 24.8907 | 16.4159 | 0 |
+| Raw byte channel 2 standard deviation | 24.0195 | 15.9464 | 0 |
+| Sum of game deltas after first sample (ticks) | 374 | 195.001446 | 164.939040 |
+
+The 144 output is exactly `(255,128,128,255)` for every pixel in every sampled
+image. The 120 result has 34.05%/33.61% less variation in its two varying byte
+channels than the same-build original reference. Previous original-60 and
+unmodified-native-144 captures both have standard deviations near 24–25,
+so this is materially different from the previous observed range. These are
+raw channel statistics, not a calibrated measurement of water height. The
+reviewed three-image contact sheet also shows a flat 144 texture. Random states
+and capture durations differ; cross-run exact pixel equality is not asserted.
+
+The statistics tool now computes per-channel integer histograms and derives
+mean/standard deviation from them. This avoids substantial float32 summation
+error over millions of bytes. Its new fixture covers both changing uniform
+frames and the actual flat four-channel pattern, alongside existing hashes,
+frame continuity and executed-but-frozen detection. Private exploratory
+lag correlations use actual cumulative game ticks; undefined correlations for
+constant channels are null, not fabricated zeros. Those exploratory correlations
+are not a speed-parity acceptance test.
+
+Windows Build and its built-in checks pass. The first build caught a missing
+`g_esi` declaration at the new include; the corrected build succeeds. All 71
+then-current timing/statistics checks pass; after adding disabled-mode and
+histogram checks, 12 focused surface checks pass. Three historical patch-stack
+migration cases pass with the new dependency excluded from their older setups.
+Their CPU success does not override the failed GPU acceptance. The experiment
+remains separate from normal play, and no personal configuration enables it.
+
+Evidence remains local under `private/test-saves/surface-fractional-{60,120,144}`,
+including CSV/raw images, provenance, selected captures and scenario reports;
+`logs/surface-fractional-{60,120,144}.log`;
+`logs/native-surface-fractional-build-fixed.log`;
+`logs/native-surface-fractional-timing.log`;
+`private/pipeline/procedural-surface-fractional-summary.json`; and
+`private/pipeline/surface-fractional-contact.png`. Each session exits normally,
+with signed profiles and canonical fixture unchanged and disposable disks/BMPs
+recycled. Synchronous readback/minimization makes these unsuitable for pacing
+claims. Full-game effects and native Mac execution remain open.
+
+Next work must identify and remove the loss of fractional feedback, then
+compare impulse response and steady-state behavior against the original
+shader passes before enabling a replacement. Original `sub_003D9520` quantizes
+uploaded constants to eight bits, and the feedback targets are eight-bit
+textures; simply scaling float coefficients does not preserve sub-byte state.
+These are concrete precision hazards, but the exact share of the observed
+failure due to target rounding, centering bias, filtering and integration is
+not yet isolated. RHI already maps half-float render targets; legacy GL's
+texture constructor assumes four-byte storage and needs adapter work before
+such a format change could be portable. Preserving higher-precision state,
+correct zero-time identity and authored disturbance behavior are necessary
+investigation targets. Increasing brightness or random impulses to disguise
+the flat output is not an accepted fix. Capture-free pacing and cross-platform
+validation follow a successful image/behavior comparison.
+
+A subsequent disabled-mode control attempt (`surface-control-144`) exits cleanly
+but remains at the profile-name screen and captures no procedural images. Its
+runner's successful bounded shutdown is **not** scene/image acceptance. The
+snapshot and log are retained as rejected test evidence; the source-level
+original-dispatch checks remain valid independently of that navigation failure.
+
+The completed retry (`surface-control-retry-144`) reaches Scotland with the same
+executable and the experiment explicitly disabled. Of 359 image comparisons,
+157 change on executed passes and 202 repeat on skipped passes; no executed
+pass is frozen. Channel standard deviations are 24.6491 and 23.6327, consistent
+with the existing path's observed range. This verifies that the candidate's
+flat output is confined to its opt-in path in this scene, while the known
+60-tick texture hold still needs fixing. It does not establish full-game parity.
+The 360-image control, its hashes/provenance and
+`private/pipeline/surface-control-retry-summary.json` are retained; the session
+exits cleanly with profiles/fixture preserved and disks recycled. Patch tracking
+and backlog checks additionally pass all 15 cases. No pacing claim is made.

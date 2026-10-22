@@ -6,6 +6,20 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Fractional water candidate rejected (2026-10-21):** Built and exercised
+  an explicitly opt-in fractional feedback experiment. Original 60 changes all
+  359 captured image pairs; candidate 120 also changes all pairs but loses about
+  34% of raw-channel variation; candidate 144 is completely flat for all 360
+  images despite executing every pass. It remains disabled in normal play.
+  Preserving event cadence and passing CPU tests are insufficient for this GPU
+  simulation. Windows Build, 71 timing/statistics checks, three patch migrations,
+  and 12 subsequent focused checks pass; the image acceptance fails as recorded.
+  A same-build disabled control retains normal variation and the known tick
+  holds; one earlier control attempt failed navigation and is excluded.
+  Patch/backlog checks pass 15 cases. Profiles and fixture are preserved. [Candidate evidence and next work](docs/native-high-refresh-regressions.md#rejected-fractional-surface-candidate-2026-10-21).
+  Texture fluidity, precision diagnosis, pacing and native Mac acceptance remain
+  open; this is experimental scaffolding, not an accepted smooth-water fix.
+
 - **Procedural GPU freshness (2026-10-21):** Added an opt-in shared GPU
   readback diagnostic and validated complete texture images. Original 60
   changes all 359 successive images; native 144 changes 154 and repeats 205,

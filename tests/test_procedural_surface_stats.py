@@ -35,3 +35,19 @@ def test_invalid_evidence(mutation):
     if mutation=='nan':rows[2]['delta']=float('nan')
     if mutation=='scene':rows[2]['scene']=30
     with pytest.raises(ValueError):measure(rows,pixels)
+
+
+def test_channel_statistics_are_exact_for_flat_and_varying_bytes():
+    rows,pixels=capture()
+    result=measure(rows,pixels)
+    assert result['channel_statistics']==[
+        dict(mean=15,std=5,minimum=10,maximum=20,distinct=2)]*4
+    pixel=bytes((255,128,128,255))
+    frame=pixel*(IMAGE_BYTES//4)
+    for row in rows:
+        row['hash']=image_hash(frame)
+        row['executed']=1
+    result=measure(rows,frame*len(rows))
+    assert result['changed_images']==0 and result['executed_unchanged']==3
+    assert [v['mean'] for v in result['channel_statistics']]==[255,128,128,255]
+    assert all(v['std']==0 and v['distinct']==1 for v in result['channel_statistics'])
