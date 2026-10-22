@@ -316,3 +316,8 @@ in Windows and native Mac launcher checks. `tests/test_build_textures.py` verifi
 that the exact retirement identities enter both package manifests and rejects
 reintroduced original-only keys. Use `tools/build-launcher.ps1 -Test` for Windows;
 CI provides native Mac launcher compilation and shared fixture execution.
+
+Launcher v1.2.24 version preparation uses `tests/test_launcher_release.py` and
+the Mac backlog integrity check; the dual-host launcher workflow validates the
+actual packages. Require the Repository texture pack check for this version bump
+and publish both launchers before the icon-removal game update.
