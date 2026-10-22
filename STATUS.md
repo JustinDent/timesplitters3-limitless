@@ -90,6 +90,30 @@ isolated `crowd-hotel-before`, `crowd-hotel-after`, `crowd-hotel-outline` and
 combined candidate:
 `ba7df7f5e3406264f2d082fe3d18558a4aa9fec49bed964ebd957ffc1fbc0809`.
 
+## 2026-10-22 — Native startup to Original 60 handoff
+
+On `fix/live-fps-clock-handoff` from main 564fda6, shared Swap/Present paths
+retain the real vblank boundary while native pacing bypasses the flip gate.
+Starting at 144 then applying Original 60 previously waited twice: the original
+guest clock waited for an ISR and the uninitialized gate discarded that event.
+The observed extra gate wait falls from 16.391 ms to 0.0008 ms. Subsequent cheap
+frames still wait normally; real-event and elapsed-period checks remain.
+
+Windows supported build and 44 selected tests pass. Final trace-free live cycle
+averages 59.998/120.000/143.994/60.005 FPS; native-start replay averages
+143.987 then 59.998 FPS. Its Apply window worst is 18.105 ms, with no interval
+over 33.33 ms in either run's Apply windows. Complete clock coverage and actual
+rate changes are verified; these stationary samples do not prove full-game
+mechanics or locked 144 FPS in crowds. Actual-source tests cover five native phases,
+normal cheap/late/no-signal behavior and a no-op mutation that restores the
+failure. Historical patch fixtures exclude this new dependent patch from their
+old stacks before applying the full current stack. Temporary phase tracing is
+removed from the final binary. Native Mac gameplay/timing remains unverified
+under MAC-060; no new platform adapter is required. This branch is independent
+of PR #295's crowded-multiplayer text-read optimization.
+
+[Evidence, provenance and limitations](docs/native-high-refresh-regressions.md#native-start-return-to-original-60-2026-10-22).
+
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
 Review identified that preserving installed textures would leave the old icons
@@ -5258,7 +5282,6 @@ layout/templates; a live Windows screenshot comparison was unavailable here.
   targets, other formats and matched scene fidelity remain pending. Local source was based on `c553f9a` with this commit's changes;
   the earlier integration gameplay evidence is not a test of this new fix.
 
-
 ## Shared native runtime and launcher integration (2026-10-19)
 
 - **Dependencies:** `codex/shared-native-integration` combines published renderer
@@ -6663,7 +6686,6 @@ or audio freeze that still renders can be missed. Observation is deliberately
 suppressed in the states above, is armed at guest entry and stops at cleanup.
 No Mac execution, commit, push, merge or release publication is claimed.
 
-
 ## Windows game crash logger and launcher integration (2026-10-19)
 
 Local, uncommitted work on `feature/windows-crash-logger`, based on main
@@ -7804,7 +7826,6 @@ CI PR #81 alongside launcher-only releases. No published notes were modified.
 macOS execution and other-device synchronization are
 unverified; see [MAC-012](MAC_PORT_BACKLOG.md#mac-012--standalone-mac-runtime-distribution).
 
-
 ## Lock-on and special scope effects (2026-10-17)
 
 Local, uncommitted follow-up on `fix/responsive-menu-footer`, base `0dc9fea`.
@@ -8545,7 +8566,6 @@ Personal settings/saves were untouched; disposable test disks and frame BMPs
 were recycled. MAC-030 retains native adapter work; hosted CI and physical
 controller validation remain pending. Changes remain local and uncommitted.
 
-
 Quit to Desktop follow-up (2026-10-17): added a final row after Extras in the
 main Story/Arcade menu and after the existing Quit in Pause. New shared patch
 hooks the two original layout finalizers, after all row setters, so original
@@ -8580,7 +8600,6 @@ Evidence: `build/issue-86-menu-mouse/quit-{main,pause}.json`,
 `quit-{main,pause}-runtime.err`, `quit-build.log`, and retained main/Pause PNGs.
 Disposable test disks and redundant frame dumps were recycled. Changes are
 local and uncommitted.
-
 
 Combined wheel/hover follow-up: user testing found level-list bouncing when
 scrolling and moving the pointer simultaneously. A regression reproduces hover
@@ -8746,7 +8765,6 @@ seven focused menu/terminal/UI tests passed after this change. Confirmation that
 this resolves the user's physical-input report is still pending; the synthetic
 reproduction does not establish that their input source was a held direction.
 
-
 A further human report narrowed the remaining cycling to a click followed by a
 stationary pointer. Menu identity changes were clearing mouse ownership, allowing
 an old held direction to resume repeating in the new menu. Ownership now survives
@@ -8765,7 +8783,6 @@ reproduces and fixes a transition defect, but confirmation with the user's
 physical input remains pending. The final hover/click/Back and stationary-pointer
 keyboard-takeover live replay also passed with this executable. An isolated
 600-second physical-input test was reopened at 3440x1440 for the user.
-
 
 The next physical-input capture reproduced residual cycling after mouse selection
 and Alt+Tab. It showed neutral controller axes (128), but logical controller 0
@@ -8793,7 +8810,6 @@ Test Lab row using measured image/client coordinates. This corrected the first
 harness attempt, which inspected the empty parent menu instead of that overlay.
 Local evidence: `mouse-profile.json`, `physical-source-before.json`. A bounded
 fullscreen physical-input retest was reopened for click and Alt+Tab verification.
-
 
 The user confirmed both click-then-stationary and Alt+Tab-out/back cases are now
 stable in the corrected fullscreen build. The concurrent read-only capture
@@ -11362,7 +11378,6 @@ HUD placement/rendering fidelity; native direct-camera mouse behavior and PC
 prompt/debug features are not claimed as equivalent. This work does not establish
 that the previously reported world-disappearance case is completely resolved.
 
-
 ## Mac backlog renderer, camera and prompts (2026-10-15)
 
 Validation performed before commit on `mac-port`, based on
@@ -11471,7 +11486,6 @@ Windows MSVC/Direct3D runtime checks are unavailable on this Mac; changes to the
 shared headers/wrappers must still be checked on Windows. See
 [MAC_PORT_BACKLOG.md](MAC_PORT_BACKLOG.md) for per-entry remaining acceptance work.
 
-
 ## Mac binding capture and camera checks (2026-10-15)
 
 Validation performed before commit on `mac-port` based on `30653e3` (the checkout
@@ -11551,7 +11565,6 @@ exited normally at its bound (exit 0), with at least 1800 completed guest frames
 and 1993 successful host presents, no sampled GL errors or native fault.
 Evidence: `logs/mac-capture-final-summary.json` and `logs/mac-capture-final.err`.
 No gameplay or physical-input claim is made from this short startup check.
-
 
 ## Mac debug and performance tools (2026-10-15)
 
@@ -11761,7 +11774,6 @@ earlier local checkout, not from this publication commit. Its source-only
 patch stack and regressions passed 51 checks before the push, including the
 208-case compiled pickup regression; one Windows symlink-privilege check skipped.
 
-
 ## Runtime patch branch-switch repair — October 16, 2026
 
 Branch-switch fix on `fix/runtime-patch-branch-switch`, based on main
@@ -11802,7 +11814,6 @@ Evidence: `logs/runtime-patch-switch-build.log` and
 was retained before the transition. No game launch, end-to-end multiplayer
 session, packaging or release publication was performed. MAC-014 tracks pending
 macOS validation; other-device synchronization is unverified.
-
 
 ## Automatic runtime patch tracking — October 16, 2026
 
@@ -11852,7 +11863,6 @@ logs/patch-tracking-shared-tests.log, logs/automatic-patch-tracking-build.log,
 logs/patch-tracking-prompt-retry.log and build/patch-tracking-validation/VALIDATION.json.
 No gameplay session, binary packaging or release publication was performed.
 MAC-014 retains pending native Mac validation and other-device synchronization.
-
 
 ## Issue #8 audio timing and buffering — October 16, 2026
 
@@ -13051,7 +13061,6 @@ queued under MAC-021; other-device synchronization is unverified.
   1080p/4K/ultrawide rendering, residency and full-pack stability remain pending
   the existing near-completion gate. This is a partial preview, not a full remaster.
 
-
 ### Texture overhaul batch 60 - machinery (issue #74)
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures`; no game launches.
@@ -13077,7 +13086,6 @@ queued under MAC-021; other-device synchronization is unverified.
   `review/machinery-60-final-metrics.json`, `review/machinery-60-native-audit.txt`,
   and `review/inventory-60-alpha.jpg` under `private/texture-remaster`.
   Artwork and pack remain ignored/local. Consolidated playtesting stays deferred.
-
 
 ### Hybrid texture production adopted - issue #74 (2026-10-16)
 
@@ -13118,7 +13126,6 @@ queued under MAC-021; other-device synchronization is unverified.
   Supported Xbox executable SHA-256 reverified. Zero game launches; consolidated
   playtesting remains deferred until 90% audited scope and category review.
 
-
 ### Hybrid texture batch 63 - metal and surface materials (issue #74)
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` at `70d19b5`.
@@ -13147,7 +13154,6 @@ queued under MAC-021; other-device synchronization is unverified.
   `review/hybrid-63-native-audit.txt`, source/prompt/generated records and
   `review/inventory-63-*` RGB/alpha sheets. Consolidated scene validation remains
   deferred to 90% audited coverage and completed category review.
-
 
 ### Hybrid texture batch 64 - terrain and industrial materials (issue #74)
 
@@ -13179,7 +13185,6 @@ queued under MAC-021; other-device synchronization is unverified.
   `review/hybrid-64-acceptance.json`, batch source/prompt records, and inventory-64
   RGB/alpha sheets under `private/texture-remaster`. Consolidated scene testing
   remains deferred until 90% audited coverage and completed category review.
-
 
 ### Hybrid texture batch 65 - materials and equipment (issue #74)
 
@@ -13215,7 +13220,6 @@ queued under MAC-021; other-device synchronization is unverified.
   audit, acceptance and retirement records, highlight profile, source/prompt files.
   Zero gameplay launches or rebuilds; no runtime/tooling code changed. Consolidated
   playtesting remains deferred to 90% audited coverage and completed category review.
-
 
 ### Hybrid texture batch 66 - characters and shared armor (issue #74)
 
@@ -13254,7 +13258,6 @@ queued under MAC-021; other-device synchronization is unverified.
   Consolidated playtesting remains deferred to 90% audited scope and completed
   category review. No runtime or tooling source changed this batch.
 
-
 ## Texture overhaul hybrid batch 67 — offline equipment review
 
 - Continued issue #74 on `74-enhancement-gfx-overhaul-to-modernize-textures`, starting from `cfffe0a`. Verified supported US XBE and original payload hashes; no runtime/source changes or gameplay launches.
@@ -13263,7 +13266,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 306 retained DDS pass native format validation and worklist hash, dimensions/aspect, mip and cap checks. Coverage: 306 installed / 6,812 supported keys, 6,485 needing art and 21 held drafts. The 627 provisional classifications and unresolved embedded/procedural scope remain open. Offline installation is not full-game visual validation.
 - Active pack: 453,946,549 bytes (432.92 MiB) / 6 GiB, including metadata; batch adds 4,546,692 bytes. Texture workspace at audit: 1,600,297,394 allocated bytes (1.49 GiB); original exports/review/preview: 146,229,407 bytes / 256 MiB. Free disk: 137,601,146,880 bytes. No duplicate game, staging or archive created; saves/settings unchanged.
 - Private evidence: `review/hybrid-67-final-*.jpg`, metrics, native audit, retirement hashes and acceptance record under `private/texture-remaster`. Artwork remains local/ignored. Existing shared DDS path is unchanged; Mac artwork/scene validation remains pending. Consolidated playtesting stays deferred to the established near-completion gate.
-
 
 ## Texture overhaul hybrid batch 68 — metal surfaces and inventory
 
@@ -13275,7 +13277,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Active pack: 456,572,573 bytes (435.42 MiB) / 6 GiB including metadata; batch adds 2,626,024 bytes. Texture workspace at audit: 1,634,636,828 allocated bytes (1.52 GiB). Original exports/review/preview: 149,403,778 bytes / 256 MiB; free disk: 137,182,937,088 bytes. No game copies, archives or staging trees created; personal saves/settings unchanged.
 - Evidence remains ignored/local under `private/texture-remaster/review/hybrid-68-*`, including original triage, compressed DDS/repeat sheets, metrics, slot profiles, native audit and acceptance. Shared DDS path unchanged; Mac artwork/scene validation pending. Consolidated playtesting remains deferred to the existing near-completion gate.
 
-
 ## Texture overhaul hybrid batch 69 — broader material production
 
 - Continued issue #74 from `acadffc`; verified supported US XBE and original payload hashes. Classified 64 additional originals/alpha ranges: 755 provisional classifications total, with all unresolved coverage retained.
@@ -13286,7 +13287,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 464,620,511 bytes (443.10 MiB) / 6 GiB including metadata, +8,047,938 this batch. Texture workspace at audit: 1,705,656,196 allocated bytes (1.59 GiB); temporary original/review/preview: 155,260,377 bytes / 256 MiB. Separate minimal source checkout: 2,684,911 bytes; no duplicated private art/game/build. Free disk: 137,629,822,976 bytes.
 - Zero game launches; saves/settings untouched. Evidence is ignored/local under `private/texture-remaster/review/hybrid-69-*`. Shared runtime unchanged; Mac scene/art validation remains pending. Consolidated playtesting remains deferred to the near-completion gate.
 
-
 ## Texture overhaul hybrid batch 70 — equipment material production
 
 - Continued issue #74 from `b8a4327` in the minimal `build/texture-74-source` worktree, sharing the authoritative private artwork/game paths. Other checkout preserved. Supported US XBE and original payloads verified; no gameplay launches or runtime/tooling changes.
@@ -13295,7 +13295,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 342 retained DDS pass native format and worklist hash, dimensions/aspect, mip-chain and cap checks. Coverage: 342 installed / 6,812 supported keys; 6,445 need art and 25 drafts need correction. Visual classification remains 755 provisional keys; full category and unresolved embedded/procedural coverage remain open.
 - Active pack including metadata: 474,589,415 bytes (452.60 MiB) / 6 GiB, +9,968,904 this batch. Texture workspace at audit: 1,767,689,868 allocated bytes (1.65 GiB); original/review/preview files: 158,403,381 bytes / 256 MiB. Free disk: 137,342,664,704 bytes. No duplicate game, pack, ZIP or staging tree; personal saves/settings untouched.
 - Private evidence: `review/hybrid-70-*`, including compressed comparisons, repetition, metrics, pattern profiles, native audit, retirement hashes and acceptance record. Artwork stays ignored/local. Shared DDS path unchanged; Mac scene/art verification pending. Consolidated playtesting stays deferred to the near-completion gate; this remains a partial offline-reviewed pack.
-
 
 ## Texture overhaul hybrid batch 71 — machinery and effects triage
 
@@ -13306,7 +13305,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack including metadata: 483,946,646 bytes (461.53 MiB) / 6 GiB; +9,357,231 this batch. Texture workspace at audit: 1,822,735,910 allocated bytes (1.70 GiB); original/review/preview files 162,128,360 bytes / 256 MiB. Free disk 137,074,503,680 bytes. No duplicate game, pack, archive or staging tree; saves/settings untouched.
 - Evidence stays ignored/local under `private/texture-remaster/review/hybrid-71-*`: originals/alpha triage, generation prompts, compressed comparisons, repeat sheets, metrics, pattern profiles, variant decision, native audit, retirement hashes and acceptance. Shared DDS path unchanged; Mac scene/art validation pending. Consolidated playtesting remains deferred to the established near-completion gate.
 
-
 ## Texture overhaul hybrid batch 72 — specialist interface alpha review
 
 - Continued issue #74 from `6cfff18` in the isolated source worktree with explicit shared artwork/game paths. Verified supported US XBE and original payload hashes. No runtime/tooling changes or gameplay launches.
@@ -13315,7 +13313,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Inspected 32 additional opaque originals: 819 provisional classifications total, with ten environment-material candidates now available. Continue material production and defer exact UI correction to specialist batches. Coverage remains 355 installed / 6,812 supported keys; 6,423 need art, 34 held drafts. Full category/scene review and unresolved embedded/procedural scope remain open.
 - All 355 retained DDS pass native format and worklist hash, dimensions/aspect, mip-chain and cap checks. Pack unchanged at 483,946,646 bytes (461.53 MiB) / 6 GiB. Texture workspace at audit: 1,825,513,207 allocated bytes (1.70 GiB); original/review/preview files 163,250,400 bytes / 256 MiB; free disk 134,966,263,808 bytes. No duplicate game/pack, archive or staging tree; saves/settings untouched.
 - Evidence is private/local under `review/hybrid-72-*`: verified selection, transparent generation prompts, compiled-alpha comparisons/metrics, held reasons, retirement hashes, candidate and retained native audits, and triage sheets. Shared DDS path unchanged; Mac scene validation remains pending. Playtesting stays deferred to the near-completion gate.
-
 
 ## Texture overhaul hybrid batch 73 — environment material production
 
@@ -13356,7 +13353,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Storage at audit: active pack 501,091,102 bytes (477.88 MiB), including metadata, under 6 GiB; batch adds 5,773,453 bytes. Texture workspace 1,973,530,313 logical / 1,973,530,313 allocated bytes (1.84 GiB). Temporary originals/review/previews 174,337,625 bytes (166.26 MiB), under 256 MiB. Free disk 133,734,461,440 bytes. Texture-workspace totals are not whole-project totals.
 - Private evidence: `review/hybrid-75-selection.json`, `hybrid-75-final-*`, `hybrid-75-details.jpg`, `hybrid-75-detail-counts.jpg`, `hybrid-75-pattern-diagnostics.json`, `hybrid-75-grille-diagnostics.json`, `hybrid-75-retired.json`, `hybrid-75-native-audit.txt`, `hybrid-75-acceptance.json`. Worklist, hybrid plan, inventory and progress refreshed and reconciled against retained pack. Only progress documentation is tracked.
 
-
 ## Texture hybrid batch 76: grouped environment material production
 
 - Issue #74 branch `74-enhancement-gfx-overhaul-to-modernize-textures`, base `bfe2c57`, Windows x64 source checkout `build/texture-74-source`; single authoritative private artwork folder shared with main project. Concurrent checkout work preserved. Supported US XBE and selected original payload hashes verified before generation.
@@ -13371,7 +13367,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Storage at audit: pack including metadata 512,283,917 bytes (488.55 MiB) / 6 GiB; batch adds 11,192,815 bytes. Texture workspace 2,041,176,085 logical / 2,041,176,085 allocated bytes (1.90 GiB). Temporary originals/review/previews 180,989,044 bytes (172.60 MiB) / 256 MiB; free disk 131,927,351,296 bytes. These are texture-workspace measurements, not whole-project totals.
 - Private evidence under `review/hybrid-76-*`: triage/selection, prompts, compiled and repeat comparisons, structural details, pattern diagnostics, native audit and acceptance. Worklist, hybrid plan, inventory and progress refreshed and reconciled. Only progress documentation is tracked.
 
-
 ## Texture hybrid batch 77: individual equipment and garment atlases
 
 - Issue #74 branch `74-enhancement-gfx-overhaul-to-modernize-textures`, base `e60b17d`, Windows x64 source checkout `build/texture-74-source`. Supported US XBE SHA-256 and eight original payload hashes verified; all selected originals and generated sources have opaque alpha. Concurrent checkout work preserved.
@@ -13384,7 +13379,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Drive free space fell from 131916271616 bytes before the batch to about 48725544960 bytes at audit, while texture workspace grew only about 34 MiB. A read-only project directory scan is saved in review/hybrid-77-project-storage.json; build allocates about 15.73 GB and private about 6.66 GB (decimal), with sparse logical sizes larger. The drive-wide change is unexplained and is not attributed to this batch. No unrelated files removed.
 - Storage at audit: active pack including metadata 521,026,048 bytes (496.89 MiB) / 6 GiB; adds 8,742,131 bytes. Texture workspace 2,075,505,930 logical / 2,075,505,930 allocated bytes (1.93 GiB). Temporary originals/review/previews 182,820,262 bytes (174.35 MiB) / 256 MiB. Texture-workspace totals are not whole-project totals.
 - Private source art saved in `private/texture-remaster/authored/*-hybrid-v1.png`; built-in imagegen prompts in `review/hybrid-77-prompts.json` and per-asset provenance. Other private evidence under `review/hybrid-77-*`: selection, comparisons, repeat sheets, details, retirement, native audit, storage scan and acceptance. Worklist, hybrid plan, inventory and progress refreshed/reconciled. Only progress documentation is tracked.
-
 
 ## Texture hybrid batch 78: material classification and production
 
@@ -13399,7 +13393,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No gameplay launches or runtime/tool changes. Shared DDS path unchanged; Mac scene validation pending. Single active private pack, no duplicate game/pack/archive/staging; source art/provenance remain ignored and local. Personal saves/settings untouched.
 - Storage at audit: active pack including metadata 532,744,286 bytes (508.06 MiB) / 6 GiB; batch adds 11,718,238 bytes. Texture workspace 2,149,950,790 logical / 2,149,950,790 allocated bytes (2.00 GiB). Temporary originals/review/previews 188,426,312 bytes (179.70 MiB) / 256 MiB; disk free 48,161,325,056 bytes. Texture-workspace totals are not whole-project totals.
 - Private source art in `private/texture-remaster/authored/*-hybrid-v1.png`; built-in imagegen prompts in `review/hybrid-78-prompts.json` and per-key provenance. Evidence under `review/hybrid-78-*`: triage, selection, compiled comparisons, repeat sheets, pattern/detail/profile checks, native audit and acceptance. Worklist, hybrid plan, inventory and progress refreshed/reconciled. Only progress documentation is tracked.
-
 
 ## Texture hybrid batch 79: materials, equipment and character atlases
 
@@ -13602,7 +13595,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Storage at audit: pack 660,589,723 bytes (629.99 MiB) including metadata / 6 GiB; adds 9,621,080 bytes. Texture workspace 2,873,984,680 allocated/logical bytes (2.68 GiB); temporary originals/review/previews 251,329,066 bytes (239.69 MiB) / 256 MiB. Reclaim verified reproducible export headroom before the next batch. These are texture totals, not whole-project totals.
 - Private evidence `review/hybrid-93-*`, authored sources and exact per-key prompts retained. Worklist, hybrid plan, inventory and progress reconciled; only progress documentation tracked.
 
-
 ### Texture issue #74: hybrid batch 94, props and focused corrections
 
 - Six replacements accepted offline: four new individual props and two repaired drafts. Total **584 / 6,812** supported keys; **6,185** need artwork and **43** held drafts remain. Classification remains 1,113 provisional reviews. Full overhaul is unfinished.
@@ -13610,7 +13602,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Eight built-in imagegen sources (six 1254-square, two 1774x887); six retained resampled DXT1 full-mip outputs (four 1024-square, one 512-square, one 1024x512). No native 4K source claim. Two comparison sheets, two repeat sheets, four correction details and explicit indicator diagnostics reviewed; all 584 DDS passed native/worklist audits. Scene appearance remains unverified.
 - Retired 240 reproducible reference PNGs, **32.01 MiB**, with catalog/hash/pixel recovery evidence and exact-path checks. Authored sources/provenance, working game, saves/settings preserved. Pack **663,913,649 bytes (633.16 MiB / 6144 MiB)**; texture workspace measured **2,871,182,423 bytes (2.67 GiB)** logical/allocated; temporary reference/review **210.84 MiB / 256 MiB**. No duplicate game, ZIP or staging.
 - Private evidence: `private/texture-remaster/review/hybrid-94-*`, per-source prompts and `progress.json`. All artwork remains ignored/local. No runtime/tool changes, no game launches; previous compiler checks retained. Continue on `74-enhancement-gfx-overhaul-to-modernize-textures`, preserving concurrent root-checkout work. Mac/scene validation remains pending.
-
 
 ### Texture issue #74: hybrid batch 95, original-alpha materials
 
@@ -13620,7 +13611,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All **587** retained DDS pass native/worklist audits. Pack **672,305,297 bytes (641.16 MiB / 6144 MiB)**; texture workspace measured **2,911,074,240 bytes (2.71 GiB)** logical/allocated; temporary exports/reviews **218.57 MiB / 256 MiB**. Source art is included in workspace usage. No duplicate game/pack/ZIP/staging; saves/settings untouched.
 - Private evidence: `private/texture-remaster/review/hybrid-95-*`, exact per-key prompts and progress. Retired initial DXT5 files by exact parent/hash checks. No runtime/tool change and no launches; existing tests retained. Continue on issue #74 while preserving concurrent source work. Mac/scene validation remains pending.
 
-
 ### Texture issue #74: hybrid batch 96, materials and panels
 
 - **602 / 6,812** supported replacements installed and approved offline; **15** added, one access-panel draft held for four added fasteners. **6,161** need artwork and **49** drafts remain held. Inspected 32 more originals, bringing provisional classification to **1,177**. Full overhaul remains unfinished.
@@ -13628,7 +13618,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Four comparisons, four repeat sheets and three enlarged detail sheets reviewed; original alpha stays opaque. All **602** retained DDS pass native/worklist checks. Accepted mean luminance changes **-14.30% to +7.54%**; scene lighting, tiling, material scale and mapped appearance remain pending. Existing bright borders on pale plaster retained and flagged for later scene-use review.
 - Pack **682,275,373 bytes (650.67 MiB / 6144 MiB)**. Texture workspace measured **2,990,408,418 bytes (2.79 GiB)** logical/allocated, including authored sources. Temporary exports/reviews **225.85 MiB / 256 MiB**. No duplicate game/pack/ZIP/staging. Only held DDS/metadata retired after exact parent/hash checks; art/provenance and saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-96-*`, prompts and progress. No game launches or runtime/tool changes; previous compiler tests retained. Work stays on #74; concurrent source work preserved. Mac/scene validation pending.
-
 
 ## Texture overhaul issue #74: hybrid batch 97
 
@@ -13638,7 +13627,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 618 installed/offline-approved replacements pass native DDS and worklist validation. Still 6,145 need art and 49 drafts need correction; the full overhaul remains unfinished. No new game launches, runtime edits or shared-tool changes. Playtesting stays deferred until the near-completion gate.
 - Pack including metadata: 691,022,687 bytes (659.01 MiB), below 6 GiB. Texture workspace: 3,066,077,378 logical and 3,066,077,378 allocated bytes. Temporary originals/reviews: 243,245,392 bytes (231.98 MiB), below 256 MiB. Free disk at audit: 127,800,561,664 bytes. No duplicate game, ZIP or staging copy created.
 - Private evidence: `review/hybrid-97-acceptance.json`, `hybrid-97-functional-audit.json`, `hybrid-97-native-audit.txt`, `hybrid-97-selection.json` and exact authored prompt records. Artwork remains local and ignored; this commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 98
 
@@ -13650,7 +13638,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Reclaimed 13,965,689 bytes from 140 old decoded opaque reference PNGs after catalog payload, exact pixel, resolved-parent and SHA256 verification. Excluded alpha-source dependencies and recent batches 90-98. Kept recovery recipes, authored art, prompts, reviews, game files, saves and settings. No duplicate game/pack/ZIP/staging.
 - Private evidence under `private/texture-remaster/review/hybrid-98-*`, including selection, acceptance, functional/native audits, reference recovery manifest and exact authored prompt records. This commit records progress; artwork stays local and ignored.
 
-
 ## Texture overhaul issue #74: hybrid batch 99
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `66328a8`. Inspected 32 catalog-verified opaque originals; 1,273 provisionally classified keys. Faces, labels, previews, effects and ambiguous materials remain queued.
@@ -13659,7 +13646,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 650 installed/offline-approved DDS pass native and worklist validation. Still 6,113 need art and 49 drafts need correction; full overhaul unfinished. No game launches, runtime changes or shared-tool edits. Near-completion testing gate retained.
 - Pack: 707,992,997 bytes (675.19 MiB / 6144 MiB). Texture workspace: 3,206,699,870 logical/allocated bytes (2.99 GiB). Temporary exports/reviews: 243,571,476 bytes (232.29 MiB / 256 MiB). Free disk at audit: 128,358,879,232 bytes. No duplicate game/pack/ZIP/staging. Saves and settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-99-*`, exact prompts, authored sources and progress. Artwork remains ignored/local; this commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 100
 
@@ -13670,7 +13656,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 712,366,655 bytes (679.37 MiB / 6144 MiB). Texture workspace at worklist audit: 3,241,918,728 logical/allocated bytes (3.02 GiB). Temporary exports/reviews: 246,454,153 bytes (235.04 MiB / 256 MiB). Free disk at audit: 128,133,189,632 bytes. No duplicate game/pack/ZIP/staging; saves and settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-100-*`, exact prompts, authored art and progress. Artwork remains local and ignored; this commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 101
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `3b85fcd`. Inspected 32 catalog-verified opaque originals; 1,305 provisionally classified keys. Faces, labels, equipment and ambiguous effects remain separately queued.
@@ -13679,7 +13664,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 674 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,089 need art and 49 drafts need correction; full overhaul unfinished. Zero game launches, runtime changes or shared-tool edits. Near-completion testing gate retained.
 - Pack: 722,337,312 bytes (688.87 MiB / 6144 MiB). Texture workspace at audit: 3,317,984,772 logical/allocated bytes (3.09 GiB). Temporary exports/reviews: 253,204,287 bytes (241.47 MiB / 256 MiB). Free disk at audit: 127,513,735,168 bytes. No duplicate game/pack/ZIP/staging; saves and settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-101-*`, exact prompts, authored sources and progress. Corrected one mistyped identifier before successful generation; all 32 triage identifiers verified against the catalog. Artwork remains local and ignored; this commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 102
 
@@ -13690,7 +13674,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 726,011,912 bytes (692.38 MiB / 6144 MiB). Texture workspace at audit: 3,341,796,029 logical/allocated bytes (3.11 GiB). Temporary exports/reviews: 248,756,093 bytes (237.23 MiB / 256 MiB). Free disk at audit: 127,328,124,928 bytes.
 - Reclaimed 7,835,754 bytes from 180 old opaque reference PNGs after payload, decoded-pixel, resolved-parent and SHA256 checks. Excluded alpha dependencies and recent batches 90-101; recovery recipes and review evidence retained. No duplicate game/pack/ZIP/staging; saves, settings, source artwork and original game data preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-102-*`, exact prompts, authored sources, recovery manifest and progress. Artwork remains local and ignored; this commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 103
 
@@ -13703,7 +13686,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 728,636,800 bytes (694.88 MiB / 6144 MiB). Texture workspace at audit: 3,372,430,551 logical/allocated bytes (3.14 GiB). Temporary exports/reviews: 251,880,394 bytes (240.21 MiB / 256 MiB). Free disk at audit: 126,942,121,984 bytes. No duplicate game/pack/ZIP/staging; saves and settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-103-*`, exact prompts, authored corrections, fitting audit and retirement record. Artwork remains local and ignored; this commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 104
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `55d6f2d`. Inspected 32 catalog-verified opaque originals; 1,337 provisionally classified keys. Screens, faces, effects, reflections, weapons and ambiguous surfaces remain separately queued.
@@ -13712,7 +13694,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 704 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,065 need art and 43 drafts need correction; discovery/category coverage and full overhaul remain unfinished. Zero game launches, runtime changes or shared-tool edits. Near-completion playtesting gate retained.
 - Pack: 737,908,406 bytes (703.72 MiB / 6144 MiB). Texture workspace at audit: 3,446,795,618 logical/allocated bytes (3.21 GiB). Temporary exports/reviews: 259,808,559 bytes (247.77 MiB / 256 MiB). Free disk at audit: 126,097,854,464 bytes. Inspect/reclaim reproducible temporary references before the next batch approaches its cap. No duplicate game/pack/ZIP/staging; saves and settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-104-*`, exact prompts, authored sources and progress. Artwork remains local and ignored; this commit records progress only. Mac scene validation remains pending alongside Windows scene validation; no platform behavior changed.
-
 
 ## Texture overhaul issue #74: hybrid batch 105
 
@@ -13725,7 +13706,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 741,232,918 bytes (706.89 MiB / 6144 MiB). Texture workspace at audit: 3,469,836,277 logical/allocated bytes (3.23 GiB). Temporary exports/reviews: 256,824,828 bytes (244.93 MiB / 256 MiB). Free disk: 125,942,497,280 bytes. No duplicate game/pack/ZIP/staging; saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-105-*`, exact prompts, authored sources, recovery manifest and progress. Artwork remains local/ignored; this commit records progress only. Mac and Windows scene validation remain pending; no platform behavior changed.
 
-
 ## Texture overhaul issue #74: hybrid batch 106
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `0a0c49a`. Inspected 32 catalog-verified opaque originals; provisional visual classification now covers 1,369 keys. Lettering, identity-sensitive atlases, interface imagery and uncertain surfaces remain separately queued.
@@ -13735,7 +13715,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 727 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,041 need art and 44 drafts need correction; full overhaul and category/scene coverage remain unfinished. Zero game launches or shared-tool/runtime changes; near-completion playtesting gate retained.
 - Pack: 748,756,914 bytes (714.07 MiB / 6144 MiB). Texture workspace at audit: 3,538,803,030 logical/allocated bytes (3.30 GiB). Temporary exports/reviews: 263,159,720 bytes (250.97 MiB / 256 MiB). Free disk: 125,261,328,384 bytes. Recycle redundant reproducible triage sheets before the next large batch. No duplicate game/pack/ZIP/staging; saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-106-*`, exact prompts, authored sources and progress. Artwork remains local/ignored; this commit records progress only. Mac and Windows scene validation remain pending; no platform behavior changed.
-
 
 ## Texture overhaul issue #74: hybrid batch 107
 
@@ -13748,7 +13727,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 752,256,180 bytes (717.41 MiB / 6144 MiB). Texture workspace at audit: 3,566,640,305 logical/allocated bytes (3.32 GiB). Temporary exports/reviews: 260,370,955 bytes (248.31 MiB / 256 MiB). Free disk: 125,270,286,336 bytes. No duplicate game/pack/ZIP/staging; saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-107-*`, exact prompts, authored sources, recovery manifest and progress. Artwork remains local/ignored; commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
 
-
 ## Texture overhaul issue #74: hybrid batch 108
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `67a9d05`. Retried eight held drafts from verified originals; five accepted, three still held. Classification remains 1,369 keys.
@@ -13759,7 +13737,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Accepted luminance changes -5.98% to +1.80%. Stronger relief, tread shadows, edges and local contrast remain scene-review items. All 739 installed/offline-approved replacements pass native DDS and worklist checks. Still 6,033 need art and 40 drafts need correction; full overhaul/category/scene coverage unfinished. Zero game launches or shared runtime/tool changes.
 - Pack: 757,327,163 bytes (722.24 MiB / 6144 MiB). Texture workspace at audit: 3,600,897,424 logical/allocated bytes (3.35 GiB). Temporary exports/reviews: 264,624,347 bytes (252.37 MiB / 256 MiB). Free disk: 125,084,114,944 bytes. Recycle redundant reproducible review files before next large batch. No duplicate game/pack/ZIP/staging; saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-108-*`, exact prompts, authored corrections, gradient/pattern audits and progress. Artwork remains local/ignored; commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
-
 
 ## Texture overhaul issue #74: hybrid batch 109
 
@@ -13772,7 +13749,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 767,122,486 bytes (731.59 MiB / 6144 MiB). Texture workspace at audit: 3,660,276,668 logical/allocated bytes (3.41 GiB). Temporary exports/reviews: 257,315,983 bytes (245.40 MiB / 256 MiB). Free disk: 125,295,374,336 bytes. No duplicate game/pack/ZIP/staging; saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-109-*`, exact prompts, authored art, recovery manifests and progress. Artwork remains local/ignored; commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
 
-
 ## Texture overhaul issue #74: hybrid batch 110
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `2e9bb1a`. Eight previously classified equipment/architectural panels individually reworked from catalog-verified opaque originals; all eight accepted offline. Classification remains 1,401 keys.
@@ -13782,7 +13758,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 762 installed/offline-approved replacements pass native DDS and worklist checks. Corrected a BOM in eight prompt records before successful worklist audit. Still 6,009 need art and 41 drafts need correction; full overhaul/category/scene coverage unfinished. Zero game launches or shared runtime/tool changes; near-completion testing gate retained.
 - Pack: 772,369,956 bytes (736.59 MiB / 6144 MiB). Texture workspace at audit: 3,694,663,928 logical/allocated bytes (3.44 GiB). Temporary exports/reviews: 261,379,767 bytes (249.27 MiB / 256 MiB). Free disk: 125,123,239,936 bytes. Recycle redundant reproducible review files before next large batch. Saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-110-*`, authored sources/prompts and progress. Commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
-
 
 ## Texture overhaul issue #74: hybrid batch 111
 
@@ -13795,7 +13770,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 779,892,198 bytes (743.76 MiB / 6144 MiB). Texture workspace at audit: 3,762,244,913 logical/allocated bytes (3.50 GiB). Temporary exports/reviews: 266,383,504 bytes (254.04 MiB / 256 MiB). Free disk: 124,556,144,640 bytes. Recycle redundant reproducible review files before next large batch. No duplicate game/pack/ZIP/staging; saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-111-*`, authored sources/prompts, recovery manifest and progress. Commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
 
-
 ## Texture overhaul issue #74: hybrid batch 112
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `198bb0c`. Eight held drafts retried from catalog-verified opaque originals; three accepted, five still held. Classification remains 1,433 keys.
@@ -13807,7 +13781,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 781,029,880 bytes (744.85 MiB / 6144 MiB). Texture workspace at audit: 3,779,370,018 logical/allocated bytes (3.52 GiB). Temporary exports/reviews: 261,459,586 bytes (249.35 MiB / 256 MiB). Free disk: 121,601,974,272 bytes. No duplicate game/pack/ZIP/staging; saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-112-*`, authored corrections/prompts, recovery manifest and progress. Commit records progress only. Mac/Windows scene validation pending; no platform behavior changed.
 
-
 ## Texture overhaul issue #74: hybrid batch 113
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `3154cb3`. Individually edited eight catalog-verified opaque character atlases with built-in imagegen; six accepted offline and two held. Provisional classification remains 1,433 keys.
@@ -13817,7 +13790,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 784 installed/offline-approved replacements pass native DDS and worklist checks. Still 5,987 need art and 41 drafts need correction. Full overhaul/category/scene coverage unfinished; zero game launches. Near-completion testing gate retained. No shared runtime/tool or platform behavior changes; Windows/Mac scene validation pending.
 - Pack: 783,130,492 bytes (746.85 MiB / 6144 MiB). Texture workspace at audit: 3,803,910,283 logical/allocated bytes (3.54 GiB). Temporary exports/reviews: 263,848,688 bytes (251.63 MiB / 256 MiB). Free disk: 121,157,996,544 bytes. Recycle reproducible temporary outputs before another large batch; no duplicate game/ZIP/staging, saves/settings preserved.
 - Artwork, exact prompts, review evidence, retirement manifest and progress remain local under ignored `private/texture-remaster`; this commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 114
 
@@ -13830,7 +13802,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 791,527,706 bytes (754.86 MiB / 6144 MiB). Texture workspace at audit: 3,873,265,716 logical/allocated bytes (3.61 GiB). Temporary exports/reviews: 266,155,312 bytes (253.83 MiB / 256 MiB). Free disk: 116,300,247,040 bytes. Recycle temporary references before another large batch; no duplicate game/pack/ZIP/staging.
 - Private evidence: `private/texture-remaster/review/hybrid-114-*`, authored sources/prompts, recovery manifests and progress. This commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 115
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `888756c`. Generated eight individual metal/wood assets from the catalog-verified existing queue with built-in imagegen; six accepted offline, two held. Classification remains 1,465 reviewed keys; no new coverage claimed from routing.
@@ -13841,7 +13812,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 805 installed/offline-approved replacements pass native DDS/worklist checks. Remaining: 5,963 need art and 44 drafts need correction. Full category/discovery/scene coverage unfinished. Zero game launches or shared runtime/tool changes; 512 MiB residency cap, near-completion testing gate and personal saves/settings preserved. Windows/Mac scene validation remains pending.
 - Pack: 797,473,093 bytes (760.53 MiB / 6144 MiB). Texture workspace at audit: 3,904,035,579 logical/allocated bytes (3.64 GiB). Temporary exports/reviews: 264,081,304 bytes (251.85 MiB / 256 MiB). Free disk: 116,123,303,936 bytes. Recycle reproducible temporary references before the next large batch; no duplicate game/pack/ZIP/staging.
 - Private evidence: `private/texture-remaster/review/hybrid-115-*`, authored sources/prompts, recovery manifest and progress. This records progress only; full overhaul remains active.
-
 
 ## Texture overhaul issue #74: hybrid batch 116
 
@@ -13854,7 +13824,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 804,120,391 bytes (766.87 MiB / 6144 MiB). Texture workspace at audit: 3,946,047,186 logical/allocated bytes (3.68 GiB). Temporary exports/reviews: 249,582,180 bytes (238.02 MiB / 256 MiB). Free disk: 115,728,343,040 bytes. No duplicate game/pack/ZIP/staging.
 - Private evidence: `private/texture-remaster/review/hybrid-116-*`, authored sources/prompts, retirement/recovery manifest and progress. Full overhaul remains active.
 
-
 ## Texture overhaul issue #74: hybrid batch 117
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `7514afb`. Eight held drafts retried; four accepted offline and four still held. Classification remains 1,497 keys.
@@ -13864,7 +13833,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 820 installed/offline-approved replacements pass native DDS and worklist checks. Still 5,949 need art and 43 drafts need correction. Full overhaul/category/discovery/scene coverage remains unfinished. Zero game launches; near-completion testing gate retained. No shared runtime or tool changes; Mac and Windows scene validation pending.
 - Pack: 806,569,365 bytes (769.20 MiB / 6144 MiB). Texture workspace at audit: 3,972,878,045 logical/allocated bytes (3.70 GiB). Temporary exports/reviews: 252,375,505 bytes (240.68 MiB / 256 MiB). Free disk: 115,334,217,728 bytes. One active pack; no duplicate extracts/ZIPs/staging. Saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-117-*`, authored correction sources/prompts and progress. Commit records progress only; artwork stays local and ignored.
-
 
 ## Texture overhaul issue #74: hybrid batch 118
 
@@ -13877,7 +13845,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 812,691,793 bytes (775.04 MiB / 6144 MiB). Texture workspace at audit: 4,029,425,391 logical/allocated bytes (3.75 GiB). Temporary exports/reviews: 258,904,439 bytes (246.91 MiB / 256 MiB). Free disk: 115,049,431,040 bytes. One active pack; no duplicate game/ZIP/staging.
 - Private evidence: `private/texture-remaster/review/hybrid-118-*`, authored sources/prompts, reference-recovery manifest and progress. Commit records progress only; full overhaul remains active.
 
-
 ## Texture overhaul issue #74: hybrid batch 119
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `e5baf5a`. Eight already-classified opaque originals verified against catalog payloads and decoded RGBA; seven individual panels and one environment door authored. Classification remains 1,529 keys.
@@ -13888,7 +13855,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 817,239,639 bytes (779.38 MiB / 6144 MiB). Texture workspace at audit: 4,062,130,789 logical/allocated bytes (3.78 GiB). Temporary exports/reviews: 261,931,890 bytes (249.80 MiB / 256 MiB). Free disk: 114,943,606,784 bytes. Recycle reproducible review output before the next large batch. One active pack; no duplicate game/ZIP/staging; saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-119-*`, authored sources/prompts and progress. Commit records progress only. Full overhaul remains active.
 
-
 ## Texture overhaul issue #74: hybrid inventory batch 120
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `135fecf`. Inspected 32 smaller textures and 32 additional nonopaque textures through eight paired RGB/alpha-composite sheets. Catalog payloads and decoded RGBA hashes verified. Classified 64 new keys; 1,593 now visually classified. No new artwork or installed replacements in this inventory pass.
@@ -13898,7 +13864,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack unchanged: 837 installed/offline-approved textures. Every DDS hash matches the previous progress record; refreshed worklist dimensions/aspect/mip/format/hash checks, planner and inventory pass. Native DDS evidence retained from hybrid-119; no redundant native rerun or gameplay launch. Still 5,929 need art and 46 drafts need correction. Full category/discovery/scene validation unfinished; 512 MiB residency limit and near-completion testing gate retained.
 - Pack: 817,239,639 bytes (779.38 MiB / 6144 MiB). Texture workspace at audit: 4,057,974,413 logical/allocated bytes (3.78 GiB). Temporary exports/reviews: 257,688,084 bytes (245.75 MiB / 256 MiB). Free disk: 114,939,904,000 bytes. No duplicate games, packs, ZIPs or staging; saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-120-*`, updated visual classification/planner, recovery manifests and progress. No shared runtime/tool changes; no new Mac adaptation. Windows/Mac scene validation remains pending. Full overhaul stays active.
-
 
 ## Texture overhaul issue #74: hybrid alpha batch 121
 
@@ -13911,7 +13876,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack: 818,727,200 bytes (780.80 MiB / 6144 MiB). Texture workspace at audit: 4,081,339,837 logical/allocated bytes (3.80 GiB). Temporary exports/reviews: 260,171,001 bytes (248.12 MiB / 256 MiB). Free disk: 114,395,357,184 bytes. One active pack; no duplicate games, ZIPs or staging; saves/settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-121-*`, authored sources/prompts, alpha masks and progress. Commit records progress only. Full overhaul remains active.
 
-
 ## Texture overhaul issue #74: hybrid batch 122
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `6861099`. Diagnosed colored cutout fringes in low-opacity authored RGB; opacity-aware resizing did not resolve them, so the compiler is unchanged. One transparent edit still failed. A second built-in imagegen opaque color-bleed plate succeeds with the verified original mask reapplied using the existing compiler options.
@@ -13920,7 +13884,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 840 installed/offline-approved replacements pass native DDS and worklist audits; planner and inventory refreshed. 51 held keys and 5,921 needing art remain, classification unchanged at 1,593. Full overhaul, discovery gaps and scene validation remain unfinished. Zero gameplay launches; near-completion gate retained. No runtime/tool change or Mac adapter requirement; actual Windows/Mac appearance remains pending.
 - Pack: 819,427,301 bytes (781.47 MiB / 6144 MiB). Texture workspace at audit: 4,090,379,429 logical and allocated bytes (3.81 GiB). Temporary exports/reviews: 261,497,680 bytes (249.38 MiB / 256 MiB). Free disk: 114,328,350,720 bytes. One active pack; original game, saves and settings preserved.
 - Private evidence: `private/texture-remaster/review/hybrid-122-*`, authored versioned sources/prompts and progress. Authoring guidance updated in `docs/textures.md`; artwork remains private. No full-pack or source duplication.
-
 
 ## Texture overhaul issue #74: hybrid batch 123
 
@@ -13932,7 +13895,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Recycled 16 older original-only contact sheets (2,406,716 bytes) after catalog/RGBA recovery checks and all resolved-parent/SHA256 checks. Selections, classifications, final comparisons and original game retained. Pack: 826,074,599 bytes (787.81 MiB / 6144 MiB); texture workspace 4,143,281,467 logical/allocated bytes (3.86 GiB). Temporary output at audit 266,660,053 bytes (254.31 MiB / 256 MiB); free disk 114,049,458,176 bytes. Saves/settings untouched; no duplicate game/ZIP/staging.
 - Evidence stays private under `private/texture-remaster/review/hybrid-123-*`, authored PNG/prompts and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 124
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `6985ca8`. Inspected/classified 32 additional catalog-verified opaque originals, now 1,657 provisional classifications. Weapon, character, interface and effect/utility candidates remain separate review work; small/alpha assets remain in scope.
@@ -13943,7 +13905,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Safely retired 105 older redundant enlarged comparison JPGs (16,855,915 bytes), preserving final comparison sheets and source/game/selection provenance with recovery hashes. Pack: 835,170,857 bytes (796.48 MiB / 6144 MiB). Texture workspace at audit: 4,199,979,189 logical/allocated bytes (3.91 GiB); temporary output 259,255,682 bytes (247.25 MiB / 256 MiB); free disk 109,204,045,824 bytes. Saves/settings untouched; no duplicate extracts/ZIPs/staging.
 - Evidence and prompts stay private under `private/texture-remaster/review/hybrid-124-*`, `authored/` and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 125
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `d52e030`. Inspected/classified 32 more catalog-verified opaque originals, now 1,689 provisional classifications. Characters, text and uncertain effects remain separate review work; classification is not full category/scene coverage.
@@ -13953,7 +13914,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 880 installed/offline-approved replacements pass native DDS and worklist audits; planner/inventory refreshed. 5,878 need art and 54 drafts need correction. Scope remains 6,812 supported unique keys plus discovery/category/scene gaps. Zero game launches; no runtime/tool changes. Windows/Mac scene validation and near-completion gate remain pending; full overhaul unfinished.
 - Safely retired 24 older redundant enlarged comparison JPGs (4,291,914 bytes), preserving final comparisons, selections, original game, artwork and recovery hashes. Pack: 842,868,461 bytes (803.82 MiB / 6144 MiB). Texture workspace at audit: 4,261,439,547 logical/allocated bytes (3.97 GiB); temporary output 263,461,870 bytes (251.26 MiB / 256 MiB); free disk 108,656,508,928 bytes. Personal saves/settings untouched; no duplicate extracts/ZIPs/staging.
 - Artwork/prompts and evidence remain private under `private/texture-remaster/authored`, `review/hybrid-125-*` and progress. Commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 126 corrections
 
@@ -13966,7 +13926,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Safely retired 25 older redundant enlarged comparison JPGs (4,222,204 bytes), retaining final comparisons and recovery hashes. Pack: 844,968,479 bytes (805.82 MiB / 6144 MiB). Texture workspace at audit: 4,284,755,115 logical/allocated bytes (3.99 GiB); temporary output 261,989,711 bytes (249.85 MiB / 256 MiB); free disk 108,512,960,512 bytes. Artwork, original game, personal saves/settings preserved; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-126-*`, versioned/canonical authored prompt records, source PNGs and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 127
 
 - Continued on the #74 branch from f63e2c1. Inspected/classified 32 more catalog-verified opaque originals, now 1,721 provisional classifications. Character identity, text and uncertain shader uses remain specialist work; category/scene coverage is unfinished.
@@ -13977,7 +13936,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 896 installed/offline-approved replacements pass native DDS and worklist audits; planner/inventory refreshed. 5,866 need art and 50 held drafts need correction. Scope remains 6,812 supported unique keys plus discovery/category/scene gaps. Zero game launches; no runtime/tool changes. Final Windows/Mac scene validation and near-completion gate remain pending; full overhaul unfinished.
 - Safely retired 26 older redundant enlarged review JPGs (4,277,409 bytes), retaining final comparisons and recovery hashes. Pack: 850,392,443 bytes (811.00 MiB / 6144 MiB). Texture workspace at audit: 4,335,447,609 logical/allocated bytes (4.04 GiB); temporary output 264,345,234 bytes (252.10 MiB / 256 MiB); free disk 108,199,550,976 bytes. Artwork, original game, personal saves/settings preserved; no duplicate extracts/ZIPs/staging.
 - Private artwork/prompts: authored/*-hybrid127-v1.png, canonical prompt records and review/hybrid-127-prompt-set.json. Evidence: review/hybrid-127-* and progress. Commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 128
 
@@ -13991,7 +13949,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Retired 138 verified-reproducible opaque original exports (9,365,291 bytes), protecting held/recent references and original-alpha dependencies; catalog payload/RGBA and all resolved-parent/SHA256 checks passed. Initial 4 MiB detail cleanup had only 1,115,498 eligible bytes and made no changes. Pack: 854,940,869 bytes (815.34 MiB / 6144 MiB). Texture workspace at audit: 4,372,229,116 logical/allocated bytes (4.07 GiB); temporary output 261,747,881 bytes (249.62 MiB / 256 MiB); free disk 108,191,662,080 bytes. Original game, artwork, saves/settings and recovery evidence preserved; no duplicate extracts/ZIPs/staging.
 - Private artwork/prompts: authored/*-hybrid128-v1.png, canonical/rejected prompt records and review/hybrid-128-prompt-set.json. Evidence: review/hybrid-128-* and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 129 corrections
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `f748fc3`. Eight held opaque corrections completed and reviewed; catalog payload/RGBA references verified. Classification remains 1,753 provisional keys; no new category coverage claim.
@@ -14003,7 +13960,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 907 installed/offline-approved replacements pass native DDS/worklist audits; planner/inventory refreshed. 5,855 need art and 50 held drafts require correction. Audited catalog remains 6,812 supported unique keys / 7,147 payloads, with noncatalog discovery/category/scene gaps. Zero game launches; no runtime/tool changes. Full overhaul and Windows/Mac scene validation remain incomplete; near-completion gate not reached.
 - Pack 856,340,697 bytes (816.67 MiB / 6144 MiB). Texture workspace at audit 4,402,439,459 logical/allocated bytes (4.10 GiB); temporary output 265,134,321 bytes (252.85 MiB / 256 MiB); free disk 108,028,887,040 bytes. Personal saves/settings and original game preserved; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-129-*`, canonical/versioned prompt records, retained source PNGs and progress. Commit records progress only; other-device synchronization unverified.
-
 
 ## Texture overhaul issue #74: hybrid batch 130
 
@@ -14020,7 +13976,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Zero game launches; no runtime/tool changes. Shared source retains 512 MiB replacement residency cap; actual scene residency/fallback remains pending final testing. Full overhaul unfinished and near-completion gate not reached. Other-device synchronization and scene/hardware validation unverified.
 - Pack 862,638,473 bytes (822.68 MiB / 6144 MiB). Texture workspace at audit 4,450,922,047 logical/allocated bytes (4.15 GiB); temporary output 265,913,472 bytes (253.59 MiB / 256 MiB); free disk 107,755,659,264 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-130-*`, authored source PNGs and prompt records, and progress. Commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 131
 
@@ -14039,7 +13994,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 869,285,771 bytes (829.02 MiB / 6144 MiB). Texture workspace at audit 4,499,909,936 logical/allocated bytes (4.19 GiB); temporary output 267,382,842 bytes (255.00 MiB / 256 MiB); free disk 107,499,507,712 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-131-*`, authored source PNGs and prompt records, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 132
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `648e76a`.
@@ -14057,7 +14011,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 875,059,257 bytes (834.52 MiB / 6144 MiB). Texture workspace at audit 4,536,168,127 logical/allocated bytes (4.22 GiB); temporary output 255,835,116 bytes (243.98 MiB / 256 MiB); free disk 107,227,541,504 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-132-*`, authored source PNGs and prompt records, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 133 corrections
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `7ac61b8`.
@@ -14072,7 +14025,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - All 944 installed/offline-approved replacements pass native DDS/worklist audits. 5819 need art and 49 held drafts require correction; four previously moderated gaps remain unfinished and were not retried. Planner/inventory refreshed. Zero game launches and no runtime/tool changes. 512 MiB replacement residency cap retained; actual scene residency/fallback unverified. Full overhaul and scene/platform validation remain incomplete; near-completion gate not reached.
 - Pack 876,809,187 bytes (836.19 MiB / 6144 MiB). Texture workspace at audit 4,565,683,315 logical/allocated bytes (4.25 GiB); temporary output 259,340,920 bytes (247.33 MiB / 256 MiB); free disk 107,069,952,000 bytes.
 - Private evidence: `review/hybrid-133-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
-
 
 ## Texture overhaul issue #74: hybrid batch 134
 
@@ -14092,7 +14044,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 882,406,759 bytes (841.53 MiB / 6144 MiB). Texture workspace at audit 4,606,174,120 logical/allocated bytes (4.29 GiB); temporary output 256,276,034 bytes (244.40 MiB / 256 MiB); free disk 106,445,672,448 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-134-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 135
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `d4cee5b`.
@@ -14111,7 +14062,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 886,780,997 bytes (845.70 MiB / 6144 MiB). Texture workspace at audit 4,643,549,615 logical/allocated bytes (4.32 GiB); temporary output 250,898,167 bytes (239.28 MiB / 256 MiB); free disk 106,213,736,448 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-135-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 136 corrections
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `c0f4934`.
@@ -14127,7 +14077,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Zero game launches and no runtime/tool changes. Full overhaul and representative scene/platform/1080p/4K/ultrawide validation remain incomplete; near-completion gate not reached. Continue hybrid material production from existing triage cursor 5be5ec38bdd947b1, with specialist corrections kept separate.
 - Pack 887,306,433 bytes (846.20 MiB / 6144 MiB). Texture workspace at audit 4,663,931,149 logical/allocated bytes (4.34 GiB); temporary output 253,431,836 bytes (241.69 MiB / 256 MiB); free disk 106,108,067,840 bytes.
 - Private evidence: `review/hybrid-136-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
-
 
 ## Texture overhaul issue #74: hybrid batch 137
 
@@ -14145,7 +14094,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 896,053,749 bytes (854.54 MiB / 6144 MiB). Texture workspace at audit 4,728,121,489 logical/allocated bytes (4.40 GiB); temporary output 250,428,564 bytes (238.83 MiB / 256 MiB); free disk 105,723,666,432 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-137-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 138
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `c1ccbab`.
@@ -14161,7 +14109,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Zero game launches; no runtime/tool changes. Full overhaul and scene/platform/1080p/4K/ultrawide validation remain incomplete; near-completion gate not reached. Continue hybrid production from opaque >=2-occurrence/min128 triage cursor 704e5bd94fb33437, with specialist corrections kept separate. Other-device synchronization unverified.
 - Pack 902,877,541 bytes (861.05 MiB / 6144 MiB). Texture workspace at audit 4,798,714,251 logical/allocated bytes (4.47 GiB); temporary output 258,473,428 bytes (246.50 MiB / 256 MiB); free disk 105,469,222,912 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-138-*`, authored source PNGs and prompts, and progress. Commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 139
 
@@ -14180,7 +14127,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 912,323,335 bytes (870.06 MiB / 6144 MiB). Texture workspace at audit 4,865,727,957 logical/allocated bytes (4.53 GiB); temporary output 260,242,780 bytes (248.19 MiB / 256 MiB); free disk 105,116,016,640 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-139-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 140 corrections
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `19ebc0f`.
@@ -14197,7 +14143,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Zero game launches; no runtime/tool changes. Full overhaul and representative scene/platform/1080p/4K/ultrawide validation remain incomplete. Near-completion gate is not reached. Continue hybrid material production from opaque >=2-occurrence/min128 triage cursor 787969fba3da53ee, with specialist corrections separate. Other-device synchronization unverified.
 - Pack 915,297,745 bytes (872.90 MiB / 6144 MiB). Texture workspace at audit 4,894,138,420 logical/allocated bytes (4.56 GiB); temporary output 263,772,947 bytes (251.55 MiB / 256 MiB); free disk 105,585,082,368 bytes.
 - Private evidence: `review/hybrid-140-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
-
 
 ## Texture overhaul issue #74: hybrid batch 141
 
@@ -14216,7 +14161,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 925,267,836 bytes (882.40 MiB / 6144 MiB). Texture workspace at audit 4,966,377,587 logical/allocated bytes (4.63 GiB); temporary output 266,365,603 bytes (254.03 MiB / 256 MiB); free disk 105,200,091,136 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-141-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 142
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `252ac6a`.
@@ -14232,7 +14176,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Zero game launches; no runtime/tool changes. Shared code retains the 512 MiB replacement residency limit; actual scene residency/fallback and Windows/Mac scene/platform/1080p/4K/ultrawide validation remain pending. Near-completion gate is not reached. Other-device synchronization unverified.
 - Pack 932,616,484 bytes (889.41 MiB / 6144 MiB). Texture workspace at audit 5,033,017,015 logical/allocated bytes (4.69 GiB); temporary output 263,517,805 bytes (251.31 MiB / 256 MiB); free disk 104,795,901,952 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-142-*`, authored source PNGs and prompts, and progress. Commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 143
 
@@ -14252,7 +14195,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 940,489,422 bytes (896.92 MiB / 6144 MiB). Texture workspace at audit 5,096,896,364 logical/allocated bytes (4.75 GiB); temporary output 261,378,971 bytes (249.27 MiB / 256 MiB); free disk 104,419,393,536 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-143-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 144 corrections
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8821d73`.
@@ -14268,7 +14210,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 941,189,626 bytes (897.59 MiB / 6144 MiB). Texture workspace at audit 5,122,794,576 logical/allocated bytes (4.77 GiB); temporary output 262,415,011 bytes (250.26 MiB / 256 MiB); free disk 104,233,201,664 bytes.
 - Private evidence: `review/hybrid-144-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
 
-
 ## Texture overhaul issue #74: hybrid batch 145
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `b87ef83`.
@@ -14282,7 +14223,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No runtime behavior changes or gameplay launches. One active pack, 6144 MiB pack cap and 512 MiB residency limit preserved. Category/scene coverage, embedded/procedural/unclassified inventory gaps and final 1080p/4K/ultrawide, memory and fallback validation remain unfinished. No duplicate game extracts, ZIPs or staging trees created; other-device synchronization unverified.
 - Pack 949,586,274 bytes (905.60 MiB / 6144 MiB). Texture workspace at audit 5,188,433,699 logical/allocated bytes (4.83 GiB); temporary output 261,155,217 bytes (249.06 MiB / 256 MiB); free disk 103,592,374,272 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-145-*`, authored source PNGs and prompts, and progress. Commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 146
 
@@ -14298,7 +14238,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No game launches or runtime changes. The existing 512 MiB replacement residency limit is unchanged. Consolidated scene, memory, fallback and 1080p/4K/ultrawide validation remain deferred until the coverage/category gate; no full-remaster or campaign-completion claim.
 - Pack 955,710,442 bytes (911.44 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,246,690,166 logical/allocated bytes (4.89 GiB); temporary output 259,585,122 bytes (247.56 MiB / 256 MiB); free disk 103,248,834,560 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-146-*`, authored source PNGs and prompts, and progress. Commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 147 corrections
 
@@ -14316,7 +14255,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 959,907,981 bytes (915.44 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,276,122,854 logical/allocated bytes (4.91 GiB); temporary output 264,002,089 bytes (251.77 MiB / 256 MiB); free disk 102,210,797,568 bytes.
 - Private evidence: `review/hybrid-147-*`, canonical/versioned prompts, source PNGs and progress. Commit records progress only; other-device synchronization unverified.
 
-
 ## Texture overhaul issue #74: hybrid batch 148
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `428fa92`.
@@ -14330,7 +14268,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Zero game launches. The 90% plus all-categories-reviewed runtime gate remains unmet; 512 MiB runtime residency limit unchanged. No runtime source changes or other-device verification.
 - Pack 963,582,015 bytes (918.94 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,309,431,252 logical/allocated bytes (4.94 GiB); temporary output 264,565,209 bytes (252.31 MiB / 256 MiB); free disk 102,021,873,664 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-148-*`, authored source PNGs and prompts, and progress. Commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 149
 
@@ -14347,7 +14284,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 967,080,715 bytes (922.28 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,338,372,329 logical/allocated bytes (4.97 GiB); temporary output 264,912,071 bytes (252.64 MiB / 256 MiB); free disk 101,850,939,392 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-149-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: inventory batch 150
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `fd1782c`.
@@ -14360,7 +14296,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Zero gameplay launches. Native loader-format result from hybrid-149 remains the latest native audit of this unchanged pack; this pass did not rerun it. The 90% plus all-categories-reviewed gate is unmet; 6144 MiB pack budget and 512 MiB runtime residency remain unchanged. Other-device synchronization unverified.
 - Pack 967,080,715 bytes (922.28 MiB / 6144 MiB). Texture workspace at audit 5,331,433,168 logical bytes and 5,331,433,168 Windows GetCompressedFileSizeW allocated bytes (4.97 GiB); temporary output 257,921,010 bytes (245.97 MiB / 256 MiB); free disk 101,882,597,376 bytes.
 - Private evidence: `review/hybrid-150-*`, visual classification, inventory and progress. Commit records progress only; no game or artwork files published.
-
 
 ## Texture overhaul issue #74: hybrid batch 151
 
@@ -14376,7 +14311,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No gameplay launch. Full scene, transparency, fallback, memory/residency and 1080p/4K/ultrawide runtime validation remain pending; 512 MiB residency cap is unchanged. Continue bounded hybrid production and focused corrections; all categories and the >=90% offline gate remain required before consolidated playtesting.
 - Pack 970,755,895 bytes (925.78 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,375,083,287 logical/allocated bytes (5.01 GiB); temporary output 263,004,525 bytes (250.82 MiB / 256 MiB); free disk 101,656,809,472 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-151-*`, authored source PNGs and prompts, and progress. Commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 152
 
@@ -14394,7 +14328,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 975,828,597 bytes (930.62 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,421,159,797 logical/allocated bytes (5.05 GiB); temporary output 258,664,450 bytes (246.68 MiB / 256 MiB); free disk 101,182,087,168 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-152-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 153
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `aa2cac5`.
@@ -14411,7 +14344,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 978,627,093 bytes (933.29 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,449,537,345 logical/allocated bytes (5.08 GiB); temporary output 262,547,983 bytes (250.39 MiB / 256 MiB); free disk 101,033,865,216 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-153-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: inventory batch 154
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `83a4d50`.
@@ -14423,7 +14355,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Zero gameplay launches. Hybrid-153 remains the latest native loader-format audit of this unchanged pack; it was not rerun this pass. The 90% plus all-categories-reviewed gate remains unmet. Pack budget 6144 MiB and runtime residency limit 512 MiB remain unchanged. Other-device synchronization and runtime scenes remain unverified.
 - Pack 978,627,093 bytes (933.29 MiB / 6144 MiB). Texture workspace at audit 5,447,268,442 logical bytes and 5,447,268,442 Windows GetCompressedFileSizeW allocated bytes (5.07 GiB); temporary output 260,225,779 bytes (248.17 MiB / 256 MiB); free disk 101,049,389,056 bytes.
 - Private evidence: `review/hybrid-154-*`, visual classification, inventory and progress. Commit records progress only; no artwork/game files published. No runtime or platform implementation change; Mac adaptation is not needed for this inventory-only record, and Mac validation remains pending.
-
 
 ## Texture overhaul issue #74: hybrid batch 155
 
@@ -14437,7 +14368,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No gameplay launch. Consolidated scene/model, transparency, residency, fallback and 1080p/4K/ultrawide validation remains pending. The >=90% offline coverage plus all-categories-reviewed gate is unmet; 6144 MiB pack, 512 MiB residency and 256 MiB temporary limits remain unchanged. No additional review-cache cleanup needed this batch. No runtime/platform implementation change; other-device artwork synchronization and scene validation remain unverified.
 - Pack 982,825,417 bytes (937.30 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,486,777,071 logical/allocated bytes (5.11 GiB); temporary output 264,378,805 bytes (252.13 MiB / 256 MiB); free disk 100,815,908,864 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-155-*`, authored source PNGs and prompts, and progress. Commit records progress only.
-
 
 ## Texture overhaul issue #74: hybrid batch 156
 
@@ -14453,7 +14383,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 985,711,869 bytes (940.05 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,514,984,490 logical/allocated bytes (5.14 GiB); temporary output 262,153,667 bytes (250.01 MiB / 256 MiB); free disk 100,612,423,680 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-156-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: inventory batch 157
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `6ec96cc`.
@@ -14464,7 +14393,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No gameplay launch or cleanup this pass. Temporary original/review output remained below 256 MiB, one active pack remains below 6144 MiB, and the 512 MiB runtime residency limit is unchanged. The >=90% offline coverage plus all-categories-reviewed gate is unmet. Scene, hardware and other-device validation remain pending.
 - Pack 985,711,869 bytes (940.05 MiB / 6144 MiB). Texture workspace at audit 5,517,976,124 logical bytes and 5,517,976,124 Windows GetCompressedFileSizeW allocated bytes (5.14 GiB); temporary output 265,094,308 bytes (252.81 MiB / 256 MiB); free disk 100,597,227,520 bytes.
 - Private evidence: `review/hybrid-157-*`, visual classification, inventory and progress. Commit records progress only; no artwork/game files published. No runtime or platform implementation change; Mac adaptation is not needed for this inventory-only record, and Mac validation remains pending.
-
 
 ## Texture overhaul issue #74: hybrid batch 158
 
@@ -14480,7 +14408,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 989,735,991 bytes (943.89 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,553,340,253 logical/allocated bytes (5.17 GiB); temporary output 265,578,625 bytes (253.28 MiB / 256 MiB); free disk 99,796,377,600 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-158-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: hybrid batch 159 archive coverage audit
 
 - Continued from `ffe24d3` on `74-enhancement-gfx-overhaul-to-modernize-textures`.
@@ -14493,7 +14420,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - One active pack, 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary cap retained. No game copy, generated artwork, save, settings or build change. Research script is platform-neutral Python; tested on Windows only. No PC runtime feature or Mac adapter was introduced.
 - Pack 989,735,991 bytes (943.89 MiB); texture workspace at worklist audit 5,553,876,401 logical / 5,553,876,401 allocated bytes (Windows GetCompressedFileSizeW). Temporary output 265,584,596 bytes (253.28 MiB); free disk 99,882,307,584 bytes. Private research report 507,197 bytes, SHA256 `31c7c5d68c1199db98277fec91b4f5eb706344aa320cf96d4e0e36cd595dee15`.
 - Reproduce with `python tools/texture-archive-signatures.py --game <game-directory> --root <texture-remaster-directory>`. Requires the existing catalog and embedded-scan corpus baseline. Private evidence remains local; source and tests are tracked.
-
 
 ## Texture overhaul issue #74: hybrid batch 160
 
@@ -14511,7 +14437,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 993,409,445 bytes (947.39 MiB / 6144 MiB). Texture workspace at audit (Windows compressed-file-size allocation measurement) 5,585,259,406 logical/allocated bytes (5.20 GiB); temporary output 265,113,926 bytes (252.83 MiB / 256 MiB); free disk 99,725,651,968 bytes. One active pack; no duplicate extracts/ZIPs/staging.
 - Private evidence: `review/hybrid-160-*`, authored source PNGs and prompts, and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: inventory batch 161
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `4b93ad9`.
@@ -14522,7 +14447,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Previous goal turn 160 made concrete progress with six accepted textures. This inventory turn continues that production workflow. No gameplay launch or cleanup this pass. Temporary original/review output remained below 256 MiB, one active pack remains below 6144 MiB, and the 512 MiB runtime residency limit is unchanged. The >=90% offline coverage plus all-categories-reviewed gate is unmet. Scene, hardware and other-device validation remain pending.
 - Pack 993,409,445 bytes (947.39 MiB / 6144 MiB). Texture workspace at audit 5,586,460,567 logical bytes and 5,586,460,567 Windows GetCompressedFileSizeW allocated bytes (5.20 GiB); temporary output 266,262,863 bytes (253.93 MiB / 256 MiB); free disk 99,724,779,520 bytes.
 - Private evidence: `review/hybrid-161-*`, visual classification, inventory and progress. Commit records progress only; no artwork/game files published. No runtime or platform implementation change; Mac adaptation is not needed for this inventory-only record, and Mac validation remains pending.
-
 
 ## Texture overhaul issue #74: hybrid batch 162
 
@@ -14540,7 +14464,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 997,083,479 bytes (950.89 MiB / 6144 MiB). Texture workspace at audit 5,618,962,155 logical/Windows GetCompressedFileSizeW allocated bytes (5.23 GiB). Temporary output 268,241,324 bytes (255.81 MiB / 256 MiB); free disk 99,246,714,880 bytes. No duplicate extracts or packaging.
 - Private evidence: `review/hybrid-162-*`, source PNGs, prompts and progress. Commit records progress only.
 
-
 ## Texture overhaul issue #74: inventory batch 163
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `5b08b97`.
@@ -14551,7 +14474,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Previous goal turn 162 made concrete progress with seven accepted textures. This inventory turn continues that production workflow while avoiding new image files. No gameplay launch or cleanup this pass. Previously denied deletion was not retried, and all blocked-deletion files remain untouched. Temporary original/review output remained below 256 MiB, one active pack remains below 6144 MiB, and the 512 MiB runtime residency limit is unchanged. The >=90% offline coverage plus all-categories-reviewed gate is unmet. Scene, hardware and other-device validation remain pending.
 - Pack 997,083,479 bytes (950.89 MiB / 6144 MiB). Texture workspace at audit 5,619,049,576 logical bytes and 5,619,049,576 Windows GetCompressedFileSizeW allocated bytes (5.23 GiB); temporary output 268,280,512 bytes (255.85 MiB / 256 MiB); free disk 99,231,617,024 bytes.
 - Private evidence: `review/hybrid-163-*`, visual classification, inventory and progress. Commit records progress only; no artwork/game files published. No runtime or platform implementation change; Mac adaptation is not needed for this inventory-only record, and Mac validation remains pending.
-
 
 ## Texture overhaul issue #74: hybrid batch 164
 
@@ -14568,7 +14490,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 999,883,135 bytes (953.56 MiB / 6144 MiB); added 2,799,656 bytes. Texture workspace at audit 5,648,756,412 logical and 5,648,756,412 Windows GetCompressedFileSizeW allocated bytes (5.26 GiB). Final temporary output 268,334,444 bytes (255.90 MiB / 256 MiB); free disk at audit 44,096,827,392 bytes.
 - Private evidence: `review/hybrid-164-*`, source PNGs, prompts and progress. This commit records progress only; artwork and game files stay private.
 
-
 ## Texture overhaul issue #74: inventory batch 165
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8e55e51`.
@@ -14579,7 +14500,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Previous goal turn 164 made concrete progress with six accepted textures and two correction drafts. This inventory pass expands the production queue without new image files. No gameplay launch or cleanup attempt; previously denied deletions were not retried. One active pack stays under 6144 MiB, temporary texture output stays under 256 MiB, and the 512 MiB residency limit is unchanged. The >=90% offline coverage and all-categories-reviewed gate is unmet. Scene, hardware, memory/fallback and other-device validation remain pending.
 - Pack 999,883,135 bytes (953.56 MiB / 6144 MiB). Texture workspace at audit 5,648,841,694 logical and 5,648,841,694 Windows GetCompressedFileSizeW allocated bytes (5.26 GiB). Final temporary output 268,371,678 bytes (255.94 MiB / 256 MiB); free disk at audit 96,530,452,480 bytes.
 - Private evidence: `review/hybrid-165-*`, classification, inventory and progress. Commit records progress only; artwork/game files stay private. No runtime/platform change or Mac adapter needed for inventory-only work; Mac validation remains unverified.
-
 
 ## Texture overhaul issue #74: correction batch 166
 
@@ -14594,7 +14514,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,001,982,587 bytes (955.57 MiB / 6144 MiB); added 2,099,452 bytes. Texture workspace at audit 5,675,237,756 logical and 5,675,237,756 Windows GetCompressedFileSizeW allocated bytes (5.29 GiB). Final temporary output 268,417,259 bytes (255.98 MiB / 256 MiB); free disk at audit 92,923,473,920 bytes.
 - Private evidence: `review/hybrid-166-*`, source PNGs, prompts and progress. Commit records progress only; artwork/game files stay private.
 
-
 ## Texture overhaul issue #74: inventory batch 167
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `22df9b4`.
@@ -14606,7 +14525,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Batch167 expands the reviewed inventory and reduces redundant presentation storage; the preceding production batch166 added four accepted corrections. One active pack, the 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary cap remain. The >=90% offline coverage and all-categories-reviewed gate is unmet; scene, hardware, memory/fallback, display modes and Mac validation remain pending.
 - Pack 1,001,982,587 bytes (955.57 MiB / 6144 MiB). Texture workspace at audit 5,672,801,485 logical and 5,672,801,485 Windows GetCompressedFileSizeW allocated bytes (5.28 GiB). Final temporary output 265,899,199 bytes (253.58 MiB / 256 MiB); free disk at audit 92,929,699,840 bytes.
 - Private evidence: `review/hybrid-167-*`, classification, inventory and progress. Artwork/game files stay private. No runtime/platform change or Mac adapter needed for inventory-only work; Mac validation remains unverified.
-
 
 ## Texture overhaul issue #74: hybrid batch 168
 
@@ -14622,7 +14540,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,004,956,417 bytes (958.40 MiB / 6144 MiB); added 2,973,830 bytes. Texture workspace at audit 5,708,073,771 logical and 5,708,073,771 Windows GetCompressedFileSizeW allocated bytes (5.32 GiB). Final temporary output 266,681,817 bytes (254.33 MiB / 256 MiB); free disk at audit 92,694,777,856 bytes.
 - Private evidence: `review/hybrid-168-*`, source PNGs, prompts and progress. This commit records progress only; artwork and game files stay private.
 
-
 ## Texture overhaul issue #74: hybrid batch 169
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `167c49a`.
@@ -14636,7 +14553,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No gameplay launch. The >=90% offline coverage and every-category-reviewed gate remains unmet. Final scene, memory/residency, fallback, stability, 1080p/4K/ultrawide and other-device checks remain pending. No runtime/platform implementation change; Mac scene validation remains unverified. One active pack; 6144 MiB pack cap, 512 MiB residency limit and 256 MiB temporary cap unchanged.
 - Pack 1,006,357,391 bytes (959.74 MiB / 6144 MiB); added 1,400,974 bytes. Texture workspace at audit 5,735,106,439 logical and 5,735,106,439 Windows GetCompressedFileSizeW allocated bytes (5.34 GiB). Final temporary output 267,038,903 bytes (254.67 MiB / 256 MiB); free disk at audit 92,542,943,232 bytes.
 - Private evidence: `review/hybrid-169-*`, source PNGs, prompts and progress. This commit records progress only; artwork and game files stay private.
-
 
 ## Texture overhaul issue #74: hybrid batch 170
 
@@ -14652,7 +14568,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,009,156,467 bytes (962.41 MiB / 6144 MiB); added 2,799,076 bytes. Texture workspace at audit 5,762,389,679 logical and 5,762,389,679 Windows GetCompressedFileSizeW allocated bytes (5.37 GiB). Final temporary output 267,534,648 bytes (255.14 MiB / 256 MiB); free disk at audit 92,388,966,400 bytes.
 - Private evidence: `review/hybrid-170-*`, source PNGs, prompts and progress. This commit records progress only; artwork and game files stay private.
 
-
 ## Texture overhaul issue #74: inventory batch 171
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `e5bb75b`.
@@ -14666,7 +14581,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Private evidence: `review/hybrid-171-*`, classification, inventory and progress. Artwork/game files stay private. No runtime/platform change or Mac adapter needed for inventory-only work; Mac validation remains unverified.
 - Expanded storage audit found a separate comparison deliverable omitted by the legacy originals/review/preview subtotal: 100,081,850 bytes (95.45 MiB), preserved with hashes for all 47 files. Conservatively including it raises review/comparison storage to about 348.5 MiB, ABOVE the 256 MiB temporary limit. No new artwork production until aggregate cleanup is resolved; source, active pack, user data and the separate comparison deliverable are preserved. Details: review/hybrid-171-storage-scope.json.
 
-
 ## Texture overhaul issue #74: storage batch 172
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `060624a`.
@@ -14679,7 +14593,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No game launch or runtime/platform change. The 512 MiB residency limit and >=90% offline coverage plus every-category-reviewed gate remain unchanged and unmet. Consolidated scene, display-mode, memory/fallback, stability and Mac checks remain pending. Shared Python accounting needs no Mac adapter; Mac execution is unverified and MAC-011 records acceptance checks.
 - Final aggregate temporary output including comparison: 266,115,892 bytes (253.79 MiB / 256 MiB), headroom 2,319,564 bytes. Texture workspace at audit: 5,761,070,759 logical and 5,761,070,759 Windows allocated bytes (5.37 GiB); free disk 93,143,248,896 bytes.
 - Private cleanup/recovery evidence: `review/hybrid-172-*`. Artwork/game files remain private. The complete overhaul remains unfinished.
-
 
 ## Texture overhaul issue #74: hybrid batch 173
 
@@ -14695,7 +14608,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,010,251,033 bytes (963.45 MiB / 6144 MiB), added 1,094,566 bytes. Texture workspace at audit: 5,785,828,064 logical and 5,785,828,064 Windows allocated bytes (5.39 GiB); free disk 92,972,015,616 bytes. Final aggregate temporary output including comparison: 265,270,660 bytes (252.98 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid173-v1.png`, `review/hybrid-173-*`, progress and catalog. Artwork/game files remain private; the overhaul is incomplete.
 
-
 ## Texture overhaul issue #74: hybrid batch 174
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `47ade81`.
@@ -14710,7 +14622,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,013,399,631 bytes (966.45 MiB / 6144 MiB), added 3,148,598 bytes. Texture workspace at audit: 5,823,235,195 logical and 5,823,235,195 Windows allocated bytes (5.42 GiB); free disk 92,839,399,424 bytes. Aggregate temporary output: 267,781,607 bytes (255.38 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid174-v1.png`, `review/hybrid-174-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
 
-
 ## Texture overhaul issue #74: inventory batch 175
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `8cc68cf`.
@@ -14723,7 +14634,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No runtime/platform source changed; no Mac adapter needed for this inventory pass. Mac scene validation remains unverified. The >=90% offline coverage and every-category-reviewed gate remains unmet. Consolidated scene, UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability checks remain pending; full campaign playthrough is separate.
 - Pack 1,013,399,631 bytes (966.45 MiB / 6144 MiB). Texture workspace at audit 5,823,386,245 logical and 5,823,386,245 Windows allocated bytes (5.42 GiB); free disk 93,695,979,520 bytes. Aggregate temporary output 267,852,067 bytes (255.44 MiB / 256 MiB).
 - Private evidence: `review/hybrid-175-*`, classification, inventory and progress. No game files or artwork published; full overhaul remains incomplete.
-
 
 ## Texture overhaul issue #74: hybrid batch 176
 
@@ -14739,7 +14649,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,015,849,185 bytes (968.79 MiB / 6144 MiB), added 2,449,554 bytes. Texture workspace at audit: 5,848,418,268 logical and 5,848,418,268 Windows allocated bytes (5.45 GiB); free disk 93,194,076,160 bytes. Aggregate temporary output: 265,536,028 bytes (253.23 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid176-v1.png`, `review/hybrid-176-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
 
-
 ## Texture overhaul issue #74: correction batch 177
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `4284b6a`.
@@ -14754,7 +14663,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,017,162,201 bytes (970.04 MiB / 6144 MiB), added 1,313,016 bytes. Texture workspace at audit: 5,769,066,621 logical and 5,769,066,621 Windows allocated bytes (5.37 GiB); free disk 93,113,380,864 bytes. Aggregate temporary output: 156,431,438 bytes (149.18 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid177-v1.png`, `review/hybrid-177-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
 
-
 ## Texture overhaul issue #74: inventory batch 178
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `7b592d0`.
@@ -14767,7 +14675,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No runtime/platform source changed; no Mac adapter needed for this inventory pass. Mac scene validation remains unverified. The >=90% offline coverage and every-category-reviewed gate remains unmet. Consolidated scene, UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability checks remain pending; full campaign playthrough is separate.
 - Pack 1,017,162,201 bytes (970.04 MiB / 6144 MiB). Texture workspace at audit 5,769,217,702 logical and 5,769,217,702 Windows allocated bytes (5.37 GiB); free disk 93,124,018,176 bytes. Aggregate temporary output 156,501,653 bytes (149.25 MiB / 256 MiB).
 - Private evidence: `review/hybrid-178-*`, classification, inventory and progress. No game files or artwork published; full overhaul remains incomplete.
-
 
 ## Texture overhaul issue #74: hybrid batch 179
 
@@ -14782,7 +14689,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No cleanup this pass; prior denied files, source artwork, original archives, saves and settings preserved. Pack cap 6144 MiB, residency limit 512 MiB and aggregate temporary cap 256 MiB unchanged. No runtime/platform implementation changed; no new Mac adapter required, Mac scene validation remains unverified. The >=90% offline-coverage/all-categories-reviewed gate remains unmet. Consolidated scene UV/alpha, 1080p/4K/ultrawide, memory/fallback and stability validation remain pending; full campaign playthrough is separate.
 - Pack 1,021,010,423 bytes (973.71 MiB / 6144 MiB), added 3,848,222 bytes. Texture workspace at audit: 5,804,781,511 logical and 5,804,781,511 Windows allocated bytes (5.41 GiB); free disk 92,910,788,608 bytes. Aggregate temporary output: 157,232,019 bytes (149.95 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid179-v1.png`, `review/hybrid-179-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
-
 
 ## Texture overhaul issue #74: hybrid batch 180
 
@@ -14799,7 +14705,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,022,061,430 bytes (974.71 MiB / 6144 MiB), added 1,051,007 bytes. Texture workspace at audit: 5,831,995,557 logical and 5,831,995,557 Windows allocated bytes (5.43 GiB); free disk 92,633,391,104 bytes. Aggregate temporary output: 157,440,673 bytes (150.15 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid180-v1.png`, `review/hybrid-180-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
 
-
 ## Texture overhaul issue #74: inventory batch 181
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `e551d07`.
@@ -14812,7 +14717,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No runtime/platform source changed in batch181; no Mac adapter needed for this inventory pass. Mac scene validation and the batch180 shared compiler check on Mac remain unverified. The >=90% offline coverage and every-category-reviewed gate remains unmet. Consolidated scene, UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability checks remain pending; full campaign playthrough is separate.
 - Pack 1,022,061,430 bytes (974.71 MiB / 6144 MiB). Texture workspace at audit 5,832,149,408 logical and 5,832,149,408 Windows allocated bytes (5.43 GiB); free disk 92,631,265,280 bytes. Aggregate temporary output 157,511,128 bytes (150.21 MiB / 256 MiB).
 - Private evidence: `review/hybrid-181-*`, classification, inventory and progress. No game files or artwork published; full overhaul remains incomplete.
-
 
 ## Texture overhaul issue #74: hybrid batch 182
 
@@ -14828,7 +14732,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,025,035,840 bytes (977.55 MiB / 6144 MiB), added 2,974,410 bytes. Texture workspace at audit: 5,861,618,596 logical and 5,861,618,596 Windows allocated bytes (5.46 GiB); free disk 92,463,947,776 bytes. Aggregate temporary output: 158,034,352 bytes (150.71 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid182-v1.png`, `review/hybrid-182-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
 
-
 ## Texture overhaul issue #74: hybrid batch 183
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a355d7e`.
@@ -14842,7 +14745,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No runtime/platform source changed; no new Mac adapter required. Mac tool and scene validation remain unverified. The >=90% offline coverage/every-category-reviewed gate remains unmet. Consolidated scene UV/alpha, 1080p/4K/ultrawide, memory/fallback and stability checks remain pending; full campaign playthrough is separate. No redundant source tests or game rebuild for this artwork-only batch.
 - Pack 1,028,884,062 bytes (981.22 MiB / 6144 MiB), added 3,848,222 bytes. Texture workspace at audit: 5,893,139,723 logical and 5,893,139,723 Windows allocated bytes (5.49 GiB); free disk 92,048,580,608 bytes. Aggregate temporary output: 158,659,349 bytes (151.31 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid183-v1.png`, `review/hybrid-183-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
-
 
 ## Texture overhaul issue #74: correction batch 184
 
@@ -14858,7 +14760,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,030,371,846 bytes (982.64 MiB / 6144 MiB), added 1,487,784 bytes. Texture workspace at audit: 5,918,180,883 logical and 5,918,180,883 Windows allocated bytes (5.51 GiB); free disk 91,667,390,464 bytes. Aggregate temporary output: 158,748,133 bytes (151.39 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid184-v1.png`, `review/hybrid-184-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
 
-
 ## Texture overhaul issue #74: inventory batch 185
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `9881aa7`.
@@ -14871,7 +14772,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - No runtime/platform code changed; no new Mac adapter required. Mac validation remains unverified. The >=90% offline-coverage/every-category-reviewed gate is unmet. Consolidated scene UV/alpha, 1080p/4K/ultrawide, GPU memory/fallback and stability testing remain pending; a full campaign playthrough is separate.
 - Pack 1,030,371,846 bytes (982.64 MiB / 6144 MiB). Texture workspace at audit 5,918,336,425 logical and 5,918,336,425 Windows allocated bytes (5.51 GiB); free disk 91,661,201,408 bytes. Aggregate temporary output 158,818,688 bytes (151.46 MiB / 256 MiB).
 - Private evidence: `review/hybrid-185-*`, classification, inventory and progress. No game files or artwork published; full overhaul remains incomplete.
-
 
 ## Texture overhaul issue #74: hybrid batch 186
 
@@ -14887,7 +14787,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,032,296,530 bytes (984.47 MiB / 6144 MiB), added 1,924,684 bytes. Texture workspace at audit: 5,951,331,038 logical and 5,951,331,038 Windows allocated bytes (5.54 GiB); free disk 91,451,752,448 bytes. Aggregate temporary output: 159,547,103 bytes (152.16 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid186-v1.png`, `review/hybrid-186-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
 
-
 ## Texture overhaul issue #74: hybrid batch 187
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `a19b934`.
@@ -14902,7 +14801,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Pack 1,036,144,752 bytes (988.14 MiB / 6144 MiB), added 3,848,222 bytes. Texture workspace at audit: 5,982,457,535 logical and 5,982,457,535 Windows allocated bytes (5.57 GiB); free disk 91,285,053,440 bytes. Aggregate temporary output: 160,191,362 bytes (152.77 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid187-v1.png`, `review/hybrid-187-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
 
-
 ## Texture overhaul issue #74: correction batch 188
 
 - Continued on `74-enhancement-gfx-overhaul-to-modernize-textures` from `d1401bc`.
@@ -14916,7 +14814,6 @@ queued under MAC-021; other-device synchronization is unverified.
 - Caps unchanged: 6144 MiB pack, 512 MiB replacement residency, 256 MiB aggregate temporary output. No runtime/platform code change or new Mac adapter required; Mac validation unverified. The >=90% offline coverage/all categories reviewed gate remains unmet. Scene UV/alpha, 1080p/4K/ultrawide, memory/fallback and stability checks remain pending; full campaign playthrough is separate.
 - Pack 1,038,243,624 bytes (990.15 MiB / 6144 MiB), added 2,098,872 bytes. Texture workspace at audit: 6,011,438,021 logical and 6,011,438,021 Windows allocated bytes (5.60 GiB); free disk 90,987,274,240 bytes. Aggregate temporary output: 160,278,210 bytes (152.85 MiB / 256 MiB).
 - Private source art/prompts and evidence: `authored/*-hybrid188-v1.png`, `review/hybrid-188-*`, progress and catalog. Game files/artwork remain private. Full overhaul incomplete.
-
 
 ## Texture overhaul alpha PR preparation — 2026-10-19
 
@@ -14999,7 +14896,6 @@ The code does not add a new AI replication protocol. Working cross-peer bot
 movement, weapons, damage, deaths, respawns and scoring are not established;
 issue #25 remains incomplete. MAC-033 records deferred Mac integration. No Mac
 execution, other-device synchronization, commit, push or release was performed.
-
 
 ### 2026-10-17 ? Issue #25: Arcade Bot Set and two-peer spawn investigation
 
@@ -15941,7 +15837,6 @@ The combined game executable and native Mac runtime were not rebuilt/retested
 for this merge; earlier build/live-game evidence remains scoped to its recorded
 revision. Personal files and the primary checkout were preserved.
 
-
 ## Launcher compatibility automation (2026-10-19)
 
 Source: `codex/launcher-compatibility-automation`, based on shared launcher UI
@@ -16837,7 +16732,6 @@ switching/restoration, cable reconnects, physical Alt-Tab, dedicated GPU-memory
 growth, checkpoint saves, longer sessions and broader Arcade/online map coverage
 remain unverified. Native Mac equivalents remain pending in MAC-049.
 
-
 ### Controls Accept save follow-up (2026-10-19)
 
 Fixed the frontend Controls persistence caveat found in the transition run.
@@ -16902,7 +16796,6 @@ multiple simultaneously loaded profiles, and checkpoint-progress saves were not
 exercised here; error routing and the global dirty-flag behavior were reviewed
 against the supported executable. This follow-up establishes frontend Controls
 persistence, not broader save-system or gameplay validation.
-
 
 ### Issue 167 PR integration validation (2026-10-19)
 
@@ -16984,7 +16877,6 @@ launcher was rebuilt from this integration's uncommitted source; its build recei
 records that state. Fresh Windows/Mac CI and the final main merge are pending. No release was published and these checks
 do not certify native gameplay or complete visual parity.
 
-
 ## Launcher main patch integration follow-up (2026-10-19)
 
 At `02acfe0`, GitHub run [39340698617](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39340698617)
@@ -17010,7 +16902,6 @@ skips. Another 71 renderer/frame-clock/CI-scope checks passed against a disposab
 source-only archive of pinned upstream `d90c929`; the active runtime checkout was
 not patched. Fresh Windows/macOS CI and the real-GPU contract are pending.
 No game execution, new game build or release publication occurred in this pass.
-
 
 CI follow-up at `ba5aaa7`: both launcher/package jobs passed again in run
 39341464578. Windows runtime migration assertions exposed a test-only mixed
@@ -17248,7 +17139,6 @@ stub, retaining its fail-loud behavior if configuration is unexpectedly reached.
 No runtime behavior changes. All 20 renderer-host tests pass locally on macOS
 ARM64/Clang 21 (3.22 seconds); Windows rerun remains required.
 
-
 ### Shared renderer final bounded acceptance (2026-10-19)
 
 At runtime/test head `c6b01d3`, [run 39347966123](https://github.com/TheDoffman/timesplitters-future-perfect-pc/actions/runs/39347966123)
@@ -17303,7 +17193,6 @@ not full-game certification. Broader MAC-005 shader fidelity and MAC-049 spirit
 wall-occlusion/full-angle/other-encounter coverage remain in the backlog. There
 is no demonstrated unresolved Mac-only Khallos defect in the collected evidence.
 
-
 ### Renderer promotion onto current main (2026-10-19)
 
 The user authorized merging the completed renderer work into main. Focused
@@ -17327,7 +17216,6 @@ this source merge does not publish a release or validate Windows gameplay.
 Logs: `logs/renderer-promotion-{patches,contracts,launcher}.log`; source hash
 baseline: `logs/renderer-promotion-runtime-before.json`. No personal data or
 concurrent worktree changes were included.
-
 
 ## Texture alpha main integration — 2026-10-19
 
@@ -17361,7 +17249,6 @@ All 34 patch-transition/tracking checks passed in 314.60 seconds, including fres
 art generation, pack copy, save/config modification or additional game build tree.
 The existing Windows executable has not been replaced; these changes require a
 new runtime build. Visual layout and real-art scene behavior remain unverified.
-
 
 
 ## 2026-10-20: focused PR validation optimization
@@ -17510,7 +17397,6 @@ are recorded separately and do not retag or replace the Windows release.
   bundle metadata is normalized before signing, with source artwork preserved.
   Source changes remain on this focused branch for review; main is not merged.
 
-
 ## 2026-10-20: launcher texture installation and OneDrive path repair
 
 Branch fix/launcher-onedrive-paths, based on main 5db4efc. The local portable
@@ -17551,7 +17437,6 @@ untouched. Local build output is build/launcher-onedrive-fix in the working root
 Mac: no adapter is required for Windows Cloud Files. The existing Mac rejection
 of filesystem links remains unchanged behind its platform adapter; native Mac
 build/interaction validation was not performed in this Windows-only repair.
-
 
 ## Optional launcher texture installation (2026-10-20)
 
@@ -17699,7 +17584,6 @@ regressions passed on Windows (`logs/auto-ci-patch-upgrades.log`).
 Both native-runtime CI jobs and the Windows/Mac launcher checks passed on
 `c46cc8c`; this does not establish full Mac game or physical display validation.
 
-
 ## Crane vignette widescreen (#221) — 2026-10-21
 
 Implemented on `221-bug-scotland-the-brave-crane-widescreen-issue`,
@@ -17735,7 +17619,6 @@ The desert shattered-glass comment remains unverified. The named bugshatter
 textures traced so far are instantiated as world entities, so they have not
 been changed based only on their names. No desert scene fix is claimed.
 Personal saves/settings are preserved; testing uses a disposable unlocked profile.
-
 
 ### Crane right/bottom edge follow-up — 2026-10-21
 
