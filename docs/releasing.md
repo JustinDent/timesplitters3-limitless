@@ -43,7 +43,11 @@ launcher release workflow validates both Windows and Mac before publication.
 Both Windows and native Mac packaging use the same streaming texture helper.
 The package includes an isolated Windows Python/Tk runtime and the Online
 companion, including automatic hosting certificate support; players do not need
-Python or Git installed. Packaging downloads the pinned Windows wheels in
+Python or Git installed.
+`ssl.py` and its distribution's PEM trust resources remain adjacent on disk in
+the portable Python runtime; packaging preserves their trust policy unchanged.
+The bundled interpreter must pass TLS context/certificate creation before upload.
+Packaging downloads the pinned Windows wheels in
 `requirements-release.txt` and includes their licenses. A matching successful
 Release build is required. `Source/pc-port-source.zip` records the local project
 source and runtime patch, including changes not yet committed.
