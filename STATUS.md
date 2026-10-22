@@ -1,3 +1,35 @@
+## 2026-10-22 — Optional launcher texture downloads
+
+`optional-texture-downloads`, based on `564fda6`, implements one shared Windows/Mac
+check/download/update flow. New game packages omit DDS/JSON by default while
+preserving the small exact-hash retired-icon policy. Existing packs are adopted
+by file hashes; matching parts need no download, changed keys merge, and unrelated
+custom textures/saves/settings survive. Updates require confirmation. Cancellation
+keeps completed parts and rolls back the part being installed. Classic stays the
+default, and turning off update checks does not uninstall textures.
+
+Windows x64: `tools/build-launcher.ps1 -Test` passed the complete launcher suite,
+including 19 texture installer checks and 13 shared UI groups. New synthetic cases
+cover bundled-pack adoption, incremental additions/replacements, cancel/resume,
+invalid file indexes, opt-out preservation, lightweight game upgrade/repair/rollback,
+and the existing retired-icon migration. Download/recovery checks also passed.
+Python: 154 tests and 31 subtests passed across optional publication, texture
+packaging/audit, release policy, Windows packaging, portable Mac packaging/tools
+and launcher CI scoping; one Mac-only check skipped. Fixtures are small synthetic
+DDS files; no real pack was downloaded or published. Repository context check
+against the task base passed.
+
+Native Mac host execution remains unverified (MAC-057). A cross-compile attempt
+with this Windows machine's .NET 9.0.312 SDK was stopped by the locked dependencies:
+they require ILLink 8.0.32 from the pinned Mac SDK 8.0.426, while the local SDK
+requests 8.0.25. Pins/lock files were preserved. Run the normal pinned Mac build,
+UI and preservation tests on Apple Silicon before release.
+
+The download manifest remains an explicit unpublished placeholder. Publish the
+immutable texture parts, merge the generated index, and release updated launchers
+before advertising player downloads. Implementation is on
+`optional-texture-downloads`; publication remains a separate step.
+
 ## 2026-10-22 — Retired icon upgrade migration (PR #289)
 
 Review identified that preserving installed textures would leave the old icons

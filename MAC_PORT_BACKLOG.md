@@ -3529,6 +3529,18 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-057 — Optional texture pack delivery through the launcher
 
+- **Optional-delivery replacement (2026-10-22, `optional-texture-downloads`):** The user's new
+  request supersedes the default-bundling follow-ups below. Shared `SettingsPage`,
+  `TextureDownload` and `TexturePack` implement opt-in checks, confirmed downloads,
+  file-hash adoption of bundled packs, incremental part updates and preservation.
+  Both hosts bind the same busy/cancel behavior. Both game packagers omit textures
+  by default; separate `texture-release.py` publication supplies the schema-3 index.
+  No Mac-specific algorithm is required. Windows checks and portable package tests
+  are recorded in STATUS.md; native Apple Silicon build, download/cancel/update UI
+  and preserved-pack gameplay still need host validation. The optional pack and
+  launcher releases have not been published by this change.
+
+
 - **Alpha.2 removal compatibility (2026-10-22):** Launcher 1.2.24 carries the
   shared retired-icon migration for both hosts. The game publisher requires
   stable 1.2.24+ with both platform downloads when the audited pack declares
