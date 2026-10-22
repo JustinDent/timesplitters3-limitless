@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Water shader arithmetic (2026-10-21):** Original translated shaders on
+  Windows WARP confirm two further fractional-update errors: a fixed green
+  velocity offset per feedback pass and nonidentity smoothing during the
+  supposed zero-radius copy. A diagnostic float centering correction has
+  zero-step identity for persistent channels and bit-identical one-tick output
+  at the tested inputs. The correction is not yet wired into gameplay; buffer
+  ownership and ordered renderer-state transport need implementation. Both
+  shader fixtures pass. [Equations, evidence and limits](docs/native-high-refresh-regressions.md#procedural-shader-arithmetic-audit-2026-10-21).
+
 - **Water feedback precision (2026-10-21):** An opt-in shared half-float
   intermediate-target experiment eliminates the previous 144 FPS freeze:
   359/359 consecutive image pairs now change at both 120 and 144. Final image

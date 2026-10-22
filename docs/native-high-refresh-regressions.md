@@ -4883,3 +4883,82 @@ The four new float image captures are also losslessly gzip-compressed after
 byte-for-byte decompression checks, with raw SHA-256 receipts in
 `private/pipeline/surface-precision-compression.json`. This recovers space for
 the two scene captures while preserving all image evidence.
+
+
+## Procedural shader arithmetic audit (2026-10-21)
+
+The half-float experiment removes storage starvation but still changes wave
+statistics. A new Windows WARP diagnostic reads the original second feedback
+program at `0x4BBF10` and smoothing program at `0x4BBC40` from the SHA-256-pinned
+US XBE. It compiles their unchanged HLSL through the current production combiner
+parser/generator and common RHI. No shader bytes or generated HLSL are checked
+in. The fixture uses known constant texels in float32 textures/targets to isolate
+arithmetic from filtering footprints, 8-bit/half-float storage and random input.
+It is an original-program GPU test, not a full simulation or scene replay.
+
+For the second feedback pass, the unsaturated persistent-channel equations
+measured across the test states are:
+
+```
+v = G - 0.5 + a * (R - 0.5 + neighborB - B)
+G_next = v + 128/255
+B_next = d * (B + b * v)
+```
+
+Here `a`, `b`, `d` are the quantized uploaded acceleration, displacement and
+damping coefficients. The actual dynamic vectors and per-stage mapping come
+from the original definition and the established `0x195110` upload. In this
+program, damping multiplies the blue displacement output; it does not multiply
+the green velocity output. The new numerical fixture corrects the earlier
+informal interpretation of damping the velocity. Its two sampled textures
+contain the same known texel, so the neighbor difference is zero in these
+specific executions; nonuniform spatial behavior is not tested.
+
+Even with `a=b=0` and `d=1`, the second pass adds `128/255 - 0.5`, approximately
+0.001960784, to green on every execution. A neutral input of 0.5 becomes
+0.501960814 on WARP. The smaller-step candidate executes this operation more
+often while leaving that offset unchanged. This is an additional arithmetic
+rate dependency, independent of intermediate storage quantization. The runtime
+already skips zero-game-time dispatch, so this limiting-kernel test does not
+claim that paused gameplay runs or drifts.
+
+A diagnostic-only float constant `0.5 + (128/255 - 0.5) * delta` removes this
+offset at zero and scales it with elapsed ticks. Tests cover three input states
+at delta 0, 0.0001, 60/144, 60/120 and 1. The corrected zero-step green/blue
+outputs match their inputs within 1e-6; complete float outputs at delta 1 are
+bit-identical between original/corrected constants. This is not enabled in the
+game. Fractional coefficient quantization, clipping, coupling, spatial filtering
+and intermediate rounding still prevent a full-trajectory equivalence claim.
+
+The smoothing shader is also not an identity at zero sampling radius. With
+four identical texels `x` and the authored vertex color `127/255`, its tested
+output is:
+
+```
+min(1, x - 0.5 + 128/255) * (254/255)
+```
+
+WARP outputs 0.201168805 from 0.2, 0.499992341 from 0.5, 0.798815906 from 0.8,
+and 0.996078432 from 1. The initial diagnostic formula omitted the intermediate
+clamp and failed at input 1; retaining that original clamp makes all five inputs
+pass across every pixel/channel. This detects real loss of variation when the
+supposed copy runs at extra fractional updates with float intermediates. Byte
+rounding hides most of this change, which explains why treating the byte pass
+as an exact copy was insufficient after changing storage. It does not by itself
+quantify the contribution to the preceding complete-scene differences.
+
+Next implementation work must remove the extra smoothing/copy operation while
+preserving feedback-buffer ownership, and deliver the time-scaled centering
+constant through ordered renderer commands with correct shader/draw scope.
+Directly reading a mutable guest delta from a delayed host draw would be unsafe:
+`hle_d3d8_record.c` queues draws/state and supports replay. Whole-tick/original-60
+results, pause/resume, live presets and common renderer behavior remain required.
+Do not compensate for these errors by increasing random disturbances or gain.
+
+Validation: `python -m pytest tests/test_surface_shader_feedback.py -q -s`
+passes both shader cases on Windows WARP (`logs/surface-shader-feedback.log`).
+The initial test launch lacked the runtime import path; adding that explicit
+path fixes independent invocation. The workflow includes this test, which skips
+without Windows or the pinned local XBE; a hosted skip is not GPU validation.
+This checkpoint changes diagnostics/documentation only. Existing executable
+and opt-in defaults remain as in `66eec0f`; no interactive game was closed.

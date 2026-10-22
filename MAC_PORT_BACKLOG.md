@@ -2960,6 +2960,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Procedural shader arithmetic audit (2026-10-21, this revision):** Two
+  original-program GPU fixtures use the common HLSL translator/RHI and pinned
+  local XBE on Windows WARP. They identify per-pass centering drift and loss
+  of variation in zero-radius smoothing. No runtime correction or Mac adapter
+  change is made. Ordered state transport, buffer ownership, native Mac GPU
+  execution and scene acceptance remain open; see STATUS and the arithmetic
+  audit for the tested inputs and limits. CI registers the fixtures and skips
+  when the required host or private executable is absent.
+
 - **Half-float feedback experiment (2026-10-21, local source):** Shared
   `pc_surface_precision.h` and its original-constructor wrapper register only
   feedback intermediates; final textures and all guest allocations stay intact.
