@@ -25,8 +25,13 @@ def test_index_excludes_untracked_experiments_and_uses_real_loader_order():
     names = [p['name'] for p in index['patches']]
     assert {f'patches/{n}' for n in names} == {n for n in tracked if n.startswith('patches/')
                                               and n.count('/') == 1 and n.endswith('.patch')}
-    assert names[-2].endswith('-fixed-60-fps.patch')
-    assert names[-1].endswith('-late-frame-pacing.patch')
+    def position(suffix):
+        return next(i for i, name in enumerate(names) if name.endswith(suffix))
+    assert position('-native-frame-timing.patch') < position('-native-interp-retirement.patch')
+    assert position('-native-interp-retirement.patch') < position('-fixed-60-fps.patch')
+    assert position('-late-frame-pacing.patch') == position('-fixed-60-fps.patch') + 1
+    assert position('-late-frame-pacing.patch') < position('-native-numeric-policy.patch')
+    assert names[-1].endswith('-native-surface-live.patch')
     assert all(p['targets'] and len(p['sha256']) == 64 for p in index['patches'])
 
 

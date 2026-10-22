@@ -13,7 +13,9 @@ def test_decal_projection(tmp_path, camera_available, platform_define):
     wrapper = re.search(r'void sub_00151CF0\(void\)\n\{.*?\n\}', manual, re.S)
     assert wrapper, 'Apply the complete patch stack before testing'
     camera = (ROOT / 'src/pc_display_menu.c').read_text()
-    function = camera[camera.index('void pc_display_perspective_projection'):camera.index('void pc_display_menu_button')]
+    projection = re.search(r'void pc_display_perspective_projection\(.*?\n\}', camera, re.S)
+    assert projection, 'Production perspective projection function missing'
+    function = projection.group()
     source = r'''
 #include <stdint.h>
 #include <stdio.h>

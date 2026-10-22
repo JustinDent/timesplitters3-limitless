@@ -26,8 +26,28 @@ def test_target_settings_round_trip(tmp_path):
     config=ROOT / 'external/ts3FPrecomp/src/config'
     output=tmp_path / ('target-settings.exe' if os.name == 'nt' else 'target-settings')
     sources=[str(ROOT / 'tests/frame_target_settings.c'), str(config / 'recomp_config.c')]
-    command=([compiler, '/nologo', '/std:c11', '/I'+str(config), *sources,
+    command=([compiler, '/nologo', '/std:c11', '/I'+str(config), '/I'+str(ROOT/'src'), *sources,
               '/Fe:'+str(output), '/Fo:'+str(tmp_path)+os.sep]
-             if os.name == 'nt' else [compiler, '-std=c11', '-I'+str(config), *sources, '-o', str(output)])
+             if os.name == 'nt' else [compiler, '-std=c11', '-I'+str(config), '-I'+str(ROOT/'src'), *sources, '-o', str(output)])
     subprocess.run(command, cwd=tmp_path, env=environment, check=True)
     subprocess.run([str(output), str(tmp_path / 'runtime.ini')], check=True, timeout=10)
+
+
+def test_player_frame_rate_startup_preference(tmp_path):
+    compiler, environment = native_compiler(tmp_path)
+    config=ROOT/'external/ts3FPrecomp/src/config'
+    output=tmp_path/('rates.exe' if os.name=='nt' else 'rates')
+    sources=[str(ROOT/'tests/frame_rate_settings.c'),str(config/'recomp_config.c')]
+    command=([compiler,'/nologo','/std:c11','/I'+str(config),'/I'+str(ROOT/'src'),*sources,
+              '/Fe:'+str(output),'/Fo:'+str(tmp_path)+os.sep] if os.name=='nt' else
+             [compiler,'-std=c11','-I'+str(config),'-I'+str(ROOT/'src'),*sources,'-o',str(output)])
+    subprocess.run(command,cwd=tmp_path,env=environment,check=True)
+    display=tmp_path/'display.ini'
+    display.write_text('TSFP_DISPLAY_V2 1920 1080 75\n')
+    for before,after in [(144,120),(120,144),(144,0),(0,120)]:
+        subprocess.run([str(output),str(display),str(before),str(after)],check=True,timeout=10)
+        assert display.read_text()=='TSFP_DISPLAY_V2 1920 1080 75\n'
+    preference=tmp_path/'pc-frame-rate.ini'
+    for invalid in ['TSFP_FRAME_RATE_V1 240','TSFP_FRAME_RATE_V1 120 extra','TSFP_FRAME_RATE_V2 120']:
+        preference.write_text(invalid)
+        subprocess.run([str(output),str(display),'144','0'],check=True,timeout=10)

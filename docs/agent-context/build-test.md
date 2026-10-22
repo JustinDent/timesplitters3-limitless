@@ -83,6 +83,13 @@ rebuilds or repeating unchanged failures; re-run when the inputs change.
 
 ## CI and cross-host limits
 
+Standalone HLE fixtures need both the patched runtime and repository `src/`
+include roots. Framebuffer/ghost mocks cover the current feedback-preservation
+and float-combiner host interfaces; unexpected calls fail rather than silently
+succeed. Camera fixtures extract through the perspective function's closing
+brace, excluding adjacent menu allocation code. Keep the stale-copy, state-leak
+and camera mutation cases enabled when updating those harness dependencies.
+
 `.github/workflows/runtime-patches.yml` calls `tools/ci-runtime-scope.py` to
 select transition/native/GPU/release checks. Launcher builds have separate
 owners. New tests must be registered in the correct workflow; adding a test
@@ -254,6 +261,28 @@ with the expected exception, cancel its request, and leave that response pending
 A ten-second deadlock guard bounds failures; the test no longer races a 500 ms
 fake response against a 350 ms runner-speed assertion. Both launcher host builds
 run this shared fixture; production timeout and cancellation policy is unchanged.
+
+## PR #285 integration checks
+
+Keep both native FPS test registrations and main's mounted mouse, text entry,
+Auto display, crane/Ghost Gun and scoped-text checks. The historical controls
+upgrade fixture defers both late-frame and native tail patches until full-stack
+migration; fresh stacks apply all of them. `stability_transitions_game.py` retains
+the weapon-set scenario alongside bounded native-rate/surface/network options
+and uses perf-counter timestamps for command/presentation alignment.
+
+The Windows prompt fixture now verifies real page protections and scratch ABI
+without trying to count read queries in its own translation unit: scoped reads
+live in `pc_prompts.c`. `test_text_read_scope.py` retains explicit query-count,
+nesting and fresh-write checks. Merging source does not establish fresh Mac or
+whole-game high-refresh acceptance.
+
+The PR #285 CI index check also caught three pre-existing Windows patch files
+with residual CRLF bytes despite their LF attributes. They were normalized to
+the exact committed Git blobs and the index refreshed. Patch record hashes
+identify actual bytes: refresh from canonical attribute-compliant files, keeping
+the explicitly binary watermark patch unchanged. Local index success alone
+does not prove a fresh checkout has the same patch bytes.
 
 ## Exporting updates from a pointer-only art checkout
 

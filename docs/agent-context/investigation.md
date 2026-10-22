@@ -108,3 +108,10 @@ followed by late-frame-pacing. `tests/test_repo_context.py` checks that pair as
 well as excluding untracked experiments. Refreshing the index alone does not
 update explicit ordering contracts; keep those assertions aligned with the
 loader when deliberately extending its dependency order.
+
+PR #285 extends the effective patch tail with native timing/surface integration.
+The index regression checks native timing/retirement before fixed defaults,
+late-frame pacing immediately after fixed defaults, and numeric/surface patches
+after that boundary. It no longer assumes fixed-60/pacing are the final two
+patches. This is a navigation-order contract; runtime/build tests establish
+application and behavior separately.

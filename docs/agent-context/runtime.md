@@ -51,7 +51,8 @@ Top-level `patches/*.patch` is the active stack. The legacy subdirectory contain
 migration inputs only. The loader moves networking ahead of native boot, build
 identity after Discord, and the presentation integration series to the end;
 consult the generated ordered index instead of guessing from the number of z's.
-The `-late-frame-pacing.patch` follows `-fixed-60-fps.patch` at the tail.
+The `-late-frame-pacing.patch` immediately follows `-fixed-60-fps.patch`
+within the timing tail, before the later native numeric/surface patches.
 Earlier 144-FPS, presentation-timing, recovery and shared-presentation patches
 remain structural dependencies even though higher-FPS behavior is disabled.
 The loader orders the late-frame correction explicitly; do not rely on filename
@@ -152,3 +153,13 @@ The captured crane also uses an inclusive 639x479 last-pixel scissor. The
 crane patch's RHI hunk applies shared `pc_ui_vignette_clip` to a temporary
 rectangle before scaling; it never changes the guest-readable scissor state.
 Legacy GL uses the same helper. This prevents the amplified right/bottom gap.
+
+## Native FPS integration with current main (PR #285)
+
+The effective tail now installs native timing and retires interpolation before
+fixed-60 defaults, then applies main's late-frame gate correction before the
+remaining native update/surface patches. Original 60 remains the default;
+`pc_native_timing_guest.inc` commits requested 120/144 changes at update boundaries
+and HLE skips the original flip gate while native timing is active. Keep both
+`test_frame_clock.py` (real Arm body) and `test_native_timing.py`; neither alone
+validates the combined stack. Water precision experiments remain off by default.

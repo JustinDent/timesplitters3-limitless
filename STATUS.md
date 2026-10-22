@@ -1,3 +1,57 @@
+## PR #285 CI harness compatibility (2026-10-21)
+
+The merged stack exposed missing repository include paths in framebuffer and
+config tests, missing feedback/combiner host mocks, and camera fixture extraction
+that accidentally included the adjacent Audio Options allocator. Updated these
+test dependencies and bounded extraction without changing production behavior or
+removing mutation controls. Unexpected precision/combiner calls fail the fixtures.
+Windows: all 18 affected and related renderer cases pass, including stale-copy,
+state-leak and camera mutations; all 99 release-validation cases pass. Evidence:
+`logs/pr285-ci-fixture-retest.log`, `logs/pr285-ci-release-retest.log`.
+The failed transition gate depended on the failed native jobs; patch upgrades
+themselves passed. Fresh Windows/macOS CI is pending; no gameplay acceptance is
+claimed from these harness repairs. Personal saves and game sessions untouched.
+
+## PR #285 integration with main (2026-10-21)
+
+Merged `origin/main` at `00e0e16` into `feature/native-144-fps` after `99260c9`.
+Preserved native 120/144 opt-in timing and unified Video Options while retaining
+main's Auto resolution, physical text entry, mounted-gun mouse input, scoped
+text reads, late-frame pacing and crane/Ghost Gun fixes. Auto is labeled by its
+saved sentinel in the unified menu and remains staged until Apply. Both test
+sets and bounded runner routes are retained. Native high-refresh tracking is
+renumbered MAC-060; main's crane MAC-058 and keyboard MAC-059 remain distinct.
+
+The text-hook merge uses main's nested read scope and fresh scratch-write checks.
+Existing Windows protection/boundary/ABI cases remain; obsolete per-translation-
+unit query counts moved out of that fixture because reads now execute in
+`pc_prompts.c`. The dedicated scope fixture still measures query reduction,
+nesting, invalidation and boundaries, and the prompt fixture checks fresh writes.
+
+Windows x64 / MSVC 19.44 / D3D11: complete patch stack applies; supported build
+with `-SkipTextures` regenerates guest code, builds and passes bundled native
+checks (`logs/pr285-merge-build.log`). This is a development build without texture
+pack auditing, not a release/package validation. Supported US XBE verified by
+the builder. EXE SHA256:
+`e26b81fa906ab0f54ab835cc8032062029219b02849b9420ccb604201a06fc0e`.
+Native/renderer/tracking/context suite: 181 passed, one platform skip and one
+outdated patch-order assertion; after correcting that assertion all 11 context
+checks pass. Updated Auto menu check: one pass, one Mac-only skip. Logs:
+`pr285-merge-native-tests.log` and `pr285-merge-context-retest.log`.
+Integration/upgrade suite: 40 passed, one Mac-only skip, including full historical
+stack migrations (`logs/pr285-merge-tests.log`). Final unique suite results are
+222 passed and two host-specific skips after the targeted context correction;
+the updated Auto assertion was separately rerun successfully.
+
+Repository context/index checks pass against current main. The first pushed CI
+run exposed residual CRLF in three local patch files whose committed Git blobs
+were LF. Normalized those files to their exact committed bytes and refreshed
+the index; patch source semantics and the binary watermark patch are unchanged. No fresh whole-game
+or Mac runtime validation is claimed. The earlier transition-hitch measurements
+predate main's late-frame correction and require remeasurement before calling
+that issue resolved. Experimental water changes remain disabled by default.
+Personal saves/settings are preserved; no interactive session was closed.
+
 ## Issue #74 accepted texture upload (2026-10-21)
 
 The commit carrying this entry adds 700 accepted texture keys to the repository
@@ -260,6 +314,1183 @@ Local launcher tests reach the new large-manifest test but stop at
 the running-game guard for another checkout; host CI supplies the full tests.
 
 # Measured progress
+
+## Menu ordering and divider removal (2026-10-21)
+
+This revision follows `894cb45` on `feature/native-144-fps`, depending
+on its unified Video Options menu. The shared button hook now inserts Video
+Options before Controls in pause Options, matching the frontend Settings order.
+The frontend already places Cheats last when unlocked; that conditional placement
+is retained. Removed the silver divider above Apply at the user's request,
+superseding the restored-divider note below. Preserved the pause Audio alignment
+fix and the staged Apply behavior.
+
+Windows x64 / MSVC / D3D11: six display/menu-pointer checks passed, with the
+native Mac compile check skipped on this host. The insertion fixture checks
+Video-before-Controls, guest stack/arguments and the original Controls return
+value. Standard Windows Build applied the complete patch stack and passed its
+bundled checks (`logs/menu-order-build.log`). EXE SHA256:
+`77e675648fb06644ca03b7ab8c5a8484acf6da6cfa98db32c1be1955df93a03b`.
+Shared implementation needs no new Mac adapter; native Mac validation is pending.
+Bounded isolated Story check `menu-order-check` visually confirms Video Options
+above Controls and no divider above the disabled Apply button. Evidence:
+`private/test-saves/menu-order-check/pause-order.png` and `video-no-divider.png`.
+The optional Controls navigation command reopened Video Options, so it does not
+establish Controls-submenu validation. The run exited cleanly, signatures and
+profiles were unchanged, the fixture was preserved and temporary partitions and
+BMPs were recycled (`logs/menu-order-game.log`).
+
+## Pause-menu Audio alignment and Video divider (2026-10-21)
+
+Local follow-up to the unmerged unified menu on `feature/native-144-fps`,
+base `93a805a`; source changes are uncommitted in `src/pc_display_menu.c` and
+`tests/fov_settings.c`. This depends on that branch's newer Video/Audio menus,
+which are not present on current main. Existing pacing/statistics changes in
+this working tree were preserved; this fix does not change timing behavior.
+
+The Audio rename hook was forcing frontend left alignment (`0x26200`) onto
+pause Options, whose other entries inherit `0x32200` (or `0x32000` in its
+alternate multiplayer layout). Restricting that override to frontend Audio
+preserves the pause builder's alignment and original per-row disabled bits.
+Video Options again invokes the title's native silver divider immediately
+above Apply, retaining the seven action/settings rows and disabled-until-dirty
+behavior. The implementation is shared by Windows and native Mac.
+
+Windows 11 x64 / MSVC / D3D11 RTX 4070 SUPER driver 32.0.16.1742; supported US
+XBE SHA256 `3cfd001a84fc3e08175d6c4b2e42ebf49577a089b5d0bd87ac724f61a41816bc`.
+Standard Windows Build applied the complete pinned patch stack and passed its
+bundled checks (`logs/menu-alignment-build.log`). Six display/menu-pointer
+regressions passed; one Mac compile check was skipped on this Windows host.
+EXE SHA256 `97646f78784edccbca288a2c6394f1dd07f673c3a168fa2e0722180ff3aab9d0`.
+The build also contains the pre-existing uncommitted presentation metrics work.
+
+Bounded isolated Story runs reproduced the left-offset pause Audio entry and
+missing divider, then verified centered Audio, the restored silver rule and
+Apply becoming enabled after a staged FOV edit. Reviewed captures:
+`private/test-saves/menu-pause-before/pause.png`,
+`private/test-saves/menu-pause-after/pause-aligned.png`, `video-divider.png`
+and `apply-enabled.png`; reports/logs use the matching run names. A separate
+`menu-audio-check` run verifies the aligned selected Audio row, opening Audio
+Options and returning to the same selected row. Profiles and
+the canonical fixture stayed unchanged; temporary disk images/BMPs were
+recycled. The frontend baseline was already correctly left-aligned. Native
+Mac visual validation and actual split-screen layout remain unverified.
+
+## Native high refresh development (2026-10-20)
+
+Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
+development checkpoint is local to this branch. This is an opt-in path, not a
+published release or a full-game 144 FPS certification.
+
+- **Clock-aligned live FPS pacing (2026-10-21):** Present CSVs now include the
+  existing host clock, aligned with Windows test input-request timestamps.
+  Strict analysis rejects missing/truncated windows. Two capture-free Scotland
+  cycles complete 60/120/144/60 with matching player endpoints and near-real-time
+  level clocks, using the same build with the water experiment on/off. Both
+  expose a return-to-original-60 stall: 35.937/39.075 ms respectively, mostly
+  outside Present. This rules out water conversion as the sole explanation;
+  shared Apply/clock handoff remains an investigation target. Experimental 144
+  also has a 37.069 ms steady-play gap, so hitch-free pacing is not established.
+  Windows Build and 29 checks pass (one Mac CoreText check unavailable).
+  [Measured windows and limits](docs/native-high-refresh-regressions.md#clock-aligned-live-fps-pacing-2026-10-21).
+
+- **Live water precision transitions (2026-10-21):** The opt-in experiment
+  selects byte feedback storage at original 60 and half-float at 120/144,
+  preserving contents before both source reads and destination writes. A bounded
+  Windows Scotland session applies 144/120/60/144 through Video Options without
+  restarting: four sets of 90 GPU images pass hashes, consecutive-frame and
+  timing-path checks, with 89/89 fresh comparisons in each. Both three-texture
+  conversions complete and gameplay resumes at every preset; profiles remain
+  unchanged. Windows Build, 85 selected cases, three historical migrations and
+  25 final trace/transaction/statistics checks pass. All four experiment flags
+  remain off by default. Original-look parity, longer dynamics, switch latency
+  without capture, native Mac and full-game coverage remain open.
+  [Scope and evidence](docs/native-high-refresh-regressions.md#live-water-precision-transitions-2026-10-21).
+
+- **Feedback precision preservation (2026-10-21):** Rendered textures now
+  retain their live GPU contents when host precision changes. The replacement
+  is published only after allocation/copy succeed; failure leaves the old
+  texture and bindings intact. Shared WARP checks preserve all byte values
+  through byte/half/byte conversion and reconstruct exact GPU content from
+  capture storage. Production cache tests cover rollback and deferred ordering;
+  Windows Build, 85 selected cases, three patch migrations and final targeted
+  GPU/transaction/backlog checks pass. This is the transition foundation: live FPS-dependent
+  precision selection, gameplay switches and their timing cost remain untested.
+  All experiments remain off in ordinary play. [Evidence and remaining work](docs/native-high-refresh-regressions.md#feedback-texture-preservation-2026-10-21).
+
+- **Ordered water centering correction (2026-10-21):** The opt-in experiment
+  now copies lossless float shader overrides through deferred draws and capture
+  replay, clearing them outside the target pass. Windows Build and production
+  queue/replay/GPU checks pass (90 selected cases plus backlog integrity).
+  Corrected 120/144 each produce 359/359 fresh
+  image transitions. At 144, channel-1 variation stays near 19.2 throughout;
+  a same-build correction-disabled control fades from 14.0194 to 11.2507.
+  This isolates progress on the fading regression, not original appearance or
+  full wave dynamics. Profiles/fixture are preserved and temporary partitions
+  recycled. The three experimental switches remain off in normal play; original
+  fidelity, live precision transitions, capture-free pacing and actual Mac
+  execution remain open. [Scope and measured evidence](docs/native-high-refresh-regressions.md#ordered-fractional-water-centering-2026-10-21).
+
+- **Fractional feedback buffer reuse (2026-10-21):** The opt-in candidate
+  now reads the latest state directly between authored smoothing events,
+  eliminating the nonidentity zero-radius copy. Original-code lineage checks
+  cover separate destinations, pause, catch-up and rate changes; Windows Build,
+  91 focused checks and three patch migrations pass. Both 120/144 GPU runs
+  retain 359/359 fresh image pairs, but **144 loses wave variation and is not
+  accepted**. The centering correction and intermediate-state diagnosis remain
+  necessary; normal play still has both experiments disabled. [Results and scope](docs/native-high-refresh-regressions.md#fractional-feedback-buffer-reuse-2026-10-21).
+
+- **Water shader arithmetic (2026-10-21):** Original translated shaders on
+  Windows WARP confirm two further fractional-update errors: a fixed green
+  velocity offset per feedback pass and nonidentity smoothing during the
+  supposed zero-radius copy. A diagnostic float centering correction has
+  zero-step identity for persistent channels and bit-identical one-tick output
+  at the tested inputs. The correction is not yet wired into gameplay; buffer
+  ownership and ordered renderer-state transport need implementation. Both
+  shader fixtures pass. [Equations, evidence and limits](docs/native-high-refresh-regressions.md#procedural-shader-arithmetic-audit-2026-10-21).
+
+- **Water feedback precision (2026-10-21):** An opt-in shared half-float
+  intermediate-target experiment eliminates the previous 144 FPS freeze:
+  359/359 consecutive image pairs now change at both 120 and 144. Final image
+  format and guest allocations stay unchanged. Float-target 60/144 controls
+  separate precision from tick cadence; appearance still differs from the
+  original byte-target path, so both switches remain disabled by default.
+  Windows Build, 89 focused checks, three patch migrations and a real WARP
+  half-float storage/sampling check pass. Four isolated sessions preserve the
+  profiles/fixture and recycle temporary disks. [Precision evidence and limits](docs/native-high-refresh-regressions.md#half-float-procedural-feedback-experiment-2026-10-21).
+  Capture-free Scotland pacing measures 144.006 guest FPS, p99 8.639 ms
+  versus 143.993 / 8.282 ms for the disabled control, with game/wall time
+  ratio 1.000000 in the native update trace. This is one windowed scene and
+  API acceptance, not scanout or an isolated cost measurement. Live FPS
+  switching, water motion/appearance acceptance, native Mac and broader effects
+  remain open. Two additional renderer-capture sessions show intact shoreline
+  water/reflections in matching views and pass pause/resume/profile checks;
+  still-image review does not establish motion equivalence.
+
+- **Fractional water candidate rejected (2026-10-21):** Built and exercised
+  an explicitly opt-in fractional feedback experiment. Original 60 changes all
+  359 captured image pairs; candidate 120 also changes all pairs but loses about
+  34% of raw-channel variation; candidate 144 is completely flat for all 360
+  images despite executing every pass. It remains disabled in normal play.
+  Preserving event cadence and passing CPU tests are insufficient for this GPU
+  simulation. Windows Build, 71 timing/statistics checks, three patch migrations,
+  and 12 subsequent focused checks pass; the image acceptance fails as recorded.
+  A same-build disabled control retains normal variation and the known tick
+  holds; one earlier control attempt failed navigation and is excluded.
+  Patch/backlog checks pass 15 cases. Profiles and fixture are preserved. [Candidate evidence and next work](docs/native-high-refresh-regressions.md#rejected-fractional-surface-candidate-2026-10-21).
+  Texture fluidity, precision diagnosis, pacing and native Mac acceptance remain
+  open; this is experimental scaffolding, not an accepted smooth-water fix.
+
+- **Procedural GPU freshness (2026-10-21):** Added an opt-in shared GPU
+  readback diagnostic and validated complete texture images. Original 60
+  changes all 359 successive images; native 144 changes 154 and repeats 205,
+  exactly on frames where the whole-tick simulation skips. This confirms a
+  remaining native texture-fluidity gap. No simulation coefficients/gates were
+  changed. Windows Build, 75 focused checks and two isolated GPU sessions pass;
+  profiles/fixture are preserved. [Image evidence and next integration work](docs/native-high-refresh-regressions.md#procedural-gpu-image-freshness-2026-10-21).
+  Synchronous readback is not a pacing test; native Mac and fractional GPU
+  simulation remain open.
+
+- **Procedural texture scene audit (2026-10-21):** Added bounded read-only
+  resource observation and reproducible Venice/Scotland replays. Original-60
+  and native-144 Venice samples allocate no procedural resources; Scotland
+  shoreline samples both use kind 1 with advancing cache stamps. Four sessions
+  exit cleanly with profiles/fixture preserved and temporary disks recycled.
+  The nested passes include random disturbances and coupled feedback, so fresh
+  cache stamps alone do not prove fresh texture images. Existing surface-cache
+  checks pass. [Resource and shader audit](docs/native-high-refresh-regressions.md#procedural-texture-live-resource-audit-2026-10-21)
+  identifies Scotland for the next image-level comparison. No production change;
+  fractional GPU simulation and native Mac validation remain open.
+
+- **Native analogue input freshness (2026-10-21):** Fixed a real 60 Hz hold in
+  the native pad wrapper: it now refreshes original stick/trigger decoding on
+  every native update while retaining digital press/release delivery on whole
+  ticks. Raw mouse behavior and original-60 input remain unchanged. The lifted
+  original decoder confirms fresh axes across four ports at 60/120/144; trigger,
+  disconnect, pause, catch-up and identical absolute rumble-command checks pass.
+  Six focused checks (including 864 edge/pause schedules) and ten input/menu
+  regression checks pass, with one Mac-only check skipped. Windows Build passes.
+  Live captures verify 144→120 application, Controls navigation and return to
+  main; Venice fires two rounds, moves/aims and pauses/resumes before an enemy
+  kills the player. Profiles/fixture are unchanged; test disks are recycled.
+  [Input scope and evidence](docs/native-high-refresh-regressions.md#fresh-analogue-input-at-native-cadence-2026-10-21).
+  Physical controller latency/rumble, native Mac and full-game checks remain open.
+
+- **Completed-update multiplayer comparison (2026-10-21):** A shared opt-in
+  observer now samples after the gameplay update, avoiding temporary positions
+  counted by asynchronous polling. Five original-60 and native 144/120 movement
+  holds produce fresh local/remote positions on every sampled update (930
+  original and 2,058 native observations). Native rates are about 144/120 Hz;
+  worst update-boundary interval is 12.492 ms and game-time/wall-time ratios are
+  0.999122–1.000444. This run demonstrates continuous 120 motion but does not
+  establish the cause of earlier route stops. Four bounded sessions exit cleanly
+  with profiles/fixture preserved and disks recycled. Windows Build, five
+  timing/cadence/observer checks and 82 statistics/CI/backlog checks pass. No
+  movement policy changed. [Measured scope](docs/native-high-refresh-regressions.md#completed-update-multiplayer-poses-2026-10-21)
+  distinguishes completed updates from GPU/scanout, route speed parity and
+  unverified native Mac/transport/combat coverage.
+
+- **Remote correction and in-motion observation (2026-10-21):** The lifted
+  original remote-position correction already advances on fractional deltas;
+  eight original/native normal/quarter-speed sequences plus guard cases pass.
+  The timing/network suite passes 68 checks. A new bounded background sampler
+  fixes a 15.625 ms Python observation-clock limitation by using QPC. In the
+  capture-free Vietnam comparison, original local changes measure about 60/s;
+  native host changes measure 144.367/s locally and 124.003/s on its 120 peer.
+  Both directions deliver identical settled positions. The 120 client stops
+  locally as well as remotely, and a captured reverse-direction attempt also
+  stops; these are not uninterrupted-movement passes. Memory observations can
+  include changes within a frame, so they do not establish rendered-pose
+  smoothness. Six corrected sessions exit cleanly with profiles/fixture intact
+  and disks recycled. Statistics/CI/backlog checks pass 72 tests. No production
+  change/rebuild; native Mac, frame-boundary pose capture and an unobstructed
+  120 route remain open. [Evidence and limits](docs/native-high-refresh-regressions.md#in-motion-loopback-observations-2026-10-21).
+
+- **Explicit network reference:** Corrected setup selects Vietnam Deathmatch
+  with no bots. Original 60/60 and native 144/120 pairs both move in each
+  direction and deliver identical settled positions to the peer. Spawn/terrain
+  differ; this verifies endpoint delivery, not speed parity or moving-pose
+  smoothness. The new summary checker rejects stationary/wrong-scene/stale
+  observations; 70 summary/CI-scope checks pass. Four bounded sessions exit
+  normally with unchanged profiles and fixture. No production change/rebuild.
+  [Corrected reference evidence](docs/native-high-refresh-regressions.md#explicit-vietnam-network-reference-2026-10-21).
+
+- **Mixed-rate loopback session:** A native-144 host and native-120 client join
+  Subway Thief and replicate movement in both directions. After separate
+  two-second walks, each peer reports exactly the same settled actor position.
+  Client movement reaches the host while its menu is open; Continue resumes.
+  A subsequent original-60 attempt is rejected as a movement reference because
+  Team Deathmatch remains at team selection and both players stay still.
+  Four test processes exit normally with unchanged profiles/fixture. Captured,
+  minimized same-PC runs do not establish performance or real-network latency;
+  damage, continuous remote smoothness, original-60 parity and Mac remain open.
+  [Loopback scope and rejected reference](docs/native-high-refresh-regressions.md#mixed-rate-loopback-movement-2026-10-21).
+
+- **Native network cadence audit:** A new composed clock/adapter fixture
+  preserves 60 movement-send opportunities/s and 20 unchanged full-state
+  refreshes/s per local player at native 60/120/144. Counter wraparound,
+  live target changes, pause/resume and a 100 ms stall pass. Two mutations
+  using rendered-frame counters are rejected; 64 timing/network/backlog checks
+  pass in 66.49 s. No production code changed;
+  actual peer delivery, remote movement and Mac execution remain unverified.
+  [Network cadence scope](docs/native-high-refresh-regressions.md#native-clock-and-network-movement-cadence-2026-10-21).
+
+- **Native 120 Venice follow-up:** The same replay on the unchanged `dbb84e3`
+  build averages 120.003 guest presentations/s, p99 9.429 ms and worst
+  11.333 ms, with no intervals above 33.33 ms. Native updates average
+  119.930/s; game-time/wall-time ratio is 1.000000. Two revolver shots and a
+  30-degree mouse turn match the other presets; the clock stops during pause.
+  The run exits normally with unchanged profiles/fixture. Bot outcomes differ;
+  exact trajectories, scanout, physical latency and Mac remain unverified.
+  [120 preset evidence](docs/native-high-refresh-regressions.md#native-120-preset-follow-up).
+
+- **Venice pacing and gameplay (this revision):** A new native-144 capture run
+  reaches Venice deathmatch, fires, moves/aims, pauses/resumes and later shows
+  results. Separate original-60/native-144 runs use the same replay with captures
+  disabled. Guest Present rates are 59.999/143.648 FPS; p99 intervals are
+  17.950/8.278 ms, with no intervals above 33.33 ms in either measured window.
+  Native update cadence is 143.720/s and game-time/wall-time ratio is 1.000000.
+  Both runs consume two revolver rounds and turn the same 30 degrees, with
+  unchanged signed profiles/fixture. Windows Build is unchanged from `dbb84e3`.
+  Bot outcomes differ; these are API timings, not scanout or full-game proof.
+  [Venice scope and evidence](docs/native-high-refresh-regressions.md#venice-gameplay-and-presentation-pacing-2026-10-21).
+
+- **Menu separator follow-up (2026-10-21):** Removed the remaining silver
+  separator above Video Options Apply. Settings already places Controls directly
+  after Video Options and conditional Cheats last. The production callback
+  fixture passes with seven rows and zero separators; native Mac execution
+  remains unverified. Windows x64 Release Build and its required checks pass
+  under Windows PowerShell; the initial PowerShell 7 invocation stopped at the
+  icon helper because its System.Drawing reference was unavailable. No new
+  visual gameplay run was needed for this separator-only change.
+
+- **Settings ordering (this revision):** The shared Settings constructor now
+  lists Audio, Video, Controls and Copy Profile, with Cheats last when the
+  original unlock condition permits it. All entries use the same left-aligned
+  row style, and the divider beneath Cheats is removed. The existing native
+  actions, profile selector and Back/save flow remain in use. Windows Build
+  and the display callback checks pass. A bounded Windows capture verifies the
+  requested order, matching alignment and absent divider. Mac execution and
+  multiplayer profile selection remain unverified.
+
+- **Unified Video Options and Audio labels (this revision):** One page stages
+  aspect/resolution, FOV, texture style, FPS and Subtitles behind one Apply row.
+  Apply uses the native disabled/gray state until dirty and returns to it after
+  success; resolution retains its 15-second confirmation. Failed display/FPS
+  saves restore the prior live display and do not publish other drafts. The
+  submenu/Back rows, FPS disclaimer and default-FOV note are removed; the
+  separator above Apply is now removed. Shared frontend/pause focus painters
+  use rounded corners across menus, retaining their original tint and fade.
+  Audio/Video is renamed Audio Options, with its Settings entry using the same
+  layout flags as Controls/Video before native row construction. Subtitles is
+  hidden from Audio and uses the original profile field/save flag when applied
+  in Video. Native audio update/save records remain intact. Windows x64 Build
+  passes; 82 relevant checks pass with one unavailable Mac-only check. Patch
+  migration checks pass after excluding this dependent hook from an old-stack
+  fixture. Windows captures verify rounded main/settings highlights, Audio entry
+  alignment, Video layout, dirty/
+  clean Apply, and live FPS switching. Subtitle application updates live state
+  and the signed profile payload at 0x1B0; the test fixture remains unchanged.
+  The reload attempt was interrupted by a user window close, so reload UI
+  verification remains pending. One transient debug-dialog save failure passed
+  standalone retry and the final full Build. Shared implementation needs native
+  Mac visual/runtime validation.
+
+- **Live FPS presets and smaller helper text (this revision):** Frame rate now
+  offers Apply instead of requiring a restart. A successful atomic save queues
+  the choice; the guest timing boundary publishes it to all rate consumers.
+  Native 120/144 switches preserve timer remainders and reset the pacing
+  deadline; returning to original 60 rebases against the real console tick and
+  disables fractional hooks. Re-entering native mode starts a fresh elapsed
+  clock. Back and failed saves leave the running rate unchanged. The beta/helper
+  rows use 75% native text scaling with case conversion disabled on those rows.
+  Shared configuration, guest timing and menu checks pass, including repeated
+  changes, pause/resume, invalid choices and failed persistence. The full
+  regression run had 142 passes, one Mac-only skip and three old patch-history
+  fixture failures; all three pass after excluding the new dependent patch from
+  those historical stacks. The final menu fixture also passes. Windows Build
+  passes; its focus-dependent virtual-pad check is skipped when Windows refuses
+  foreground activation. Two isolated frontend sessions apply 144 -> 120 ->
+  original 60 -> 144 in the same process and exit normally with unchanged
+  profiles. Read-only sampling confirms pacing changes while console-unit time
+  remains near 60 ticks/s; renderer captures add overhead, so these are not FPS
+  benchmarks. A third isolated run visually verifies the final smaller,
+  sentence-case helper text at 1280x720. Final Windows executable SHA-256:
+  `15d306303ab84d363c1f09af8ca398c58d1e82b61f4f2806a31979f2989b7ff8`.
+  It contains parent `c084804`, this live-FPS change and the pre-existing
+  uncommitted force/drag work. Gameplay transitions and Mac execution remain
+  unverified.
+
+- **Region-driven player force/drag (this revision):** Mode 0x800 rounded each
+  positive fractional update up to a whole drag step. Shared policy now splits
+  drag and force consistently and preserves original speed limits and view
+  settling, including 1.5x/2x/3x game time. A reproduced one-ULP speed-ratio error
+  under irregular intervals is corrected before choosing the drag count.
+  Complete original selector/state/movement/falling fixtures cover 76 sequences
+  across original 60/native 60/120/144 and normal/quarter/accelerated time, plus
+  pause, bounds, isolation and unchanged catch-up. The prior 159-check suite and
+  new 63-check timing/observer suite pass; all 56 final timing/backlog checks
+  pass after the rounding fix. The supported Windows x64 Build and its runtime
+  checks pass (`logs/native-force-final-build.log`).
+  Measured integration differences, live scene/network coverage and Mac
+  validation remain open.
+  [Force/drag evidence](docs/native-high-refresh-regressions.md#region-driven-player-force-and-drag).
+- **Airborne view-height damping (this revision):** Two shared numeric sites
+  now preserve the original 0.8-per-update settling response at 120/144 FPS,
+  including quarter-speed game time. Complete original-routine tests pass 32
+  controlled landing sequences, terminal speed, pause, uneven intervals and
+  unchanged catch-up. Damage and grounded-state results match. Fractional
+  gravity retains measured trajectory differences; actual world collision,
+  perceptual landing and Mac validation remain open. All 158 related Windows
+  checks and the full supported Build pass. Two bounded 120 smoke attempts
+  remained in the frontend due to misnavigated synthetic input; no new gameplay
+  acceptance is claimed. Test/profile and personal files are unchanged.
+  [Airborne evidence](docs/native-high-refresh-regressions.md#airborne-view-offset-and-controlled-landing).
+- **Complete local Arcade match (this revision):** On the `2adcf29` Windows
+  build, original 60 and native 144 both complete a Hotel deathmatch and show
+  results. Native read-only observation confirms deaths and respawns; continuing
+  through results starts a fresh countdown with visible dual pistols. Test
+  profiles and personal settings remain unchanged. This expands scene/flow
+  coverage, not full Arcade/network/Mac certification or a pacing comparison.
+  [Hotel evidence and limits](docs/native-high-refresh-regressions.md#hotel-deathmatch-completion-and-results-flow).
+- **Aim/weapon-offset easing (this revision):** Original fractional linear
+  easing settled more slowly at higher refresh rates. Six audited shared
+  coefficient sites now preserve the original 60-Hz response at the live game
+  speed, including quarter speed. Whole/catch-up updates and snap behavior are
+  unchanged. Original-block tests cover both paths, 60/120/144, pause, uneven
+  intervals and scope. All 157 related checks and the supported Windows Build
+  pass. A bounded 144 gameplay smoke completes aiming, movement, firing, reload
+  and pause/resume, with unchanged personal settings and fixture. Full
+  caller/physical aiming and Mac execution remain
+  open. [Easing evidence](docs/native-high-refresh-regressions.md#aim-and-weapon-offset-easing).
+- **Animation timeline/event coupling (this revision):** A new fixture executes
+  the complete original animation clock and event readers together. All 32
+  sequences pass across original 60/native 60/120/144, normal/quarter speed,
+  forward/reverse and looping/clamped playback, with pause after each update.
+  Forward event counts/timing and loop root displacement match; no intermediate
+  clock holds are observed. Five related fixtures pass. This path already uses
+  fractional time, so runtime source is unchanged. Real skeletal rendering,
+  blend transitions and Mac execution remain open. See
+  [coupled animation evidence](docs/native-high-refresh-regressions.md#animation-timeline-and-event-coupling).
+- **Native weapon sway (this revision):** The weapon dispatcher still sampled
+  integer level time, repeating its motion value on 720 of 1,440 native-120
+  updates in a 12-second original-routine fixture. Shared policy now samples
+  fractional time only for the final visual value, preserving original sine
+  crossings and RNG event timing. Tests execute the complete dispatcher and
+  both original model C8 consumer stores, including the sway-disabled flag.
+  Normal-speed 60/120/144 sequences have no repeats and match original whole-
+  time samples; pause, quarter speed and fallback cases pass. Quarter speed
+  retains authored sine-table quantization. The full Windows Build and built-in
+  checks pass; 154 broader checks pass plus both repaired/expanded fixtures.
+  Binary SHA-256 is
+  `5bb5eab308ba236056c22ae0ca8121e7bc02e4c96eba160068020ca1682200cb`
+  (compiled parent label `500f8be` plus this revision). Mac and perceptual
+  smoothness remain unverified. The bounded 144 smoke reached visible gameplay,
+  aiming, movement and firing; a normal window-close interrupted it before
+  reload/pause/resume verification. Fixture and personal settings are unchanged.
+  [Weapon sway evidence and scope](docs/native-high-refresh-regressions.md#native-weapon-sway).
+- **Input across pause/resume (this revision):** The real native clock/input
+  wrapper passes 864 schedules covering 60/120/144 FPS, 24 fractional pause
+  durations and 12 press phases. Held presses reach a game-tick consumer and
+  press/release edges occur exactly once, including 9,084 misaligned raw/game
+  clock frames. The pad service is mocked; physical latency, very short taps
+  and full weapon caller behavior remain unverified. All 50 native timing
+  checks pass (`logs/input-weapon-phase-checks.log`). No production timing
+  change or game rebuild accompanies this test extension.
+  [Input audit scope](docs/native-high-refresh-regressions.md#button-delivery-after-fractional-pause-offsets).
+- **Additional gameplay pacing (this revision):** The current `d336cd9`
+  Windows build completes a bounded, no-capture What Lies Below input/weapon/
+  pause/movement sequence. All qualifying active-gameplay intervals total
+  62.485569 seconds at 143.825 fresh updates/s, with p99 8.0834 ms, maximum
+  12.3813 ms and no interval above 16.67 ms. Game-time ratio is 1.000000.
+  Presentation counters report guest frames only. This is minimized/background
+  CPU/API evidence, not physical input latency, GPU completion or scanout.
+  Test profiles and personal controls/display settings remain unchanged.
+  [Pacing selection and limits](docs/native-high-refresh-regressions.md#what-lies-below-frame-pacing-without-captures).
+- **FPS overlay beta label (this revision):** Shared `pc_debug.c` displays
+  `target 120 (Beta)` and `target 144 (Beta)` for the active high-refresh preset.
+  Original and native 60 retain their existing labels. The full Windows Build
+  and built-in checks pass, including both beta labels and absence at 60;
+  69 debug-model, CI-scope and backlog checks pass. Personal controls/display
+  hashes are unchanged. Binary SHA-256 is
+  `0358d1725a61424d2398f09ac27f811e412c082f0b0fc9a19a73d74a2e7bc976`
+  (compiled parent label `319191e` plus this revision). Build logs are
+  `logs/fps-beta-overlay-build.log` and `.err`. No timing policy changes.
+  Mac uses the shared formatter; Mac execution remains unverified.
+- **Display settings reorganization (this revision):** Screen, Camera, Textures
+  and Frame rate are separate guest pages. Saved 60 FPS Original or beta
+  120/144 FPS applies on restart; the page explains beta gameplay issues and
+  the original-60 fallback. Windows x64/D3D11 Release build and built-in checks
+  pass (binary SHA-256 `6934be7528dfe9635b34c0ca9579f3a93e5183e2373291dec2ad9ff7a88770f2`).
+  Nine focused settings/input tests and 156 timing/input/runtime regressions
+  pass; one Mac compile check is skipped. All 21 patch-upgrade cases pass
+  across the full run and a targeted historical-checkpoint rerun. Final menu
+  corrections pass three settings/config checks. Live keyboard navigation and
+  captures verify the grouped pages, selected FPS row, unclipped beta/restart
+  notes and save feedback. The isolated `display-menu-restart` session saves
+  120 from 144, restarts at native 120, saves Original 60 and restarts with the
+  fixed-60 clock despite the launcher's native-144 default. Test profiles and
+  personal controls/display files remain unchanged. Earlier test windows were
+  closed normally before completion; their exit traces are not crashes.
+  Controller/physical mouse checks and Mac execution remain unverified.
+  Arcade acceptance is tracked separately below.
+- **Broader player-facing coverage:** At the user's request, repeated Scotland
+  investigation is deferred. Original-60/native-144 bounded What Lies Below
+  checks on `319191e` match the starting revolver ammunition sequence and
+  mouse-look endpoints; reload, pause/resume and subsequent movement work.
+  Both runs exit normally with profiles unchanged. Post-resume movement against
+  geometry differs by about 0.280 units; this is not full physics/combat parity
+  or a frame-pacing benchmark. The Scotland retry also exits normally but takes
+  no hits, so it does not validate the new hit-response correction in combat.
+  [Broader scene evidence](docs/native-high-refresh-regressions.md#broader-player-facing-check-what-lies-below).
+- **Player hit displacement/recovery (this revision):** The hit vector lost
+  10% per update and was added to movement once per update. Shared policy now
+  normalizes both decay and displacement to elapsed game ticks, preserving
+  original 60 FPS arithmetic and total response. The expanded original-routine
+  fixture reproduces the faster decay, rejects a decay-only fix, and checks
+  all three channels, quarter-speed, uneven intervals, repeat hits and pause.
+  The full Windows Build and built-in checks pass. There are 153 passing
+  broader regressions plus the final expanded fixture pass after correcting
+  its test-only linker dependency. Binary SHA-256 is
+  `f0a3a1e11dfc77f334961d011b861717cf911bf75d866d8e8fd5a1f06f8ec42e`.
+  The isolated 144 FPS smoke window was closed before gameplay; its log
+  records a normal user window close, so live acceptance remains open.
+  Full collision/combat parity, the earlier route/firing differences and Mac
+  execution remain unverified.
+  [Hit-response evidence](docs/native-high-refresh-regressions.md#player-hit-displacement-and-recovery).
+- **Scotland route under fire (this revision):** Read-only player-health
+  observations now distinguish combat deaths from stalls. A repeated route
+  at original 60/native 120/144 reaches the ruins, takes damage and is pushed
+  below the upper path at all three rates. Original 60 dies during the final
+  firing sequence; native runs survive with different health/ammo. These
+  uncontrolled combat outcomes do not establish damage, knockback or firing
+  parity, and do not establish a native-specific defect. All five exploratory
+  and comparison sessions exit normally with unchanged isolated profiles.
+  The next comparison needs combat-aware navigation; castle/jeep/full mission
+  acceptance remains open. No executable or gameplay change was made.
+  [Route evidence](docs/native-high-refresh-regressions.md#scotland-route-under-fire).
+- **Live aiming and shore movement (this revision):** The bounded Windows
+  runner now supports sequenced synthetic mouse packets and position/level-clock
+  samples during short key holds. On the unchanged HUD-fix binary, Scotland
+  comparisons at original 60/native 120/native 144 produce identical tested
+  camera turns, reversed aim and paused-input discard. Captures establish an
+  unobstructed shore path; separate three-second holds without screenshots
+  yield game-time speed estimates within 0.227% of original 60. These short
+  asynchronous measurements do not establish exact physics or physical input
+  latency. All six completed sessions exit normally and preserve profiles.
+  No production source or executable changed; Mac execution, full missions,
+  vehicles and multiplayer remain open.
+  [Movement evidence](docs/native-high-refresh-regressions.md#scotland-aiming-and-shore-movement).
+- **HUD message timing (this revision):** The HUD queue previously discarded
+  fractional intervals, doubling a one-second notice at native 120. Its shared
+  pause gate now accepts every advancing interval. Complete original-routine
+  tests cover original 60/native 60/120/144, delayed expiry, queue limits,
+  sound-linked holds, quarter-speed time and pause; 133 broader checks pass.
+  Full Windows Release build and built-in checks pass. Rebuilt Scotland
+  comparisons at original 60/native 120/native 144 show message-clock/wall-time
+  ratios of 1.000024/0.999715/1.000389, versus 0.49315 in the capture-heavy
+  pre-fix run. Captures and queue observations verify objective display/fade/
+  removal and pause/resume; all isolated profiles and personal settings remain
+  unchanged. Binary SHA-256 is
+  `167e9bce3b96d4ff8ceaab378d52aaadb9d0b923fa3a7a42374a1364db413397`.
+  Mac execution, full campaign and audible subtitle synchronization remain
+  unverified. [HUD evidence](docs/native-high-refresh-regressions.md#hud-message-timing).
+- **Scotland opening comparison (this revision):** On the same corrected
+  Windows binary, original 60 and native 144 reach the boat intro and dock,
+  consume three pistol rounds, move to the nearby wall and pause/resume.
+  Starting state matches; movement endpoints differ by about 0.020 world
+  units. Both isolated profiles remain unchanged and sessions exit normally.
+  This does not verify free movement speed, objective-message timing, the
+  jeep encounter, combat, full-level completion or Scotland frame pacing.
+  [Opening evidence](docs/native-high-refresh-regressions.md#scotland-opening-comparison).
+- **Arcade pacing without screenshots (this revision):** Same corrected
+  Windows binary, isolated Test Lab, no renderer BMP capture. Native 120/144
+  averages 119.958/143.936 CPU updates/s across roughly 48 unpaused seconds
+  each, with game/wall time 1.000000. p99 intervals are 8.9563/7.9785 ms,
+  worst 12.6748/11.5586 ms. Both runs verify initial movement/fire; 120 also
+  verifies later respawn/fire. These are short mixed combat/death scene samples,
+  not scanout, physical latency or full-game target certification.
+  [Pacing evidence](docs/native-high-refresh-regressions.md#arcade-pacing-without-renderer-captures).
+- **Arcade match-start countdown (this revision):** The integer countdown
+  discarded each sub-tick float addition at native 120/144, leaving the
+  original input suppression active. The shared numeric policy now supplies
+  accumulated raw whole ticks at that one counter. Original 60 and native
+  60/120/144 execute the complete original dispatcher and reach gameplay at
+  tick 184 with identical four cue IDs; 132 timing/translation/CI checks pass.
+  Full Windows Release build and built-in tests pass. The live 120 Vietnam
+  match now starts, moves and consumes ten rounds, with pause/resume verified.
+  The final live 144 match starts, moves and consumes six rounds, and
+  pause/resume works. The bounded runs preserve profiles and exit normally.
+  Capture-heavy 120/144 samples average 107.697/130.188 updates/s, with
+  p99 intervals 32.57/33.02 ms. Stable target pacing and full Arcade coverage
+  remain open; these samples are not scanout or physical latency measurements.
+  Mac execution and online multiplayer are unverified.
+  [Arcade evidence](docs/native-high-refresh-regressions.md#match-start-countdown-diagnosis).
+- Terminal mouse motion now uses the shared batch-consumption helper and,
+  in native mode, the fractional game-time pause gate. A 1,000 Hz input
+  fixture reproduces only 39.1 units of a requested 100-unit horizontal move
+  at native 144; the correction retains the full move and advances every
+  frame receiving packets. Forty-two cadence/slow-motion/jitter cases and
+  pause, stale-whole, ownership, scripted-pointer and gameplay-return checks
+  pass. All 161 shared/regression checks pass and the complete patch stack
+  verifies unchanged. Windows build `c4171db` and its built-in checks pass,
+  including the real Windows adapter's native/original-mode and pause cases.
+  The existing user session is preserved on `3c2fcc2`; the correction is ready
+  for its next launch. Live terminal acceptance and Mac execution remain pending.
+  [Terminal cadence](docs/native-high-refresh-regressions.md#terminal-mouse-fractional-cadence).
+- Shared raw mouse input now rebases its empty buffer's age after consumption.
+  Previously a later packet could expire fresh counts using an earlier batch's
+  timestamp, producing refresh-dependent aim loss. A controlled 1,000 Hz
+  packet stream intended to turn 100 degrees produced 87.4/93.8/93.3 degrees
+  at 60/120/144 updates/s; the corrected code produces 100 within float error.
+  All 48 packet-rate/frame-rate/jitter/zoom cases and stale-input/focus/capture
+  checks pass. This is shared Windows/Mac input policy; actual device latency
+  and Mac execution remain unverified. All 153 shared checks and seven input
+  context checks pass. Windows build `149bef9`, its built-in checks and the
+  two-minute native-144 gameplay/pause replay pass. The active gameplay window
+  averages 140.365 CPU updates/s at 1x speed alongside the user's session.
+  Their existing `3c2fcc2` session stays open; this correction is ready for
+  the next launch. Terminal-pointer timing is addressed separately above;
+  live pointer acceptance remains pending.
+  [Raw mouse cadence](docs/native-high-refresh-regressions.md#raw-mouse-packet-cadence).
+- The latest Windows build (`3c2fcc2`) passes matching 120-second original-60
+  and native-144 opening gameplay replays: handoff, hand animation, movement,
+  firing and pause/resume. Both consume 32 rounds and observe the same three
+  hand clips during the action window. Native gameplay measures 140.399 CPU
+  updates/s, 1.000000 game seconds per wall second, and p95/p99 intervals of
+  8.362/9.327 ms while a separate interactive session is open. These are
+  bounded smoke checks, not full-level or steady-144 acceptance. The user has
+  now launched this build at target 144; their session remained responsive
+  throughout the native comparison. Controls/display hashes are unchanged.
+  [Comparison and limits](docs/native-high-refresh-regressions.md#latest-build-opening-comparison).
+- Native host-movie polling now has a separate per-playback pacer at the
+  selected 60/120/144 rate. The movie loop bypasses the level-update pacer;
+  previously it could repeatedly submit an unchanged movie picture without
+  waiting. Shared timing policy retains movie/audio clocks and releases its
+  timer on playback close. With synthetic packet/audio backends, the actual
+  movie updater delivers the same 90 timestamps and 2,880 audio bytes using
+  643 polls instead of 44,502 at native 144. Build `3c2fcc2`, 152 shared checks
+  and 21 patch-upgrade checks pass. A windowless real EA-intro decode produces
+  identical image/timestamp/PCM hashes at original 60 and native 60/120/144.
+  Real Windows-timer checks also pass at 60/120/144 with identical decoded
+  content and confirmed timer release. At 144 the measured poll-completion
+  mean/p95/max are 6.94/9.21/9.99 ms, including decode and test hashing.
+  On-screen playback, audible sync and input latency remain open;
+  native Mac movie support remains MAC-009. The user has since launched this
+  build; startup alone does not establish movie visual/audio acceptance.
+  [Movie pacing](docs/native-high-refresh-regressions.md#native-movie-polling).
+- Shared source now samples fractional level time in the second, strip-based
+  screen-distortion effect (`0xF9B4B`). The complete original-code fixture
+  reproduces 672 repeated frames out of 1,152 at native 144 over eight game
+  seconds; the correction produces zero in this controlled full-screen case.
+  Whole-tick draw arguments remain exact. Pause, rebases, four views, clipped
+  ranges and disabled-native checks pass. Graphics calls are spies; this does
+  not yet establish live visual acceptance. All 148 shared checks and the
+  supported Windows build/built-in checks pass for `a08f41a`. The existing
+  interactive `b3c30cf` session was preserved; the new build awaits its next
+  launch. Controls/display hashes are unchanged.
+  [Strip distortion](docs/native-high-refresh-regressions.md#fractional-strip-distortion).
+- Shared source corrects a reproduced procedural-texture cache collision.
+  A zero-whole native frame could cache a no-op against the display vblank;
+  the following advancing frame then skipped its texture update. The two
+  cache reads now use the native update ID, preserving per-view/shared-resource
+  deduplication. A zero-float pause also freezes the procedural dispatcher
+  even if a stale whole count is positive. Original-code fixtures reproduce
+  missed updates at 120/144 and check restored cadence, UV/phase integration,
+  resource swaps, pause/resume and original inactive-native behavior.
+  All 147 shared checks pass; the unchanged patch stack verifies cleanly.
+  Windows build `b3c30cf` and its built-in checks pass. The expanded original-code
+  fixture also passes resource allocation, reuse, pool exhaustion, recycling
+  and four-view deduplication checks. The user-requested interactive launch
+  uses this build; live textures, GPU pass contents and complete level coverage
+  remain open.
+  [Procedural texture cache](docs/native-high-refresh-regressions.md#procedural-texture-cache-cadence).
+- Build `ae410c4` now supplies fractional level time to the audited screen-distortion
+  read. Direct clock stores update a shared fractional offset, explicit
+  reset/demo/network writes rebase it, and render calls only sample it.
+  Guest integer clocks are unchanged. The original-code fixture exercises
+  this implementation: native-144 repeated outputs fall from 672 to 44 of
+  1,152, matching the exact fractional probe and original tick-boundary data.
+  All nine original direct stores have ABI/rebase checks; the model covers
+  pause, skipped updates, carry across reset, catch-up and long-run drift.
+  All 146 shared checks, 21 patch-upgrade checks, the full Windows build and
+  two-minute native-144 gameplay/pause replay pass. Active intervals average
+  138.375 updates/s with 1x game speed while the older interactive session is
+  also open; this is not a stable-144 or isolated performance measurement.
+  The original-60 comparison was closed before completion (normal window
+  close, exit 0) and remains incomplete. The interactive window was also closed;
+  no session was restarted, and its retained old image was removed after
+  validating the new build. Actual Mac and live distortion visual acceptance,
+  plus complete replay/network/level lifecycle checks, remain open.
+  [Fractional clock correction](docs/native-high-refresh-regressions.md#fractional-screen-distortion-clock).
+- An offline original-code screen-distortion audit reproduces a remaining
+  visual timing limit: 672 of 1,152 native-144 mesh updates repeat over eight
+  game seconds. A test-only fractional absolute-time probe reduces repeats
+  to 44 and preserves original meshes/draw arguments at tick boundaries.
+  Integer pixel coordinates account for the residual quantization. Reset/
+  rebase sampling, paused sampling and two player-view selections are covered
+  as consumer checks; actual clock lifecycle integration is still required.
+  All 139 shared checks passed on Windows. This was evidence for the source
+  correction above, not a GPU test.
+  That audit left the then-interactive `8893ba8` build unchanged.
+  [Distortion audit](docs/native-high-refresh-regressions.md#screen-distortion-absolute-time-audit).
+- Previous build `8893ba8` corrects a reproduced MapMaker light-preview regression:
+  the original mode-3 zero-whole-tick branch replaces a white preview with
+  black even while its decision timer is unchanged. Shared source now retains
+  its last color between authored decisions and during native pause. The
+  original-code fixture matches 480 original color decisions, their RGB table
+  values/deadlines and 69 RNG calls at native 60/120/144, normal/quarter speed.
+  Other light modes and original-60 behavior remain unchanged. The full Windows
+  build, 138 shared checks, 21 patch-upgrade checks and the two-minute native-144
+  gameplay/pause replay pass. Live MapMaker visual acceptance and actual Mac
+  validation remain pending.
+  [Light-preview evidence](docs/native-high-refresh-regressions.md#mapmaker-random-light-preview).
+- Previous built executable `6fc4d87` reduces duplicate VM queries during prompt
+  rendering, with the same labels and protection checks. The supported Windows
+  Release build, focused real-memory tests, 66 shared checks and a 120-second
+  native-144 gameplay/pause replay pass. The active window averages 137.512 CPU
+  updates/s (p95 9.1119 ms) with 1x game speed under profiling/capture. This is
+  not evidence of an overall FPS gain or stable 144 FPS. The matching original-60
+  gameplay/pause replay also passes; actual Mac execution remains pending.
+  [Prompt validation](docs/native-high-refresh-regressions.md#performance-follow-up-and-rejected-gpu-poll-experiment).
+- Restored executable `eae18a3` passes the full supported Windows Release build,
+  137 shared regressions and a 120-second native-144 gameplay/pause check.
+  A GPU polling optimization in `aef8d29` passed isolated tests but stalled
+  during the live replay; it was reverted in full. No GPU-poll performance
+  improvement is retained or claimed. The user's old interactive process
+  exited independently before restoration. The retained old executable was
+  removed after the new build passed live validation.
+  [Performance follow-up](docs/native-high-refresh-regressions.md#performance-follow-up-and-rejected-gpu-poll-experiment).
+- Earlier built executable `dee6170` passes the full supported Windows Release
+  build and a 120-second isolated native-144 gameplay check, including movement,
+  firearm handoff/animation, ammunition use, pause/resume and fresh presents.
+  The measured active window averages 138.418 CPU updates/s (p95 8.8808 ms)
+  with 1x game speed while the older interactive session remains open. This
+  is not a stable-144 or scanout certification. The new binary includes the
+  NPC aim, kind-35 projectile and rocking corrections; the interactive
+  `fc3a7ce` process still uses its retained old image. The bounded effects
+  trace now starts safely after guest mapping, but this opening replay
+  observes no type-32 beams or active rocking callbacks and cannot close
+  the reported encounter-specific bugs.
+  [Latest build and run evidence](docs/native-high-refresh-regressions.md#native-object-rocking-integration).
+- At the user's request, encounter-specific reports are deferred while broader
+  smoothness work continues. They remain open: pre-bridge enemies react to hits and die
+  but do not move/fire; gun trails appear about three seconds late and later
+  disappear; the plasma sniper reportedly deals no damage. These need live
+  AI, projectile collision/damage and effect-lifetime checks beyond the
+  current opening-area smoke test and isolated arithmetic fixtures.
+  [Investigation](docs/native-high-refresh-regressions.md#additional-first-mission-reports-awaiting-reproduction).
+- Sniper damage now has a reproduced cause and source fix: the shared
+  damage-application gate at 0xBB6C0 dropped one-shot hits on live frames
+  with zero whole ticks. An extended original-code fixture executes sniper
+  setup, impact damage calculation, actor dispatch and health subtraction.
+  The unchanged hit goes from health 1.00 to 0.35 at native 60/120/144 and
+  fractional/slow/catch-up intervals; the unpatched zero-whole case leaves
+  health at 1.00. Pause and rejected/untargetable hits remain blocked. Scene
+  geometry, network acceptance and reactions are controlled fixture services.
+  Windows Release and a 120-second native-144 smoke check now pass on
+  `fc3a7ce`; live sniper-hit confirmation and actual Mac execution remain pending.
+  [Sniper evidence](docs/native-high-refresh-regressions.md#sniper-damage-on-fractional-frames).
+- NPC animation-event firing now preserves a crossed firing marker on a
+  fractional frame. Two original caller branches discarded the marker when
+  the whole-tick weapon gate rejected it. A shared caller-specific wrapper
+  executes one transaction for that event and restores live timing; held-fire
+  callers retain their existing cadence. The original selector/caller/firing
+  chain passes shots, sounds, ammo, no-duplicate, pause and rejection checks.
+  This is not yet tied to the first-mission enemies; their movement report
+  remains open. Windows Release and the 120-second native-144 smoke check
+  pass on `fc3a7ce`; targeted live AI and actual Mac verification remain pending. [Event evidence](docs/native-high-refresh-regressions.md#npc-animation-marker-shots).
+- Current play build `fc3a7ce` includes the sniper and NPC animation-event
+  fixes. The shared suite passes 169 checks with the existing object-rocking
+  expected failure; final wrapper integration passes two focused checks.
+  The 120-second isolated test passes movement, firearm handoff/animation,
+  ammo use, pause/resume and fresh presentation without interpolation.
+  Active CPU frame samples average 137.60 FPS (p95 9.24 ms), so stable 144
+  FPS is not established. Personal controls/display hashes are unchanged.
+  Interactive native-144 PID 25304 was reopened and is responding.
+  [Build evidence](docs/native-high-refresh-regressions.md#npc-and-sniper-build-validation).
+- NPC aim recovery/tracking now has a separate source correction. Original
+  code lost fractional decay intervals, while its actor-target blend and
+  random decisions used fixed per-update behavior. The fix advances recovery
+  each live frame, normalizes the 5% blend to elapsed ticks, and preserves
+  random decisions on carried whole ticks. Original-branch tests match the
+  60-FPS stable-input result at 120/144 and quarter speed, with fresh aim
+  changes each frame. Rare decisions retain their counts and game ticks;
+  their subframe blend phase is bounded, not bit-identical. Wider checks pass
+  484 tests, 87 subtests, with 41 skips and the existing rocking xfail;
+  17 patch-transition checks pass. Windows Release and the opening smoke
+  check now pass on `dee6170`; targeted live AI and actual Mac execution
+  remain pending while the user's older session stays open.
+  [Aim evidence](docs/native-high-refresh-regressions.md#npc-aim-recovery-and-tracking).
+- Beam-manager lifetime audit passes without a runtime change: the original
+  type-32 manager starts an undelayed beam on its first update and expires it
+  near 1.2 game seconds at 60/120/144, including quarter-speed and paused
+  intervals. This checks scheduling, not rendered visibility. A 30-second
+  read-only observation of the interactive game captured no active effects,
+  so delayed trails remain unreproduced. The user's game was left running.
+  [Beam evidence](docs/native-high-refresh-regressions.md#beam-manager-lifetime-audit).
+- Beam construction/geometry now has separate original-code coverage through
+  vertex output. At 60/120/144 and quarter speed, nonzero vertex alpha appears
+  on the first update; fade timing agrees within one original frame. This
+  narrows the delayed-trail investigation without resolving it: effect
+  identification, scene visibility and GPU submission remain unverified.
+  No production behavior changed and the interactive game remains running.
+  [Geometry evidence](docs/native-high-refresh-regressions.md#beam-construction-and-vertex-output-audit).
+- The beam audit now includes the original type-32 render-list branch and
+  manager visibility flags. Eligible beams draw on fractional frames;
+  hidden/wrong-view/deferred effects are suppressed and retired effects do
+  not reappear in the fixture. A bounded `--trace-effects` runner option now
+  records effect identity fields, age, colors and render-gate state for the
+  next live reproduction. The `dee6170` opening replay collects 147 snapshots
+  (146 complete traversals) without observing type 32. It does not establish
+  the reported trail's effect type or actual GPU submission; no beam fix is claimed.
+  [Dispatch evidence](docs/native-high-refresh-regressions.md#effect-visibility-and-reproduction-tracing).
+- Projectile travel regression reproduced: the 0xF4A50 updater uses fractional
+  displacement but skipped zero-whole-tick frames while age advanced normally.
+  Its entry gate is corrected in shared source. The original-code fixture
+  restores swept impact dispatch and range at 60/120/144, normal/quarter speed,
+  pause and uneven intervals; native 60 output is byte-identical. Scene
+  collision and damage application are mocked, so the plasma-sniper report
+  remains open. The separate 0xF08D0 updater and distance-based damage falloff
+  still need auditing. Windows Release/built-in tests and a 120-second
+  isolated native-144 smoke check pass; actual Mac execution is pending.
+  [Projectile evidence](docs/native-high-refresh-regressions.md#projectile-travel-on-fractional-frames).
+- The separate 0xF08D0 updater now has a shared, kind-35-only source fix.
+  Motion, steering and four trail anchors advance on fractional frames;
+  target checks, acceleration and shared random draws retain their original
+  whole-update cadence. At native 144, one-second unsteered travel is 454.70
+  units versus original 456.21 (previously 190.09), with all 144 positions
+  fresh, 540 random draws and six homing checks. Original/native 60 remains
+  byte-identical in the controlled fixture. Impact, expiry, pause, missing
+  emitters, uneven intervals and sidecar isolation now have passing checks.
+  The prior coupled expected failure is resolved in source. Live identification
+  of the reported trails, complete distance-based damage falloff coverage,
+  other kinds in this updater and actual Mac execution remain unverified.
+  The full supported Windows Release build and opening smoke check now pass
+  on `dee6170`, including the manual wrappers and generated game units.
+  The user's running fc3a7ce game is unchanged while they play.
+  [Correction evidence](docs/native-high-refresh-regressions.md#kind-35-projectile-motion-and-trail-correction).
+- Extended projectile damage-dispatch checks now execute the original
+  0xDCEF0/0xB9920/0xB9720 chain for kind/profile combinations from the saved
+  live trace. Kinds 28/31/45/46 bypass distance falloff and retain scalar 1
+  across native rates; captured kind 35 uses profile -1 and retains scalar 0
+  on this record path. This does not measure total impact damage or health.
+  Kind 46 now also has travel/impact/expiry coverage. Non-flat profile controls
+  confirm that other combinations can depend on the frame-dependent +0xF4
+  accumulator, so the remaining mapping/health audit stays open.
+  [Damage-dispatch evidence](docs/native-high-refresh-regressions.md#projectile-distance-accumulation-and-damage-dispatch).
+- The ship reported in the canyon after the first bridge destruction is
+  identified as the crashed mothership, model 0x53A. Its updater skipped
+  fractional intervals while still applying whole-tick damping, changing
+  both crash duration and landing position. The shared source now accepts
+  every advancing interval at that updater's entry gate. The complete
+  original-routine fixture reproduces a 26.58-second crash at 144 FPS versus
+  9.67 seconds at 60 FPS; the correction restores 9.65 seconds and lands
+  within 0.24 units per axis in the normal 144 FPS case. Six native-rate /
+  slow-motion combinations, pause, ABI and exact original catch-up pass.
+  Uneven frame intervals and pauses in all three crash phases also pass.
+  The supported Windows Release build and its built-in tests now pass;
+  the user session had closed before rebuilding. A 120-second isolated
+  native-144 gameplay check passes movement, hand/weapon animation,
+  ammunition and pause/resume checks. Its active gameplay window averages
+  137.949 CPU updates/s with 1× game speed. The rebuilt executable
+  still requires a bridge-scene comparison before this obstruction can
+  be marked resolved. Actual Mac execution remains pending.
+  [Bridge investigation](docs/native-high-refresh-regressions.md#bridge-crash-placement-investigation).
+- A related ship-debris initializer underestimates inherited velocity on
+  fractional frames. Its shared division guard is now corrected, with a
+  failing-before/passing-after original-code fixture covering model choice,
+  random effects, allocation failures, zero time and catch-up. The 60 FPS
+  output is byte-identical. Windows Release and the 120-second isolated
+  native-144 smoke check now pass on `ef2ace3`, together with projectile
+  travel; live debris and bridge-scene comparisons remain pending.
+  [Debris check](docs/native-high-refresh-regressions.md#ship-debris-inherited-velocity).
+- Object rocking now has a shared native-motion correction in source. At
+  144 FPS, the original updater changed its transform only 60 times per second
+  (15 at quarter speed); the corrected path changes it on all 144 updates in
+  both schedules and retains the exact original one-second endpoints.
+  It integrates damping/gravity continuously and evaluates original floor,
+  tilt and sound rules at their original contact intervals. All 96 tested
+  bounce/material/rate/slow-motion combinations retain original impact ticks
+  and sound payloads. The former expected failure is now a passing check.
+  Tests cover original recursive impulses, interleaved/nested updates,
+  object reuse, pool resets/changes, uneven steps and pause during floor
+  contact. Shared checks pass 136 tests with no expected failures, and all
+  21 patch-upgrade checks pass. The full supported Windows Release build and
+  built-in checks now pass on `dee6170`; the interactive `fc3a7ce` session
+  remains open on its retained executable. Live scene acceptance and actual
+  Mac execution remain pending. Unknown entities
+  outside the audited object pool retain the original motion path.
+  [Rocking integration](docs/native-high-refresh-regressions.md#native-object-rocking-integration).
+- The NPC firing path now has the same scoped event-timing correction in
+  shared source. Its whole-tick gate previously kept projectile counts
+  stable but advanced the event timer by only 0.417 seconds per second at
+  144 FPS. The original-code fixture verifies 96 configurations, including
+  both hands, primary/secondary/fallback modes, both ammunition pools,
+  original sound positioning/repeat timers, pause and catch-up. Source
+  generation, 143 shared checks and five targeted patch-transition tests
+  pass. Five additional network dispatch/results checks verify composition
+  with the existing multiplayer shot hook. The Windows Release build and
+  120-second native-144 movement/firing/animation/pause checks now pass on
+  `cfaef73`; the updated game was reopened. Build SHA-256:
+  `afb5ed6a71c05f3c8a3ddc1ede825e8f2f07f4a05d39dc3901de665a35840d26`.
+  With COD absent, the same build averaged 138.6 fresh CPU updates/s versus
+  62.0 in the earlier gameplay window; the final five-second FPS samples
+  reached about 144. Both runs passed the behavior checks and maintained
+  correct game speed. This supports the user's contention explanation,
+  but does not establish sustained full-game 144 FPS. Full caller cadence,
+  damage and actual Mac execution remain open.
+  [NPC timing evidence](docs/native-high-refresh-regressions.md#npc-firing-event-tick-scope).
+- Generic firing now scopes its event timers and nested sound calls to the
+  carried whole-game-tick span used by its projectile gate. Fractional time is
+  restored before returning to other updates. This removes the reproduced
+  60/120/144 timer discrepancy without opening the projectile gate. The
+  original-code fixture now includes the real sound selector, repeat timer
+  and parameter builders and passes across 96 configurations, with alternate
+  modes/fallback, multiple projectiles, quarter-speed schedules, pause and
+  variable/catch-up steps. The strict expected-failure marker is removed.
+  Full patch validation, Windows Release/built-in checks and the isolated
+  120-second native-144 movement/firing/animation/pause checks pass. The
+  broader suite initially passed 173 checks; all four patch-transition
+  failures were corrected and all 35 transition/tracking rechecks pass.
+  The game was reopened for
+  interactive testing. Build SHA-256:
+  `1edf3c62f7f648448e8d8a3fc8050d53f00cfe2aff509bd694d349653ad55ded`.
+  This behavior check does not establish sustained 144 FPS. Actual damage/ammo,
+  other caller families, full-game acceptance
+  and Mac execution remain unverified.
+  [Fix scope and evidence](docs/native-high-refresh-regressions.md#generic-firing-event-tick-scope).
+- Weapon sound helper 0x1B6FF0 now accepts events on live fractional intervals.
+  Its original-code test reproduces dropped one-shot requests before the fix
+  and verifies sound parameters, repeat duration, pause and unchanged one-tick
+  behavior afterward. **58 timing/camera/auto-look/float/vehicle checks**, **17
+  audio-adapter checks**, and Windows Release/built-in checks pass. The isolated
+  120-second native-144 movement/firing/pause run passes all reported behavior
+  checks. This was a contended run, not a performance benchmark or audible
+  parity test. Build SHA-256:
+  `0f4bc5c9b26fce5b262c18ffa53a4602d3c89fdf111fa504c56a7d7f7d6ebe3a`.
+  A separate original-code check confirms a deferred weapon cooldown already
+  expires once at the correct game tick across 60/120/144, pause and catch-up.
+  Enclosing weapon cadence/damage, cross-rate random sequences and actual Mac
+  execution remain unverified. See the
+  [weapon sound record](docs/native-high-refresh-regressions.md#weapon-sound-events-on-fractional-updates).
+- Entity post-update velocity no longer becomes zero solely because a live
+  native interval has no whole tick. The original entity routine and list
+  dispatcher reproduce the failure and pass with the site-specific guard,
+  including 60/120/144, quarter speed, pause, stationary objects and catch-up.
+  **56 timing/camera/auto-look/float/vehicle/frontend/entity checks** and the
+  Windows Release/built-in checks pass. Same-build original-60/native-144
+  120-second runs pass the available behavior checks with final ammunition
+  16/80. Sampled median body speeds are 6.25886 and 6.25914 units/s.
+  **Performance remains inconclusive:** the native run averaged 75.247 CPU
+  updates/s in its measured gameplay window while another game was running.
+  A follow-up sample found that process using 99.76% of the GPU 3D engine.
+  This is not a clean regression/improvement comparison; retest pacing with
+  hardware available. Build SHA-256:
+  `076eec0128aa55f977ee5475701797b0342c7a5cab3936e3921efb0bf7b03b34`.
+  [Full scope and limitations](docs/native-high-refresh-regressions.md#entity-velocity-on-fractional-updates).
+- Offline actor hooks now reject ineligible guest states before checking host
+  network settings. A fresh 120-second native-144 before/after pair passes
+  movement, firing, hand-animation, pause/resume and presentation checks.
+  From 85 seconds onward, unpaused Story CPU updates average **138.059 before
+  / 140.203 after**, with p95 **9.0831 / 8.4934 ms** and p99
+  **10.1881 / 9.3970 ms**. Both game clocks advance at 1.0 seconds per wall
+  second. This is one comparison, not a repeatability or sustained-144 claim.
+  Patch validation, Windows Release/built-in checks and 71 focused network,
+  CI-scope/backlog checks pass. Final executable SHA-256:
+  `a920df05eb37f18c2247ebb233a074d98cb591f8672eb7104961573705f612c7`.
+  Evidence and remaining limits are in
+  [the regression record](docs/native-high-refresh-regressions.md#offline-network-callback-overhead).
+- Overlay follow-up: native mode shows its selected `target 60/120/144`
+  instead of the original console cap. Offline RTT is hidden; network RTT
+  remains available. Full patch-stack validation, Windows Release and built-in
+  checks pass (`logs/native-overlay-build.log`); the focused debug check also
+  passes with isolated runtime settings (`logs/native-overlay-debug-check.log`).
+  Actual Mac validation remains pending under MAC-060.
+- Camera mode 27 now evaluates its authored track on live fractional frames
+  and selects an adjacent keyframe when the whole-tick delta is zero. A
+  gate-only change still produced repeated poses; the original branch test
+  reproduces both failures. Fractional catch-up also required matching the
+  blend divisor to the selected integer keyframe span. Original-code tests cover 60/120/144, quarter
+  speed, pause, external clocks, catch-up, looping, completion and authored
+  discontinuity cuts. **55 timing/camera/auto-look/float/vehicle/frontend checks** pass,
+  including a new original frontend-backdrop test covering fractional rotation,
+  bidirectional wrapping and texture-index transitions. Windows Release and
+  its built-in checks pass. Build SHA-256:
+  `ea81dc2b9e148d2e71063e2e7ea64a2221cb61b8abed5a95825f4844298097dc`.
+  The camera fixture stubs asset decoding, matrix, projection, sector and
+  input services; the frontend fixture stubs matrix/menu services. These are
+  behavioral timing checks, not rendered-fidelity or complete texture-motion
+  acceptance. The final 240-second unskipped native run passes scene/handoff
+  and guest-only-present checks. Track 2485 advances at 0.99955 seconds per
+  wall second versus 1.00002 in the original-60 reference; first firearm is
+  observed at 182.156 versus 183.656 s. Loading and half-second sampling limit
+  timing comparisons. The 20,000-row native trace ends at 154.936 s, before
+  mode 27 starts, so it supplies no cinematic/gameplay pacing measurement.
+  The reference predates the final native-only divisor correction; hashes
+  and scope are recorded in `native-camera-track-comparison.json` and the
+  regression document. Actual Mac and broader modes remain unverified.
+- Text wrapping now reuses a single call's validated stack-memory span for
+  stack-local fragments, avoiding a duplicate VM query on each width probe.
+  Protection boundaries, changed mappings and rewrite scratch space remain
+  checked. Windows real-VM tests and the Release build's full built-in checks
+  pass; Mac cases are added but unrun. The 120-second native movement/firing/
+  pause replay passes. Its measured stress interval averages **138.101
+  updates/s**, versus 134.484 before this change; p95 falls from 10.285 to
+  9.040 ms. This single comparison suggests an improvement, not sustained
+  144 FPS or repeatable full-game performance. Build SHA-256:
+  `f4800caaa98d593b8b62bc657c95081463a8a35d2a7fd1a139b3dc712bf19b04`.
+  Evidence: `logs/native-prompt-span-*` and isolated `prompt-span` records.
+  A separate 120-second profile also passes; the text-wrap memory-query chain
+  falls from 1,881 to 1,093 samples at 200 Hz. Overall CPU time does not fall
+  in this pair (92.8 versus 94.3 s), so only the narrower query reduction is
+  supported by the profile. Sustained performance remains open.
+- Camera effects now evaluate every advancing native interval, with kick decay
+  scaled by elapsed game time. The original whole-tick loop and caller could
+  skip effects between ticks. **53 timing/camera/auto-look/float/vehicle tests**
+  and Windows Release/built-in checks pass. Executable SHA-256:
+  `5820d4f6bd4dda225bf7181cb67f638e1712d7b1a2bcbbf5ddbdc57a0c307d95`.
+  Separate 120-second original-60 and native-144 movement/firing/pause replays
+  pass all runner checks. Walking measures 6.2554 versus 6.2593 world units/s
+  (0.063% difference); both finish with 16 loaded rounds and 80 in reserve.
+  No nonzero kick was observed by the asynchronous live camera samples, so
+  live kick coverage remains pending despite original-routine test coverage.
+  The unprofiled native Story interval averages **134.484 updates/s** over
+  34.465 s, with p95/p99 intervals of 10.285/11.433 ms and a 12.756 ms maximum.
+  Sustained 144 FPS remains unmet. A separate 120-second sampled run also
+  passes; `NtQueryVirtualMemory` accounts for 4,706 of 19,976 main-thread samples
+  (16,133 on CPU), warranting investigation of repeated guest-memory queries.
+  That aggregate includes loading and menus; it is not a gameplay-only cost
+  estimate or GPU measurement. Evidence: `logs/native-camera-effects-*` and
+  isolated `camera-effects`/`camera-profile` records. Actual Mac, full-game,
+  real collision and additional camera-mode validation remain open.
+- Scripted camera translation/direction now consume fractional intervals.
+  Their two original whole-tick gates lost movement or reported premature
+  transition completion; direction easing also needed its per-call decay
+  scaled by elapsed game time. Tests execute the original US routines, with
+  collision/sector services mocked. **15 native timing/capture/auto-look checks**
+  and **22 patch-migration/backlog checks** pass, plus **37 original
+  floating-point/vehicle regression checks**, **352 recompiler tests
+  and 87 subtests** (41 skips). Windows Release and built-in checks pass.
+  Build SHA-256: `6609f626278bc4ce6d77c9bd1597c74c7e4a748973a36ebcecc1ef6d3ad5acb1`.
+  A 240-second native 144 run without skipping the intro passes the handoff
+  and guest-only presentation checks; first player at 157.625 s, first firearm
+  at 182.141 s. The matching original-60 reference also passes, with first
+  player at 158.531 s and firearm at 183.625 s. Embedded NPC clip-time
+  estimates put the idle-to-handoff-clip span at 20.599 versus 20.678 s;
+  loading time and half-second sampling prevent exact event-parity claims.
+  The short
+  recorded Story interval after 160 s averages 141.748 CPU updates/s over
+  7.309 s, with p95/p99 intervals of 7.781/8.428 ms and a 34.706 ms worst
+  interval. Game and raw clock deltas both sum to 1.0 second per wall second.
+  This captured diagnostic run does not establish sustained 144 FPS or
+  per-frame visual smoothness; camera modes/decay loops remain under audit.
+  Evidence: `logs/native-camera-*` and isolated `camera-timing` records.
+- Integration of main `7b0838a` preserves its fixed-60 default, retired
+  interpolation engine, launcher/packaging repairs and both sets of validation
+  notes. The opt-in native update path uses its own shared pacing helper.
+  Native Mac handoff is **MAC-060**; main's texture-delivery MAC-057 is retained.
+  Windows Release and its built-in checks pass. **14 timing/default/inert-engine
+  checks**, **119 patch/launcher/Mac-tool tests with 13 subtests** (two skips),
+  and the backlog integrity test pass. A 120-second native 144 replay passes
+  all gameplay checks and records guest-only presents without failed presents.
+  The original-60 replay also passes. Comparable one-second walking spans
+  measure 6.256 versus 6.262 world units/s (0.10% difference); both runs end
+  with 16 loaded rounds and 80 in reserve. This is bounded opening-level
+  evidence, not full-game acceptance. Integration executable SHA-256:
+  `95660e9e93227cbb05e2f1b0a66bd97caa609c9c8cbef4ad2e68fc79f4bd23e2`.
+  Logs use `logs/native-main-*`; live evidence has `main-integration` labels.
+- Active goal now includes texture fluidity, smooth animations, and regression
+  verification for previously addressed bugs. The acceptance criteria are in
+  [the native high-refresh goal](docs/native-high-refresh.md#goal-and-acceptance-criteria).
+  Previous test results below describe their measured scope; they do not verify
+  every historical fix or establish full-game correctness.
+- Further no-stress comparisons isolated slow NPC translation: original 60
+  equips at 73.063 s versus native 144 at 89.578 s; comparable walk segments
+  cover 3.020 versus 1.240 world units/s. The NPC dispatcher was skipping
+  fractional frames at its `0x15EB0C` whole-tick pause gate. That exact load
+  now uses the live fractional delta. **10 native timing tests pass**, including
+  execution of the original NPC dispatcher to check elapsed timers, callback
+  cadence, pause/resume and ABI preservation. Windows Release and its built-in
+  checks pass. A 120-second native 144 test with intro skip, movement/firing
+  replay and pause/resume now passes every runner check: first firearm at
+  **72.063 s**, versus **73.063 s** in the earlier original-60 reference.
+  Matching walk-clip spans measure **3.030 versus 3.038 world units/s**
+  (0.26% difference). This repairs the skipped-intro opening regression in
+  this bounded test. A following 300-second unskipped run also restores the
+  handoff (first firearm at 182.125 s); matching original cinematic timing
+  and broader scene acceptance remain open.
+  NPC-stage executable SHA-256:
+  `614eec11e1896273a4424988893b0a298122149c494136c159c26f9f7fb9c5d5`.
+  Evidence: `native-npc-dispatch-comparison.json` and
+  `native-npc-144-handoff-validation.json` in `private/test-saves/high-refresh`;
+  build/runtime logs use `logs/native-npc-dispatch-*`.
+- The player movement audit reproduced a separate slowdown (about 2.6 versus
+  6.25 world units/s). Its exact pause gate now permits fractional updates,
+  with the adjacent per-update damping changed to preserve its original
+  half-life. The original player routine's timer/damping test passes at all
+  three target rates: **11 timing tests**, **352 recompiler tests and 87
+  subtests** (41 skips). The player build passes its Windows checks and
+  120-second original-60/native-144 stress replays. Steady walking measures
+  **6.255 versus 6.258 world units/s**, within **0.05%**; both runs consume
+  **32 rounds** with matching sampled ammunition totals and pass handoff,
+  animation and pause/resume checks. Exact shot timing, collision/acceleration
+  and other scenes/weapons remain open. Current executable SHA-256:
+  `a52dc8bbd81f92f27d203cce27ac05fec8ee9f507863106ad7831493660736b6`.
+  See `native-player-comparison.json` in the isolated high-refresh test
+  directory and `logs/native-player-*`. The same build also passes native
+  **60 and 120 FPS** replays with steady speed within 0.05% of the original
+  reference and the same final ammunition. The refreshed suites pass:
+  **91 prior-fix tests** (62.53 s), **20 patch-transition tests** (320.26 s)
+  and **11 timing tests**. These establish the recorded scope, not all
+  historical bug scenes or full-game/native-Mac correctness.
+- The combined prior-fix, timing and patch-transition suite passed **120 tests
+  in 404.79 s** before the NPC-gate addition, recorded in
+  `logs/native-script-events-regressions.log`. Full-game and Mac coverage
+  remain open.
+- **Earlier script-only repair:** initial native 144 FPS captures showed unarmed
+  hands without firearm/HUD, while the original 60 FPS reference equips weapon
+  ID 14 by about 80 seconds. Further sampling shows movement and hand animation
+  can progress in native mode, narrowing the issue to the opening handoff rather
+  than a completely frozen animator. Native timing at 60 FPS also reaches
+  firearm/HUD gameplay. A subsequent script-event repair now reaches the gun,
+  HUD and next objective at native 144, but first equips at **93.579 s** versus
+  **73.047 s** in the original reference. The stress-window handoff requirement
+  failed on that earlier build; the NPC-gate result above supersedes it.
+- The US level-script dispatcher skipped fractional frames with zero whole
+  ticks, losing animation-event crossings. Its one pause-gate load now uses
+  the live fractional delta without changing integer timers. A compiled test
+  executes the original dispatcher, first-mission handoff and event readers:
+  the old gate misses phases; the repair catches all twelve phases exactly
+  once. **Nine timing tests**, plus **352 recompiler tests and 87 subtests**
+  pass (41 skips). Windows Release build and its built-in checks pass.
+  Script-only executable SHA-256:
+  `f74f5b15364a1d742a37c6e7cd8500cf665c19ab949127329954b174e6ee6006`.
+- The earlier script-only 120-second stress run passes movement, hand-animation progress,
+  pause/resume and eventual firearm equip, but fails equip-before-stress.
+  A runner summary-key collision initially hid that failure in JSON while
+  the terminal assertion failed. New runners keep the two criteria distinct;
+  the corrected historical assessment is
+  `private/test-saves/high-refresh/native-script-events-analysis.json`.
+  See [the script-event evidence](docs/native-high-refresh-regressions.md#fractional-script-event-repair).
+- Strengthened the isolated runner with player position, body/hand/weapon clip
+  times, equipped weapon and action observations. First-mission stress checks
+  now require movement, advancing/changing hand animation and weapon ID 14;
+  Story flags or unarmed punching cannot alone pass. Timing/observation unit
+  checks pass **eight cases**. Natural-intro runs have a distinct evidence tag,
+  and new validation records identify both runner and executable hashes.
+- Existing-fix checks passed **91 tests** in 61.83 seconds for vehicle/float
+  joins, terminal depth, camera feeds, objectives health, profile/menu input,
+  audio, automatic look, texture loading, letterboxing and channel clears.
+  This is source-contract coverage, not all affected scenes at native 144 FPS.
+  The [regression record](docs/native-high-refresh-regressions.md) lists the
+  coverage and outstanding scene/platform checks.
+- A 300-second native 144 run let the cinematic finish naturally. Story-player
+  observations span 157.609 to 299.734 seconds; equipped weapon changes from
+  absent to unarmed ID 37 at 180.640 seconds and never becomes firearm ID 14.
+  The handoff failure therefore also occurs without skipping. The old runner's
+  metadata passes only its coarse scene/native/no-crash checks; separate
+  post-run handoff checks pass for original 60 FPS and fail for native 144.
+  New runner versions enforce this check for any run with at least a minute of
+  Story observations, including runs without stress inputs. Evidence is in
+  `logs/native-144-natural-intro-complete.log` and ignored
+  `private/test-saves/high-refresh/*-handoff-analysis.json`.
+- Added a shared native update clock at 60/120/144 FPS targets, fractional
+  motion deltas, remainder-carrying integer timers, pause/resume and bounded
+  catch-up. The title's update routine no longer waits for a whole console
+  tick in this mode. The console ISR remains at 60 Hz; interpolation and its
+  redraws are disabled. Normal launch behavior and personal preferences remain
+  unchanged. `Play-Native.cmd` supplies temporary launch overrides.
+- Added an optional numeric policy to the generic recompiler, with ordinary
+  x86 conversion as its default. The title policy routes floating-point reads
+  of the two frame deltas to their adjacent fractional fields. Other integer
+  reads/counters stay in original units. Frozen animation evaluation restores
+  the incoming fractional delta rather than reconstructing it from an integer.
+- A zero-tick input regression was reproduced in the US frontend: an input
+  probe observed a confirm edge on a zero-tick frame, then no edge on the next
+  whole tick. The title hook now retains the original button sampling cadence
+  and clears consumed edges between those samples. Tests cover all twelve
+  phases of 144:60, stack balance, held/released state and one delivery per
+  press. Raw mouse look remains independent of the button gate.
+- Validation host: Windows 11 Pro x64 `10.0.26300`, MSVC `19.44.35224.0`, D3D11,
+  NVIDIA RTX 4070 SUPER driver `32.0.16.1742`; desktop `3440x1440` at 144 Hz.
+  The supported XBE SHA-256 was verified, and the runtime stays pinned to
+  `d90c92988a9f99d0580d2ca3f7efd6ec3a7b7845`. Full Windows Release build and its
+  built-in input/settings/display/network/texture/crash-policy checks passed.
+- The broader source regression run passed **130 tests**, with one Mac-only
+  skip, before the final button hook. After that hook, **24 targeted checks**
+  passed, including native timing/edges and fresh/historical/idempotent patch
+  transitions. The final timing/statistics unit run passed all six cases.
+  Native Mac compilation, GPU/runtime checks and remote CI were not run here;
+  shared implementation is recorded as MAC-060 awaiting validation.
+- The final 120-second isolated 144-target run passed its startup, Story-state,
+  pause/resume, native-hook/no-interpolation and no-crash assertions. It replayed
+  camera turns, movement keys and firing. The final presentation report showed
+  **15,900 guest presents, zero interpolated presents, zero skipped/failed
+  presents** at its last 300-present report. The runner terminated the child
+  at its time limit; its raw process exit code is not a gameplay-test result.
+- In 7,755 unpaused Story CPU update intervals after the first 60 seconds,
+  measured mean was **137.630 updates/s** over 56.3469 seconds; interval median
+  **7.0230 ms**, p95 **9.6025 ms**, p99 **11.8535 ms**, worst **31.9153 ms**.
+  Game-clock accumulation was **1.000000 game seconds per wall second**. This
+  was a 1280x720 windowed test with CSV tracing and periodic renderer captures;
+  it does not establish constant 144 FPS, monitor scanout or input latency.
+  Earlier lighter intervals averaged about 143 FPS; the complete stressed
+  sample above is the retained performance result.
+- Local evidence: `logs/native-144-build.log`,
+  `logs/native-144-final-regressions.log`, `logs/native-144-input-regressions.log`,
+  `logs/native-144-final-game.log`, `logs/native-144-update-stats.json`, and
+  `private/test-saves/high-refresh/native-144-{frames.csv,timing.json,validation.json}`.
+  Test saves/configs were isolated and disposable disks recycled; the canonical
+  Test Lab fixture and personal data were preserved. These local files and
+  captures are ignored, not bundled in the source commit.
+- Remaining acceptance: fix the opening animation regression, visually compare
+  animation/camera and animated texture behavior with the original timing,
+  verify previous fixes, actual movement/weapon cadence and physical input,
+  other levels/modes, scripted cinematics/demos, vehicles, split-screen,
+  multiplayer synchronization and a full campaign. Source timing checks and
+  scene flags alone do not establish complete gameplay or perceptual smoothness.
+  See [usage and limits](docs/native-high-refresh.md).
 
 ## Expanded menu icons and portrait production (2026-10-21)
 
