@@ -485,6 +485,11 @@ are not a substitute for actual weapon-switch animation/gameplay validation.
 
 ## Themed keyboard editor checks
 
+The historical old-controls upgrade fixture excludes keyboard-settings-menu and
+keyboard-weapon-slots until the shared-input locks/display wrappers exist. The
+final full-stack upgrade must contain the capture pump, two-binding limit and
+weapon-slot sampling/guest hook, so both new patches are still validated.
+
 `tests/test_keyboard_menu.py` compiles the portable capture/page model: opening
 input release, one event per press, cancel/focus/timeout, complete action
 coverage and the sensitivity range. Run alongside `test_menu_mouse.py`,
