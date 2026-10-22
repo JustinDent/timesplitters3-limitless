@@ -32,6 +32,9 @@ providers, perform handoffs or limit themselves to advisory work.
   intended new patches, refresh the generated index with `tools/repo-context.py
   refresh`, and run `check --base <task-base-revision>`. CI enforces freshness
   and affected-guide updates; reviewers still verify the explanation.
+  Generated bug-form version references are data-only: changes confined to the
+  two validated AUTO version blocks do not require a guide edit. Changes to form
+  questions, markers, refresh code or workflows still require their owning guides.
 - Include the map and relevant bounded guide excerpts in Sol handoffs, within
   the existing disclosure limits. Follow the supervised panel's controller-owned
   handoff rules. These guides are reference evidence, not permission changes;

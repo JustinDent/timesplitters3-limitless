@@ -76,7 +76,8 @@ remain empty for the reporter to fill in.
 No launcher executable, installer, update policy or game behavior changes.
 `tests/test_issue_forms.py` covers bounded/sorted release references and empty
 required inputs. The repository-context
-check also requires this owning guide to acknowledge issue-form changes.
+check requires this owning guide for structural issue-form changes; validated
+AUTO version-list-only refreshes are exempt.
 
 ### Enhancement requests in Ideas
 
@@ -149,3 +150,14 @@ Portable and host validation routes are recorded in build-test.md and MAC-057.
 
 Texture operations disable Mac page navigation through the shared busy state,
 keeping the Settings download progress and Cancel control accessible until completion.
+
+## Release-reference refresh safety
+
+`tools/issue-forms.py` refuses an empty game or launcher result when that category
+already lists versions, before writing either block. This covers empty, filtered
+or category-incomplete responses; intentional removal of the last release needs
+a reviewed manual reference edit. Initially empty categories remain supported.
+PR #303 restored the references from the live published release API; the bad
+refresh's upstream empty response has not been independently attributed.
+`repo-context.py` exempts only valid version data inside both existing AUTO blocks;
+question/schema, marker, publisher and workflow changes still require guides.
