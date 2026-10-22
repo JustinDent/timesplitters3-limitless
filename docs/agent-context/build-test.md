@@ -445,3 +445,12 @@ fixtures exclude the new full-float patch until its prerequisites are installed.
 Optional texture publication changes (`tools/texture-release.py` and its test)
 select the release suite even when changed alone. Manual Windows upgrades carry
 Textures alongside Data, Settings and Saves to retain downloaded/custom packs.
+
+## Issue-form refresh regression checks
+
+`test_issue_forms.py` checks that an empty or category-incomplete release result
+cannot partially erase known references, including check-only mode and first-use
+empty repositories. `test_repo_context.py` exercises the ownership gate with real
+Git diffs: generated version data is exempt, structural edits and empty-list
+regressions are not. Existing issue-form/runtime-plan CI runs these asset-free
+Python cases; there is no game or native launcher behavior change.

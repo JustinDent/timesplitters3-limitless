@@ -136,3 +136,9 @@ The user's optional-download request supersedes the earlier mandatory bundled-pa
 rule. AGENTS.md now records lightweight default game packaging, separate audited
 optional publication and preservation of installed packs. Use the launcher and
 build-test guides for the implementation; do not infer publication from local code.
+
+The ownership gate has one content-aware data exception: bug-form release-version
+changes within validated existing AUTO blocks. It compares the rest of the file
+against the base unchanged and rejects empty-list regressions, malformed/duplicate
+markers and arbitrary inserted content. Deleted/new forms and all implementation
+or workflow changes retain ordinary guide requirements.
