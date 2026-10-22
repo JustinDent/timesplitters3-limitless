@@ -1799,6 +1799,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   The 232 installed local replacements are partial coverage; consolidated
   scene testing remains deferred. See the issue #74 transfer record in STATUS.
 
+#### Launcher v1.2.24 icon retirement release
+
+MAC-011: shared launcher migration is included in v1.2.24 on Windows and native
+Apple Silicon. The release workflow validates both host builds and packages.
+No new adapter is needed; actual Mac game/menu appearance remains Awaiting
+validation. This version bump alone is not publication evidence.
+
 ### MAC-012 — Standalone Mac runtime distribution
 
 - **Game-only PR notes (2026-10-17, branch `fix/game-only-release-prs`):**
