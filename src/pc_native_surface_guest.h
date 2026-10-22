@@ -55,14 +55,17 @@ static void pc_surface_feedback_guest(void (*original)(void))
     PC_SURFACE_VALUE(params+0x18u)=velocity;
     PC_SURFACE_VALUE(params+0x1cu)=damping;
 }
-static void pc_surface_filter_guest(void (*original)(void))
+static void pc_surface_smoothing_guest(void (*original)(void))
 {
-    if(!pc_surface_step.active) {original();return;}
-    float saved=PC_SURFACE_VALUE(0x665478u);
-    /* Keep the authored four-neighbor smoothing on whole events. A zero-radius
-     * pass copies the current state into the other feedback target between
-     * them; skipping the pass would feed a stale target into the integrator. */
-    if(!pc_surface_step.whole)PC_SURFACE_VALUE(0x665478u)=0;
-    original();PC_SURFACE_VALUE(0x665478u)=saved;
+    if(!pc_surface_step.active || pc_surface_step.whole) {original();return;}
+    /* The caller has just swapped current (+24) and destination (+28), and
+     * will swap them again after this call. Cancel that second swap so the
+     * feedback reads the latest state directly and writes the other buffer.
+     * The shader's former zero-radius "copy" changes floating-point state.
+     * Do not dispatch it between authored smoothing events. */
+    uint32_t current=PC_SURFACE_WORD(g_esi+0x24u);
+    PC_SURFACE_WORD(g_esi+0x24u)=PC_SURFACE_WORD(g_esi+0x28u);
+    PC_SURFACE_WORD(g_esi+0x28u)=current;
+    g_esp+=4;
 }
 #endif

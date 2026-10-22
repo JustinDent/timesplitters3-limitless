@@ -6,6 +6,15 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Fractional feedback buffer reuse (2026-10-21):** The opt-in candidate
+  now reads the latest state directly between authored smoothing events,
+  eliminating the nonidentity zero-radius copy. Original-code lineage checks
+  cover separate destinations, pause, catch-up and rate changes; Windows Build,
+  91 focused checks and three patch migrations pass. Both 120/144 GPU runs
+  retain 359/359 fresh image pairs, but **144 loses wave variation and is not
+  accepted**. The centering correction and intermediate-state diagnosis remain
+  necessary; normal play still has both experiments disabled. [Results and scope](docs/native-high-refresh-regressions.md#fractional-feedback-buffer-reuse-2026-10-21).
+
 - **Water shader arithmetic (2026-10-21):** Original translated shaders on
   Windows WARP confirm two further fractional-update errors: a fixed green
   velocity offset per feedback pass and nonidentity smoothing during the

@@ -2960,6 +2960,15 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Fractional buffer reuse (2026-10-21, this revision):** Shared guest
+  wrapper/patch skips extra smoothing while preserving newest-state ownership.
+  Original-code fixtures check lineage and ABI at 60/120/144 and across
+  transitions. Windows Build, 91 checks and three patch migrations pass.
+  Windows GPU images stay fresh, but 144 variation degrades; this experiment
+  is not accepted or enabled by default. Centering correction, intermediate GPU
+  observations, live precision transitions and actual Mac execution remain
+  open. The wrapper is shared; there is no platform-specific copy of its policy.
+
 - **Procedural shader arithmetic audit (2026-10-21, this revision):** Two
   original-program GPU fixtures use the common HLSL translator/RHI and pinned
   local XBE on Windows WARP. They identify per-pass centering drift and loss

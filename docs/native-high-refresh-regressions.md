@@ -4962,3 +4962,76 @@ path fixes independent invocation. The workflow includes this test, which skips
 without Windows or the pinned local XBE; a hosted skip is not GPU validation.
 This checkpoint changes diagnostics/documentation only. Existing executable
 and opt-in defaults remain as in `66eec0f`; no interactive game was closed.
+
+
+## Fractional feedback buffer reuse (2026-10-21)
+
+The opt-in fractional path now bypasses `0x1950B0` smoothing on updates with
+no whole game tick. The original dispatcher first swaps the current/destination
+indices and normally swaps them again after smoothing. The wrapper cancels that
+second swap when smoothing is skipped, allowing feedback to read the latest
+state directly and write the other buffer. It no longer runs the nonidentity
+zero-radius copy from the preceding arithmetic audit. Whole-tick smoothing,
+discrete disturbances and original-60/disabled dispatch are unchanged. The
+fourth final image remains distinct from the feedback intermediates.
+
+A subsequent reproducible patch replaces the old `0x2BA80` radius wrapper with
+the `0x1950B0` wrapper. The original smoothing body, dispatcher and two feedback
+passes are lifted together in the updated CPU integration fixture. Draw spies
+track independent content generations for the four image IDs: every smoothing
+and feedback read must see the latest state, each destination must differ from
+its sources, and final conversion must read the newly completed feedback.
+The old destination begins with a stale sentinel, so silently reusing it fails.
+Both experiment-on and disabled runs check original/native 60, 120 and 144,
+pause, catch-up and rate changes without resetting buffer ownership. These
+spies prove lineage/ABI/cadence rather than GPU pixel values.
+
+Across eight-second synthetic schedules, authored smoothing runs 480 times and
+disturbance callbacks 960 times at every rate. The enabled fractional feedback
+runs 480/960/1152 times at 60/120/144; disabled runs execute 480 at all rates.
+The full patch stack applies, Windows Release Build and built-in checks pass,
+91 focused timing/shader/statistics/patch/backlog cases pass, and all three
+historical migration cases pass. Build executable SHA-256 is
+`4106bee3f0a5427ad8429bc08ab1f88e0b629d8502adc1ab9c6035785bc83afb`,
+base `63243fc` plus this change. Evidence: `logs/surface-copy-{build,checks,migrations,patches}.log`.
+This still uses both opt-in experiments; centering-offset transport, live
+precision transitions, actual Mac execution and full-game acceptance remain open.
+
+
+Two bounded Scotland GPU runs on that executable keep both experiment switches
+on, capture 360 final byte-format images at 120 and 144, and disable renderer
+screenshots. These minimized, synchronous-readback runs cannot measure pacing.
+The image tool verifies every raw hash and consecutive update ID. Both sessions
+exit cleanly, retain profile signatures/the fixture, and recycle disposable
+partitions. Their raw captures are gzip-compressed only after byte-for-byte
+verification; older `surface-fractional-120`, `surface-image-60` and
+`surface-image-144` evidence was likewise compressed with raw SHA receipts in
+`private/pipeline/surface-copy-space.json`, recovering 48.38 MiB before testing.
+
+| Path | Changed pairs / 359 | Channel 1 std | Channel 2 std |
+| --- | ---: | ---: | ---: |
+| Prior float 120 with zero-radius copies | 359 | 19.1387 | 18.4523 |
+| Direct-buffer 120 | 359 | 19.3332 | 18.3723 |
+| Prior float 144 with zero-radius copies | 359 | 18.8516 | 18.1925 |
+| Direct-buffer 144 | 359 | 12.8683 | 12.3266 |
+| Float-target original 60 reference | 359 | 19.9405 | 19.1807 |
+
+The 120 distribution remains close to its prior experiment. The 144 result is
+**not accepted**: its channel variation is substantially lower, with channel-1
+std declining from 14.3242 in the first 60 images to 11.0676 in the last 60.
+The inspected raw-channel contact sheet also shows weaker structure at 144.
+Freshness and correct CPU buffer lineage do not establish healthy wave dynamics.
+The uncorrected per-pass velocity offset, quantized constants and coupled update
+remain possible contributors; these runs do not isolate which accounts for the
+new decline. Original noise code selects the current index dynamically, and
+the common renderer restores nonaliasing shader views around target changes;
+those source checks do not substitute for intermediate GPU-state observation.
+
+Evidence: `private/test-saves/surface-copy-{120,144}-fractional`,
+`private/pipeline/procedural-surface-copy-summary.json`,
+`surface-copy-contact.png`, and `logs/surface-copy-images.log`. The fixture now
+prints enabled and disabled schedules (`logs/surface-copy-lineage.log`). No
+capture-free pacing or new in-world appearance acceptance is claimed for this
+change. It remains confined to the disabled-by-default experiment. Next work
+must combine correct state reuse with the shader centering correction and
+observe intermediate state instead of tuning visible gain to hide the decline.

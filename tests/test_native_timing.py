@@ -258,7 +258,7 @@ def test_capture_cleanup_preserves_other_evidence(tmp_path):
 @pytest.mark.parametrize('harness_name,ranges', [
     ('native_analog_input.c', [(0x18ff70,0x190334),(0x426e0,0x4270d)]),
     ('native_network_correction.c', [(0x356e20,0x3570c7)]),
-    ('native_surface_fractional.c', [(0x195110,0x195277),(0x1956a0,0x19576d)]),
+    ('native_surface_fractional.c', [(0x1950b0,0x195110),(0x195110,0x195277),(0x1956a0,0x19576d)]),
     ('native_surface_cache.c', [(0x127400,0x127494),(0x127500,0x12782c),
                                (0x194b00,0x194bb0),(0x1956a0,0x19576d)]),
     ('native_visual_time_guest.c', [(0x43595,0x4359c),(0x670e8,0x670ef),
@@ -545,6 +545,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         if harness_name=='native_object_rocking.c':
             functions[0xa8aa0]['name']+='_gen'
         if harness_name=='native_surface_fractional.c':
+            functions[0x1950b0]['name']+='_gen'
             functions[0x195110]['name']+='_gen'
             functions[0x1956a0]['name']+='_gen'
         translator=FunctionTranslator(image,functions)
@@ -561,6 +562,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                 'sub_001BB5C0_gen)', 'sub_001BB5C0)')
 
         if harness_name=='native_surface_fractional.c':
+            assert code.count('sub_001950B0_gen)')==1
+            code='void sub_001950B0(void);\n'+code.replace('sub_001950B0_gen)', 'sub_001950B0)')
             assert code.count('sub_00195110_gen)')==1
             code='void sub_00195110(void);\n'+code.replace('sub_00195110_gen)', 'sub_00195110)')
     finally:
@@ -587,6 +590,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
                            .replace('/* ORIGINAL_CONSTANTS */',constants)
                            .replace('/* GENERATED_ROUTINES */',code))
     if harness_name=='native_surface_fractional.c':
+        print(output)
         executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
         subprocess.run([str(executable),'disabled'],check=True,timeout=10)
     if harness_name in ('native_analog_input.c','native_network_correction.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_hud_messages.c','native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
