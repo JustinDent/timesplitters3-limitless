@@ -95,6 +95,39 @@ def test_packaging_streams_sanitized_metadata_and_hashes(tmp_path):
         textures.write_zip(archive, '', records)
 
 
+def test_release_keeps_one_texture_copy_and_reproducible_sources(tmp_path):
+    source, _, _, _, _ = fixture(tmp_path)
+    pack = tmp_path/'assets/textures'
+    pack.parent.mkdir()
+    source.rename(pack)
+    _, records, _ = textures.ensure_pack(tmp_path)
+    files = {'src/game.c': b'/* source */', 'assets/icon.png': b'icon',
+             'config/texture-pack.json': b'{"delivery":"bundled"}'}
+    for name, data in files.items():
+        path = tmp_path/name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+    sources = [*files, '', 'src/game.c', 'deleted.c',
+               *(p.relative_to(tmp_path).as_posix() for p in pack.iterdir())]
+    code = io.BytesIO()
+    with zipfile.ZipFile(code, 'w') as archive:
+        textures.write_source_files(archive, tmp_path, sources)
+        archive.writestr('runtime-local.patch', 'runtime patch')
+    package = io.BytesIO()
+    with zipfile.ZipFile(package, 'w') as archive:
+        archive.writestr('Game/Source/pc-port-source.zip', code.getvalue())
+        textures.write_zip(archive, 'Game/', records)
+    with zipfile.ZipFile(package) as archive:
+        assert set(archive.namelist()) == {
+            'Game/Source/pc-port-source.zip', *("Game/"+name for name, _, _ in textures.zip_entries(records))}
+        with zipfile.ZipFile(io.BytesIO(archive.read('Game/Source/pc-port-source.zip'))) as code:
+            assert set(code.namelist()) == {*files, 'runtime-local.patch'}
+            for name, data in files.items():
+                assert code.read(name) == data
+        for name, _, sha in textures.zip_entries(records):
+            assert hashlib.sha256(archive.read('Game/'+name)).hexdigest() == sha
+
+
 @pytest.mark.parametrize('existing_pointer', [False, True])
 def test_repository_export_tracks_only_audited_public_content(tmp_path, existing_pointer):
     import importlib.util

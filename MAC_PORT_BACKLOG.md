@@ -3499,6 +3499,14 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
 
 ### MAC-057 — Optional texture pack delivery through the launcher
 
+- **Alpha.2 packaging follow-up (2026-10-22):** Both game packagers use the
+  shared `build_textures.write_source_files` helper to exclude compiled pack
+  files from the nested source ZIP. The complete DDS/JSON pack remains in
+  `Textures/`, and source-build reuse is documented. This removes a duplicate
+  download/staging copy without changing either host's installer or runtime.
+  The combined source/texture delivery regression runs in both release CI jobs;
+  real package validation follows on each release host.
+
 - **Publisher requirement follow-up (2026-10-20):**
   `fix/publish-required-textures` adds an unconditional repository-pack gate to
   `tools/publish-release.py`, including resumed preparations and pre-upload ZIP

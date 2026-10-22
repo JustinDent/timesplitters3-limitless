@@ -120,6 +120,13 @@ bundle pointers. For an explicitly texture-free development build use Windows
 `-SkipTextures` or native Mac `--without-textures`; do not download a duplicate
 pack just to run source/documentation checks. Release packaging includes the
 audited committed replacements by default; see `tools/build_textures.py`.
+Both game packagers use `write_source_files` in that helper to omit
+`assets/textures/` from the nested source-code ZIP while preserving code,
+configuration, other assets and the runtime patch. Compiled DDS/JSON are shipped
+once through the playable `Textures/` entries. The source README explains how
+to reuse them at `assets/textures` for a rebuild. `test_build_textures.py` checks
+the nested source ZIP and complete outer texture delivery together; these
+asset-free tests run in both host release-validation jobs.
 
 `testing_profile.prepare_run` explicitly supplies `TSFP_TEXTURE_PACK_DIR` from
 the checkout's `assets/textures` and `TSFP_TEXTURE_MODE=classic` after filtering

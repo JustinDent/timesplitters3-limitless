@@ -13,7 +13,7 @@ import urllib.request
 import zipfile
 
 import vulkan_sdk
-from build_textures import ensure_pack, zip_entries, write_zip
+from build_textures import ensure_pack, zip_entries, write_zip, write_source_files
 
 ROOT = Path(__file__).resolve().parents[1]
 GAME = 'Bin/futureperfect_recomp'
@@ -226,11 +226,11 @@ def main():
     (stage/'Source').mkdir()
     sources = sorted(set(run('git', 'ls-files', '-z').split('\0')) | set(native['source_sha256']))
     with zipfile.ZipFile(stage/'Source/pc-port-source.zip', 'x', zipfile.ZIP_DEFLATED) as archive:
-        for relative in sources:
-            if relative and (ROOT/relative).is_file():
-                archive.write(ROOT/relative, relative)
+        write_source_files(archive, ROOT, sources)
         archive.writestr('runtime-local.patch', subprocess.check_output(['git', '-C', str(upstream), 'diff', '--binary']))
     (stage/'Source/README.txt').write_text('Project source and the exact runtime patch are in pc-port-source.zip.\n'
+        'Compiled DDS/JSON replacements are included once in the package Textures folder.\n'
+        'For a source build, copy that folder to assets/textures in the extracted source.\n'
         'Runtime: https://github.com/nemonicicon/ts3FPrecomp/tree/'+native['runtime_revision']+'\n'
         'SDL: https://github.com/libsdl-org/SDL/tree/'+run('git','-C',upstream/'third_party/SDL','rev-parse','HEAD')+'\n'
         'Build with tools/build-native-mac.py; package with tools/package-native-mac.py.\n')
