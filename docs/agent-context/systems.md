@@ -167,3 +167,12 @@ in a separately compiled translation unit. Mounted mouse aim remains ahead of
 ordinary camera input in both adapters; fractional terminal handling is retained.
 Native high-refresh validation is MAC-060, distinct from crane MAC-058 and
 text input MAC-059.
+
+## Issue #74 menu texture additions
+
+The branch pack now contains 2,205 accepted replacements. The same keyed DDS
+files serve Windows and the common native Mac renderer; loader contracts are
+unchanged. Menu coverage is 733/750 keys, with eight intentional functional
+originals and nine unresolved replacements. Source resampling and original-detail
+recovery are distinguished from newly generated art in `docs/main-menu-textures.md`.
+Offline acceptance does not certify mapped scene appearance or Mac GPU behavior.

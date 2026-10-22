@@ -31,7 +31,10 @@ def stage(source, root=ROOT, pointers_only=False):
         regular(destination)
         regular(destination.with_suffix('.json'))
         with path.open('rb') as stream:
-            result = subprocess.run(['git', 'lfs', 'clean', '--', 'assets/textures/'+path.name],
+            # The checkout may contain a small LFS pointer. Passing its filename
+            # makes LFS use that file's size for the different DDS on stdin,
+            # truncating the clean input. Read the complete stream without a hint.
+            result = subprocess.run(['git', 'lfs', 'clean'],
                                     stdin=stream, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                     cwd=root, check=True)
         expected_pointer = f'version https://git-lfs.github.com/spec/v1\noid sha256:{sha}\nsize {path.stat().st_size}\n'.encode()

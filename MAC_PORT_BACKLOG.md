@@ -1176,6 +1176,39 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-21 #74 repository texture update (commit carrying this entry):
+  700 new keys, 2,205 total, using the same audited DDS/JSON for both hosts.
+  The shared LFS exporter now reads DDS stdin without a stale pointer-file size
+  hint; the existing-pointer regression failed before the fix and passes now.
+  Windows texture/build/planner/backlog checks: 22 tests and 21 subtests pass.
+  No runtime adapter changed. Native Mac export and GPU/scene acceptance remain
+  unverified; **Awaiting validation** is unchanged. No gameplay or release.
+
+<!-- menu-expanded-progress -->
+- 2026-10-21 expanded menu pass (included in the #74 texture upload):
+  421 source-faithful schematic/UI/effect additions plus 158 newly detailed
+  portraits and 63 scene thumbnails in this continuation. Same keyed RGBA8 files serve both hosts;
+  26 additional cards recover matching native 512px original artwork.
+  no runtime or adapter changes. Windows offline parser, alpha/pixel and full
+  pack audits pass. All-menu coverage and model associations remain incomplete.
+  Actual Windows/Mac menu rendering and GPU residency await final validation;
+  no game launched. See docs/main-menu-textures.md and latest STATUS entry.
+<!-- /menu-expanded-progress -->
+
+- 2026-10-21 menu follow-up (included in the #74 texture upload): corrected
+  reflection, original-mask logo and two faithfully resampled font atlases now
+  pass offline acceptance. Same keyed RGBA8 replacements serve both hosts; no
+  adapter change. Windows DDS parsing and full Python pack audit pass; actual
+  font/logo rendering, menu animation and Mac GPU behavior remain unverified.
+  No gameplay launched. Awaiting validation; see docs/main-menu-textures.md.
+
+- 2026-10-21 main-menu focus (documentation included in the #74 texture upload): mapped
+  logo/font/background and candidate schematic keys using existing Windows
+  evidence. One 1254-square background draft is held, with no installed DDS or
+  runtime/adapter changes. The same eventual replacement pack serves both hosts;
+  Mac and Windows mapped appearance/alpha checks remain pending. Status remains
+  Awaiting validation. See docs/main-menu-textures.md and STATUS.md.
+
 - 2026-10-21 unlocked test launch correction (branch
   `fix/test-profile-texture-pack`): shared `testing_profile.prepare_run` now
   connects `assets/textures` explicitly while starting in Classic mode. The
@@ -1197,6 +1230,426 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   execution is evaluated in PR CI. **Awaiting validation** remains for real
   texture scene/GPU/display/residency coverage. See STATUS.md bundled texture
   dependency entry. No graphics adapter or guest-clock behavior changed.
+
+- 2026-10-20 texture build dependency and game ZIP inclusion (local #74 source):
+  tools/build_textures.py shares audit/download/cache policy across Windows and
+  native Mac builders. play-native-mac.py automatically selects the prepared pack.
+  Shared tools/launcher/Core.cs accepts bounded keyed DDS/JSON in game packages,
+  seeds missing texture pairs, preserves existing pairs, and safely cleans staged
+  payloads. Windows launcher build/regressions and 183 Python tests pass;
+  one platform test skips. Mac native host build/install/GPU checks remain pending,
+  so **Awaiting validation** is unchanged. No separate Mac policy implementation.
+  Missing published textures-v0.1.0-alpha.1 prevents fresh-clone remote validation;
+  local 1,505-texture reuse passes. No release/push/gameplay. See STATUS.md texture
+  build dependency entry; no cross-device synchronization claimed.
+
+- 2026-10-20 texture batch 255: seven metal surfaces installed, one held;
+  1,505 installed. Seven new Windows parser checks and full Python audit pass;
+  previous 1,498 DDS hashes/checker unchanged. Six RAM reviews replay exactly
+  after retiring new reference exports. Pack 1,165,240,310 bytes, temporary
+  snapshot 267,500,128 bytes, within caps. No runtime/adapters/gameplay changes.
+  **Awaiting validation** for Mac GPU, mapped scenes, display modes and residency.
+  See STATUS.md batch 255 and private review/hybrid-255 evidence.
+
+- 2026-10-20 texture batch 254: five metal surfaces installed, three drafts held;
+  1,498 installed. Fresh full Python audit and five new Windows parser checks
+  pass; previous 1,493 DDS hashes/checker unchanged. Five RAM reviews replay
+  exactly after reference retirement. Recoverable JSON formatting compaction and
+  two never-previously-listed cache removals reclaimed temporary headroom.
+  Pack 1,162,614,842 bytes; temporary snapshot 267,413,737 bytes, below caps.
+  No gameplay or runtime adapters changed. **Awaiting validation** remains for
+  Mac GPU, mapped materials/seams/light channels, display modes and residency.
+  See STATUS.md batch 254 and private evidence; no cross-device validation claim.
+
+- 2026-10-20 texture batch 253: four metal replacements installed, four drafts
+  held for tone/geometry correction; 1,493 installed. Fresh full Python audit and
+  four new Windows parser checks pass; prior 1,489 hashes/checker unchanged.
+  Five RAM comparisons replay exactly after retiring eight verified original
+  exports (194,487 bytes). Pack 1,159,466,244 bytes; temporary snapshot
+  268,188,079 bytes, below caps. No runtime adapters or gameplay changed.
+  **Awaiting validation** remains for Mac GPU, mapped materials/seams/light
+  channels, display modes and residency. See STATUS.md batch 253.
+
+- 2026-10-20 texture batch 252: eight metal-family replacements installed;
+  total 1,489. Fresh full Python audit and eight new Windows parser checks pass;
+  prior 1,481 DDS hashes/checker identity unchanged. Six RAM comparisons include
+  enlarged vent-grid review and replay exactly after retirement of eight new
+  source exports (273,500 bytes). Pack 1,158,327,982 bytes; temporary snapshot
+  268,099,093 bytes, below caps. No runtime adapter changes or gameplay.
+  **Awaiting validation** remains for Mac GPU, mapped seams/light channels,
+  material lighting, display modes and residency. See STATUS.md batch 252.
+
+- 2026-10-20 texture batch 251: seven metal-family replacements installed;
+  one brown seam draft held for tonal drift. Total 1,481 installed. Fresh full
+  Python audit and seven new Windows parser checks pass; prior 1,474 DDS hashes
+  and checker identity unchanged. Five RAM comparisons replay exactly, including
+  after verified retirement of eight new original exports (325,816 bytes).
+  Pack 1,156,007,778 bytes; temporary snapshot 268,023,162 bytes, below caps.
+  No runtime adapter changes or gameplay. **Awaiting validation** remains for
+  Mac GPU, mapped seams/light channels/materials, display modes and residency.
+  See STATUS.md artwork batch 251 and private provenance.
+
+- 2026-10-20 texture batch 250: five wood/panel/equipment replacements installed;
+  three drafts held for brightness or missing component detail. Total 1,474
+  installed. Fresh whole-pack Python audit and five new Windows parser checks
+  pass; prior 1,469 hashes/checker identity unchanged. Five RAM comparisons
+  replay exactly. Pack 1,153,294,936 bytes; temporary snapshot 267,950,496 bytes,
+  below caps. Five review JSON records compacted with semantic equality and
+  byte-exact gzip recovery; no artwork changes. No runtime adapter changes or
+  gameplay. **Awaiting validation** remains for Mac GPU, mapped seams/materials,
+  display modes and residency. See STATUS.md artwork batch 250.
+
+- 2026-10-20 texture batch 249: four material/equipment replacements installed,
+  four drafts held for markings, brightness or band geometry. Total 1,469 installed.
+  Fresh whole-pack Python audit and four new Windows parser checks pass; prior
+  1,465 hashes/checker identity unchanged. Six RAM comparisons replay exactly.
+  Pack 1,151,369,672 bytes; temporary snapshot 268,172,153 bytes, below caps.
+  Actual Windows allocation queried without errors; provenance retains source
+  sizes and resampling. No platform adapter/runtime change or gameplay.
+  **Awaiting validation** remains for Mac GPU, mapped seams/markings, material
+  lighting, render modes and residency. See STATUS.md artwork batch 249.
+
+- 2026-10-20 hybrid queue reconciliation: shared Python planner accepts the
+  environment_material alias and routes mixed sensitive categories to specialist
+  review. 145 keys join bounded material batches; 1,191 move to specialist review.
+  Eight planner tests pass on Windows; already registered in runtime-patches CI.
+  No OS-specific adapter or runtime change. Mac execution is unrun. All 1,465
+  installed DDS hashes unchanged and fresh Python audit passes; native evidence
+  stays batch 242. No new artwork or gameplay. **Awaiting validation** remains
+  for Mac GPU, mapped scenes, channel semantics, display modes and residency.
+
+- 2026-10-20 inventory batch 247: final 243 known keys reviewed (195 opaque,
+  48 nonopaque). Exact-set check proves all 6,812 supported catalog keys have a
+  provisional appearance/alpha classification; zero unclassified. This closes
+  the known-key first pass only, not discovery, category/use or scene validation.
+  Thirty-two RAM sheets replay exactly; full provenance is 42,410-byte gzip.
+  No new art installed. All 1,465 DDS hashes unchanged; fresh full Python audit
+  passes and native evidence stays batch 242. Pack 1,149,619,742 bytes; temporary
+  268,092,924 bytes, below caps. **Awaiting validation** remains for Mac GPU,
+  mapped scenes, channel semantics, display modes and residency. No gameplay.
+
+- 2026-10-20 inventory batch 246: 128 RGB/alpha pairs reviewed (87 opaque,
+  41 nonopaque); 6,569 provisionally classified and 243 unclassified, all needing
+  art. The previously unclassified installed disc-error screen is now recorded.
+  Sixteen RAM sheets replay exactly; full provenance is 23,704-byte lossless gzip.
+  No artwork generated/installed. All 1,465 DDS hashes unchanged; fresh Python
+  audit passes, native evidence stays batch 242. Pack 1,149,619,742 bytes;
+  temporary 268,034,212 bytes, below caps. **Awaiting validation** remains for
+  Mac GPU, mapped scenes, alpha semantics, display modes and residency. No gameplay.
+
+- 2026-10-20 inventory batch 245: 128 RGB/alpha pairs reviewed (90 opaque,
+  38 nonopaque); 6,441 provisionally classified and 371 unclassified. Sixteen
+  RAM-only sheets exactly replayed; 23,350-byte gzip retains full provenance.
+  Alpha-only signage/diagrams, inverse masks and character identity retain
+  explicit constraints. No artwork generated or installed. All 1,465 DDS
+  hashes unchanged; fresh full Python audit passes, native evidence stays
+  batch 242. Pack 1,149,619,742 bytes; temporary 267,996,909 bytes, below caps.
+  **Awaiting validation** remains for Mac GPU, mapped scenes, alpha semantics,
+  display modes and residency. No gameplay; classification is not completion.
+
+- 2026-10-20 inventory batch 244: 128 original RGB/alpha pairs reviewed
+  (93 opaque, 35 nonopaque), bringing provisional classification to 6,313 keys.
+  Functional constants, diagrams, exact lettering, character atlases and
+  channel-dependent effects retain explicit constraints. Sixteen RAM sheets
+  replay exactly; full provenance retained as 25,738-byte lossless gzip JSON.
+  No artwork generated/installed. All 1,465 DDS hashes unchanged and fresh full
+  Python audit passes; native evidence remains batch 242. Pack 1,149,619,742 bytes;
+  temporary 267,960,106 bytes, below caps. **Awaiting validation** remains for
+  Mac GPU, mapped scenes, alpha semantics, display modes and residency. No gameplay.
+
+- 2026-10-20 inventory batch 243: 64 original RGB/alpha pairs reviewed
+  (43 opaque, 21 nonopaque), bringing provisional classification to 6,185 keys.
+  Alpha-carried diagrams, numeral/icon masks, partial-opacity lettering and
+  gradients retain explicit specialist constraints. Eight RAM sheets replay
+  exactly. No artwork generated or installed; all 1,465 existing DDS hashes
+  unchanged and fresh full Python audit passes. Native parser evidence remains
+  batch 242. Pack 1,149,619,742 bytes; temporary 267,920,780 bytes, below caps.
+  **Awaiting validation** remains for Mac GPU, mapped scenes, channel semantics,
+  display modes and residency. No gameplay. See STATUS.md inventory batch 243.
+
+- 2026-10-20 texture batch 242: three mechanical replacements installed;
+  five drafts held for excessive brightness or marking/component fidelity.
+  Total 1,465 installed. Fresh full Python audit and three new Windows parser
+  checks pass; prior 1,462 DDS hashes/checker identity unchanged. Six RAM
+  comparisons replay exactly, including component/marking focus. Pack 1,149,619,742
+  bytes; temporary 267,817,886 bytes, both below caps. Cached originals reused.
+  **Awaiting validation** remains for Mac GPU, mapped components, seam sampling,
+  reflections/lighting, display modes, alpha and 512 MiB residency. No gameplay or
+  runtime changes. See STATUS.md batch 242 and private acceptance.
+
+- 2026-10-20 texture batch 241: five clothing/equipment/character replacements
+  installed; two character drafts held for facial/component fidelity and one
+  generation blocked without retry. Total 1,462 installed. Fresh full Python
+  audit and five new Windows parser checks pass; prior 1,457 DDS hashes/checker
+  identity unchanged. Six RAM comparisons replay exactly, including face focus.
+  Pack 1,148,219,914 bytes; temporary 267,758,522 bytes, both below caps.
+  **Awaiting validation** remains for Mac GPU, mapped character identity, skin/seam
+  matching, equipment, lighting, display modes, alpha and 512 MiB residency.
+  No gameplay/runtime changes. See STATUS.md batch 241 and private acceptance.
+
+- 2026-10-20 texture batch 240: six equipment/clothing replacements installed;
+  two equipment atlases held for warning-symbol/stamped-marking fidelity.
+  Total 1,457 installed. Fresh full Python audit and six new Windows parser
+  checks pass; prior 1,451 DDS hashes/checker identity unchanged. Six RAM
+  comparisons replay exactly, including enlarged marking focus. Pack 1,146,294,650
+  bytes; temporary 267,702,477 bytes, both below caps. Cached originals reused.
+  **Awaiting validation** remains for Mac GPU, character/weapon mapping, seams,
+  lamps/reflections, display modes, alpha and 512 MiB residency. No gameplay or
+  runtime changes. See STATUS.md batch 240 and private acceptance.
+
+- 2026-10-20 texture batch 239: seven prop/folded-metal atlases installed;
+  one curved atlas held for tonal correction. Total 1,451 installed. Fresh full
+  Python audit and seven new Windows parser checks pass; prior 1,444 DDS hashes
+  and checker identity unchanged. Five RAM comparisons replay exactly. Sixteen
+  archive-reproducible original exports retired, reclaiming 712,272 bytes;
+  no denied paths retried. Pack 1,143,495,008 bytes; temporary 267,651,438 bytes,
+  both below caps. **Awaiting validation** remains for Mac GPU, mapped scenes,
+  reflections, display modes, alpha and 512 MiB residency. No gameplay/runtime
+  changes. See STATUS.md batch 239 and private acceptance.
+
+- 2026-10-20 texture batch 238: three machinery atlases installed (yellow lamps,
+  paired hinges and socket/latch panel); five lighting/layout failures held.
+  Total 1,444 installed. Fresh full Python audit and three new Windows parser
+  checks pass; prior 1,441 DDS hashes/checker identity unchanged. Eight cached
+  originals reused; five RAM comparisons replay exactly. Pack 1,140,170,496
+  bytes; temporary 268,300,554 bytes, both below caps. No exports or cleanup.
+  **Awaiting validation** remains for Mac GPU, mapped scenes and lamp behavior,
+  display modes, alpha and 512 MiB residency. No gameplay/runtime changes.
+  See STATUS.md batch 238 and private acceptance.
+
+- 2026-10-20 texture batch 237: six masonry/timber/striated replacements installed;
+  two panel/red-material tonal/detail failures held. Total 1,441 installed.
+  Fresh full Python audit and six new Windows parser checks pass; prior 1,435
+  hashes/checker identity unchanged. Five RAM comparisons replay exactly.
+  Pack 1,138,071,624 bytes; temporary 268,246,333 bytes, below both caps.
+  Original exports retained; JSON whitespace compacted with exact original-byte
+  recovery; no denied cleanup retried. No gameplay/runtime changes.
+  **Awaiting validation** remains for Mac GPU, mapped scenes, alpha, display
+  modes and 512 MiB residency. See STATUS.md batch 237 and private acceptance.
+
+- 2026-10-20 texture batch 236: one corrected ochre rock installed; seven
+  repeated layout/tonal failures remain held and need a different approach.
+  Total 1,435 installed. Fresh full Python audit and one new Windows parser
+  check pass; prior 1,434 hashes/checker identity unchanged. Eight existing
+  references reused, five RAM comparisons replay exactly. Pack 1,137,325,450
+  bytes; temporary 268,061,834 bytes, both below caps. No gameplay/runtime
+  changes. **Awaiting validation** remains for Mac GPU, mapped scenes, alpha,
+  modes and 512 MiB residency. See STATUS.md batch 236 and private acceptance.
+
+- 2026-10-20 texture batch 235: six cliff/stone/concrete replacements installed;
+  two brightness/contrast failures held. Total 1,434 installed. Fresh full
+  Python audit and six new Windows parser checks pass; prior 1,428 hashes and
+  checker identity unchanged. Five RAM comparisons replay exactly. Historical
+  JSON compaction preserves original-byte recovery; no denied cleanup retried.
+  Pack 1,137,237,494 bytes; temporary 268,002,202 bytes, both below limits.
+  No runtime change or gameplay. **Awaiting validation** remains for Mac GPU,
+  mapped scenes, alpha, modes and 512 MiB residency. See STATUS.md batch 235
+  and private review/hybrid-235-acceptance.json.
+
+- 2026-10-20 texture batch 234: six stone/masonry/plaster replacements installed;
+  two color/contrast failures held. Total 1,428 installed; fresh full Python
+  audit and six new Windows parser checks pass, with prior 1,422 DDS hashes and
+  checker identity unchanged. Five RAM comparisons replay exactly; eight new
+  reference exports retained after policy denial. Pack 1,134,088,316 bytes;
+  temporary 267,970,440 bytes. No gameplay or runtime changes. **Awaiting
+  validation** remains for Mac GPU, mapped scenes, alpha, display modes and
+  512 MiB residency. See STATUS.md batch 234 and private acceptance evidence.
+
+- 2026-10-20 texture batch 233: three small surfaces/trim accepted and installed;
+  five drafts held for ridge, atlas, border or brightness errors. Total 1,422
+  installed; fresh full Python audit and three new Windows parser checks pass,
+  with prior 1,419 hashes/checker identity carried forward unchanged. Five RAM
+  comparisons replay exactly; seven reference exports retained after policy
+  denial. Pack 1,133,516,898 bytes, below 6 GiB; temporary 267,793,785 bytes,
+  below 256 MiB. No runtime changes or gameplay. **Awaiting validation** remains
+  for Mac GPU, mapped scenes, transparency, modes and 512 MiB residency. See
+  STATUS.md batch 233 and private review/hybrid-233-acceptance.json.
+
+- Texture batch 232: six timber/panel replacements installed; two drafts held
+  for missing color detail/darkening. Sources seven 1774x887 and one 1254x1254;
+  accepted outputs downsampled to four 512x256, one 1024x512 and one 1024x1024.
+  Six new Windows native parser passes plus 1,413 unchanged hash/checker
+  evidence; all 1,419 pass fresh Python audit. No runtime/adapter changes;
+  MAC-011 remains Awaiting validation for Mac GPU/scenes/transparency and
+  512 MiB residency. See STATUS.md batch 232 and private
+  review/hybrid-232-acceptance.json. Parser success does not prove scene fidelity.
+
+- Texture batch 231: all six interrupted requests now have generated sources
+  and review decisions; four stone/molding materials installed, two held for
+  palette/brightness corrections. Sources three 1774x887 and three 1254x1254;
+  accepted outputs downsampled to one 1024x512 and three 1024x1024. Four new
+  Windows parser passes plus 1,409 unchanged hash/checker evidence; all 1,413
+  pass fresh Python audit. Shared runtime/512 MiB residency unchanged.
+  MAC-011 remains Awaiting validation for Mac GPU, scenes and transparency.
+  See STATUS.md batch 231 and private review/hybrid-231-acceptance.json.
+
+- Texture batch 230: two new opaque rock materials accepted offline and installed;
+  six unreturned generation requests remain unfinished after orchestration was
+  stopped. Sources 1774x887 and 1254x1254 downsampled to 1024x512/1024x1024.
+  Two new Windows parser passes plus 1,407 unchanged hash/checker evidence;
+  all 1,409 pass fresh Python audit. No runtime or adapter changes. MAC-011
+  remains Awaiting validation for Mac GPU/scenes/transparency/residency.
+  See STATUS.md batch 230 and private review/hybrid-230-acceptance.json.
+
+- Texture batch 229: three held material corrections accepted/installed; five
+  remain held for layout/tone failures. Three new Windows native parser passes
+  plus 1,404 unchanged hash/checker evidence; all 1,407 pass fresh Python audit.
+  Generated sources were three 1774x887 and five 1254x1254; accepted rust/wood
+  upsampled to 2048-square and stone downsampled to 1024-square. No runtime or
+  host adapter changes. MAC-011 remains Awaiting validation: parser success
+  does not prove Mac GPU, mapped scenes, transparency or 512 MiB residency.
+  See STATUS.md batch 229 and private review/hybrid-229-acceptance.json.
+
+- Batch 228 (issue #74): eight opaque material edits, six accepted/installed and two held for tone/palette correction. Actual sources seven 1254-square and one 1774x887; accepted outputs five 1024-square and one 1024x512, all downsampled. Six new Windows parser passes plus 1,398 unchanged-hash results; all 1,404 DDS files pass current Python audit. Exact memory review replay survives retirement of this batch’s eight disposable original exports. No runtime/adapter changes or Mac execution. **Awaiting validation** for Mac GPU, mapped scenes, transparency and 512 MiB residency. See STATUS.md batch 228 and private review/hybrid-228-acceptance.json.
+- Batch 227 (issue #74): 128 original RGB/alpha classifications (89 opaque, 39 nonopaque), exact memory replay and lossless gzip readback verified. All 1,398 installed DDS files pass fresh Python audit with unchanged-hash Windows parser evidence carried from batch 226. No artwork, pack/runtime or adapter changes; no Mac execution. **Awaiting validation** on Mac GPU, mapped scenes, transparency and 512 MiB residency. See STATUS.md batch 227 and private review/hybrid-227-acceptance.json.
+- Batch 226 (issue #74): 128 original RGB/alpha classifications (89 opaque, 39 nonopaque), exact memory replay and lossless gzip readback verified. All 1,398 installed DDS files pass fresh Python audit with unchanged-hash Windows parser evidence carried from batch 225. No artwork, pack/runtime or adapter changes; no Mac execution. **Awaiting validation** on Mac GPU, mapped scenes, transparency and 512 MiB residency. See STATUS.md batch 226 and private review/hybrid-226-acceptance.json.
+- Batch 225 (issue #74): 128 original RGB/alpha classifications (85 opaque, 43 nonopaque), exact memory replay and lossless gzip readback verified. All 1,398 installed DDS files pass fresh Python audit with unchanged-hash Windows parser evidence carried from batch 224. No art, pack/runtime or adapter changes; no Mac execution. **Awaiting validation** on Mac GPU, mapped scenes, alpha and 512 MiB residency. See STATUS.md batch 225 and private review/hybrid-225-acceptance.json.
+- Batch 224 (issue #74): 128 original RGB/alpha classifications (93 opaque, 35 nonopaque), exact memory replay and lossless gzip readback verified. All 1,398 installed DDS files pass fresh Python audit with unchanged-hash Windows parser evidence carried forward. No art, pack/runtime or adapter changes; no Mac execution. **Awaiting validation** on Mac GPU, mapped scenes, alpha and 512 MiB residency. See STATUS.md batch 224 and private review/hybrid-224-acceptance.json.
+- Batch 223 (issue #74): 128 original RGB/alpha inspections, 83 opaque, 45 nonopaque; exact memory replay and lossless gzip provenance readback verified on Windows. No artwork, pack/runtime or adapter changes. All 1,398 DDS files pass current Python audit with unchanged-hash Windows parser evidence carried forward. **Awaiting validation** on Mac GPU, mapped scenes, alpha and 512 MiB residency; no Mac execution. See STATUS.md batch 223 and private review/hybrid-223-acceptance.json.
+- Batch 222 (issue #74): eight generated opaque materials, six accepted/installed and two held for masonry-layout/wood-tone corrections. All 1,398 DDS files pass current Python audit; six new Windows parser passes plus 1,392 unchanged-hash results carried forward. No runtime/adapter changes; shared format and 512 MiB residency policy unchanged. **Awaiting validation** for Mac GPU, mapped scenes, alpha and residency; no Mac execution or gameplay. See STATUS.md batch 222 and private review/hybrid-222-acceptance.json.
+- Batch 221 (issue #74): 128 more RGB/alpha original inspections (74 opaque, 54 nonopaque); exact memory-sheet replay with no raster outputs, artwork or runtime changes. All 1,392 DDS files pass fresh Python checks; unchanged-hash Windows parser results carried forward. Shared renderer remains ce45eb4 and requires no adapter; Mac execution unverified. **Awaiting validation** for mapped scenes, GPU/alpha and residency. See STATUS.md batch 221 and private review/hybrid-221-acceptance.json.
+- Batch 220 (issue #74): 128 original RGB/alpha classifications via shared tools/texture-triage-memory.py; sixteen sheets exactly replayed in memory with no raster files written. Windows actual-data replay and three invalid-input cases pass; Mac execution unverified, no OS adapter needed. All 1,392 DDS files pass current Python audit with unchanged-hash Windows parser evidence carried forward. No pack/runtime changes or gameplay. **Awaiting validation** for Mac GPU, mapped scenes, alpha and 512 MiB residency. See STATUS.md batch 220 and private review/hybrid-220-acceptance.json.
+- Batch 219 (issue #74): 128 original RGB/alpha classifications (81 opaque, 47 nonopaque); no artwork, pack, format, runtime or adapter changes. All 1,392 files pass current Python audit with unchanged-hash Windows parser evidence carried forward. Shared formats and 512 MiB residency policy unchanged. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 219 and private review/hybrid-219-acceptance.json.
+
+- Batch 218 (issue #74): eleven environment materials accepted offline; one rusty sheet held for brightness/color drift. All 1,392 installed files pass current Python audit; eleven new Windows DDS parser passes and 1,381 unchanged-hash results carried forward. Shared formats and 512 MiB residency policy unchanged; no runtime/adapter edits. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 218 and private review/hybrid-218-acceptance.json.
+
+- Batch 217 (issue #74): 128 original RGB/alpha classifications (85 opaque, 43 nonopaque); no artwork, pack, format, runtime or adapter changes. All 1,381 files pass current Python audit with unchanged-hash Windows parser evidence carried forward. Shared formats and 512 MiB residency policy unchanged. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 217 and private review/hybrid-217-acceptance.json.
+
+- Batch 216 (issue #74): seven held material corrections accepted offline; patterned metal remains held for pitch/shape drift. All 1,381 installed files pass current Python audit; seven new Windows DDS parser passes and 1,374 unchanged-hash results carried forward. Shared formats and 512 MiB residency policy unchanged; no runtime/adapter edits. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 216 and private review/hybrid-216-acceptance.json.
+
+- Batch 215 (issue #74): eight panel/material replacements accepted offline and four drafts held. All 1,374 installed files pass current Python audit; eight new Windows DDS parser passes and 1,366 unchanged-hash results carried forward. Shared DXT1 and 512 MiB residency policy unchanged; no runtime/format/adapter edits. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 215 and private review/hybrid-215-acceptance.json.
+
+- Batch 214 (issue #74): 128 original RGB/alpha classifications; no artwork, pack, format, runtime or adapter changes. All 1,366 files pass current Python audit with unchanged-hash Windows parser evidence carried forward. Shared formats and 512 MiB residency policy unchanged. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 214 and private review/hybrid-214-acceptance.json.
+
+- Batch 213 (issue #74): nine environment materials accepted offline and three drafts held for boundary/tone corrections. All 1,366 files pass current Python audit; nine new Windows DDS parser passes and 1,357 unchanged-hash results carried forward. Shared DXT1 and 512 MiB residency policy unchanged; no runtime/format/adapter edits. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 213 and private review/hybrid-213-acceptance.json.
+
+- Batch 212 (issue #74): 128 additional original RGB/alpha classifications; no art, pack, format, runtime or adapter changes. All 1,357 installed DDS files pass current Python audit with unchanged-hash Windows parser evidence carried forward. Shared DXT1/DXT5/RGBA8 support and 512 MiB residency policy unchanged. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 212 and private review/hybrid-212-acceptance.json.
+
+- Batch 211 (issue #74): five held materials corrected and installed; three pattern corrections remain held. All 1,357 files pass current Python audit; five new Windows DDS parser passes and 1,352 unchanged-hash results carried forward. Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 211 and private review/hybrid-211-acceptance.json.
+
+- Batch 210 (issue #74): eleven metal/machinery replacements accepted offline, one draft held and 128 original RGB/alpha pairs classified. All 1,352 installed files pass current Python audit; eleven new Windows DDS parser passes and 1,341 unchanged-hash results carried forward. Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 210 and private review/hybrid-210-acceptance.json.
+
+- Batch 209 (issue #74): eight environment replacements accepted offline and 64 original RGB/alpha pairs classified. All 1,341 installed files pass current Python audit; eight new Windows DDS parser passes and 1,333 unchanged-hash results carried forward. Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 209 and private review/hybrid-209-acceptance.json.
+
+- Batch 208 (issue #74): six metal-panel/atlas replacements accepted offline; two visual-fidelity drafts held and 32 further RGB/alpha originals classified. All 1,333 installed files pass current Python audit; six new Windows DDS parser passes and 1,327 unchanged-hash results carried forward. Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 208 and private review/hybrid-208-acceptance.json.
+
+- Batch 207 (issue #74): 128 additional original RGB/alpha classifications; no art, pack, format, runtime or adapter changes. Existing 1,327 DDS files pass current Python audit and unchanged-hash native evidence carry-forward. Shared DXT1/DXT5/RGBA8 support remains; **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency. No Mac execution. See STATUS.md batch 207 and private review/hybrid-207-acceptance.json.
+
+- Batch 206 (issue #74): found and withdrew the batch 205 trim's blended-magenta border, then replaced it and installed seven further narrow trims using original-only repeated references. Eight new Windows DDS parser passes; 1,319 unchanged hashes carried forward and full current Python audit passed (1,327 total). Shared DXT1, no runtime/format/adapter changes. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. STATUS.md batch 206 and private review/hybrid-206-acceptance.json supersede the earlier edge-color claim.
+
+- Batch 205 (issue #74): one narrow metal trim installed after fixed-region carrier extraction and offline UV/edge review; 1,320 total. New Windows native DDS parser pass, remaining 1,319 unchanged-hash evidence carried forward. Shared DXT1, no format/runtime/adapter change. **Awaiting validation** on Mac GPU, mapped scenes, alpha and residency; no Mac execution. See STATUS.md batch 205 and private review/hybrid-205-acceptance.json.
+
+- Batch 204 (issue #74): eight narrow metal drafts held for aspect/layout correction; none installed. Existing 1,319 files pass current Python audit and unchanged-hash native evidence carry-forward. No format/runtime/adapter change; shared DXT1/DXT5/RGBA8 remains. No Mac GPU, alpha, residency or scene execution; **Awaiting validation**. See STATUS.md batch 204 and private review/hybrid-204-acceptance.json.
+
+- Texture batch 203 (2026-10-20, commit carrying this entry): 128 reused
+  original RGB/alpha pairs classified, total 4,297. No art, format or adapter
+  change; existing 1,319-file native evidence retained through unchanged
+  DDS/checker hashes and current Python audit. Status: Awaiting validation;
+  alpha-only text/icons, partial opacity and material behavior still require
+  Mac scene/GPU validation. No new game or native parser execution.
+  See [batch 203 evidence](STATUS.md#texture-batch-203-reused-texture-inventory-and-hidden-alpha-detail-2026-10-20).
+
+- Texture batch 202 (2026-10-20, commit carrying this entry): eight standard
+  DXT1 material replacements accepted offline; four layout/lighting drafts held.
+  Total 1,319 installed and 4,169 provisionally classified keys. Shared format
+  support is already present; no adapter change. Status: Awaiting validation;
+  Windows parser/hash evidence does not validate Mac scenes, GPU memory or
+  darker material/indicator visibility. No new gameplay on either host.
+  See [batch 202 evidence](STATUS.md#texture-batch-202-metal-and-architectural-surfaces-2026-10-20).
+
+- Texture batch 201 (2026-10-20, commit carrying this entry): 128 reused
+  originals classified from separate RGB/alpha review, total 4,105. No artwork,
+  pack or runtime changes; no platform adapter needed. Existing 1,311-file
+  offline evidence is retained by verified unchanged hashes/checker, not a new
+  native execution. Status: Awaiting validation; logos, text, masks, panoramas
+  and alpha behavior still need final Mac scenes and GPU/memory validation.
+  See [batch 201 evidence](STATUS.md#texture-batch-201-reused-asset-inventory-and-alpha-semantics-2026-10-20).
+
+- Texture batch 200 (2026-10-20, commit carrying this entry): seven metal
+  replacements accepted offline; one altered tread pattern held. Standard
+  DXT1 uses existing shared support, requiring no new adapter. The 1,311-file
+  Windows offline structure/hash evidence does not verify Mac curved mapping,
+  brightness, adjacency, residency or scene fidelity. Status: Awaiting
+  validation; retain consolidated Mac scenes, modes, memory and fallback checks
+  near completion. See [batch 200 evidence](STATUS.md#texture-batch-200-metal-patterns-and-baked-shading-2026-10-20).
+
+- Texture batch 199 (2026-10-20, commit carrying this entry): three
+  character/clothing atlases accepted offline and five identity/tone failures
+  held; 1,304 installed files have current offline structure/hash evidence.
+  Standard DXT1 and shared loader support require no adapter change. Windows
+  parser checks do not establish Mac model seams, skin/cloth appearance,
+  renderer fidelity or GPU residency. Status: Awaiting validation; retain
+  consolidated Mac scene/mode/memory/fallback checks near completion. See
+  [batch 199 evidence](STATUS.md#texture-batch-199-character-identity-and-clothing-atlas-review-2026-10-20).
+
+- Texture batch 198 (2026-10-20, commit carrying this entry): fourteen
+  private DXT1 environment/prop replacements accepted; cloth and wood atlas
+  held for correction. 1,301 installed and 3,849 original keys classified.
+  Existing shared DDS support needs no adapter change. Windows offline
+  structure, feature profiles and repeat review do not establish Mac scene
+  lighting, UV behavior or residency; Awaiting validation. See
+  [batch 198 evidence](STATUS.md#texture-batch-198-architectural-materials-and-prop-layout-checks-2026-10-20).
+
+- Texture batch 197 (2026-10-20, commit carrying this entry): seven prior
+  material/cutout drafts corrected and installed; one wire mesh remains held.
+  1,287 installed and 3,753 keys classified. Existing shared DXT1/DXT5/RGBA8
+  support needs no adapter change. Windows offline DDS and color/mask review
+  does not verify Mac scene brightness, alpha blending, shader use or residency;
+  Awaiting validation. See [batch 197 evidence](STATUS.md#texture-batch-197-cutout-corrections-with-complete-color-coverage-2026-10-20).
+
+- Texture batch 196 (2026-10-20, commit carrying this entry): one private
+  DXT5 hedge accepted offline, seven cutout/material corrections held; 1,280
+  installed and 3,689 original keys visually classified. Existing shared DDS
+  support needs no adapter change. Windows DDS and mask/composite review do
+  not establish Mac scene brightness, blending or residency; Awaiting validation.
+  See [batch 196 evidence](STATUS.md#texture-batch-196-alpha-bearing-materials-and-mask-fidelity-2026-10-20).
+
+- Texture batch 195 (2026-10-20, commit carrying this entry): fifteen private
+  DXT1 replacements accepted, one wood correction held; 1,279 installed and
+  3,625 original keys visually classified. Existing shared DDS support needs
+  no adapter change. Windows structure, profile and repeat-grid checks do not
+  prove Mac scene, reflection or residency behavior; Awaiting validation. See
+  [batch 195 evidence](STATUS.md#texture-batch-195-sixteen-asset-production-and-repeated-feature-checks-2026-10-20).
+
+- Texture batch 194 (2026-10-20, commit carrying this entry): eight private
+  DXT1 environment/atlas replacements; 1,264 installed and 3,561 original keys
+  visually classified. Existing shared DDS support needs no adapter change.
+  Windows offline structure/repeat-grid review does not establish Mac scene,
+  brightness or residency behavior; status remains Awaiting validation. See
+  [batch 194 evidence](STATUS.md#texture-batch-194-environment-materials-and-architectural-atlases-2026-10-20).
+
+- Texture batch 193 (2026-10-20, commit carrying this entry): one private
+  identity-preserving portrait installed, seven drafts held; 1,256 installed
+  and 3,497 original keys visually classified. Existing shared RGBA8/alpha
+  support needs no adapter change. Windows offline DDS checks do not establish
+  Mac UI, scene or residency behavior; status remains Awaiting validation. See
+  [batch 193 evidence](STATUS.md#texture-batch-193-portrait-identity-review-and-inventory-2026-10-20).
+
+- Texture batch 192 (2026-10-20, commit carrying this entry): two private lamp
+  replacements, including RGBA8 with exact resampled original alpha; 1,255
+  installed and 3,433 original keys visually classified. Existing shared
+  DXT1/RGBA8 support needs no adapter change. Windows offline checks do not prove
+  Mac scene/alpha or residency behavior; status stays Awaiting validation. See
+  [batch 192 evidence](STATUS.md#texture-batch-192-small-props-and-exact-alpha-lamp-2026-10-20).
+
+- Texture batch 191 (2026-10-20, commit carrying this entry): four private DXT1
+  corrections accepted; 1,253 installed and 3,401 original keys visually
+  classified. Existing shared format support needs no adapter change. Windows
+  offline checks do not establish Mac scene or residency behavior; status stays
+  Awaiting validation. See [batch 191 evidence](STATUS.md#texture-batch-191-correction-acceptance-and-original-triage-2026-10-20).
+
+- Texture batch 190 (2026-10-20, commit carrying this entry): three private
+  shared DDS additions, including luminance preservation for the L8 panel;
+  1,249 installed and 3,369 original keys visually classified. Existing shared
+  format support needs no adapter change. Mac scene and residency validation
+  remain pending; status stays Awaiting validation. See
+  [batch 190 evidence](STATUS.md#texture-batch-190-metal-timber-and-visual-triage-2026-10-20).
+
+- Texture batch 189 (2026-10-20, commit carrying this note) adds four private
+  shared DDS replacements after Windows offline checks; 1,246 total installed.
+  No adapter change is needed for the existing shared DXT1 loader. No Mac
+  runtime/scene or GPU-residency validation was run; status remains Awaiting
+  validation. See [batch 189 evidence](STATUS.md#texture-batch-189-stone-and-concrete-2026-10-20).
 
 - **Status:** Awaiting validation
 - **Windows replay link fix (2026-10-20, `fix/replay-texture-mode-link`):**

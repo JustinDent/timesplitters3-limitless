@@ -283,3 +283,14 @@ the exact committed Git blobs and the index refreshed. Patch record hashes
 identify actual bytes: refresh from canonical attribute-compliant files, keeping
 the explicitly binary watermark patch unchanged. Local index success alone
 does not prove a fresh checkout has the same patch bytes.
+
+## Exporting updates from a pointer-only art checkout
+
+`tools/texture-repository.py --pointers-only` audits the private pack, stores DDS
+objects through Git LFS and writes sanitized metadata plus small pointers. Its
+clean command reads stdin without a destination filename: an existing pointer
+filename can supply the wrong size and truncate the streamed DDS. Exact pointer
+hash/size comparison remains mandatory. `tests/test_build_textures.py` covers
+first export and updating an existing pointer with a DDS larger than 1 KiB.
+Use `tests/test_texture_release.py` for format/hash/privacy and package limits.
+No game launch is required for this export-only change.

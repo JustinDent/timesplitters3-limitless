@@ -2,8 +2,10 @@
 
 [Back to the README](../README.md)
 
-The alpha contains **1,505 replacements**, about **1.08 GiB installed**, covering
-approximately 22% of known supported keys. Major surfaces use up to 4K; smaller
+This branch contains **2,205 replacements**, about **1.77 GiB installed**, covering
+approximately 32% of the 6,812 known supported keys. The menu progress and
+remaining gaps are recorded in [Menu texture overhaul](main-menu-textures.md).
+These additions enter game downloads after integration and a normal game release. Major surfaces use up to 4K; smaller
 assets use appropriate sizes. Metadata records resampling. Original game files,
 source artwork and private prompts are excluded. This is a partial overhaul.
 
