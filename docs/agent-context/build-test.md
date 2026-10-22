@@ -153,6 +153,14 @@ development outputs; the official publisher rejects them. Regression coverage:
 `tests/test_publish_release.py` plus `tests/test_build_textures.py` in the existing
 Windows/macOS release-validation CI step; no game assets are used by those tests.
 
+`tools/bundle_online.py:bundle_standard_library` keeps `ssl.py` and top-level
+stdlib PEM trust resources together as real files in the Windows portable
+runtime. A CPython distribution may load adjacent policy during SSLContext
+construction; placing the module in a ZIP while dropping its PEM files broke
+alpha.2 packaging. Trust-policy bytes are preserved unchanged. The relocated
+SSLContext regression runs in `test_publish_release.py`; the normal real-package
+probe still checks Tk, TLS and certificate generation with the bundled Python.
+
 `STATUS.md` holds measured results; `MAC_PORT_BACKLOG.md` records missing adapter
 or validation work. Neither is an architectural index or a guarantee that all
 listed historical tests still describe current policy. Current rules retain

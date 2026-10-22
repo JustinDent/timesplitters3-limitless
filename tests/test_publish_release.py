@@ -527,6 +527,42 @@ def test_release_lock_prevents_overlapping_builds(tmp_path):
                 pytest.fail('Second release acquired the lock')
 
 
+def test_relocated_standard_library_preserves_ssl_trust_resources(tmp_path):
+    import ssl
+    spec = importlib.util.spec_from_file_location('bundle_online', module.ROOT/'tools/bundle_online.py')
+    bundler = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bundler)
+    base, runtime = tmp_path/'base', tmp_path/'relocated'
+    library = base/'Lib'
+    library.mkdir(parents=True); runtime.mkdir()
+    original = Path(ssl.__file__)
+    shutil.copy2(original, library/'ssl.py')
+    resources = list(original.parent.glob('*.pem'))
+    for path in resources:
+        shutil.copy2(path, library/path.name)
+    (library/'portable_fixture.py').write_text('VALUE = 42\n')
+    bundler.bundle_standard_library(base, runtime, 'test')
+    with zipfile.ZipFile(runtime/'pythontest.zip') as archive:
+        assert archive.namelist() == ['portable_fixture.py']
+    assert (runtime/'ssl.py').read_bytes() == original.read_bytes()
+    for path in resources:
+        assert (runtime/path.name).read_bytes() == path.read_bytes()
+    # Actual SSLContext construction failed in alpha.2 preparation when its
+    # module-relative trust policy was absent or addressed inside the ZIP.
+    script = '''import pathlib, sys
+root = pathlib.Path(sys.argv[1])
+sys.path[:0] = [str(root/'pythontest.zip'), str(root)]
+import ssl, portable_fixture
+assert pathlib.Path(ssl.__file__) == root/'ssl.py'
+assert portable_fixture.VALUE == 42
+ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+print('PASS: relocated SSL context and unchanged trust policy')
+'''
+    result = subprocess.run([sys.executable, '-I', '-S', '-c', script, str(runtime)],
+                            capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stdout+result.stderr
+
+
 def test_main_moving_after_preparation_prevents_upload(publisher):
     publisher.preflight(); publisher.prepare()
     publisher.remote = PREVIOUS

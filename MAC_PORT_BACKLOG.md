@@ -1841,6 +1841,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-013 — System Link and Online multiplayer
 
+- **Alpha.2 portable TLS follow-up (2026-10-22):** Windows' bundled CPython
+  keeps `ssl.py` adjacent to its unchanged stdlib PEM trust resources instead
+  of loading the module from inside the library ZIP. This fixes TLS context
+  construction during the real package probe. The relocated-module regression
+  runs in both host release CI suites. Native Mac game packages do not bundle
+  this Windows Python/Online runtime; native transport work remains queued.
+
 - **Status:** Queued
 - **Temporary diagnostics experiment (`e9eed34`, 2026-10-16):** Windows
   `Play-Quiet.cmd` / `TSFP_DEBUG_QUIET=1` routes stdout/stderr to `NUL` and skips
