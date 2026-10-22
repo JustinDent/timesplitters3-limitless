@@ -35,6 +35,17 @@ The same Python suite extracts the production outlined-text wrapper and tests
 both host feature defines, all five draws, guest ABI, invalidation and fresh
 scratch writes. Removing the outer scope is a required failing mutation.
 
+`tests/test_decal_projection.py` checks the production projection wrapper's
+guest ABI and all matrix elements, plus one VM query per same-region correction.
+Its split camera/stack case requires two queries and covers the actual decal
+callers' temporary stack output ordering.
+A retained-snapshot mutation must fail, proving each invocation queries afresh.
+`tests/display_memory.c` uses real Windows/macOS VM protection for read-only,
+no-access, boundary-crossing and overflow rejection (Windows also guard pages).
+The existing registered projection/cutscene CI suites run these checks on both
+hosts. The cutscene fixture shares a controlled query adapter for geometry;
+neither query counts nor successful geometry tests establish FPS improvement.
+
 Native `--input-self-test` must reset the synthetic terminal context between
 its fractional-time test and mouse-capture/fire test. The stale context caused
 a false failure during alpha.2 validation; clearing it within the self-test
