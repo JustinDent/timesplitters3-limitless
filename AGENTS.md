@@ -342,6 +342,11 @@ this preference on all further work, including texture remastering and testing.
 
 ## Active texture issue branch
 
+- The user requests original character selection/profile icons (2026-10-22).
+  Keep the keys in `config/texture-originals.json` out of generation and installed
+  packs unless the user changes this preference. Character model materials and
+  full-size scene artwork remain separate and in scope.
+
 - The user approved hybrid production: individually redesign prominent assets;
   enhance simpler materials in bounded batches grouped by material family.
   Inspect originals and alpha before assigning a batch. Keep text, UI, effects,

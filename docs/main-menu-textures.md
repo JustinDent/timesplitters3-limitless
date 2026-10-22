@@ -1,6 +1,6 @@
 # Menu texture overhaul
 
-Issue #74, production progress on 2026-10-21. The menu overhaul is still
+Issue #74, production progress on 2026-10-22. The menu overhaul is still
 in progress. The accepted compiled replacements and sanitized metadata are
 included in this branch under `assets/textures`, with DDS stored through Git LFS.
 Source artwork, prompts and detailed provenance remain private. This update
@@ -11,8 +11,8 @@ does not install a launcher copy or publish a game release.
 | Scope | Offline result | Remaining work |
 | --- | --- | --- |
 | Original main-menu focus | All 25 keys have replacements | Final mapped appearance and animation |
-| Conservative menu archive census | 733/750 keys have replacements; eight functional originals intentionally retained | 9 keys need artwork or specific review |
-| Newly detailed portraits in this continuation | 158 accepted at 256 x 256 | Remaining portraits and held corrections |
+| Conservative menu archive census | 574/750 keys have replacements; 164 character icons and eight functional originals intentionally retained | 4 keys need artwork or specific review |
+| Character selection/profile icons | All 164 known keys retain original artwork; 159 installed replacements removed | Excluded from future production at user request |
 | Functional UI/effect additions in this continuation | 13 schematic layers + 208 UI assets + 140 utility graphics + 60 effect layers | Final menu compositing/filtering review |
 | Newly detailed scene images | 63 accepted: 29 at 512 square, 34 at 1024 square | Remaining map images and held geometry corrections |
 | Decorative/material images | 20 accepted with original aspect ratio | Final material/UV alignment and appearance |
@@ -56,10 +56,12 @@ All replacements retain their runtime keys, original aspect and full mip chains.
   This restores real source detail without inventing different buildings,
   camera angles or scene geometry. Generated drafts superseded by this recovery
   remain held and are not counted as accepted generated art.
-- **Character portraits:** individually generated modern interpretations from
-  verified original cards. Accepted actual sources are 1254 square, downsampled
-  to 256 square with original rounded-card alpha. Original and final-size images
-  are reviewed together; no native 4K claim is made for these small assets.
+- **Character portraits:** original selection/profile icons are retained at the
+  user's request. The 158 previously accepted generated portraits and one older
+  icon replacement were removed on 2026-10-22. Historical source artwork and
+  receipts remain private; character model materials and full-size scene art
+  are separate and unchanged. `config/texture-originals.json` excludes all 164
+  known icon keys from the production queue.
 
 RGBA8 avoids block-compression damage to fine UI coverage. Every accepted DDS
 passes native format parsing, mip/aspect/hash checks and Python lossless pixel
@@ -72,20 +74,21 @@ remain original because enlargement adds no useful authored detail.
 The original wireframe has been compiled at its native 512-square size with
 pixel-exact RGBA8 encoding and full mips. No generated line geometry or new
 native detail is claimed; menu-wireframe-validation.json records its checks.
-The remaining 9 menu assets were rejected by image-generation safety
-checks. They have not been retried through other tools or added to the pack.
+The remaining 4 non-icon menu assets were rejected by image-generation safety
+checks. Five additional historical rejections are now intentionally original
+character icons. They have not been retried through other tools or added to the pack.
 Their originals remain in use. menu-generation-blockers.json lists each key,
 description, original payload hash and rejection receipt. The menu overhaul
 cannot be reported complete while these replacements and scene checks remain.
 
 73 historical menu-generation records were held in the batch receipts;
-9 distinct held keys still have no accepted replacement.
+4 non-icon held keys still need replacements; the five held icon keys now
+retain originals by choice.
 Reasons include card-edge coverage, background color drift, extra
 facial features, changed scene geometry and image-generation rejections.
 Those drafts are not installed or counted as accepted. The previously held
 generated arrow has a separate faithful source replacement; its generated draft
-was not accepted. Map images, decorative materials and remaining portraits
-continue in the explicit key-level queue.
+was not accepted. Remaining non-icon menu materials continue in the explicit key-level queue.
 
 No game launch was performed. Scene identity, menu readability/animation,
 material associations, GPU residency and actual Windows/Mac appearance await
@@ -95,10 +98,10 @@ Awaiting validation.
 
 ## Storage and reproducibility
 
-The active pack contains 2,205 entries and occupies
-1,900,180,156 bytes (1.77 GiB), below 6 GiB.
-The pre-export texture workspace snapshot, including retained source art, occupies
-9,057,524,448 bytes. Temporary files total
+The active pack contains 2,046 entries and occupies
+1,844,405,700 bytes (1.72 GiB), below 6 GiB.
+The 2026-10-22 texture workspace snapshot, including retained source art, occupies
+9,003,558,966 bytes. Temporary files total
 266,089,008 bytes, with 2,346,448
 bytes below the 256 MiB cap at this audit. These are different budgets. Git LFS additionally stores the compiled objects
 for upload; the checkout retains small pointers rather than another full pack.
@@ -111,7 +114,14 @@ ZIPs, staging packs or builds were duplicated. Five old repetition sheets were
 also retired after byte-exact in-memory reconstruction, retaining primary
 comparisons, verified inputs and menu-cache-retirement.json recovery evidence.
 
+The removal audit verified 14,760 retained DDS/JSON files unchanged across
+active copies, including all 72 installed character-model materials. The public
+pack occupies 1,843,682,193 bytes with sanitized metadata. No gameplay ran.
+
 Private evidence is under private/texture-remaster:
+
+- character-icon-removal.json: exact retired keys, prior metadata, removal
+  verification and hashes for every retained file.
 
 - main-menu-focus.json and main-menu-validation.json: original focus and
   brightness/logo/font measurements.

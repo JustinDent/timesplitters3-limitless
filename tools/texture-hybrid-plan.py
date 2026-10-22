@@ -21,6 +21,8 @@ MATERIAL_CATEGORIES = {'environment', 'environment_material'}
 
 def lane(texture, classification):
     status = texture['status']
+    if status == 'retained_original':
+        return 'retained_original'
     if status == 'installed':
         return 'installed'
     if status == 'draft_requires_review':

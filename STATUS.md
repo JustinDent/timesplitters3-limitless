@@ -1,3 +1,21 @@
+## 2026-10-22 — Original character icons restored (#74)
+
+Removed 159 installed character selection/profile icon replacements and their
+metadata from the private pack, #74 repository assets and working-game pack.
+All 164 known icon keys now retain originals and are excluded from production
+by `config/texture-originals.json`. Character model materials, full-size scene
+art, maps, logo/fonts and other replacements remain unchanged.
+
+Windows offline audit: 2,046 entries; sanitized public pack 1,843,682,193 bytes
+(1.72 GiB), below 6 GiB. All 14,760 retained DDS/JSON files across the four
+inspected folders match their prior SHA-256 hashes. Repository LFS pointers,
+public metadata and working-game DDS match the private pack. Planner checks:
+44 tests and 18 subtests passed. Menu coverage: 574 replacements, 164 original
+icons, eight functional originals, four unresolved keys. Character model scope
+still has 72 replacements among 392 keys. No game launch or build was needed;
+Windows/Mac scene acceptance remains pending (MAC-011). This commit records the removal; no game release was published.
+Historical production receipts remain.
+
 ## PR #285 CI harness compatibility (2026-10-21)
 
 The merged stack exposed missing repository include paths in framebuffer and

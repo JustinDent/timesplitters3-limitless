@@ -170,9 +170,12 @@ text input MAC-059.
 
 ## Issue #74 menu texture additions
 
-The branch pack now contains 2,205 accepted replacements. The same keyed DDS
+The branch pack now contains 2,046 accepted replacements. The same keyed DDS
 files serve Windows and the common native Mac renderer; loader contracts are
-unchanged. Menu coverage is 733/750 keys, with eight intentional functional
-originals and nine unresolved replacements. Source resampling and original-detail
+unchanged. Menu coverage is 574/750 keys, with 164 original character icons, eight
+intentional functional originals and four unresolved replacements.
+`config/texture-originals.json` records excluded icon keys; the worklist rejects
+installed replacements for those keys and hybrid planning retains the original
+lane. Character model materials remain in scope. Source resampling and original-detail
 recovery are distinguished from newly generated art in `docs/main-menu-textures.md`.
 Offline acceptance does not certify mapped scene appearance or Mac GPU behavior.

@@ -1176,6 +1176,13 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-22 character icon removal (commit carrying this entry): 159 replacements retired;
+  164 known selection/profile icon keys intentionally use original assets.
+  Shared pack now has 2,046 entries; character model materials are unchanged.
+  No runtime or host adapter change is required. Windows offline hashes, pack
+  audit and planner regression checks pass; actual Mac menu/GPU behavior remains
+  **Awaiting validation**. See STATUS.md; no gameplay run.
+
 - 2026-10-21 #74 repository texture update (commit carrying this entry):
   700 new keys, 2,205 total, using the same audited DDS/JSON for both hosts.
   The shared LFS exporter now reads DDS stdin without a stale pointer-file size

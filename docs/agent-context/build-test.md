@@ -301,3 +301,12 @@ hash/size comparison remains mandatory. `tests/test_build_textures.py` covers
 first export and updating an existing pointer with a DDS larger than 1 KiB.
 Use `tests/test_texture_release.py` for format/hash/privacy and package limits.
 No game launch is required for this export-only change.
+
+## Original character icon policy
+
+`config/texture-originals.json` excludes user-retained original icons from
+`texture-worklist.py` and `texture-hybrid-plan.py`. Offline regression coverage
+is in `tests/texture_pack_tools.py` (including rejection of accidental reinstall)
+and `tests/test_texture_hybrid_plan.py`. These tests are already registered in CI.
+Asset removal also requires pack count/size audit and unchanged-file hashes;
+no game rebuild is needed.

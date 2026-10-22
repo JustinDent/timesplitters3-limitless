@@ -17,6 +17,7 @@ class HybridPlanTests(unittest.TestCase):
         record = {'visual_category': 'environment'}
         self.assertEqual(hybrid.lane({'status': 'installed'}, record), 'installed')
         self.assertEqual(hybrid.lane({'status': 'draft_requires_review'}, record), 'correction')
+        self.assertEqual(hybrid.lane({'status': 'retained_original'}, record), 'retained_original')
 
     def test_new_material_label_joins_same_family_batches(self):
         worklist = dict(pack_bytes=0, textures=[

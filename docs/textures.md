@@ -2,12 +2,12 @@
 
 [Back to the README](../README.md)
 
-This branch contains **2,205 replacements**, about **1.77 GiB installed**, covering
-approximately 32% of the 6,812 known supported keys. The menu progress and
+This branch contains **2,046 replacements**, about **1.72 GiB installed**, covering
+approximately 30% of the 6,812 known supported keys. The menu progress and
 remaining gaps are recorded in [Menu texture overhaul](main-menu-textures.md).
 These additions enter game downloads after integration and a normal game release. Major surfaces use up to 4K; smaller
 assets use appropriate sizes. Metadata records resampling. Original game files,
-source artwork and private prompts are excluded. This is a partial overhaul.
+source artwork and private prompts are excluded. This is a partial overhaul. Character selection/profile icons retain their original artwork; character model materials remain in scope.
 
 ## Install through the launcher
 
