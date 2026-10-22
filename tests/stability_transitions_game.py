@@ -33,6 +33,8 @@ def main():
     parser.add_argument('--no-captures',action='store_true',help='Disable renderer dumps and label screenshots for timing measurements')
     parser.add_argument('--profile-presents',action='store_true',help='Record bounded host Present intervals for original or native timing')
     parser.add_argument('--watch-hud',action='store_true',help='Observe bounded HUD message slots and their elapsed time')
+    parser.add_argument('--trace-surface-switches',action='store_true',help='Record 90 positive-time images per FPS segment, at most 360 total')
+    parser.add_argument('--live-surfaces',action='store_true',help='Switch experimental water precision with the FPS preset; requires all three surface experiments')
     parser.add_argument('--bias-surfaces',action='store_true',help='Correct experimental water centering; requires float and fractional surfaces')
     parser.add_argument('--float-surfaces',action='store_true',help='Use experimental half-float feedback intermediates independently of timestep conversion')
     parser.add_argument('--fractional-surfaces',action='store_true',help='Enable the experimental procedural feedback conversion for comparison')
@@ -42,6 +44,10 @@ def main():
     parser.add_argument('--minimized',action='store_true',help='Keep the isolated test window minimized')
     parser.add_argument('--seconds',type=int,choices=range(1,601),default=600)
     args=parser.parse_args()
+    if args.trace_surface_switches and not args.trace_surface_images:
+        parser.error("--trace-surface-switches requires --trace-surface-images")
+    if args.live_surfaces and not (args.bias_surfaces and args.float_surfaces and args.fractional_surfaces):
+        parser.error("--live-surfaces requires --bias-surfaces, --float-surfaces and --fractional-surfaces")
     if args.bias_surfaces and not (args.float_surfaces and args.fractional_surfaces):
         parser.error("--bias-surfaces requires --float-surfaces and --fractional-surfaces")
     assert not args.sample_network_ms or args.lan_role
@@ -77,6 +83,8 @@ def main():
     if args.native_fps:
         env.update(TSFP_NATIVE_FPS=str(args.native_fps),RECOMP_FRAME_TARGET='0',RECOMP_FRAME_INTERP='1',
                    TSFP_NATIVE_TRACE=str(run/'native-frames.csv'))
+    env['TSFP_SURFACE_TRACE_SWITCHES']='1' if args.trace_surface_switches else '0'
+    env['TSFP_SURFACE_LIVE_TEST']='1' if args.live_surfaces else '0'
     env['TSFP_SURFACE_BIAS_TEST']='1' if args.bias_surfaces else '0'
     env['TSFP_SURFACE_FLOAT_TEST']='1' if args.float_surfaces else '0'
     env['TSFP_SURFACE_FRACTIONAL_TEST']='1' if args.fractional_surfaces else '0'
@@ -277,7 +285,7 @@ def main():
     (run/'provenance.json').write_text(json.dumps(dict(
         executable_sha256=hashlib.sha256((ROOT/'build/windows/Release/futureperfect_recomp.exe').read_bytes()).hexdigest(),
         runner_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
+        native_fps=args.native_fps or 0,seconds=args.seconds,captures=not args.no_captures,watch_hud=args.watch_hud,watch_surfaces=args.watch_surfaces,trace_surface_images=args.trace_surface_images,fractional_surfaces=args.fractional_surfaces,float_surfaces=args.float_surfaces,bias_surfaces=args.bias_surfaces,live_surfaces=args.live_surfaces,trace_surface_switches=args.trace_surface_switches,minimized=args.minimized,profile_presents=args.profile_presents,lan_role=args.lan_role,sample_network_ms=args.sample_network_ms,trace_network_poses=args.trace_network_poses,observation_clock=time.get_clock_info('perf_counter').implementation,clock_resolution=time.get_clock_info('perf_counter').resolution,started_monotonic=start),indent=2))
     with lock.open('x') as f:f.write(str(os.getpid()))
     try:
         launch(index)

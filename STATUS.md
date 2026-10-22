@@ -6,6 +6,19 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Live water precision transitions (2026-10-21):** The opt-in experiment
+  selects byte feedback storage at original 60 and half-float at 120/144,
+  preserving contents before both source reads and destination writes. A bounded
+  Windows Scotland session applies 144/120/60/144 through Video Options without
+  restarting: four sets of 90 GPU images pass hashes, consecutive-frame and
+  timing-path checks, with 89/89 fresh comparisons in each. Both three-texture
+  conversions complete and gameplay resumes at every preset; profiles remain
+  unchanged. Windows Build, 85 selected cases, three historical migrations and
+  25 final trace/transaction/statistics checks pass. All four experiment flags
+  remain off by default. Original-look parity, longer dynamics, switch latency
+  without capture, native Mac and full-game coverage remain open.
+  [Scope and evidence](docs/native-high-refresh-regressions.md#live-water-precision-transitions-2026-10-21).
+
 - **Feedback precision preservation (2026-10-21):** Rendered textures now
   retain their live GPU contents when host precision changes. The replacement
   is published only after allocation/copy succeed; failure leaves the old

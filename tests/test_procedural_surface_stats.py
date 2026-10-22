@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 import pytest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools'))
-from procedural_surface_stats import IMAGE_BYTES,image_hash,measure
+from procedural_surface_stats import IMAGE_BYTES,image_hash,measure,measure_segments,validate_switch_cycle
 
 
 def capture():
@@ -23,6 +23,46 @@ def test_freshness_counts_retained_images():
 def test_executed_but_frozen_is_not_fresh():
     rows,pixels=capture();rows[1]['executed']=1
     assert measure(rows,pixels)['executed_unchanged']==1
+
+
+def segmented_capture():
+    rows,pixels=capture()
+    for i,row in enumerate(rows):
+        row.update(segment=i//2,rate=144 if i<2 else 60,native=int(i<2))
+        if i>=2:row['frame']+=1000
+    return rows,pixels
+
+
+def test_segments_do_not_count_the_rate_switch_as_a_fresh_frame():
+    rows,pixels=segmented_capture();result=measure_segments(rows,pixels)
+    assert [r['rate'] for r in result['segments']]==[144,60]
+    assert all(r['comparisons']==1 and r['changed_images']==0 for r in result['segments'])
+
+
+@pytest.mark.parametrize('mutation',['none','partial','order','segment','original-path'])
+def test_complete_switch_cycle_requires_all_presets_and_original_60(mutation):
+    rows=[dict(segment=i//90,rate=(144,120,60,144)[i//90],native=int(i//90!=2))
+          for i in range(360)]
+    if mutation=='partial':rows=rows[:180]
+    if mutation=='order':rows[180]['rate']=120
+    if mutation=='segment':rows[270]['segment']=1
+    if mutation=='original-path':rows[180]['native']=1
+    if mutation=='none':validate_switch_cycle(rows)
+    else:
+        with pytest.raises(ValueError):validate_switch_cycle(rows)
+
+
+@pytest.mark.parametrize('mutation',['sample','segment','mixed-rate','rate','time','path','gap'])
+def test_invalid_segmented_evidence(mutation):
+    rows,pixels=segmented_capture()
+    if mutation=='sample':rows[2]['sample']=0
+    if mutation=='segment':rows[2]['segment']=2
+    if mutation=='mixed-rate':rows[1]['rate']=120
+    if mutation=='rate':rows[0]['rate']=90
+    if mutation=='time':rows[2]['delta']=0
+    if mutation=='path':rows[0]['native']=0
+    if mutation=='gap':rows[3]['frame']+=1
+    with pytest.raises(ValueError):measure_segments(rows,pixels)
 
 
 @pytest.mark.parametrize('mutation',['short','hash','gap','resource','nan','scene'])

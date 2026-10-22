@@ -10,6 +10,7 @@
 #include "pc_native_rate.h"
 #include "pc_surface_bias.h"
 extern void hle_d3d8_surface_bias_step(float delta);
+extern void hle_d3d8_surface_precision_rate(int high_rate);
 #ifndef PC_SURFACE_WORD
 #define PC_SURFACE_WORD(va) (*(uint32_t *)((uintptr_t)(va)+g_xbox_mem_offset))
 #endif
@@ -25,6 +26,7 @@ static int pc_surface_fractional_requested(void)
 }
 static void pc_surface_simulation_guest(void (*original)(void))
 {
+    if(pc_surface_live_requested())hle_d3d8_surface_precision_rate(pc_native_rate()>60);
     float delta=PC_SURFACE_VALUE(0x4e794cu);
     if(!pc_surface_fractional_requested() || !g_tsfp_native_timing_active ||
        pc_native_rate()<=60 || !(delta>0 && delta<1)) { original();return; }

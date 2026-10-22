@@ -76,15 +76,20 @@ def test_native_timing(source, mutation, tmp_path):
     if source == 'native_surface_trace.c':
         import csv
         subprocess.run([str(output), 'disabled'], env=run_environment, check=True, timeout=10)
-        for mode in ('bounded', 'failure'):
+        for mode in ('bounded', 'failure', 'switches'):
             path=tmp_path / (mode+'.csv')
-            trace_environment=dict(run_environment, TSFP_SURFACE_TRACE=str(path))
+            trace_environment=dict(run_environment, TSFP_SURFACE_TRACE=str(path), TSFP_SURFACE_TRACE_SWITCHES='1' if mode=='switches' else '0')
             subprocess.run([str(output), mode], env=trace_environment, check=True, timeout=10)
             rows=list(csv.DictReader(path.open()))
-            assert len(rows)==(360 if mode=='bounded' else 2)
+            assert len(rows)==(2 if mode=='failure' else 360)
+            assert Path(str(path)+'.rgba').stat().st_size==len(rows)*128*128*4
+            if mode=='switches':
+                sys.path.insert(0,str(ROOT/'tools'))
+                from procedural_surface_stats import validate_switch_cycle
+                validate_switch_cycle(rows)
+                continue
             assert rows[0]['executed']=='1' and rows[1]['executed']=='0'
             assert rows[0]['hash']==rows[1]['hash']
-            assert Path(str(path)+'.rgba').stat().st_size==len(rows)*128*128*4
         return
     result = subprocess.run([str(output)], env=run_environment, check=not mutation,
                             capture_output=bool(mutation), text=bool(mutation), timeout=10)
@@ -595,6 +600,7 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         subprocess.run([str(executable),'disabled'],check=True,timeout=10)
         bias_env=dict(os.environ,TSFP_SURFACE_BIAS_TEST='1',TSFP_SURFACE_FLOAT_TEST='1')
         subprocess.run([str(executable)],env=bias_env,check=True,timeout=10)
+        subprocess.run([str(executable)],env=dict(bias_env,TSFP_SURFACE_LIVE_TEST='1'),check=True,timeout=10)
     if harness_name in ('native_analog_input.c','native_network_correction.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_hud_messages.c','native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)

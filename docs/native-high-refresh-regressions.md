@@ -5189,3 +5189,77 @@ byte storage for original 60 and float storage for higher refresh, convert
 before a changed-precision source is sampled as well as before target writes,
 then validate 60/120/144 transitions in-game. Appearance/motion parity, longer
 wave evolution, capture-free pacing and full-game/Mac coverage remain open.
+
+## Live water precision transitions (2026-10-21)
+
+The shared opt-in policy now chooses original byte feedback storage at 60 FPS
+and half-float at 120/144. It requires all four flags:
+`TSFP_SURFACE_FRACTIONAL_TEST`, `TSFP_SURFACE_FLOAT_TEST`,
+`TSFP_SURFACE_BIAS_TEST`, and `TSFP_SURFACE_LIVE_TEST`. Normal play retains
+the existing path. The live flag has no effect without the other three.
+
+The guest simulation publishes the precision choice before dispatch, including
+paused/original/catch-up paths. The HLE setter finishes old queued draws before
+changing modes because resource creation happens immediately while binds may be
+queued. A cache read converts a changed-precision source before sampling, even
+when that texture has not yet been chosen as a destination. The prior
+transactional preservation path handles allocation/copy failure and rebinding.
+120-to-144 changes do not reformat textures or add a precision barrier.
+
+The optional `TSFP_SURFACE_TRACE_SWITCHES=1` diagnostic records the first 90
+positive-time images at each rate, with a 360-image total bound. Rate/segment
+columns distinguish paused gaps from consecutive captures. The analysis tool's
+`--switch-cycle` option requires exactly 144/120/60/144, 90 images per segment,
+and the original timing path at 60; per-segment analysis then checks hashes,
+consecutive frame IDs, resource/format/path consistency and actual image changes.
+Partial navigation cannot pass this acceptance check. Trace fixtures also check
+that paused mode changes consume no images and that the bound releases references.
+
+Windows x64/MSVC 14.44.35207/SDK 10.0.26100.0 Release Build and its built-in
+checks pass. Executable SHA-256:
+`9ed32894f21ce48e1d5185596a7c52a332b91324e6f7cf918e672cad0e5f173d`,
+base `5301c3a` plus the live policy/trace change. The selected suite passes 85
+cases (six historical variants deselected); three historical patch migrations
+pass separately. Final trace/transaction/statistics checks pass 25 cases after
+adding strict complete-cycle acceptance and pause checks; 15 patch-tracking and
+backlog integrity checks also pass. Later edits affect
+only tests, analysis and documentation, not the tested runtime binary.
+
+The bounded Scotland run in `private/test-saves/surface-live-cycle` applies
+144/120/60/144 through Video Options in one process. Both precision transitions
+log successful preservation of all three registered feedback textures. The
+procedural resource remains the same throughout the four captured segments.
+Menu captures show each applied preset and disabled Apply; state samples show
+unpaused scene 4 after each return. Profile signatures remain valid and hashes
+unchanged; the canonical fixture is preserved and temporary partitions recycled.
+The run exits cleanly after 284.425 seconds of commands.
+
+| Segment | Timing path | Images | Fresh pairs | Channel 1 std | Channel 2 std |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Initial 144 | Native | 90 | 89/89 | 18.5532 | 17.9479 |
+| 120 | Native | 90 | 89/89 | 19.2549 | 18.6855 |
+| 60 | Original | 90 | 89/89 | 25.0471 | 23.7691 |
+| Return 144 | Native | 90 | 89/89 | 20.2485 | 19.3712 |
+
+The inspected raw-channel contact sheet retains wave structure in all segments;
+the 60 segment has greater variation. These samples occur at different times,
+so their statistics are not a paired dynamics/appearance equivalence test.
+Gameplay screenshots face the shoreline wall and establish menu return, not
+water appearance in the world. The synchronous GPU image capture is expressly
+not a switch-latency, frame-pacing, GPU-completion or scanout measurement.
+
+Evidence: `logs/surface-live-{build,checks,migrations,focused,patches}.log`,
+`logs/surface-live-{final,integrity}.log`, `logs/surface-live-cycle-game.log`,
+and the run's `surface-results.json`,
+`water-channel1-contact.png`, menu captures, reports and provenance. The raw
+capture is gzip-compressed after byte-for-byte verification; uncompressed
+SHA-256 is `084a0deeb065c806bcf734c801d314cf5809eb0cc7f7458775c4cbaa4b5944ec`.
+Earlier `surface-live-switches` only reached 144/120 because navigation failed;
+`surface-live-verified` entered the wrong mission and contributes no transition
+evidence. The successful cycle recovered from initial Arcade navigation using
+observed screens, then completed the measured sequence in Scotland. No failed
+navigation is counted as a game physics or rendering failure.
+
+The experiment remains disabled pending original-byte appearance and longer
+wave dynamics validation. Capture-free switch latency, representative additional
+surfaces/levels, native Mac execution and full-game goal coverage remain open.

@@ -23,6 +23,8 @@ static unsigned events,steps,filter_steps,uploads;
 static unsigned generations[4],program,pass,target;
 static float expected_delta;
 static int requested;
+static int precision_rate=-1;
+void hle_d3d8_surface_precision_rate(int high_rate){precision_rate=high_rate;}
 static float bias_step=-1;
 void hle_d3d8_surface_bias_step(float delta){bias_step=delta;}
 static void state(void) {g_eax=7;g_esp+=4;}
@@ -97,6 +99,7 @@ static void step(unsigned whole,float delta) {
     assert(MEM32(RESOURCE+0x24)!=MEM32(RESOURCE+0x28));
     assert(generations[MEM32(RESOURCE+0x28)]==steps);
     assert(bias_step==-1);
+    assert(precision_rate==(pc_surface_live_requested()?(pc_native_rate()>60):-1));
     assert(!pc_surface_step.active && uploads==steps*2 && filter_steps==events/2);
 }
 int main(int argc,char **argv) {

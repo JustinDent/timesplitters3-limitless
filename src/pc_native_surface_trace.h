@@ -4,6 +4,7 @@
  * readback interface, including native Mac; never treats a CPU stamp as pixels.
  * Capturing synchronizes the GPU and therefore is NOT a performance benchmark. */
 #include "d3d/d3d8_xbox.h"
+#include "pc_native_rate.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -18,7 +19,8 @@ extern IDirect3DDevice8 *d3d8_GetDevice(void);
 #define PC_SURFACE_TRACE_LIMIT 360u
 static struct {
     int checked,enabled,failed;
-    unsigned rows;
+    unsigned rows,segment_rows,segment_index;
+    int segmented,segment_rate;
     uint32_t resource,scene,last_frame;
     int have_frame,executed;
     IDirect3DSurface8 *surface;
@@ -39,6 +41,8 @@ static int pc_surface_trace_enabled(void)
 {
     if(!pc_surface_trace.checked) {
         pc_surface_trace.checked=1;
+        const char *segments=getenv("TSFP_SURFACE_TRACE_SWITCHES");
+        pc_surface_trace.segmented=segments && segments[0]=='1';
         const char *path=getenv("TSFP_SURFACE_TRACE");
         if(path && *path && strlen(path)<480) {
             char pixels[512];snprintf(pixels,sizeof pixels,"%s.rgba",path);
@@ -46,7 +50,7 @@ static int pc_surface_trace_enabled(void)
             pc_surface_trace.pixels=fopen(pixels,"wb");
             if(pc_surface_trace.csv && pc_surface_trace.pixels) {
                 pc_surface_trace.enabled=1;atexit(pc_surface_trace_close);
-                fputs("sample,frame,scene,level_ticks,whole_ticks,delta,native,resource,executed,format,hash\n",pc_surface_trace.csv);
+                fputs("sample,frame,scene,level_ticks,whole_ticks,delta,native,resource,executed,format,hash,rate,segment\n",pc_surface_trace.csv);
             } else {
                 fprintf(stderr,"[SURFACE-TRACE] Cannot open requested files\n");
                 pc_surface_trace_close();
@@ -92,6 +96,15 @@ static void pc_surface_dispatch_guest(void (*original)(void))
     if(!pc_surface_trace.enabled || !eligible || !pc_surface_trace.surface)return;
     uint32_t frame=PC_SURFACE_WORD(0x7497b8u);
     if(pc_surface_trace.have_frame && pc_surface_trace.last_frame==frame)return;
+    int rate=pc_native_rate();if(rate<=60)rate=60;
+    if(pc_surface_trace.segmented) {
+        if(!(PC_SURFACE_FLOAT(0x4e794cu)>0))return;
+        if(pc_surface_trace.segment_rows && pc_surface_trace.segment_rate!=rate) {
+            pc_surface_trace.segment_rows=0;pc_surface_trace.segment_index++;
+        }
+        if(pc_surface_trace.segment_rows>=90)return;
+        pc_surface_trace.segment_rate=rate;
+    }
     D3DSURFACE_DESC desc;D3DLOCKED_RECT locked;
     IDirect3DSurface8 *surface=pc_surface_trace.surface;
     if(FAILED(surface->lpVtbl->GetDesc(surface,&desc)) || desc.Width!=128 || desc.Height!=128 ||
@@ -111,10 +124,11 @@ static void pc_surface_dispatch_guest(void (*original)(void))
     }
     if(FAILED(surface->lpVtbl->UnlockRect(surface)))ok=0;
     if(!ok){pc_surface_trace_error("pixel read/write");return;}
-    fprintf(pc_surface_trace.csv,"%u,%u,%u,%u,%u,%.9g,%d,%u,%d,%u,%016llx\n",
+    fprintf(pc_surface_trace.csv,"%u,%u,%u,%u,%u,%.9g,%d,%u,%d,%u,%016llx,%d,%u\n",
         pc_surface_trace.rows,frame,scene,PC_SURFACE_WORD(0x7de318u),PC_SURFACE_WORD(0x4e7944u),
         PC_SURFACE_FLOAT(0x4e794cu),g_tsfp_native_timing_active,resource,pc_surface_trace.executed,
-        (unsigned)desc.Format,(unsigned long long)hash);
+        (unsigned)desc.Format,(unsigned long long)hash,rate,pc_surface_trace.segment_index);
+    pc_surface_trace.segment_rows++;
     pc_surface_trace.last_frame=frame;pc_surface_trace.have_frame=1;
     if(++pc_surface_trace.rows==PC_SURFACE_TRACE_LIMIT) {
         fprintf(stderr,"[SURFACE-TRACE] Completed %u GPU images\n",pc_surface_trace.rows);

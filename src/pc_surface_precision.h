@@ -17,4 +17,9 @@ static inline uint32_t pc_surface_precision_format(const PcSurfacePrecision *sta
     for(unsigned i=0;i<15;i++)if(va && state->targets[i]==va)return 0x34u;
     return format;
 }
+static inline uint32_t pc_surface_precision_rate_format(const PcSurfacePrecision *state,
+    uint32_t va,uint32_t format,int live,int high_rate)
+{
+    return live && !high_rate?format:pc_surface_precision_format(state,va,format);
+}
 #endif

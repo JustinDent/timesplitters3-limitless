@@ -14,6 +14,8 @@ static PcSurfacePrecision g_surface_precision;
 static unsigned g_skip_create,creates,copies,releases,bindings,flushed,old_released,new_released;
 static int deferred,fail_create,fail_copy,layout_ok=1;
 static uint32_t desired=6,gpu_state;
+static int live,g_surface_high_rate,check_cache_pin=1;
+static int pc_surface_live_requested(void){return live;}
 static uint32_t mem32(uint32_t va) {
     if(va==0x10004)return 0x123456;
     if(va==0x1000c)return 6<<8;
@@ -22,7 +24,7 @@ static uint32_t mem32(uint32_t va) {
 #define HLE_MEM32(va) mem32(va)
 static unsigned long hle_d3d8_shadow_swaps(void){return 50;}
 static int hle_d3d8_defer_recording(void){return deferred;}
-static void hle_d3d8_defer_flush(void){assert(g_textures[0].used_swap==50);flushed++;deferred=0;gpu_state=123;}
+static void hle_d3d8_defer_flush(void){if(check_cache_pin)assert(g_textures[0].used_swap==50);flushed++;deferred=0;gpu_state=123;}
 static int read_layout(uint32_t va,texture_layout *t) {
     assert(va==0x10000);*t=(texture_layout){128,128,1,6};return layout_ok;
 }
@@ -53,6 +55,12 @@ static ULONG host_ReleaseTexture(IDirect3DTexture8 *object) {
     return 0;
 }
 /* PRODUCTION */
+static IDirect3DTexture8 *sample_cached(void) {
+    texture_entry *e=&g_textures[0];uint32_t va=e->va,format=e->format;
+    IDirect3DDevice8 *dev=NULL;
+/* READ_GUARD */
+    return e->host;
+}
 static void setup(int wide) {
     g_textures[0]=(texture_entry){0x10000,0x123456,6<<8,0,&old_object,1,wide?0x34u:6u,1,2};
     memset(g_bound,0,sizeof g_bound);g_bound[0]=g_bound[2]=&old_object;
@@ -82,6 +90,16 @@ int main(void) {
     }
     setup(0);layout_ok=0;
     assert(!hle_d3d8_render_texture(NULL,0x10000) && !creates && !releases && deferred);
+    /* Read-first transitions use the actual host_texture precision guard. */
+    for(int high=0;high<2;high++) {
+        setup(!high);live=1;check_cache_pin=0;g_surface_high_rate=!high;
+        assert(pc_surface_precision_set(&g_surface_precision,0,0x10000));
+        assert(sample_cached()==&old_object && !creates);
+        hle_d3d8_surface_precision_rate(high);assert(flushed==1 && g_surface_high_rate==high);
+        assert(sample_cached()==&new_object && creates==1 && copies==1);
+        hle_d3d8_surface_precision_rate(high);assert(flushed==1); /* 120 <-> 144 */
+        assert(sample_cached()==&new_object && creates==1);
+    }
     puts("PASS: precision promotion/demotion, prior-draw flush, rebinding, rollback and stable cache reuse");
     return 0;
 }

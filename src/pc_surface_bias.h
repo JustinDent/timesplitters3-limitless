@@ -14,4 +14,13 @@ static inline int pc_surface_bias_requested(void)
     }
     return enabled;
 }
+static inline int pc_surface_live_requested(void)
+{
+    static int checked,enabled;
+    if(!checked) {
+        const char *live=getenv("TSFP_SURFACE_LIVE_TEST");
+        enabled=live && live[0]=='1' && pc_surface_bias_requested();checked=1;
+    }
+    return enabled;
+}
 #endif

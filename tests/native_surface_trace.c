@@ -22,6 +22,9 @@ static uint32_t *word(uint32_t address) {
 }
 #define PC_SURFACE_WORD(address) (*word(address))
 #define PC_SURFACE_FLOAT(address) delta
+#define TSFP_PC_NATIVE_RATE_H
+static int rate=144;
+static int pc_native_rate(void){return rate;}
 #include "pc_native_surface_trace.h"
 static unsigned refs,locks,unlocks,draws,calls;
 static int fail_lock;
@@ -57,6 +60,20 @@ int main(int argc,char **argv) {
         step(1);assert(calls==1 && draws==1 && !refs && !locks);return 0;
     }
     assert(getenv("TSFP_SURFACE_TRACE"));
+    if(!strcmp(argv[1],"switches")) {
+        const int rates[4]={144,120,0,144};
+        for(unsigned section=0;section<4;section++) {
+            rate=rates[section];g_tsfp_native_timing_active=rate>60;
+            unsigned paused_locks=locks,paused_rows=pc_surface_trace.rows;
+            delta=0;g_esp=0x1000;frame++;pc_surface_dispatch_guest(original);
+            assert(g_esp==0x1004 && locks==paused_locks && pc_surface_trace.rows==paused_rows);
+            for(unsigned i=0;i<90;i++)step(1);
+            assert(pc_surface_trace.rows==(section+1)*90);
+            unsigned before=locks;for(unsigned i=0;i<10;i++)step(1);assert(locks==before);
+        }
+        assert(!refs && !pc_surface_trace.enabled && pc_surface_trace.segment_index==3);
+        puts("PASS: four bounded rate segments, skipped tails and balanced references");return 0;
+    }
     step(0);assert(!locks && !pc_surface_trace.rows); /* no image yet */
     step(1);assert(locks==1 && unlocks==1 && refs==1 && pc_surface_trace.rows==1);
     step(0);assert(locks==2 && draws==1 && pc_surface_trace.rows==2); /* read real retained image */
