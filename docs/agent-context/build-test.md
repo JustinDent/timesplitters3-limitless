@@ -334,3 +334,15 @@ in Windows and native Mac launcher checks. `tests/test_build_textures.py` verifi
 that the exact retirement identities enter both package manifests and rejects
 reintroduced original-only keys. Use `tools/build-launcher.ps1 -Test` for Windows;
 CI provides native Mac launcher compilation and shared fixture execution.
+
+## Walking and boost timing audit
+
+`tests/native_locomotion.c` is lifted through the existing hash-verified US XBE
+route in `test_native_timing.py`. It executes the complete walking routine,
+with controlled input displacement and flat-floor world services. Tests cover
+60/120/144 displacement, diagonal cap, stops/reversals, boost resource, selected
+player/mode/button eligibility, depletion, slow/fast time and catch-up. A
+runtime mutation restores the old subtraction and must fail resource parity.
+`native_timing_guest.c` also checks the actual clock-to-resource calculation
+without game assets in existing Windows/macOS CI. The XBE-dependent fixture
+is skipped when assets are absent; do not count that skip as gameplay coverage.

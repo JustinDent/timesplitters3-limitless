@@ -3585,6 +3585,16 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **Walking boost resource (2026-10-22, `fix/native-boost-timing`):** Shared
+  `pc_native_numeric.h` scopes fractional charge scaling to US site 0x259060.
+  Windows actual-routine evidence shows the old boost drain doubled at 120 and
+  multiplied by 2.4 at 144; the fix preserves original active-update consumption
+  at normal, slow/fast and catch-up intervals. No new OS adapter. Asset-free
+  clock/resource tests run in both-host CI; the complete walking fixture needs
+  the supported private XBE. Native Mac execution and live activation remain
+  awaiting validation. See the walking/boost audit in
+  `docs/native-high-refresh-regressions.md` for exact scope and unknown mode name.
+
 - **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
   now supply current include paths and host interfaces. Cutscene/decal fixtures
   extract camera code without the adjacent menu allocator that Clang rejected.
