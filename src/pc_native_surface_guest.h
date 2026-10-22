@@ -2,7 +2,7 @@
 #define PC_NATIVE_SURFACE_GUEST_H
 /* Fractional procedural-feedback candidate. The original one-tick path remains
  * exact; disturbances remain discrete while the feedback integrates live time.
- * GPU acceptance currently FAILS: 120 loses variation and 144 becomes flat.
+ * With original 8-bit feedback targets, 120 loses variation and 144 becomes flat.
  * Keep opt-in for diagnosis; see the rejected-candidate regression record. */
 #include <math.h>
 #include <stdint.h>

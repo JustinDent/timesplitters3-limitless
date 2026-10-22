@@ -5,6 +5,7 @@ The synchronous readback changes workload. No wall-clock FPS/scanout claims.
 import argparse
 from collections import Counter
 import csv
+import gzip
 import json
 import math
 from pathlib import Path
@@ -67,11 +68,23 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('csv',type=Path)
     args=parser.parse_args()
-    if args.csv.stat().st_size>128*1024:raise ValueError('CSV exceeds bound')
-    path=Path(str(args.csv)+'.rgba')
-    if path.stat().st_size>LIMIT*IMAGE_BYTES:raise ValueError('Pixels exceed bound')
-    with args.csv.open(newline='') as source:rows=list(csv.DictReader(source))
-    print(json.dumps(measure(rows,path.read_bytes()),indent=2))
+    rows,pixels=load_capture(args.csv)
+    print(json.dumps(measure(rows,pixels),indent=2))
+
+
+def load_capture(path):
+    if path.stat().st_size>128*1024:raise ValueError('CSV exceeds bound')
+    pixels_path=Path(str(path)+'.rgba')
+    compressed=not pixels_path.exists()
+    if compressed:pixels_path=Path(str(pixels_path)+'.gz')
+    limit=LIMIT*IMAGE_BYTES
+    if pixels_path.stat().st_size>limit:raise ValueError('Pixels exceed bound')
+    with (gzip.open(pixels_path,'rb') if compressed else pixels_path.open('rb')) as source:
+        pixels=source.read(limit+1)
+    if len(pixels)>limit:raise ValueError('Expanded pixels exceed bound')
+    with path.open(newline='') as source:rows=list(csv.DictReader(source))
+    return rows,pixels
+
 
 
 if __name__=='__main__':main()

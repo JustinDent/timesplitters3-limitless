@@ -4693,9 +4693,10 @@ uploaded constants to eight bits, and the feedback targets are eight-bit
 textures; simply scaling float coefficients does not preserve sub-byte state.
 These are concrete precision hazards, but the exact share of the observed
 failure due to target rounding, centering bias, filtering and integration is
-not yet isolated. RHI already maps half-float render targets; legacy GL's
-texture constructor assumes four-byte storage and needs adapter work before
-such a format change could be portable. Preserving higher-precision state,
+not yet isolated. RHI already maps half-float render targets; the selected native legacy GL adapter (`src/native/renderer_gl.c`) allocates
+render targets as `GL_RGBA8` regardless of format. Its CPU pitch already uses
+the format's byte size, but float render storage/readback still needs adapter
+work before such a format change could be portable. Preserving higher-precision state,
 correct zero-time identity and authored disturbance behavior are necessary
 investigation targets. Increasing brightness or random impulses to disguise
 the flat output is not an accepted fix. Capture-free pacing and cross-platform
@@ -4718,3 +4719,167 @@ The 360-image control, its hashes/provenance and
 `private/pipeline/surface-control-retry-summary.json` are retained; the session
 exits cleanly with profiles/fixture preserved and disks recycled. Patch tracking
 and backlog checks additionally pass all 15 cases. No pacing claim is made.
+
+## Half-float procedural feedback experiment (2026-10-21)
+
+The preceding candidate lost all visible variation at native 144 with 8-bit
+feedback targets. A separately selectable `TSFP_SURFACE_FLOAT_TEST=1` experiment
+now allocates only the three feedback intermediates per resource as host
+`A16B16G16R16F`. The fourth, final effect texture remains in its original byte
+format. Guest texture headers, allocation sizes, handles and bytes are unchanged.
+The constructor wrapper registers at most 15 exact target addresses, resets
+old hints at a new pool and leaves normal rendering untouched when disabled.
+The host texture cache records its actual render format and recreates a target
+if its precision hint changes, instead of silently returning an old-format
+cache entry. This experimental recreation does not preserve the old target's
+contents; it is used before original initialization clears the new resource,
+not as an accepted live frame-rate switching mechanism.
+
+`pc_surface_precision.h` owns the bounded mapping policy; the original US
+constructor wrapper is in `pc_surface_precision_guest.h`. The complete patch
+stack adds the hook and host-format plumbing in `hle_d3d8_texture.c`. Both
+Windows and the native Mac common RHI use that same implementation. Legacy GL
+refuses this diagnostic request because its render-target allocation is fixed
+at `GL_RGBA8`; the runner rejects the unsupported marker. This corrects the
+previous audit's reference to the unused generic POSIX GL constructor: the
+actual native adapter already computes CPU pitch from the guest format. Normal
+legacy-GL behavior is preserved; its float storage/sampling/readback and actual
+Mac validation remain open.
+
+Four bounded Scotland GPU runs use executable SHA-256
+`b5fa2323c838c632d2a19af00733c96b54586b4b49d9787df9498a16da99bd31`,
+base `9fe6037` plus this precision experiment. They select `--float-surfaces`;
+only the fractional rows also select `--fractional-surfaces`. The original
+60 row omits native timing entirely. Per-run provenance records those flags,
+executable/runner hashes, Python 3.12.14 and QPC. Renderer logs confirm that
+three targets per intro/Scotland resource use host format 0x34 while the final
+captured image is still a 128x128 byte texture. Renderer screenshots are disabled
+for these runs, but the synchronous texture readbacks still disqualify them as
+pacing measurements.
+
+| Path | Changed pairs / 359 | Repeated pairs | Channel 1 std | Channel 2 std |
+| --- | ---: | ---: | ---: | ---: |
+| Prior original 60, byte targets | 359 | 0 | 24.8907 | 24.0195 |
+| Prior fractional 144, byte targets | 0 | 359 | 0 | 0 |
+| Original 60, float targets | 359 | 0 | 19.9405 | 19.1807 |
+| Native 144 whole-tick feedback, float targets | 149 | 210 | 19.7471 | 19.2683 |
+| Native 120 fractional feedback, float targets | 359 | 0 | 19.1387 | 18.4523 |
+| Native 144 fractional feedback, float targets | 359 | 0 | 18.8516 | 18.1925 |
+
+Changing intermediate precision eliminates the frozen final image at 144;
+all positive sampled updates also change pixels at 120. The whole-tick float
+control still retains images between authored ticks, which distinguishes
+storage precision from simulation cadence. Relative to float-target original
+60, the fractional 144 variation is about 5.5%/5.2% lower, and 120 about
+4.0%/3.8% lower. Exploratory six-game-tick correlations are approximately
+0.346/0.324 at float 60 versus 0.372/0.357 at fractional float 144; these use
+nearest observed samples and do not prove identical wave speed. Different
+random states, durations and variable deltas prevent deterministic trajectory
+claims. Float storage itself changes the original byte-target distribution by
+about 20%, so neither original appearance nor mechanics parity is declared.
+The reviewed contact sheet shows structured variation in all float cases,
+including 144; these raw-channel previews are not rendered-world acceptance.
+
+A new asset-free check in the shared RHI fixture renders two distinct,
+sub-byte values into both byte and half-float targets, samples them back into
+a float target and checks the half-float readback bits. The values collapse to
+byte 128 in the byte target and remain distinct (0x3804/0x3805) in half float.
+Windows WARP passes this real renderer contract; the same source is consumed
+by the native Vulkan runner, whose execution is unverified here. This proves
+the storage capability, not the original water equations. The first fixture
+compile hit Windows' `small` macro; renaming that local viewport fixes it.
+
+The portable constructor/mapping fixture checks explicit opt-in and disabled
+pass-through, all five resources, exclusion of each final texture, untouched
+guest headers, pool reset, slot/address bounds, unsupported capability and
+guest stack preservation. Windows Build and its built-in checks pass; 89
+native-timing/statistics/patch-tracking/backlog checks, three historical patch
+migrations and the common RHI WARP fixture pass. The affected checks already
+run through the existing shared runtime workflow selections.
+
+The three older byte captures named `surface-fractional-60`,
+`surface-fractional-144` and `surface-control-retry-144` now retain their raw
+images as lossless `.rgba.gz` files, verified against the original bytes and
+hashes before removing only those exact uncompressed duplicates. The statistics
+tool reads either representation with bounds on both compressed input and
+expanded output; a regression checks exact equality and rejects overexpansion.
+This keeps the retained texture-test evidence within the 256 MiB temporary
+budget. No original assets, personal settings or saves are changed.
+
+Evidence: `private/test-saves/surface-float-{60-original,144-original,120-fractional,144-fractional}`,
+matching logs, `private/pipeline/procedural-surface-precision-summary.json`,
+`surface-float-120-summary.json`, and `surface-precision-contact.png`;
+`logs/native-surface-precision-{build,checks,migrations,rhi}.log`. All four
+sessions exit cleanly with profiles/fixture preserved and disposable disks
+recycled. Both experimental switches remain off by default. Remaining work
+before acceptance includes rendered-water review, live 60/120/144 switching
+without state loss, original-60 appearance behavior, native Mac/legacy GL,
+other procedural kinds and the wider full-game goal. Storage precision is a
+confirmed contributor to the previous freeze, not proof that all integration,
+constant quantization, centering and filtering issues are solved.
+
+
+### Capture-free Scotland pacing with precision experiment
+
+Three sequential bounded Windows x64/D3D11 sessions use the same executable
+hash above and `procedural-surface-pacing-commands.json`, windowed at 1280x720.
+Original 60 omits native timing; native 144 control disables both experiments;
+native 144 candidate enables both. All disable renderer captures and texture
+readbacks, remain unminimized, and record successful Present API intervals.
+Each uses a stationary 20-second shoreline interval, trimmed by two seconds
+at each end for measurement. Runner markers and Present CSV have different
+startup origins; the trim accommodates that uncertainty rather than claiming
+millisecond-precise alignment. All endpoint positions and camera angles match.
+
+| Path | Guest presents | Guest FPS | Median ms | p95 ms | p99 ms | Worst ms |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Original 60 control | 966 | 59.999 | 16.675 | 17.466 | 17.821 | 18.277 |
+| Native 144 control | 2318 | 143.993 | 7.052 | 7.922 | 8.282 | 9.605 |
+| Native 144 fractional + float | 2319 | 144.006 | 7.029 | 7.926 | 8.639 | 9.615 |
+
+No interpolated presents or intervals over 33.33 ms occur in those selected
+windows. CPU update means are 143.998 and 144.002 for the native control and
+candidate; their elapsed-game/elapsed-wall ratios both round to 1.000000.
+Endpoint level-clock ratios are 1.000779, 1.000779 and 0.999901 respectively,
+including asynchronous read/marker uncertainty. Health is 35 at all gameplay
+observations. The runner blocks during its 20-second wait, so there are zero
+interior world-state observations; endpoint snapshots alone do not prove
+continuous pose stability. The native per-update trace independently remains
+in unpaused scene 4 with positive game delta throughout the selected interval.
+The original-60 case has no corresponding per-update trace.
+
+The first summary attempt rejected the absent interior observations instead
+of misreporting them as continuous coverage; the corrected private summary
+records their count explicitly. All three sessions exit cleanly, preserve
+profile signatures/the fixture and recycle disposable disks. Evidence is in
+`private/test-saves/surface-pacing-{60-control,144-control,144-candidate}`
+(provenance, reports, raw timing CSVs and `pacing-summary.json`), with
+`logs/surface-pacing-summary.log` and `private/pipeline/summarize-surface-pacing.py`.
+The candidate sustains the target in this scene, but this single sequential
+comparison does not isolate its rendering cost from system variance, prove
+monitor scanout, establish full-game pacing or accept the changed appearance.
+
+
+### Rendered shoreline inspection
+
+Two additional capture-enabled sessions (`surface-visual-60-control` and
+`surface-visual-144-candidate`) replay the existing Scotland commands with the
+same executable. Original 60 has both switches disabled; native 144 enables
+both. Reviewed `turn-right.png` renderer outputs show the same pier/camera
+composition with textured water, the horizon and reflected cloud lighting
+present in both. No obvious missing water, black target or gross reflection
+breakage is visible in these stills. This is a single static view at 1280x720,
+not a motion review or exact appearance-equivalence test. World/RNG phase is
+not synchronized; the earlier raw-image distribution difference still prevents
+acceptance. These capture-enabled runs are not used for pacing results.
+
+Both reports reach scene 4, retain health 35, traverse forward, enter pause and
+resume. Camera position/look match at the inspected label. Their profile/fixture
+checks pass and all disposable partitions are recycled. Capture provenance,
+report/PNG files and logs are retained locally; the scene must still be reviewed
+in motion, at other viewpoints and across live preset changes before release.
+
+The four new float image captures are also losslessly gzip-compressed after
+byte-for-byte decompression checks, with raw SHA-256 receipts in
+`private/pipeline/surface-precision-compression.json`. This recovers space for
+the two scene captures while preserving all image evidence.

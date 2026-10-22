@@ -51,3 +51,17 @@ def test_channel_statistics_are_exact_for_flat_and_varying_bytes():
     assert result['changed_images']==0 and result['executed_unchanged']==3
     assert [v['mean'] for v in result['channel_statistics']]==[255,128,128,255]
     assert all(v['std']==0 and v['distinct']==1 for v in result['channel_statistics'])
+
+
+def test_compressed_capture_preserves_bytes_and_checks_expanded_bound(tmp_path):
+    import csv,gzip
+    from procedural_surface_stats import load_capture,LIMIT
+    rows,pixels=capture();path=tmp_path/'surface.csv'
+    with path.open('w',newline='') as out:
+        writer=csv.DictWriter(out,fieldnames=list(rows[0]));writer.writeheader();writer.writerows(rows)
+    compressed=Path(str(path)+'.rgba.gz')
+    compressed.write_bytes(gzip.compress(pixels))
+    loaded,data=load_capture(path)
+    assert data==pixels and measure(loaded,data)==measure(rows,pixels)
+    compressed.write_bytes(gzip.compress(bytes(LIMIT*IMAGE_BYTES+1)))
+    with pytest.raises(ValueError,match='Expanded'):load_capture(path)

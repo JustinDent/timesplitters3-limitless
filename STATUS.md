@@ -6,6 +6,24 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Water feedback precision (2026-10-21):** An opt-in shared half-float
+  intermediate-target experiment eliminates the previous 144 FPS freeze:
+  359/359 consecutive image pairs now change at both 120 and 144. Final image
+  format and guest allocations stay unchanged. Float-target 60/144 controls
+  separate precision from tick cadence; appearance still differs from the
+  original byte-target path, so both switches remain disabled by default.
+  Windows Build, 89 focused checks, three patch migrations and a real WARP
+  half-float storage/sampling check pass. Four isolated sessions preserve the
+  profiles/fixture and recycle temporary disks. [Precision evidence and limits](docs/native-high-refresh-regressions.md#half-float-procedural-feedback-experiment-2026-10-21).
+  Capture-free Scotland pacing measures 144.006 guest FPS, p99 8.639 ms
+  versus 143.993 / 8.282 ms for the disabled control, with game/wall time
+  ratio 1.000000 in the native update trace. This is one windowed scene and
+  API acceptance, not scanout or an isolated cost measurement. Live FPS
+  switching, water motion/appearance acceptance, native Mac and broader effects
+  remain open. Two additional renderer-capture sessions show intact shoreline
+  water/reflections in matching views and pass pause/resume/profile checks;
+  still-image review does not establish motion equivalence.
+
 - **Fractional water candidate rejected (2026-10-21):** Built and exercised
   an explicitly opt-in fractional feedback experiment. Original 60 changes all
   359 captured image pairs; candidate 120 also changes all pairs but loses about

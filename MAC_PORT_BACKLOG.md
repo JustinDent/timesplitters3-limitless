@@ -2960,6 +2960,24 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Half-float feedback experiment (2026-10-21, local source):** Shared
+  `pc_surface_precision.h` and its original-constructor wrapper register only
+  feedback intermediates; final textures and all guest allocations stay intact.
+  Common HLE cache creation selects half float on Windows/native Mac RHI. The
+  legacy GL adapter explicitly refuses the diagnostic; it needs float render
+  storage and matching sampling/readback support. Its CPU pitch is already
+  format-aware, correcting the preceding generic-GL audit. Four Windows image
+  comparisons eliminate the fractional 144 freeze and demonstrate fresh 120
+  output, while revealing appearance differences from the original byte path.
+  Both experiments remain off by default. A shared real-GPU resource contract
+  passes on Windows WARP and is wired into the existing Vulkan fixture; actual
+  Mac execution, live preset switches and motion/appearance acceptance remain
+  unverified. Windows capture-free Scotland pacing sustains 144.006 guest FPS
+  with normal game speed; two rendered shoreline stills show intact water and
+  reflection rendering, without establishing appearance parity.
+  Windows Build, 89 focused checks and three patch migrations pass. See STATUS
+  and the half-float regression record for image metrics and remaining scope.
+
 - **Rejected procedural feedback experiment (2026-10-21, local source):**
   Shared `pc_native_surface_guest.h` and reproducible wrappers add an explicit
   `TSFP_SURFACE_FRACTIONAL_TEST=1` experiment; the default is unchanged. It
@@ -2972,8 +2990,8 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   selections include these checks. Native Mac compilation/readback/appearance
   remain unverified; do not enable this candidate on either host. A replacement
   must retain fractional feedback precision and original effect behavior. RHI
-  supports float target formats, while the legacy GL texture constructor assumes
-  four-byte storage; changing formats will require explicit adapter validation,
+  supports float target formats, while `src/native/renderer_gl.c` allocates
+  render targets as GL_RGBA8; changing formats will require explicit adapter validation,
   not a Windows-only simulation. See the rejected-candidate record in STATUS.
 
 - **GPU image freshness diagnostic (2026-10-21):** Shared
