@@ -38,7 +38,9 @@ The separate launcher bootstrap ZIP stays small; this applies to the game ZIP.
 Launcher 1.2.22 adds bundled-texture installation; publish that shared launcher
 update before distributing a game ZIP that contains textures. The game publisher
 refuses to create a release until GitHub Latest is a stable launcher 1.2.22+
-with uploaded Windows and Mac packages. The standard
+with uploaded Windows and Mac packages. Packs declaring retired textures require
+launcher 1.2.24+ so upgrades retire unchanged old pairs while preserving
+customized replacements. The standard
 launcher release workflow validates both Windows and Mac before publication.
 Both Windows and native Mac packaging use the same streaming texture helper.
 The package includes an isolated Windows Python/Tk runtime and the Online

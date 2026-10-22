@@ -152,7 +152,10 @@ sanitized JSON and the bundled manifest path/count/size using the shared texture
 helper. Finished ZIP validation compares every DDS/JSON name and hash against
 that pack, even after staging cleanup and immediately before upload. A missing
 texture identity cannot bypass the published stable launcher 1.2.22+ requirement
-for both Windows and Mac assets. Local texture-free/artist-override packages are
+for both Windows and Mac assets. Packs declaring retired replacements instead
+require stable launcher 1.2.24+ on both hosts, covering transactional icon
+retirement; its version regression runs in `test_publish_release.py`.
+Local texture-free/artist-override packages are
 development outputs; the official publisher rejects them. Regression coverage:
 `tests/test_publish_release.py` plus `tests/test_build_textures.py` in the existing
 Windows/macOS release-validation CI step; no game assets are used by those tests.

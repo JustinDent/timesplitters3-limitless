@@ -614,3 +614,21 @@ def test_bundled_game_requires_published_compatible_launcher(publisher, monkeypa
     else:
         with pytest.raises(ValueError, match='launcher'):
             publisher.require_texture_launcher()
+
+
+@pytest.mark.parametrize('version,passes', [('1.2.22', False), ('1.2.23', False), ('1.2.24', True)])
+def test_retired_textures_require_launcher_with_transactional_migration(publisher, monkeypatch, version, passes):
+    publisher.preflight()
+    publisher.output.mkdir(parents=True, exist_ok=True)
+    publisher.texture_identity['retired'] = {'fedcba9876543210': {'dds': 'a'*64, 'json': 'b'*64}}
+    publisher.metadata.write_text(json.dumps({'textures': publisher.texture_identity, 'files': publisher.texture_files}))
+    latest = {'tag_name': 'launcher-v'+version, 'draft': False, 'prerelease': False,
+              'published_at': '2026-10-22', 'assets': [
+                  {'name': f'TimeSplitters-Launcher-v{version}-{platform}.zip', 'state': 'uploaded', 'size': 1}
+                  for platform in ('windows-x64', 'macos-arm64')]}
+    monkeypatch.setattr(publisher, 'gh', lambda *args, **kwargs: json.dumps(latest))
+    if passes:
+        publisher.require_texture_launcher()
+    else:
+        with pytest.raises(ValueError, match='launcher 1.2.24'):
+            publisher.require_texture_launcher()
