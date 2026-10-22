@@ -11,7 +11,7 @@ authoritative place to implement portable behavior.
 
 Textures: root `src/texture_pack*`, `texture_mode*`, runtime `src/d3d/` and HLE
 texture hooks; offline tooling `tools/texture-*`. Sanitized replacements now live
-in `assets/textures` (DDS via Git LFS), audited/bundled by `tools/build_textures.py`;
+in `assets/textures` (DDS via Git LFS), audited by `tools/build_textures.py` for optional delivery;
 private source art and original assets stay local. Networking: `src/pc_network*`,
 `pc_online*`, runtime HLE/kernel patches and `tools/online.py`. Crash capture:
 `src/pc_crash*`, `pc_hang_policy.h`, runtime crash hooks and launcher diagnostics.
@@ -56,6 +56,18 @@ native Mac visual validation remains pending under MAC-036.
 
 ## State and data boundaries
 
+Camera and perspective corrections use `pc_display_memory.h` to retain one
+OS-validated writable region only after their original guest routine returns.
+The stack-local snapshot expires when the correction returns; no guest calls,
+allocations or protection changes may occur while it is reused. Bounds,
+overflow, read-only and guard/no-access rejection remain enforced. Other
+display/menu validation still uses its existing checks. This avoids repeating
+the VM query for camera, output and source matrices within the same region;
+it does not cache matrices, reduce updates or change projection arithmetic.
+Decal corrections validate the camera and its source matrix before the output
+because the original callers build their temporary output on the guest stack.
+Separate camera/stack regions therefore need two queries, not three.
+
 The native SDL input self-test ends its synthetic terminal context before
 testing independent mouse capture/fire behavior. The fractional-terminal case
 otherwise leaves `camera_input.terminal_active` set after its mock guest is freed,
@@ -69,9 +81,10 @@ the canonical local fixture and must remain unchanged. Test runners copy it into
 bounded disposable test roots. `private/texture-remaster/pack` is the one active
 6-GiB-capped art-production pack; source art and original game assets stay ignored.
 Sanitized compiled DDS/JSON replacements are tracked in `assets/textures` and
-bundled with game releases; `tools/texture-repository.py` stages them with LFS,
+published as optional packs; `tools/texture-repository.py` stages them with LFS,
 `tools/build_textures.py` audits them. Leave pointers unhydrated for unrelated
-source work. Packaging must reject missing LFS content, not silently omit it.
+source work. Optional pack publication must reject missing LFS content. Ordinary
+game packages omit textures; existing installed packs and runtime fallback remain.
 
 For installed layouts, use the launcher platform adapter instead of assuming
 checkout names. Never include private data, generated guest code, credentials,
@@ -196,3 +209,54 @@ The original-icon policy also includes historical public DDS/JSON hashes.
 identities in `BUILD.json` under `textures.retired` for both game packagers.
 The shared launcher retires only matching installed pairs transactionally;
 custom artwork stays protected. See the launcher guide for recovery behavior.
+
+## Native movement boost resource
+
+The US walking routine `sub_00258F50` gates a movement boost on mode byte
+`0x7DE456 == 0x11`, selected player `0x7DE498`, input bit `0x800`, and positive
+entity+0x1D0 resource. The fixed subtraction at `0x259060` is now scoped through
+`pc_native_boost_drain` in `pc_native_numeric.h`. Native frames split one active
+original-update charge by `max(0, min(1, raw_delta, game_delta))`: slow motion
+retains the original zero-whole-tick gate's reduced consumption; fast/catch-up
+updates still consume at most one charge. Original mode and other sites retain
+exact subtraction. No constant table, boost speed, threshold or stored clock
+is changed. The complete US routine fixture uses a controlled flat collision
+floor; it does not establish real-map geometry, input acceleration or network
+transport parity. The game rule-name table at 0x4D1F90 + index*0x20, decoded
+through the existing Discord string-table path, identifies index 17 as Escort.
+A bounded frontend lookup confirms the name; live boost activation remains
+unverified.
+
+Escort recovery takes a separate route: active-match `sub_00068830` calls
+`sub_000681C0`, then `sub_000654E0`. Its original game-clock delay is more than
+five seconds; eligible match updates include zero-whole-game-tick frames.
+`pc_native_boost_recover` therefore scales only addition site `0x6552D` by
+`max(0,min(1,raw_delta))`. The original dispatcher gates pause; its selected-actor
+write and mirror, threshold overshoot and health-dependent clamp are preserved.
+The full three-routine fixture controls external services and validates those
+boundaries separately from the walking drain's active-game-update budget.
+
+## Experimental water coefficient precision
+
+`pc_surface_coefficients` in `pc_surface_bias.h` preserves the current guest
+uploader's clamped/truncated byte anchors, then scales acceleration/displacement
+and exponentiates damping without repacking fractional values. The existing
+bias+float+fractional opt-in gates enable it. `pc_native_surface_guest.h` copies
+original parameters into the HLE state before temporary guest scaling; whole
+steps retain original uploads. The HLE path copies bank 0 stages 3/5/7 and bank
+1 stage 6 into ordered commands only for shader 0x4BBF10, caching duplicates and
+clearing on scope exit. Defaults and original/catch-up behavior stay unchanged.
+The constant-uploader fixture documents the current lifter's truncation; this
+change does not claim original Xbox MXCSR rounding fidelity or full wave parity.
+
+The opt-in precision policy now selects full-float format 0x4B for registered
+feedback intermediates. Final byte textures, guest headers, rate gating and
+normal-play defaults are unchanged. Common-RHI promotion/demotion preserves
+live GPU contents and capture bytes; the transaction still flushes before copy,
+rebinds only on success and retains the old resource on failure. This removes
+measured half-float accumulation error but does not prove original wave parity.
+
+Optional game packages use `build_textures.optional_identity` to retain only the
+small `textures.retired` migration, without any DDS/JSON payload or LFS access.
+This preserves the original-icon fix using the existing shared launcher consumer;
+ordinary missing texture files never cause removal of an installed pack.

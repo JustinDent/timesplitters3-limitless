@@ -127,3 +127,25 @@ Launcher 1.2.24 packages this migration for both hosts. Its shared version and
 numeric assembly/file attributes advance together. The game publisher requires
 a published stable 1.2.24+ with both platform ZIPs whenever the pack manifest
 declares retired replacements; older bundled packs retain their 1.2.22 minimum.
+
+## Optional texture delivery (2026-10-22)
+
+`SettingsPage` owns both hosts' optional check/download/confirmation/cancel UI.
+`TextureBusyChanged` locks the WPF/Avalonia host navigation and update actions.
+`TextureDownload` reads schema-3 `config/texture-download.json` (bounded to 8 MiB),
+verifies per-part/per-file hashes and adopts matching files from existing packs
+without receipts. Schema-1 receipts remain supported. Downloads merge keyed pairs
+through `TexturePack`'s per-part recovery journal; identical pairs aren't rewritten.
+Unrelated keys and settings remain. Completed parts survive interruption and are
+rechecked on retry. Opt-in lives in `.launcher/texture-opt-in.json`; opening Settings
+checks for updates, but downloads always require confirmation. Opt-out deletes only
+that preference. Classic/Enhanced persistence is separate and defaults to Classic.
+
+The catalog in `config/texture-pack.json` now declares optional delivery; normal
+Windows/Mac game packages omit the assets. The download manifest is an unpublished
+placeholder until a maintainer publishes through `texture-release.py` and merges
+the resulting index. No runtime changes or OS-specific texture protocol are needed.
+Portable and host validation routes are recorded in build-test.md and MAC-057.
+
+Texture operations disable Mac page navigation through the shared busy state,
+keeping the Settings download progress and Cancel control accessible until completion.
