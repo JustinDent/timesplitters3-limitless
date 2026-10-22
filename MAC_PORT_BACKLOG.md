@@ -2960,6 +2960,17 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-058 — Native fractional updates at 60/120/144 FPS
 
+- **Ordered water centering (2026-10-21, this revision):** Shared formula and
+  float-constant state, common HLE queued transport/capture/replay, and RHI/GL
+  adapters implement an opt-in second-pass correction. Windows original-code,
+  queue/replay and GPU checks pass; corrected 120/144 final images stay fresh,
+  and 144 variation no longer fades in the bounded sample. This does not prove
+  original-byte appearance or full dynamics. Native Mac compilation/execution,
+  live precision transitions and longer motion/pacing checks remain open.
+  Legacy GL constant support is implemented, but its half-float target gap
+  still blocks the combined experiment. All three switches stay off by default.
+  [Measured evidence](docs/native-high-refresh-regressions.md#ordered-fractional-water-centering-2026-10-21).
+
 - **Fractional buffer reuse (2026-10-21, this revision):** Shared guest
   wrapper/patch skips extra smoothing while preserving newest-state ownership.
   Original-code fixtures check lineage and ABI at 60/120/144 and across

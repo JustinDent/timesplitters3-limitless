@@ -31,7 +31,8 @@ including after a successful apply. A resolution preview keeps its 15-second
 confirmation; accepting it commits the entire batch. Reverting it restores the
 resolution and keeps the other drafts pending. Failed saves restore the active
 display settings and do not publish pending FPS/texture changes. FOV occupies
-one control row; the native silver divider sits above Apply.
+one control row, and Apply has no silver divider above it. Settings lists Audio
+Options, Video Options, Controls and Copy Profile, with Cheats last when unlocked.
 Shared menu focus bars use rounded blue corners throughout the frontend and pause menus. Back remains available through
 the normal key/footer. **Audio Options** retains the audio controls; Subtitles
 now uses Video Options and the native profile save mechanism. Texture style stays session-only, like F10. The same

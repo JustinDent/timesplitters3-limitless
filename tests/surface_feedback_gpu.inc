@@ -41,7 +41,17 @@
                         ((definition[10+bank*8+stage]>>shifts[channel])&255)/255.f;
             }
             CHECK(cb.c1[6][1]==128/255.f);
-            if(corrected)cb.c1[6][1]=.5f+(cb.c1[6][1]-.5f)*delta;
+            PcCombinerConstants overrides={0};
+            if(corrected) {
+                const float value[4]={0,pc_surface_bias(delta),0,0};
+                CHECK(pc_combiner_constant_set(&overrides,1,6,value));
+            }
+            /* Same lookup used by production upload; untouched slots retain
+             * the original packed constants. */
+            for(unsigned i=0;i<8;i++) {
+                pc_combiner_constant_get(&overrides,0,i,cb.c0[i]);
+                pc_combiner_constant_get(&overrides,1,i,cb.c1[i]);
+            }
             rhi_buffer_update(uniforms,&cb);rhi_draw(3,0);
             float result[64*64*4];CHECK(rhi_image_readback(target,0,result,64*4*sizeof(float))==0);
             if(step==4) {

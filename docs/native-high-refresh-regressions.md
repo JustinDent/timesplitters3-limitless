@@ -5035,3 +5035,89 @@ capture-free pacing or new in-world appearance acceptance is claimed for this
 change. It remains confined to the disabled-by-default experiment. Next work
 must combine correct state reuse with the shader centering correction and
 observe intermediate state instead of tuning visible gain to hide the decline.
+
+
+## Ordered fractional water centering (2026-10-21)
+
+The optional correction now travels with the draw commands as a copied float4,
+through both the deferred queue and the existing replay recorder. It overrides
+only bank 1, stage 6 of the validated second feedback shader (`0x4BBF10`) during
+a positive fractional surface step. Changing shaders or leaving that scope
+queues a clear. Packed guest render states and the shader cache key remain
+unchanged. `pc_surface_bias.h` defines the shared centering formula; the common
+RHI and legacy GL adapters use the same bounded float-constant state model.
+Device initialization resets that state. This avoids reading mutable guest time
+from a later queued GPU draw.
+
+Capture format 9 records overrides, including all enabled/disabled slots in the
+frame-start snapshot; versions 5 through 8 remain readable. The replay reader
+rejects short payloads, bad indices/enable values and nonfinite constants.
+A subsequent patch reproduces all upstream changes, including the versioned
+capture fixture. New tests extract the actual production queue/set/clear,
+shader-scope and replay functions. They exercise copied payload ownership,
+ordered clears, recorded replay, lossless capture round trips and malformed
+chunks. The original translated shader GPU test now gets its corrected value
+through the shared override model, keeping zero-step identity and bit-identical
+one-tick output for the tested states. The original guest dispatcher fixture
+also runs explicitly with the centering flag enabled and checks scope cleanup.
+
+The correction requires all three explicitly enabled switches:
+`TSFP_SURFACE_BIAS_TEST=1`, `TSFP_SURFACE_FRACTIONAL_TEST=1` and
+`TSFP_SURFACE_FLOAT_TEST=1`. The bounded runner's `--bias-surfaces` rejects
+missing dependencies and records the choice in provenance; absent switches
+explicitly disable it. No experiment is enabled in ordinary gameplay.
+
+Windows x64 Release Build and built-in checks pass under Windows PowerShell 5.
+The complete selected timing, original-shader, capture, ordered-constant and
+patch-migration suite passes 90 cases in 440.52 seconds; backlog integrity adds
+one passing check. This includes all six historical stack/line-ending migration
+combinations, fresh/repeated application and conflict-preservation checks.
+Build uses MSVC 14.44.35207 / SDK 10.0.26100.0. Executable SHA-256:
+`0764c79610871abdab6875f05683cb2a48348d9fd4cf3c337acd3e1b28094fcd`,
+base `62eb824` plus this change. The first focused run found one old capture
+assertion still expecting version 8; updating the fixture in the same patch
+corrected that mismatch. Build output retains existing unreachable-code
+warnings in the device frontend. Native Mac compilation/execution is unavailable;
+legacy GL still refuses the half-float target experiment, so its constant support
+alone does not make the water experiment available there.
+
+Two bounded minimized Scotland runs capture 360 final byte-format images each.
+All 359 consecutive pairs change at both 120 and 144. At 144, corrected channel-1
+variation is stable across the sample (first 60 std 19.1674, last 60 19.1134),
+in contrast to the preceding uncorrected run (14.3242 to 11.0676). Corrected
+channel-2 std is 17.9335 to 17.9604. These runs contain synchronous GPU readbacks;
+they are not frame-pacing measurements. The directly inspected first/last raw
+channel contact sheet shows restored structure at 144, without asserting
+identical spatial patterns, animation speed or scene appearance.
+
+| Path | Channel 1 std | Channel 2 std |
+| --- | ---: | ---: |
+| Historical float-target original 60 | 19.9405 | 19.1807 |
+| Historical direct-buffer 120 | 19.3332 | 18.3723 |
+| Corrected 120 | 18.8573 | 18.2360 |
+| Historical direct-buffer 144 | 12.8683 | 12.3266 |
+| Corrected 144 | 19.3034 | 18.0951 |
+| Same-build 144, correction disabled | 12.0537 | 11.6518 |
+
+A third bounded run uses the same executable, precision/fractional switches,
+scene commands and capture method at 144 with only bias correction disabled.
+It reproduces the loss: channel-1 std falls from 14.0194 to 11.2507 and channel-2
+from 13.5069 to 10.7385. All images still change, demonstrating why freshness
+alone is inadequate. This supports the centering correction's causal role in
+the restored variation; it does not establish full temporal equivalence.
+Control provenance and logs are under `surface-bias-control-144-fractional`
+and `logs/surface-bias-control-images.log`.
+
+Profiles, canonical fixture and signatures are preserved; pause/resume completes
+and the runner recycles its temporary partitions. Raw images are compressed only
+after byte-exact verification. Evidence: `logs/surface-bias-{build,checks,images,metrics}.log`,
+`private/test-saves/surface-bias-{120,144}-fractional`,
+`private/pipeline/procedural-surface-bias-summary.json` and
+`private/pipeline/surface-bias-contact.png`.
+
+This is progress toward a stable fractional update, not acceptance for normal
+play. The float-target 60 reference itself differs from original byte storage.
+Longer-run evolution, intermediate-state behavior, quantized coefficients,
+original appearance/motion, content-preserving live FPS/precision transitions,
+capture-free pacing and actual Mac execution remain unverified. Full-game
+coverage and the broader goal remain open.

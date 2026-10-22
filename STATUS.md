@@ -6,6 +6,19 @@ Prepared on `feature/native-144-fps` from fetched main `5db4efc`; the tested
 development checkpoint is local to this branch. This is an opt-in path, not a
 published release or a full-game 144 FPS certification.
 
+- **Ordered water centering correction (2026-10-21):** The opt-in experiment
+  now copies lossless float shader overrides through deferred draws and capture
+  replay, clearing them outside the target pass. Windows Build and production
+  queue/replay/GPU checks pass (90 selected cases plus backlog integrity).
+  Corrected 120/144 each produce 359/359 fresh
+  image transitions. At 144, channel-1 variation stays near 19.2 throughout;
+  a same-build correction-disabled control fades from 14.0194 to 11.2507.
+  This isolates progress on the fading regression, not original appearance or
+  full wave dynamics. Profiles/fixture are preserved and temporary partitions
+  recycled. The three experimental switches remain off in normal play; original
+  fidelity, live precision transitions, capture-free pacing and actual Mac
+  execution remain open. [Scope and measured evidence](docs/native-high-refresh-regressions.md#ordered-fractional-water-centering-2026-10-21).
+
 - **Fractional feedback buffer reuse (2026-10-21):** The opt-in candidate
   now reads the latest state directly between authored smoothing events,
   eliminating the nonidentity zero-radius copy. Original-code lineage checks

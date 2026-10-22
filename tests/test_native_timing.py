@@ -593,6 +593,8 @@ def test_original_fractional_dispatch(tmp_path, harness_name, ranges):
         print(output)
         executable=tmp_path/('float_join.exe' if os.name=='nt' else 'float_join')
         subprocess.run([str(executable),'disabled'],check=True,timeout=10)
+        bias_env=dict(os.environ,TSFP_SURFACE_BIAS_TEST='1',TSFP_SURFACE_FLOAT_TEST='1')
+        subprocess.run([str(executable)],env=bias_env,check=True,timeout=10)
     if harness_name in ('native_analog_input.c','native_network_correction.c','native_player_force.c','native_player_fall.c','native_aim_easing.c','native_animation_clock.c','native_weapon_sway.c','native_player_dispatch.c','native_hud_messages.c','native_light_preview.c','native_strip_distortion.c','native_screen_distortion.c','native_surface_cache.c'):print(output)
     if harness_name in ('native_mothership.c','native_ship_debris.c','native_projectile_motion.c','native_projectile_coupled.c','native_sniper_damage.c','native_beam_lifetime.c','native_beam_geometry.c','native_npc_aim.c','native_object_rocking.c','native_object_bounce.c'):
         print(output)

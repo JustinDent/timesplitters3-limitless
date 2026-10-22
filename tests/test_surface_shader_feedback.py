@@ -65,7 +65,7 @@ def test_original_surface_shader_feedback(tmp_path, address, case, stage):
     setup = (ROOT / 'tests/rhi_menu_sampling.c').read_text(encoding='utf-8')
     setup = setup[:setup.index('    CHECK(menu_sampling_cases(render));')]
     setup = setup.replace('#include "rhi.h"',
-                          '#include "rhi.h"\n#include "d3d8_combiners.h"\n#include "surface_shader.h"')
+                          '#include "rhi.h"\n#include "d3d8_combiners.h"\n#include "surface_shader.h"\n#include "graphics/combiner_constants.h"\n#include "pc_surface_bias.h"')
     source = tmp_path / 'surface.c'
     source.write_text(setup + (ROOT / 'tests' / case).read_text(encoding='utf-8'),
                       encoding='utf-8')

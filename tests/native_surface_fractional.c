@@ -23,6 +23,8 @@ static unsigned events,steps,filter_steps,uploads;
 static unsigned generations[4],program,pass,target;
 static float expected_delta;
 static int requested;
+static float bias_step=-1;
+void hle_d3d8_surface_bias_step(float delta){bias_step=delta;}
 static void state(void) {g_eax=7;g_esp+=4;}
 void sub_00019650(void){state();} void sub_0001ED60(void){state();}
 void sub_00023270(void){state();} void sub_00021450(void){state();}
@@ -52,6 +54,8 @@ void sub_0002A310(void) {
     pass=MEM32(g_esp+4);assert(pass<2);
     if(program==0x12) { assert(!pass);g_esp+=4;return; }
     assert(program==0x14);
+    if(pc_surface_bias_requested() && pc_surface_step.active)assert(bias_step==expected_delta);
+    else assert(bias_step==-1);
     if(!pass)assert(MEMF(0x665308)==.17f && MEMF(0x665314)==.17f);
     else {
         assert(fabsf(MEMF(0x66531c)-.105f*expected_delta)<1e-7f);
@@ -92,6 +96,7 @@ static void step(unsigned whole,float delta) {
     assert(MEM32(RESOURCE+0x24)+MEM32(RESOURCE+0x28)==2);
     assert(MEM32(RESOURCE+0x24)!=MEM32(RESOURCE+0x28));
     assert(generations[MEM32(RESOURCE+0x28)]==steps);
+    assert(bias_step==-1);
     assert(!pc_surface_step.active && uploads==steps*2 && filter_steps==events/2);
 }
 int main(int argc,char **argv) {
