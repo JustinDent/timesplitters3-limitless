@@ -54,6 +54,16 @@ def write_zip(archive, prefix, records):
             raise ValueError('Texture changed during packaging')
 
 
+def write_source_files(archive, root, sources):
+    """Keep compiled replacements in the playable pack, without a source copy."""
+    for relative in sorted(set(sources)):
+        if not relative or relative.startswith('assets/textures/'):
+            continue
+        path = Path(root)/relative
+        if path.is_file():
+            archive.write(path, relative)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runtime-root', type=Path, default=ROOT)

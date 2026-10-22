@@ -21,6 +21,9 @@ personal settings, and saves, and writes the ZIP plus SHA-256 under `build/relea
 The game ZIP includes the audited compiled textures in `Textures/` by default.
 They stream directly from the single active pack into the ZIP, with sanitized
 metadata and per-file hashes in `BUILD.json`; no texture staging copy is made.
+The source-code ZIP excludes these compiled replacements to avoid a second
+copy inside each download. To rebuild from the extracted source archive with
+textures, copy the package's `Textures` folder to its `assets/textures` path.
 Use `--texture-pack <folder>` to select another audited pack, or
 `--without-textures` for a lightweight local test package. Official releases
 through `Publish-Release.ps1` require the complete repository pack; artist

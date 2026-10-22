@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import zipfile
 from bundle_online import bundle
-from build_textures import ensure_pack, zip_entries, write_zip
+from build_textures import ensure_pack, zip_entries, write_zip, write_source_files
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -87,14 +87,13 @@ def main():
     source_files = subprocess.check_output(
         ['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z'], cwd=ROOT).decode().split('\0')
     with zipfile.ZipFile(source_dir/'pc-port-source.zip', 'w', zipfile.ZIP_DEFLATED) as source:
-        for relative in sorted(set(source_files)):
-            path = ROOT/relative
-            if relative and path.is_file():
-                source.write(path, relative)
+        write_source_files(source, ROOT, source_files)
         local_patch = subprocess.check_output(['git', '-C', str(upstream), 'diff', '--binary'])
         source.writestr('runtime-local.patch', local_patch)
     (source_dir/'README.txt').write_text(
         'pc-port-source.zip contains the project source and local runtime patch for this build.\n'
+        'Compiled DDS/JSON replacements are included once in the package Textures folder.\n'
+        'For a source build, copy that folder to assets/textures in the extracted source.\n'
         f'Base runtime: https://github.com/nemonicicon/ts3FPrecomp/tree/'
         f'{subprocess.check_output(["git", "-C", str(upstream), "rev-parse", "HEAD"], text=True).strip()}\n'
         'See the project README and requirements-release.txt for build and packaging instructions.\n',
