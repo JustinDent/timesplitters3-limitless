@@ -1,3 +1,30 @@
+## Issue #74 accepted texture upload (2026-10-21)
+
+The commit carrying this entry adds 700 accepted texture keys to the repository
+pack, for 2,205 total. All 1,505 previous DDS hashes match main. Public pack
+size is 1,899,313,431 bytes (1.77 GiB), below the 6 GiB cap; private production
+metadata accounts for the slightly larger historical art-workspace pack size.
+Compiled DDS uses Git LFS and sidecars contain only allowlisted metadata.
+The art checkout retains pointers, with objects in the shared LFS store, so
+there is no second hydrated pack, ZIP or game-data copy.
+
+Export exposed a repeat-update bug: passing an existing pointer filename to
+`git lfs clean` caused it to use the small pointer size while reading the DDS
+stream. The exporter now omits that filename and still requires an exact
+SHA-256/size match. The regression reproduced the failure before the fix.
+Windows x64 / Git LFS 3.7.1: 22 texture/build/planner/backlog tests and 21
+subtests pass. Repository context validation passes against the integrated main.
+The shared exporter has no OS-specific policy; a native Mac run is unverified.
+All 2,205 LFS object hashes/sizes, exact pointers and sanitized sidecars pass
+verification against the audited production pack. Checkout pointers/metadata
+total 796,941 bytes; all nine blocked menu keys remain absent.
+
+Menu coverage remains 733/750, with eight intentional functional originals
+and nine unresolved replacements. See `docs/main-menu-textures.md` for source
+fidelity and detailed limits. No game launch or scene acceptance was performed.
+This is a branch update, not a main merge or game-version release; bundled
+launcher delivery follows integration and the normal release workflow.
+
 ## Mounted and CCTV gun mouse aim (#182) — 2026-10-21
 
 Fix on `182-bug-you-cant-control-external-big-guns-with-your-mouse`,
@@ -233,6 +260,97 @@ Local launcher tests reach the new large-manifest test but stop at
 the running-game guard for another checkout; host CI supplies the full tests.
 
 # Measured progress
+
+## Expanded menu icons and portrait production (2026-10-21)
+
+Included with the issue #74 texture upload. The conservative six-archive frontend census
+contains 750 unique keys: 733 have offline replacements, eight functional
+primitives/masks remain intentionally original, and 9 need artwork or
+specific review. Archive membership includes shared 3D/effect assets and does
+not establish which menu draws each key. This is not a completed menu overhaul.
+
+The wireframe now uses its exact original 512-square pixels encoded as RGBA8
+with full mips, avoiding the rejected drafts' geometry changes. This preserves
+source detail and is not a high-resolution redraw. 9 menu assets remain
+blocked by image-generation safety rejections; originals remain in use and
+are not counted as completed replacements. See menu-generation-blockers.json.
+
+All 25 original focus keys now have replacements. This continuation added 13
+remaining schematic layers, 208 functional UI replacements and a further 140
+utility graphics plus 60 effect/glow layers through exact source RGB/alpha
+resampling. This preserves
+labels, branding, masks and layout but does not create new native detail.
+158 newly detailed character portraits passed visual/mask review and
+were compiled at 256 square from actual 1254-square built-in imagegen sources.
+63 generated map/scene images are accepted (29 at 512 square, 34 at 1024 square).
+Another 20 decorative/material images passed offline review, preserving
+original aspect ratios; final UV alignment on models remains to be checked.
+Another 26 menu thumbnails recover genuine 512-square original game
+artwork matching their 128-square cards, with exact source RGB and original UI
+alpha. These are native source-detail recoveries, not generated reinterpretations.
+Held drafts remain out of the pack. The separate chr.pak census covers 392
+keys, with 72 current replacements; portrait-to-model associations remain
+unproven and no model-completion claim is made.
+
+Windows native DDS checks, lossless pixel/alpha comparisons, mip/aspect/hash
+checks and full Python pack audit pass. Active pack: 2,205
+entries, 1,900,180,156 bytes (1.77 GiB of 6 GiB).
+Texture-workspace allocation including source art: 9,057,524,448
+bytes; temporary files: 266,089,008 bytes, leaving
+2,346,448 bytes below 256 MiB at this audit. One pack and
+one rotating contact sheet remain. Verified recoverable references created
+in this menu pass and five byte-reproducible old repetition sheets were removed;
+primary comparisons remain. Previously denied cleanup files were untouched.
+
+Private batch receipts, prompts and key-level gaps are recorded under
+private/texture-remaster/menu-*.json. See docs/main-menu-textures.md.
+Compiled DDS and sanitized metadata are included in this branch through Git LFS.
+Source art remains private. No game launch, runtime/adapter change or game release.
+Windows/Mac scene appearance and residency remain unverified; MAC-011 awaits validation.
+
+## Corrected menu background and higher-fidelity logo/font pack (2026-10-21)
+
+Continued on #74, incorporating the user's updated request to improve the logo
+and fonts. Four new RGBA8 DDS replacements are in the local production pack:
+1024-square blue reflection, 2048x1024 logo and two 1024-square font atlases.
+The corrected background is 2.48% darker than the original by mean luminance,
+instead of the first draft's 13.96% brighter. Generated logo shading uses the
+verified original alpha, preserving the branded silhouette and subtitle.
+
+Rejected generated font glyphs; accepted fonts are faithful compiler resamples
+of the original masks, not newly authored high-resolution typefaces. No native
+4K claim. No game launch or subjective scene-quality claim. See
+docs/main-menu-textures.md and private main-menu-validation.json / prompts.
+
+Windows native DDS parser accepts all four mipmapped files. Python checks cover
+all 1,509 replacements; new font pixels exactly match the expected lossless
+resampling and the logo alpha exactly matches its original-mask resampling.
+All previous 3,010 DDS/metadata files retain their SHA-256 hashes. Current queue:
+1,509 installed, 5,134 need art, 169 held. Seventeen menu schematic candidates
+remain original pending specialist review and exact draw association.
+
+Pack 1,193,205,058 bytes, below 6 GiB; increase 27,964,748 bytes including metadata.
+Measured texture-workspace allocation 7,545,313,726 bytes before final small report
+writes; temporary outputs 267,924,926 bytes, leaving 510,530 bytes below 256 MiB.
+No game extracts, ZIPs, build copies, release or GitHub upload. No runtime or
+platform adapter changes; MAC-011 remains Awaiting validation on both hosts.
+
+## Main-menu texture focus and first held draft (2026-10-21)
+
+Focused issue #74 on the logo, two font atlases, blue curved-room reflection
+and 17 candidate technical overlays. Reused existing menu-fidelity captures/logs
+and verified catalog sources; no game launch. Archive membership is not per-draw
+confirmation. See docs/main-menu-textures.md and private main-menu-focus.json.
+
+One generated opaque 1254-square background source is held for lighting/layout
+correction: mean luminance is approximately 13.96% above the original and seams
+are more pronounced. It is not native 4K, compiled, installed or published.
+Worklist and hybrid planner refreshed: 1,505 installed, 5,137 need art, 170 held;
+all 6,812 known keys retain their classification. The active pack is unchanged
+at 1,165,240,310 bytes. Temporary outputs total 267,656,205 bytes, below 256 MiB
+with 779,251 bytes headroom. Measured texture-workspace allocation including
+authoritative art is 7,513,997,324 bytes before this small documentation update.
+No runtime/host changes or gameplay checks; MAC-011 remains Awaiting validation.
 
 ## Ghost Gun living-character alignment (issue #181, 2026-10-20)
 

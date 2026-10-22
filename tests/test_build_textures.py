@@ -14,15 +14,17 @@ sys.path.insert(0, str(ROOT/'tools'))
 import build_textures as textures
 
 
-def fixture(tmp_path):
+def fixture(tmp_path, dimension=1):
     source = tmp_path/'source'
     source.mkdir()
     words = [0]*32
-    for index, value in {0: 0x20534444, 1: 124, 3: 1, 4: 1, 7: 1,
+    for index, value in {0: 0x20534444, 1: 124, 3: dimension, 4: dimension, 7: dimension.bit_length(),
                          19: 32, 20: 4, 21: 0x31545844}.items():
         words[index] = value
     path = source/'0123456789abcdef.dds'
-    path.write_bytes(struct.pack('<32I', *words)+b'\0'*8)
+    payload_size = sum(((max(1, dimension >> mip)+3)//4)**2*8
+                       for mip in range(dimension.bit_length()))
+    path.write_bytes(struct.pack('<32I', *words)+b'\0'*payload_size)
     path.with_suffix('.json').write_text(json.dumps({
         'key': path.stem, 'sha256': textures.RELEASE.digest(path),
         'source': '/private/art.png', 'prompt': 'private artwork prompt'}))
@@ -93,19 +95,25 @@ def test_packaging_streams_sanitized_metadata_and_hashes(tmp_path):
         textures.write_zip(archive, '', records)
 
 
-def test_repository_export_tracks_only_audited_public_content(tmp_path):
+@pytest.mark.parametrize('existing_pointer', [False, True])
+def test_repository_export_tracks_only_audited_public_content(tmp_path, existing_pointer):
     import importlib.util
     import subprocess
     spec = importlib.util.spec_from_file_location('repository_textures', ROOT/'tools/texture-repository.py')
     exporter = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(exporter)
-    source, _, _, _, _ = fixture(tmp_path)
+    source, _, _, _, _ = fixture(tmp_path, dimension=64)
     repo = tmp_path/'repo'
     repo.mkdir()
     (repo/'config').mkdir()
     subprocess.run(['git', 'init', str(repo)], check=True, capture_output=True)
     if subprocess.run(['git', 'lfs', 'version'], capture_output=True).returncode:
         pytest.skip('Git LFS unavailable')
+    if existing_pointer:
+        destination = repo/'assets/textures/0123456789abcdef.dds'
+        destination.parent.mkdir(parents=True)
+        destination.write_text('version https://git-lfs.github.com/spec/v1\n'
+                               'oid sha256:'+'0'*64+'\nsize 2872\n')
     exporter.stage(source, root=repo, pointers_only=True)
     pointer = (repo/'assets/textures/0123456789abcdef.dds').read_text()
     assert pointer.startswith('version https://git-lfs.github.com/spec/v1')

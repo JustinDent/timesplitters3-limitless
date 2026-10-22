@@ -302,8 +302,9 @@ the saved bot set. The host sees how many are waiting.
 
 **Texture overhaul:** modern materials and surfaces, with **up to 4K** on major
 surfaces. A **6 GiB** active-pack budget and **512 MiB** replacement-residency limit
-keep storage and memory bounded. Game builds and release ZIPs now include the
-**1,505-texture alpha pack** (about 1.08 GiB installed) by default. Choose
+keep storage and memory bounded. Builds from this branch include the
+**2,205-texture alpha pack** (about 1.77 GiB installed) by default.
+The new menu assets reach launcher downloads with a subsequent game release. Choose
 **Display settings → Textures → Enhanced** in the game to use it; Classic remains
 available. Install or update the game through the launcher to receive the pack.
 The upcoming launcher update adds **Game settings → Graphics & resolution →

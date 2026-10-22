@@ -1156,6 +1156,39 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-011 — Real texture-pack gameplay coverage
 
+- 2026-10-21 #74 repository texture update (commit carrying this entry):
+  700 new keys, 2,205 total, using the same audited DDS/JSON for both hosts.
+  The shared LFS exporter now reads DDS stdin without a stale pointer-file size
+  hint; the existing-pointer regression failed before the fix and passes now.
+  Windows texture/build/planner/backlog checks: 22 tests and 21 subtests pass.
+  No runtime adapter changed. Native Mac export and GPU/scene acceptance remain
+  unverified; **Awaiting validation** is unchanged. No gameplay or release.
+
+<!-- menu-expanded-progress -->
+- 2026-10-21 expanded menu pass (included in the #74 texture upload):
+  421 source-faithful schematic/UI/effect additions plus 158 newly detailed
+  portraits and 63 scene thumbnails in this continuation. Same keyed RGBA8 files serve both hosts;
+  26 additional cards recover matching native 512px original artwork.
+  no runtime or adapter changes. Windows offline parser, alpha/pixel and full
+  pack audits pass. All-menu coverage and model associations remain incomplete.
+  Actual Windows/Mac menu rendering and GPU residency await final validation;
+  no game launched. See docs/main-menu-textures.md and latest STATUS entry.
+<!-- /menu-expanded-progress -->
+
+- 2026-10-21 menu follow-up (included in the #74 texture upload): corrected
+  reflection, original-mask logo and two faithfully resampled font atlases now
+  pass offline acceptance. Same keyed RGBA8 replacements serve both hosts; no
+  adapter change. Windows DDS parsing and full Python pack audit pass; actual
+  font/logo rendering, menu animation and Mac GPU behavior remain unverified.
+  No gameplay launched. Awaiting validation; see docs/main-menu-textures.md.
+
+- 2026-10-21 main-menu focus (documentation included in the #74 texture upload): mapped
+  logo/font/background and candidate schematic keys using existing Windows
+  evidence. One 1254-square background draft is held, with no installed DDS or
+  runtime/adapter changes. The same eventual replacement pack serves both hosts;
+  Mac and Windows mapped appearance/alpha checks remain pending. Status remains
+  Awaiting validation. See docs/main-menu-textures.md and STATUS.md.
+
 - 2026-10-21 unlocked test launch correction (branch
   `fix/test-profile-texture-pack`): shared `testing_profile.prepare_run` now
   connects `assets/textures` explicitly while starting in Classic mode. The
