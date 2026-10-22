@@ -163,3 +163,14 @@ remaining native update/surface patches. Original 60 remains the default;
 and HLE skips the original flip gate while native timing is active. Keep both
 `test_frame_clock.py` (real Arm body) and `test_native_timing.py`; neither alone
 validates the combined stack. Water precision experiments remain off by default.
+
+## Outlined text read scope
+
+`*-text-outline-scope.patch` wraps US `sub_00041E30`, whose synchronous body
+draws four outline offsets and then the foreground through `sub_00040FA0`.
+The existing prompt read scope now spans those five passes and ends before
+returning to the caller. The wrapper preserves the original draw routine and
+guest ABI, enables the same path for `TSFP_PC_CONTROLS`/`TSFP_NATIVE_PROMPTS`,
+and performs no AI, animation, rendering-quality or frame-rate throttling.
+The mapping cache remains read-only; prompt scratch writes query live protection.
+Adding the manual wrapper requires the normal guest regeneration/build route.

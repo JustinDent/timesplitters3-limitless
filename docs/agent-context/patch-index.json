@@ -825,6 +825,13 @@
       ]
     },
     {
+      "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-text-outline-scope.patch",
+      "sha256": "eb703ac45b4121b940e8189d893640b84f01adde0ab5e90ec4ff6b4619b70c5f",
+      "targets": [
+        "titles/futureperfect/src/recomp_manual.c"
+      ]
+    },
+    {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-frame-replay.patch",
       "sha256": "50d4b55ae7b955eb00fbd3e734f39fed3322d6c8a7bac6925747fc84c9a720a8",
       "targets": [

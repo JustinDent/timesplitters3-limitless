@@ -749,6 +749,18 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
 
 ### MAC-002 — Keyboard/mouse prompts and device switching
 
+- **Crowded multiplayer CPU follow-up (2026-10-22, uncommitted):** The shared
+  text read cache now keeps the complete OS-validated interval, avoiding repeat
+  queries when guest stack reads descend or labels visit earlier addresses in
+  the same mapping. The US outlined-label wrapper also shares one read scope
+  across its four outline passes and foreground draw. Scope expiry at return
+  and fresh scratch-write validation are unchanged.
+  The existing Windows/Darwin VM adapters provide the interval; no new platform
+  adapter is needed. Descending-read regression fails before the fix and passes
+  after it. Both host feature defines pass the five-pass wrapper/ABI fixture,
+  including a mutation that detects repeated queries. Native Mac gameplay and
+  performance remain awaiting validation; see STATUS.md for Windows evidence.
+
 - **Issue #105 follow-up (`5c2f4ac`, 2026-10-21):** Shared prompt read scopes
   (`src/pc_text_read_scope.h`, `pc_prompts.c`, `pc_prompt_guest.inc`,
   `pc_tutorial_ui.inc`, `pc_display_ui.inc`) reduce VM queries. The separate

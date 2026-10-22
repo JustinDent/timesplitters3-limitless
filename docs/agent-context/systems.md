@@ -84,8 +84,13 @@ symbols, semantics and sanitized measured conclusions instead.
 thread-local `pc_text_read_scope.h` cache uses existing OS VM query adapters.
 It is valid only during synchronous text layout, with no mapping/protection
 changes or event dispatch. Nested scopes retain intervals; the next outer scope
-clears them. Scratch writes still use a fresh protection query. Scope wrapping,
-label construction/drawing and nested prompt measurement through the shared
+clears them. Scratch writes still use a fresh protection query.
+The cached interval covers the full OS-validated region, so descending guest
+stack reads and earlier labels in the same mapping reuse one query. It never
+extends beyond that region or survives the outer layout scope.
+The US outlined-label wrapper (`sub_00041E30`) retains this same scope over
+its four outline draws and foreground pass, then expires it at return.
+Scope wrapping, label construction/drawing and nested prompt measurement use the shared
 hooks in `pc_tutorial_ui.inc`, `pc_display_ui.inc` and `pc_prompt_guest.inc`.
 `pc_display_menu.c` includes `pc_prompts.h` before the .inc callers to avoid
 implicit declarations. Do not extend caches across menu ticks or frames.
