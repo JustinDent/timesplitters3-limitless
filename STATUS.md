@@ -17681,3 +17681,10 @@ The failure reproduced locally before the correction; all 34 patch-tracking
 and upgrade tests pass afterward (352.49 seconds). Context and whitespace
 checks pass. Both original native-runtime jobs and both launcher jobs passed;
 new-head hosted validation will run after the correction is pushed.
+
+## Launcher v1.2.24 release preparation
+
+Advances the shared launcher and assembly versions for the original character
+icon migration from PR #289. Both platform packages are published only after
+the release workflow passes; the game update follows launcher publication.
+The game remains v0.3.1-alpha.2. No gameplay validation is claimed by this bump.

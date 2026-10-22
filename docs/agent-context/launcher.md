@@ -123,3 +123,8 @@ unknown texture backups stay protected. This policy is shared by both hosts.
 `tests/launcher_textures.cs` runs upgrade, custom-pair, partial-pair, rollback,
 failure and late-change checks in both launcher builds. Already published
 launchers require an update carrying this migration before upgrading the game.
+
+Launcher v1.2.24 is the release carrying the retired-icon upgrade migration.
+Its shared assembly/package version advances together for Windows and Mac.
+Publication uses the dual-platform launcher release workflow before the game
+release; synthetic migration tests and package verification are its checks.
