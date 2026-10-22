@@ -29,7 +29,10 @@ stack migrations (`logs/pr285-merge-tests.log`). Final unique suite results are
 222 passed and two host-specific skips after the targeted context correction;
 the updated Auto assertion was separately rerun successfully.
 
-Repository context/index checks pass against current main. No fresh whole-game
+Repository context/index checks pass against current main. The first pushed CI
+run exposed residual CRLF in three local patch files whose committed Git blobs
+were LF. Normalized those files to their exact committed bytes and refreshed
+the index; patch source semantics and the binary watermark patch are unchanged. No fresh whole-game
 or Mac runtime validation is claimed. The earlier transition-hitch measurements
 predate main's late-frame correction and require remeasurement before calling
 that issue resolved. Experimental water changes remain disabled by default.

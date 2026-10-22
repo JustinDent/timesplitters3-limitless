@@ -269,3 +269,10 @@ without trying to count read queries in its own translation unit: scoped reads
 live in `pc_prompts.c`. `test_text_read_scope.py` retains explicit query-count,
 nesting and fresh-write checks. Merging source does not establish fresh Mac or
 whole-game high-refresh acceptance.
+
+The PR #285 CI index check also caught three pre-existing Windows patch files
+with residual CRLF bytes despite their LF attributes. They were normalized to
+the exact committed Git blobs and the index refreshed. Patch record hashes
+identify actual bytes: refresh from canonical attribute-compliant files, keeping
+the explicitly binary watermark patch unchanged. Local index success alone
+does not prove a fresh checkout has the same patch bytes.

@@ -109,7 +109,7 @@
     },
     {
       "name": "save-routing.patch",
-      "sha256": "17e0760ba9b1eab0f701776dbd9f2f846588776beaa6a41f9ac8d26988446fcf",
+      "sha256": "1b22c5c8f3b082827f6e41338a4e355ecd8225f2cbbceedac6c512f27f8cc657",
       "targets": [
         "src/kernel/kernel_path.c",
         "titles/futureperfect/CMakeLists.txt"
@@ -1046,18 +1046,18 @@
     },
     {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-npc-animation-shots.patch",
-      "sha256": "48c05032dedd9d5c1590db367f3d6d09b9eb84a035a61402f5945bd2c6984d22",
+      "sha256": "f7eb33821883b3b51d5d1b50c71bef614a3a841fabfe2f3d72f3a0a1972115ec",
       "targets": [
-        "titles/futureperfect/src/recomp_manual.c\r"
+        "titles/futureperfect/src/recomp_manual.c"
       ]
     },
     {
       "name": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz-native-npc-aim-timing.patch",
-      "sha256": "9e0803b5fe02146c938a2b90fbc3bc27c399df8e6519fdeb73be701bbfcab13a",
+      "sha256": "68b9c72073db9f9314f9e91e65c47b9824f05bd00cd14979027fe383e5d44ad0",
       "targets": [
-        "templates/runtime/recomp_types.h\r",
-        "titles/futureperfect/src/recomp_manual.c\r",
-        "tools/recomp/lifter.py\r"
+        "templates/runtime/recomp_types.h",
+        "titles/futureperfect/src/recomp_manual.c",
+        "tools/recomp/lifter.py"
       ]
     },
     {
