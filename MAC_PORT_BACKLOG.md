@@ -709,6 +709,21 @@ validation until Mac checks pass. Do not infer Mac support from Windows results.
   pending: bind slots, select single/dual weapons, try empty slots, switch
   devices and pause/focus, then save/reload both editors.
 
+- **Mounted native cadence (2026-10-22, `fix/native-mounted-mouse`):** Shared
+  `pc_mounted.h` now rebases consumed mouse batches and accepts advancing
+  fractional game time at native presets. Windows and SDL adapters pass their
+  native-mode selection; no new OS adapter is required. The old helper lost
+  fresh packets at 60 and discarded zero-whole-frame motion at 120/144.
+  Existing gun behavior plus cadence/pause/handoff and two negative controls
+  pass five focused Windows checks; 159 broader timing/input/context cases
+  also pass. Supported Windows build `a5e0dc2` and built-in checks pass; draft
+  PR #304 carries this independent main-based fix. Mac execution and a live turret test of
+  this addition remain awaiting validation; existing #182 acceptance applies.
+  Windows actual-adapter checks now pass native/pause/live-rate handoff and
+  return-to-foot cases with synthetic raw motion. Matching cases are in SDL's
+  input self-test, awaiting native execution. The new packet fixture explicitly
+  includes `<stddef.h>` after Mac CI exposed the missing `ptrdiff_t` declaration;
+  that CI repair does not change gameplay behavior.
 
 - **Alpha.2 self-test isolation (2026-10-22):** `tsfp_native_input_test`
   clears its synthetic terminal context after the fractional-time fixture,

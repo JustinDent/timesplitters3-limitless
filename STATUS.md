@@ -70,6 +70,42 @@ use their separate 70-entry bound. The rebuilt Windows game and all supported
 build tests pass; both weapon-slot tests and the complete Windows launcher
 regression run pass, including all 37 settings checks. A fresh isolated Test Lab
 session is prepared for the user; in-game switching still needs user validation.
+## 2026-10-22 — Mounted-gun mouse cadence
+
+`fix/native-mounted-mouse` corrects two input losses in shared AGUN/CCTV
+mouse routing. The old direct batch clear retained an old timestamp, allowing
+new packets to expire mid-interval. A 60-update/125 Hz packet test turned
+91.2 degrees for 100 degrees of raw input. Using the shared consume/rebase
+helper restores 100. The separate whole-tick gate then reproduces only
+52 degrees and 60 aim updates at native120 with 120 motion-bearing updates.
+Native mode now tests positive finite fractional game time; the same counts
+produce 100 degrees at all three presets without scaling mouse displacement
+by elapsed time. Original mode keeps its whole-time pause gate.
+
+Five focused Windows tests pass, covering existing gun ownership/limits,
+FOV/inversion, terminal routing, normal-camera return, and the new native
+packet/cadence cases. The broader input/native-timing/context/backlog suite
+passes 159 tests in 103.37 seconds. Supported Windows build `a5e0dc2` and its
+built-in checks pass (`logs/native-mounted-build.log`, MSVC 14.44.35207,
+Windows SDK 10.0.26100, common Xbox frontend). Live turret acceptance and
+native Mac execution remain pending; draft PR #304 records current CI status.
+The candidate EXE/PDB is retained at `private/build-recovery/mounted-a5e0dc2`;
+EXE SHA-256 is `b74bd5a49bd32fac5628a1a558cf34e9b61edb8122ebf456237f35c41a87ede4`.
+Playable `4adb6b0` is restored with its hash verified; personal data is intact.
+This main-based candidate is independent of the WIP vehicle-physics build.
+See MAC-001 for host and live acceptance limits.
+The Windows host-adapter follow-up passes through the real input library and
+`pc_controls_apply_mouse`: native zero-whole motion, paused stale-whole motion,
+live return to Original60, and no deferred motion on returning to on-foot
+controls. Evidence: `logs/mounted-host-adapter-{build,test}.log`, using the
+fixture configuration and isolated `build/path-tests` scratch files. The SDL
+self-test contains matching cases but has not run on a physical Mac here.
+Mac CI's initial new-fixture compile failure was a missing `<stddef.h>` include;
+the explicit include repairs that portability issue. Current-head CI must pass
+before recording Mac fixture success. Gameplay source is unchanged by this
+test-only follow-up, so the retained Windows candidate still has the fix.
+The focused input, Mac-tooling and repository companion suite passes 116
+tests with one unavailable-host skip on Windows (10.43 seconds).
 
 ## 2026-10-22 — Pending PR integration
 

@@ -172,6 +172,16 @@ and its left-click mapping retain `pc_terminal_mouse` behavior. Controller
 input remains in the guest routines. The separate vehicle-seat mode `0x8000`
 is not routed by this helper. `tests/test_mounted_mouse.py` runs the guarded C
 fixture on Windows/macOS; physical Mac validation is tracked under MAC-001.
+The mounted helper receives the adapter's explicit native-timing selection.
+Native mode accepts finite positive game-float time at `4E794C`; Original60
+retains its whole-time gate at `4E7944`. Both consume/rebase mouse batches with
+`pc_input_consume_motion`, preventing fresh packets from expiring against a
+previous batch timestamp. Paused/invalid native time consumes without aiming.
+The helper still handles only AGUN mode `0x80`, not vehicle-seat mode `0x8000`.
+Host input self-tests route synthetic motion through `pc_controls_apply_mouse`
+in Windows and SDL, with zero-whole positive time, paused stale whole time,
+live return to Original60 and return to on-foot controls. Windows execution
+passes; native SDL self-test execution remains a host validation requirement.
 
 ## Unified Video Options and native presets (PR #285)
 
