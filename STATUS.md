@@ -163,6 +163,46 @@ activation, upstream input acceleration and native
 Mac execution remain unverified. See MAC-060 and the
 [walking/boost audit](docs/native-high-refresh-regressions.md#walking-update-and-boost-resource-audit-2026-10-22).
 
+## 2026-10-22 — Full-float procedural feedback candidate
+
+PR #298 head `496b636` passes all selected Windows/Mac native, upgrade and
+transition checks. The dependent `fix/native-water-float32` follow-up addresses
+another measured error in the disabled water experiment: repeated half-float
+render-target writes change the evolving image more than float32 writes.
+
+A deterministic 64x64 field now executes both original feedback pixel programs.
+Explicit diagonal offsets follow callback 0x2BF10; all pixels are compared to
+the controlled stencil. After one second, RMS blue differences from the same
+format's 60 FPS run are 0.001149/0.001341 for float32 at 120/144, versus
+0.013886/0.010135 for half-float. This excludes the original vertex program,
+smoothing, random forcing and full scene behavior. Remaining timestep drift
+and differences from original byte storage are explicit, not accepted parity.
+
+The opt-in policy now selects full-float intermediates; shared preservation
+also reconstructs their capture storage correctly. Normal-play defaults, guest
+headers and final byte textures remain unchanged. Existing GPU checks cover
+byte/half/full conversion and exact capture reconstruction. Eleven focused
+surface/GPU/transaction cases pass locally, plus 80 companion timing/queue/
+patch checks and four affected upgrade cases. The combined source `6a766f5`
+build passes all required Windows checks. Executable SHA-256:
+`c11dd28d2207fec7f40a5be2c658cf0713cf8edb2ab6535e0f4b818e290fa8de`.
+
+Three bounded isolated Scotland routes at 60/120/144 complete shoreline viewing,
+movement and pause/resume, with unchanged valid profiles and preserved fixtures.
+Logs confirm host format 0x4B in the high-rate runs. Each contains 360 validated
+consecutive GPU images, with all 359 adjacent pairs changed; reviewed shoreline
+stills contain water. First-120-game-tick active-channel standard deviations
+are 24.396/24.093 at 60, 18.940/18.147 at 120 and 19.014/18.381 at 144.
+The original-byte appearance/dynamics gap remains; unpaired RNG and synchronous
+capture prevent exact motion or pacing claims. Traces are roundtrip-verified
+compressed, disposable disks recycled, and no personal session is left open.
+
+Mac native runtime and the asset-free common-RHI GPU check pass for source
+`6035ed7` in PR #299. This includes the extended full-float conversion contract,
+not private-XBE wave-shader or actual Mac gameplay acceptance. Further live
+switching, longer motion, additional scenes and capture-free performance remain
+pending. The experiment stays disabled for normal play.
+
 ## 2026-10-22 — Controlled coupled-water and upgrade follow-up
 
 The original second feedback shader now has a deterministic fixed-neighbor
