@@ -1176,9 +1176,9 @@
     },
     {
       "name": "zzzz-native-surface-coefficients.patch",
-      "sha256": "de69708dfa59fa6a5fadd955c2645ee2480459c11c3da9bc0b38368f2a87d643",
+      "sha256": "cb26a14ec5f5e76391db9f1211d88f768b886de5ca2c294fa0f25ee0ca87349c",
       "targets": [
-        "src/hle/hle_d3d8_state.c\r"
+        "src/hle/hle_d3d8_state.c"
       ]
     },
     {
