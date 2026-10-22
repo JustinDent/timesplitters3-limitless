@@ -83,6 +83,13 @@ rebuilds or repeating unchanged failures; re-run when the inputs change.
 
 ## CI and cross-host limits
 
+Standalone HLE fixtures need both the patched runtime and repository `src/`
+include roots. Framebuffer/ghost mocks cover the current feedback-preservation
+and float-combiner host interfaces; unexpected calls fail rather than silently
+succeed. Camera fixtures extract through the perspective function's closing
+brace, excluding adjacent menu allocation code. Keep the stale-copy, state-leak
+and camera mutation cases enabled when updating those harness dependencies.
+
 `.github/workflows/runtime-patches.yml` calls `tools/ci-runtime-scope.py` to
 select transition/native/GPU/release checks. Launcher builds have separate
 owners. New tests must be registered in the correct workflow; adding a test

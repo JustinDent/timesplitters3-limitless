@@ -3087,6 +3087,13 @@ to retain V1 display compatibility. Windows model/UI regression coverage is in
   scene fidelity remains under MAC-011 and the near-completion playtest policy.
 ### MAC-060 — Native fractional updates at 60/120/144 FPS
 
+- **PR #285 CI harness repair (2026-10-21):** Shared framebuffer/ghost fixtures
+  now supply current include paths and host interfaces. Cutscene/decal fixtures
+  extract camera code without the adjacent menu allocator that Clang rejected.
+  No runtime policy or Mac adapter changes; 18 affected/related Windows cases
+  and 99 release checks pass. Fresh macOS CI remains pending; these source
+  contracts do not establish native Mac gameplay or visual parity.
+
 - **Main integration for PR #285 (2026-10-21):** Renumbered from MAC-058 to
   avoid main's crane entry; keyboard entry remains MAC-059. Shared native timing
   and unified Video Options retain Auto mode, main's scoped prompt reads/fresh

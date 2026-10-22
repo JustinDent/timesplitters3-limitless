@@ -1,3 +1,17 @@
+## PR #285 CI harness compatibility (2026-10-21)
+
+The merged stack exposed missing repository include paths in framebuffer and
+config tests, missing feedback/combiner host mocks, and camera fixture extraction
+that accidentally included the adjacent Audio Options allocator. Updated these
+test dependencies and bounded extraction without changing production behavior or
+removing mutation controls. Unexpected precision/combiner calls fail the fixtures.
+Windows: all 18 affected and related renderer cases pass, including stale-copy,
+state-leak and camera mutations; all 99 release-validation cases pass. Evidence:
+`logs/pr285-ci-fixture-retest.log`, `logs/pr285-ci-release-retest.log`.
+The failed transition gate depended on the failed native jobs; patch upgrades
+themselves passed. Fresh Windows/macOS CI is pending; no gameplay acceptance is
+claimed from these harness repairs. Personal saves and game sessions untouched.
+
 ## PR #285 integration with main (2026-10-21)
 
 Merged `origin/main` at `00e0e16` into `feature/native-144-fps` after `99260c9`.
