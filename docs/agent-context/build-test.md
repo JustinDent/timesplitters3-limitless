@@ -235,3 +235,13 @@ until the complete stack installs the display/viewport prerequisites. The
 post-upgrade assertions require both the crane wrapper and renderer clip hook,
 alongside preservation of local edits and idempotent reapplication. This does
 not omit the patch from fresh/current-stack or renderer regression tests.
+
+## Mounted gun input regression
+
+`python -m pytest tests/test_mounted_mouse.py tests/test_terminal_mouse.py -q`
+compiles guarded host-memory C fixtures on Windows/macOS. Mounted tests cover
+AGUN ownership/local port, single-consumption relative motion, gun-specific
+pitch sign, FOV/inversion/speed, authored clamps/fixed axes/full-circle wrap,
+paused/stale/focus rejection and returning to ordinary look. Runtime CI includes
+both tests. Physical turret aiming/firing and native host delivery remain
+separate gameplay checks; see #182 in STATUS and MAC-001.

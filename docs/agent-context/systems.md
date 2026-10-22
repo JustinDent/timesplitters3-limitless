@@ -132,3 +132,19 @@ STRETCH tag `0x00137010`. Shared RHI `d3d8_GetScissor` and legacy GL
 `native_apply_scissor` apply this policy before output scaling. Stored guest
 clips, other tags and partial rectangles remain unchanged. The title helper
 scope supplies the tag only for complete single-player non-4:3 views.
+
+## Mounted and CCTV gun mouse aim (#182)
+
+`src/pc_mounted.h` handles guest player mode `0x80` before ordinary player
+camera updates in both `pc_controls.c` and `native/input_sdl.c`. The US guest
+`sub_0025D520`/`sub_00258A20` aim an AGUN through player entity data `+0xC14`;
+ordinary player yaw/pitch do not turn it. The shared helper validates its AGUN
+tag and reverse owner link, uses local input port zero (not guest player ID),
+and updates gun pitch/yaw with authored limits, sensitivity, inversion, FOV and
+optional gun speed. Mouse displacement is consumed once without frame-time
+multiplication. Invalid ownership, pause, focus loss and stale motion consume
+input without falling through to hidden player angles. Terminal mode `0x2000`
+and its left-click mapping retain `pc_terminal_mouse` behavior. Controller
+input remains in the guest routines. The separate vehicle-seat mode `0x8000`
+is not routed by this helper. `tests/test_mounted_mouse.py` runs the guarded C
+fixture on Windows/macOS; physical Mac validation is tracked under MAC-001.
