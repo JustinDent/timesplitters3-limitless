@@ -42,6 +42,21 @@ not rendered frames, monitor scanout or Internet latency. Window captures are
 limited to the test processes. Benchmark fixture junctions are staged locally
 as five manifest files, then checked by the normal fixture validator.
 
+Launcher changelog publication: tests/test_launcher_release.py covers explicit
+previous stable launcher selection across paginated game/launcher history,
+initial-release notes and refusal of incomplete history. It remains registered
+in the existing Windows/Mac launcher build workflow. These are offline publisher
+tests; no game rebuild or launcher UI rebuild is needed for this notes-only fix.
+Additional launcher publication fixtures verify game/docs/housekeeping exclusion,
+mixed PR inclusion, merge range, file pagination, renamed paths and incomplete
+file-list refusal in the same existing dual-host test route.
+
+Game changelog baselines: tests/test_publish_release.py covers first-Stable
+bootstrap from the latest earlier published alpha, subsequent Stable baselines
+across minor versions, mixed launcher/draft history and ancestor restrictions.
+The suite is already registered for both hosts in the release checks; these
+offline publisher fixtures need no game or launcher rebuild.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows
@@ -488,3 +503,111 @@ empty repositories. `test_repo_context.py` exercises the ownership gate with rea
 Git diffs: generated version data is exempt, structural edits and empty-list
 regressions are not. Existing issue-form/runtime-plan CI runs these asset-free
 Python cases; there is no game or native launcher behavior change.
+
+## Weapon-slot selection checks
+
+`tests/test_weapon_slots.py` compiles the shared key-state and production guest
+selector fixture on Windows/macOS. It covers press edges, held/focus/menu input,
+expiry, empty slots, grouped weapon variants and local-player/state guards.
+The supported Windows build also runs `tests/pc_settings.c` for migration and
+last-slot rebinding/persistence. Launcher settings tests cover defaults, custom
+conflicts, explicit Unbound, moving keys and reset. Original input-hook changes
+require regenerating the guest C through the supported build. These fixtures
+are not a substitute for actual weapon-switch animation/gameplay validation.
+
+## Themed keyboard editor checks
+
+The historical old-controls upgrade fixture excludes keyboard-settings-menu and
+keyboard-weapon-slots until the shared-input locks/display wrappers exist. The
+final full-stack upgrade must contain the capture pump, two-binding limit and
+weapon-slot sampling/guest hook, so both new patches are still validated.
+
+`tests/test_keyboard_menu.py` compiles the portable capture/page model: opening
+input release, one event per press, cancel/focus/timeout, complete action
+coverage and the sensitivity range. Run alongside `test_menu_mouse.py`,
+`test_weapon_slots.py` and `test_quit_menu.py`. Supported game Build checks
+exercise native settings persistence and two-slot bounds; launcher settings
+tests cover importing legacy four-binding profiles, rejecting a third slot,
+and saving two slots. Live acceptance must separately check main/pause access,
+binding capture without shortcut leakage, conflict/clear/defaults, mouse
+sensitivity, two-column layout and return to gameplay.
+
+## Storage selection checks
+
+Run test_storage_menu.py for actual Windows volume queries, bounded labels,
+free/total formatting, atomic selection, routing rollback, unavailable paths, preserved
+profile files and test-session locks. test_fov_settings.py exercises inline drive
+rows, alphabetical drive-letter/volume-name ordering independent of the active drive, no child menu, failure/success feedback, console
+index isolation, profile-list refresh and original save dispatch. Its Mac-only compile contracts
+cover the production menu and prompts/storage translation units. The Windows and
+Mac bounded runners set TSFP_SAVE_LOCATION_LOCK=1; use temporary test folders for
+persistence checks rather than selecting a real save drive in automated play.
+For a user-requested manual drive-selection session, the Windows runner accepts
+`--play --allow-save-drive-changes`. This explicit option disables that launch's
+lock and respects save-location.txt beside its isolated controls file. Selecting
+a drive activates it immediately and persists the choice; future manual launches
+use the same preference. Preparation preserves this preference and never copies
+the Test Lab fixture onto the selected external drive. Ordinary automated sessions
+stay locked regardless of inherited environment settings.
+Mac runtime/UI validation remains separate from shared fixtures and Windows builds.
+
+Unlocked Test Lab fixtures use their game-created directory ID 1AD19156651F,
+not the original Player 1 seed folder. prepare_run remaps legacy fixtures and
+backs up only untouched seeded copies outside UserData. Modified legacy profiles
+require a fresh isolated run. This prevents ERROR_ALREADY_EXISTS when creating
+Player 1 without deleting a profile or altering personal saves.
+
+
+## Game release channels and maintenance publication (2026-10-22)
+
+`tools/release_channels.py` owns canonical X.Y.Z[-channel.N] package identity and
+the minimum launcher 1.3.0. `tools/release-version.py` writes an explicitly chosen
+VERSION only; no automatic increment/tag/publication. The next Stable source
+version is 0.3.2. Both game packagers validate identity before staging and emit
+release_channel in BUILD.json. Official packages continue optional texture delivery.
+
+`publish-release.py` defaults to exact origin/main; --branch permits pushed feature
+previews and Stable release/ or hotfix/ branches with a published Stable ancestor.
+It validates monotonic versions within stable major/minor lines or exact preview
+base/channel series. Notes choose an ancestor in that series, falling back to
+Stable; unrelated/nonancestor experiments never become a baseline. Channel JSON
+records exact source and included/latest published Stable; a missing latest
+Stable is disclosed. --notes-file supplies reviewed feature notes for unmerged
+branches. Prepared package reuse includes the channel metadata; publication
+retains latest=false and existing package/installer/hash/rollback checks.
+
+The release CI scope selects release_channels.py and release-version.py and
+existing test_publish_release.py covers their identity, preparation, branch,
+hotfix, unrelated-baseline and prepared-retry contracts using fake GitHub.
+LauncherSharedUiChecks covers shared channel selection/preferences/metadata;
+launcher_versions.cs covers paginated discovery. Run the existing Windows launcher
+suite and both-host CI. See STATUS.md for measured local results; no runtime game
+behavior or generated guest code changed, and no game build/publication is
+established by these asset-free checks.
+
+
+Grouped Preview UI: GameChannelPickerPage.cs is compiled automatically by both
+hosts' existing *Page.cs includes. launcher_shared_ui.cs tests the actual shared
+selector, including remembering a feature while returning through Stable, general
+preview selection and unavailable-track refresh. Rebuild with build-launcher.ps1
+-Test, then run build/launcher/TimeSplitters Launcher.exe. --render-preview produces
+a synthetic named-track example without modifying preferences or calling GitHub.
+No game build or publisher/tag-format change is required for this grouping.
+
+
+Local Windows artwork selection: build-launcher.ps1 resolves explicit image
+arguments first, then validates each build/launcher-art PNG against the shared
+artwork pin, then uses the existing private legacy fallback if no cached file
+exists. fetch-launcher-art.ps1 recovers the pinned banner/backdrop/logo without
+executing downloaded code. -RequireArtwork checks the selected resources; normal
+local rebuilds now reuse the same verified art as release CI when cached.
+
+
+Beta publication (2026-10-23): release_channels.identity defaults to history parsing;
+publishing=True rejects alpha/preview/rc/legacy suffixes. Version preparation,
+both package entry points and publisher preflight enforce that mode. Beta's
+canonical identity is beta/Beta; a custom Beta display name is rejected. Historical
+identities remain readable for baselines without joining Beta's series. Publisher
+fixtures now use beta.N, with explicit legacy rejection/history and independent
+Beta baseline tests. Existing generic semantic-version ordering tests still cover
+alpha/beta ordering separately from the new publication policy.
