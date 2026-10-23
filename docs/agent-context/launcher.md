@@ -269,3 +269,12 @@ cap uses the local merge diff). The source comparison link explicitly includes
 game history. Offline release fixtures cover filtering, range and complete files.
 Mixed PRs touching game runtime/patch/texture source use a neutral launcher label
 so their game feature titles do not become advertised launcher features.
+
+Game changelog bootstrap: tools/publish-release.py preflight uses the most
+recently published earlier ancestor game prerelease (including legacy alpha)
+only when publishing the first Stable game and no Stable game exists. Later
+Stable notes select the highest earlier Stable ancestor across minor versions;
+preview series policy is unchanged. Maintenance branches still need a Stable
+ancestor. Launcher tags, drafts, future versions and nonancestor previews are
+excluded. tests/test_publish_release.py verifies baseline selection and generated
+notes payload/range through the existing release test route. No host adapters change.

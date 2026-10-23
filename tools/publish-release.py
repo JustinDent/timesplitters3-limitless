@@ -228,7 +228,7 @@ class Publisher:
         if any(release['tag_name'] == self.tag for release in releases):
             raise ValueError(f'{self.tag} already has a release or draft. Inspect it on GitHub; it will not be overwritten.')
         published = [r for r in releases if not r.get('draft') and r.get('published_at')]
-        same_series, stable = [], []
+        same_series, stable, previews = [], [], []
         for release in published:
             try:
                 tag = release['tag_name']
@@ -240,6 +240,8 @@ class Publisher:
                 continue
             if old_channel == 'stable' and not release.get('prerelease'):
                 stable.append(release)
+            elif release.get('prerelease') and old_key < key:
+                previews.append(release)
             if (old_channel == self.channel['channel'] and
                     (old_key[:3] == key[:3] if self.prerelease else old_key[:2] == key[:2])):
                 same_series.append(release)
@@ -247,10 +249,19 @@ class Publisher:
             raise ValueError('Update VERSION beyond the published versions in this release series.')
         self.previous = None
         self.baseline = None
+        if self.prerelease:
+            candidates = (sorted(same_series, key=lambda r: version_key(r['tag_name']), reverse=True)
+                          + sorted(stable, key=lambda r: version_key(r['tag_name']), reverse=True))
+        else:
+            candidates = sorted((r for r in stable if version_key(r['tag_name']) < key),
+                                key=lambda r: version_key(r['tag_name']), reverse=True)
+            # Bootstrap the first Stable changelog from the latest published game
+            # preview (including historical alphas), then use Stable baselines forever.
+            if not stable:
+                candidates = sorted(previews, key=lambda r: r['published_at'], reverse=True)
         # Notes compare only against an ancestor; unrelated experimental branches
         # must never become a baseline merely because they were published later.
-        for release in (sorted(same_series, key=lambda r: version_key(r['tag_name']), reverse=True)
-                        + sorted(stable, key=lambda r: version_key(r['tag_name']), reverse=True)):
+        for release in candidates:
             revision = self.git('rev-parse', '--verify', 'refs/tags/'+release['tag_name']+'^{commit}')
             try:
                 self.git('merge-base', '--is-ancestor', revision, self.commit)
@@ -258,7 +269,7 @@ class Publisher:
                 continue
             self.previous, self.baseline = release, revision
             break
-        if not self.prerelease and self.source_branch != 'main' and self.previous is None:
+        if not self.prerelease and self.source_branch != 'main' and self.previous not in stable:
             raise ValueError('A maintenance branch must descend from a published Stable release.')
         if self.baseline == self.commit:
             raise ValueError('There are no new source commits since the last published release')
