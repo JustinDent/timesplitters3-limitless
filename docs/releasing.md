@@ -143,10 +143,15 @@ package. Windows validation does not establish Mac runtime acceptance.
 
 ## Release notes and provenance
 
-Notes compare against the highest suitable ancestor in the same release series,
-falling back to an ancestor Stable release. Unrelated experiments and nonancestor
-commits cannot become the baseline. Stable notes exclude prior previews as a
-baseline, so their included fixes/features are not omitted.
+Stable notes compare against the highest earlier published Stable game ancestor,
+even across minor versions. For the first Stable game release only, when no
+Stable game has been published, use the most recently published earlier game
+prerelease that is an ancestor. Thus `v0.3.2` compares against
+`v0.3.1-alpha.2`; subsequent Stable releases compare against Stable releases,
+even if newer previews exist. Launcher releases and drafts are never candidates.
+Preview notes compare against the highest suitable ancestor in the same release
+series, falling back to an ancestor Stable release. Nonancestor commits cannot
+become a baseline. A maintenance branch still requires a published Stable ancestor.
 
 The publisher includes merged game-related PRs from the exact commit range.
 Launcher-only, documentation-only and release housekeeping PRs are excluded.

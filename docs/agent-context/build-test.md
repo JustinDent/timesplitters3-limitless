@@ -25,6 +25,12 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+Game changelog baselines: tests/test_publish_release.py covers first-Stable
+bootstrap from the latest earlier published alpha, subsequent Stable baselines
+across minor versions, mixed launcher/draft history and ancestor restrictions.
+The suite is already registered for both hosts in the release checks; these
+offline publisher fixtures need no game or launcher rebuild.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows

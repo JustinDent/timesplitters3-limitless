@@ -251,3 +251,12 @@ GameChannelPickerPage shows Beta under Preview and retains the feature suffixes.
 Old general-track note metadata remains readable without relabeling legacy builds.
 Shared UI fixtures check Beta-only candidates, hidden legacy tracks/history,
 preference migration and existing grouped selectors on both hosts.
+
+Game changelog bootstrap: tools/publish-release.py preflight uses the most
+recently published earlier ancestor game prerelease (including legacy alpha)
+only when publishing the first Stable game and no Stable game exists. Later
+Stable notes select the highest earlier Stable ancestor across minor versions;
+preview series policy is unchanged. Maintenance branches still need a Stable
+ancestor. Launcher tags, drafts, future versions and nonancestor previews are
+excluded. tests/test_publish_release.py verifies baseline selection and generated
+notes payload/range through the existing release test route. No host adapters change.

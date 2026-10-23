@@ -689,6 +689,62 @@ def test_stable_hotfix_is_not_blocked_by_newer_experiment(publisher):
     assert '--latest=false' in publication_calls(publisher)[0][1]
 
 
+def test_first_stable_notes_compare_against_latest_published_alpha(publisher):
+    (publisher.root/'VERSION').write_text('0.3.2')
+    publisher.releases = [dict(tag_name=tag, draft=False, prerelease=True, published_at=date)
+                          for tag, date in [('v0.3.1-alpha.1', '2026-10-01'),
+                                            ('v0.3.1-alpha.2', '2026-10-20'),
+                                            ('v0.4.0-beta.1', '2026-10-21'),
+                                            ('launcher-v1.3.0', '2026-10-23')]]
+    publisher.releases.append(dict(tag_name='v0.3.1-alpha.3', draft=True, prerelease=True,
+                                   published_at='2026-10-22'))
+    publisher.preflight()
+    assert publisher.previous['tag_name'] == 'v0.3.1-alpha.2'
+    assert publisher.baseline == PREVIOUS
+    assert publisher.stable_base is None
+    publisher.output.mkdir(parents=True)
+    publisher.write_notes()  # Fake GitHub checks the explicit previous_tag_name.
+    notes = publisher.notes.read_text()
+    assert '## Changes since v0.3.1-alpha.2' in notes
+    assert '/compare/v0.3.1-alpha.2...v0.3.2' in notes
+    assert ('git', ('rev-list', f'{PREVIOUS}..{HEAD}')) in publisher.calls
+
+
+@pytest.mark.parametrize('version', ['0.3.3', '0.4.0'])
+def test_later_stable_notes_prefer_stable_over_newer_previews(publisher, version):
+    (publisher.root/'VERSION').write_text(version)
+    publisher.releases = [dict(tag_name=tag, draft=False, prerelease='-' in tag,
+                               published_at=f'2026-10-{day}') for tag, day in [
+        ('v0.2.9', '10'), ('v0.3.2', '20'), ('v0.3.3-beta.1', '21')]]
+    publisher.preflight()
+    assert publisher.previous['tag_name'] == 'v0.3.2'
+
+
+def test_first_stable_uses_latest_publication_but_skips_nonancestor(publisher, monkeypatch):
+    (publisher.root/'VERSION').write_text('0.3.2')
+    publisher.releases = [dict(tag_name=tag, draft=False, prerelease=True, published_at=date)
+                          for tag, date in [('v0.3.1-alpha.3', '2026-10-18'),
+                                            ('v0.3.1-alpha.2', '2026-10-20'),
+                                            ('v0.3.1-story-coop.1', '2026-10-22')]]
+    original = publisher.git
+    def git(*args):
+        if args[0] == 'rev-parse' and args[-1] == 'refs/tags/v0.3.1-story-coop.1^{commit}':
+            return 'c'*40
+        if args[0] == 'merge-base' and args[2] == 'c'*40:
+            raise RuntimeError('not an ancestor')
+        return original(*args)
+    monkeypatch.setattr(publisher, 'git', git)
+    publisher.preflight()
+    assert publisher.previous['tag_name'] == 'v0.3.1-alpha.2'
+
+
+def test_first_stable_preview_baseline_does_not_allow_maintenance_branch(publisher):
+    publisher.branch = publisher.source_branch = 'hotfix/0.3.2'
+    (publisher.root/'VERSION').write_text('0.3.2')
+    with pytest.raises(ValueError, match='descend from a published Stable'):
+        publisher.preflight()
+
+
 def test_unrelated_channel_and_nonancestor_releases_are_not_note_baselines(publisher, monkeypatch):
     (publisher.root/'VERSION').write_text('0.5.0-story-coop.2')
     publisher.releases = [dict(tag_name=tag, draft=False, prerelease='-' in tag, published_at='2026-10-22')
