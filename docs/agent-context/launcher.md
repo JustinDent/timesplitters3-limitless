@@ -251,3 +251,12 @@ GameChannelPickerPage shows Beta under Preview and retains the feature suffixes.
 Old general-track note metadata remains readable without relabeling legacy builds.
 Shared UI fixtures check Beta-only candidates, hidden legacy tracks/history,
 preference migration and existing grouped selectors on both hosts.
+
+Launcher changelog correction: tools/launcher-release.py launcher_notes pages the
+published release history and explicitly supplies the highest earlier stable
+launcher tag to GitHub's generated notes API. This prevents a game alpha from
+becoming the implicit comparison baseline; drafts, launcher previews and later
+versions are excluded. Initial launcher notes avoid implicit generation, and
+incomplete pagination fails closed. tests/test_launcher_release.py covers mixed
+paginated history, initial releases and the history cap in the existing dual-host
+publication test route. No launcher binaries or OS adapters change.

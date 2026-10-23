@@ -25,6 +25,12 @@ invent results. Root AGENTS.md owns isolation, supported XBE and storage rules.
 
 ## Choose the cheapest relevant check
 
+Launcher changelog publication: tests/test_launcher_release.py covers explicit
+previous stable launcher selection across paginated game/launcher history,
+initial-release notes and refusal of incomplete history. It remains registered
+in the existing Windows/Mac launcher build workflow. These are offline publisher
+tests; no game rebuild or launcher UI rebuild is needed for this notes-only fix.
+
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts
 and expiry between operations. `tests/pc_prompts.c` retains real Windows

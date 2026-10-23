@@ -55,6 +55,12 @@ are ignored; older public assets remain untouched.
 Publication explicitly refreshes the issue-form version workflow because releases
 created using `GITHUB_TOKEN` do not trigger its release event.
 
+Generated changelogs explicitly compare against the highest earlier published
+stable `launcher-vX.Y.Z` release, including for launcher previews. Game tags,
+drafts and launcher prereleases cannot become the baseline. Release history is
+paged; incomplete history stops publication. With no previous stable launcher,
+the notes describe an initial launcher release without an unrelated comparison.
+
 The Mac target is ARM64, not Intel. The app retains its existing ad-hoc signing;
 Developer ID signing/notarization and clean-machine Gatekeeper acceptance remain
 separate delivery work. This workflow releases the launcher only; native game

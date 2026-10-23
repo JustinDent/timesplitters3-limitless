@@ -26,6 +26,7 @@ class FakeGitHub:
         self.fail_upload = None
         self.bad_digest = False
         self.latest = {'tag_name': 'launcher-v1.2.18'}
+        self.history = [dict(self.latest, draft=False, prerelease=False)]
 
     def call(self, method, path, data=None, upload=None):
         self.calls.append((method, path, data))
@@ -40,6 +41,9 @@ class FakeGitHub:
             return self.latest
         if path.endswith('/releases/generate-notes'):
             return {'body': 'Changes'}
+        if '/releases?per_page=100&page=' in path:
+            page = int(path.rsplit('=', 1)[1])
+            return self.history[(page-1)*100:page*100]
         if method == 'POST' and path.endswith('/releases'):
             assert data['draft'], 'The first visible release state must be a draft.'
             self.release = dict(data, id=1)
@@ -163,6 +167,33 @@ class LauncherReleaseTests(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             release.publish(self.directory, self.plan, self.api)
         self.assertEqual(self.api.calls, [])
+
+    def test_notes_use_previous_stable_launcher_across_paginated_mixed_history(self):
+        self.api.history = [{'tag_name': 'v0.3.1-alpha.2'}]*100 + [
+            {'tag_name': 'launcher-v1.2.17'},
+            {'tag_name': 'launcher-v1.2.18'},
+            {'tag_name': 'launcher-v1.2.19'},  # Current release is not its own baseline.
+            {'tag_name': 'launcher-v1.2.20'},  # Nor is a newer version.
+            {'tag_name': 'launcher-v1.2.19-beta.1', 'prerelease': True},
+            {'tag_name': 'launcher-v1.2.19-beta.2'},
+            {'tag_name': 'launcher-v1.2.18', 'draft': True}]
+        self.both()
+        release.publish(self.directory, self.plan, self.api)
+        notes = [call[2] for call in self.api.calls if call[1].endswith('/generate-notes')]
+        self.assertEqual(notes, [dict(tag_name=self.plan['tag'], target_commitish=SHA,
+                                     previous_tag_name='launcher-v1.2.18')])
+
+    def test_initial_launcher_notes_never_use_game_baseline(self):
+        self.api.history = [{'tag_name': 'v0.3.1-alpha.2'},
+                            {'tag_name': 'launcher-v1.2.18', 'draft': True}]
+        self.assertEqual(release.launcher_notes(self.api, '/repos/test', self.plan['tag'], SHA),
+                         'Initial launcher release.')
+        self.assertFalse(any(call[1].endswith('/generate-notes') for call in self.api.calls))
+
+    def test_incomplete_notes_history_is_rejected(self):
+        self.api.history = [{'tag_name': 'v0.3.1-alpha.2'}]*2000
+        with self.assertRaisesRegex(ValueError, 'history is incomplete'):
+            release.launcher_notes(self.api, '/repos/test', self.plan['tag'], SHA)
 
     def test_stale_aliases_and_old_archives_are_not_published(self):
         self.both()

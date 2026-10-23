@@ -213,6 +213,31 @@ def publication_assets(directory, plan):
     return {path.name: path for path in release_assets(directory, plan)}
 
 
+def launcher_notes(api, base, tag, sha):
+    # GitHub's implicit baseline can be a game release in this shared repository.
+    current = tuple(map(int, VERSION.fullmatch(tag[10:]).groups()[:3]))
+    candidates = []
+    for page in range(1, 21):
+        releases = api.call('GET', base+f'/releases?per_page=100&page={page}')
+        for item in releases:
+            name = item.get('tag_name', '')
+            match = VERSION.fullmatch(name[10:]) if name.startswith('launcher-v') else None
+            if not match or match[4] or item.get('draft') or item.get('prerelease'):
+                continue
+            version = tuple(map(int, match.groups()[:3]))
+            if version < current:
+                candidates.append((version, name))
+        if len(releases) < 100:
+            break
+    else:
+        raise ValueError('Launcher release history is incomplete; refusing an ambiguous changelog baseline.')
+    if not candidates:
+        return 'Initial launcher release.'
+    previous = max(candidates)[1]
+    return api.call('POST', base+'/releases/generate-notes', {
+        'tag_name': tag, 'target_commitish': sha, 'previous_tag_name': previous})['body']
+
+
 def publish(directory, plan, api):
     require(plan['publish'] and plan['repository'] == REPOSITORY, 'This run is validation-only.')
     expected = publication_assets(directory, plan)
@@ -235,7 +260,7 @@ def publish(directory, plan, api):
     if existing_sha is None:
         api.call('POST', base+'/git/refs', {'ref': 'refs/tags/'+tag, 'sha': sha})
     if release is None:
-        notes = api.call('POST', base+'/releases/generate-notes', {'tag_name': tag, 'target_commitish': sha})
+        notes = launcher_notes(api, base, tag, sha)
         download = 'https://github.com/'+REPOSITORY+'/releases/download/'+tag+'/'
         links = ' · '.join('['+label+']('+download+package_names(version, platform)[0]+')'
                            for label, platform in [('Download Windows x64', 'windows-x64'),
@@ -246,7 +271,7 @@ def publish(directory, plan, api):
                 'Mac v1.2.19 users: manually replace the app and Support/Launcher/manifest.json with this release; '
                 'that older updater cannot install the newly sealed app bundle. Preserve game files, saves, settings and ISO.\n\n'
                 'The Mac app is ad-hoc signed; Developer ID signing/notarization and clean-machine installation '
-                'remain pending. No game runtime or original game data is included.\n\n' + notes.get('body', '') + '\n\n' + marker)
+                'remain pending. No game runtime or original game data is included.\n\n' + notes + '\n\n' + marker)
         release = api.call('POST', base+'/releases', {'tag_name': tag, 'target_commitish': sha,
             'name': 'Launcher v'+version, 'body': body, 'draft': True,
             'prerelease': plan['prerelease'], 'make_latest': 'false'})
