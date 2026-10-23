@@ -117,7 +117,9 @@ class FakePublisher(module.Publisher):
             return PREVIOUS if 'refs/tags/' in args[-1] else HEAD
         if args[0] == 'ls-remote':
             tag = HEAD+'\trefs/tags/'+self.tag if self.tag_created else ''
-            return tag if len(args) == 3 else self.remote+'\trefs/heads/main'+ ('\n'+tag if tag else '')
+            return tag if len(args) == 3 else self.remote+'\trefs/heads/'+self.source_branch+ ('\n'+tag if tag else '')
+        if args[0] == 'merge-base':
+            return ''
         if args[0] == 'log':
             return HEAD+'\tAdd Online hosting and <diagnostics>'
         if args[0] == 'rev-list':
@@ -127,9 +129,9 @@ class FakePublisher(module.Publisher):
     def gh(self, *args, payload=None):
         self.calls.append(('gh', args, payload))
         if args[:2] == ('api', 'repos/owner/repo/releases/latest'):
-            return json.dumps({'tag_name': 'launcher-v1.2.22', 'draft': False, 'prerelease': False,
+            return json.dumps({'tag_name': 'launcher-v1.3.0', 'draft': False, 'prerelease': False,
                                'published_at': '2026-10-20', 'assets': [
-                                   {'name': 'TimeSplitters-Launcher-v1.2.22-'+platform+'.zip', 'state': 'uploaded', 'size': 1}
+                                   {'name': 'TimeSplitters-Launcher-v1.3.0-'+platform+'.zip', 'state': 'uploaded', 'size': 1}
                                    for platform in ('windows-x64', 'macos-arm64')]})
         if args[:2] == ('auth', 'status'):
             return ''
@@ -138,7 +140,7 @@ class FakePublisher(module.Publisher):
         if args[:2] == ('api', '--paginate'):
             return json.dumps([self.releases])
         if 'generate-notes' in str(args):
-            assert payload['previous_tag_name'] == 'v0.2.0-alpha.2'
+            assert payload.get('previous_tag_name') == (self.previous['tag_name'] if self.previous else None)
             assert payload['target_commitish'] == HEAD
             return json.dumps(dict(body='## What\u2019s Changed\n\n* Online multiplayer https://github.com/owner/repo/pull/12'))
         if args[:2] == ('api', 'repos/owner/repo/pulls/12'):
@@ -167,7 +169,7 @@ class FakePublisher(module.Publisher):
         binary = self.stage/'Bin/game.exe'
         binary.parent.mkdir()
         binary.write_bytes(b'fixture executable, no original game data')
-        build = dict(source_commit=HEAD, version=self.tag, source_changes=[], textures=self.texture_identity,
+        build = dict(source_commit=HEAD, version=self.tag, release_channel=module.CHANNELS.identity(self.tag), source_changes=[], textures=self.texture_identity,
                      files={'Bin/game.exe':module.digest(binary), **self.texture_files})
         (self.stage/'BUILD.json').write_text(json.dumps(build))
         with zipfile.ZipFile(self.archive, 'x') as archive:
@@ -566,7 +568,7 @@ print('PASS: relocated SSL context and unchanged trust policy')
 def test_main_moving_after_preparation_prevents_upload(publisher):
     publisher.preflight(); publisher.prepare()
     publisher.remote = PREVIOUS
-    with pytest.raises(ValueError, match='main changed'):
+    with pytest.raises(ValueError, match='source branch changed'):
         publisher.publish()
     assert not publication_calls(publisher)
 
@@ -599,7 +601,7 @@ def test_large_texture_pr_uses_verified_local_merge_diff(publisher, monkeypatch)
 
 @pytest.mark.parametrize('version,draft,missing,passes', [
     ('1.2.21', False, False, False), ('1.2.22', True, False, False),
-    ('1.2.22', False, True, False), ('1.2.22', False, False, True)])
+    ('1.2.22', False, True, False), ('1.3.0', False, False, True)])
 def test_bundled_game_requires_published_compatible_launcher(publisher, monkeypatch, version, draft, missing, passes):
     publisher.preflight()
     publisher.output.mkdir(parents=True, exist_ok=True)
@@ -610,13 +612,13 @@ def test_bundled_game_requires_published_compatible_launcher(publisher, monkeypa
                    for platform in (['windows-x64'] if missing else ['windows-x64', 'macos-arm64'])]}
     monkeypatch.setattr(publisher, 'gh', lambda *args, **kwargs: json.dumps(release))
     if passes:
-        publisher.require_texture_launcher()
+        publisher.require_launcher()
     else:
         with pytest.raises(ValueError, match='launcher'):
-            publisher.require_texture_launcher()
+            publisher.require_launcher()
 
 
-@pytest.mark.parametrize('version,passes', [('1.2.22', False), ('1.2.23', False), ('1.2.24', True)])
+@pytest.mark.parametrize('version,passes', [('1.2.22', False), ('1.2.23', False), ('1.3.0', True)])
 def test_retired_textures_require_launcher_with_transactional_migration(publisher, monkeypatch, version, passes):
     publisher.preflight()
     publisher.output.mkdir(parents=True, exist_ok=True)
@@ -628,10 +630,10 @@ def test_retired_textures_require_launcher_with_transactional_migration(publishe
                   for platform in ('windows-x64', 'macos-arm64')]}
     monkeypatch.setattr(publisher, 'gh', lambda *args, **kwargs: json.dumps(latest))
     if passes:
-        publisher.require_texture_launcher()
+        publisher.require_launcher()
     else:
-        with pytest.raises(ValueError, match='launcher 1.2.24'):
-            publisher.require_texture_launcher()
+        with pytest.raises(ValueError, match='launcher 1.3.0'):
+            publisher.require_launcher()
 
 
 def test_optional_texture_policy_needs_no_lfs_and_rejects_bundled_payload(publisher):
@@ -644,3 +646,108 @@ def test_optional_texture_policy_needs_no_lfs_and_rejects_bundled_payload(publis
     publisher.require_package_textures({'textures': None, 'files': {'Bin/game.exe': 'a'*64}})
     with pytest.raises(ValueError):
         publisher.require_package_textures({'textures': None, 'files': {'Textures/0123456789abcdef.dds': 'a'*64}})
+
+
+@pytest.mark.parametrize('version,channel', [
+    ('0.4.1', 'stable'), ('0.5.0-story-coop.1', 'story-coop'),
+    ('0.5.0-preview.2', 'preview'), ('0.3.1-alpha.2', 'preview')])
+def test_game_channel_identity(version, channel):
+    assert module.CHANNELS.identity(version)['channel'] == channel
+
+
+@pytest.mark.parametrize('version', ['0.4.0-stable.1', '0.4.0-story-coop.0',
+    '0.4.0-story-coop.01', '0.4.0-Story-Coop.1', '0.4.0-coop', '0.4.0+local'])
+def test_invalid_channel_versions_are_rejected(version):
+    with pytest.raises(ValueError): module.CHANNELS.identity(version)
+
+
+def test_preview_branch_publishes_exact_pushed_source_without_main_merge(publisher):
+    publisher.branch = publisher.source_branch = 'story-coop'
+    (publisher.root/'VERSION').write_text('0.5.0-story-coop.1')
+    publisher.releases.append(dict(tag_name='v0.4.0', draft=False, prerelease=False, published_at='2026-10-16'))
+    publisher.preflight()
+    assert publisher.channel['channel'] == 'story-coop'
+    assert publisher.previous['tag_name'] == 'v0.4.0'
+    assert publisher.channel['stable_base'] == 'v0.4.0'
+    publisher.prepare()
+    publisher.publish()
+    assert '--prerelease' in publication_calls(publisher)[0][1]
+    assert 'Story Coop Preview' in publisher.notes.read_text()
+    assert '<!-- tsfp-release ' in publisher.notes.read_text()
+
+
+def test_stable_hotfix_is_not_blocked_by_newer_experiment(publisher):
+    publisher.branch = publisher.source_branch = 'hotfix/0.4.1'
+    (publisher.root/'VERSION').write_text('0.4.1')
+    publisher.releases = [dict(tag_name=tag, draft=False, prerelease='-' in tag, published_at=date)
+                          for tag,date in [('v0.4.0','2026-10-15'), ('v0.5.0-story-coop.8','2026-10-22')]]
+    publisher.preflight()
+    assert publisher.previous['tag_name'] == 'v0.4.0'
+    publisher.prepare()
+    publisher.publish()
+    assert '--prerelease' not in publication_calls(publisher)[0][1]
+    assert '--latest=false' in publication_calls(publisher)[0][1]
+
+
+def test_unrelated_channel_and_nonancestor_releases_are_not_note_baselines(publisher, monkeypatch):
+    (publisher.root/'VERSION').write_text('0.5.0-story-coop.2')
+    publisher.releases = [dict(tag_name=tag, draft=False, prerelease='-' in tag, published_at='2026-10-22')
+                          for tag in ['v0.4.0','v0.4.1','v0.5.0-story-coop.1','v0.6.0-other.9']]
+    original = publisher.git
+    def git(*args):
+        if args[0]=='rev-parse' and args[-1] in ('refs/tags/v0.4.1^{commit}', 'refs/tags/v0.5.0-story-coop.1^{commit}'):
+            return 'c'*40
+        if args[0]=='merge-base' and args[2]=='c'*40:
+            raise RuntimeError('not an ancestor')
+        return original(*args)
+    monkeypatch.setattr(publisher,'git',git)
+    publisher.preflight()
+    assert publisher.previous['tag_name']=='v0.4.0'
+    assert publisher.channel['latest_stable']=='v0.4.1'
+    assert not publisher.channel['includes_latest_stable']
+    publisher.output.mkdir(parents=True)
+    publisher.write_notes()
+    assert 'does not include the latest Stable release, v0.4.1' in publisher.notes.read_text()
+
+
+def test_channel_display_identity_cannot_change_on_prepared_retry(publisher):
+    publisher.preflight();publisher.prepare()
+    publisher.channel['name']='Changed name'
+    with pytest.raises(ValueError,match='Prepared output'):
+        publisher.prepare()
+
+
+def test_stable_branch_without_stable_ancestor_is_rejected(publisher):
+    publisher.branch = publisher.source_branch = 'hotfix/0.4.1'
+    (publisher.root/'VERSION').write_text('0.4.1')
+    with pytest.raises(ValueError,match='descend from a published Stable'):
+        publisher.preflight()
+
+
+@pytest.mark.parametrize('version', ['0.3.2', '0.4.0-story-coop.1'])
+def test_version_preparation_writes_only_explicit_version(tmp_path, monkeypatch, version):
+    import sys
+    monkeypatch.setitem(sys.modules,'release_channels',module.CHANNELS)
+    spec = importlib.util.spec_from_file_location('release_version',module.ROOT/'tools/release-version.py')
+    prepare = importlib.util.module_from_spec(spec);spec.loader.exec_module(prepare)
+    (tmp_path/'VERSION').write_text('0.3.1-alpha.2')
+    (tmp_path/'keep').write_text('keep')
+    prepare.set_version(tmp_path,version)
+    assert (tmp_path/'VERSION').read_text()==version+'\n'
+    assert (tmp_path/'keep').read_text()=='keep'
+    with pytest.raises(ValueError): prepare.set_version(tmp_path,'0.4.0-rc.1')
+    assert (tmp_path/'VERSION').read_text()==version+'\n'
+
+
+
+def test_preview_maintainer_notes_and_display_name_are_reviewable(publisher):
+    publisher.channel_name='Story Co-op Preview'
+    (publisher.root/'VERSION').write_text('0.5.0-story-coop.1')
+    publisher.notes_file=publisher.root/'preview-notes.md'
+    publisher.notes_file.write_text('## Known issues\nTest peers must use the same game build.')
+    publisher.preflight();publisher.output.mkdir(parents=True);publisher.write_notes()
+    notes=publisher.notes.read_text()
+    assert 'Story Co-op Preview' in notes and 'Test peers must use the same game build.' in notes
+    publisher.notes_file.write_text('<!-- tsfp-release {} -->')
+    with pytest.raises(ValueError,match='override channel metadata'):
+        publisher.write_notes()

@@ -58,10 +58,67 @@ public static class LauncherSharedUiChecks
         return Path.GetTempPath();
 #endif
     }
+    static Dictionary<string,object> ChannelRecord(string tag,bool preview=false)
+    {
+        string asset="TimeSplitters-Future-Perfect-PC-"+tag+"-"+LauncherPlatform.AssetSuffix+".zip";
+        return Json.Object(Json.Encode(new {tag_name=tag,prerelease=preview,draft=false,body="Notes",assets=new[]{new {
+            name=asset,state="uploaded",size=100,digest="sha256:"+new string('a',64),browser_download_url=ReleaseClient.ReleasesPage+"/download/"+tag+"/"+asset}}}));
+    }
     static int RunCore()
     {
         string root=Path.Combine(TestBase(),"tsfp-shared-ui-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(root);
         try {
+            Test("Preview groups named feature tracks and remembers the selected test across Stable",()=>{
+                var picker=new GameChannelPickerPage();int changes=0;picker.Changed+=()=>changes++;
+                var releases=new[]{new Release {Tag="v0.4.0-preview.1",Channel="preview",ChannelName="Preview"},
+                    new Release {Tag="v0.4.0-story-coop.1",Channel="story-coop",ChannelName="Story Co-op Preview"}};
+                picker.SetReleases(releases,"stable","story-coop");
+                Need(picker.Channel.Items.Count==2&&picker.Selected=="stable"&&!picker.ShowingTracks&&changes==0,"Top-level channels must be Stable and Preview only");
+                picker.Channel.SelectedIndex=1;
+                Need(picker.ShowingTracks&&picker.Selected=="story-coop"&&changes==1,"Preview did not restore the remembered feature track");
+                Need(picker.Track.Items.Cast<GameChannelChoice>().Select(c=>c.Name).SequenceEqual(new[]{"General Preview","Story Co-op"}),"Named tests were not grouped under Preview");
+                picker.Track.SelectedItem=picker.Track.Items.Cast<GameChannelChoice>().First(c=>c.Id=="preview");
+                Need(picker.Selected=="preview"&&changes==2,"General Preview did not select its own track");
+                picker.Channel.SelectedIndex=0;picker.Channel.SelectedIndex=1;
+                Need(picker.Selected=="preview"&&changes==4,"Switching through Stable lost the selected preview track");
+                picker.SetReleases(new Release[0],"story-coop");
+                Need(picker.Selected=="story-coop"&&picker.ShowingTracks&&changes==4,"Unavailable tracks must remain selected without triggering checks");
+                picker.SetEnabled(false);Need(!picker.Channel.IsEnabled&&!picker.Track.IsEnabled,"Busy state must lock both selectors");
+            });
+            Test("game channels select independent series and permit explicit return to Stable",()=>{
+                var records=new[]{ChannelRecord("v0.4.1"),ChannelRecord("v0.5.0-story-coop.2",true),ChannelRecord("v0.6.0-other.8",true),ChannelRecord("v0.5.0-preview.1",true),ChannelRecord("v0.3.1-alpha.2",true)};
+                var releases=ReleaseClient.GameVersions(Json.Encode(records)).Releases;
+                Need(GameChannels.Select(releases,"story-coop").Tag=="v0.5.0-story-coop.2","Experiment escaped its channel");
+                Need(GameChannels.Select(releases,"preview").Tag=="v0.5.0-preview.1","General preview absorbed experiments");
+                var stable=GameChannels.Select(releases,"stable");Need(stable.Tag=="v0.4.1","Stable absorbed preview");
+                Need(GameChannels.CanInstall(stable,"v0.5.0-story-coop.2"),"Returning to Stable must allow a lower version");
+                Need(!GameChannels.CanInstall(stable,"v0.4.2"),"Same-channel downgrade must remain explicit history selection");
+                Need(GameChannels.Select(releases,"withdrawn")==null,"Missing experiment must not substitute Stable");
+                Need(GameChannels.Choices(releases,"withdrawn").Any(c=>c.Id=="withdrawn"),"Unavailable selected channel was lost");
+            });
+            Test("game preview preferences migrate without enrolling launcher previews or losing unrelated preferences",()=>{
+                string folder=Path.Combine(root,"channels");Directory.CreateDirectory(folder);
+                Need(GameChannels.Read(folder)=="stable","Fresh installs must use Stable");
+                string path=Core.PathIn(folder,".launcher/preferences.json");
+                Core.Write(path,Json.Encode(new {preview=true,custom="keep"}));
+                Need(GameChannels.Read(folder)=="preview"&&!SelfUpdate.PreviewChannel(folder),"Old Preview must affect only game previews");
+                GameChannels.Save(folder,"story-coop");var prefs=Json.Object(File.ReadAllText(path));
+                Need(GameChannels.Read(folder)=="story-coop"&&GameChannels.ReadPreviewTrack(folder)=="story-coop"&&Json.String(prefs,"custom")=="keep"&&!Json.Flag(prefs,"preview"),"Channel save lost preferences");
+                GameChannels.Save(folder,"stable");
+                Need(GameChannels.Read(folder)=="stable"&&GameChannels.ReadPreviewTrack(folder)=="story-coop","Stable lost the remembered preview track");
+                bool rejected=false;try{GameChannels.Save(folder,"../outside");}catch(InvalidDataException){rejected=true;}Need(rejected,"Unsafe channel ID accepted");
+            });
+            Test("release channel metadata is checked and hidden from visible notes",()=>{
+                var record=ChannelRecord("v0.5.0-story-coop.1",true);
+                var metadata=new Dictionary<string,object>{{"schema",1},{"channel","story-coop"},{"name","Story Co-op Preview"},{"source_commit",new string('a',40)},{"minimum_launcher","1.3.0"}};
+                record["body"]="<!-- tsfp-release "+Json.Encode(metadata)+" -->\nHuman release notes";
+                var release=ReleaseClient.GameVersions(Json.Encode(new[]{record})).Releases.Single();
+                Need(release.ChannelName=="Story Co-op Preview"&&release.MinimumLauncher=="1.3.0"&&!release.Notes.Contains("tsfp-release"),"Metadata was lost or displayed");
+                record["body"]="<!-- tsfp-release {bad json} -->";
+                Need(ReleaseClient.GameVersions(Json.Encode(new[]{record})).Releases.Length==0,"Malformed metadata was accepted");
+                metadata["channel"]="other";record["body"]="<!-- tsfp-release "+Json.Encode(metadata)+" -->";
+                Need(ReleaseClient.GameVersions(Json.Encode(new[]{record})).Releases.Length==0,"Mismatched metadata was accepted");
+            });
             Test("optional texture beta toggle saves a launch preference without changing textures",()=>{
                 string folder=Path.Combine(root,"textures-toggle");Directory.CreateDirectory(Path.Combine(folder,"Textures"));
                 string texture=Path.Combine(folder,"Textures/0123456789abcdef.dds");File.WriteAllText(texture,"untouched texture fixture");
