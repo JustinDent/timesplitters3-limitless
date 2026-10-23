@@ -61,6 +61,15 @@ drafts and launcher prereleases cannot become the baseline. Release history is
 paged; incomplete history stops publication. With no previous stable launcher,
 the notes describe an initial launcher release without an unrelated comparison.
 
+The change list includes only merged PRs in that commit range touching launcher
+source, packaging, artwork/SDK pins or embedded default controls. Game-only,
+documentation-only and issue/release housekeeping PRs are excluded. Mixed PRs
+remain included when they change launcher inputs.
+Mixed PRs touching game source, patches or texture assets use the neutral
+"Launcher updates" label instead of advertising a game feature in their title.
+Changed-file lists are paged and checked for completeness, including renamed paths. The full source comparison
+link is explicitly labeled because GitHub's compare view also shows game changes.
+
 The Mac target is ARM64, not Intel. The app retains its existing ad-hoc signing;
 Developer ID signing/notarization and clean-machine Gatekeeper acceptance remain
 separate delivery work. This workflow releases the launcher only; native game

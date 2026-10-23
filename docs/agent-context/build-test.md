@@ -30,6 +30,9 @@ previous stable launcher selection across paginated game/launcher history,
 initial-release notes and refusal of incomplete history. It remains registered
 in the existing Windows/Mac launcher build workflow. These are offline publisher
 tests; no game rebuild or launcher UI rebuild is needed for this notes-only fix.
+Additional launcher publication fixtures verify game/docs/housekeeping exclusion,
+mixed PR inclusion, merge range, file pagination, renamed paths and incomplete
+file-list refusal in the same existing dual-host test route.
 
 `tests/test_text_read_scope.py` checks query reuse for ascending and descending
 addresses within the same OS region, both mapping boundaries, nested layouts

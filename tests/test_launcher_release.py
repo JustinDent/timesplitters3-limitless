@@ -190,6 +190,50 @@ class LauncherReleaseTests(unittest.TestCase):
                          'Initial launcher release.')
         self.assertFalse(any(call[1].endswith('/generate-notes') for call in self.api.calls))
 
+    def test_launcher_notes_filter_game_docs_housekeeping_and_out_of_range_prs(self):
+        base = '/repos/'+release.REPOSITORY
+        paths = {1: ['src/game.c'], 2: ['tools/launcher/Core.cs'],
+                 3: ['docs/launcher.md'], 4: ['tools/issue-forms.py'],
+                 5: ['src/input.c', 'tools/launcher/GameSettings.cs'],
+                 6: ['tools/build-mac-launcher.py'], 7: ['tools/launcher/Core.cs']}
+        def call(method, path):
+            number = int(path.split('/pulls/')[1].split('/')[0])
+            if '/files?' in path:
+                return [{'filename': name} for name in paths[number]]
+            return dict(merged_at='2026-10-23', merge_commit_sha='b'*40 if number == 7 else SHA,
+                        title=f'Change {number}', changed_files=len(paths[number]))
+        self.api.call = call
+        generated = '\n'.join(f'https://github.com/{release.REPOSITORY}/pull/{n}' for n in paths)
+        notes = release.launcher_pr_notes(self.api, base, generated, 'launcher-v1.2.18',
+                                          'launcher-v1.2.19', SHA)
+        for number in (2, 6):
+            self.assertIn(f'Change {number}', notes)
+        self.assertIn(f'Launcher updates ([#5](https://github.com/{release.REPOSITORY}/pull/5))', notes)
+        self.assertNotIn('Change 5', notes)
+        for number in (1, 3, 4, 7):
+            self.assertNotIn(f'Change {number}', notes)
+        self.assertIn('Full source comparison', notes)
+
+    def test_launcher_notes_check_renamed_paths_and_paginate_files(self):
+        def call(method, path):
+            if '/files?' not in path:
+                return dict(merged_at='2026-10-23', merge_commit_sha=SHA,
+                            title='Move launcher file', changed_files=101)
+            if path.endswith('page=1'):
+                return [{'filename': 'docs/usage.md'}]*100
+            return [{'filename': 'archive/old.cs', 'previous_filename': 'tools/launcher/Old.cs'}]
+        self.api.call = call
+        notes = release.launcher_pr_notes(self.api, '/repos/'+release.REPOSITORY,
+                    f'https://github.com/{release.REPOSITORY}/pull/1', 'launcher-v1.2.18', self.plan['tag'], SHA)
+        self.assertIn('Move launcher file', notes)
+
+    def test_launcher_notes_refuse_incomplete_pr_files(self):
+        self.api.call = lambda method, path: ([] if '/files?' in path else dict(
+            merged_at='2026-10-23', merge_commit_sha=SHA, title='Change', changed_files=1))
+        with self.assertRaisesRegex(ValueError, 'Incomplete changed-file'):
+            release.launcher_pr_notes(self.api, '/repos/'+release.REPOSITORY,
+                f'https://github.com/{release.REPOSITORY}/pull/1', 'launcher-v1.2.18', self.plan['tag'], SHA)
+
     def test_incomplete_notes_history_is_rejected(self):
         self.api.history = [{'tag_name': 'v0.3.1-alpha.2'}]*2000
         with self.assertRaisesRegex(ValueError, 'history is incomplete'):

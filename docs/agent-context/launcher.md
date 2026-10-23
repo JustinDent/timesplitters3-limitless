@@ -260,3 +260,12 @@ versions are excluded. Initial launcher notes avoid implicit generation, and
 incomplete pagination fails closed. tests/test_launcher_release.py covers mixed
 paginated history, initial releases and the history cap in the existing dual-host
 publication test route. No launcher binaries or OS adapters change.
+
+launcher_pr_notes filters generated PR references to merges in the exact Git
+range and launcher payload/build paths via launcher_release_path. Game-only,
+docs and automation PRs are omitted; mixed launcher/game PRs remain eligible.
+File pagination, rename sources and API truncation are validated (the 3,000-file
+cap uses the local merge diff). The source comparison link explicitly includes
+game history. Offline release fixtures cover filtering, range and complete files.
+Mixed PRs touching game runtime/patch/texture source use a neutral launcher label
+so their game feature titles do not become advertised launcher features.
