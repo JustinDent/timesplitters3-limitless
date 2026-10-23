@@ -65,28 +65,31 @@ namespace TimeSplitters.Launcher
             string pre=GameVersion.Parse(tag).Pre;
             if(pre.Length==0)return "stable";
             var match=Regex.Match(pre,@"^([a-z][a-z0-9-]{0,39})\.[1-9][0-9]*$");
-            if(!match.Success)return "preview"; // Historical prerelease tags.
+            if(!match.Success)return "legacy"; // Exact-version history only.
             string id=match.Groups[1].Value;
-            return id=="alpha"||id=="beta"||id=="rc"||id=="stable"?"preview":id;
+            return id=="alpha"||id=="preview"||id=="rc"||id=="stable"||id=="legacy"?"legacy":id;
         }
         public static GameChannelChoice[] Choices(IEnumerable<Release> releases,string selected)
         {
-            var names=new Dictionary<string,string> { {"stable","Stable"},{"preview","Preview"} };
-            foreach(var release in releases.OrderBy(r=>GameVersion.Parse(r.Tag)))names[release.Channel]=release.ChannelName;
+            selected=Preference(selected);
+            var names=new Dictionary<string,string> { {"stable","Stable"},{"beta","Beta"} };
+            foreach(var release in releases.Where(r=>r.Channel!="legacy").OrderBy(r=>GameVersion.Parse(r.Tag)))names[release.Channel]=release.Channel=="beta"?"Beta":release.ChannelName;
             if(!names.ContainsKey(selected))names[selected]=Name(selected);
-            return names.OrderBy(p=>p.Key=="stable"?0:p.Key=="preview"?1:2).ThenBy(p=>p.Key,StringComparer.Ordinal)
+            return names.OrderBy(p=>p.Key=="stable"?0:p.Key=="beta"?1:2).ThenBy(p=>p.Key,StringComparer.Ordinal)
                 .Select(p=>new GameChannelChoice {Id=p.Key,Name=p.Value}).ToArray();
         }
         public static bool Valid(string id) {return Regex.IsMatch(id??"",@"^[a-z][a-z0-9-]{0,39}\z");}
         public static string Name(string id)
-        {return id=="stable"?"Stable":id=="preview"?"Preview":CultureInfo.InvariantCulture.TextInfo.ToTitleCase(id.Replace('-',' '))+" Preview";}
+        {return id=="stable"?"Stable":id=="beta"?"Beta":id=="legacy"?"Legacy Preview":CultureInfo.InvariantCulture.TextInfo.ToTitleCase(id.Replace('-',' '))+" Preview";}
+        public static string Preference(string id)
+        {return id=="preview"||id=="alpha"||id=="rc"||id=="legacy"?"beta":id;}
         public static string Read(string root)
         {
             try {
                 string path=Core.PathIn(root,".launcher/preferences.json");
                 if(!File.Exists(path))return "stable";
                 var prefs=Json.Object(File.ReadAllText(path));string id=Json.String(prefs,"game_channel");
-                return Valid(id)?id:Json.Flag(prefs,"preview")?"preview":"stable";
+                return Valid(id)?Preference(id):Json.Flag(prefs,"preview")?"beta":"stable";
             } catch(Exception ex){LauncherLog.Write(root,"Game channel preferences: "+ex.Message);return "stable";}
         }
         public static string ReadPreviewTrack(string root)
@@ -95,14 +98,15 @@ namespace TimeSplitters.Launcher
                 string path=Core.PathIn(root,".launcher/preferences.json");
                 if(File.Exists(path)) {
                     string id=Json.String(Json.Object(File.ReadAllText(path)),"game_preview_track");
-                    if(Valid(id) && id!="stable")return id;
+                    if(Valid(id) && id!="stable")return Preference(id);
                 }
             } catch(Exception ex){LauncherLog.Write(root,"Preview track preferences: "+ex.Message);}
-            string selected=Read(root);return selected=="stable"?"preview":selected;
+            string selected=Read(root);return selected=="stable"?"beta":selected;
         }
         public static void Save(string root,string id,string previewTrack=null)
         {
             Core.Require(Valid(id),"Invalid game channel.");
+            id=Preference(id);previewTrack=Preference(previewTrack);
             string path=Core.PathIn(root,".launcher/preferences.json");
             var prefs=File.Exists(path)?Json.Object(File.ReadAllText(path)):new Dictionary<string,object>();
             string remembered=id!="stable"?id:previewTrack;
@@ -126,18 +130,20 @@ namespace TimeSplitters.Launcher
         {return releases.Where(r=>r.Channel==id).OrderByDescending(r=>GameVersion.Parse(r.Tag)).FirstOrDefault();}
         internal static void Metadata(Release release,string body)
         {
-            release.Channel=release.IsPreview && GameVersion.Parse(release.Tag).Pre.Length==0?"preview":FromTag(release.Tag);
+            release.Channel=release.IsPreview && GameVersion.Parse(release.Tag).Pre.Length==0?"legacy":FromTag(release.Tag);
             release.ChannelName=Name(release.Channel);
             var match=Regex.Match(body??"",@"<!-- tsfp-release (.*?) -->");
             if(!match.Success)return; // Published legacy releases remain installable.
             Dictionary<string,object> data;
             try{data=Json.Object(match.Groups[1].Value);}catch(Exception error){throw new InvalidDataException("Invalid release channel metadata.",error);}
             Core.Require(data!=null && Regex.Matches(body,@"<!-- tsfp-release ").Count==1,"Invalid release channel metadata.");
-            Core.Require(Json.String(data,"schema")=="1" && Json.String(data,"channel")==release.Channel &&
+            string metadataChannel=Json.String(data,"channel");
+            bool oldGeneral=metadataChannel=="preview" && (release.Channel=="legacy" || release.Channel=="beta");
+            Core.Require(Json.String(data,"schema")=="1" && (metadataChannel==release.Channel || oldGeneral) &&
                 Regex.IsMatch(Json.String(data,"source_commit"),"^[0-9a-f]{40}$"),"Release channel metadata does not match its version.");
             string name=Json.String(data,"name");
             Core.Require(name.Length>0 && name.Length<=80 && !name.Any(Char.IsControl),"Invalid channel display name.");
-            release.ChannelName=name;release.MinimumLauncher=Json.String(data,"minimum_launcher");
+            release.ChannelName=release.Channel=="legacy"?"Legacy Preview":release.Channel=="beta"?"Beta":name;release.MinimumLauncher=Json.String(data,"minimum_launcher");
             GameVersion.Parse(release.MinimumLauncher);
         }
         public static string VisibleNotes(string body)

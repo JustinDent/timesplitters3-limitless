@@ -60,7 +60,7 @@ Launcher v1.2.14 adds recovery when Windows interrupts startup, with **Retry**,
 - Your supported **US Xbox game**, title ID `45410066`; [exact executable hash](docs/building.md#inputs-and-generated-files).
 - Internet access for the initial runtime download; about **5 GB** for the game,
   plus space for update staging, rollback and any optional textures.
-- **Stable** is the default game channel. choose **Preview**, then a **Testing track** for opt-in experiments. Each track follows its own updates in launcher 1.3.0+. See [release channels](docs/releasing.md).
+- **Stable** is the default game channel. choose **Preview**, then **Beta** or a named feature under **Testing track** for opt-in testing. Each track follows its own updates in launcher 1.3.0+. See [release channels](docs/releasing.md).
   Launcher and game versions are separate.
 - Keep the whole installation together, especially `Data`, `Settings`, `Saves`
   and the launcher's recovery files. Normal updates preserve existing data,

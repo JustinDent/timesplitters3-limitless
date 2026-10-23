@@ -133,7 +133,7 @@ release; resource-link tests use a tiny executable without running the game.
 ## Publishing game updates
 
 Publish a GitHub Release with a semantic version tag (`v1.2.3`, or
-`v1.3.0-preview.1` or `v1.3.0-story-coop.1` for an opt-in prerelease) and these assets from the existing packager:
+`v1.3.0-beta.1` or `v1.3.0-story-coop.1` for an opt-in prerelease) and these assets from the existing packager:
 
 - `TimeSplitters-Future-Perfect-PC-<tag>-windows-x64.zip`
 - The corresponding `.zip.sha256` sidecar (publish both).
@@ -145,7 +145,7 @@ they predate the launcher. The standalone launcher remains installed in that cas
 
 Launcher 1.3.0+ pages through published release records and chooses the highest
 compatible game version in the selected channel with the matching Windows asset.
-Stable is the default and excludes prereleases. General Preview and named
+Stable is the default and excludes prereleases. Beta and named
 previews follow their own testing releases. Launcher-only releases, drafts and
 source-only releases are ignored. Same-channel updates do not downgrade; an
 explicit channel switch can install a lower Stable version after confirmation.
@@ -751,12 +751,12 @@ also leave one. See [session recovery and limits](windows-crash-logger.md#unfini
 
 Launcher 1.3.0 source adds independent game channels on Windows and native Mac.
 New installations default to **Stable**; use the game update channel selector to
-choose **Preview**, then select **General Preview** or a named feature such as
+choose **Preview**, then select **Beta** or a named feature such as
 **Story Co-op** under **Testing track**. Each track receives only its own updates.
 The track selector appears only for Preview; switching through Stable remembers
 the previously selected track. Old Preview preferences
-migrate to general Preview without enabling launcher preview updates. Historical
-alpha/beta versions remain available; no release-candidate type is required.
+migrate to Beta without enabling launcher preview updates. Historical alpha and
+`-preview.N` versions remain available only in Game versions; no release-candidate type is required.
 Select Stable and confirm the channel switch to install its latest game, even
 when its version is lower than the installed preview. **Game versions** still
 allows exact-version installation. Missing channels never silently substitute

@@ -191,12 +191,12 @@ Use the bounded wrapper, never automate Play against the personal installation.
 
 Launcher 1.3.0 source adds independent game channels on Windows and native Mac.
 New installations default to **Stable**; use the game update channel selector to
-choose **Preview**, then select **General Preview** or a named feature such as
+choose **Preview**, then select **Beta** or a named feature such as
 **Story Co-op** under **Testing track**. Each track receives only its own updates.
 The track selector appears only for Preview; switching through Stable remembers
 the previously selected track. Old Preview preferences
-migrate to general Preview without enabling launcher preview updates. Historical
-alpha/beta versions remain available; no release-candidate type is required.
+migrate to Beta without enabling launcher preview updates. Historical alpha and
+`-preview.N` versions remain available only in Game versions; no release-candidate type is required.
 Select Stable and confirm the channel switch to install its latest game, even
 when its version is lower than the installed preview. **Game versions** still
 allows exact-version installation. Missing channels never silently substitute

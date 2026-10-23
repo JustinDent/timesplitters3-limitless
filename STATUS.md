@@ -18110,3 +18110,23 @@ Local Windows -RequireArtwork -Test and embedded resource hash verification pass
 Mac builds/package/lifecycle checks will run in PR/release CI before publication.
 Game VERSION 0.3.2 is source preparation only; this launcher publication does not
 publish the game or original/private assets. MAC-062 remains awaiting validation.
+
+
+## Beta as the general Preview track (2026-10-23)
+
+Before merging/publishing launcher 1.3.0, the user selected Beta as the sole general
+testing track. Preview now contains Beta and independent named features such as
+Story Co-op. New general versions use -beta.N; version preparation, package entry
+points and publisher preflight reject new alpha/preview/rc/legacy suffixes. Beta's
+name is fixed. Historical alpha and -preview.N releases remain exact-version
+history/repair entries labeled Legacy Preview, outside Beta update candidates.
+Old general-preview preferences migrate to beta, preserving named tracks and
+unrelated preferences. Stable remains the default. Tags/assets are not relabeled.
+
+Local asset-free publisher/package/launcher checks passed 227 tests plus 36
+subtests, with four directory symlink prerequisite skips. Windows built with the
+pinned artwork; shared grouped-selection, preference and version checks passed.
+The broader local suite again failed the pre-existing GameSessions fallback-
+retention File.Replace check (also reproduced separately); maintenance checks
+passed. Updated dual-platform PR CI must validate the final commit before merge.
+No GameSessions code was changed. No merge, tag or release was created.

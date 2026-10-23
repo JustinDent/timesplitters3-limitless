@@ -207,8 +207,10 @@ class Publisher:
         key = version_key(self.version)
         self.tag = 'v'+self.version
         self.prerelease = not key[3]
-        self.channel = CHANNELS.identity(self.version)
+        self.channel = CHANNELS.identity(self.version, publishing=True)
         if self.channel_name:
+            if self.channel['channel']=='beta' and self.channel_name!='Beta':
+                raise ValueError('The beta track is named Beta; custom display names are for feature tracks.')
             if not self.prerelease or not self.channel_name.strip() or len(self.channel_name)>80 or any(ord(c)<32 for c in self.channel_name):
                 raise ValueError('A preview display name must be 1-80 printable characters.')
             self.channel['name'] = self.channel_name

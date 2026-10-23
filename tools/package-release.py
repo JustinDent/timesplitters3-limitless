@@ -24,13 +24,13 @@ def main():
     parser.add_argument('--texture-pack', type=Path, help='Use this audited compiled pack instead of the committed repository pack')
     args = parser.parse_args()
     try:
-        release_identity(args.version)
+        release_identity(args.version, publishing=True)
     except ValueError as error:
         parser.error(str(error))
     if args.without_textures and (args.texture_pack or args.with_textures):
         parser.error('--texture-pack cannot be combined with --without-textures')
     if not re.fullmatch(r'v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?', args.version):
-        parser.error('Use a semantic release version, such as v1.2.3 or v1.2.3-alpha.1.')
+        parser.error('Use a semantic release version, such as v1.2.3 or v1.2.3-beta.1.')
     if '-' in args.version and any(part.isdecimal() and len(part)>1 and part[0]=='0' for part in args.version.split('-',1)[1].split('.')):
         parser.error('Numeric prerelease identifiers must not contain leading zeros.')
     name = f'TimeSplitters-Future-Perfect-PC-{args.version}-windows-x64'

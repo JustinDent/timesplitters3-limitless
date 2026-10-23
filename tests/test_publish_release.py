@@ -80,7 +80,7 @@ def test_pytest_alias_cleanup_rejects_unrecognized_links_without_mutation(tmp_pa
 class FakePublisher(module.Publisher):
     def __init__(self, root):
         super().__init__(root)
-        (root/'VERSION').write_text('0.2.0-alpha.3')
+        (root/'VERSION').write_text('0.2.0-beta.3')
         pack = root/'assets/textures'
         pack.mkdir(parents=True)
         words = [0]*32
@@ -98,7 +98,7 @@ class FakePublisher(module.Publisher):
             'texture_count': identity['texture_count'], 'installed_bytes': identity['installed_bytes']}))
         self.calls = []
         self.branch, self.dirty, self.remote = 'main', False, HEAD
-        self.releases = [dict(tag_name='v0.2.0-alpha.2', draft=False, prerelease=True, published_at='2026-10-15T01:00:00Z')]
+        self.releases = [dict(tag_name='v0.2.0-beta.2', draft=False, prerelease=True, published_at='2026-10-15T01:00:00Z')]
         self.bad_upload = False
         self.tag_created = False
         self.builds = 0
@@ -198,7 +198,7 @@ def test_prepare_then_publish_reuses_exact_package(publisher):
     assert not publication_calls(publisher)
     assert not publisher.stage.exists()
     notes = publisher.notes.read_text(encoding='utf-8')
-    assert 'Changes since v0.2.0-alpha.2' in notes and '- Online multiplayer ([#12]' in notes
+    assert 'Changes since v0.2.0-beta.2' in notes and '- Online multiplayer ([#12]' in notes
     assert 'What\u2019s Changed' not in notes and "What's Changed" not in notes
     assert 'Source changes' not in notes and 'Build and validation' not in notes
     assert not any(call[0] == 'git' and call[1][0] == 'log' for call in publisher.calls)
@@ -217,8 +217,8 @@ def test_preflight_blocks_wrong_or_already_published_source(publisher, problem):
     if problem == 'branch': publisher.branch = 'feature'
     if problem == 'dirty': publisher.dirty = True
     if problem == 'remote': publisher.remote = PREVIOUS
-    if problem == 'published': publisher.releases[0]['tag_name'] = 'v0.2.0-alpha.3'
-    if problem == 'version': (publisher.root/'VERSION').write_text('0.2.0-alpha.1')
+    if problem == 'published': publisher.releases[0]['tag_name'] = 'v0.2.0-beta.3'
+    if problem == 'version': (publisher.root/'VERSION').write_text('0.2.0-beta.1')
     with pytest.raises(ValueError):
         publisher.preflight()
     assert not publication_calls(publisher) and publisher.builds == 0
@@ -304,7 +304,7 @@ def test_draft_option_never_publishes(publisher):
     assert len(publication_calls(publisher)) == 1
 
 
-@pytest.mark.parametrize('version', ['0.2.0-alpha.3', '0.2.0'])
+@pytest.mark.parametrize('version', ['0.2.0-beta.3', '0.2.0'])
 @pytest.mark.parametrize('draft', [False, True])
 def test_game_releases_preserve_latest_launcher(publisher, version, draft):
     (publisher.root/'VERSION').write_text(version)
@@ -347,14 +347,14 @@ def test_streamed_textures_validate_from_zip_without_stage_copy(publisher, corru
 
 def test_published_baseline_includes_prereleases_and_ignores_drafts():
     stable = dict(tag_name='v0.1.0', draft=False, published_at='2026-01-01T00:00:00Z')
-    preview = dict(tag_name='v0.2.0-alpha.2', draft=False, published_at='2026-10-01T00:00:00Z')
+    preview = dict(tag_name='v0.2.0-beta.2', draft=False, published_at='2026-10-01T00:00:00Z')
     draft = dict(tag_name='v9.0.0', draft=True, published_at=None)
     assert module.last_published([[stable], [preview, draft]])[1] == preview
 
 
 @pytest.mark.parametrize('tag', ['launcher-v1.2.7', 'other-release', 'vbad', 'v0.2.0-alpha.01', 'vv1.0.0'])
 def test_game_baseline_ignores_unrelated_or_invalid_tags(tag):
-    game = dict(tag_name='v0.2.0-alpha.2', draft=False, published_at='2026-10-01T00:00:00Z')
+    game = dict(tag_name='v0.2.0-beta.2', draft=False, published_at='2026-10-01T00:00:00Z')
     other = dict(tag_name=tag, draft=False, published_at='2026-10-16T00:00:00Z')
     releases, previous = module.last_published([[game], [other]])
     assert releases == [game, other]  # Keep every tag for collision checks.
@@ -366,8 +366,8 @@ def test_newer_launcher_does_not_change_game_notes_baseline(publisher):
     publisher.releases.append(dict(tag_name='launcher-v1.2.7', draft=False,
                                    published_at='2026-10-16T00:00:00Z'))
     publisher.preflight(); publisher.prepare()
-    assert publisher.previous['tag_name'] == 'v0.2.0-alpha.2'
-    assert 'Changes since v0.2.0-alpha.2' in publisher.notes.read_text(encoding='utf-8')
+    assert publisher.previous['tag_name'] == 'v0.2.0-beta.2'
+    assert 'Changes since v0.2.0-beta.2' in publisher.notes.read_text(encoding='utf-8')
     # FakePublisher also asserts generate-notes receives the previous game tag.
 
 
@@ -397,7 +397,7 @@ def test_notes_select_merged_game_prs_by_files_and_commit_range(publisher, monke
     notes = publisher.game_pr_notes('https://github.com/owner/repo/pull/12\nhttps://github.com/owner/repo/pull/12')
     assert ('[#12]' in notes) == included
     assert notes.count('[#12]') == int(included)
-    assert 'compare/v0.2.0-alpha.2...v0.2.0-alpha.3' in notes
+    assert 'compare/v0.2.0-beta.2...v0.2.0-beta.3' in notes
     assert ('git', ('rev-list', PREVIOUS+'..'+HEAD)) in publisher.calls
 
 
@@ -498,7 +498,7 @@ def test_failed_cleanup_preserves_original_test_error(publisher, monkeypatch, ca
 @pytest.mark.skipif(sys.platform != 'win32', reason='Windows cleanup script')
 @pytest.mark.parametrize('relative', [
     'build/release-tests',
-    'build/releases/TimeSplitters-Future-Perfect-PC-v0.2.0-alpha.2-windows-x64',
+    'build/releases/TimeSplitters-Future-Perfect-PC-v0.2.0-beta.2-windows-x64',
     'private/saves',
 ])
 def test_release_cleanup_targets_only_disposable_work(tmp_path, relative):
@@ -650,7 +650,7 @@ def test_optional_texture_policy_needs_no_lfs_and_rejects_bundled_payload(publis
 
 @pytest.mark.parametrize('version,channel', [
     ('0.4.1', 'stable'), ('0.5.0-story-coop.1', 'story-coop'),
-    ('0.5.0-preview.2', 'preview'), ('0.3.1-alpha.2', 'preview')])
+    ('0.5.0-beta.2', 'beta'), ('0.3.1-alpha.2', 'legacy'), ('0.4.0-preview.1', 'legacy')])
 def test_game_channel_identity(version, channel):
     assert module.CHANNELS.identity(version)['channel'] == channel
 
@@ -724,7 +724,7 @@ def test_stable_branch_without_stable_ancestor_is_rejected(publisher):
         publisher.preflight()
 
 
-@pytest.mark.parametrize('version', ['0.3.2', '0.4.0-story-coop.1'])
+@pytest.mark.parametrize('version', ['0.3.2', '0.4.0-beta.1', '0.4.0-story-coop.1'])
 def test_version_preparation_writes_only_explicit_version(tmp_path, monkeypatch, version):
     import sys
     monkeypatch.setitem(sys.modules,'release_channels',module.CHANNELS)
@@ -751,3 +751,31 @@ def test_preview_maintainer_notes_and_display_name_are_reviewable(publisher):
     publisher.notes_file.write_text('<!-- tsfp-release {} -->')
     with pytest.raises(ValueError,match='override channel metadata'):
         publisher.write_notes()
+
+
+@pytest.mark.parametrize('version', ['0.4.0-alpha.1','0.4.0-preview.1','0.4.0-rc.1','0.4.0-legacy.1'])
+def test_new_publication_rejects_retired_general_suffixes_but_history_is_readable(publisher, version):
+    assert module.CHANNELS.identity(version)['channel']=='legacy'
+    with pytest.raises(ValueError,match='Use beta.N'):
+        module.CHANNELS.identity(version,publishing=True)
+    (publisher.root/'VERSION').write_text(version)
+    with pytest.raises(ValueError,match='Use beta.N'):
+        publisher.preflight()
+    assert not publication_calls(publisher)
+
+
+def test_beta_has_its_own_canonical_identity_and_fixed_display_name(publisher):
+    (publisher.root/'VERSION').write_text('0.4.0-beta.1')
+    publisher.preflight()
+    assert publisher.channel['channel']=='beta' and publisher.channel['name']=='Beta'
+    publisher.channel_name='General Preview'
+    with pytest.raises(ValueError,match='track is named Beta'):
+        publisher.preflight()
+
+
+def test_beta_baseline_excludes_legacy_preview_and_alpha_builds(publisher):
+    (publisher.root/'VERSION').write_text('0.4.0-beta.2')
+    publisher.releases=[dict(tag_name=tag,draft=False,prerelease=True,published_at='2026-10-22')
+                        for tag in ['v0.4.0-beta.1','v0.4.0-preview.99','v0.4.0-alpha.99']]
+    publisher.preflight()
+    assert publisher.previous['tag_name']=='v0.4.0-beta.1'

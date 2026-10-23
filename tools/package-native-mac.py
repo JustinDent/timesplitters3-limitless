@@ -163,7 +163,7 @@ def main():
                         help='Directory containing verified Vulkan/DXC third-party notices')
     args = parser.parse_args()
     try:
-        release_identity(args.version)
+        release_identity(args.version, publishing=True)
     except ValueError as error:
         parser.error(str(error))
     if args.without_textures and (args.texture_pack or args.with_textures):

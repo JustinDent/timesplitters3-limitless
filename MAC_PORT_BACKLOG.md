@@ -4567,6 +4567,10 @@ none of the renderer entries above is a confirmed diagnosis of that symptom.
   tools/release_channels.py, publish-release.py and both game packagers.
 - **Existing Mac support:** Shared models, installer and generated layout already
   serve both hosts. Channel policy and shared behavioral fixtures are common.
+- **Beta naming follow-up:** Preview's general testing track is Beta (-beta.N).
+  Shared source migrates old general-preview preferences to beta, retains feature
+  tracks, and leaves historical alpha/preview releases in Game versions only.
+  Shared UI fixtures cover this policy on WPF/Avalonia; refreshed Mac CI is needed.
 - **Preview grouping follow-up:** Shared GameChannelPickerPage now supplies
   Stable/Preview and the conditional testing-track selector on both hosts.
   game_preview_track persists the remembered feature across Stable. The generated

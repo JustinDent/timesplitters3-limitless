@@ -7,16 +7,14 @@ from release_channels import identity
 def set_version(root, version):
     if version.startswith('v'):
         raise ValueError('Use the version number without the v prefix.')
-    channel = identity(version)
-    if '-' in version and version.split('-', 1)[1].split('.')[0] in ('alpha', 'beta', 'rc'):
-        raise ValueError('Use preview.N or a named channel such as story-coop.N for new test releases.')
+    channel = identity(version, publishing=True)
     (Path(root)/'VERSION').write_text(version+'\n', encoding='utf-8', newline='\n')
     return channel
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('version', help='X.Y.Z, X.Y.Z-preview.N or X.Y.Z-story-coop.N')
+    parser.add_argument('version', help='X.Y.Z, X.Y.Z-beta.N or X.Y.Z-story-coop.N')
     args = parser.parse_args()
     try:
         channel = set_version(Path(__file__).resolve().parents[1], args.version)

@@ -21,7 +21,7 @@ namespace TimeSplitters.Launcher
         public readonly ComboBox Track=new ComboBox {MinWidth=160,MaxWidth=260,FontSize=13};
         readonly Grid trackRow;
         bool updating;
-        string lastPreview="preview";
+        string lastPreview="beta";
         public event Action Changed;
         public string Selected {get{return Channel.SelectedIndex==1?LastPreview:"stable";}}
         public string LastPreview {get{return lastPreview;}}
@@ -38,7 +38,7 @@ namespace TimeSplitters.Launcher
             Channel.Items.Add("Stable");Channel.Items.Add("Preview");
             View.Children.Add(Row("UPDATE CHANNEL",Channel));
             trackRow=Row("TESTING TRACK",Track);View.Children.Add(trackRow);
-            SetReleases(new Release[0],"stable","preview");
+            SetReleases(new Release[0],"stable","beta");
             Channel.SelectionChanged+=(s,e)=>Notify();
             Track.SelectionChanged+=(s,e)=>{
                 if(updating)return;
@@ -65,10 +65,11 @@ namespace TimeSplitters.Launcher
         {
             updating=true;
             try {
+                selected=GameChannels.Preference(selected);rememberedPreview=GameChannels.Preference(rememberedPreview);
                 if(selected!="stable")lastPreview=selected;
                 else if(GameChannels.Valid(rememberedPreview) && rememberedPreview!="stable")lastPreview=rememberedPreview;
                 var tracks=GameChannels.Choices(releases,lastPreview).Where(c=>c.Id!="stable")
-                    .Select(c=>new GameChannelChoice {Id=c.Id,Name=c.Id=="preview"?"General Preview":
+                    .Select(c=>new GameChannelChoice {Id=c.Id,Name=c.Id=="beta"?"Beta":
                         c.Name.EndsWith(" Preview",StringComparison.Ordinal)?c.Name.Substring(0,c.Name.Length-8):c.Name}).ToArray();
                 Track.ItemsSource=tracks;Track.SelectedItem=tracks.First(c=>c.Id==lastPreview);
                 Channel.SelectedIndex=selected=="stable"?0:1;

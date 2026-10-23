@@ -5,7 +5,8 @@
 Game and launcher versions are independent. The next Stable game source version
 is **0.3.2**, including fixes since `0.3.1-alpha.2`. This source change does not
 publish a release or establish full campaign/platform validation. Historical
-alpha/beta releases remain available as previews; do not relabel their assets.
+alpha and `-preview.N` releases remain available in Game versions; do not
+relabel their assets or offer them as Beta updates.
 
 ## Versions and channels
 
@@ -13,7 +14,7 @@ alpha/beta releases remain available as previews; do not relabel their assets.
 | --- | --- | --- | --- |
 | Stable game | `v0.3.2` | `stable` | Regular release, never Latest |
 | Maintenance fix | `v0.3.3` | `stable` | Regular release, never Latest |
-| General preview | `v0.4.0-preview.1` | `preview` | Pre-release |
+| Beta testing | `v0.4.0-beta.1` | `beta` | Pre-release |
 | Named feature test | `v0.4.0-story-coop.1` | `story-coop` | Pre-release |
 | Launcher | `launcher-v1.3.0` | Independent launcher updates | Stable launcher owns Latest |
 
@@ -26,8 +27,11 @@ supported game channel, not a claim of complete original-game fidelity.
 A preview's base number is its intended future release. Both a co-op branch with
 recent main fixes and one without them can use `0.4.0-story-coop.1`; the commit
 and notes identify their actual contents. Once published, the next changed build
-is `.2`. New general tests use `preview.N`; no separate release-candidate type or
-workflow is needed. Legacy alpha/beta tags are still readable.
+is `.2`. New general tests use `beta.N`; the track is always named **Beta**. Named
+feature tests keep their own suffixes, such as `story-coop.N`. New alpha,
+preview and rc suffixes are rejected by version preparation, packaging and
+publishing. Historical versions remain readable for exact-version history and
+repair, and are excluded from Beta update selection.
 
 Stable hotfixes such as `0.3.3` are not blocked by a published `0.4.0-story-coop.8`.
 Ordering is checked within the stable major/minor maintenance line, or within a
@@ -70,6 +74,18 @@ Channel IDs are lowercase letters/digits/hyphens, start with a letter, and are a
 most 40 characters; preview counters start at 1 without leading zeros. Display
 names may vary independently and are limited to 80 printable characters. A custom
 name is specified on each invocation. The tag, package and channel ID must agree.
+
+For general Beta testing, prepare `0.4.0-beta.1` on the intended pushed branch:
+
+```powershell
+.\.venv\Scripts\python.exe tools/release-version.py 0.4.0-beta.1
+# Review, commit and push the version and intended changes first.
+.\Publish-Release.ps1 -Branch beta-testing -PrepareOnly
+```
+
+This appears as **Preview -> Beta**. Repeat the same branch argument without
+`-PrepareOnly` to publish after reviewing the package and notes. Beta's display
+name is fixed; `-ChannelName` customizes named feature tracks only.
 
 ## Build, inspect and publish
 
@@ -156,11 +172,13 @@ does not reserve its target minor release for that feature.
 
 Fresh installs default to Stable. The top-level **Update channel** has only
 **Stable** and **Preview**. Selecting Preview reveals **Testing track**, containing
-**General Preview** and published named features such as **Story Co-op**. The
+**Beta** and published named features such as **Story Co-op**. The
 launcher remembers the track when switching through Stable; checks stay within
-the selected track. Tags and publisher channel IDs remain unchanged. The old Preview preference migrates to the General Preview
-testing track, including historical alpha/beta builds. It never opts the
-launcher itself into test updates. Launcher self-updates remain Stable unless a
+the selected track. Beta releases use `-beta.N` and channel ID `beta`; named
+feature IDs remain unchanged. Old Preview/general-preview preferences migrate
+to Beta, preserving the remembered named feature when present. Historical alpha
+and `-preview.N` releases stay in Game versions without being relabeled Beta.
+This migration never opts the launcher itself into test updates. Launcher self-updates remain Stable unless a
 separate explicit launcher preview preference is configured.
 
 Select **Stable** and confirm **Switch game channel** to return from a newer

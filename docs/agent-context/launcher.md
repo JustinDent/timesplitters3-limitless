@@ -187,7 +187,7 @@ Launcher 1.3.0 source separates game channels from launcher self-updates.
 `GameChannels` in ReleaseClient.cs owns canonical tag-derived IDs, optional
 `tsfp-release` note metadata, channel options, preference migration and cross-channel
 install eligibility. New game versions are X.Y.Z or X.Y.Z-channel.N; legacy
-alpha/beta tags map to general Preview. New installs choose Stable; old preview
+Beta tags map to the beta track; alpha/preview/rc tags remain history-only. New installs choose Stable; old preview
 preferences affect only the game. Save preserves unrelated preference keys and
 writes game_channel plus preview=false for older-client recovery. SelfUpdate
 reads the separate launcher_preview preference, default false on both hosts.
@@ -222,7 +222,7 @@ This follow-up changes documentation only, with no runtime or installer change.
 
 Preview grouping follow-up: `GameChannelPickerPage.cs` is the shared WPF/Avalonia
 Home selector hosted by GameChannelPickerHost. Its top-level choices are Stable
-and Preview; Preview reveals General Preview and named feature tracks. Canonical
+and Preview; Preview reveals Beta and named feature tracks. Canonical
 channel IDs/tags and release selection stay unchanged. game_preview_track remembers
 the last testing track across Stable and restarts; game_channel still stores the
 actual selected ID for compatibility. Catalog refreshes suppress selection events,
@@ -240,3 +240,14 @@ the incorrect local banner came from 1.2.12 and lacked the pinned backdrop.
 Top-right badge wording is restored to Stable Channel/Preview Channel on both
 hosts; the grouped selector itself remains Stable/Preview. No release artwork
 pin or published asset was changed.
+
+
+Beta naming (2026-10-23): canonical general-track ID/name are beta/Beta and tags
+use -beta.N. GameChannels.FromTag marks old alpha/preview/rc releases as legacy;
+they remain repairable in Game versions, outside Choices and Beta candidates.
+Old general-preview preference IDs/remembered tracks and the old boolean Preview
+flag migrate to beta; named features and unrelated preferences remain intact.
+GameChannelPickerPage shows Beta under Preview and retains the feature suffixes.
+Old general-track note metadata remains readable without relabeling legacy builds.
+Shared UI fixtures check Beta-only candidates, hidden legacy tracks/history,
+preference migration and existing grouped selectors on both hosts.

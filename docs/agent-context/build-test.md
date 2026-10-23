@@ -569,3 +569,13 @@ artwork pin, then uses the existing private legacy fallback if no cached file
 exists. fetch-launcher-art.ps1 recovers the pinned banner/backdrop/logo without
 executing downloaded code. -RequireArtwork checks the selected resources; normal
 local rebuilds now reuse the same verified art as release CI when cached.
+
+
+Beta publication (2026-10-23): release_channels.identity defaults to history parsing;
+publishing=True rejects alpha/preview/rc/legacy suffixes. Version preparation,
+both package entry points and publisher preflight enforce that mode. Beta's
+canonical identity is beta/Beta; a custom Beta display name is rejected. Historical
+identities remain readable for baselines without joining Beta's series. Publisher
+fixtures now use beta.N, with explicit legacy rejection/history and independent
+Beta baseline tests. Existing generic semantic-version ordering tests still cover
+alpha/beta ordering separately from the new publication policy.

@@ -70,29 +70,32 @@ public static class LauncherSharedUiChecks
         try {
             Test("Preview groups named feature tracks and remembers the selected test across Stable",()=>{
                 var picker=new GameChannelPickerPage();int changes=0;picker.Changed+=()=>changes++;
-                var releases=new[]{new Release {Tag="v0.4.0-preview.1",Channel="preview",ChannelName="Preview"},
+                var releases=new[]{new Release {Tag="v0.4.0-beta.1",Channel="beta",ChannelName="Beta"},
                     new Release {Tag="v0.4.0-story-coop.1",Channel="story-coop",ChannelName="Story Co-op Preview"}};
                 picker.SetReleases(releases,"stable","story-coop");
                 Need(picker.Channel.Items.Count==2&&picker.Selected=="stable"&&!picker.ShowingTracks&&changes==0,"Top-level channels must be Stable and Preview only");
                 picker.Channel.SelectedIndex=1;
                 Need(picker.ShowingTracks&&picker.Selected=="story-coop"&&changes==1,"Preview did not restore the remembered feature track");
-                Need(picker.Track.Items.Cast<GameChannelChoice>().Select(c=>c.Name).SequenceEqual(new[]{"General Preview","Story Co-op"}),"Named tests were not grouped under Preview");
-                picker.Track.SelectedItem=picker.Track.Items.Cast<GameChannelChoice>().First(c=>c.Id=="preview");
-                Need(picker.Selected=="preview"&&changes==2,"General Preview did not select its own track");
+                Need(picker.Track.Items.Cast<GameChannelChoice>().Select(c=>c.Name).SequenceEqual(new[]{"Beta","Story Co-op"}),"Named tests were not grouped under Preview");
+                picker.Track.SelectedItem=picker.Track.Items.Cast<GameChannelChoice>().First(c=>c.Id=="beta");
+                Need(picker.Selected=="beta"&&changes==2,"Beta did not select its own track");
                 picker.Channel.SelectedIndex=0;picker.Channel.SelectedIndex=1;
-                Need(picker.Selected=="preview"&&changes==4,"Switching through Stable lost the selected preview track");
+                Need(picker.Selected=="beta"&&changes==4,"Switching through Stable lost the selected preview track");
                 picker.SetReleases(new Release[0],"story-coop");
                 Need(picker.Selected=="story-coop"&&picker.ShowingTracks&&changes==4,"Unavailable tracks must remain selected without triggering checks");
                 picker.SetEnabled(false);Need(!picker.Channel.IsEnabled&&!picker.Track.IsEnabled,"Busy state must lock both selectors");
             });
             Test("game channels select independent series and permit explicit return to Stable",()=>{
-                var records=new[]{ChannelRecord("v0.4.1"),ChannelRecord("v0.5.0-story-coop.2",true),ChannelRecord("v0.6.0-other.8",true),ChannelRecord("v0.5.0-preview.1",true),ChannelRecord("v0.3.1-alpha.2",true)};
+                var records=new[]{ChannelRecord("v0.4.1"),ChannelRecord("v0.5.0-story-coop.2",true),ChannelRecord("v0.6.0-other.8",true),ChannelRecord("v0.5.0-beta.1",true),ChannelRecord("v0.3.1-alpha.2",true),ChannelRecord("v0.6.0-preview.99",true)};
                 var releases=ReleaseClient.GameVersions(Json.Encode(records)).Releases;
                 Need(GameChannels.Select(releases,"story-coop").Tag=="v0.5.0-story-coop.2","Experiment escaped its channel");
-                Need(GameChannels.Select(releases,"preview").Tag=="v0.5.0-preview.1","General preview absorbed experiments");
+                Need(GameChannels.Select(releases,"beta").Tag=="v0.5.0-beta.1","Beta absorbed experiments");
                 var stable=GameChannels.Select(releases,"stable");Need(stable.Tag=="v0.4.1","Stable absorbed preview");
                 Need(GameChannels.CanInstall(stable,"v0.5.0-story-coop.2"),"Returning to Stable must allow a lower version");
                 Need(!GameChannels.CanInstall(stable,"v0.4.2"),"Same-channel downgrade must remain explicit history selection");
+                Need(releases.Any(r=>r.Tag=="v0.3.1-alpha.2"&&r.Channel=="legacy"&&r.ChannelName=="Legacy Preview"),"Historical alpha was relabeled Beta");
+                Need(releases.Any(r=>r.Tag=="v0.6.0-preview.99"&&r.Channel=="legacy"),"Historical preview was relabeled Beta");
+                Need(!GameChannels.Choices(releases,"beta").Any(c=>c.Id=="legacy"),"Legacy versions must stay in history, outside testing tracks");
                 Need(GameChannels.Select(releases,"withdrawn")==null,"Missing experiment must not substitute Stable");
                 Need(GameChannels.Choices(releases,"withdrawn").Any(c=>c.Id=="withdrawn"),"Unavailable selected channel was lost");
             });
@@ -101,7 +104,11 @@ public static class LauncherSharedUiChecks
                 Need(GameChannels.Read(folder)=="stable","Fresh installs must use Stable");
                 string path=Core.PathIn(folder,".launcher/preferences.json");
                 Core.Write(path,Json.Encode(new {preview=true,custom="keep"}));
-                Need(GameChannels.Read(folder)=="preview"&&!SelfUpdate.PreviewChannel(folder),"Old Preview must affect only game previews");
+                Need(GameChannels.Read(folder)=="beta"&&!SelfUpdate.PreviewChannel(folder),"Old Preview must migrate to Beta without enrolling launcher previews");
+                Core.Write(path,Json.Encode(new {game_channel="preview",game_preview_track="preview",custom="keep"}));
+                Need(GameChannels.Read(folder)=="beta"&&GameChannels.ReadPreviewTrack(folder)=="beta","Explicit general-preview preferences were not migrated");
+                Core.Write(path,Json.Encode(new {game_channel="stable",game_preview_track="preview",custom="keep"}));
+                Need(GameChannels.Read(folder)=="stable"&&GameChannels.ReadPreviewTrack(folder)=="beta","Stable must retain a migrated Beta track");
                 GameChannels.Save(folder,"story-coop");var prefs=Json.Object(File.ReadAllText(path));
                 Need(GameChannels.Read(folder)=="story-coop"&&GameChannels.ReadPreviewTrack(folder)=="story-coop"&&Json.String(prefs,"custom")=="keep"&&!Json.Flag(prefs,"preview"),"Channel save lost preferences");
                 GameChannels.Save(folder,"stable");
